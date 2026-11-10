@@ -1018,16 +1018,6 @@ local function BuildSidebar()
         end)
 
         CludesUI._unlockSidebarBtn = btn
-
-        -- One-time tutorial tip: play badge opening the Unlock Mode video guide, retired
-        -- once clicked. VideoGuides owns all gating (its per-account seen map);
-        -- nil-guarded for standalone builds.
-        if CludesUI.VideoGuides and CludesUI.VideoGuides.AttachTip then
-            CludesUI.VideoGuides.AttachTip(btn, "unlock_mode", {
-                tooltip = "Video Guide: Unlock Mode",
-                x = -12,
-            })
-        end
     end
 
     -------------------------------------------------------------------
@@ -1700,18 +1690,6 @@ local function BuildSidebar()
         label:SetPoint("LEFT", btn, "LEFT", CHILD_INDENT_X, 0)
         label:SetText(CludesUI.L(info.display))
         btn._label = label
-
-        -- One-time tutorial tip on the Cooldown Manager row: play badge in the indent
-        -- gutter opening the CDM video guide, retired once clicked. VideoGuides owns all
-        -- gating (its seen map); nil-guarded for standalone builds.
-        if info.folder == "CludesUICooldownManager"
-            and CludesUI.VideoGuides and CludesUI.VideoGuides.AttachTip then
-            CludesUI.VideoGuides.AttachTip(btn, "cooldown_manager", {
-                tooltip = "Video Guide: Cooldown Manager",
-                point = "RIGHT", relPoint = "LEFT",
-                x = CHILD_INDENT_X - 6,
-            })
-        end
 
         -- Download icon (shown for uninstalled addons)
         local dlIcon = btn:CreateTexture(nil, "ARTWORK")
@@ -6071,21 +6049,8 @@ do
         __metatable = false,
     })
 
-    -- Whenever the panel opens: places what the outside addons added since,
-    -- then the update notice naming the addons whose changes to suite pages
-    -- were ignored (CludesUI_VideoGuides.lua). Once per session for a set of
-    -- addons; nothing is saved. Standalone builds have no guide popups.
-    local noticeShownFor
+    -- Whenever the panel opens: places what the outside addons added since.
     CludesUI:RegisterOnShow(function()
         CUI_NS.SyncExternal()
-        if not next(offenders) then return end
-        local names = {}
-        for folder in pairs(offenders) do names[#names + 1] = AddonTitle(folder) or folder end
-        table.sort(names)
-        local seen = table.concat(names, "\n")
-        if noticeShownFor == seen then return end
-        noticeShownFor = seen
-        local guides = CludesUI.VideoGuides
-        if guides then guides.ShowAddonUpdate(names) end
     end)
 end

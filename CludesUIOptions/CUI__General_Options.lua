@@ -26,7 +26,6 @@ local PAGE_STYLE       = "Style"     -- per-module CludesUI / Blizzard Style pag
 local PAGE_COLORS      = "Colors"    -- the color half of the old "Fonts & Colors" page
 local PAGE_NUMBERS     = "Numbers"   -- Number Format page; body lives in CUI_NumberFormat_Options.lua
 local PAGE_PROFILES    = "Profiles"
-local PAGE_PRESETS     = "Presets"   -- navigation tab over the presets subpage of the profiles page
 local PAGE_WHATSNEW    = "Patch Notes"
 
 -- Profiles/Patch Notes/CUI Legends are their own sidebar pages, not tabs under Global Settings. Keys match the sidebar buttons in CludesUI_Panel.lua.
@@ -109,7 +108,29 @@ end
 --  Patch-notes content for the What's New page (newest first). Entry `nav`
 --  deep-links via NavigateToElementSettings(module, page, section, preSelect, highlight).
 -------------------------------------------------------------------------------
-CludesUI._WHATSNEW_PATCHES = {}
+CludesUI._WHATSNEW_PATCHES = {
+    {
+        version = "1.0.0",
+        features = {
+            { module = "Global Settings",
+              title  = "Class colour by default",
+              desc   = "A fresh install opens in your class colour. Pick any other theme under CUI Options Theme." },
+            { module = "Global Settings",
+              title  = "Six new colour themes",
+              desc   = "Ember, Blood, Frost, Arcane, Gold and Toxic join the theme list." },
+            { module = "Profiles",
+              title  = "Import older profile strings",
+              desc   = "Import Profile also accepts strings in the older format and converts them as it imports." },
+            { module = "Global Settings",
+              title  = "Shorter slash commands",
+              desc   = "/cui opens the panel and /ce the global settings. Each addon has its own shortcut, such as /cab, /cuf, /crf and /cnp." },
+        },
+        fixes = {
+            { module = "Global Settings", text = "Panel artwork loads when a theme is picked instead of all at login, which uses less video memory." },
+            { module = "Raid Frames", text = "Nicknames from Timeline Reminders, Northern Sky, Liquid and RakGaming Aliases are picked up again." },
+        },
+    },
+}
 
 -------------------------------------------------------------------------------
 --  FCT font -- handled by CludesUI_Startup.lua which runs earlier.
@@ -1464,8 +1485,6 @@ initFrame:SetScript("OnEvent", function(self)
         end
         return 200
     end
-    -- PAGE_PRESETS is a NAVIGATION tab only: the in-game browser is retired, so the tab shows the presets-website popup over the normal Profiles page.
-    -- The tab builds the profiles page and flips it to the presets subpage via the pending flag consumed at the end of _G._CUI_BuildProfilesPage.
     CludesUI:RegisterModule(PROFILES_KEY, {
         title       = "Profiles & Presets",
         description = "Import, export, and switch CludesUI profiles and presets.",
@@ -1492,12 +1511,6 @@ initFrame:SetScript("OnEvent", function(self)
                 CleanupProfilesRoot()
                 return BuildFullExportPage(parent, yOffset)
             end
-            if pageName == PAGE_PRESETS then
-                -- The in-game presets browser is retired: the tab opens the
-                -- website popup (copyable link) over the normal Profiles page.
-                if CludesUI.VideoGuides then CludesUI.VideoGuides.Show("presets_website") end
-                return _G._CUI_BuildProfilesPage(PAGE_PROFILES, parent, yOffset)
-            end
             return _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end,
         onPageCacheRestore = function(pageName)
@@ -1514,28 +1527,6 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI:RefreshPage(true)
                     end
                 end)
-            elseif pageName == PAGE_PRESETS then
-                -- Retired browser: the tab shows the website popup over the
-                -- normal Profiles view. An active API import session wins --
-                -- re-enter it instead of hiding its import page.
-                if CludesUI.VideoGuides then CludesUI.VideoGuides.Show("presets_website") end
-                if CludesUI._profilesRoot then
-                    local s = CludesUI._apiImportSession
-                    if s and s.state ~= "done" then
-                        if CludesUI._ProfilesConsumeApiImport then
-                            CludesUI._ProfilesConsumeApiImport()
-                        end
-                    elseif CludesUI._ProfilesResetToMain then
-                        CludesUI._ProfilesResetToMain()
-                    end
-                else
-                    C_Timer.After(0, function()
-                        if CludesUI:GetActiveModule() == PROFILES_KEY
-                           and CludesUI:GetActivePage() == PAGE_PRESETS then
-                            RenderProfilesRoot()
-                        end
-                    end)
-                end
             elseif not CludesUI._profilesRoot then
                 C_Timer.After(0, function()
                     if CludesUI:GetActiveModule() == PROFILES_KEY
@@ -1558,25 +1549,8 @@ initFrame:SetScript("OnEvent", function(self)
         end,
     })
 
-    -- The Presets tab is a dummy trigger: clicking it opens the website popup
-    -- and must NOT become the active page (no tab underline, current page
-    -- stays). All tab clicks route through SelectPage, so intercept it here;
-    -- the PAGE_PRESETS buildPage/cache-restore branches above remain only as
-    -- fallbacks for programmatic selects that bypass this wrapper.
-    do
-        local origSelectPage = CludesUI.SelectPage
-        function CludesUI:SelectPage(pageName, ...)
-            if pageName == PAGE_PRESETS and self.GetActiveModule
-               and self:GetActiveModule() == PROFILES_KEY then
-                if CludesUI.VideoGuides then CludesUI.VideoGuides.Show("presets_website") end
-                return
-            end
-            return origSelectPage(self, pageName, ...)
-        end
-    end
-
-    -- Patch Notes and CUI Legends (the donor and team celebration page): one
-    -- sidebar module each. Suite-only, never registered in standalone builds.
+    -- Patch Notes: its own sidebar module. Suite-only, never registered in
+    -- standalone builds.
     if not IS_STANDALONE then
         CludesUI:RegisterModule(PATCHNOTES_KEY, {
             title       = "Patch Notes",

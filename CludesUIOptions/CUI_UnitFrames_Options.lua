@@ -1414,7 +1414,6 @@ initFrame:SetScript("OnEvent", function(self)
     local BORDER_BACKDROP = { edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 }
 
     -- Generic portrait image for NPC previews (player uses SetPortraitTexture)
-    local ENEMY_PORTRAIT_PATH = "Interface\\AddOns\\CludesUI\\media\\enemy-portrait.png"
 
     -- Portrait mask/border media paths (for detached portrait shape preview)
     local PORTRAIT_MASKS_P = CludesUI.SHAPE_MASKS

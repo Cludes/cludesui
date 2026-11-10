@@ -3719,11 +3719,9 @@ end
 -- the first-install popup will call RunConflictCheck when the user closes it (no reload needed).
 C_Timer.After(2, function()
     if CludesUIDB and CludesUIDB.firstInstallPopupShown then
-        -- Defer while any intro popup is still pending/open; each runs the conflict check itself
-        -- when dismissed (the Kick Tracker and style choice popup files, plus the 12.1 launch
-        -- video announcement in CludesUI_VideoGuides.lua).
-        if CludesUI._launchVideoIntroPending or CludesUI._kickTrackerIntroPending
-           or CludesUI._styleChoicePending then return end
+        -- Defer while the style choice popup is still pending/open; it runs the
+        -- conflict check itself when dismissed.
+        if CludesUI._styleChoicePending then return end
         CludesUI._RunConflictCheck()
     end
 end)

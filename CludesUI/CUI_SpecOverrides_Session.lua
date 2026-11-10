@@ -713,8 +713,8 @@ end
 local _warnWatch   -- one-shot GLOBAL_MOUSE_UP frame: the guide never pops mid-drag
 local function MaybeWarnDefaultEdit(frame, snap)
     local DEFAULT_EDIT_GUIDE = "override_default_edit"
-    local VG = CludesUI.VideoGuides
-    if not VG or VG.HasSeen(DEFAULT_EDIT_GUIDE) then return end
+    -- The warning popup is not part of CludesUI: nothing to show.
+    do return end
     -- Hidden search prebuild: selector setters run on pages the user never sees.
     if CludesUI._prebuilding then return end
     if _warnWatch and _warnWatch._pending then return end
@@ -779,9 +779,8 @@ function CludesUI._SOAttribution(frame, detached)
             if _lastAttr.busy then return nil end
             into = _lastAttr.pend
         elseif _defaultView then
-            -- read at once by MaybeWarnDefaultEdit, only until its guide was seen
-            local VG = CludesUI.VideoGuides
-            if not VG or VG.HasSeen("override_default_edit") then return nil end
+            -- only MaybeWarnDefaultEdit read this, and it shows nothing now
+            return nil
         else
             return nil
         end

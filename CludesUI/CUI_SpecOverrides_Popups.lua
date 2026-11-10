@@ -231,11 +231,6 @@ function CludesUI.SpecOverrides_SetupButton(btn)
             CludesUI.ShowWidgetTooltip(self, L("Overrides are locked: this page's custom Buff Manager is active. Leave the Buff Manager tab to manage overrides."))
             return
         end
-        -- First-ever press shows the Settings Overrides video guide instead of
-        -- the cards popup; later presses behave normally (FireOnce returns
-        -- false once seen; the nil-guard covers standalone builds).
-        local VG = CludesUI.VideoGuides
-        if VG and VG.FireOnce("settings_overrides") then return end
         CludesUI.SpecOverrides_ToggleCardsPopup(self)
     end)
     UpdateIndicator()

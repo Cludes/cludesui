@@ -27,8 +27,6 @@ end
 -------------------------------------------------------------------------------
 local whatsNewOpen = {}
 local NOTES_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\sidebar\\notes-off.png"
--- The CUI Legends sidebar module (LEGENDS_KEY in CUI__General_Options.lua).
-local LEGENDS_KEY = "_CUILegends"
 function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
     local PP  = CludesUI.PanelPP
     local EG  = CludesUI.CLUDES_GREEN
@@ -256,148 +254,6 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         return bh
     end
 
-    -- Tier 1a: full-width VIDEO banner (entry.videoBanner = true) -- the biggest
-    -- card the page renders: launch-video callouts. Same announcement chrome as
-    -- the banner hero but taller type, a 3px accent, a play badge, mirrored
-    -- play-glyph streams, and a read-only URL box that pre-selects itself so
-    -- Ctrl+C is the only keystroke a user needs. URL: entry.url, else the
-    -- shared CludesUI.MIDNIGHT_VIDEO_URL (CludesUI_VideoGuides.lua).
-    local function MakeVideoBannerCard(x, cy, w, entry)
-        local card = CreateFrame("Frame", nil, parent)
-        -- Width FIRST (height provisional): the desc anchors L+R to the card.
-        PP.Size(card, w, 200)
-        PP.Point(card, "TOPLEFT", parent, "TOPLEFT", x, cy)
-        card:SetFrameLevel(parent:GetFrameLevel() + 2)
-
-        local brd = CludesUI.MakeRoundedCard(card, 0.18, 0.95, 3)
-        local bg, accent = brd.bg, brd.accent
-
-        accent:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
-        OnAccent(accent, function(r, g, b) accent:SetColorTexture(r, g, b, 0.9) end)
-
-        -- Right-pointing play triangle: collapse the right edge of a color
-        -- texture to its vertical midpoint (vertex 3 = UpperRight, 4 = LowerRight).
-        local function Tri(host, pw, ph, r, g, b, a)
-            local t = host:CreateTexture(nil, "ARTWORK")
-            t:SetColorTexture(r, g, b, a or 1)
-            PP.Size(t, pw, ph)
-            t:SetVertexOffset(3, 0, -ph / 2)
-            t:SetVertexOffset(4, 0, ph / 2)
-            return t
-        end
-
-        -- Mirrored flanking streams: three play glyphs swelling toward the text.
-        local defs = { { 16, 0.10 }, { 22, 0.16 }, { 28, 0.24 } }  -- outermost -> innermost
-        for _, side in ipairs({ "LEFT", "RIGHT" }) do
-            local off = 40
-            for i = 1, 3 do
-                local sz, a = defs[i][1], defs[i][2]
-                local t = Tri(card, math.floor(sz * 0.8), sz, EG.r, EG.g, EG.b, a)
-                OnAccent(t, function(r, g, b) t:SetColorTexture(r, g, b, a) end)
-                if side == "LEFT" then
-                    PP.Point(t, "LEFT", card, "LEFT", off, 0)
-                else
-                    PP.Point(t, "RIGHT", card, "RIGHT", -off, 0)
-                end
-                off = off + math.floor(sz * 0.8) + 10
-            end
-        end
-
-        local eyebrow = MakeFont(card, 12, nil, EG.r, EG.g, EG.b, 0.95)
-        OnAccent(eyebrow, function(r, g, b) eyebrow:SetTextColor(r, g, b, 0.95) end)
-        PP.Point(eyebrow, "TOP", card, "TOP", 0, -22)
-        eyebrow:SetJustifyH("CENTER"); eyebrow:SetWordWrap(false)
-        eyebrow:SetText(CludesUI.L(entry.eyebrow or "WATCH FIRST"))
-
-        local titleFs = MakeFont(card, 30, nil, 1, 1, 1, 1)
-        PP.Point(titleFs, "TOP", eyebrow, "BOTTOM", 0, -8)
-        titleFs:SetJustifyH("CENTER"); titleFs:SetWordWrap(false)
-        titleFs:SetText(CludesUI.L(entry.title) or "")
-
-        local descFs = MakeFont(card, 13, nil, 1, 1, 1, 0.55)
-        PP.Point(descFs, "TOP", titleFs, "BOTTOM", 0, -10)
-        PP.Point(descFs, "LEFT", card, "LEFT", 120, 0)
-        PP.Point(descFs, "RIGHT", card, "RIGHT", -120, 0)
-        descFs:SetJustifyH("CENTER"); descFs:SetJustifyV("TOP"); descFs:SetWordWrap(true)
-        descFs:SetText(CludesUI.L(entry.desc) or "")
-
-        local url = entry.url or CludesUI.MIDNIGHT_VIDEO_URL or ""
-        local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf")
-
-        local urlWell = CreateFrame("Frame", nil, card)
-        urlWell:SetFrameLevel(card:GetFrameLevel() + 2)
-        PP.Size(urlWell, 400, 36)
-        PP.Point(urlWell, "TOP", descFs, "BOTTOM", 0, -16)
-        local wbg = urlWell:CreateTexture(nil, "BACKGROUND")
-        wbg:SetAllPoints()
-        wbg:SetColorTexture(0.045, 0.035, 0.027, 1)
-        -- Neutral border: the link-blue text carries the "this is the link" read.
-        CludesUI.MakeRoundedBorder(urlWell, 1, 1, 1, 0.22, wbg)
-
-        -- Play badge standing left of the URL well (announcement-popup chip).
-        local badge = CreateFrame("Frame", nil, card)
-        badge:SetFrameLevel(card:GetFrameLevel() + 3)
-        PP.Size(badge, 44, 44)
-        PP.Point(badge, "RIGHT", urlWell, "LEFT", -16, 0)
-        local chip = badge:CreateTexture(nil, "BACKGROUND")
-        chip:SetAllPoints()
-        chip:SetColorTexture(0.062, 0.050, 0.039, 0.95)
-        local badgeBrd = MakeBorder(badge, EG.r, EG.g, EG.b, 0.85, PP)
-        OnAccent(badge, function(r, g, b) badgeBrd:SetColor(r, g, b, 0.85) end)
-        local btri = Tri(badge, 16, 18, 1, 1, 1, 0.95)
-        PP.Point(btri, "CENTER", badge, "CENTER", 2, 0)
-
-        -- Hint under the well; doubles as the Ctrl+C confirmation line.
-        local hintFs = MakeFont(card, 11, nil, 1, 1, 1, 0.45)
-        PP.Point(hintFs, "TOP", urlWell, "BOTTOM", 0, -8)
-        hintFs:SetJustifyH("CENTER")
-        hintFs:SetText(CludesUI.L("Click the link, then Ctrl+C to copy it"))
-
-        local eb = CreateFrame("EditBox", nil, urlWell)
-        eb:SetAllPoints(urlWell)
-        eb:SetMultiLine(false)
-        eb:SetAutoFocus(false)
-        eb:SetFont(FONT, 13, "")
-        eb:SetJustifyH("CENTER")
-        eb:SetTextInsets(12, 12, 0, 0)
-        eb:SetTextColor(0.55, 0.75, 1.0, 1)   -- link blue
-        eb._readOnly = url
-        eb:SetText(url)
-        eb:SetCursorPosition(0)
-        eb:SetScript("OnMouseUp", function(self)
-            -- Next frame, unless a rebuild dressed the box again or put it
-            -- away by then: a box put away (or under a card put away) is
-            -- hidden, and a hidden box must not take the keyboard.
-            local gen = PoolGen(self)
-            C_Timer.After(0, function()
-                if PoolGen(self) ~= gen or not self:IsVisible() then return end
-                self:SetFocus(); self:HighlightText()
-            end)
-        end)
-        eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
-        -- Read-only: typing/paste/cut restore the URL and re-select.
-        eb:SetScript("OnChar", function(self)
-            self:SetText(self._readOnly or ""); self:HighlightText()
-        end)
-        eb:SetScript("OnTextChanged", function(self, userInput)
-            if userInput then self:SetText(self._readOnly or ""); self:HighlightText() end
-        end)
-        eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-        eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-        eb:SetScript("OnKeyDown", function(self, key)
-            if key == "C" and IsControlKeyDown() then
-                hintFs:SetText(CludesUI.L("Link copied - paste it into your browser"))
-                hintFs:SetTextColor(EG.r, EG.g, EG.b, 0.9)
-                OnAccent(hintFs, function(r, g, b) hintFs:SetTextColor(r, g, b, 0.9) end)
-            end
-        end)
-
-        local dh = math.ceil(descFs:GetStringHeight() or 14)
-        local bh = 22 + 12 + 8 + 30 + 10 + dh + 16 + 36 + 8 + 11 + 22
-        PP.Size(card, w, bh)
-        return bh
-    end
-
     -- Tier 2: clickable small listing -- title + subtitle, no card chrome, faint row highlight on hover.
     local function MakeListing(x, cy, w, entry)
         local ROW_H = 48
@@ -453,45 +309,6 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         fs:SetText(text or "")
         local th = fs:GetStringHeight() or 14
         return math.max(22, math.ceil(th) + 8)
-    end
-
-    -- A patch's closing thank-you (patch.thanks): its "contributors" word is a
-    -- link in the accent colour that opens the CUI Legends page with the team
-    -- wall scrolled to the contributor groups and outlined.
-    local function MakeThanksLine(host, x, cy)
-        local tmpl = CludesUI.L("%s") or ""
-        local pre, post = tmpl:match("^(.-)%%s(.*)$")
-        if not pre then pre, post = "", "" end
-        local preFs = MakeFont(host, 12, nil, 1, 1, 1, 0.5)
-        PP.Point(preFs, "TOPLEFT", parent, "TOPLEFT", x, cy)
-        preFs:SetText(pre)
-        local link = CreateFrame("Button", nil, host)
-        local linkFs = MakeFont(link, 12, nil, EG.r, EG.g, EG.b, 0.9)
-        OnAccent(linkFs, function(r, g, b) linkFs:SetTextColor(r, g, b, 0.9) end)
-        linkFs:SetPoint("LEFT", link, "LEFT", 0, 0)
-        linkFs:SetText(CludesUI.L("contributors"))
-        link:SetSize(math.ceil(linkFs:GetStringWidth() or 60) + 1, 18)
-        link:SetPoint("LEFT", preFs, "RIGHT", 0, 0)
-        local postFs = MakeFont(host, 12, nil, 1, 1, 1, 0.5)
-        postFs:SetPoint("LEFT", link, "RIGHT", 0, 0)
-        postFs:SetText(post)
-        link:SetScript("OnEnter", function(self)
-            linkFs:SetAlpha(1)
-            CludesUI.ShowWidgetTooltip(self, CludesUI.L("View CUI Legends"))
-        end)
-        link:SetScript("OnLeave", function()
-            linkFs:SetAlpha(0.9)
-            CludesUI.HideWidgetTooltip()
-        end)
-        link:SetScript("OnClick", function()
-            CludesUI.HideWidgetTooltip()
-            CludesUI:SelectModule(LEGENDS_KEY)
-            -- After the page is shown, as the deep links do (NavigateToElementSettings).
-            C_Timer.After(0.05, function()
-                if CludesUI._LegendsFocusContributors then CludesUI._LegendsFocusContributors() end
-            end)
-        end)
-        return 22
     end
 
     -- A tier's title (already localized) inside a patch card: the section label
@@ -597,11 +414,7 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
             -- Column state: heroes flow 2/row in authored order; a `banner` hero takes a full row, breaking then resuming the flow.
             local col = 0
             for _, hero in ipairs(heroes) do
-                if hero.videoBanner then
-                    if col == 1 then cy = cy - CARD_H - CARD_GAP; col = 0 end
-                    local bh = MakeVideoBannerCard(innerX, cy, innerW, hero)
-                    cy = cy - bh - CARD_GAP
-                elseif hero.banner then
+                if hero.banner then
                     if col == 1 then cy = cy - CARD_H - CARD_GAP; col = 0 end
                     local bh = MakeBannerCard(innerX, cy, innerW, hero)
                     cy = cy - bh - CARD_GAP
@@ -638,10 +451,6 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
                 local fh = MakeFixLine(host, innerX, PAD + INSET, cy, PrefixOf(fx) .. (CludesUI.L(fx.text) or "")); cy = cy - fh
             end
         end
-        if patch.thanks then
-            cy = cy - 8
-            cy = cy - MakeThanksLine(host, innerX, cy)
-        end
         return cy - 4
     end
 
@@ -656,7 +465,7 @@ function CludesUI._BuildWhatsNewPage(pageName, parent, yOffset)
         -- Header counts: hero cards (a launch-video banner is no feature), listings, fix lines.
         local heroN = 0
         for _, hero in ipairs(patch.heroes or {}) do
-            if not hero.videoBanner then heroN = heroN + 1 end
+            heroN = heroN + 1
         end
         local featN, fixN = #(patch.features or {}), #(patch.fixes or {})
         local parts = {}
