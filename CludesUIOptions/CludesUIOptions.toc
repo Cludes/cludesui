@@ -1,0 +1,118 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Options
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: CludesUI settings panel. Loads on demand when you open CludesUI options.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## LoadOnDemand: 1
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Frame pool first (page reuse: the widget factory and the page builders create
+# through it), then the widget factory: everything below builds pages with it.
+# File order mirrors the original suite load order (parent files, then children A-Z).
+CludesUI_FramePool.lua
+CludesUI_Widgets.lua
+CludesUI_Widgets_Color.lua
+CludesUI_Widgets_Rows.lua
+CludesUI_Widgets_CogPopup.lua
+CludesUI_Widgets_SegmentedControl.lua
+CludesUI_Widgets_ApplyToAll.lua
+CludesUI_Widgets_RowAddons.lua
+CludesUI_Widgets_AuraPopups.lua
+CludesUI_Widgets_CheckboxDropdowns.lua
+CludesUI_Widgets_Visibility.lua
+CludesUI_Widgets_PageParts.lua
+CludesUI_GlowOptions.lua
+CludesUI_TalentConditionsPopup.lua
+CUI_Colors_Options.lua
+CUI_Profiles_Options.lua
+CUI_WhatsNew_Options.lua
+CUI__General_Options.lua
+CUI_Fonts_Options.lua
+CUI_Textures_Options.lua
+CUI_Glows_Options.lua
+CUI_Gamepad_Options.lua
+CUI_NumberFormat_Options.lua
+CUI_Style_Options.lua
+CUI_PartyMode_Horoscope_Options.lua
+CUI_PartyMode_Options.lua
+
+ActionBars_Options\AnimationsPage_Options.lua
+ActionBars_Options\BarAppearance_Options.lua
+ActionBars_Options\BarVisibilityLayout_Options.lua
+ActionBars_Options\LivePreview_Options.lua
+ActionBars_Options\XPBarPage_Options.lua
+ActionBars_Options\MenuBagsRepPage_Options.lua
+CUI_ActionBars_Options.lua
+CUI_AuraBuffReminders_Options.lua
+CUI_Bags_Options.lua
+CUI_BlizzardSkin_Options.lua
+CUI_Chat_Options.lua
+CooldownManager_Options\BarsPage_Options.lua
+CooldownManager_Options\BuffBarsPage_Options.lua
+CooldownManager_Options\LivePreview_Options.lua
+CooldownManager_Options\Pickers_Options.lua
+CooldownManager_Options\SpellPicker_Options.lua
+CUI_CooldownManager_Options.lua
+CUI_CooldownManager_TalentConditions.lua
+CUI_CooldownManager_BarGlowConditions.lua
+CUI_DamageMeters_Options.lua
+CludesUIDataBars_Options.lua
+CUI_ForeverEssentials_Options.lua
+CUI_ForeverEssentials_General_Options.lua
+CUI_ForeverEssentials_Travel_Options.lua
+CUI_ForeverEssentials_Threat_Options.lua
+CUI_ForeverEssentials_Loot_Options.lua
+CUI_ForeverEssentials_MacroModel_Options.lua
+CUI_ForeverEssentials_Macros_Options.lua
+CUI_Friends_Options.lua
+CUI_LoadoutManager_Options.lua
+CUI_GroupFinder_Options.lua
+CUI_SimpleLootCouncil_Options.lua
+CUI_Minimap_Options.lua
+CUI_MythicTimer_KickTracker_Options.lua
+CUI_MythicTimer_Options.lua
+Nameplates_Options\ColorsPage_Options.lua
+Nameplates_Options\CoreTextColoring_Options.lua
+Nameplates_Options\DisplayBars_Options.lua
+Nameplates_Options\DisplayLayout_Options.lua
+Nameplates_Options\GeneralPage_Options.lua
+Nameplates_Options\NameplatePreview_Options.lua
+CUI_Nameplates_Options.lua
+CUI_QoL_Options.lua
+CUI_QoL_StatPicker.lua
+CUI_QoL_Cursor_Options.lua
+CUI_QoL_BattleRes_Options.lua
+CUI_QoL_Alerts_Options.lua
+CUI_QoL_AutoLogging_Options.lua
+CUI_QoL_Shifter_Options.lua
+CUI_QoL_MovementAlert_Options.lua
+CUI_QoL_RaidTools_Options.lua
+CUI_UpgradeCalc_Options.lua
+CUI_QuestTracker_Options.lua
+CUI_Quickdraw_Options.lua
+CUI_RaidFrames_ManagerPages.lua
+RaidFrames_Options\FramesPages_Options.lua
+RaidFrames_Options\VisualBars_Options.lua
+RaidFrames_Options\CUI_RaidFrames_TextDisplay_Options.lua
+RaidFrames_Options\VisualIndicators_Options.lua
+CUI_RaidFrames_Options.lua
+ResourceBars_Options\HealthSection_Options.lua
+ResourceBars_Options\PowerSection_Options.lua
+ResourceBars_Options\ClassResourceSection_Options.lua
+ResourceBars_Options\BarDisplayPage_Options.lua
+ResourceBars_Options\CastBarPage_Options.lua
+ResourceBars_Options\TotemBarPage_Options.lua
+ResourceBars_Options\GCDBarPage_Options.lua
+ResourceBars_Options\SwingTimerPage_Options.lua
+CUI_ResourceBars_Options.lua
+UnitFrames_Options\TextSlots_Options.lua
+UnitFrames_Options\MiniFrames_Options.lua
+UnitFrames_Options\SharedAppearance_Options.lua
+UnitFrames_Options\SharedBars_Options.lua
+UnitFrames_Options\SharedCastAuras_Options.lua
+UnitFrames_Options\UnitPreview_Options.lua
+CUI_UnitFrames_Options.lua
+CUI_PlayerAuraBars_ManagerPages.lua

@@ -1,0 +1,35 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Bags
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: A beautiful visual refresh of Blizzard Bags with intuitive organization.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIBagsDB, CludesUIBagsInventoryDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Module database (options page lives in CludesUIOptions)
+CludesUIBags_DB.lua
+
+# Core
+CludesUIBags_Categories.lua
+CludesUIBags.lua
+CUI_Bags_Style.lua
+CUI_Bags_Data.lua
+CUI_Bags_Header.lua
+CUI_Bags_Footer.lua
+CUI_Bags_Shared.lua
+CUI_Bags_Slots.lua
+CUI_Bags_Select.lua
+CUI_Bags_Sidebar.lua
+CUI_Bags_Refresh.lua
+CUI_Bags_Start.lua
+CludesUIBags_Grid.lua
+CludesUIBags_List.lua
+CludesUIBags_Compact.lua
+CludesUIBags_Bank.lua
+CludesUIBags_QuickActions.lua
+CludesUIBags_Offline.lua
+CludesUIBags_OfflineView.lua
+CludesUIBags_AutoGold.lua

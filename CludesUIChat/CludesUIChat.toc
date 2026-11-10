@@ -1,0 +1,43 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Chat
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Modern chat enhancements with useful utilities.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIChatDB
+## SavedVariablesPerCharacter: CludesUIChatScrollDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIChat.lua
+CUI_Chat_SidebarIcons.lua
+CUI_Chat_Position.lua
+CUI_Chat_Sidebar.lua
+CUI_Chat_Visibility.lua
+CUI_Chat_Links.lua
+CUI_Chat_EditBox.lua
+CUI_Chat_Skin.lua
+CUI_Chat_Init.lua
+
+# Display engine: our message frames fed by the AddMessage bridge; Blizzard's
+# chat frames stay as the secure formatting/data plane with visuals parked.
+CludesUIChat_Engine.lua
+
+# Owned tab strip: our buttons over Blizzard's window storage (hidden dock
+# stays the routing backend; all management via the C config API).
+CludesUIChat_Tabs.lua
+
+# Stock-style sidebar kits (Blizzard Style / Classic WoW UI chat button column)
+CludesUIChat_SidebarStock.lua
+
+# WoW Forever look (Forever client only, Blizzard Style variant): bronze
+# panel frames, tabs and sidebar kit on our own frames
+CludesUIChat_Forever.lua
+
+# Options
+
+# Session scrollback: bridge-tail capture (formatted lines), replay into our
+# message frames (open world only)
+CludesUIChat_SessionHistory.lua

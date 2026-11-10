@@ -1,0 +1,33 @@
+name: Release
+
+# Push a tag such as v1.0.1 to build CludesUI-v1.0.1.zip and attach it to a
+# GitHub release. The tag must match "## Version" in CludesUI/CludesUI.toc.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag matches the addon version
+        run: |
+          version=$(grep '^## Version:' CludesUI/CludesUI.toc | tr -d '\r' | sed 's/## Version: *//')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match addon version $version"
+            exit 1
+          fi
+
+      - name: Build zip
+        run: zip -r -q "CludesUI-$GITHUB_REF_NAME.zip" CludesUI*/
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --title "CludesUI $GITHUB_REF_NAME" --generate-notes

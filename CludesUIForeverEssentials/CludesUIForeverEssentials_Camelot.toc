@@ -1,0 +1,53 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff0cd29fCludesUI|r Forever Essentials
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Essential tools for WoW Forever.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Lua
+CludesUIForeverEssentials.lua
+
+# General (spell uprank, classic spellbook and talents, junk items, simplified stats, gathering skill, map fade, active stance icon, map reveal, map markers, quest rewards)
+CludesUIForeverEssentials_Uprank.lua
+CludesUIForeverEssentials_ClassicSpellbook.lua
+CludesUIForeverEssentials_ClassicTalents.lua
+CludesUIForeverEssentials_JunkItems.lua
+CludesUIForeverEssentials_SimplifiedStats.lua
+CludesUIForeverEssentials_GatherSkill.lua
+CludesUIForeverEssentials_MapFade.lua
+CludesUIForeverEssentials_ActiveForm.lua
+CludesUIForeverEssentials_MapRevealData.lua
+CludesUIForeverEssentials_MapReveal.lua
+CludesUIForeverEssentials_MapTravelData.lua
+CludesUIForeverEssentials_MapTravel.lua
+CludesUIForeverEssentials_QuestRewards.lua
+
+# Travel (flight timer)
+CludesUIForeverEssentials_FlightTimerData.lua
+CludesUIForeverEssentials_FlightTimer.lua
+
+# World map zone levels
+CludesUIForeverEssentials_ZoneLevels.lua
+
+# Threat (threat meter)
+CludesUIForeverEssentials_ThreatData.lua
+CludesUIForeverEssentials_Window.lua
+CludesUIForeverEssentials_ThreatMeter.lua
+CludesUIForeverEssentials_ThreatFeed.lua
+
+# Companion pets (auto summon)
+CludesUIForeverEssentials_PetSummon.lua
+
+# Loot (loot feed)
+CludesUIForeverEssentials_LootFeed.lua
+
+# Macros (macro manager)
+CludesUIForeverEssentials_MacroManager.lua
+
+# Fishing (key, double-click, bobber indicator, sounds)
+CludesUIForeverEssentials_Fishing.lua

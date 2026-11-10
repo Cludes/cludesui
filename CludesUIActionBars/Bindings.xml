@@ -1,0 +1,26 @@
+<Bindings>
+	<Binding name="CUI_BAR9_BUTTON1" header="CUI_BAR9" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON2" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON3" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON4" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON5" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON6" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON7" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON8" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON9" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON10" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON11" category="CludesUI" />
+	<Binding name="CUI_BAR9_BUTTON12" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON1" header="CUI_BAR10" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON2" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON3" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON4" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON5" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON6" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON7" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON8" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON9" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON10" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON11" category="CludesUI" />
+	<Binding name="CUI_BAR10_BUTTON12" category="CludesUI" />
+</Bindings>

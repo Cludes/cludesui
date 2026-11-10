@@ -1,0 +1,192 @@
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+-------------------------------------------------------------------------------
+-- CludesUIGroupFinder.lua: premade group filters, list tweaks and the M+
+-- applications bar. Nothing hooks in until it's enabled.
+-------------------------------------------------------------------------------
+local ADDON_NAME, ns = ...
+if not (CludesUI and CludesUI._ModuleNS and CludesUI.Lite and CludesUI.HELD_BACK_ADDONS and CludesUI.SetFontFamily and CludesUI.PREVIEW_ROSTER) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (group titles, applicant names and notes take font families through SetFontFamily, and the settings preview names its samples from PREVIEW_ROSTER)
+-- Held back from this release (CludesUI.HELD_BACK_ADDONS): nothing runs,
+-- and with no namespace published the options page never registers.
+if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then return end
+CludesUI._ModuleNS[ADDON_NAME] = ns  -- options file grabs the ns from here
+
+local GF = CludesUI.Lite.NewAddon(ADDON_NAME)
+-- Work on Blizzard frames that waits for combat to end; inert until a Defer.
+ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+
+local DEFAULTS = {
+    padding          = 12,
+    nameColors       = false,
+    classTooltip     = true,
+    leaderRating     = true,
+    leaderCrown      = true,
+    missingRoles     = true,
+    specIcons        = true,
+    iconSize         = 125,
+    cancelOldest     = false,
+    dungeonAbbr      = false,
+    dungeonScore     = false,
+}
+ns.DEFAULTS = DEFAULTS
+
+local APPS_DEFAULTS = {
+    enabled       = false,
+    scope         = "character",
+    texture       = "none",
+    showAccepted  = true,
+    showDeclined  = true,
+    showDelisted  = true,
+    showCancelled = true,
+}
+ns.APPS_DEFAULTS = APPS_DEFAULTS
+
+local db
+
+local function Profile() return db and db.profile end
+
+-- Account-wide bits live in CludesUIDB.<key>, outside profiles.
+local function Account(key)
+    if not CludesUIDB then CludesUIDB = {} end
+    local t = CludesUIDB[key]
+    if type(t) ~= "table" then
+        t = {}
+        CludesUIDB[key] = t
+    end
+    return t
+end
+
+-- Account-wide so profile swaps and imports never flip it.
+function ns.Enabled()
+    local t = CludesUIDB and CludesUIDB.groupFinder
+    return type(t) == "table" and t.enabled == true or false
+end
+
+function ns.SetEnabled(v)
+    Account("groupFinder").enabled = v and true or false
+end
+
+-- True while another premade groups filter that hooks the same panel is loaded:
+-- Group Finder can't be turned on then (its page and the login announcement ask).
+function ns.Blocked()
+    return C_AddOns.IsAddOnLoaded("PremadeGroupsFilter") and true or false
+end
+
+-- Read-only defaults until the profile's ready.
+local readOnly = { search = setmetatable({}, { __index = DEFAULTS, __newindex = function() end }),
+                   apps   = setmetatable({}, { __index = APPS_DEFAULTS, __newindex = function() end }) }
+
+local function Search()
+    local p = Profile()
+    return p and p.search or readOnly.search
+end
+
+-- filters belong to the character, everything else to the profile
+local FILTER_KEYS = {}
+for _, k in ipairs({ "ratingOn", "ratingValue", "regions", "delves", "delveTiers", "bosses", "raidDiffs",
+    "raidPlaystyles", "raidRoles", "partyFit", "notDeclined", "hasLust", "hasBrez", "extraMyClass", "raidMyClass",
+    "extraExpr", "extraRolesAny", "roleCounts", "dimPicks" }) do FILTER_KEYS[k] = true end
+
+local charDB
+local function CharFilters() return charDB and charDB.filters end
+
+local cfg = setmetatable({}, {
+    __index = function(_, k)
+        if FILTER_KEYS[k] then
+            local f = CharFilters()
+            return f and f[k]
+        end
+        return Search()[k]
+    end,
+    __newindex = function(_, k, v)
+        if FILTER_KEYS[k] then
+            local f = CharFilters()
+            if f then f[k] = v end
+            return
+        end
+        Search()[k] = v
+    end,
+})
+
+function ns.Cfg() return cfg end
+
+-- blizzard's dungeon picks for this character, nil until saved once
+function ns.CharBlizzFilter() return charDB and charDB.blizz end
+function ns.SetCharBlizzFilter(t) if charDB then charDB.blizz = t end end
+
+-- the results and applicant lists' display settings, in the profile (read-only
+-- until the profile's ready)
+local ownListRO = setmetatable({}, { __newindex = function() end })
+function ns.OwnListDB()
+    local p = Profile()
+    if not p then return ownListRO end
+    local t = p.ownList
+    if type(t) ~= "table" then
+        t = {}
+        p.ownList = t
+    end
+    return t
+end
+
+function ns.AppsCfg()
+    local p = Profile()
+    return p and p.apps or readOnly.apps
+end
+
+function ns.AppCountsStore()
+    local t = Account("groupFinderApps")
+    if type(t.dungeon) ~= "table" then t.dungeon = {} end
+    return t.dungeon
+end
+
+function ns.ResetSettings()
+    if db then db:ResetProfile() end
+    if charDB then wipe(charDB.filters) end
+end
+
+function GF:OnInitialize()
+    db = CludesUI.Lite.NewDB("CludesUIGroupFinderDB", { profile = { search = DEFAULTS, apps = APPS_DEFAULTS } })
+    if type(CludesUIGroupFinderCharDB) ~= "table" then CludesUIGroupFinderCharDB = {} end
+    charDB = CludesUIGroupFinderCharDB
+    if type(charDB.filters) ~= "table" then
+        -- a character's first login with filters of its own: it starts from a
+        -- copy of the profile's, which stay for the characters that log in later
+        local filters = {}
+        local s = Profile() and Profile().search
+        if s then
+            for k in pairs(FILTER_KEYS) do
+                local v = s[k]
+                if type(v) == "table" then v = CopyTable(v) end
+                filters[k] = v
+            end
+        end
+        charDB.filters = filters
+    end
+end
+
+function GF:OnEnable()
+    if not ns.Enabled() then return end
+    -- PGF hooks the same panel, so we turn ourselves off while it's loaded.
+    if ns.Blocked() then
+        ns.SetEnabled(false)
+        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI|r "
+            .. CludesUI.L("Group Finder has been turned off because Premade Groups Filter is loaded."))
+        return
+    end
+
+    if ns.Apps_Enable then ns.Apps_Enable() end
+    local function Start()
+        if ns.Search_OnEnable then ns.Search_OnEnable() end
+    end
+    if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") and PVEFrame then
+        Start()
+        return
+    end
+    local f = CreateFrame("Frame")
+    f:RegisterEvent("ADDON_LOADED")
+    f:SetScript("OnEvent", function(self, _, name)
+        if name == "Blizzard_GroupFinder" then
+            self:UnregisterEvent("ADDON_LOADED")
+            Start()
+        end
+    end)
+end

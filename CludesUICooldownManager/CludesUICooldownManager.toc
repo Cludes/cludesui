@@ -1,0 +1,62 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Cooldown Manager
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: A CDM replacement focused on performance, customizations and alerts.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUICooldownManagerDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Lua
+CludesUICooldownManager.lua
+CUI_CDM_Store.lua
+CUI_CDM_Spec.lua
+CUI_CDM_Glows.lua
+CUI_CDM_Blizzard.lua
+CUI_CDM_Bars.lua
+CUI_CDM_Icons.lua
+CUI_CDM_FocusKick.lua
+CUI_CDM_Rebuild.lua
+CUI_CDM_Reconcile.lua
+CUI_CDM_Lifecycle.lua
+CUI_CDM_Rotation.lua
+CUI_CDM_Events.lua
+CludesUICdmKeybindStyle.lua
+CludesUICdmRotationIcon.lua
+CludesUICdmHooks.lua
+CUI_CDM_HookResolve.lua
+CUI_CDM_HookIconStyle.lua
+CUI_CDM_HookIconWatch.lua
+CUI_CDM_HookDecorate.lua
+CUI_CDM_HookTrinkets.lua
+CUI_CDM_HookPresetFrames.lua
+CUI_CDM_HookPresetCooldowns.lua
+CUI_CDM_HookReanchor.lua
+CUI_CDM_HookCustomBuffs.lua
+CUI_CDM_HookViewers.lua
+CUI_CDM_HookPressMirror.lua
+CludesUICdmSpellPicker.lua
+CludesUICdmBarGlows.lua
+CludesUICdmBarGlowConditions.lua
+CludesUICdmBuffBars.lua
+CUI_CDM_BuffBarStore.lua
+CUI_CDM_BuffBarGroups.lua
+CUI_CDM_BuffBarFrames.lua
+CUI_CDM_BuffBarAssign.lua
+CUI_CDM_BuffBarPresets.lua
+CUI_CDM_BuffBarCooldown.lua
+CUI_CDM_BuffBarTick.lua
+CUI_CDM_BuffBarBuild.lua
+CUI_CDM_BuffBarUnlock.lua
+CludesUICdmTbbDecimals.lua
+CludesUICdmFakeActive.lua
+CludesUICdmRPTSync.lua
+CludesUICdmTalentConditions.lua
+CludesUICdmStanceBar.lua
+CUI_CDM_ForeverAntiClip.lua
+CUI_CDM_AuraIcons.lua
+CUI_CDM_ForeverSeals.lua
+
+# Options

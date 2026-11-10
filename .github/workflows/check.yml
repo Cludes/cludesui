@@ -1,0 +1,45 @@
+name: Check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LuaJIT
+        run: sudo apt-get update && sudo apt-get install -y luajit
+
+      - name: Lua syntax check
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            if ! luajit -bl "$f" > /dev/null 2> err.txt; then
+              echo "::error file=$f::$(head -1 err.txt)"
+              fail=1
+            fi
+          done < <(find . -name '*.lua' -not -path './.git/*')
+          exit $fail
+
+      - name: Every file a .toc lists exists
+        run: |
+          fail=0
+          for toc in */*.toc; do
+            dir=$(dirname "$toc")
+            while IFS= read -r line; do
+              file=$(printf '%s' "$line" | tr -d '\r' | sed 's/ \[.*//' | tr '\\' '/')
+              case "$file" in
+                *.lua|*.xml)
+                  if [ ! -f "$dir/$file" ]; then
+                    echo "::error file=$toc::missing $file"
+                    fail=1
+                  fi
+                  ;;
+              esac
+            done < <(grep -v '^#' "$toc")
+          done
+          exit $fail

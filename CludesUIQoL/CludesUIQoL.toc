@@ -1,0 +1,31 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Quality of Life
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Lightweight quality of life tools and enhancements.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIQoLDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIQoL_ForeverStats.lua
+CludesUIQoL.lua
+CludesUIQoL_Cursor.lua
+CludesUIQoL_BattleRes.lua
+CludesUIQoL_Bloodlust.lua
+CludesUIQoL_AutoLogging.lua
+CludesUIQoL_Keys.lua
+CludesUIQoL_TeleportPrompt.lua
+CludesUIQoL_Waypoint.lua
+CludesUIQoL_Shifter.lua
+CludesUIQoL_MovementAlert.lua
+CludesUIQoL_RaidTools.lua
+CludesUIQoL_RaidBuffCheck.lua
+CludesUIQoL_SelfCombatText.lua
+CludesUIQoL_Alerts.lua
+CludesUIQoL_UpgradeTooltip.lua
+CUI_UpgradeCalc.lua
+
+# Options

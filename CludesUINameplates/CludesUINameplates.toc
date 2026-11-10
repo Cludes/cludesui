@@ -1,0 +1,33 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Nameplates
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Clean, lightweight nameplates with endless customization.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUINameplatesDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUINameplates.lua
+CUI_Nameplates_Styles.lua
+CUI_Nameplates_Layout.lua
+CUI_Nameplates_Overlays.lua
+CUI_Nameplates_PlatePool.lua
+CUI_Nameplates_CastState.lua
+CUI_Nameplates_ClassPower.lua
+CUI_Nameplates_Colors.lua
+CUI_Nameplates_Plate.lua
+CUI_Nameplates_Health.lua
+CUI_Nameplates_Name.lua
+CUI_Nameplates_Cast.lua
+CUI_Nameplates_Events.lua
+CUI_Nameplates_Init.lua
+CUI_Nameplates_AuraContainers.lua
+CludesUINameplates_DebuffColors.lua
+CludesUINameplatesFriendly.lua
+CludesUINameplates_Faction.lua
+CludesUINameplates_CastOverlay.lua
+
+# Options

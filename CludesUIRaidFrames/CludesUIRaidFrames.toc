@@ -1,0 +1,72 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Raid & Party Frames
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Incredibly light performance, modern raid and party frames with endless flexibility.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIRaidFramesDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIRaidFrames.lua
+CUI_RaidFrames_TextKeys.lua
+CUI_RaidFrames_Colors.lua
+CUI_RaidFrames_TextPaint.lua
+CUI_RaidFrames_Compact.lua
+CUI_RaidFrames_Absorb.lua
+CUI_RaidFrames_Style.lua
+CUI_RaidFrames_Update.lua
+CUI_RaidFrames_BossFrames.lua
+CUI_RaidFrames_ExtraFrames.lua
+CUI_RaidFrames_PetFrames.lua
+CUI_RaidFrames_Sort.lua
+CUI_RaidFrames_Layout.lua
+CUI_RaidFrames_Reload.lua
+CUI_RaidFrames_Visibility.lua
+CUI_RaidFrames_Events.lua
+CUI_RaidFrames_Party.lua
+CUI_RaidFrames_PartyTargets.lua
+CUI_RaidFrames_PartyLayout.lua
+CUI_RaidFrames_Extras.lua
+CUI_RaidFrames_Lifecycle.lua
+
+# Options preview (fake raid/party members while the options panel is open)
+CUI_RaidFrames_Preview.lua
+CUI_RaidFrames_PreviewAuras.lua
+CUI_RaidFrames_PreviewBuffs.lua
+CUI_RaidFrames_PreviewFrame.lua
+CUI_RaidFrames_PreviewRoles.lua
+CUI_RaidFrames_PreviewData.lua
+CUI_RaidFrames_PreviewRaid.lua
+CUI_RaidFrames_PreviewSize.lua
+CUI_RaidFrames_PreviewParty.lua
+
+# Blizzard Style / Classic WoW UI (edge, highlights, defaults)
+CUI_RaidFrames_Stock.lua
+
+# Party portrait (every style)
+CUI_RaidFrames_Portrait.lua
+
+# Click Casting
+CUI_RaidFrames_ClickCast.lua
+
+# Buff Manager
+CUI_RaidFrames_BuffManager.lua
+
+# 12.1 Aura Containers
+CUI_RaidFrames_AuraContainers.lua
+
+# 12.1 Debuff Manager (self-gated; inert on 12.0)
+CUI_RaidFrames_DebuffManager.lua
+
+# 12.1 Buff Manager v2: spell -> filter -> indicator model (self-gated)
+CUI_RaidFrames_BuffManager2.lua
+
+# WoW Forever: Missing Buffs indicator (returns on every other client)
+CUI_RaidFrames_ForeverMissingBuffs.lua
+
+# 12.1 Manager options pages (self-gated; inert on 12.0)
+
+# Options

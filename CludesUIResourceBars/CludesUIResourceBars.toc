@@ -1,0 +1,36 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Resource Bars
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Custom Resource Bars with thresholds, hash lines and more.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIResourceBarsDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CUI_ResourceBars_HealthIndicators.lua
+CludesUIResourceBars.lua
+CUI_ResourceBars_Thresholds.lua
+CUI_ResourceBars_Defaults.lua
+CUI_ResourceBars_Frames.lua
+CUI_ResourceBars_Anchors.lua
+CUI_ResourceBars_Build.lua
+CUI_ResourceBars_Update.lua
+CUI_ResourceBars_Style.lua
+CUI_ResourceBars_Groups.lua
+CUI_ResourceBars_CastBar.lua
+CUI_ResourceBars_GCD.lua
+CUI_ResourceBars_Totem.lua
+CUI_ResourceBars_Events.lua
+CUI_ResourceBars_EbonMight121.lua
+CUI_ResourceBars_ArcaneSoul.lua
+CUI_ResourceBars_SwingTimer.lua
+CUI_ResourceBars_ForeverDruidMana.lua
+CUI_ResourceBars_CallTotemBar.lua
+CUI_ResourceBars_WarriorCharges.lua
+CUI_ResourceBars_BlizzClassArt.lua
+
+# Options
+CUI_ResourceBars_Helpers.lua

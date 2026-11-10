@@ -1,0 +1,24 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Minimap
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: A new age minimap with clean styling and square layout options.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIMinimapDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIMinimap.lua
+CUI_Minimap_Flyout.lua
+CUI_Minimap_Info.lua
+CUI_Minimap_Buttons.lua
+CUI_Minimap_Indicators.lua
+CUI_Minimap_Tooltips.lua
+CUI_Minimap_Layout.lua
+CUI_Minimap_Styles.lua
+CUI_Minimap_Apply.lua
+CUI_Minimap_Lifecycle.lua
+
+# Options

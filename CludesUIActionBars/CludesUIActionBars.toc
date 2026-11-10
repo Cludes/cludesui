@@ -1,0 +1,47 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Action Bars
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Modern action bars built for performance and clarity.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIActionBarsDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIActionBars.lua
+CUI_ActionBars_Disposal.lua
+CUI_ActionBars_Controllers.lua
+CUI_ActionBars_Secure.lua
+CUI_ActionBars_Paging.lua
+CUI_ActionBars_Bars.lua
+CUI_ActionBars_Layout.lua
+CUI_ActionBars_Fade.lua
+CUI_ActionBars_VisibilityDrivers.lua
+CUI_ActionBars_Keybinds.lua
+CUI_ActionBars_Vehicle.lua
+CUI_ActionBars_ApplyAll.lua
+CUI_ActionBars_Unlock.lua
+CUI_ActionBars_Init.lua
+CUI_ActionBars_Setup.lua
+CUI_ActionBars_ButtonArt.lua
+CUI_ActionBars_Range.lua
+CUI_ActionBars_Apply.lua
+CUI_ActionBars_Glows.lua
+CUI_ActionBars_Pushed.lua
+CUI_ActionBars_Visibility.lua
+CUI_ActionBars_Events.lua
+CUI_ActionBars_Chrome.lua
+CUI_ActionBars_DataBars.lua
+CUI_ActionBars_ExtraBars.lua
+CUI_ActionBars_QuickKeybind.lua
+CUI_ActionBars_XPBar.lua
+CUI_ActionBars_Flyout.lua
+
+# Options
+
+# Note: Bindings.xml (custom Bar9/Bar10 keybind commands) is intentionally NOT
+# listed here -- WoW auto-loads a file named Bindings.xml from the addon root.
+# Listing it would load it a second time through the UI-XML parser ("Unrecognized
+# XML: Binding").

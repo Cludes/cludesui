@@ -1,0 +1,18 @@
+<Bindings>
+	<Binding name="CUI_RADIAL1" header="CUI_RADIAL" category="CludesUI" />
+	<Binding name="CUI_RADIAL2" category="CludesUI" />
+	<Binding name="CUI_RADIAL3" category="CludesUI" />
+	<Binding name="CUI_RADIAL4" category="CludesUI" />
+	<Binding name="CUI_RADIAL5" category="CludesUI" />
+	<Binding name="CUI_RADIAL6" category="CludesUI" />
+	<Binding name="CUI_RADIAL7" category="CludesUI" />
+	<Binding name="CUI_RADIAL8" category="CludesUI" />
+	<Binding name="CUI_RADIAL9" category="CludesUI" />
+	<Binding name="CUI_RADIAL10" category="CludesUI" />
+	<Binding name="CUI_RADIAL11" category="CludesUI" />
+	<Binding name="CUI_RADIAL12" category="CludesUI" />
+	<Binding name="CUI_RADIAL13" category="CludesUI" />
+	<Binding name="CUI_RADIAL14" category="CludesUI" />
+	<Binding name="CUI_RADIAL15" category="CludesUI" />
+	<Binding name="CUI_RADIAL16" category="CludesUI" />
+</Bindings>

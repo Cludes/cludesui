@@ -1,0 +1,45 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Unit Frames
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Simple unit frames with a modern visual style.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIUnitFramesDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CUI_UnitFrames_Engine.lua
+CludesUIUnitFrames.lua
+CUI_UnitFrames_Text.lua
+CUI_UnitFrames_Portrait.lua
+CUI_UnitFrames_Castbar.lua
+CUI_UnitFrames_Layout.lua
+CUI_UnitFrames_Absorb.lua
+CUI_UnitFrames_Power.lua
+CUI_UnitFrames_Builders.lua
+CUI_UnitFrames_ClassPower.lua
+CUI_UnitFrames_Threat.lua
+CUI_UnitFrames_StockStyles.lua
+CUI_UnitFrames_Reload.lua
+CUI_UnitFrames_ForeverExtras.lua
+CUI_UnitFrames_Visibility.lua
+CUI_UnitFrames_Init.lua
+CUI_UnitFrames_OptionsSetup.lua
+CUI_UnitFrames_Unlock.lua
+CUI_UnitFrames_Lifecycle.lua
+CUI_UnitFrames_ForeverFormBar.lua
+CludesUIUnitFrames_PlayerAuraBars.lua
+CUI_PlayerAuraBars_Style.lua
+CUI_PlayerAuraBars_Groups.lua
+CUI_PlayerAuraBars_Config.lua
+CUI_PlayerAuraBars_Bars.lua
+CUI_PlayerAuraBars_Filters.lua
+CUI_PlayerAuraBars_CustomBars.lua
+CUI_PlayerAuraBars_Preview.lua
+CUI_PlayerAuraBars_Lifecycle.lua
+CUI_UnitFrames_ForeverImbues.lua
+CUI_UnitFrames_AuraContainers.lua
+
+# Options

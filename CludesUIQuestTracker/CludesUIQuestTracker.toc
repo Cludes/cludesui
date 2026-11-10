@@ -1,0 +1,26 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Quest Tracker
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: A clean, updated reskin of Blizzard's Quest Tracker.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIQuestTrackerDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Loader
+CludesUIQuestTracker.lua
+
+# Modules
+CludesUIQuestTracker_Skin.lua
+CludesUIQuestTracker_Visibility.lua
+CludesUIQuestTracker_QoL.lua
+CludesUIQuestTracker_Position.lua
+CludesUIQuestTracker_Forever.lua
+CludesUIQuestTracker_Custom.lua
+CludesUIQuestTracker_QuestAudio.lua
+CludesUIQuestTracker_Details.lua
+CludesUIQuestTracker_QuestLinks.lua
+
+# Options

@@ -1,0 +1,28 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r Damage Meters
+## Category: |cff0cd29fCludes|rUI
+## Group: CludesUI
+## Notes: Lightweight damage meters with simple but powerful customization.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUIDamageMetersDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Main Luas
+CludesUIDamageMeters.lua
+CUI_DamageMeters_Style.lua
+CUI_DamageMeters_State.lua
+CUI_DamageMeters_Format.lua
+CUI_DamageMeters_Appearance.lua
+CUI_DamageMeters_SeasonMobs.lua
+CUI_DamageMeters_SeasonRaids.lua
+CUI_DamageMeters_Tooltip.lua
+CUI_DamageMeters_Window.lua
+CUI_DamageMeters_Apply.lua
+CUI_DamageMeters_Timer.lua
+CUI_DamageMeters_Lifecycle.lua
+CludesUIDamageMeters_SpellHistory.lua
+CludesUIDamageMeters_ForeverThreat.lua
+
+# Options

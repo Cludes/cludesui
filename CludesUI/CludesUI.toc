@@ -1,0 +1,114 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fCludesUI|r
+## Notes: Shared framework for the CludesUI addon suite
+## Author: Cludes
+## Version: 1.0.0
+## SavedVariables: CludesUIDB
+## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+
+# Pre-12.1 client failsafe -- MUST load first (arms the per-file guard line)
+CludesUI_ClientGate.lua
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
+Libs\LibDeflate\LibDeflate.lua
+Libs\LibKeystone\LibKeystone.lua [AllowLoadGameType standard]
+Libs\LibSpecialization\LibSpecialization.lua [AllowLoadGameType standard]
+
+# Lightweight addon framework (replaces Ace3)
+CludesUI_Lite.lua
+
+# Game settings CludesUI changes, recorded so Uninstall CUI can put them back
+# (before any file that changes one)
+CludesUI_Uninstall.lua
+
+# Central multi-language engine (resolves locale + glyph font; defines L/Lf/EnKey)
+# Translation data lives in the LoadOnDemand CludesUILocales child addon,
+# loaded by the engine at ADDON_LOADED for non-English locales only.
+CludesUI_Locale.lua
+
+# Central number-abbreviation engine (K/M/B by default; CJK wan/yi grouping
+# tables keyed by locale; a locale file may register its own algorithm).
+CludesUI_NumberFormat.lua
+
+# One-time data migration (runs before child addons init)
+CludesUI_Migration.lua
+
+# Early startup -- applies engine-cached settings before PLAYER_LOGIN
+CludesUI_Startup.lua
+
+CludesUI_GoldLedger.lua
+
+# Shared CludesUI Files
+CludesUI_PixelPerfect.lua
+CludesUI.lua
+CludesUI_AbsorbGlow.lua
+CludesUI_Panel.lua
+CludesUI_VisibilityRules.lua
+CludesUI_SharedHelpers.lua
+CludesUI_Popups.lua
+CludesUI_TextTags.lua
+CludesUI_Colors.lua
+CludesUI_Fonts.lua
+CludesUI_ProfileSync.lua
+CludesUI_RetailAtlas.lua
+CludesUI_BuffPresets.lua
+CludesUI_UICore.lua
+CludesUI_Ticker.lua
+CludesUI_Mouse.lua
+CludesUI_BlizzardParty.lua
+CludesUI_KickData.lua
+CludesUI_Kick.lua
+CludesUI_MenuFallbacks.lua
+CludesUI_SignupHelpers.lua
+CludesUI_GlobalSearch.lua
+CludesUI_Visibility.lua
+CludesUI_Presets.lua
+CludesUI_Profiles.lua
+CludesUI_PartyMode.lua
+CUI_MacroFactory.lua
+CUI_UnlockMode_PointAnchors.lua
+CUI_UnlockMode.lua
+CUI_UnlockMode_Anchors.lua
+CUI_UnlockMode_Positions.lua
+CUI_UnlockMode_Tools.lua
+CUI_UnlockMode_PointVisuals.lua
+CUI_UnlockMode_PointPicker.lua
+CUI_UnlockMode_Movers.lua
+CUI_UnlockMode_Session.lua
+CUI_UnlockMode_Filter.lua
+CludesUI_Glows.lua
+CludesUI_RoundedCorners.lua
+CludesUI_ClassicArt.lua
+CludesUI_Range.lua
+CludesUI_AuraKit.lua
+CludesUI_WarriorCharges.lua
+CludesUI_ManaRegenSpark.lua
+CludesUI_SpellCostPrediction.lua
+# Friends list kit: realm regions, the 12.1 Social UI tiles and invite auto-accept,
+# shared by the Friends List module (retail) and Blizzard Skins+ (WoW Forever)
+CludesUI_FriendsKit.lua
+# Custom friends list: rows of our own over the Social UI friends list, for a
+# tile height and friend groups (its hosts start it after the kit's tiles)
+CludesUI_FriendsList.lua
+CludesUI_FirstInstall.lua
+CludesUI_StyleCards.lua
+CludesUI_StyleChoicePopup.lua
+
+# Spec Overrides (per-spec setting overrides within a profile)
+CludesUI_SpecOverrides.lua
+CUI_SpecOverrides_Harvest.lua
+CUI_SpecOverrides_Layers.lua
+CUI_SpecOverrides_Conditional.lua
+CUI_SpecOverrides_Borders.lua
+CUI_SpecOverrides_Session.lua
+CUI_SpecOverrides_Popups.lua
+CUI_SpecOverrides_ListPage.lua
+CUI_SpecOverrides_Hooks.lua
+
+# Conditional Overrides engine (Dungeon/Raid/Arena/BG/Solo/Keybind conditions;
+# override integration lives in CUI_SpecOverrides_Conditional.lua)
+CludesUI_Conditions.lua
