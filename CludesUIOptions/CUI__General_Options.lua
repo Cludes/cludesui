@@ -1486,7 +1486,7 @@ initFrame:SetScript("OnEvent", function(self)
         return 200
     end
     CludesUI:RegisterModule(PROFILES_KEY, {
-        title       = "Profiles & Presets",
+        title       = "Profiles",
         description = "Import, export, and switch CludesUI profiles and presets.",
         pages       = { PAGE_PROFILES, PAGE_OVERRIDES, PAGE_FULLEXPORT },
         buildPage   = function(pageName, parent, yOffset)

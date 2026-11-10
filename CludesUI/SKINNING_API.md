@@ -160,5 +160,5 @@ simply doesn't run.
 **What if two addons register the same name?** First registration wins; use
 your addon's folder name to stay unique.
 
-**I need a primitive that isn't listed.** Ask! The API is additive -- ping
-Cludes on Discord and it can usually ship in the next build.
+**I need a primitive that isn't listed.** Ask! The API is additive -- open an
+issue on GitHub and it can usually ship in the next build.

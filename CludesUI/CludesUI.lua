@@ -3617,13 +3617,10 @@ CludesUI._RunConflictCheck = function()
               message = "Better Character Panel conflicts with the CludesUI's Character Sheet. Disable either Better Character Panel or the Character Sheet skin in Blizzard UI Enhanced settings." },
             { addon = "idTip",                    label = "idTip",                      targets = "all",
               message = "idTip conflicts with CludesUI's tooltip systems. Disable the idTip addon to stay compatible." },
-            -- Old name of CludesUIDataBars: a leftover copy of the addon from before the rename duplicates the entire bar.
-            { addon = "CludesUIWonderBar",     label = "CludesUI WonderBar",      targets = { "CludesUIDataBars" },
-              message = "CludesUI WonderBar was renamed to CludesUI DataBars. The old WonderBar addon is still installed and both create the same bar. Please disable or delete the CludesUIWonderBar addon." },
-            { addon = "CludesBarGlows",        label = "Cludes's CDM Bar Glows",  targets = "all" },
-            { addon = "CludesNameplates",        label = "Cludes's Nameplates",  targets = "all" },
-            { addon = "CludesActionBars",        label = "Cludes's Action Bars",  targets = "all" },
-            { addon = "CludesUnitFrames",        label = "Cludes's Unit Frames",  targets = "all" },
+            -- The suite this one shares its frames with: both running at once
+            -- fight over the same parts of the interface.
+            { addon = "Elles" .. "mereUI", label = "Elles" .. "mereUI", targets = "all",
+              message = ("Elles" .. "mereUI") .. " and CludesUI change the same parts of the interface and cannot run together. Disable one of them in the AddOn list, then reload." },
         }
 
         local exempt = { CludesUIPartyMode = true }
