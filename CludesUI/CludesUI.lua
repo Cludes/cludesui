@@ -36,7 +36,7 @@ end
 -- bgFile is relative to MEDIA_PATH (resolved later after MEDIA_PATH is defined)
 local THEME_PRESETS = {
     ["CludesUI"]    = { r = 12/255,  g = 210/255, b = 157/255 },  -- #0CD29D
-    ["CludesUI Original"] = { r = 12/255, g = 210/255, b = 157/255 },  -- #0CD29D
+    ["CludesUI Original"] = { r = 12/255, g = 210/255, b = 157/255 },  -- #0CD29D (not listed; kept for saved settings)
     ["CludesUI Forever"] = { r = 220/255, g = 167/255, b = 127/255 },  -- #DCA77F soft bronze
     ["Horde"]          = { r = 255/255, g = 90/255,  b = 31/255  },  -- #FF5A1F
     ["Alliance"]       = { r = 63/255,  g = 167/255, b = 255/255 },  -- #3FA7FF
@@ -53,16 +53,16 @@ local THEME_PRESETS = {
     ["Class Colored"]  = nil,  -- resolved at runtime from player class
     ["Custom Color"]   = nil,  -- user-chosen via color picker
 }
-local THEME_ORDER = { "CludesUI", "CludesUI Original", "CludesUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Ember", "Blood", "Frost", "Arcane", "Gold", "Toxic", "Class Colored", "Custom Color" }
+local THEME_ORDER = { "CludesUI", "CludesUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Ember", "Blood", "Frost", "Arcane", "Gold", "Toxic", "Class Colored", "Custom Color" }
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
-if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 3) end
+if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- The theme in force when none was chosen: the Forever client opens on its own
 -- backdrop, every other client on the player's class colour. A chosen theme always wins.
 CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or "Class Colored"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
 local THEME_BG_FILES = {
     ["CludesUI"]   = "backgrounds\\cui-bg-new.png",
-    ["CludesUI Original"] = "backgrounds\\cui-bg-old.png",
+    ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
     ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
     ["Horde"]         = "backgrounds\\cui-bg-horde-compressed.png",
     ["Alliance"]      = "backgrounds\\cui-bg-alliance-compressed.png",
@@ -71,20 +71,20 @@ local THEME_BG_FILES = {
     ["Pixels"]        = "backgrounds\\cui-bg-pixels-compressed.png",
     -- The six colour schemes share the tintable art: the panel desaturates it
     -- and tints it to the scheme's accent, as it does for Class Colored.
-    ["Ember"]         = "backgrounds\\cui-bg-old.png",
-    ["Blood"]         = "backgrounds\\cui-bg-old.png",
-    ["Frost"]         = "backgrounds\\cui-bg-old.png",
-    ["Arcane"]        = "backgrounds\\cui-bg-old.png",
-    ["Gold"]          = "backgrounds\\cui-bg-old.png",
-    ["Toxic"]         = "backgrounds\\cui-bg-old.png",
-    ["Class Colored"] = "backgrounds\\cui-bg-old.png",
-    ["Custom Color"]  = "backgrounds\\cui-bg-old.png",
+    ["Ember"]         = "backgrounds\\cui-bg-new.png",
+    ["Blood"]         = "backgrounds\\cui-bg-new.png",
+    ["Frost"]         = "backgrounds\\cui-bg-new.png",
+    ["Arcane"]        = "backgrounds\\cui-bg-new.png",
+    ["Gold"]          = "backgrounds\\cui-bg-new.png",
+    ["Toxic"]         = "backgrounds\\cui-bg-new.png",
+    ["Class Colored"] = "backgrounds\\cui-bg-new.png",
+    ["Custom Color"]  = "backgrounds\\cui-bg-new.png",
 }
--- Theme art kept out of the file-load VRAM preload below (fields: the main chunk
--- sits at its local cap). It loads on its first pick (the crossfade starts the new
--- layer at alpha 0, so nothing flashes), or at PLAYER_LOGIN for the player whose
--- saved theme it is (CludesUI._PreloadLazyThemeBG).
-CludesUI._THEME_BG_LAZY = { ["Pixels"] = true }
+-- Theme art is not loaded at file load: each file is a 1500x1154 canvas, and
+-- holding every theme in VRAM costs tens of MB for a panel most sessions never
+-- open. A theme loads on its first pick (the crossfade starts the new layer at
+-- alpha 0, so nothing flashes), or at PLAYER_LOGIN for the player whose saved
+-- theme it is (CludesUI._PreloadLazyThemeBG).
 -- Accent overlay per theme: its accent-coloured pieces (logo mark, rules, close X)
 -- as white art, cropped to their band of the 1500x1154 canvas (x, y = top-left
 -- offset; w, h = size, all in canvas units). Drawn above the theme art and tinted
@@ -108,9 +108,6 @@ CludesUI.THEME_CLOSE_BOX = {
     ["backgrounds\\cui-bg-forever-compressed.png"] = { x = 1346, y = 114, w = 43, h = 41, gx = 1368, gy = 134,
         bx = 1348, by = 116, bw = 40, bh = 38, bd = 3,
         r = 0.894, g = 0.788, b = 0.617, sh = 0.5, ex = 122, ey = 109, rr = 0.417, rg = 0.311, rb = 0.231 },
-    ["backgrounds\\cui-bg-old.png"] = { x = 1347, y = 117, w = 40, h = 39, gx = 1367, gy = 136,
-        bx = 1348, by = 118, bw = 38, bh = 37, bd = 2,
-        r = 0.685, g = 0.719, b = 0.715, sh = 0.5, ex = 118, ey = 110, rr = 0.324, rg = 0.345, rb = 0.363 },
     ["backgrounds\\cui-bg-midnight-compressed.png"] = { x = 1347, y = 117, w = 40, h = 39, gx = 1367, gy = 136,
         bx = 1348, by = 118, bw = 38, bh = 37, bd = 2,
         r = 0.738, g = 0.617, b = 0.834, sh = 0.5, ex = 118, ey = 110, rr = 0.335, rg = 0.296, rb = 0.440 },
@@ -137,31 +134,24 @@ local function ResolveFactionTheme(theme)
     return theme
 end
 
--- Hidden 1x1 frame preloads bg textures into VRAM: no 1-frame bg flash on first open.
+-- Hidden 1x1 frame preloads the saved theme into VRAM: no 1-frame bg flash on first open.
 do
     local mp = "Interface\\AddOns\\CludesUI\\media\\"
     local preload = CreateFrame("Frame")
     preload:SetSize(1, 1)
     preload:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
     preload:Show()
-    local lazy = CludesUI._THEME_BG_LAZY
-    for theme, file in pairs(THEME_BG_FILES) do
-        if not lazy[theme] then
-            local tex = preload:CreateTexture()
-            tex:SetTexture(mp .. file)
-            tex:SetAllPoints()
-        end
-    end
     local baseTex = preload:CreateTexture()
     baseTex:SetTexture(mp .. "backgrounds\\cui-bg.png")
     baseTex:SetAllPoints()
     -- The saved theme is known only once SavedVariables load, so the PLAYER_LOGIN
-    -- theme block calls this (once): a lazy theme's own player then opens the
-    -- panel with its art, and its accent overlay, already resident.
+    -- theme block calls this (once): the player then opens the panel with
+    -- their theme's art, and its accent overlay, already resident.
     function CludesUI._PreloadLazyThemeBG(theme)
-        if not lazy[theme] then return end
+        theme = ResolveFactionTheme(theme)
+        local file = THEME_BG_FILES[theme] or THEME_BG_FILES["CludesUI"]
         local tex = preload:CreateTexture()
-        tex:SetTexture(mp .. THEME_BG_FILES[theme])
+        tex:SetTexture(mp .. file)
         tex:SetAllPoints()
         local ov = CludesUI.THEME_ACCENT_OVERLAYS[theme]
         if ov then
