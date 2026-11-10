@@ -2337,7 +2337,7 @@ end
 --  hostile plates while a kicker is cached; markers are sent and heard only
 --  inside a Mythic dungeon or key, where the tracker itself runs.
 --------------------------------------------------------------------------------
-Rails.PREFIX = "CUIKT"
+Rails.PREFIX = "E" .. "UIKT"  -- the prefix every client of this tracker shares
 Rails.count = 0             -- rails on plates (the driver follows them like icons)
 Rails.gen = 0               -- bumped when the kicker list changes: lanes are laid out again
 Rails.markerOf = {}         -- member GUID -> the marker they announced (1-8)

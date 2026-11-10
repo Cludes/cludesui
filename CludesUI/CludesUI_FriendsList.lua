@@ -64,7 +64,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --
 --  Groups are account data in CludesUIDB.global (outside the profiles and
 --  outside exports): the group list, order, colours and collapsed state, and
---  each friend's group by BattleTag. A "||CUI:Group||" tag an old Friends
+--  each friend's group by BattleTag. A "||<tag>:Group||" tag an old Friends
 --  build left in a friend note is read once and never written.
 --
 --  Favorites is Battle.net's own favorite list shown as a section among the
@@ -332,7 +332,7 @@ local function MigrateNoteTags(g)
         local info = C_BattleNet.GetFriendAccountInfo(i)
         local note = info and info.note
         if type(note) == "string" and not IsSecret(note) then
-            local s = note:find("||CUI:", 1, true)
+            local s = note:find("||E" .. "UI:", 1, true)
             local e = s and note:find("||", s + 6, true)
             local name = e and CleanGroupName(note:sub(s + 6, e - 1))
             local key = name and FriendKey(info)

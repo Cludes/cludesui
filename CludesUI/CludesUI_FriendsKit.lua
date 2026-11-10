@@ -1185,7 +1185,7 @@ local function BuildInfo(accountInfo)
             text = (loc == "enUS" or loc == "enGB") and "In App" or "Battle.Net"
         end
     end
-    -- Legacy ||CUI:Group|| tags are stripped from any note we display.
+    -- Legacy ||<tag>:Group|| tags are stripped from any note we display.
     local note = CludesUI.StripFriendNoteTag(accountInfo.note)
     if note then
         if text ~= "" then

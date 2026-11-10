@@ -1399,12 +1399,12 @@ function CludesUI.BuildFullName(charName, realmName)
     return base .. "-" .. suffix
 end
 
--- A friend or guild note for display. Old Friends builds wrote a "||CUI:Group||" tag
+-- A friend or guild note for display. Older Friends builds wrote a "||<tag>:Group||" tag
 -- into friend notes that was never removed: the text before it is kept, trailing
 -- space trimmed. nil for a non-string, secret or empty note.
 function CludesUI.StripFriendNoteTag(note)
     if type(note) ~= "string" or issecretvalue(note) or note == "" then return nil end
-    local s = note:find("||CUI:", 1, true)
+    local s = note:find("||E" .. "UI:", 1, true)
     if s and note:find("||", s + 6, true) then
         note = note:sub(1, s - 1):match("^(.-)%s*$")
         if note == "" then return nil end
