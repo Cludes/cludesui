@@ -3621,6 +3621,13 @@ CludesUI._RunConflictCheck = function()
             -- fight over the same parts of the interface.
             { addon = "Elles" .. "mereUI", label = "Elles" .. "mereUI", targets = "all",
               message = ("Elles" .. "mereUI") .. " and CludesUI change the same parts of the interface and cannot run together. Disable one of them in the AddOn list, then reload." },
+            -- The same author's older single-purpose addons, and the old name of
+            -- the DataBars addon: each still draws what one of our modules draws.
+            { addon = "Elles" .. "mereUIWonderBar", label = "Elles" .. "mereUI WonderBar", targets = { "CludesUIDataBars" } },
+            { addon = "Elles" .. "mereBarGlows",    label = "Elles" .. "mere's CDM Bar Glows", targets = "all" },
+            { addon = "Elles" .. "mereNameplates",  label = "Elles" .. "mere's Nameplates",    targets = "all" },
+            { addon = "Elles" .. "mereActionBars",  label = "Elles" .. "mere's Action Bars",   targets = "all" },
+            { addon = "Elles" .. "mereUnitFrames",  label = "Elles" .. "mere's Unit Frames",   targets = "all" },
         }
 
         local exempt = { CludesUIPartyMode = true }
