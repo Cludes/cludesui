@@ -26,7 +26,7 @@ local PAGE_BUFF_BARS    = "Tracking Bars"
 local PAGE_CDM_BARS     = "CDM Bars"
 local PAGE_ROTATION_ICON = "Rotation Assist Icon"
 
-local PAGE_UNLOCK       = "Unlock Mode"
+local PAGE_UNLOCK       = "Layout Mode"
 
 local SEC_MAPPINGS   = "GLOW MAPPINGS"
 local SEC_LAYOUT     = "LAYOUT"
@@ -2102,7 +2102,7 @@ initFrame:SetScript("OnEvent", function(self)
         local kbRow
         kbRow, h = W:DualRow(parent, y,
             { type="toggle", text="Only in Combat",
-              tooltip="Hide outside combat. Unlock Mode shows a placeholder when no recommendation is available.",
+              tooltip="Hide outside combat. Layout Mode shows a placeholder when no recommendation is available.",
               disabled=IconOff, disabledTooltip=IconLockTip,
               getValue=function() return Settings().onlyInCombat == true end,
               setValue=function(v) Settings().onlyInCombat = v; Apply() end },
@@ -2115,12 +2115,12 @@ initFrame:SetScript("OnEvent", function(self)
         BuildKeybindStyleControls(kbRow, Settings, Apply, IconLockTip)
         _, h = W:DualRow(parent, y,
             { type="slider", text="X Offset", min=-2000, max=2000, step=1,
-              tooltip="Horizontal screen offset. You can also drag the Rotation Assist Icon in Unlock Mode.",
+              tooltip="Horizontal screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
               disabled=IconOff, disabledTooltip=IconLockTip,
               getValue=function() return CludesUI.PP.ToPixels(Position().x or 0) end,
               setValue=function(v) SetOffset("x", v) end },
             { type="slider", text="Y Offset", min=-1200, max=1200, step=1,
-              tooltip="Vertical screen offset. You can also drag the Rotation Assist Icon in Unlock Mode.",
+              tooltip="Vertical screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
               disabled=IconOff, disabledTooltip=IconLockTip,
               getValue=function() return CludesUI.PP.ToPixels(Position().y or 0) end,
               setValue=function(v) SetOffset("y", v) end }

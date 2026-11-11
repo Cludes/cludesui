@@ -987,7 +987,7 @@ local function BuildSidebar()
 
         local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
         label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(CludesUI.L("Unlock Mode"))
+        label:SetText(CludesUI.L("Layout Mode"))
         btn._label = label
 
         -- Always "loaded" appearance
@@ -4732,7 +4732,7 @@ function CludesUI:SelectPage(pageName)
 
     -- "Unlock Mode" is a fake nav item -- fire unlock mode without changing page state.
     -- Capture the current module + page so DoClose can restore them exactly.
-    if pageName == "Unlock Mode" then
+    if pageName == "Layout Mode" then
         if CludesUI._openUnlockMode then
             CludesUI._unlockReturnModule = activeModule
             CludesUI._unlockReturnPage   = activePage
@@ -5316,7 +5316,7 @@ local function ShowSidebarUnlockTip()
     if not _sidebarUnlockTip then
         local tip = CludesUI.BuildTipCallout(CludesUI._panelBody, {
             width = 320, height = 100,
-            text = CludesUI.L("Unlock Mode is where you can adjust\npositioning for all the elements of CludesUI"),
+            text = CludesUI.L("Layout Mode is where you can adjust\npositioning for all the elements of CludesUI"),
             onOkay = function()
                 if CludesUIDB then CludesUIDB.sidebarUnlockTipSeen = true end
             end,

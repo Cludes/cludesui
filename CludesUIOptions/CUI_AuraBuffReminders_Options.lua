@@ -10,7 +10,7 @@ if not ns then return end  -- module disabled: no options page
 
 local PAGE_REMINDERS = "Auras, Buffs & Consumables"
 local PAGE_TALENTS   = "Talent Reminders"
-local PAGE_UNLOCK    = "Unlock Mode"
+local PAGE_UNLOCK    = "Layout Mode"
 
 -- WoW Forever: the page keeps CORE, DISPLAY and RAID BUFFS (that client's
 -- locations and its own buffs) and swaps every other retail section for the one
@@ -1356,7 +1356,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Row 1: Enable Reminders | Scale
         local row1
         row1, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable AuraBuff Reminders",
+            { type="toggle", text="Enable Buff Reminders",
               tooltip="Master toggle for all aura, buff, and consumable reminders. Talent reminders are not affected.",
               getValue=function() local d = DDB(); return d and d.remindersEnabled ~= false end,
               setValue=function(v)
@@ -3695,7 +3695,7 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     CludesUI:RegisterModule("CludesUIAuraBuffReminders", {
         title       = "Auras, Buffs & Consumables",
-        description = "AuraBuff Reminders: Raid Buffs, Auras, and Consumables.",
+        description = "Buff Reminders: Raid Buffs, Auras, and Consumables.",
         pages       = FOREVER and { PAGE_REMINDERS } or { PAGE_REMINDERS, PAGE_TALENTS },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE_REMINDERS then

@@ -784,8 +784,8 @@ initFrame:SetScript("OnEvent", function(self)
         local cuiBtnItems = {
             { key = "pause",   label = "Hide Pause Menu Button",
               tooltip = "Hides the CludesUI button from the game's Escape/pause menu." },
-            { key = "unlock",  label = "Hide Unlock Mode Menu Button",
-              tooltip = "Hides the Unlock Mode button from the game's Escape/pause menu. You can still toggle Unlock Mode from the CUI options panel." },
+            { key = "unlock",  label = "Hide Layout Mode Menu Button",
+              tooltip = "Hides the Layout Mode button from the game's Escape/pause menu. You can still toggle Layout Mode from the CUI options panel." },
             { key = "minimap", label = "Show Minimap Button" },
         }
         local cuiBtnRow
@@ -864,14 +864,14 @@ initFrame:SetScript("OnEvent", function(self)
         local pointAnchorRow
         pointAnchorRow, h = W:DualRow(parent, y,
             { type="toggle", text="Point Anchoring",
-              tooltip="Show nine source points after clicking Anchor in Unlock Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
+              tooltip="Show nine source points after clicking Anchor in Layout Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
               getValue=function() return CludesUIDB and CludesUIDB.unlockPointHandles == true end,
               setValue=function(v)
                   CludesUI.SetPointAnchorHandles(v)
                   CludesUI:RefreshPage()
               end },
             { type="dropdown", text="Overlap Cycling",
-              tooltip="Scroll with the chosen modifier to cycle overlapping frames in Unlock Mode.",
+              tooltip="Scroll with the chosen modifier to cycle overlapping frames in Layout Mode.",
               values=CludesUI.UNLOCK_OVERLAP_LABELS,
               order={ "disabled", "scroll", "shiftscroll", "controlscroll", "altscroll" },
               getValue=function() return CludesUI.GetUnlockOverlapMethod() end,
@@ -1435,7 +1435,7 @@ initFrame:SetScript("OnEvent", function(self)
         wtext:SetWidth(width - 32)
         wtext:SetJustifyH("LEFT")
         wtext:SetSpacing(3)
-        wtext:SetText(CludesUI.L("This export includes cross profile settings that will overwrite the importing user's settings including Quality of Life, Hovercast and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."))
+        wtext:SetText(CludesUI.L("This export includes cross profile settings that will overwrite the importing user's settings including Utilities, Hovercast and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."))
         warn:SetHeight((wtext:GetStringHeight() or 40) + 28)
         y = y - warn:GetHeight() - 40
 

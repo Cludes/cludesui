@@ -1074,7 +1074,7 @@ local function RegisterLootUnlockElements()
         elements[#elements + 1] = MK({
             key   = info.key,
             label = info.label,
-            group = "Quality of Life",
+            group = "Utilities",
             order = info.order,
             noResize          = true,
             noAnchorTarget    = true,
@@ -1084,7 +1084,7 @@ local function RegisterLootUnlockElements()
             -- until the user turns them off: brown tint + reminder subtitle
             -- to tell them apart from live-frame movers.
             moverBg  = { r = 0.165, g = 0.11, b = 0.055 },
-            subtitle = info.subtitle or "Disable Loot unlock mode overlays in Shifter once done positioning",
+            subtitle = info.subtitle or "Disable Loot layout mode overlays in Shifter once done positioning",
             isHidden = function()
                 if not LootEnabled(info) or not _G[info.name] then return true end
                 -- "Hide Unlock Mode Overlays": the movers stay out of unlock
@@ -1252,7 +1252,7 @@ local function RegisterTopBarUnlockElement()
         MK({
             key   = TOPBAR_KEY,
             label = TOPBAR_LABEL,
-            group = "Quality of Life",
+            group = "Utilities",
             order = 643,
             noResize          = true,
             noAnchorTarget    = true,
@@ -1412,7 +1412,7 @@ function CARRIER.Register()
         MK({
             key   = "CUI_FlagCarriers",
             label = "Flag Carriers",
-            group = "Quality of Life",
+            group = "Utilities",
             order = 645,
             noResize          = true,
             noAnchorTarget    = true,

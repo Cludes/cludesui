@@ -159,7 +159,7 @@ local function DataBarKit(parent)
                   local k, t = OutsideSizeMatch()
                   if not k then return nil end
                   return CludesUI.GetBarLabel(k) .. ": "
-                      .. CludesUI.Lf("Size matched to %1$s. Unmatch in Unlock Mode to edit.", CludesUI.GetBarLabel(t))
+                      .. CludesUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", CludesUI.GetBarLabel(t))
               end,
               rawTooltip=true,
               getValue=function()
@@ -823,9 +823,9 @@ local function BuildMenuBagsRepPage(pageName, parent, yOffset)
     do
         local SkinCfg = CludesUI.WindowSkinStyleCfg
         local microSkin = SkinCfg and SkinCfg("micromenu", "Micro Menu Skin",
-            "Same setting as the Micro Menu card on Blizzard Skins+ > Window Skins.")
+            "Same setting as the Micro Menu card on Window Skins > Window Skins.")
         local bagSkin = SkinCfg and SkinCfg("bagbar", "Bag Bar Skin",
-            "Same setting as the Bag Bar card on Blizzard Skins+ > Window Skins.")
+            "Same setting as the Bag Bar card on Window Skins > Window Skins.")
         local function Ctl(key, label)
             return EndCapsCtl({
                 key = function() return key end,

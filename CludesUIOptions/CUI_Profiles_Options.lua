@@ -1069,10 +1069,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 { label = "Overrides", sum = "Overrides",
                   enabled = stringHasOverrides,
                   offTip = "This profile string does not carry any override data.",
-                  tip   = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom Unlock Mode layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
+                  tip   = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
                   get   = function() return includeOverridesImport end,
                   set   = function() includeOverridesImport = not includeOverridesImport end },
-                { label = "Unlock Mode Layout", sum = "Layout",
+                { label = "Layout Mode Layout", sum = "Layout",
                   enabled = true,
                   tip   = "Import the anchor & size-match relationships from this profile. Off = keep your own layout; only the selected modules' own positions/settings come in.",
                   get   = function() return includeLayoutImport end,
@@ -1086,7 +1086,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 { label = "Window & Tooltip Skins", sum = "Window Skins",
                   enabled = stringHasBlizzSkin,
                   offTip = "This profile string does not carry any Window & Tooltip Skins settings.",
-                  tip   = "Apply the sharer's Blizzard Skins+ Window Skins and Tooltips & Menus settings. These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
+                  tip   = "Apply the sharer's Window Skins Window Skins and Tooltips & Menus settings. These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
                   get   = function() return includeWindowSkinsImport end,
                   set   = function(refresh)
                       if includeWindowSkinsImport then
@@ -1098,7 +1098,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                       local ddGen = PoolGen(ddBtn)
                       CludesUI:ShowConfirmPopup({
                           title       = CludesUI.L("Overwrite Window & Tooltip Settings?"),
-                          message     = CludesUI.L("This will replace YOUR Blizzard Skins+ settings (the Window Skins and Tooltips & Menus tabs) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."),
+                          message     = CludesUI.L("This will replace YOUR Window Skins settings (the Window Skins and Tooltips & Menus tabs) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."),
                           confirmText = CludesUI.L("OK"),
                           cancelText  = CludesUI.L("Cancel"),
                           onConfirm   = function()
@@ -1560,7 +1560,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         pastePage:Hide()
                         CludesUI:ShowConfirmPopup({
                             title = CludesUI.L("Import Full Account Data"),
-                            message = CludesUI.L("This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Quality of Life, HoverCast bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced.")
+                            message = CludesUI.L("This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, HoverCast bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced.")
                                 .. ((CludesUI.PayloadFromOtherClient(payload) and type(payload.data) == "table"
                                     and payload.data.spellAssignments ~= nil)
                                     and ("\n\n" .. CludesUI.L("Its Cooldown Manager spells come from the other game client and will not be imported.")) or ""),
@@ -2391,10 +2391,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
             local rowDefs = {
                 { label = "Overrides",
-                  tip   = "Include your complete override setup: spec and conditional override values, groups, their custom Unlock Mode layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
+                  tip   = "Include your complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
                   get   = function() return EffectiveIncludeOverrides() end,
                   set   = function() includeOverridesExport = not EffectiveIncludeOverrides() end },
-                { label = "Unlock Mode Layout",
+                { label = "Layout Mode Layout",
                   tip   = "Include the anchor & size-match relationships between modules. Off = export each module's own positions only, with no cross-module tying.",
                   get   = function() return includeLayoutExport end,
                   set   = function() includeLayoutExport = not includeLayoutExport end },
@@ -2406,7 +2406,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             if hasBlizzSkinRow then
                 rowDefs[#rowDefs + 1] = {
                     label = "Window & Tooltip Skins",
-                    tip   = "Include your Blizzard Skins+ settings from the Window Skins and Tooltips & Menus tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
+                    tip   = "Include your Window Skins settings from the Window Skins and Tooltips & Menus tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
                     get   = function() return includeWindowSkinsExport end,
                     set   = function() includeWindowSkinsExport = not includeWindowSkinsExport end }
             end

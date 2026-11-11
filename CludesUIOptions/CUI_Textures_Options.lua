@@ -905,7 +905,7 @@ local function TileDataBars(parent, y, W, tile)
     local ns = NS(tile.folder)
     if not ns then return DisabledTile(parent, y, W, tile) end
     y = LinkRow(parent, y, "Bar Texture (per data bar)",
-        tile.folder, "DataBars", "BAR SETTINGS", "Bar Texture")
+        tile.folder, "Info Bar", "BAR SETTINGS", "Bar Texture")
     return y
 end
 

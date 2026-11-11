@@ -550,7 +550,7 @@ end
 -- explains. Returns whether the open was requested.
 function CludesUI.OpenUnlockModeAt(key)
     if InCombatLockdown() then
-        CludesUI.PrintError("Cannot enter Unlock Mode during combat.")
+        CludesUI.PrintError("Cannot enter Layout Mode during combat.")
         return false
     end
     -- Installed by the unlock core's init, so a live check rather than a dead guard.
@@ -584,7 +584,7 @@ function CludesUI.BuildUnlockJump(rgn, opts)
     local key = opts.key
     local btn = BuildInlineCog(rgn, {
         icon = CludesUI.UNLOCK_ICON,
-        tip = opts.tooltip or "Move in Unlock Mode",
+        tip = opts.tooltip or "Move in Layout Mode",
         show = function()
             local k = key
             if type(k) == "function" then k = k() end

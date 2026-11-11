@@ -22,7 +22,7 @@ local PAGE_DISPLAY   = "Main Frames"
 local PAGE_BOSS      = "Boss Frames"
 local PAGE_MINI      = "Mini Frames"
 local PAGE_AURA_BARS = "Player Aura Bars"
-local PAGE_UNLOCK    = "Unlock Mode"
+local PAGE_UNLOCK    = "Layout Mode"
 
 -- Threat % Position dropdown (WoW Forever only, so nil on retail). On ns: the
 -- Main Frames page builder is near its 60-upvalue cap, and the Forever

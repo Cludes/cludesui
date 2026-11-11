@@ -54,7 +54,7 @@ function CludesUI.BuildUnlockPlaceholder(opts)
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     local label = f:CreateFontString(nil, "OVERLAY")
     label:SetFont(fontPath, 10, "OUTLINE, SLUG")
-    label:SetText(CludesUI.L(opts.text or "Move in Unlock Mode"))
+    label:SetText(CludesUI.L(opts.text or "Move in Layout Mode"))
     label:SetTextColor(1, 1, 1, 0.9)
     label:SetPoint("CENTER")
     f._label = label

@@ -714,7 +714,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
               local p = DB()
               if p and not p.primary.enabled then return "Power Bar" end
               if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
-                  return "This option can't be used while you have the Power Bar Height Matched in the Unlock Mode."
+                  return "This option can't be used while you have the Power Bar Height Matched in the Layout Mode."
               end
               return "This option can't be used while Shift Elements if No Resource is enabled."
           end,
@@ -782,7 +782,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
                 local p = DB()
                 if p and not p.primary.enabled then return "Power Bar" end
                 if heightMatched() then
-                    return "This option can't be used while you have the Power Bar Height Matched in the Unlock Mode."
+                    return "This option can't be used while you have the Power Bar Height Matched in the Layout Mode."
                 end
                 return "Expand Power Bar if No Resource"
             end,

@@ -1454,7 +1454,7 @@ CludesUI.RegisterMigration({
 CludesUI.RegisterMigration({
     id          = "cdm_unanchor_buff_bars",
     scope       = "global",
-    description = "Clear unlock anchors that target CDM buff/custom_buff bars or the AuraBuff Reminders frame. Dynamic bars (resize with auras) cause cascading position shifts when used as anchor targets.",
+    description = "Clear unlock anchors that target CDM buff/custom_buff bars or the Buff Reminders frame. Dynamic bars (resize with auras) cause cascading position shifts when used as anchor targets.",
     body = function(ctx)
         -- Self-gating: predicate false once targeting anchors are cleared. Buff key
         -- set unions ALL profiles, so inactive-profile buff bars count too.
@@ -3980,7 +3980,7 @@ end
 CludesUI.RegisterMigration({
     id          = "per_character_data_account_wide_v1",
     scope       = "global",
-    description = "Drop leaked per-character data (DataBars gold ledger, QoL upgrade-calc state) from every stored profile; both are account-wide now.",
+    description = "Drop leaked per-character data (Info Bar gold ledger, QoL upgrade-calc state) from every stored profile; both are account-wide now.",
     body        = function(ctx)
         local db = ctx.db
         if not db or type(db.profiles) ~= "table" then return end

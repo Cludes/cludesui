@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff4cc9f0CludesUI|r Quickdraw
+## Title: |cff4cc9f0CludesUI|r Action Wheel
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Hold a keybind to open a menu of actions; point or scroll to choose, release to fire.

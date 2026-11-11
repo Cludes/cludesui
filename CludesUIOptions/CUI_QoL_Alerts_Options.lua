@@ -60,7 +60,7 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
     local row1
     row1, h = W:DualRow(parent, y,
         { type="toggle", text="Combat Alert",
-          tooltip="Shows a large on-screen text when you enter and/or leave combat (e.g. \"+Combat\" / \"-Combat\"). Use the cog to set the display text, size, colors and which transitions are shown; use Unlock Mode to reposition the alert.",
+          tooltip="Shows a large on-screen text when you enter and/or leave combat (e.g. \"+Combat\" / \"-Combat\"). Use the cog to set the display text, size, colors and which transitions are shown; use Layout Mode to reposition the alert.",
           getValue=function()
               return CludesUIDB and CludesUIDB.combatAlertEnabled or false
           end,
@@ -71,7 +71,7 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
               CludesUI:RefreshPage()
           end },
         { type="toggle", text="Potion Ready Alert",
-          tooltip="Shows on-screen text when a potion you used is off cooldown again. Use the cog to set the text, size and color; use Unlock Mode to reposition the alerts.",
+          tooltip="Shows on-screen text when a potion you used is off cooldown again. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
           getValue=function()
               return CludesUIDB and CludesUIDB.potionAlertEnabled or false
           end,
@@ -86,7 +86,7 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
     local row2
     row2, h = W:DualRow(parent, y,
         { type="toggle", text="Unspent Talents Alert",
-          tooltip="Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Unlock Mode to reposition the alerts.",
+          tooltip="Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
           getValue=function()
               return CludesUIDB and CludesUIDB.talentAlertEnabled or false
           end,
@@ -97,7 +97,7 @@ _G._CUI_BuildAlertsSection = function(parent, yOffset, W, PP)
               CludesUI:RefreshPage()
           end },
         { type="toggle", text="Announce Group Deaths",
-          tooltip="Shows a large on-screen alert (e.g. \"Player DIED!\") whenever a party or raid member dies, so you immediately notice deaths during dungeons and raids. Use Unlock Mode to reposition the alert.",
+          tooltip="Shows a large on-screen alert (e.g. \"Player DIED!\") whenever a party or raid member dies, so you immediately notice deaths during dungeons and raids. Use Layout Mode to reposition the alert.",
           getValue=function()
               return CludesUIDB and CludesUIDB.announceGroupDeaths or false
           end,

@@ -12,7 +12,7 @@ if not ns then return end  -- module disabled: no options page
 local Pool = CludesUI._Pool
 local CreateFrame = Pool.CreateFrame
 
-local PAGE_DISPLAY = "Quickdraw"
+local PAGE_DISPLAY = "Action Wheel"
 local BINDING_PREFIX = "CUI_RADIAL"
 -- Every palette has a <Binding> entry of its own, so the keybind row below
 -- applies to all of them. Read from the module rather than restated, so the two
@@ -191,7 +191,7 @@ initFrame:SetScript("OnEvent", function(self)
         if _G.UIErrorsFrame then
             UIErrorsFrame:AddMessage(msg, 1.0, 0.3, 0.3, 1.0)
         else
-            CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Quickdraw:|r " .. msg)
+            CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Action Wheel:|r " .. msg)
         end
     end
 
@@ -273,7 +273,7 @@ initFrame:SetScript("OnEvent", function(self)
         Palette(owner).keyShare = nil
         Palette(idx).keyShare = owner
         if k1 or k2 then SaveBindings(GetCurrentBindingSet()) end
-        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Quickdraw:|r " .. CludesUI.Lf("%1$s now shares %2$s with %3$s.",
+        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Action Wheel:|r " .. CludesUI.Lf("%1$s now shares %2$s with %3$s.",
             MenuName(idx), GetBindingText(chord) or chord, MenuName(owner)))
         RebuildPage()
     end
@@ -295,7 +295,7 @@ initFrame:SetScript("OnEvent", function(self)
                 else
                     Palette(s).keyShare = nil
                     broke = true
-                    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Quickdraw:|r "
+                    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Action Wheel:|r "
                         .. CludesUI.Lf("%1$s no longer shares the key of %2$s: they can now load in the same spec.",
                             MenuName(s), MenuName(owner)))
                 end
@@ -322,7 +322,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Uninstall CUI hands the key back to what it did before.
             CludesUI.NoteBinding(chord, GetBindingAction(chord))
             if not SetBinding(chord, action) then
-                Complain("Quickdraw: " .. (GetBindingText(chord) or chord)
+                Complain("Action Wheel: " .. (GetBindingText(chord) or chord)
                     .. " could not be bound.")
             else
                 -- A key of its own ends a share; a primary that menus share
@@ -335,7 +335,7 @@ initFrame:SetScript("OnEvent", function(self)
                     -- The menus that shared the key lose it with its holder
                     local holder = PaletteOfAction(stolenFrom)
                     local names = holder and SharerNames(holder)
-                    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Quickdraw:|r took "
+                    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "Action Wheel:|r took "
                         .. (GetBindingText(chord) or chord) .. " from |cffffd100"
                         .. BindingLabel(stolenFrom) .. "|r"
                         .. (names and (" (" .. CludesUI.Lf("and %1$s, which shared it", names) .. ")") or "")
@@ -364,7 +364,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- SaveBindings raises "can't be done in combat" and SetBinding would
         -- then be half-applied, so nothing is touched until combat drops.
         if InCombatLockdown() then
-            Complain("Quickdraw: keybinds can't be changed in combat.")
+            Complain("Action Wheel: keybinds can't be changed in combat.")
             return
         end
 
@@ -413,7 +413,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- long as the user leaves it, and a fight can start under it.
                 onConfirm   = function()
                     if InCombatLockdown() then
-                        Complain("Quickdraw: keybinds can't be changed in combat.")
+                        Complain("Action Wheel: keybinds can't be changed in combat.")
                         RebuildPage()
                         return
                     end
@@ -2347,7 +2347,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- The keybind shift below runs SetBinding, so the same combat wall the
         -- keybind picker documents applies to the whole operation.
         if InCombatLockdown() then
-            Complain("Quickdraw: action menus can't be deleted in combat.")
+            Complain("Action Wheel: action menus can't be deleted in combat.")
             return
         end
 
@@ -2789,7 +2789,7 @@ initFrame:SetScript("OnEvent", function(self)
             set = (spec and spec.commit) or function(chord) CommitKey(palette, chord) end,
             canArm = function()
                 if not InCombatLockdown() then return true end
-                Complain("Quickdraw: keybinds can't be changed in combat.")
+                Complain("Action Wheel: keybinds can't be changed in combat.")
                 return false
             end,
         })
@@ -3311,7 +3311,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local addPaletteBtn
         row, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Quickdraw",
+            { type="toggle", text="Enable Action Wheel",
               getValue=function() return Cfg("enabled") == true end,
               setValue=function(v) Set("enabled", v); RebuildPage() end },
             -- The chooser it opens offers an empty palette or a preset. The new
@@ -3436,12 +3436,12 @@ initFrame:SetScript("OnEvent", function(self)
                     -- wins.
                     if chord then
                         if chord == Cfg("confirmKey") then
-                            Complain("Quickdraw: that key is already the Toggled Menu Select Action.")
+                            Complain("Action Wheel: that key is already the Toggled Menu Select Action.")
                             return
                         end
                         for i = 1, (Cfg("paletteCount") or 1) do
                             if GetBindingKey(BINDING_PREFIX .. i) == chord then
-                                Complain("Quickdraw: that key opens a menu, so it cannot also close one.")
+                                Complain("Action Wheel: that key opens a menu, so it cannot also close one.")
                                 return
                             end
                         end
@@ -3959,7 +3959,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Register the module
     ---------------------------------------------------------------------------
     CludesUI:RegisterModule("CludesUIQuickdraw", {
-        title       = "Quickdraw",
+        title       = "Action Wheel",
         description = "Hold a keybind to open a menu of actions; point or scroll to choose, release to fire.",
         pages       = { PAGE_DISPLAY },
         buildPage   = BuildPage,

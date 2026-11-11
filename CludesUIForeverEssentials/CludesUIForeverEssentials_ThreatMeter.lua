@@ -1553,7 +1553,7 @@ local function RegisterUnlock()
         CUI.MakeUnlockElement({
             key      = UNLOCK_KEY,
             label    = "Threat Meter",
-            group    = "Forever Essentials",
+            group    = "Forever Tools",
             order    = 731,
             isHidden = function() return not Get("enabled") end,
             getFrame = function()

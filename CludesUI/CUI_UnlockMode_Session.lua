@@ -990,7 +990,7 @@ do
             specOvBanner._text = fs
         end
         specOvBanner._text:SetText(string.format(
-            CludesUI.L("Customizing Unlock Mode: %s (changes apply only to this group's specs)"),
+            CludesUI.L("Customizing Layout Mode: %s (changes apply only to this group's specs)"),
             g.name or "?"))
         specOvBanner:SetWidth((specOvBanner._text:GetStringWidth() or 200) + 28)
         specOvBanner:Show()
@@ -1600,7 +1600,7 @@ function CludesUI.ForceCloseUnlockDiscard()
         UM.isUnlocked = true
     end
     if not UM.isUnlocked then return end
-    CludesUI.PrintError(CludesUI.L("Layout changed: Unlock Mode closed, unsaved layout changes discarded."))
+    CludesUI.PrintError(CludesUI.L("Layout changed: Layout Mode closed, unsaved layout changes discarded."))
     pendingAfterClose = nil
     -- Unconditional: RevertPositions only runs below when positions changed,
     -- but the value-edit snapshot must never survive a discard-close.
@@ -1992,7 +1992,7 @@ function ns.ShowUnlockTip()
             width = 450, height = 175, pp = CludesUI.PP,
             strata = "TOOLTIP", level = 900, bgAlpha = 0.95,
             font = FONT_PATH, fontFlags = "OUTLINE, SLUG",
-            text = CludesUI.L("This is where you can control the settings of Unlock Mode.\n\nElements can be repositioned by dragging or arrow keys (+shift)\nAnchor, Height Match, or Width match any element.\nSnapping is based on closest element, but you can snap only to\n a specific element via right click or the settings icon."),
+            text = CludesUI.L("This is where you can control the settings of Layout Mode.\n\nElements can be repositioned by dragging or arrow keys (+shift)\nAnchor, Height Match, or Width match any element.\nSnapping is based on closest element, but you can snap only to\n a specific element via right click or the settings icon."),
             btnW = 80, btnH = 24, btnBottom = 15, btnFontSize = 10,
             onOkay = function()
                 if CludesUIDB then CludesUIDB.unlockTipSeen = true end
@@ -2012,7 +2012,7 @@ end
 function ns.OpenUnlockMode()
     if UM.isUnlocked then return end
     if InCombatLockdown() then
-        print(CludesUI.L("|cffff6060[CludesUI]|r Cannot enter Unlock Mode during combat."))
+        print(CludesUI.L("|cffff6060[CludesUI]|r Cannot enter Layout Mode during combat."))
         return
     end
     -- Standardized options-panel roundtrip: entering unlock mode by ANY means

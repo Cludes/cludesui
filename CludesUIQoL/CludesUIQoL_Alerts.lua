@@ -211,7 +211,7 @@ local function RegisterUnlock()
         CUI.MakeUnlockElement({
             key      = "CUI_CombatAlert",
             label    = "Alerts",
-            group    = "Quality of Life",
+            group    = "Utilities",
             order    = 721,
             noResize = true,
             isHidden = function() return not AnyEnabled() end,

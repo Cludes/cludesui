@@ -1223,7 +1223,7 @@ function EQD:OnInitialize()
     _G._EQD_AceDB = db
     ns.db = db
 
-    _G.BINDING_HEADER_CUI_RADIAL = "CludesUI Quickdraw"
+    _G.BINDING_HEADER_CUI_RADIAL = "CludesUI Action Wheel"
     for i = 1, MAX_PALETTES do
         _G["BINDING_NAME_" .. BINDING_PREFIX .. i] = "Open Action Menu " .. i
     end

@@ -146,7 +146,7 @@ end
 
 local function RegisterMover()
     CludesUI:RegisterUnlockElements({ CludesUI.MakeUnlockElement({
-        key = UNLOCK_KEY, label = "Self Combat Text", group = "Quality of Life", order = 730,
+        key = UNLOCK_KEY, label = "Self Combat Text", group = "Utilities", order = 730,
         noResize = true,
         isHidden = function() return not Enabled() end,
         getFrame = function() return enabled and anchor or nil end,

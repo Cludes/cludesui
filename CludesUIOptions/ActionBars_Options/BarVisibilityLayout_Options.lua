@@ -587,7 +587,7 @@ local function BuildBarVisibilityLayout(parent, y, ctx)
                   local target = wt or ht
                   if target then
                       local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(target)) or target
-                      return CludesUI.Lf("Size matched to %1$s. Unmatch in Unlock Mode to edit.", name)
+                      return CludesUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", name)
                   end
                   return nil
               end,

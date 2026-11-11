@@ -278,7 +278,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- (CludesUI.ForeverBorderKind).
         local fvBorderCfg = CludesUI.BlizzStyle.Forever("damagemeters") and
             { type="dropdown", text="Border Style",
-              tooltip="WoW Forever's frame round the meter windows, the breakdown, Spell History and the Forever Essentials threat meter. Slim Textured uses Blizzard's current art; a style whose art this client lacks draws Slim. Applies after a UI reload.",
+              tooltip="WoW Forever's frame round the meter windows, the breakdown, Spell History and the Forever Tools threat meter. Slim Textured uses Blizzard's current art; a style whose art this client lacks draws Slim. Applies after a UI reload.",
               values = { slim = "Slim", textured = "Slim Textured", heavy = "Heavy Bronze" },
               order  = { "slim", "textured", "heavy" },
               getValue = function()

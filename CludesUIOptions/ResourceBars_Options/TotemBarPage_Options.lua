@@ -405,7 +405,7 @@ function ns.ERB_BuildTotemBarPage(pageName, parent, yOffset)
             enableRow = function(ry, sizeCfg, RefreshTotem)
                 return W:DualRow(parent, ry,
                     { type = "toggle", text = "Enable Call Totem Bar",
-                      tooltip = "Reskins Blizzard's call totem bar in this look and moves it with Unlock Mode instead of Edit Mode.",
+                      tooltip = "Reskins Blizzard's call totem bar in this look and moves it with Layout Mode instead of Edit Mode.",
                       getValue = function()
                           local p = DB()
                           local c = p and p.callTotemBar

@@ -43,10 +43,10 @@ local ADDON_DB_MAP = {
     { folder = "CludesUICooldownManager",   display = "Cooldown Manager",    svName = "CludesUICooldownManagerDB",   suffix = "CooldownManager"   },
     { folder = "CludesUIResourceBars",      display = "Resource Bars",       svName = "CludesUIResourceBarsDB",      suffix = "ResourceBars"      },
     { folder = "CludesUIRaidFrames",       display = "Raid & Party Frames", svName = "CludesUIRaidFramesDB",        suffix = "RaidFrames"        },
-    { folder = "CludesUIAuraBuffReminders", display = "AuraBuff Reminders",  svName = "CludesUIAuraBuffRemindersDB", suffix = "AuraBuffReminders" },
+    { folder = "CludesUIAuraBuffReminders", display = "Buff Reminders",  svName = "CludesUIAuraBuffRemindersDB", suffix = "AuraBuffReminders" },
     -- v6.6 split-out addons (were previously bundled under the retired
     -- CludesUIBasics, removed from the suite v8.7.x).
-    { folder = "CludesUIQoL",               display = "Quality of Life",     svName = "CludesUIQoLDB",               suffix = "QoL"               },
+    { folder = "CludesUIQoL",               display = "Utilities",     svName = "CludesUIQoLDB",               suffix = "QoL"               },
     -- BlizzardSkin itself is excluded: it stores settings on the shared
     -- CludesUIDB root, not through NewDB, so it has no module profile
     -- (its few per-profile keys -- disableWindowSkins, the character sheet
@@ -65,8 +65,8 @@ local ADDON_DB_MAP = {
     { folder = "CludesUIMinimap",           display = "Minimap",             svName = "CludesUIMinimapDB",           suffix = "Minimap"           },
     { folder = "CludesUIDamageMeters",     display = "Damage Meters",       svName = "CludesUIDamageMetersDB",      suffix = "DamageMeters"      },
     { folder = "CludesUIChat",             display = "Chat",                svName = "CludesUIChatDB",              suffix = "Chat"              },
-    { folder = "CludesUIDataBars",         display = "DataBars",            svName = "CludesUIDataBarsDB",          suffix = "DataBars"          },
-    { folder = "CludesUIQuickdraw",        display = "Quickdraw",           svName = "CludesUIQuickdrawDB",         suffix = "Quickdraw"         },
+    { folder = "CludesUIDataBars",         display = "Info Bar",            svName = "CludesUIDataBarsDB",          suffix = "DataBars"          },
+    { folder = "CludesUIQuickdraw",        display = "Action Wheel",           svName = "CludesUIQuickdrawDB",         suffix = "Quickdraw"         },
 }
 CludesUI._ADDON_DB_MAP = ADDON_DB_MAP
 

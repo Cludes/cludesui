@@ -3003,7 +3003,7 @@ initFrame:SetScript("OnEvent", function(self)
         {
             key   = "flagcarrier",
             title = "Flag Carriers",
-            desc  = "The battleground flag and orb carrier frames, dressed like CludesUI unit frames: health in the carrier's class color and power in its power color inside a thin black border, a square spec icon, a bordered trinket and cast bar, and the carrier's pet. The faction icon and the cast bar's fill stay as Blizzard draws them. To move them, turn on Move Flag Carriers in Unlock Mode on the Quality of Life Shifter page.",
+            desc  = "The battleground flag and orb carrier frames, dressed like CludesUI unit frames: health in the carrier's class color and power in its power color inside a thin black border, a square spec icon, a bordered trinket and cast bar, and the carrier's pet. The faction icon and the cast bar's fill stay as Blizzard draws them. To move them, turn on Move Flag Carriers in Layout Mode on the Utilities Shifter page.",
             reloadMsg = "Changing the Flag Carriers reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
                 if not CludesUIDB then CludesUIDB = {} end
@@ -4431,7 +4431,7 @@ initFrame:SetScript("OnEvent", function(self)
         if not on then CatchUpPreviews() end
     end)
     CludesUI:RegisterModule("CludesUIBlizzardSkin", {
-        title       = "Blizzard Skins+",
+        title       = "Window Skins",
         description = CludesUI.IS_FOREVER and "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles."
             or "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles, Dragon Riding HUD.",
         searchTerms = "blizzard skin character sheet tooltip menu popup dragon riding skyriding window skins lfg group finder premade queue pause game menu great vault inspect collections mounts pets toys spellbook talents adventure guide encounter journal professions guild communities calendar achievements mail catalyst gem socket item upgrade upgrades crest loot window loot toast you received popup micro menu modern delves companion brann loot roll need greed pass disenchant loot rolls pending rolls group invite invited to a group role chat bubbles bubble speech balloon",

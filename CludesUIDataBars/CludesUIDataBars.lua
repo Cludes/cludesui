@@ -2816,7 +2816,7 @@ local function MakeBarElement(barId, orderIdx)
     return CludesUI.MakeUnlockElement({
         key      = "EDB_" .. barId,
         label    = label,
-        group    = "DataBars",
+        group    = "Info Bar",
         order    = 700 + orderIdx,
         -- ApplyBarPosition is the sole position authority: full-screen/edge-snap
         -- recompute the anchor from cfg, so re-applying the stored CENTER
@@ -2914,7 +2914,7 @@ function ns.RegisterAllUnlockElements()
         elements[#elements + 1] = MakeBarElement(barId, i)
         -- Cog deep-link: unlock cog on this element opens the DataBars page.
         CludesUI._ELEMENT_SETTINGS_MAP = CludesUI._ELEMENT_SETTINGS_MAP or {}
-        CludesUI._ELEMENT_SETTINGS_MAP["EDB_" .. barId] = { module = "CludesUIDataBars", page = "DataBars" }
+        CludesUI._ELEMENT_SETTINGS_MAP["EDB_" .. barId] = { module = "CludesUIDataBars", page = "Info Bar" }
     end
     if #elements > 0 then
         CludesUI:RegisterUnlockElements(elements, "CludesUIDataBars")

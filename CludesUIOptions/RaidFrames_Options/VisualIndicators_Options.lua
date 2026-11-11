@@ -1855,7 +1855,7 @@ local function BuildVisualIndicators(parent, y, W, onSection, EYE, CustomBorderO
     local hmRow
     hmRow, h = W:DualRow(parent, y,
         { type="dropdown", text="Healer Mana Display",
-          tooltip="Shows a mana percentage row for every healer in your group as its own movable text display. Position it in Unlock Mode.",
+          tooltip="Shows a mana percentage row for every healer in your group as its own movable text display. Position it in Layout Mode.",
           values={ none="None", party="In Party", raid="In Raid", both="In Party & Raid" },
           order={ "none", "party", "raid", "both" },
           getValue=function()
@@ -2057,7 +2057,7 @@ local function BuildVisualIndicators(parent, y, W, onSection, EYE, CustomBorderO
         local pgRow
         pgRow, h = W:DualRow(parent, y,
             { type="toggle", text="Player Group Label",
-              tooltip="Shows your raid group number in its own movable frame. Position it in Unlock Mode.",
+              tooltip="Shows your raid group number in its own movable frame. Position it in Layout Mode.",
               getValue=function() return PGS().enabled and true or false end,
               setValue=function(v)
                   PGS().enabled = v

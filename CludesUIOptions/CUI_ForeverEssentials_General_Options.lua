@@ -842,7 +842,7 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
             title = "Fishing Key",
             rows = {
                 fishRow("Reel In With the Key", "Once the bobber bites and is on screen, the Fishing Key reels it in.", "reel"),
-                fishRow("Bobber Indicator", "Shows whether the key will reel in. Place it in Unlock Mode.", "indicator"),
+                fishRow("Bobber Indicator", "Shows whether the key will reel in. Place it in Layout Mode.", "indicator"),
                 fishRow("Apply Lure", "With no lure on your pole, the key applies your best lure first.", "lure"),
             },
             anchorTo = kbBtn,

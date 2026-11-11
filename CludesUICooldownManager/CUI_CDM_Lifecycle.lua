@@ -121,7 +121,7 @@ RegisterCDMUnlockElements = function()
                     local toPx = CludesUI.PP.ToPixels
                     ox, oy = toPx(ox), toPx(oy)
                     return CludesUI.Lf(
-                        "This bar has an Additional Bar Offset (X %1$s, Y %2$s) set in its options. Unlock mode shows the base position; the offset re-applies when you exit.",
+                        "This bar has an Additional Bar Offset (X %1$s, Y %2$s) set in its options. Layout mode shows the base position; the offset re-applies when you exit.",
                         ox, oy)
                 end,
                 linkedKeys = linked,

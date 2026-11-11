@@ -123,7 +123,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Border Size / Border Color drive only this module's own flat look;
         -- the Window Skins "Friends List" card draws the frame otherwise.
-        local CHROME_BORDER_TIP = "The Friends List window skin draws this border (Blizzard Skins+ > Window Skins)."
+        local CHROME_BORDER_TIP = "The Friends List window skin draws this border (Window Skins > Window Skins)."
 
         -- DISPLAY
         _, h = W:SectionHeader(parent, "DISPLAY", y);  y = y - h

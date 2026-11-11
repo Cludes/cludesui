@@ -1889,7 +1889,7 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         _, h = W:SectionHeader(parent, "CAST BAR", y);  y = y - h
         _, h = W:DualRow(parent, y,
             { type="toggle", text="Show Cast Bar",
-              tooltip="Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Unlock Mode.",
+              tooltip="Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
               getValue=function() return P.showCastbar == true end,
               setValue=function(v)
                   P.showCastbar = v

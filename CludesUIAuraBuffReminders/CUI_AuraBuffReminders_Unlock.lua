@@ -123,8 +123,8 @@ local function RegisterUnlockElements()
     CludesUI:RegisterUnlockElements({
         MK({
             key = "EABR_Reminders",
-            label = "AuraBuff Reminders",
-            group = "AuraBuff Reminders",
+            label = "Buff Reminders",
+            group = "Buff Reminders",
             order = 600,
             noAnchorTarget = true,  -- icon count changes dynamically with auras
             -- Icon size is driven solely by the Scale slider. No drag-resize: row width is count-dependent, so restoring a stored width under a different count would corrupt the persisted scale (matches External Defensives).

@@ -164,11 +164,11 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
         return not (CludesUIDB and CludesUIDB.shifterLootUnlock)
     end
     -- One toggle adds all three loot movers, so the button takes the first.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_BonusRoll", disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Unlock Mode" })
+    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_BonusRoll", disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Layout Mode" })
 
     _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Loot Windows in Unlock Mode",
-          tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Unlock Mode.",
+        { type = "toggle", text = "Move Loot Windows in Layout Mode",
+          tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Layout Mode.",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterLootUnlock or false
           end,
@@ -186,9 +186,9 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
               end
               CludesUI:RefreshPage()  -- update the overlay toggle disabled state
           end },
-        { type = "toggle", text = "Hide Unlock Mode Overlays",
-          tooltip = "Hides the loot window movers in Unlock Mode while keeping their saved positions applied.",
-          disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Unlock Mode",
+        { type = "toggle", text = "Hide Layout Mode Overlays",
+          tooltip = "Hides the loot window movers in Layout Mode while keeping their saved positions applied.",
+          disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Layout Mode",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterLootHideOverlays or false
           end,
@@ -206,10 +206,10 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
     local function topBarUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterTopBarUnlock)
     end
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_TopBarEventText", disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Unlock Mode" })
+    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_TopBarEventText", disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Layout Mode" })
 
     _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Top Bar Event Text in Unlock Mode",
+        { type = "toggle", text = "Move Top Bar Event Text in Layout Mode",
           tooltip = "Adds a mover for Blizzard's top-center event text and widgets (scenario, event, and encounter bars).",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterTopBarUnlock or false
@@ -228,9 +228,9 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
               end
               CludesUI:RefreshPage()  -- update the overlay toggle disabled state
           end },
-        { type = "toggle", text = "Hide Unlock Mode Overlay",
-          tooltip = "Hides the Top Bar Event Text mover in Unlock Mode while keeping its saved position applied.",
-          disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Unlock Mode",
+        { type = "toggle", text = "Hide Layout Mode Overlay",
+          tooltip = "Hides the Top Bar Event Text mover in Layout Mode while keeping its saved position applied.",
+          disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Layout Mode",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterTopBarHideOverlay or false
           end,
@@ -249,11 +249,11 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
         return not (CludesUIDB and CludesUIDB.shifterBattlegroundUnlock)
     end
     -- One toggle adds both battleground movers, so the button takes the flag carriers'.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_FlagCarriers", disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Unlock Mode" })
+    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_FlagCarriers", disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Layout Mode" })
 
     _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Battleground Frames in Unlock Mode",
-          tooltip = "Adds movers for the battleground flag carriers and the capture bar to Unlock Mode.",
+        { type = "toggle", text = "Move Battleground Frames in Layout Mode",
+          tooltip = "Adds movers for the battleground flag carriers and the capture bar to Layout Mode.",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false
           end,
@@ -268,9 +268,9 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
               end
               CludesUI:RefreshPage()  -- update the overlay toggle disabled state
           end },
-        { type = "toggle", text = "Hide Unlock Mode Overlays",
-          tooltip = "Hides the battleground frame movers in Unlock Mode while keeping their saved positions applied.",
-          disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Unlock Mode",
+        { type = "toggle", text = "Hide Layout Mode Overlays",
+          tooltip = "Hides the battleground frame movers in Layout Mode while keeping their saved positions applied.",
+          disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Layout Mode",
           getValue = function()
               return CludesUIDB and CludesUIDB.shifterBattlegroundHideOverlays or false
           end,

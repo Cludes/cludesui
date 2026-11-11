@@ -21,7 +21,7 @@ local ADDON_NAME = "CludesUIDataBars"
 local ns = CludesUI._ModuleNS[ADDON_NAME]  -- module namespace (published by the module at its load)
 if not ns then return end  -- module disabled: no options page
 
-local PAGE_DATABARS = "DataBars"
+local PAGE_DATABARS = "Info Bar"
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
@@ -396,7 +396,7 @@ initFrame:SetScript("OnEvent", function(self)
             if nm == nil then nm = "" end
             ddLbl:SetText(nm)
         else
-            ddLbl:SetText(L("No DataBars"))
+            ddLbl:SetText(L("No Info Bar"))
         end
 
         -- The bar menu is built on its first open and kept across header builds
@@ -2038,7 +2038,7 @@ initFrame:SetScript("OnEvent", function(self)
                   CludesUI:RefreshPage()
               end },
             { type = "dropdown", text = "Snap to Screen Edge",
-              tooltip = "Pins the bar flush against a screen edge; moving the bar in unlock mode sets this back to None.",
+              tooltip = "Pins the bar flush against a screen edge; moving the bar in layout mode sets this back to None.",
               values = { none = "None", bottom = "Bottom", top = "Top", left = "Left", right = "Right" },
               order = { "none", "bottom", "top", "left", "right" },
               itemDisabled = function(v)
@@ -3909,7 +3909,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Module registration
     ---------------------------------------------------------------------------
     CludesUI:RegisterModule("CludesUIDataBars", {
-        title       = "DataBars",
+        title       = "Info Bar",
         description = "User-created info bars: clock, gold, XP, micro menu and more.",
         pages       = { PAGE_DATABARS },
         buildPage   = function(pageName, parent, yOffset)

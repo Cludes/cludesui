@@ -346,10 +346,10 @@ end
 --- describe the unlock-layout fork.
 local function BuildUnlockLayoutRow(parent, y, g, opts)
     opts = opts or {}
-    local crumbText = opts.crumb or "Custom Unlock Mode"
-    local titleText = opts.title or "Delete Custom Unlock Mode"
+    local crumbText = opts.crumb or "Custom Layout Mode"
+    local titleText = opts.title or "Delete Custom Layout Mode"
     local msgText = opts.message
-        or "Delete the custom unlock mode for '%s'? Its specs return to your default unlock mode layout."
+        or "Delete the custom layout mode for '%s'? Its specs return to your default layout mode layout."
     local removeFn = opts.removeFn or CludesUI.SpecOverrides_RemoveUnlockLayout
 
     local CreateFrame = CludesUI._Pool.CreateFrame
@@ -701,7 +701,7 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
     if layoutGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Unlock Modes", y);  y = y - hh
+        local _, hh = W:SectionHeader(parent, "Custom Layout Modes", y);  y = y - hh
         for _, g in ipairs(layoutGroups) do
             local _, rh = BuildUnlockLayoutRow(parent, y, g)
             y = y - rh
@@ -907,7 +907,7 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
             end
             CludesUI:ShowConfirmPopup({
                 title = L("Promote Override to Profile"),
-                message = string.format(L("This permanently overwrites this profile's settings with the override '%s': its captured settings and its custom Unlock Mode and Buff Manager layouts (where present) become the profile's own baseline for every spec. ALL spec override groups on this profile are then deleted and the UI reloads. Conditional overrides are not affected."), pg.name or "?"),
+                message = string.format(L("This permanently overwrites this profile's settings with the override '%s': its captured settings and its custom Layout Mode and Buff Manager layouts (where present) become the profile's own baseline for every spec. ALL spec override groups on this profile are then deleted and the UI reloads. Conditional overrides are not affected."), pg.name or "?"),
                 disclaimer = L("This cannot be undone. Consider exporting this profile as a backup first."),
                 typeToConfirm = "Confirm",
                 confirmText = L("Promote & Reload"),
@@ -978,7 +978,7 @@ function CludesUI.Conditions_BuildListPage(parent, startY)
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
     if layoutGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Unlock Modes", y);  y = y - hh
+        local _, hh = W:SectionHeader(parent, "Custom Layout Modes", y);  y = y - hh
         for _, g in ipairs(layoutGroups) do
             local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
             local row = CreateFrame("Frame", nil, parent)
@@ -989,7 +989,7 @@ function CludesUI.Conditions_BuildListPage(parent, startY)
             name:SetText(g.name or "?")
             local crumb = CludesUI.MakeFont(row, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
             crumb:SetPoint("LEFT", name, "RIGHT", 10, 0)
-            crumb:SetText(L("Custom Unlock Mode"))
+            crumb:SetText(L("Custom Layout Mode"))
             local b = CreateFrame("Button", nil, row)
             b:SetSize(116, 22)
             b:SetPoint("RIGHT", row, "RIGHT", -20, 0)
@@ -1004,9 +1004,9 @@ function CludesUI.Conditions_BuildListPage(parent, startY)
             local gname = g.name or "?"
             b:SetScript("OnClick", function()
                 CludesUI:ShowConfirmPopup({
-                    title = L("Delete Custom Unlock Mode"),
+                    title = L("Delete Custom Layout Mode"),
                     message = string.format(
-                        L("Delete the custom unlock mode for '%s'? Its conditions return to your default unlock mode layout."),
+                        L("Delete the custom layout mode for '%s'? Its conditions return to your default layout mode layout."),
                         gname),
                     confirmText = L("Delete"),
                     cancelText = L("Cancel"),

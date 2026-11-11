@@ -416,7 +416,7 @@ local function BuildMovementAlertPage(pageName, parent, yOffset)
     local enableRow
     enableRow, h = W:DualRow(parent, y,
         { type="label", text="Enable Movement Alerts",
-          tooltip="Shows the checked classes' mobility spell(s) counting down on cooldown. Nothing checked = feature disabled. Use Unlock Mode to reposition/resize." },
+          tooltip="Shows the checked classes' mobility spell(s) counting down on cooldown. Nothing checked = feature disabled. Use Layout Mode to reposition/resize." },
         { type="toggle", text="Combat Only",
           tooltip="Only show the alert while in combat.",
           disabled=maOff, disabledTooltip="Select a class above", rawTooltip=true,
@@ -1005,7 +1005,7 @@ local function BuildMovementAlertPage(pageName, parent, yOffset)
     local extraRow
     extraRow, h = W:DualRow(parent, y,
         { type="toggle", text="Enable Time Spiral Tracker",
-          tooltip="Flashes a banner whenever a tracked mobility spell's cooldown is proc-reset. Use Unlock Mode to reposition/resize.",
+          tooltip="Flashes a banner whenever a tracked mobility spell's cooldown is proc-reset. Use Layout Mode to reposition/resize.",
           getValue=function() return ma.tsEnabled == true end,
           setValue=function(v)
               ma.tsEnabled = v
@@ -1014,7 +1014,7 @@ local function BuildMovementAlertPage(pageName, parent, yOffset)
               CludesUI:RefreshPage()
           end },
         { type="toggle", text="Enable Gateway Shard Alert",
-          tooltip="Warlock only. Alerts when your Gateway Control Shard is usable. Use Unlock Mode to reposition/resize.",
+          tooltip="Warlock only. Alerts when your Gateway Control Shard is usable. Use Layout Mode to reposition/resize.",
           getValue=function() return ma.gwEnabled == true end,
           setValue=function(v)
               ma.gwEnabled = v

@@ -669,7 +669,7 @@ local function PA(paletteIndex)
             end,
             -- Nothing writes through this, and a write that slipped in would
             -- land on the view and be invisible to the saved variables.
-            __newindex = function() error("Quickdraw appearance view is read-only", 2) end,
+            __newindex = function() error("Action Wheel appearance view is read-only", 2) end,
         })
         appearanceViews[palette] = view
     end

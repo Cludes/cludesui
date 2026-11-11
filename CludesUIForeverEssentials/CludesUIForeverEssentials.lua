@@ -91,7 +91,7 @@ function ns.Feature(dbKey, defaults, defaultPos)
             local e = {
                 key      = u.key,
                 label    = u.label,
-                group    = "Forever Essentials",
+                group    = "Forever Tools",
                 order    = u.order,
                 noAnchorTarget    = u.noAnchorTarget,
                 noSizeMatchTarget = u.noSizeMatchTarget,

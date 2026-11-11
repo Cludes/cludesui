@@ -13,7 +13,7 @@ Do not run CludesUI together with another full interface suite. They change the 
 ## Use
 
 - `/cui` opens the settings panel. `/cludes` and `/cludesui` do the same.
-- `/unlock` moves and resizes frames.
+- `/unlock` opens Layout Mode, where you move and resize frames.
 - `/ce` opens the global settings.
 - `/rl` reloads the interface.
 
@@ -27,14 +27,14 @@ Each addon has a shortcut to its own settings page:
 | `/cnp` | Nameplates |
 | `/crbopt` | Resource Bars |
 | `/ccmeopt` | Cooldown Manager |
-| `/cabr` | AuraBuff Reminders |
-| `/cbsk` | Blizzard Skins |
+| `/cabr` | Buff Reminders |
+| `/cbsk` | Window Skins |
 | `/cmm` | Minimap |
-| `/cdb` | DataBars |
+| `/cdb` | Info Bar |
 | `/cfr` | Friends |
 | `/cqtopts` | Quest Tracker |
-| `/cqd` | Quickdraw |
-| `/qol` | Quality of Life |
+| `/cqd` | Action Wheel |
+| `/qol` | Utilities |
 | `/cpm` | Party Mode |
 
 ## Profiles

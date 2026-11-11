@@ -332,7 +332,7 @@ Register("threatmeter",  "CludesUIForeverEssentials", "Threat Meter",
     end)
 BY_KEY.threatmeter.get = FlagAccessors(function() return TMStore(false) end, "useBlizzardStyle", "useClassicStyle",
     BY_KEY.threatmeter.foreverFlag)
-BY_KEY.threatmeter.enableName = "Forever Essentials"
+BY_KEY.threatmeter.enableName = "Forever Tools"
 end
 Register("questtracker", "CludesUIQuestTracker",    "Quest Tracker",
     QTProfile, "useBlizzardStyle", "useClassicStyle", "QT_Style")
@@ -387,7 +387,7 @@ if not CludesUI.IS_FOREVER then
 -- WoW Forever has no skyriding (no HUD, no row there).
 Register("dragonriding", "CludesUIBlizzardSkin",    "Skyriding HUD",
     DragonRidingProfile, "useBlizzardStyle", "useClassicStyle", "EDR_Style")
-BY_KEY.dragonriding.enableName = "Blizzard Skins+"
+BY_KEY.dragonriding.enableName = "Window Skins"
 -- The Friends List module never loads on WoW Forever (no row there).
 Register("friends",      "CludesUIFriends",         "Friends List",
     FriendsProfile, "useBlizzardStyle", "useClassicStyle", "FR_Style")

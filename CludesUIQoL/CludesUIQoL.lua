@@ -4544,7 +4544,7 @@ do
             MK({
                 key      = "CUI_GroupDeathAlert",
                 label    = "Group Death Alert",
-                group    = "Quality of Life",
+                group    = "Utilities",
                 order    = 720,
                 noResize = true,
                 isHidden = function()
@@ -4932,7 +4932,7 @@ do
             MK({
                 key      = "CUI_TargetDistance",
                 label    = "Target Distance",
-                group    = "Quality of Life",
+                group    = "Utilities",
                 order    = 722,
                 noResize = true,
                 isHidden = function()

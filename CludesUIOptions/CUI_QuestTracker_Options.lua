@@ -66,7 +66,7 @@ initFrame:SetScript("OnEvent", function(self)
             infoLabel:SetTextColor(1, 1, 1, 0.75)
             infoLabel:SetPoint("CENTER")
             infoLabel:SetJustifyH("CENTER")
-            infoLabel:SetText(CUSTOM and CludesUI.L("Reposition this element within Unlock Mode")
+            infoLabel:SetText(CUSTOM and CludesUI.L("Reposition this element within Layout Mode")
                 or CludesUI.L("Reposition this element within Blizzard Edit Mode"))
 
             -- Accent toggle beneath the label. "Force Quest Tracker on Screen" keeps

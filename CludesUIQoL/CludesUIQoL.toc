@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff4cc9f0CludesUI|r Quality of Life
+## Title: |cff4cc9f0CludesUI|r Utilities
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Lightweight quality of life tools and enhancements.

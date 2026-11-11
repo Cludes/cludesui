@@ -15,7 +15,7 @@ if not ns then return end  -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 local PAGE_CURSOR     = "Cursor"
-local PAGE_UNLOCK     = "Unlock Mode"
+local PAGE_UNLOCK     = "Layout Mode"
 
 local SECTION_APPEARANCE   = "CURSOR"
 local SECTION_GCD          = "GLOBAL COOLDOWN"

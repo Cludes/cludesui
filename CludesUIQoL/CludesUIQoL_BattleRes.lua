@@ -754,7 +754,7 @@ local function RegisterUnlock()
         MK({
             key   = "CUI_BattleRes",
             label = "Brez",
-            group = "Quality of Life",
+            group = "Utilities",
             order = 600,
             noAnchorTarget = true,  -- icon size changes; nothing should be anchored to it
             isHidden = function()

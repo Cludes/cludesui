@@ -3691,11 +3691,11 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
         end
         _, h = W:DualRow(parent, y,
             { type = "slider", pixel = true, text = "Offset X", min = -500, max = 500, step = 1, trackWidth = 120,
-              tooltip = "Extra horizontal shift stacked on top of this bar's normal position. Unlock mode shows the base position; the offset re-applies when you exit.",
+              tooltip = "Extra horizontal shift stacked on top of this bar's normal position. Layout mode shows the base position; the offset re-applies when you exit.",
               getValue = function() local b = BD(); return (b and b.addOffsetX) or 0 end,
               setValue = function(v) SetAddOffset("addOffsetX", v) end },
             { type = "slider", pixel = true, text = "Offset Y", min = -500, max = 500, step = 1, trackWidth = 120,
-              tooltip = "Extra vertical shift stacked on top of this bar's normal position. Unlock mode shows the base position; the offset re-applies when you exit.",
+              tooltip = "Extra vertical shift stacked on top of this bar's normal position. Layout mode shows the base position; the offset re-applies when you exit.",
               getValue = function() local b = BD(); return (b and b.addOffsetY) or 0 end,
               setValue = function(v) SetAddOffset("addOffsetY", v) end }
         );  y = y - h

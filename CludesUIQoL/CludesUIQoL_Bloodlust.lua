@@ -1005,7 +1005,7 @@ local function RegisterUnlock()
         MK({
             key   = "CUI_Bloodlust",
             label = "Lust",
-            group = "Quality of Life",
+            group = "Utilities",
             order = 601,
             noAnchorTarget = true,  -- icon size changes; nothing should anchor to it
             isHidden = function()

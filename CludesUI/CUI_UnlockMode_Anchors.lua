@@ -469,8 +469,8 @@ function CludesUI.MatchGuard(barKey, axis, existingDisabled, existingTooltip)
         if target then
             local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(target)) or target
             return isWidth
-                and CludesUI.Lf("Width matched to %1$s. Unmatch in Unlock Mode to edit.", CludesUI.L(name))
-                or CludesUI.Lf("Height matched to %1$s. Unmatch in Unlock Mode to edit.", CludesUI.L(name))
+                and CludesUI.Lf("Width matched to %1$s. Unmatch in Layout Mode to edit.", CludesUI.L(name))
+                or CludesUI.Lf("Height matched to %1$s. Unmatch in Layout Mode to edit.", CludesUI.L(name))
         end
         if existingTooltip then
             return type(existingTooltip) == "function" and existingTooltip() or existingTooltip

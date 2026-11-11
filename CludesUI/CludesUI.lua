@@ -743,10 +743,10 @@ local ADDON_ROSTER = {
     { folder = "CludesUIRaidFrames",        display = "Raid & Party Frames",  search_name = "CludesUI Raid & Party Frames"     },
     { folder = "CludesUICooldownManager",   display = "Cooldown Manager",     search_name = "CludesUI Cooldown Manager"        },
     { folder = "CludesUIResourceBars",      display = "Resource & Cast Bars", search_name = "CludesUI Resource Bars Cast Bars" },
-    { folder = "CludesUIAuraBuffReminders", display = "AuraBuff Reminders",   search_name = "CludesUI AuraBuff Reminders"      },
-    { folder = "CludesUIQoL",               display = "Quality of Life",      search_name = "CludesUI Quality of Life"         },
-    { folder = "CludesUIForeverEssentials", display = "Forever Essentials",   search_name = "CludesUI Forever Essentials"      },
-    { folder = "CludesUIBlizzardSkin",      display = "Blizzard Skins+",      search_name = "CludesUI Blizzard Skins+",      syncFolder = "CludesUIDragonRiding", syncDisplay = "Dragon Riding" },
+    { folder = "CludesUIAuraBuffReminders", display = "Buff Reminders",   search_name = "CludesUI Buff Reminders"      },
+    { folder = "CludesUIQoL",               display = "Utilities",      search_name = "CludesUI Utilities"         },
+    { folder = "CludesUIForeverEssentials", display = "Forever Tools",   search_name = "CludesUI Forever Tools"      },
+    { folder = "CludesUIBlizzardSkin",      display = "Window Skins",      search_name = "CludesUI Window Skins",      syncFolder = "CludesUIDragonRiding", syncDisplay = "Dragon Riding" },
     { folder = "CludesUIFriends",           display = "Friends List",         search_name = "CludesUI Friends List"            },
     { folder = "CludesUIMythicTimer",       display = "Mythic+ Tools",        search_name = "CludesUI Mythic+ Tools Timer"     },
     { folder = "CludesUIQuestTracker",      display = "Quest Tracker",        search_name = "CludesUI Quest Tracker"           },
@@ -754,8 +754,8 @@ local ADDON_ROSTER = {
     { folder = "CludesUIChat",              display = "Chat",                 search_name = "CludesUI Chat"                    },
     { folder = "CludesUIDamageMeters",      display = "Damage Meters",        search_name = "CludesUI Damage Meters"           },
     { folder = "CludesUIBags",              display = "Bags",                 search_name = "CludesUI Bags"                    },
-    { folder = "CludesUIDataBars",          display = "DataBars",             search_name = "CludesUI DataBars"                },
-    { folder = "CludesUIQuickdraw",         display = "Quickdraw",            search_name = "CludesUI Quickdraw"               },
+    { folder = "CludesUIDataBars",          display = "Info Bar",             search_name = "CludesUI Info Bar"                },
+    { folder = "CludesUIQuickdraw",         display = "Action Wheel",            search_name = "CludesUI Action Wheel"               },
     { folder = "CludesUILoadoutManager",    display = "Loadout Manager",      search_name = "CludesUI Loadout Manager"         },
     { folder = "CludesUIGroupFinder",       display = "Group Finder",         search_name = "CludesUI Group Finder Premade Groups" },
     { folder = "CludesUIPartyMode",         display = "Party Mode",           search_name = "CludesUI Party Mode",             alwaysLoaded = true },
@@ -3796,7 +3796,7 @@ SlashCmdList.CUIUNLOCK = function()
         if CludesUI._openUnlockMode then
             CludesUI._openUnlockMode()
         else
-            CludesUI.PrintError("Unlock Mode is not available.")
+            CludesUI.PrintError("Layout Mode is not available.")
         end
     end)
 end
@@ -4090,7 +4090,7 @@ do
             GameTooltip:SetPoint("TOPRIGHT", self, "TOPLEFT", -2, 0)
             GameTooltip:AddLine("|cff4cc9f0CludesUI|r")
             GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
-            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Unlock Mode|r"))
+            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
             GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
             GameTooltip:Show()
         end)
@@ -4385,7 +4385,7 @@ initFrame:SetScript("OnEvent", function(self, event)
         unlockBtn:SetSize(200, 35)
         unlockBtn:SetScript("OnClick", function()
             if InCombatLockdown() then
-                CludesUI.PrintError("Cannot toggle Unlock Mode during combat.")
+                CludesUI.PrintError("Cannot toggle Layout Mode during combat.")
                 return
             end
             HideUIPanel(GameMenuFrame)
@@ -4536,9 +4536,9 @@ initFrame:SetScript("OnEvent", function(self, event)
             if showUnlock then
                 unlockBtn:Show()
                 if brandHex then
-                    unlockBtn:SetText(brandHex .. "CUI|r |cffffffffUnlock Mode|r")
+                    unlockBtn:SetText(brandHex .. "CUI|r |cffffffffLayout Mode|r")
                 else
-                    unlockBtn:SetText("CUI Unlock Mode")
+                    unlockBtn:SetText("CUI Layout Mode")
                 end
                 if _reskinMenu then
                     local fs2 = unlockBtn:GetFontString()

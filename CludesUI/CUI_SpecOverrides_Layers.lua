@@ -1743,8 +1743,8 @@ function CludesUI.Conditions_EnterUnlockForGroup(g)
     local cur = CurrentSpecID()
     if OwnerGid(cur) then
         CludesUI:ShowConfirmPopup({
-            title = L("Customize Unlock Mode"),
-            message = L("Your current spec has its own custom unlock mode, so conditional unlock modes never apply to it. Swap to a spec without one to customize this."),
+            title = L("Customize Layout Mode"),
+            message = L("Your current spec has its own custom layout mode, so conditional layout modes never apply to it. Swap to a spec without one to customize this."),
             confirmText = L("OK"),
             hideCancel = true,
         })
@@ -1753,7 +1753,7 @@ function CludesUI.Conditions_EnterUnlockForGroup(g)
     local activeG = CludesUI.Conditions_ActiveGroup and CludesUI.Conditions_ActiveGroup()
     if not activeG or activeG.id ~= g.id then
         CludesUI:ShowConfirmPopup({
-            title = L("Customize Unlock Mode"),
+            title = L("Customize Layout Mode"),
             message = L("This conditional is not active right now. Meet one of its conditions first (for example, enter the dungeon) so you can arrange the layout in its real context."),
             confirmText = L("OK"),
             hideCancel = true,
@@ -1765,8 +1765,8 @@ function CludesUI.Conditions_EnterUnlockForGroup(g)
     if not cs or not s then return end
     if cs.layouts[g.id] == nil then
         CludesUI:ShowConfirmPopup({
-            title = L("Customize Unlock Mode"),
-            message = L("This will create a fully unique unlock mode for this conditional group. Changes made to your default unlock mode will no longer affect it."),
+            title = L("Customize Layout Mode"),
+            message = L("This will create a fully unique layout mode for this conditional group. Changes made to your default layout mode will no longer affect it."),
             confirmText = L("Create"),
             cancelText = L("Cancel"),
             onConfirm = function()
@@ -1827,8 +1827,8 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
         if own and own ~= g.id then
             local og = GroupById(own)
             CludesUI:ShowConfirmPopup({
-                title = L("Customize Unlock Mode"),
-                message = string.format(L("The override group '%s' already provides the custom unlock mode for your current spec. Customize it there, or remove this spec from that group."), (og and og.name) or "?"),
+                title = L("Customize Layout Mode"),
+                message = string.format(L("The override group '%s' already provides the custom layout mode for your current spec. Customize it there, or remove this spec from that group."), (og and og.name) or "?"),
                 confirmText = L("OK"),
                 hideCancel = true,
             })
@@ -1839,8 +1839,8 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(g)
     if not s then return end
     if s.layouts[g.id] == nil then
         CludesUI:ShowConfirmPopup({
-            title = L("Customize Unlock Mode"),
-            message = L("This will create a fully unique unlock mode for this override group. Changes made to your default unlock mode will no longer affect these specs."),
+            title = L("Customize Layout Mode"),
+            message = L("This will create a fully unique layout mode for this override group. Changes made to your default layout mode will no longer affect these specs."),
             confirmText = L("Create"),
             cancelText = L("Cancel"),
             onConfirm = function()

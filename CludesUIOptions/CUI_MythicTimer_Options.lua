@@ -1738,7 +1738,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             row, h = W:DualRow(parent, y,
                 { type="toggle", text=enableLabel,
-                  tooltip="A standalone cast bar for this unit, placeable anywhere in Unlock Mode. Runs alongside the Unit Frames cast bars.",
+                  tooltip="A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
                   getValue=On,
                   setValue=function(v)
                       local c = C(); if not c then return end

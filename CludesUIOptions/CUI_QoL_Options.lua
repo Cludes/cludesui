@@ -309,7 +309,7 @@ local function BuildSelfCombatTextSection(parent, y)
     local sctRow
     sctRow, h = W:DualRow(parent, y,
         { type="toggle", text="Self Combat Text",
-          tooltip="Shows your damage taken, healing, avoids and combat enter/leave above the player frame instead of Blizzard's combat text, whose other messages are hidden while this is on. Move it in Unlock Mode.",
+          tooltip="Shows your damage taken, healing, avoids and combat enter/leave above the player frame instead of Blizzard's combat text, whose other messages are hidden while this is on. Move it in Layout Mode.",
           getValue=function() return not sctOff() end,
           setValue=CludesUI.SectionToggleSetValue(function(v) SCTSet("enabled", v) end) },
         { type="slider", text="Combat Text Size", min=10, max=48, step=1,
@@ -1704,7 +1704,7 @@ initFrame:SetScript("OnEvent", function(self)
         restedRow, h = W:DualRow(parent, y,
             CludesUI.RestedIndicatorCfg(),
             { type="toggle", text="Target Distance (Range) Text",
-              tooltip="Shows the approximate distance to your current target as movable on-screen text (default 30-35). Use the cog for format, alignment, and text size; use Unlock Mode to position or Anchor to your Player Frame.",
+              tooltip="Shows the approximate distance to your current target as movable on-screen text (default 30-35). Use the cog for format, alignment, and text size; use Layout Mode to position or Anchor to your Player Frame.",
               getValue=function()
                   return CludesUIDB and CludesUIDB.targetDistanceEnabled or false
               end,
@@ -2554,7 +2554,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
     CludesUI:RegisterModule("CludesUIQoL", {
-        title       = "Quality of Life",
+        title       = "Utilities",
         description = "Quality of life features and custom cursor.",
         pages       = pages,
         searchTerms = searchTerms,

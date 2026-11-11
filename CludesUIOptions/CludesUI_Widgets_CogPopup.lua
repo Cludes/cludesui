@@ -1287,7 +1287,7 @@ local function BuildCogPopup(opts)
             local _uhb = _ugb + (1 - _ugb) * 0.25
             local unlockFS = MakeFont(unlockBtn, 13, nil, _ugr, _ugg, _ugb)
             unlockFS:SetAlpha(0.9)
-            unlockFS:SetText(CludesUI.L("Unlock Mode"))
+            unlockFS:SetText(CludesUI.L("Layout Mode"))
             unlockFS:SetPoint("CENTER")
             unlockBtn:SetScript("OnClick", function()
                 pf:Hide()

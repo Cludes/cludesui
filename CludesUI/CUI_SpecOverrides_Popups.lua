@@ -630,12 +630,12 @@ local function BuildCardRow(parent, y, opts)
             if CludesUI.ShowWidgetTooltip then
                 local tip
                 if enabled then
-                    tip = L("Customize Unlock Mode")
+                    tip = L("Customize Layout Mode")
                 else
                     -- Owner-locked (another group provides this spec's unlock mode) has
                     -- its own text; non-membership gets the switch-spec hint.
                     tip = opts.unlockLockedTooltip
-                        or L("Switch to a spec in this group to customize its Unlock Mode")
+                        or L("Switch to a spec in this group to customize its Layout Mode")
                 end
                 CludesUI.ShowWidgetTooltip(self, tip)
             end
@@ -891,7 +891,7 @@ RefreshCardsPopup = function()
             deletable = true,
             unlockEnabled = isMember and not ownerLocked,
             unlockLockedTooltip = ownerLocked
-                and string.format(L("This spec's custom unlock mode is owned by '%s'. Customize it there, or remove the spec from that group."), curOwnerName)
+                and string.format(L("This spec's custom layout mode is owned by '%s'. Customize it there, or remove the spec from that group."), curOwnerName)
                 or nil,
             onUnlock = function()
                 p:Hide()
@@ -1045,7 +1045,7 @@ RefreshCardsPopup = function()
             onDelete = function()
                 CludesUI:ShowConfirmPopup({
                     title = L("Delete Conditional Group"),
-                    message = string.format(L("Delete the conditional '%s'? Its captured overrides and custom unlock mode are removed with it."), g.name or "?"),
+                    message = string.format(L("Delete the conditional '%s'? Its captured overrides and custom layout mode are removed with it."), g.name or "?"),
                     confirmText = L("Delete"),
                     cancelText = L("Cancel"),
                     onConfirm = function()

@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff4cc9f0CludesUI|r AuraBuff Reminders
+## Title: |cff4cc9f0CludesUI|r Buff Reminders
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Simple raid buff, auras, consumables and talent reminders.

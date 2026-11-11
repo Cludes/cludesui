@@ -2422,7 +2422,7 @@ loader:SetScript("OnEvent", function(self, event, ...)
                 return MK({
                     key   = key,
                     label = label,
-                    group = "Quality of Life",
+                    group = "Utilities",
                     order = order,
                     -- isHiddenKey: profile key name, or a predicate function
                     -- (the movement tracker's enable state is per-class).

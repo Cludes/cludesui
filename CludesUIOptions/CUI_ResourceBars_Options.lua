@@ -14,7 +14,7 @@ local PAGE_CASTBAR   = "Cast Bar"
 local PAGE_GCD       = "GCD Bar"
 local PAGE_SWING     = "Swing Timer"   -- WoW Forever only (C_SwingTimer)
 local PAGE_TOTEM     = "Totem Bar"
-local PAGE_UNLOCK    = "Unlock Mode"
+local PAGE_UNLOCK    = "Layout Mode"
 
 -- WoW Forever shows the first tab as "Main Resources" and the totem tab as
 -- "Totem Bars" (it holds the Call Totem Bar too). Display only: the page
@@ -3960,7 +3960,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end,
             nil,
-            "Opens the shared Unlock Mode to reposition and scale elements"
+            "Opens the shared Layout Mode to reposition and scale elements"
         );  y = y - h
 
         _, h = W:Spacer(parent, y, 12);  y = y - h

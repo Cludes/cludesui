@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff4cc9f0CludesUI|r Blizzard Skins+
+## Title: |cff4cc9f0CludesUI|r Window Skins
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Clean and beautiful visual refreshes for Blizzard UI elements.

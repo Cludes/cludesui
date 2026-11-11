@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff4cc9f0CludesUI|r DataBars
+## Title: |cff4cc9f0CludesUI|r Info Bar
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Information bar for CludesUI - clock, gold, reputation and more

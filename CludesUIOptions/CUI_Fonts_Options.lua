@@ -1087,7 +1087,7 @@ local function TileDataBars(parent, y, W, tile)
     y = y - h
     if ns then
         y = LinkRow(parent, y, "Text Scale (per data bar)",
-            tile.folder, "DataBars", "BAR SETTINGS", "Text Scale")
+            tile.folder, "Info Bar", "BAR SETTINGS", "Text Scale")
     else
         y = NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
     end
