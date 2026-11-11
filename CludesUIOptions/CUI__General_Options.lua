@@ -112,6 +112,9 @@ CludesUI._WHATSNEW_PATCHES = {
     {
         version = "1.0.0",
         features = {
+            { module = "Mythic+ Tools",
+              title  = "Title Line",
+              desc   = "Your Mythic+ rating against the 0.1% and 1% title lines, with a season graph. Open it with /titleline." },
             { module = "Global Settings",
               title  = "Class colour by default",
               desc   = "A fresh install opens in your class colour. Pick any other theme under CUI Options Theme." },

@@ -1,0 +1,22 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105
+## AllowLoadGameType: standard
+## Title: |cff4cc9f0CludesUI|r Title Line
+## Category: |cff4cc9f0Cludes|rUI
+## Group: CludesUI
+## Notes: Your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date.
+## Author: Cludes
+## Version: 1.0.0
+## Dependencies: CludesUI
+## SavedVariables: CludesUITitleLineDB
+## IconTexture: Interface\AddOns\CludesUITitleLine\Media\Icon
+## AddonCompartmentFunc: TitleLine_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: TitleLine_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: TitleLine_OnAddonCompartmentLeave
+
+Guard.lua
+Data.lua
+Core.lua
+Share.lua
+Graph.lua
+Views.lua
+ChallengesUI.lua

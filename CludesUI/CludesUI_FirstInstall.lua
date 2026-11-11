@@ -61,6 +61,7 @@ local GROUPS = {
             { label = "Mythic+ Tools",       addon = "CludesUIMythicTimer" },
             { label = "Damage Meters",       addon = "CludesUIDamageMeters" },
             { label = "Buff Reminders",  addon = "CludesUIAuraBuffReminders" },
+            { label = "Title Line",      addon = "CludesUITitleLine" },
         },
     },
     {
@@ -69,7 +70,7 @@ local GROUPS = {
             { label = "Utilities",     addon = "CludesUIQoL" },
             { label = "Forever Tools",  addon = "CludesUIForeverEssentials" },
             { label = "Info Bar",            addon = "CludesUIDataBars" },
-            { label = "Action Wheel",           addon = "CludesUIQuickdraw" },
+            { label = "Action Wheel",           addon = "CludesUIQuickdraw", defaultChecked = false },
             -- Cursor Circle is a feature inside the QoL addon (cursor.enabled).
             -- The checkbox here is a front-end shortcut that writes directly to
             -- the QoL profile so users get a sensible default on first install.
@@ -316,14 +317,15 @@ local function ShowFirstInstallPopup()
 
             -- Initial state resolution:
             --   entry.comingSoon -> disabled, greyed, "Coming soon" tooltip
-            --   entry.addon      -> current C_AddOns enable state
+            --   entry.addon      -> current C_AddOns enable state (unticked when the entry
+            --                       says defaultChecked = false: an opt-in addon)
             --   entry.setting    -> start at entry.defaultChecked (front-end shortcut)
             --   neither          -> disabled, generic greyed state
             local checked
             if entry.comingSoon then
                 checked = false
             elseif entry.addon then
-                checked = IsAddonEnabled(entry.addon)
+                checked = IsAddonEnabled(entry.addon) and entry.defaultChecked ~= false
             elseif entry.setting then
                 checked = entry.defaultChecked and true or false
             else

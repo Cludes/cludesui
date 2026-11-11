@@ -36,6 +36,10 @@ Each addon has a shortcut to its own settings page:
 | `/cqd` | Action Wheel |
 | `/qol` | Utilities |
 
+## Title Line
+
+Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Open it with `/titleline`. Its cutoff numbers come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If you also run the standalone TitleLine addon, that one takes over and this module stays off.
+
 ## Profiles
 
 Profiles > Import Profile accepts CludesUI strings (they start with `!CUI_`) and strings in the older `!EUI_` format, which it converts as it imports.

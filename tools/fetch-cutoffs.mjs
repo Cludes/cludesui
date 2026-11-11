@@ -1,0 +1,161 @@
+// Builds Data.lua from Raider.IO's Mythic+ cutoff history.
+//
+// Addons have no network access, so the cutoff lines have to ship inside the
+// addon. This runs in CI on a schedule (see .github/workflows/refresh-data.yml)
+// and locally with:  node tools/fetch-cutoffs.mjs
+//
+// Raider.IO returns 403 to requests without a User-Agent.
+
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const BASE = 'https://raider.io/api/v1';
+const UA = 'TitleLine-addon/1.0 (+https://github.com/Cludes/TitleLine)';
+const EXPANSION_ID = Number(process.env.EXPANSION_ID || 11); // 11 = Midnight
+const REGIONS = ['us', 'eu', 'kr', 'tw', 'cn'];
+// The two lines that carry a reward: the 0.1% and 1% titles.
+const TIERS = ['p999', 'p990'];
+
+// Last season's lines, for the "Raider.IO is an estimate" footnote. Blizzard
+// removes paid carries before paying out, so it awarded BELOW Raider.IO's final
+// line. No API exposes the awarded figures; they come from Blizzard's 18 Sep
+// 2026 announcement and Raider.IO's frozen season-end snapshot.
+const LAST_SEASON = {
+  label: 'Midnight Season 1',
+  p999: {
+    awarded: { us: 4185, eu: 4204, kr: 4257, tw: 4280, cn: 4256 },
+    raiderio: { us: 4210.65, eu: 4236.77, kr: 4258.45, tw: 4281.35, cn: 4268.21 },
+  },
+  p990: {
+    awarded: { us: 3935, eu: 3981, kr: 4019, tw: 4059, cn: 4012 },
+    raiderio: { us: 3960.57, eu: 4008.1, kr: 4020.56, tw: 4058.07, cn: 4035.99 },
+  },
+};
+
+async function rio(path) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`${BASE}${path}`, {
+      headers: { 'User-Agent': UA, Accept: 'application/json' },
+    });
+    if (res.ok) return res.json();
+    if ((res.status === 429 || res.status >= 500) && attempt < 5) {
+      await new Promise((r) => setTimeout(r, attempt * 5000));
+      continue;
+    }
+    throw new Error(`Raider.IO ${path} returned ${res.status}`);
+  }
+}
+
+const epoch = (iso) => Math.round(Date.parse(iso) / 1000);
+
+// The current main season, and the one before it (whose length stands in for
+// the current season's until Blizzard announces an end date).
+async function seasons() {
+  const data = await rio(`/mythic-plus/static-data?expansion_id=${EXPANSION_ID}`);
+  const mains = data.seasons
+    .filter((s) => s.is_main_season)
+    .sort((a, b) => Date.parse(b.starts.us) - Date.parse(a.starts.us));
+  if (!mains[0]) throw new Error('No main season in static-data');
+  return { season: mains[0], previous: mains[1] };
+}
+
+// Raider.IO fills an unannounced end with a far-future placeholder (2030).
+const PLACEHOLDER_AFTER = Date.parse('2029-01-01T00:00:00Z');
+
+function seasonEnd(season, previous, region) {
+  const end = season.ends?.[region];
+  if (end && Date.parse(end) < PLACEHOLDER_AFTER) {
+    return { endsAt: epoch(end), endsEstimated: false };
+  }
+  if (!previous?.ends?.[region]) return { endsAt: null, endsEstimated: true };
+  const length = epoch(previous.ends[region]) - epoch(previous.starts[region]);
+  return { endsAt: epoch(season.starts[region]) + length, endsEstimated: true };
+}
+
+function series(graph, tier) {
+  const raw = graph?.[tier]?.data;
+  if (!Array.isArray(raw)) throw new Error(`graphData.${tier} missing`);
+  return raw
+    .filter((p) => p.y > 0)
+    .map((p) => ({ t: Math.round(p.x / 1000), score: Math.round(p.y * 100) / 100 }))
+    .sort((a, b) => a.t - b.t);
+}
+
+async function main() {
+  const { season, previous } = await seasons();
+  const regions = {};
+  let levels = null;
+
+  for (const region of REGIONS) {
+    const { cutoffs } = await rio(
+      `/mythic-plus/season-cutoffs?season=${season.slug}&region=${region}`,
+    );
+    const lines = {};
+    for (const tier of TIERS) lines[tier] = series(cutoffs.graphData, tier);
+    // Raider.IO's rating for timing every dungeon at each key level. The
+    // scoring is the same everywhere, so one region's table serves all.
+    levels ??= (cutoffs.bracketDungeonLevels || [])
+      .map((lvl) => [lvl, cutoffs[`allTimed${lvl}`]?.score])
+      .filter(([, score]) => typeof score === 'number')
+      .sort((a, b) => a[0] - b[0]);
+    regions[region] = {
+      startsAt: epoch(season.starts[region]),
+      ...seasonEnd(season, previous, region),
+      updatedAt: epoch(cutoffs.updatedAt),
+      lines,
+    };
+  }
+
+  if (!levels?.length) throw new Error('No allTimed key-level scores in the cutoffs');
+  const out = render({ season, regions, levels });
+  const path = join(dirname(fileURLToPath(import.meta.url)), '..', 'CludesUITitleLine', 'Data.lua');
+  writeFileSync(path, out);
+  const counts = REGIONS.map((r) => `${r}:${regions[r].lines.p999.length}`).join(' ');
+  console.log(`wrote ${path} (${season.slug}, points ${counts})`);
+}
+
+// --- Lua output ---------------------------------------------------------------
+
+const num = (n) => (n == null ? 'nil' : String(n));
+
+function render({ season, regions, levels }) {
+  const L = [];
+  L.push('-- GENERATED by tools/fetch-cutoffs.mjs from Raider.IO. Do not edit by hand.');
+  L.push('local _, ns = ...');
+  L.push('ns.Data = {');
+  // Raider.IO abbreviates the expansion ("MN Season 2"); spell it out.
+  const name = season.name.replace(/^MN /, 'Midnight ');
+  L.push(`\tseason = { slug = "${season.slug}", name = "${name}", blizzardId = ${num(season.blizzard_season_id)}, dungeons = ${season.dungeons.length} },`);
+  // { key level, rating for timing every dungeon at it }
+  L.push(`\tlevels = { ${levels.map(([lvl, score]) => `{ ${lvl}, ${score} }`).join(', ')} },`);
+  L.push('\tregions = {');
+  for (const [key, r] of Object.entries(regions)) {
+    L.push(`\t\t${key} = {`);
+    L.push(`\t\t\tstartsAt = ${r.startsAt}, endsAt = ${num(r.endsAt)}, endsEstimated = ${r.endsEstimated}, updatedAt = ${r.updatedAt},`);
+    L.push('\t\t\tlines = {');
+    for (const [tier, pts] of Object.entries(r.lines)) {
+      L.push(`\t\t\t\t${tier} = {`);
+      for (const p of pts) L.push(`\t\t\t\t\t{ ${p.t}, ${p.score} },`);
+      L.push('\t\t\t\t},');
+    }
+    L.push('\t\t\t},');
+    L.push('\t\t},');
+  }
+  L.push('\t},');
+  L.push(`\tlastSeason = {`);
+  L.push(`\t\tlabel = "${LAST_SEASON.label}",`);
+  for (const tier of ['p999', 'p990']) {
+    const t = LAST_SEASON[tier];
+    const kv = (o) => Object.entries(o).map(([k, v]) => `${k} = ${v}`).join(', ');
+    L.push(`\t\t${tier} = { awarded = { ${kv(t.awarded)} }, raiderio = { ${kv(t.raiderio)} } },`);
+  }
+  L.push('\t},');
+  L.push('}');
+  return L.join('\n') + '\n';
+}
+
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

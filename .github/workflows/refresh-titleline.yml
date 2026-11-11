@@ -1,0 +1,39 @@
+name: Refresh Title Line data
+
+# Raider.IO recomputes its Mythic+ cutoffs around 04:30 UTC. This rebuilds
+# CludesUITitleLine/Data.lua from them once a day and commits it when it
+# changed. It does not publish a release: players get the newer numbers the
+# next time they update CludesUI.
+
+on:
+  schedule:
+    - cron: '45 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch cutoffs
+        run: node tools/fetch-cutoffs.mjs
+
+      - name: Commit if the data changed
+        run: |
+          if git diff --quiet -- CludesUITitleLine/Data.lua; then
+            echo "Data unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CludesUITitleLine/Data.lua
+          git commit -m "Refresh Title Line data ($(date -u +%Y-%m-%d))"
+          git push
