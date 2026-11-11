@@ -35,7 +35,6 @@ Each addon has a shortcut to its own settings page:
 | `/cqtopts` | Quest Tracker |
 | `/cqd` | Action Wheel |
 | `/qol` | Utilities |
-| `/cpm` | Party Mode |
 
 ## Profiles
 

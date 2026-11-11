@@ -758,7 +758,6 @@ local ADDON_ROSTER = {
     { folder = "CludesUIQuickdraw",         display = "Action Wheel",            search_name = "CludesUI Action Wheel"               },
     { folder = "CludesUILoadoutManager",    display = "Loadout Manager",      search_name = "CludesUI Loadout Manager"         },
     { folder = "CludesUIGroupFinder",       display = "Group Finder",         search_name = "CludesUI Group Finder Premade Groups" },
-    { folder = "CludesUIPartyMode",         display = "Party Mode",           search_name = "CludesUI Party Mode",             alwaysLoaded = true },
     { folder = "CludesUISimpleLootCouncil", display = "Simple Loot Council",  search_name = "CludesUI Simple Loot Council Loot Council" },
 }
 
@@ -801,7 +800,6 @@ CludesUI.ADDON_GROUPS = {
             "CludesUIForeverEssentials",
             "CludesUIDataBars",
             "CludesUIQuickdraw",
-            "CludesUIPartyMode",
         },
     },
     {
@@ -3757,30 +3755,6 @@ SlashCmdList.CUIQUICK = function()
             return
         end
         CludesUI:Toggle()
-    end)
-end
-
--- Quick-access: /cpm opens directly to Party Mode settings
-SLASH_CUIPARTYMODE1 = "/cpm"
-SlashCmdList.CUIPARTYMODE = function()
-    C_Timer.After(0, function()
-        if InCombatLockdown() then
-            CludesUI.PrintError("Cannot open options during combat.")
-            return
-        end
-        CludesUI:ShowModule("CludesUIPartyMode")
-    end)
-end
-
--- Toggle party mode on/off
-SLASH_PARTYMODETOGGLE1 = "/partymode"
-SlashCmdList.PARTYMODETOGGLE = function()
-    C_Timer.After(0, function()
-        if CludesUI_TogglePartyMode then
-            CludesUI_TogglePartyMode()
-        else
-            CludesUI.PrintError("Party Mode addon is not loaded.")
-        end
     end)
 end
 

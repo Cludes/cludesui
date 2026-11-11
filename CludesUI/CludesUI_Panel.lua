@@ -4285,7 +4285,6 @@ do
         CludesUIAuraBuffReminders = true,
         CludesUICooldownManager = true,
         CludesUINameplates = true,
-        CludesUIPartyMode = true,
         CludesUIRaidFrames = true,
         CludesUIResourceBars = true,
         CludesUIUnitFrames = true,

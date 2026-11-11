@@ -36,8 +36,6 @@ CUI_Glows_Options.lua
 CUI_Gamepad_Options.lua
 CUI_NumberFormat_Options.lua
 CUI_Style_Options.lua
-CUI_PartyMode_Horoscope_Options.lua
-CUI_PartyMode_Options.lua
 
 ActionBars_Options\AnimationsPage_Options.lua
 ActionBars_Options\BarAppearance_Options.lua
