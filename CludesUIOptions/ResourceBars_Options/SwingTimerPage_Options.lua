@@ -674,7 +674,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
             disabled = stOff, disabledTooltip = ST_TIP,
             title = "Attack State Colors",
             rows = {
-                ColorRow("On", "active", { 0.047, 0.824, 0.616, 1 }, "While the attack is on and a swing is running.", stateNotFull, "This option requires Attack State Full."),
+                ColorRow("On", "active", { 0.298, 0.788, 0.941, 1 }, "While the attack is on and a swing is running.", stateNotFull, "This option requires Attack State Full."),
                 ColorRow("Waiting", "pending", { 0.659, 0.502, 0.949, 1 }, "While the attack is on but nothing is swinging.", stateNotFull, "This option requires Attack State Full."),
                 ColorRow("Heroic Strike", "queueHS", { 1, 0.70, 0.20, 1 }, "Heroic Strike queued.", stateOff, "This option requires an Attack State other than Off.", "queue"),
                 ColorRow("Raptor Strike", "queueRaptor", { 1, 0.70, 0.20, 1 }, "Raptor Strike queued.", stateOff, "This option requires an Attack State other than Off.", "queue"),

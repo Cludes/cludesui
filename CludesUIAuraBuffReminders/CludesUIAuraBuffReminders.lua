@@ -235,7 +235,7 @@ local function ResolveFontPath(fontName)
     if CludesUI and CludesUI.GetFontPath then
         return CludesUI.GetFontPath("auraBuff")
     end
-    return "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+    return "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 end
 local _cachedOutline
 local function SetABRFont(fs, font, size)

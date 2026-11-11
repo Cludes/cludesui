@@ -258,7 +258,7 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
                         -- existing sync and SAY so (one ticked spec is the
                         -- natural first guess at "sync FROM this spec").
                         if ns.ClearRPTSync then ns.ClearRPTSync() end
-                        CludesUI.Print("|cff0cd29fCludesUI CDM:|r " .. CludesUI.L("Sync cleared -- only one spec was selected. Tick at least two specs (including other characters' specs) to sync between them."))
+                        CludesUI.Print("|cff4cc9f0CludesUI CDM:|r " .. CludesUI.L("Sync cleared -- only one spec was selected. Tick at least two specs (including other characters' specs) to sync between them."))
                         CludesUI:RefreshPage(true)
                         return
                     end
@@ -267,7 +267,7 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
                     -- Which bar each entry sits on is synced; its SLOT is not
                     -- (every spec keeps its own ordering) -- easily read as a
                     -- bug, so the print states it explicitly.
-                    CludesUI.Print("|cff0cd29fCludesUI CDM:|r " .. CludesUI.Lf("Syncing generic CDs/buffs across %d specs. Icon order is not synced -- each spec keeps its own arrangement.", cnt))
+                    CludesUI.Print("|cff4cc9f0CludesUI CDM:|r " .. CludesUI.Lf("Syncing generic CDs/buffs across %d specs. Icon order is not synced -- each spec keeps its own arrangement.", cnt))
                     CludesUI:RefreshPage(true)
                 end,
             })
@@ -304,7 +304,7 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
                     -- Announced for the same reason as the setup path: the
                     -- sync is discarded here, not merely left unchanged.
                     if ns.ClearRPTSync then ns.ClearRPTSync() end
-                    CludesUI.Print("|cff0cd29fCludesUI CDM:|r " .. CludesUI.L("Sync cleared -- fewer than two specs remained selected."))
+                    CludesUI.Print("|cff4cc9f0CludesUI CDM:|r " .. CludesUI.L("Sync cleared -- fewer than two specs remained selected."))
                     CludesUI:RefreshPage(true)
                     return
                 end
@@ -538,7 +538,7 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
             if reorderable then
                 insLine = menu:CreateTexture(nil, "OVERLAY", nil, 7)
                 insLine:SetHeight(2)
-                local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+                local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 insLine:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
                 insLine:Hide()
             end
@@ -1583,7 +1583,7 @@ local function BuildCDMBarsPage(pageName, parent, yOffset)
                 function()
                     local eg = CludesUI.CLUDES_GREEN
                     if eg then return eg.r, eg.g, eg.b end
-                    return 0.047, 0.824, 0.624
+                    return 0.298, 0.788, 0.941
                 end,
                 function() end,  -- read-only display, no picker
                 false, 20)

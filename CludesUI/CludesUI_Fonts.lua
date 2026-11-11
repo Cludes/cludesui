@@ -14,6 +14,7 @@ local MEDIA_PATH = CludesUI.MEDIA_PATH
 -------------------------------------------------------------------------------
 -- Canonical font name -> filename mapping (shared across all addons)
 CludesUI.FONT_FILES = {
+    ["Barlow Condensed"]    = "Barlow Condensed.ttf",
     ["Expressway"]          = "Expressway.TTF",
     ["Expressway Bold"]     = "Expressway Bold.ttf",
     ["Expressway CAPS"]     = "Expressway CAPS.ttf",
@@ -72,8 +73,10 @@ CludesUI.FONT_BLIZZARD = {
     ["Morpheus"]      = "Fonts\\MORPHEUS.TTF",
     ["Skurri"]        = "Fonts\\skurri.ttf",
 }
+-- The global font a fresh install uses, and the fallback wherever none is stored.
+CludesUI.DEFAULT_FONT_NAME = "Barlow Condensed"
 CludesUI.FONT_ORDER = {
-    "Expressway", "Expressway Bold", "Expressway CAPS", "Avant Garde", "Arial Bold", "Poppins",
+    "Barlow Condensed", "Expressway", "Expressway Bold", "Expressway CAPS", "Avant Garde", "Arial Bold", "Poppins",
     "Fira Sans Medium",
     "---",
     "Arial Narrow", "Changa", "Cinzel Decorative", "Exo",
@@ -181,7 +184,7 @@ function CludesUI.GetFontsDB()
             -- install looks exactly like every prior version. Existing installs are pinned
             -- by the ru_cyrillic_font_optin_v1 migration.
             global      = (CludesUI.LOCALE_SCRIPT == "cyrillic")
-                          and CludesUI.SYSTEM_FONT_KEY or "Expressway",
+                          and CludesUI.SYSTEM_FONT_KEY or CludesUI.DEFAULT_FONT_NAME,
             outlineMode = "shadow",
         }
     end
@@ -199,7 +202,7 @@ local function ResolveFontName(fontName)
     end
     -- Explicit Expressway override: bypasses the glyph-restriction mapping below.
     if fontName == CludesUI.EXPRESSWAY_FORCED_KEY then
-        return MEDIA_PATH .. "fonts\\Expressway.TTF"
+        return MEDIA_PATH .. "fonts\\Barlow Condensed.ttf"
     end
     -- Glyph-restricted locales (CJK, Cyrillic): bundled fonts without coverage for the
     -- script, and the System Default sentinel, map to the system glyph font. Only an
@@ -253,7 +256,7 @@ local function ResolveFontName(fontName)
             end
         end
     end
-    return MEDIA_PATH .. "fonts\\Expressway.TTF"
+    return MEDIA_PATH .. "fonts\\Barlow Condensed.ttf"
 end
 CludesUI.ResolveFontName = ResolveFontName
 
@@ -347,7 +350,7 @@ function CludesUI.GetFontPath(addonKey)
     if override and override.font and override.font ~= "__global" then
         path = ResolveFontName(override.font)
     else
-        path = ResolveFontName(db.global or "Expressway")
+        path = ResolveFontName(db.global or CludesUI.DEFAULT_FONT_NAME)
     end
     c[k] = path
     return path
@@ -366,7 +369,7 @@ function CludesUI.GetFontName(addonKey)
     if override and override.font and override.font ~= "__global" then
         name = override.font
     else
-        name = db.global or "Expressway"
+        name = db.global or CludesUI.DEFAULT_FONT_NAME
     end
     c[k] = name
     return name
@@ -882,7 +885,7 @@ function CludesUI.ApplyGlobalFontToGameText()
     local swap = db.applyToAllGameText and true or false
     local path
     if swap then
-        path = ResolveFontName(db.global or "Expressway")
+        path = ResolveFontName(db.global or CludesUI.DEFAULT_FONT_NAME)
         if not path then swap = false end
     end
     if not swap and scale == 1 then return end
@@ -1082,7 +1085,7 @@ function CludesUI.BuildFontDropdownData()
             order[#order + 1] = "---"
         else
             local path = CludesUI.FONT_BLIZZARD[name]
-                or (FONT_DIR .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
+                or (FONT_DIR .. (CludesUI.FONT_FILES[name] or "Barlow Condensed.ttf"))
             local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name
             values[name] = { text = displayName, font = path }
             order[#order + 1] = name

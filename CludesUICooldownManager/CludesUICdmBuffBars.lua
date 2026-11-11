@@ -208,7 +208,7 @@ ns.TBB_POPULAR_BUFFS = TBB_POPULAR_BUFFS
 -------------------------------------------------------------------------------
 --  Default Bar Config
 -------------------------------------------------------------------------------
-local _classR, _classG, _classB = 0.05, 0.82, 0.62
+local _classR, _classG, _classB = 0.30, 0.79, 0.94
 do
     local _, ct = UnitClass("player")
     if ct then

@@ -110,7 +110,7 @@ local _masterHeaderCollapseHooked = false  -- guards the SetCollapsed re-skin ho
 local function GetAccent()
     local eg = CludesUI and CludesUI.CLUDES_GREEN
     if eg then return eg.r, eg.g, eg.b end
-    return 0.047, 0.824, 0.624
+    return 0.298, 0.788, 0.941
 end
 
 -- Player class color, via the shared CludesUI.GetClassColor() cache.

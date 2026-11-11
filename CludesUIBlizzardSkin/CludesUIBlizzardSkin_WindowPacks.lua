@@ -2369,11 +2369,11 @@ local function SkinGuildCheck(cb)
     local fill = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
     fill:SetAllPoints(boxF)
     WSkin.AddBorder(boxF, 0.25, 0.25, 0.25, 1)
-    local EG2 = CludesUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+    local EG2 = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     local tick = boxF:CreateTexture(nil, "OVERLAY")
     tick:SetPoint("TOPLEFT", 3, -3)
     tick:SetPoint("BOTTOMRIGHT", -3, 3)
-    tick:SetColorTexture(EG2.r or 0.047, EG2.g or 0.824, EG2.b or 0.616, 1)
+    tick:SetColorTexture(EG2.r or 0.298, EG2.g or 0.788, EG2.b or 0.941, 1)
     local wash = SolidTex(boxF, "ARTWORK", 1, 1, 1, 0.1)
     wash:SetAllPoints(boxF)
     wash:Hide()
@@ -6283,7 +6283,7 @@ local function Skin_Professions()
                         local txt = fs:GetText()
                         if type(txt) ~= "string" or txt == "" then return end
                         if txt:find("|c", 1, true) then return end
-                        local EG = CludesUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+                        local EG = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
                         local hex = string.format("%02x%02x%02x",
                             (EG.r or 0) * 255, (EG.g or 0) * 255, (EG.b or 0) * 255)
                         local new, n = txt:gsub("(%d+%s*)$", "|cff" .. hex .. "%1|r")

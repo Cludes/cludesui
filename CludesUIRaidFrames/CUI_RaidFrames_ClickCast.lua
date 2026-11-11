@@ -2993,7 +2993,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local outlineFlag = (CludesUI.GetFontOutlineFlag("raidFrames")) or ""
     local useShadow = not CludesUI.GetFontUseShadow or CludesUI.GetFontUseShadow("raidFrames")
-    local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     -- The page root bypasses the scroll system (like BM does)
     local scrollFrame = CludesUI._scrollFrame

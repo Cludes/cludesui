@@ -250,7 +250,7 @@ local defaults = {
     -- Show Threat Colors: where the threat colors apply -- "never", "instances" (party/raid
     -- instances and delves) or "always". Per client: WoW Forever defaults to "always".
     threatColorMode = (CludesUI.IS_FOREVER == true) and "always" or "instances",
-    tankHasAggro = { r = 0.05, g = 0.82, b = 0.62 },
+    tankHasAggro = { r = 0.30, g = 0.79, b = 0.94 },
     tankHasAggroEnabled = false,
     tankHasAggroOverrideMobType = false,  -- on: overrides Mini-Boss/Caster (above priority step 7); off = stays low
     tankHasAggroOverrideBoss = true,  -- on (default): overrides Boss color; off = held just below Boss
@@ -321,7 +321,7 @@ local defaults = {
     friendlyShowLevel = false,
     friendlyLevelDiffColor = false,
     showEnemyPets = false,
-    font = "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
+    font = "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf",
     textSlotTop = "enemyName",
     textSlotRight = "healthPercent",
     -- WoW Forever shows the level by default (retail leaves the slot empty).

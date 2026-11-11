@@ -3607,7 +3607,7 @@ local function ShowSpellPicker(anchorFrame, barKey, slotIndex, excludeSet, onSel
                             end
                             local insLine = sub:CreateTexture(nil, "OVERLAY", nil, 7)
                             insLine:SetHeight(2)
-                            local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+                            local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                             insLine:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
                             insLine:Hide()
                             CludesUI.AttachRowReorder(sub, {

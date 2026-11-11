@@ -17,7 +17,7 @@ local RING_TEXTURES = {
 
 local DEF_BASESIZE = 28
 local DEF_SCALE    = 1
-local DEF_HEX      = "0CD29D"
+local DEF_HEX      = "4CC9F0"
 local DEF_TEX      = "ring_normal"
 local DEF_INSTANCE_ONLY = false
 
@@ -49,7 +49,7 @@ local function HexToRGB(hex)
 end
 
 local function ParseHex(raw)
-    if not raw then return 12/255, 210/255, 157/255 end
+    if not raw then return 76/255, 201/255, 240/255 end
     raw = strupper(strgsub(raw, "#", ""))
     if not strmatch(raw, "^[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]$") then
         return 1, 1, 1
@@ -1287,7 +1287,7 @@ function ECL:OnInitialize()
                 onlyWhenHidden = false,
                 combatOnly = false,
                 useClassColor = true,
-                hex = "0CD29D",
+                hex = "4CC9F0",
                 texture = "ring_normal",
                 scale = 1,
                 alpha = 100,

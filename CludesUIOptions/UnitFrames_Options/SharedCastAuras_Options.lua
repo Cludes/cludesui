@@ -73,7 +73,7 @@ function ns.UFO_BuildCastBarSection(parent, y, ctx)
     -- fully rebuilds on unit change, so gating on selectedUnit re-evaluates per unit.
     if optState.selectedUnit == "player" then
         local ar, ag, ab = CludesUI.GetAccentColor()
-        ar, ag, ab = ar or 12/255, ag or 210/255, ab or 157/255
+        ar, ag, ab = ar or 76/255, ag or 201/255, ab or 240/255
         local accentHex = CludesUI.HexColor(ar, ag, ab)
         local hintText = CludesUI.Lf("For player frame, this provides a simple, mini castbar below player frame. To edit the main player cast bar, %sclick here|r", accentHex)
         -- Full-width label (nil right slot expands the left region) renders text

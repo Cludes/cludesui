@@ -1,6 +1,6 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff0cd29fCludesUI|r Cooldown Manager
-## Category: |cff0cd29fCludes|rUI
+## Title: |cff4cc9f0CludesUI|r Cooldown Manager
+## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: A CDM replacement focused on performance, customizations and alerts.
 ## Author: Cludes

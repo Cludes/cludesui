@@ -1073,7 +1073,7 @@ local function BuildCogPopup(opts)
                 local rowFrames, rowPool = {}, {}
                 local insLine = sChild:CreateTexture(nil, "OVERLAY", nil, 7)
                 insLine:SetHeight(2)
-                local EG2 = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+                local EG2 = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 insLine:SetColorTexture(EG2.r, EG2.g, EG2.b, 0.9)
                 insLine:Hide()
 

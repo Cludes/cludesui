@@ -64,9 +64,9 @@ initFrame:SetScript("OnEvent", function(self)
     --  Hex color helpers
     ---------------------------------------------------------------------------
     local function HexToRGB(hex)
-        hex = strupper(strgsub(hex or "0CD29D", "#", ""))
+        hex = strupper(strgsub(hex or "4CC9F0", "#", ""))
         if not strmatch(hex, "^[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]$") then
-            hex = "0CD29D"
+            hex = "4CC9F0"
         end
         return tonumber(strsub(hex, 1, 2), 16) / 255,
                tonumber(strsub(hex, 3, 4), 16) / 255,
@@ -138,7 +138,7 @@ initFrame:SetScript("OnEvent", function(self)
                   hasAlpha = false,
                   getValue = function()
                       local p = DB()
-                      if not p then return 12/255, 210/255, 157/255 end
+                      if not p then return 76/255, 201/255, 240/255 end
                       local r, g, b = HexToRGB(p.hex)
                       return r, g, b
                   end,
@@ -168,7 +168,7 @@ initFrame:SetScript("OnEvent", function(self)
                       local _, classFile = UnitClass("player")
                       local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                       if cc then return cc.r, cc.g, cc.b end
-                      return 12/255, 210/255, 157/255
+                      return 76/255, 201/255, 240/255
                   end,
                   setValue = function() end,
                   onClick = function()
@@ -367,7 +367,7 @@ initFrame:SetScript("OnEvent", function(self)
                       local _, classFile = UnitClass("player")
                       local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                       if cc then return cc.r, cc.g, cc.b end
-                      return 12/255, 210/255, 157/255
+                      return 76/255, 201/255, 240/255
                   end,
                   setValue = function() end,
                   onClick = function()
@@ -530,7 +530,7 @@ initFrame:SetScript("OnEvent", function(self)
                       local _, classFile = UnitClass("player")
                       local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
                       if cc then return cc.r, cc.g, cc.b end
-                      return 12/255, 210/255, 157/255
+                      return 76/255, 201/255, 240/255
                   end,
                   setValue = function() end,
                   onClick = function()

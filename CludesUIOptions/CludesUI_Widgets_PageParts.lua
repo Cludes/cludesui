@@ -51,7 +51,7 @@ function CludesUI.BuildUnlockPlaceholder(opts)
 
     -- White centered label matching unlock mode mover style
     local fontPath = (CludesUI.GetFontPath("extras"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     local label = f:CreateFontString(nil, "OVERLAY")
     label:SetFont(fontPath, 10, "OUTLINE, SLUG")
     label:SetText(CludesUI.L(opts.text or "Move in Unlock Mode"))

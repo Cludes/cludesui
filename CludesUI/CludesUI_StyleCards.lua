@@ -20,7 +20,7 @@ local POOL = CludesUI._Pool
 local GOLD_R, GOLD_G, GOLD_B = 1.0, 0.80, 0.18
 local BRONZE_R, BRONZE_G, BRONZE_B = 0.86, 0.65, 0.42
 local FOREVER_R, FOREVER_G, FOREVER_B = 0.47, 0.75, 0.95
--- The CludesUI card and its mock keep the stock #0CD29D teal (the
+-- The CludesUI card and its mock keep the stock #4CC9F0 teal (the
 -- CludesUI theme preset) on every client, whatever accent colour the user
 -- has picked.
 local CUI_TEAL = CludesUI.THEME_PRESETS["CludesUI"]
@@ -363,7 +363,7 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
     -- The options font once it has loaded, else the locale-aware core font
     -- (the picker runs before the options addon loads).
     local FONT = CludesUI._font or CludesUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     opts = opts or {}
 
     local DEFS = {

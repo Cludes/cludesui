@@ -1111,7 +1111,7 @@ end
 
 local function ShowEditModeLockNotice()
     if not _editModeLockNoticeShown then
-        CludesUI.Print(CludesUI.L("|cff0cd29fCludesUI CDM:|r Cooldown Viewer settings are managed by CludesUI. Edit Mode changes are disabled."))
+        CludesUI.Print(CludesUI.L("|cff4cc9f0CludesUI CDM:|r Cooldown Viewer settings are managed by CludesUI. Edit Mode changes are disabled."))
         _editModeLockNoticeShown = true
     end
 end

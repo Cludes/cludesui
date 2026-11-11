@@ -412,7 +412,7 @@ local function SetBagFont(fs, size)
 end
 local function GetAccentRGB()
     if CUI.GetAccentColor then return CUI.GetAccentColor() end
-    return 0.047, 0.824, 0.616
+    return 0.298, 0.788, 0.941
 end
 
 local function GetColumns()

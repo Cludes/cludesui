@@ -677,7 +677,7 @@ local function MakeMarkerButton(parent, index, kind)
         active:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 2, -2)
         active:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, -2)
         active:SetHeight(2)
-        local ar, ag, ab = 0.05, 0.82, 0.62
+        local ar, ag, ab = 0.30, 0.79, 0.94
         if CludesUI.GetAccentColor then ar, ag, ab = CludesUI.GetAccentColor() end
         active:SetColorTexture(ar, ag, ab, 0.95)
         b._activeHost = host

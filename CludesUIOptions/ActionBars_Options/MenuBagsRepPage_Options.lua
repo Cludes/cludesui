@@ -638,8 +638,8 @@ local function DataBarKit(parent)
                   { tooltip = "Accent Color",
                     getValue = function()
                         local EG = CludesUI.CLUDES_GREEN
-                        if EG then return EG.r or 0.047, EG.g or 0.824, EG.b or 0.616 end
-                        return 0.047, 0.824, 0.616
+                        if EG then return EG.r or 0.298, EG.g or 0.788, EG.b or 0.941 end
+                        return 0.298, 0.788, 0.941
                     end,
                     setValue = function() end,
                     onClick = function()

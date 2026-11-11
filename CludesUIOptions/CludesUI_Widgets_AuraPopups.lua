@@ -599,7 +599,7 @@ function CludesUI.ShowSpellBlacklistPopup(opts)
     end
     opts = opts or {}
     local fontPath = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-    local eg = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local eg = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local PW, PH = 320, 400
 
     -- Controller cursor loaded: the dimmer is a named Button, so the cursor can

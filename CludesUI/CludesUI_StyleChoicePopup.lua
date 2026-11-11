@@ -76,7 +76,7 @@ local function ChooseOtherLook(styleKey, label, dimmer)
             function() ApplyLook(styleKey) end)
         return
     end
-    CludesUI.Print("|cff00ff98CludesUI:|r " .. label .. " can be switched on under Global Settings > Style.")
+    CludesUI.Print("|cff4cc9f0CludesUI:|r " .. label .. " can be switched on under Global Settings > Style.")
     if dimmer then dimmer:Hide() end
     Release()
 end
@@ -87,7 +87,7 @@ local function ShowStyleChoicePopup()
         return
     end
     local FONT = CludesUI._font or CludesUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     local EG = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
     local POPUP_W, POPUP_H = math.max(700, CludesUI.STYLE_CARDS_W + 32), 480

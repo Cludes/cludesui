@@ -45,7 +45,7 @@ local HOUSING_OK = C_Housing and C_Housing.GetOthersOwnedHouses and C_Housing.Vi
 -------------------------------------------------------------------------------
 local T = {}
 local function ResolveTheme()
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     T.accR, T.accG, T.accB = EG.r, EG.g, EG.b
     T.bgR, T.bgG, T.bgB, T.bgA = 0.08, 0.08, 0.08, 0.92
     T.insetR, T.insetG, T.insetB, T.insetA = 0.04, 0.04, 0.04, 0.85

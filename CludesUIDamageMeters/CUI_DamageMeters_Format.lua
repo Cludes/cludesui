@@ -40,9 +40,9 @@ end
 local function GetAccentRGB()
     local EG = CUI.CLUDES_GREEN
     if EG then return EG.r, EG.g, EG.b end
-    return CUI.DEFAULT_ACCENT_R or 12/255,
-           CUI.DEFAULT_ACCENT_G or 210/255,
-           CUI.DEFAULT_ACCENT_B or 157/255
+    return CUI.DEFAULT_ACCENT_R or 76/255,
+           CUI.DEFAULT_ACCENT_G or 201/255,
+           CUI.DEFAULT_ACCENT_B or 240/255
 end
 -- A header title's "Use Accent" colour: WoW Forever's gold under the variant
 -- (its kit carries no CludesUI accent), the accent otherwise.

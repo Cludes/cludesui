@@ -98,7 +98,7 @@ local QUEUE_COLORS = {
 -- press, so a shot queued behind a cast already reads as on. AUTO_ATTACK and
 -- the action slot scan seed the state the edges missed (enable, /reload
 -- mid-attack).
-local ACTIVE_COLOR    = { r = 0.047, g = 0.824, b = 0.616 }
+local ACTIVE_COLOR    = { r = 0.298, g = 0.788, b = 0.941 }
 local AUTO_ATTACK     = 6603
 local MAX_ACTION_SLOT = 180
 

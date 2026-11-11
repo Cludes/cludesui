@@ -1419,11 +1419,11 @@ local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
 -- locale's glyphs, else falls back to the system font. Do NOT re-decide locale fallback
 -- locally or locale clients could never use a custom font here.
 local cachedFontPath = (CludesUI.GetFontPath("unitFrames"))
-    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 local cachedFontPaths = {}  -- per-unit font cache
 local function ResolveFontPath(unitKey)
     local gPath = CludesUI.GetFontPath("unitFrames")
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     cachedFontPath = gPath
     for _, uKey in ipairs({"player", "target", "focus", "boss", "pet", "targettarget", "focustarget"}) do
         cachedFontPaths[uKey] = gPath

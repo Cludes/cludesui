@@ -1,6 +1,6 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff0cd29fCludesUI|r Options
-## Category: |cff0cd29fCludes|rUI
+## Title: |cff4cc9f0CludesUI|r Options
+## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: CludesUI settings panel. Loads on demand when you open CludesUI options.
 ## Author: Cludes

@@ -131,7 +131,7 @@ local function ApplySlotVisual(widget, selected, armed)
     -- entry, which it is not. No zoom either: the add button holds its size
     -- under the cursor.
     if widget.isPlaceholder then
-        local ar, ag, ab = 0.047, 0.824, 0.624
+        local ar, ag, ab = 0.298, 0.788, 0.941
         if CludesUI.ResolveActiveAccent then ar, ag, ab = CludesUI.ResolveActiveAccent() end
         if selected then
             CludesUI.PP.UpdateBorder(widget.bhost, 2, ar, ag, ab, 1)

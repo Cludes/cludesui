@@ -93,7 +93,7 @@ ns.ERB_SimpleOverrideOverlay = function(parent, topY, botY, sectionKey)
 			and _G._ERB_CurSpecOverridesSection(sectionKey)) then
 		return
 	end
-	local EGc  = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+	local EGc  = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 	local CPAD = CludesUI.CONTENT_PAD or 45
 	local PP   = CludesUI.PanelPP or CludesUI.PP
 	-- On an options page (an options page pool host) the overlay is pooled

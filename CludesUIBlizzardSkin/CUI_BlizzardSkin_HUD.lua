@@ -99,7 +99,7 @@ local GetFFD = I.GetFFD
         if W and W.ApplyBarFill then
             W.ApplyBarFill(bar)
         elseif bar.SetStatusBarColor then
-            local EG = CludesUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+            local EG = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
             bar:SetStatusBarColor(EG.r * 0.8, EG.g * 0.8, EG.b * 0.8, 0.95)
         end
     end

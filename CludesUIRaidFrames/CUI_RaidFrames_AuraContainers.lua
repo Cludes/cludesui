@@ -19,7 +19,7 @@ local AKWorker = CludesUI.AuraKit.NewBuildWorker()
 -- really do stream, so an unbound container renders the local player's buffs onto
 -- whoever the button later shows.
 local NO_UNIT = "none"
-local FALLBACK_FONT = "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+local FALLBACK_FONT = "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
 -- Marks debuff rendering as container-owned; the legacy UpdateDebuffs body
 -- early-returns on this flag (single gate covering all seven call sites).
@@ -1646,7 +1646,7 @@ end
 local function BmApplySquare(button, dd, style)
     if not dd.tex then return end
     local ind = style.ind
-    local r, g, b = BmColor(style.sqColor, 12 / 255, 210 / 255, 157 / 255)
+    local r, g, b = BmColor(style.sqColor, 76 / 255, 201 / 255, 240 / 255)
     dd.tex:SetColorTexture(r, g, b, 1)
     -- Same hidden-swipe gate as AuraKit's style pass (engine SetCooldown re-shows
     -- a hidden swipe on aura churn; SetDrawSwipe is the persistent style knob
@@ -1706,7 +1706,7 @@ local function BmApplyBar(button, dd, style)
         end
     end
     local ind = style.ind
-    local r, g, b = BmColor(ind.color, 12 / 255, 210 / 255, 157 / 255)
+    local r, g, b = BmColor(ind.color, 76 / 255, 201 / 255, 240 / 255)
     dd.bar:GetStatusBarTexture():SetVertexColor(r, g, b, (ind.barColorOpacity or 100) / 100)
     -- Fill AXIS, mirroring what the preview has always done in BM_PlaceBar.
     -- Change-guarded like the frame-level write below: SetOrientation resets the
@@ -1765,7 +1765,7 @@ local function BmApplyEffect(button, dd, style)
         -- ticker under secrecy); dashed uses the C-side animated ants (w/h from the
         -- unit frame's own rect -- the forbidden host is never measured).
         if dd.borderHost and ns.BM_ApplyEffectBorder then
-            local r, g, b = BmColor(ind.color, 0.05, 0.82, 0.62)
+            local r, g, b = BmColor(ind.color, 0.30, 0.79, 0.94)
             local host = dd.bmFxHost
             local w, h
             if host then w, h = host:GetWidth(), host:GetHeight() end

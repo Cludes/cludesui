@@ -478,7 +478,7 @@ local function CreateHUD(parent)
         btn:SetPoint("RIGHT", UM.hudFrame, "TOPRIGHT", saveRightEdge - BANNER_PX_W / 2, btnCenterY)
         btn:SetFrameLevel(UM.hudFrame:GetFrameLevel() + 2)
 
-        local eg = CludesUI.CLUDES_GREEN or { r = 12/255, g = 210/255, b = 157/255 }
+        local eg = CludesUI.CLUDES_GREEN or { r = 76/255, g = 201/255, b = 240/255 }
         local bg = btn:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(0.077, 0.068, 0.058, 0.92)

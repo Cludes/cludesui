@@ -138,7 +138,7 @@ end
 local function Accent()
     local c = CludesUI.CLUDES_GREEN
     if c then return c.r, c.g, c.b end
-    return 0.05, 0.82, 0.62
+    return 0.30, 0.79, 0.94
 end
 
 -- Gradient end colours, refilled for each paint (SetGradient copies them).

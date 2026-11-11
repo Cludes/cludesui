@@ -492,7 +492,7 @@ function ShowFriendsTooltip(anchor)
         local hdr = EnsureFTTHeader(hdrIdx)
         hdr:SetFont(font, 12, "")
         local ac = CludesUI.CLUDES_GREEN or CludesUI._accentColor
-        local acHex = ac and format("%02x%02x%02x", (ac.r or 0.05) * 255, (ac.g or 0.82) * 255, (ac.b or 0.62) * 255) or "0cd29f"
+        local acHex = ac and format("%02x%02x%02x", (ac.r or 0.05) * 255, (ac.g or 0.82) * 255, (ac.b or 0.62) * 255) or "4cc9f0"
         hdr:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
         hdr:ClearAllPoints()
         hdr:SetPoint("TOP", tt, "TOP", 0, curY)

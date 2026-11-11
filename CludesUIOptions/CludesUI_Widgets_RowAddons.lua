@@ -819,7 +819,7 @@ local function BuildLessCommonLink(parent, y, sectionKey, label, expanded)
 
     btn:SetWidth(math.max((fs:GetStringWidth() or 0) + 2 * (ARROW_SZ + ARROW_GAP) + 8, 120))
 
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     btn:SetScript("OnEnter", function()
         fs:SetTextColor(EG.r, EG.g, EG.b); fs:SetAlpha(1)
         leftArrow:SetVertexColor(EG.r, EG.g, EG.b); leftArrow:SetAlpha(1)

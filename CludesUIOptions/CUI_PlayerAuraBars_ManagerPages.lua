@@ -1991,7 +1991,7 @@ local function BuildBarTitle(frame, fontPath, name, subtitle, y)
     title:SetWordWrap(false)
     local ac = CludesUI.CLUDES_GREEN
     if ac then title:SetTextColor(ac.r, ac.g, ac.b)
-    else title:SetTextColor(0.05, 0.82, 0.62) end
+    else title:SetTextColor(0.30, 0.79, 0.94) end
     title:SetText(name)
     local sub = frame:CreateFontString(nil, "OVERLAY")
     sub:SetFont(fontPath, 13, "")
@@ -2061,7 +2061,7 @@ local function AddNewButton(parentFrame, y, width, label, onClick)
     addBtn:SetSize(btnW, 30)
     addBtn:SetPoint("TOP", parentFrame, "TOPLEFT", floor(width / 2), y - 10)
     addBtn:SetFrameLevel(parentFrame:GetFrameLevel() + 1)
-    local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
     addBg:SetAllPoints()
     addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
@@ -2204,7 +2204,7 @@ function ns.PABMP_ShowFilterEditor()
     local fontPath = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
     local ar, ag, ab = 1, 0.82, 0.30
     if CludesUI.GetAccentColor then ar, ag, ab = CludesUI.GetAccentColor() end
-    local eg = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local eg = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
     local POPUP_W, POPUP_H, SIDE_W = 620, 520, 180
@@ -2765,7 +2765,7 @@ local function ShowAddBarPopup(anchorBtn, kind, fontPath)
         popup._nameBox = nameBox
         py = py - ROW_H - GAP
 
-        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local cBtn = CreateFrame("Button", nil, popup)
         cBtn:SetSize(ddW, ROW_H)
         cBtn:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
@@ -3030,7 +3030,7 @@ function ns.PABMP_BuildPage(pageName, parent, yOffset)
         L.track, L.knob, L.on = pillBg, knob, state and true or false
         L:Fit()
         if state then
-            local acr, acg, acb = 0.05, 0.82, 0.62
+            local acr, acg, acb = 0.30, 0.79, 0.94
             if CludesUI.ResolveActiveAccent then
                 acr, acg, acb = CludesUI.ResolveActiveAccent()
             end
@@ -3503,7 +3503,7 @@ function ns.PABMP_BuildPage(pageName, parent, yOffset)
         linkFS:SetText(CludesUI.Lf("Edit in %1$s", gname))
         local lac = CludesUI.CLUDES_GREEN
         if lac then linkFS:SetTextColor(lac.r, lac.g, lac.b, 0.85)
-        else linkFS:SetTextColor(0.05, 0.82, 0.62, 0.85) end
+        else linkFS:SetTextColor(0.30, 0.79, 0.94, 0.85) end
         link:SetSize(linkFS:GetStringWidth() + 4, 18)
         link:SetScript("OnEnter", function() linkFS:SetAlpha(1) end)
         link:SetScript("OnLeave", function() linkFS:SetAlpha(0.85) end)

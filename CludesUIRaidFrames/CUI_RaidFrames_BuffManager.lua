@@ -533,7 +533,7 @@ local function NewIndicator(indType, spells)
     elseif indType == "border" then
         ind.ownOnly          = true
         local _ac = CludesUI and CludesUI.ACCENT_COLOR
-        ind.color       = _ac and { r = _ac.r, g = _ac.g, b = _ac.b } or { r = 0.05, g = 0.82, b = 0.62 }
+        ind.color       = _ac and { r = _ac.r, g = _ac.g, b = _ac.b } or { r = 0.30, g = 0.79, b = 0.94 }
         ind.borderStyle = "solid"
         ind.borderWidth = 2
         ind.borderDashCount = 8
@@ -831,7 +831,7 @@ local function PvInd_OnEnter(self)
     if self._hoverBdr then
         local lPP = CludesUI.PanelPP or CludesUI.PP
         if lPP then
-            local ac = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+            local ac = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             lPP.UpdateBorder(self._hoverBdr, 2, ac.r, ac.g, ac.b, 1)
             self._hoverBdr:Show()
         end
@@ -2404,7 +2404,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     srcDD:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
                     popup._srcDD = srcDD
                     py = py - ROW_H - DD_GAP
-                    local ac = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+                    local ac = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                     local cBtn = CreateFrame("Button", nil, popup)
                     cBtn:SetSize(ddW, ROW_H)
                     cBtn:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
@@ -3355,7 +3355,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         if lac then
             linkFS:SetTextColor(lac.r, lac.g, lac.b, 0.85)
         else
-            linkFS:SetTextColor(0.05, 0.82, 0.62, 0.85)
+            linkFS:SetTextColor(0.30, 0.79, 0.94, 0.85)
         end
         link:SetSize(linkFS:GetStringWidth() + 4, 18)
         link:SetScript("OnEnter", function() linkFS:SetAlpha(1) end)
@@ -3387,7 +3387,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         if ac2 then
             settingsTitle:SetTextColor(ac2.r, ac2.g, ac2.b)
         else
-            settingsTitle:SetTextColor(0.05, 0.82, 0.62)
+            settingsTitle:SetTextColor(0.30, 0.79, 0.94)
         end
         settingsTitle:SetText(CludesUI.L(typeName .. " Indicator"))
 
@@ -3814,7 +3814,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
             -- swatch row (ability 1 at the right edge); no per-spell color falls back to ind.color, then the default.
             if indType == "square" then
                 local rgn = extraRow._leftRegion
-                local DEFAULT_SQ = { r=0.05, g=0.82, b=0.62 }
+                local DEFAULT_SQ = { r=0.30, g=0.79, b=0.94 }
                 local prev = nil
                 for _, sid in ipairs(ind.spells or {}) do
                     local mySid = sid
@@ -4168,7 +4168,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     bwSlot)
 
                 -- Dashes slot applies only to the dashed style; blank label otherwise (allowed on a section's last row).
-                local ac = CludesUI.ACCENT_COLOR or { r = 0.05, g = 0.82, b = 0.62 }
+                local ac = CludesUI.ACCENT_COLOR or { r = 0.30, g = 0.79, b = 0.94 }
                 local dashesSlot
                 if (ind.borderStyle or "solid") == "dashed" then
                     dashesSlot = { type="slider", text="Dashes", min=4, max=16, step=1, trackWidth=120,

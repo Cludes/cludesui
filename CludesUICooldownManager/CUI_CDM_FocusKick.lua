@@ -765,9 +765,9 @@ local function ShowFocusReminder(token)
     local r, g, b
     if bd.focusReminderUseAccent then
         local eg = CludesUI.CLUDES_GREEN
-        r = (eg and eg.r) or 0.047
-        g = (eg and eg.g) or 0.824
-        b = (eg and eg.b) or 0.624
+        r = (eg and eg.r) or 0.298
+        g = (eg and eg.g) or 0.788
+        b = (eg and eg.b) or 0.941
     else
         r = bd.focusReminderR or 1
         g = bd.focusReminderG or 1

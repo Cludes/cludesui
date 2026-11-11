@@ -149,7 +149,7 @@ end
 local addSpellPopup
 local function ShowAddSpellPopup(onAdded)
     local PP = CludesUI.PanelPP
-    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
     if not addSpellPopup then
         local dimmer = CreateFrame("Frame", nil, UIParent)
@@ -254,7 +254,7 @@ end
 local customTextPopup
 local function ShowCustomTextPopup(titleText, initial, onSave)
     local PP = CludesUI.PanelPP
-    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
     if not customTextPopup then
         local dimmer = CreateFrame("Frame", nil, UIParent)
@@ -343,8 +343,8 @@ end
 local function BuildMovementAlertPage(pageName, parent, yOffset)
     local W = CludesUI.Widgets
     local PP = CludesUI.PanelPP
-    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local ma = MA()
     if not ma then return 0 end
     local y = yOffset

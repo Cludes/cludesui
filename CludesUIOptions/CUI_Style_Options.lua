@@ -806,11 +806,11 @@ local function ApplyWholeUIFont(styleKey, legacy)
         db.global = saved.global
     else
         local blizz = CludesUI.BLIZZARD_FONT_KEY or "__blizzard"
-        local cur = db.global or "Expressway"
+        local cur = db.global or CludesUI.DEFAULT_FONT_NAME
         if styleKey ~= "cui" then
-            if cur == "Expressway" then db.global = blizz end
+            if cur == CludesUI.DEFAULT_FONT_NAME then db.global = blizz end
         elseif cur == blizz then
-            db.global = "Expressway"
+            db.global = CludesUI.DEFAULT_FONT_NAME
         end
     end
     s.active = styleKey
@@ -1051,7 +1051,7 @@ function _G._CUI_BuildStylePage(pageName, parent, yOffset)
     local HERO_H = BTN_TOP + BTN_H + 4
     local hasHero = CludesUI.BuildStyleCards ~= nil
     if hasHero and not CludesUI._prebuilding then
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
         local EG = CludesUI.CLUDES_GREEN
         local host = CreateFrame("Frame", nil, parent)
         PP.Size(host, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)

@@ -1522,7 +1522,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- nothing new is stored and nothing is written until a control changes.
         -- key = the showStatCategory_ suffix, color = the statCategoryColors key.
         local STAT_SECTIONS = {
-            { key = "Attributes",     label = "Attributes",      color = "Attributes",      def = { r = 0.047, g = 0.824, b = 0.616 } },
+            { key = "Attributes",     label = "Attributes",      color = "Attributes",      def = { r = 0.298, g = 0.788, b = 0.941 } },
             { key = "SecondaryStats", label = "Secondary Stats", color = "Secondary Stats", def = { r = 0.471, g = 0.255, b = 0.784 } },
             { key = "Tertiary",       label = "Tertiary Stats",  color = "Tertiary Stats",  def = { r = 0.859, g = 0.325, b = 0.855 } },
             { key = "Attack",         label = "Attack",          color = "Attack",          def = { r = 1,     g = 0.353, b = 0.122 } },
@@ -3340,7 +3340,7 @@ initFrame:SetScript("OnEvent", function(self)
         local EG = CludesUI.CLUDES_GREEN
         local L  = CludesUI.L
         local MakeBorder = CludesUI.MakeBorder
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
         local HERO_H = 470
         local host = CreateFrame("Frame", nil, parent)

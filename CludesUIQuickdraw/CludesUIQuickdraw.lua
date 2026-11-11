@@ -321,7 +321,7 @@ local DB_DEFAULTS = {
         -- color below, and useClassColor -- the Class Color swatch --
         -- overrides both while it is on.
         selectColorCustom = false,
-        selectColor   = { 0.047, 0.824, 0.624 },  -- the custom swatch's start
+        selectColor   = { 0.298, 0.788, 0.941 },  -- the custom swatch's start
         useClassColor = false,
 
         -- Toggle Menu Open, per palette. Off keeps the model the module was
@@ -896,7 +896,7 @@ local function SelectColor(p)
     end
     local sc = p and p.selectColor
     if sc then return sc[1] or 1, sc[2] or 1, sc[3] or 1 end
-    return 0.047, 0.824, 0.624
+    return 0.298, 0.788, 0.941
 end
 ns.SelectColor = SelectColor
 ns.MAX_SLOTS = MAX_SLOTS

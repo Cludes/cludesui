@@ -800,7 +800,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local tDimG = CludesUI.TEXT_DIM_G or 0.7
         local tDimB = CludesUI.TEXT_DIM_B or 0.7
         local tDimA = CludesUI.TEXT_DIM_A or 0.85
-        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
         local menuW = 240
         local ITEM_H = 26

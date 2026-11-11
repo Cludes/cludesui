@@ -72,7 +72,7 @@ local function BuildSortByControl(rgn, opts)
 
     local MH = 26       -- row height
     local DH = 16       -- divider height
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     -- Kept per Sort By button (the options page pool): a page build that
     -- dresses the same button again dresses the same menu again.

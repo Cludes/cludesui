@@ -260,7 +260,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local FONT_PATH = (CludesUI.GetFontPath("resourceBars"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
     local SetPVFont = CludesUI.ApplyModuleFont
     local CONTENT_PAD = 45
     local SIDE_PAD = 20

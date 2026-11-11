@@ -1701,7 +1701,7 @@ L["With Show When Missing, also show the buff for its last seconds. Buffs whose 
 L["WoW Forever has no other specs to copy this bar to"] = "WoW Forever 沒有其他專精可複製此條"
 L["Wrong Bar Type"]                = "錯誤的列類型"
 L["You're on this spec."]          = "你目前就是此專精。"
-L["|cff0cd29fCludesUI CDM:|r Cooldown Viewer settings are managed by CludesUI. Edit Mode changes are disabled."] = "|cff0cd29fCludesUI CDM:|r 冷卻檢視器的設定由 CludesUI 管理，已停用編輯模式中的變更。"
+L["|cff4cc9f0CludesUI CDM:|r Cooldown Viewer settings are managed by CludesUI. Edit Mode changes are disabled."] = "|cff4cc9f0CludesUI CDM:|r 冷卻檢視器的設定由 CludesUI 管理，已停用編輯模式中的變更。"
 
 -- == Nameplates ===========================================================
 L["%1$d. Combo"]                   = "%1$d. 組合"
@@ -9212,10 +9212,10 @@ L["Your setup and every CludesUI feature carry over; only the look changes. Appl
 L["Zone Text Scale"]               = "區域文字縮放"
 L["|cff00ff00[CludesUI]|r All hints reset. /reload to see them again."] = "|cff00ff00[CludesUI]|r 已重設所有提示。輸入 /reload 即可再次看到它們。"
 L["|cff00ff00[CludesUI]|r UI scale reset. /reload to re-snapshot from your Blizzard scale."] = "|cff00ff00[CludesUI]|r 已重設 UI 縮放。輸入 /reload 以重新擷取你的暴雪縮放值。"
-L["|cff00ff98CludesUI:|r Video guides and tutorial tips reset. Badges are back; one-time popups will fire again."] = "|cff00ff98CludesUI:|r 已重設影片教學與教學提示。徽章已恢復，一次性彈出視窗會再次出現。"
-L["|cff0cd29dLeft-click:|r |cffE0E0E0Toggle CludesUI|r"] = "|cff0cd29d左鍵點擊：|r |cffE0E0E0切換 CludesUI|r"
-L["|cff0cd29dMiddle-click:|r |cffE0E0E0Hide Minimap Button|r"] = "|cff0cd29d中鍵點擊：|r |cffE0E0E0隱藏小地圖按鈕|r"
-L["|cff0cd29dRight-click:|r |cffE0E0E0Enter Unlock Mode|r"] = "|cff0cd29d右鍵點擊：|r |cffE0E0E0進入解鎖模式|r"
+L["|cff4cc9f0CludesUI:|r Video guides and tutorial tips reset. Badges are back; one-time popups will fire again."] = "|cff4cc9f0CludesUI:|r 已重設影片教學與教學提示。徽章已恢復，一次性彈出視窗會再次出現。"
+L["|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"] = "|cff4cc9f0左鍵點擊：|r |cffE0E0E0切換 CludesUI|r"
+L["|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"] = "|cff4cc9f0中鍵點擊：|r |cffE0E0E0隱藏小地圖按鈕|r"
+L["|cff4cc9f0Right-click:|r |cffE0E0E0Enter Unlock Mode|r"] = "|cff4cc9f0右鍵點擊：|r |cffE0E0E0進入解鎖模式|r"
 L["|cffff6060[CludesUI]|r A profile named \"%1$s\" already exists."] = "|cffff6060[CludesUI]|r 名為「%1$s」的設定檔已經存在。"
 L["|cffff6060[CludesUI]|r Cannot rename to \"Default\"."] = "|cffff6060[CludesUI]|r 無法重新命名為「Default」（預設）。"
 

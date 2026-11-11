@@ -101,7 +101,7 @@ end
 -- font from the locale system's own glyph table beats a multi-script family.
 local function LP_FontFor(locale)
     local fn = CludesUI.LocaleGlyphFont
-    return (fn and fn(locale)) or (CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF")
+    return (fn and fn(locale)) or (CludesUI.MEDIA_PATH .. "fonts\\Barlow Condensed.ttf")
 end
 
 -------------------------------------------------------------------------------
@@ -116,8 +116,14 @@ CludesUI._WHATSNEW_PATCHES = {
               title  = "Class colour by default",
               desc   = "A fresh install opens in your class colour. Pick any other theme under CUI Options Theme." },
             { module = "Global Settings",
-              title  = "Six new colour themes",
-              desc   = "Ember, Blood, Frost, Arcane, Gold and Toxic join the theme list." },
+              title  = "Frost blue house colour",
+              desc   = "The CludesUI theme, logo and highlights are frost blue." },
+            { module = "Global Settings",
+              title  = "Five new colour themes",
+              desc   = "Ember, Blood, Arcane, Gold and Toxic join the theme list." },
+            { module = "Global Settings",
+              title  = "Barlow Condensed is the default font",
+              desc   = "Change it under Fonts. Expressway and the other fonts are still in the list." },
             { module = "Profiles",
               title  = "Import older profile strings",
               desc   = "Import Profile also accepts strings in the older format and converts them as it imports." },
@@ -300,7 +306,7 @@ initFrame:SetScript("OnEvent", function(self)
         -------------------------------------------------------------------
         local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
         -- Red for stop (Reset ALL, Uninstall, Restore), CludesUI's own green
-        -- (#0cd29d) for go (Optimize and its link): fixed, never the theme accent.
+        -- (#4cc9f0) for go (Optimize and its link): fixed, never the theme accent.
         local WARN = { r = 0.9, g = 0.3, b = 0.3 }
         local GO = { r = 0x0c / 255, g = 0xd2 / 255, b = 0x9d / 255 }
 
@@ -1442,7 +1448,7 @@ initFrame:SetScript("OnEvent", function(self)
         local DARK_BG = CludesUI.DARK_BG
         local bbg = CludesUI.SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bbg:SetAllPoints()
-        local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local bbrd = CludesUI.MakeRoundedBorder(btn, EG.r, EG.g, EG.b, 0.5, bbg)
         local blbl = CludesUI.MakeFont(btn, 13, nil, EG.r, EG.g, EG.b, 1)
         blbl:SetAlpha(0.8)

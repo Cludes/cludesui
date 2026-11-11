@@ -513,7 +513,7 @@ ApplyRule = function(rule, win)
             if barScopeOK and KeyMatches(sid, fc.spellID) then
                 ApplyToFrame(f, rule, win)
                 if ns._fakeActiveDebug then
-                    print(("|cff0cd29fCUI FakeActive|r %s sid=%s"):format(
+                    print(("|cff4cc9f0CUI FakeActive|r %s sid=%s"):format(
                         win and "ON " or "off", tostring(sid)))
                 end
             end
@@ -592,7 +592,7 @@ end
             else
                 st.cdLocked = true
                 if ns._fakeActiveDebug then
-                    print("|cff0cd29fCUI FakeActive|r fa121 cd engine-locked (build-time styling only)")
+                    print("|cff4cc9f0CUI FakeActive|r fa121 cd engine-locked (build-time styling only)")
                 end
             end
         end
@@ -752,7 +752,7 @@ end
                         tc:SetFrameLevel(cd:GetFrameLevel() + 5)
                         local fs = tc:CreateFontString(nil, "OVERLAY")
                         local cdFont = (CludesUI.GetFontPath("cdm"))
-                            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+                            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
                         local fsScale = (scale and scale > 0.01) and scale or 1
                         local cdSize = ((ss and ss.cooldownFontSize) or (bd and bd.cooldownFontSize) or 12) / fsScale
                         if CludesUI.ApplyIconTextFont then
@@ -1954,7 +1954,7 @@ end
 if CludesUI then
     function CludesUI.FakeActiveDebug()
         ns._fakeActiveDebug = not ns._fakeActiveDebug
-        print(("|cff0cd29fCUI FakeActive|r debug %s | armed=%s rules=%d"):format(
+        print(("|cff4cc9f0CUI FakeActive|r debug %s | armed=%s rules=%d"):format(
             ns._fakeActiveDebug and "ON" or "off", tostring(_armed), #_rules))
 
         -- Per-rule dump. "armed with N rules" reads true in every broken report,

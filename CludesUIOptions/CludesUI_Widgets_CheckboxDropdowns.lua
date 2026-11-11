@@ -1064,7 +1064,7 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             local CLOSE_H = 26
             local closePad = 6
             yOff = yOff - closePad
-            local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+            local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             if not closeBtn then
                 closeBtn = CreateFrame("Button", nil, child)
                 closeBtn:SetHeight(CLOSE_H)
@@ -1582,7 +1582,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     if standIn then return standIn, standIn end
     opts = opts or {}
     local PP = CludesUI.PanelPP
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     -- Options panel is Expressway-locked by design (locale-aware: CJK/Cyrillic get the system glyph font). The user's global font intentionally does not restyle the settings UI.
     local fontPath = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 

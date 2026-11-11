@@ -825,7 +825,7 @@ do
 
         local MEDIA_PATH = "Interface\\AddOns\\CludesUI\\media\\"
         local fontPath = (CludesUI.GetFontPath and CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-        local accentColor = CludesUI.ACCENT_COLOR or CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local accentColor = CludesUI.ACCENT_COLOR or CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local PP = CludesUI.PanelPP or CludesUI.PP
 
         local POPUP_W = 300

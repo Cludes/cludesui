@@ -25,9 +25,9 @@ end
 -------------------------------------------------------------------------------
 --  Visual Settings  (edit these to adjust the look -- values only, no tables)
 -------------------------------------------------------------------------------
--- Accent colour -- canonical default: #0CD29D teal. The Forever client opens
+-- Accent colour -- canonical default: #4CC9F0 teal. The Forever client opens
 -- on #DCA77F (soft bronze) instead; a chosen accent always wins over this.
-local DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 12/255, 210/255, 157/255
+local DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 76/255, 201/255, 240/255
 if CUI_CLIENT_FOREVER == true then
     DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 220/255, 167/255, 127/255
 end
@@ -35,8 +35,8 @@ end
 -- Theme presets: { accentR, accentG, accentB, bgFile }
 -- bgFile is relative to MEDIA_PATH (resolved later after MEDIA_PATH is defined)
 local THEME_PRESETS = {
-    ["CludesUI"]    = { r = 12/255,  g = 210/255, b = 157/255 },  -- #0CD29D
-    ["CludesUI Original"] = { r = 12/255, g = 210/255, b = 157/255 },  -- #0CD29D (not listed; kept for saved settings)
+    ["CludesUI"]    = { r = 76/255,  g = 201/255, b = 240/255 },  -- #4CC9F0
+    ["CludesUI Original"] = { r = 76/255, g = 201/255, b = 240/255 },  -- #4CC9F0 (not listed; kept for saved settings)
     ["CludesUI Forever"] = { r = 220/255, g = 167/255, b = 127/255 },  -- #DCA77F soft bronze
     ["Horde"]          = { r = 255/255, g = 90/255,  b = 31/255  },  -- #FF5A1F
     ["Alliance"]       = { r = 63/255,  g = 167/255, b = 255/255 },  -- #3FA7FF
@@ -46,14 +46,14 @@ local THEME_PRESETS = {
     ["Pixels"]         = { r = 1,       g = 1,       b = 1       },  -- white accent
     ["Ember"]          = { r = 255/255, g = 122/255, b = 26/255  },  -- #FF7A1A warm orange
     ["Blood"]          = { r = 215/255, g = 38/255,  b = 61/255  },  -- #D7263D crimson
-    ["Frost"]          = { r = 76/255,  g = 201/255, b = 240/255 },  -- #4CC9F0 ice blue
+    ["Frost"]          = { r = 76/255,  g = 201/255, b = 240/255 },  -- #4CC9F0 ice blue (now the house colour; not listed, kept for saved settings)
     ["Arcane"]         = { r = 155/255, g = 107/255, b = 255/255 },  -- #9B6BFF bright violet
     ["Gold"]           = { r = 230/255, g = 180/255, b = 80/255  },  -- #E6B450 muted gold
     ["Toxic"]          = { r = 166/255, g = 226/255, b = 46/255  },  -- #A6E22E lime green
     ["Class Colored"]  = nil,  -- resolved at runtime from player class
     ["Custom Color"]   = nil,  -- user-chosen via color picker
 }
-local THEME_ORDER = { "CludesUI", "CludesUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Ember", "Blood", "Frost", "Arcane", "Gold", "Toxic", "Class Colored", "Custom Color" }
+local THEME_ORDER = { "CludesUI", "CludesUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Ember", "Blood", "Arcane", "Gold", "Toxic", "Class Colored", "Custom Color" }
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- The theme in force when none was chosen: the Forever client opens on its own
@@ -391,7 +391,7 @@ CludesUI.PREVIEW_ROSTER = {
 }
 
 -- Font (Expressway lives in CludesUI/media)
-local EXPRESSWAY = MEDIA_PATH .. "fonts\\Expressway.ttf"
+local EXPRESSWAY = MEDIA_PATH .. ((GetLocale() == "ruRU") and "fonts\\Expressway.ttf" or "fonts\\Barlow Condensed.ttf")
 
 -- Locale system-font fallback for glyphs our fonts lack (CJK, Cyrillic). Resolved by
 -- CludesUI_Locale.lua from the EFFECTIVE locale (client or override); nil = Expressway.
@@ -1443,7 +1443,7 @@ CludesUI.COLOR_CODES = {
     DIM   = "|cff888888",
     BAD   = "|cffff5959",
     ERROR = "|cffff6060",
-    BRAND = "|cff0cd29d",  -- ADDON_COLORS["CludesUI"]
+    BRAND = "|cff4cc9f0",  -- ADDON_COLORS["CludesUI"]
 }
 
 -- 0-1 r, g, b -> "|cffRRGGBB" (each channel rounded).
@@ -4088,10 +4088,10 @@ do
             if isDragging or InCombatLockdown() then return end
             GameTooltip:SetOwner(self, "ANCHOR_NONE")
             GameTooltip:SetPoint("TOPRIGHT", self, "TOPLEFT", -2, 0)
-            GameTooltip:AddLine("|cff0cd29fCludesUI|r")
-            GameTooltip:AddLine(CludesUI.L("|cff0cd29dLeft-click:|r |cffE0E0E0Toggle CludesUI|r"))
-            GameTooltip:AddLine(CludesUI.L("|cff0cd29dRight-click:|r |cffE0E0E0Enter Unlock Mode|r"))
-            GameTooltip:AddLine(CludesUI.L("|cff0cd29dMiddle-click:|r |cffE0E0E0Hide Minimap Button|r"))
+            GameTooltip:AddLine("|cff4cc9f0CludesUI|r")
+            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
+            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Unlock Mode|r"))
+            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
             GameTooltip:Show()
         end)
         btn:SetScript("OnLeave", function() GameTooltip:Hide() end)

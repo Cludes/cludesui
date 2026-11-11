@@ -176,7 +176,7 @@ local function IsActive(site)
     return CanTake(site) and GO.IsCustomGlow(site.desc)
 end
 
-local ST_GREY, ST_GREEN, ST_AMBER = { 0.5, 0.5, 0.5 }, { 0.05, 0.82, 0.62 }, { 0.88, 0.69, 0.31 }
+local ST_GREY, ST_GREEN, ST_AMBER = { 0.5, 0.5, 0.5 }, { 0.30, 0.79, 0.94 }, { 0.88, 0.69, 0.31 }
 -- The card summary wears the status dots' colors: amber "differ", green "all match".
 local AMBER_CODE = CludesUI.HexColor(ST_AMBER[1], ST_AMBER[2], ST_AMBER[3])
 local GREEN_CODE = CludesUI.HexColor(ST_GREEN[1], ST_GREEN[2], ST_GREEN[3])

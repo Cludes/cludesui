@@ -59,8 +59,8 @@ end
 local Theme = {}
 WSkin.Theme = Theme
 local function ResolveTheme()
-    local EG = (CUI and CUI.CLUDES_GREEN) or { r = 0.047, g = 0.824, b = 0.616 }
-    Theme.accR, Theme.accG, Theme.accB = EG.r or 0.047, EG.g or 0.824, EG.b or 0.616
+    local EG = (CUI and CUI.CLUDES_GREEN) or { r = 0.298, g = 0.788, b = 0.941 }
+    Theme.accR, Theme.accG, Theme.accB = EG.r or 0.298, EG.g or 0.788, EG.b or 0.941
     -- Neutral dark grays (no color cast): panel/button/dropdown fill and the
     -- darker nested-inset variant.
     Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA = 0.08, 0.08, 0.08, 0.92
@@ -1569,8 +1569,8 @@ end
 -------------------------------------------------------------------------------
 local function LiveAccent()
     local EG = CUI and CUI.CLUDES_GREEN
-    if EG then return EG.r or 0.047, EG.g or 0.824, EG.b or 0.616 end
-    return 0.047, 0.824, 0.616
+    if EG then return EG.r or 0.298, EG.g or 0.788, EG.b or 0.941 end
+    return 0.298, 0.788, 0.941
 end
 
 function WSkin.AccentBarShown()

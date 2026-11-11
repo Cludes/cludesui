@@ -819,10 +819,10 @@ function ns._ApplyHitboxOverlay(plate)
             ov = CreateFrame("Frame", nil, np)
             local fill = ov:CreateTexture(nil, "BACKGROUND")
             fill:SetAllPoints()
-            fill:SetColorTexture(0.047, 0.824, 0.624, 0.18)
+            fill:SetColorTexture(0.298, 0.788, 0.941, 0.18)
             local function Edge()
                 local t = ov:CreateTexture(nil, "BORDER")
-                t:SetColorTexture(0.047, 0.824, 0.624, 0.85)
+                t:SetColorTexture(0.298, 0.788, 0.941, 0.85)
                 return t
             end
             local top, bottom, left, right = Edge(), Edge(), Edge(), Edge()

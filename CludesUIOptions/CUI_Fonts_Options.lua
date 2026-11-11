@@ -1343,7 +1343,7 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
                 fontDropOrder[#fontDropOrder + 1] = "---"
             else
                 local path = CludesUI.FONT_BLIZZARD[name]
-                    or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
+                    or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Barlow Condensed.ttf"))
                 local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name
                 fontDropValues[name] = { text = displayName, font = path }
                 fontDropOrder[#fontDropOrder + 1] = name
@@ -1365,7 +1365,7 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
         { type="dropdown", text="Global Font",
           values=fontDropValues, order=fontDropOrder,
           getValue=function()
-              local g = CludesUI.GetFontsDB().global or "Expressway"
+              local g = CludesUI.GetFontsDB().global or CludesUI.DEFAULT_FONT_NAME
               -- Cyrillic locales list Expressway as a normal entry, so an older
               -- __expressway opt-in collapses onto it (same file) instead of falling
               -- through to System Default and misreporting the active face.

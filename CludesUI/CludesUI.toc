@@ -1,5 +1,5 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff0cd29fCludesUI|r
+## Title: |cff4cc9f0CludesUI|r
 ## Notes: Shared framework for the CludesUI addon suite
 ## Author: Cludes
 ## Version: 1.0.0

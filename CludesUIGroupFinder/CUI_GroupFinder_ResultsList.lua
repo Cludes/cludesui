@@ -201,7 +201,7 @@ local function ByPos(a, b) return Pos(a) < Pos(b) end
 local function Accent()
     local a = CUI.CLUDES_GREEN
     if a then return a.r, a.g, a.b end
-    return 0.05, 0.82, 0.62
+    return 0.30, 0.79, 0.94
 end
 
 -------------------------------------------------------------------------------

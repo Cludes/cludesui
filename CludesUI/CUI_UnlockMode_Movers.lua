@@ -3806,7 +3806,7 @@ local function CreateMover(barKey)
         local hasTarget = curTgt and curTgt ~= "_disable_" and curTgt ~= "_select_"
         if hasTarget then
             local tgtName = UM.GetBarLabel(curTgt) or curTgt
-            selElemLbl:SetText(CludesUI.Lf("Snap Target: %1$s", "|cFF0CD29D" .. tgtName .. "|r"))
+            selElemLbl:SetText(CludesUI.Lf("Snap Target: %1$s", "|cFF4CC9F0" .. tgtName .. "|r"))
             selElemLbl:SetTextColor(0.75, 0.75, 0.75, 0.9)
         else
             selElemLbl:SetText(CludesUI.L("Select Snap Target"))

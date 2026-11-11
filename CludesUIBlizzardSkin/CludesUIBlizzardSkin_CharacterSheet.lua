@@ -2032,7 +2032,7 @@ local function SkinCharacterSheet()
 
     -- Default category colors
     local DEFAULT_CATEGORY_COLORS = {
-        Attributes = { r = 0.047, g = 0.824, b = 0.616 },
+        Attributes = { r = 0.298, g = 0.788, b = 0.941 },
         ["Secondary Stats"] = { r = 0.471, g = 0.255, b = 0.784 },
         ["Tertiary Stats"] = { r = 0.859, g = 0.325, b = 0.855 },
         Attack = { r = 1, g = 0.353, b = 0.122 },
@@ -4588,7 +4588,7 @@ local function EnsureCalcTab(frame)
     label:SetJustifyH("CENTER")
     label:SetText("Upgrades")
 
-    local EG = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local underline = calcTab:CreateTexture(nil, "OVERLAY", nil, 6)
     if PP and PP.DisablePixelSnap then
         PP.DisablePixelSnap(underline)
@@ -4987,7 +4987,7 @@ function CludesUI._refreshCharacterSheetColors()
 
     -- Default category colors
     local DEFAULT_CATEGORY_COLORS = {
-        Attributes = { r = 0.047, g = 0.824, b = 0.616 },
+        Attributes = { r = 0.298, g = 0.788, b = 0.941 },
         ["Secondary Stats"] = { r = 0.471, g = 0.255, b = 0.784 },
         ["Tertiary Stats"] = { r = 0.859, g = 0.325, b = 0.855 },
         Attack = { r = 1, g = 0.353, b = 0.122 },

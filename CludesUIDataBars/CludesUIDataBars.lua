@@ -386,7 +386,7 @@ function ns.GetAccent()
     end
     local theme = CludesUI.CLUDES_GREEN
     if theme then return theme.r, theme.g, theme.b end
-    return 0.047, 0.824, 0.616
+    return 0.298, 0.788, 0.941
 end
 
 -- Colour gradient (bad -> caution -> good)

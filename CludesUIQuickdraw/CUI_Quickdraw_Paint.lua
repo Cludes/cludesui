@@ -610,7 +610,7 @@ function PaletteView:MarkerPip(w, slot, iconSize)
     -- that knew the unscaled figure.
     local s = max(3, floor((iconSize or w:GetWidth() or 40) * 0.18))
     pip:SetSize(s, s)
-    local ar, ag, ab = 0.047, 0.824, 0.624
+    local ar, ag, ab = 0.298, 0.788, 0.941
     if CludesUI.ResolveActiveAccent then
         ar, ag, ab = CludesUI.ResolveActiveAccent()
     end

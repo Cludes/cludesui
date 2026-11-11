@@ -1480,7 +1480,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local PP = CludesUI.PanelPP or CludesUI.PP
         local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local s = db.profile
 
         if not testModeFrame then

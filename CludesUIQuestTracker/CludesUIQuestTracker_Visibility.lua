@@ -302,7 +302,7 @@ local function ApplyTopDivider()
     local onePixel = (es and es > 0) and (perfect / es) or (PP_SEC and PP_SEC.mult) or 1
     tex:SetHeight(onePixel)
     local eg = CludesUI and CludesUI.CLUDES_GREEN
-    local r, g, b = (eg and eg.r) or 0.047, (eg and eg.g) or 0.824, (eg and eg.b) or 0.624
+    local r, g, b = (eg and eg.r) or 0.298, (eg and eg.g) or 0.788, (eg and eg.b) or 0.9414
     tex:SetColorTexture(r, g, b, 1)
     tex:Show()
 end

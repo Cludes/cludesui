@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## AllowLoadGameType: camelot
-## Title: |cff0cd29fCludesUI|r Forever Essentials
-## Category: |cff0cd29fCludes|rUI
+## Title: |cff4cc9f0CludesUI|r Forever Essentials
+## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Essential tools for WoW Forever.
 ## Author: Cludes

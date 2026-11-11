@@ -104,7 +104,7 @@ local function BuildLivePreview(parent, yOff)
     -- numButtonsShowable --------------------------------------------------
     local buttons = {}
     local DEFAULT_FONT = (CludesUI.GetFontPath("actionBars"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
     for i = 1, maxBtns do
         local bf = CreateFrame("Frame", nil, pf)

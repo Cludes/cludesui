@@ -1,6 +1,6 @@
 ## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
-## Title: |cff0cd29fCludesUI|r Unit Frames
-## Category: |cff0cd29fCludes|rUI
+## Title: |cff4cc9f0CludesUI|r Unit Frames
+## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
 ## Notes: Simple unit frames with a modern visual style.
 ## Author: Cludes

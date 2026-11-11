@@ -83,7 +83,7 @@ end
 local function GetAccent()
     local eg = CludesUI and CludesUI.CLUDES_GREEN
     if eg then return eg.r, eg.g, eg.b end
-    return 12/255, 210/255, 157/255
+    return 76/255, 201/255, 240/255
 end
 
 local function IsVerticalOrientation(ori)

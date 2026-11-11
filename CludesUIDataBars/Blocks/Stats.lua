@@ -360,7 +360,7 @@ ns.BlockFactories.fps = function(blockCfg, slot, content, barCtx)
                 local memKb = collectgarbage("count")
                 local msg
                 if memKb > 1024 then msg = format("%.2f MB", memKb / 1024) else msg = format("%.0f KB", memKb) end
-                print("|cff0cd29fDataBars|r: Memory usage snapshot |cffffff00" .. msg .. "|r")
+                print("|cff4cc9f0DataBars|r: Memory usage snapshot |cffffff00" .. msg .. "|r")
                 if isOver() then FpsTooltip(inst, false) end
             end
         end,

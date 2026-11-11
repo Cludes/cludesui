@@ -98,7 +98,7 @@ local function EnsureInsertLine()
     if _dragInsertLine then return _dragInsertLine end
     local sidebar = CUI_Bags._sidebar
     if not sidebar then return nil end
-    local eg = CUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+    local eg = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     local line = sidebar:CreateTexture(nil, "OVERLAY", nil, 7)
     line:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
     local PP = CUI and CUI.PP
@@ -113,7 +113,7 @@ local function EnsureGroupHighlight()
     if _dragGroupHL then return _dragGroupHL end
     local sidebar = CUI_Bags._sidebar
     if not sidebar then return nil end
-    local eg = CUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.616 }
+    local eg = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     local hl = CreateFrame("Frame", nil, sidebar)
     hl:SetFrameLevel(sidebar:GetFrameLevel() + 10)
     hl.bg = hl:CreateTexture(nil, "OVERLAY", nil, 6)

@@ -254,7 +254,7 @@ ReloadFramesBody = function()
 
     -- Uses global font
     local donorFontPath = CludesUI.GetFontPath("unitFrames")
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
     -- Live enable/disable frames without reload
     local function ToggleFrame(unit, frame)

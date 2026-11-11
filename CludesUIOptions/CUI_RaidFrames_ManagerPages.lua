@@ -1545,7 +1545,7 @@ local function DmPvEnter(self)
     if self._hoverBdr then
         local lPP = CludesUI.PanelPP or CludesUI.PP
         if lPP then
-            local ac = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+            local ac = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             lPP.UpdateBorder(self._hoverBdr, 2, ac.r, ac.g, ac.b, 1)
             self._hoverBdr:Show()
         end
@@ -2362,7 +2362,7 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
         addBtn:SetPoint("TOP", sidebarChild, "TOPLEFT", floor(sidebarW / 2), tileY - ADD_BTN_PAD)
         addBtn:SetFrameLevel(sidebarChild:GetFrameLevel() + 1)
 
-        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
         addBg:SetAllPoints()
         addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
@@ -2509,7 +2509,7 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
                 popup._indDD = indDD
                 py = py - ROW_H2 - DD_GAP
 
-                local accentColor = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+                local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 local cBtn = CreateFrame("Button", nil, popup)
                 cBtn:SetSize(ddW, ROW_H2)
                 cBtn:SetPoint("TOPLEFT", popup, "TOPLEFT", POPUP_PAD, py)
@@ -2711,7 +2711,7 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
     settingsTitle:SetWordWrap(false)
     local ac2 = CludesUI.CLUDES_GREEN
     if ac2 then settingsTitle:SetTextColor(ac2.r, ac2.g, ac2.b)
-    else settingsTitle:SetTextColor(0.05, 0.82, 0.62) end
+    else settingsTitle:SetTextColor(0.30, 0.79, 0.94) end
 
     local subTitle = leftFixed:CreateFontString(nil, "OVERLAY")
     subTitle:SetFont(fontPath, 13, "")
@@ -2806,7 +2806,7 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
         linkFS:SetText(CludesUI.Lf("Edit in %1$s", gname2))
         local lac = CludesUI.CLUDES_GREEN
         if lac then linkFS:SetTextColor(lac.r, lac.g, lac.b, 0.85)
-        else linkFS:SetTextColor(0.05, 0.82, 0.62, 0.85) end
+        else linkFS:SetTextColor(0.30, 0.79, 0.94, 0.85) end
         link:SetSize(linkFS:GetStringWidth() + 4, 18)
         link:SetScript("OnEnter", function() linkFS:SetAlpha(1) end)
         link:SetScript("OnLeave", function() linkFS:SetAlpha(0.85) end)
@@ -2918,7 +2918,7 @@ function ns.BMP_ShowFilterEditor(show, hide)
         or "Fonts\\FRIZQT__.TTF"
     local ar, ag, ab = 1, 0.82, 0.30
     if CludesUI.GetAccentColor then ar, ag, ab = CludesUI.GetAccentColor() end
-    local eg = CludesUI.CLUDES_GREEN or { r = 0.05, g = 0.82, b = 0.62 }
+    local eg = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     local POPUP_W, POPUP_H = 620, 520
     local SIDE_W = 180

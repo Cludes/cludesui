@@ -912,7 +912,7 @@ local function RepointAllDBs(profileName)
         local fontsDB = CludesUI.GetFontsDB()
         for k in pairs(fontsDB) do fontsDB[k] = nil end
         for k, v in pairs(profileData.fonts) do fontsDB[k] = DeepCopy(v) end
-        if fontsDB.global      == nil then fontsDB.global      = "Expressway" end
+        if fontsDB.global      == nil then fontsDB.global      = CludesUI.DEFAULT_FONT_NAME end
         if fontsDB.outlineMode == nil then fontsDB.outlineMode = "shadow"     end
         -- The fonts DB was just rewritten in place; drop the resolution cache.
         CludesUI.InvalidateFontCache()
@@ -1330,7 +1330,7 @@ function CludesUI.ApplyProfileData(profileData)
         local fontsDB = CludesUI.GetFontsDB()
         for k in pairs(fontsDB) do fontsDB[k] = nil end
         for k, v in pairs(profileData.fonts) do fontsDB[k] = DeepCopy(v) end
-        if fontsDB.global      == nil then fontsDB.global      = "Expressway" end
+        if fontsDB.global      == nil then fontsDB.global      = CludesUI.DEFAULT_FONT_NAME end
         if fontsDB.outlineMode == nil then fontsDB.outlineMode = "shadow"     end
         -- The fonts DB was just rewritten in place; drop the resolution cache.
         CludesUI.InvalidateFontCache()
@@ -1726,9 +1726,9 @@ end
 function CludesUI.ProfileChangesFont(profileData)
     if not profileData or not profileData.fonts then return false end
     local cur = CludesUI.GetFontsDB()
-    local curFont    = cur.global      or "Expressway"
+    local curFont    = cur.global      or CludesUI.DEFAULT_FONT_NAME
     local curOutline = cur.outlineMode or "shadow"
-    local newFont    = profileData.fonts.global      or "Expressway"
+    local newFont    = profileData.fonts.global      or CludesUI.DEFAULT_FONT_NAME
     local newOutline = profileData.fonts.outlineMode or "shadow"
     -- "none" and "shadow" are both drop-shadow (no outline) -- treat as identical
     if curOutline == "none" then curOutline = "shadow" end

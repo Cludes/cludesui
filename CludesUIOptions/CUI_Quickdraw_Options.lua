@@ -1353,7 +1353,7 @@ initFrame:SetScript("OnEvent", function(self)
         if pickerMenu then return pickerMenu end
 
         local FONT = (CludesUI.GetFontPath())
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
         local bgR  = CludesUI.DD_BG_R or 0.075
         local bgG  = CludesUI.DD_BG_G or 0.113
         local bgB  = CludesUI.DD_BG_B or 0.141
@@ -1364,7 +1364,7 @@ initFrame:SetScript("OnEvent", function(self)
         local tG   = CludesUI.TEXT_DIM_G or 0.7
         local tB   = CludesUI.TEXT_DIM_B or 0.7
         local tA   = CludesUI.TEXT_DIM_A or 0.85
-        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.047, g = 0.824, b = 0.624 }
+        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
 
         local menu = CreateFrame("Frame", nil, UIParent)
         -- The options window is on DIALOG (CludesUI.lua:7126), so the menu
@@ -2474,7 +2474,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function RebuildMenuRows()
         local m = EnsureMenuMenu()
         local FONT = (CludesUI.GetFontPath())
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
         local mH = 4
         local count = PaletteCount()
         for i = 1, count do
@@ -3802,7 +3802,7 @@ initFrame:SetScript("OnEvent", function(self)
                 rgn, row:GetFrameLevel() + 3,
                 function()
                     local c = ACfg("selectColor") or {}
-                    return c[1] or 0.047, c[2] or 0.824, c[3] or 0.624
+                    return c[1] or 0.298, c[2] or 0.788, c[3] or 0.941
                 end,
                 function(r2, g2, b2)
                     ASet("selectColor", { r2, g2, b2 })

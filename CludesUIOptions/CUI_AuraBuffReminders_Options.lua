@@ -2758,7 +2758,7 @@ initFrame:SetScript("OnEvent", function(self)
         local y = yOffset
         local _, h
         local fontPath = (CludesUI.GetFontPath("auraBuff"))
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
 
         parent._showRowDivider = true
 
@@ -2960,7 +2960,7 @@ initFrame:SetScript("OnEvent", function(self)
             sf:GetScript("OnMouseWheel")(sf, delta)
         end)
 
-        local eg = CludesUI.CLUDES_GREEN or {r=0.047, g=0.824, b=0.624}
+        local eg = CludesUI.CLUDES_GREEN or {r=0.298, g=0.788, b=0.941}
         local checkItems = {}
         for i, z in ipairs(zones) do
             local item = CreateFrame("Button", nil, child)
@@ -3289,7 +3289,7 @@ initFrame:SetScript("OnEvent", function(self)
         local addBtnBg = CludesUI.SolidTex(addBtn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         addBtnBg:SetAllPoints()
 
-        local eg = CludesUI.CLUDES_GREEN or {r=0.047, g=0.824, b=0.624}
+        local eg = CludesUI.CLUDES_GREEN or {r=0.298, g=0.788, b=0.941}
         local addBtnBorder = CludesUI.MakeRoundedBorder(addBtn, eg.r, eg.g, eg.b, 0.7, addBtnBg)
 
         local addBtnText = addBtn:CreateFontString(nil, "OVERLAY")

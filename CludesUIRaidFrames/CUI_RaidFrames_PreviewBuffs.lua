@@ -103,7 +103,7 @@ ns.PvBuffApply = function(spellInfo, frameIndex, slot)
         icon._tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         icon._tex:SetVertexColor(1, 1, 1)
     else
-        local c = spellInfo.color or { r = 0.05, g = 0.82, b = 0.62 }
+        local c = spellInfo.color or { r = 0.30, g = 0.79, b = 0.94 }
         icon._tex:SetColorTexture(c.r, c.g, c.b, 1)
         icon._tex:SetTexCoord(0, 1, 0, 1)
     end

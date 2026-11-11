@@ -98,7 +98,7 @@ local DB_DEFAULTS = {
             offsetY = 0,
         },
 
-        skyridingFilled  = { r = 0.047, g = 0.824, b = 0.624, a = 1.0 },
+        skyridingFilled  = { r = 0.298, g = 0.788, b = 0.941, a = 1.0 },
         skyridingBg      = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
 
         secondWindFilled = { r = 0.902, g = 0.706, b = 0.133, a = 1.0 },

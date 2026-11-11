@@ -77,7 +77,7 @@ local function GetItemLevelAtLocation(loc, itemLink)
 end
 local function GetAccentRGB()
     if CUI.GetAccentColor then return CUI.GetAccentColor() end
-    return 0.05, 0.82, 0.62
+    return 0.30, 0.79, 0.94
 end
 
 local SetInsetBorderColor = ns.SetInsetBorderColor
