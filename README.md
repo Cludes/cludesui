@@ -40,6 +40,21 @@ Each addon has a shortcut to its own settings page:
 
 Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Open it with `/titleline`. Its cutoff numbers come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If you also run the standalone TitleLine addon, that one takes over and this module stays off.
 
+## Tank Kit
+
+Tank Kit is for tanks. It shows your co-tank's health, debuffs and defensives in a small frame and alerts you when to taunt. Open its settings with `/ccta`. If you also run the standalone CoTankAuras addon, that one takes over and this module stays off.
+
+## Raid Lead
+
+Raid Lead is for raid leaders and assistants. Out of combat:
+
+- `/raidlead roles` sorts the raid into tanks, melee, ranged and healers, filling group 1 upward.
+- `/raidlead split` makes two balanced halves for split runs.
+- `/raidlead undo` puts everyone back where they were.
+- `/raidlead stop` stops a sort that is under way.
+
+Damage dealers are counted as melee or ranged by class, which is a guess for Druids, Shamans and Hunters.
+
 ## Profiles
 
 Profiles > Import Profile accepts CludesUI strings (they start with `!CUI_`) and strings in the older `!EUI_` format, which it converts as it imports.

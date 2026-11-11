@@ -851,7 +851,8 @@ end
 -- and the groups -- sidebar, install picker, font and texture cards -- rather
 -- than sit in them disabled. Extend the set whenever a TOC gets that line.
 CludesUI.FOREVER_HIDDEN_ADDONS = {
-    CludesUIMythicTimer = true, CludesUIFriends = true, CludesUITitleLine = true,
+    CludesUIMythicTimer = true, CludesUIFriends = true, CludesUITitleLine = true, CludesUITank = true,
+    CludesUIRaidLead = true,
     CludesUILoadoutManager = true,
     CludesUIGroupFinder = true,
     -- Not an addon: the Dragon Riding profile pseudo-folder (its file returns at

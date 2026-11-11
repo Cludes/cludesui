@@ -112,6 +112,12 @@ CludesUI._WHATSNEW_PATCHES = {
     {
         version = "1.0.0",
         features = {
+            { module = "Tank Kit",
+              title  = "A module made for tanks",
+              desc   = "Your co-tank's health, debuffs and defensives beside your frames, with TAUNT alerts. Open its settings with /ccta." },
+            { module = "Raid Lead",
+              title  = "Sort or split the raid",
+              desc   = "/raidlead roles sorts the raid into tanks, melee, ranged and healers. /raidlead split makes two balanced halves. /raidlead undo puts everyone back." },
             { module = "Mythic+ Tools",
               title  = "Title Line",
               desc   = "Your Mythic+ rating against the 0.1% and 1% title lines, with a season graph. Open it with /titleline." },

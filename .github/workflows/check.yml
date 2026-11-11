@@ -25,6 +25,9 @@ jobs:
           done < <(find . -name '*.lua' -not -path './.git/*')
           exit $fail
 
+      - name: Raid Lead planner tests
+        run: luajit tools/test-raidlead.lua
+
       - name: Every file a .toc lists exists
         run: |
           fail=0

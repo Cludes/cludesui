@@ -62,6 +62,8 @@ local GROUPS = {
             { label = "Damage Meters",       addon = "CludesUIDamageMeters" },
             { label = "Buff Reminders",  addon = "CludesUIAuraBuffReminders" },
             { label = "Title Line",      addon = "CludesUITitleLine" },
+            { label = "Tank Kit",        addon = "CludesUITank" },
+            { label = "Raid Lead",       addon = "CludesUIRaidLead" },
         },
     },
     {
