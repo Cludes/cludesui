@@ -10,6 +10,10 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    enchants      enchantable slots with no enchant (Midnight: head,
 --                  shoulders, chest, feet, both rings, weapons)
 --    cooldowns     their raid cooldowns that are not ready
+--    consumables   flask, food, augment rune and healthstone they lack.
+--                  Read from their own buffs (flask and rune by spell ID,
+--                  food by the Well Fed icon) and bags; when the game hides
+--                  their buffs from addons the report says so instead.
 --  The leader and assistants get a window listing everyone, problems first,
 --  and the names of anyone who did not answer (no CludesUI).
 -------------------------------------------------------------------------------
@@ -25,6 +29,7 @@ function ns.ReadyCheckSettings()
     local s = p.readyCheck
     if s.enabled == nil then s.enabled = true end
     if s.minDurability == nil then s.minDurability = 30 end
+    if s.consumables == nil then s.consumables = true end
     return s
 end
 
@@ -77,11 +82,52 @@ local function CooldownsNotReady()
     return out
 end
 
---- The report this player sends: "dur|ilvl|enchants,..|cooldowns,..".
+local WELL_FED_ICON = 136000
+local HEALTHSTONES = { 5512, 224464 }   -- Healthstone, Demonic Healthstone
+
+local function HasAnyAura(ids)
+    for _, id in ipairs(ids or {}) do
+        local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
+        if ok and aura then return true end
+    end
+    return false
+end
+
+local function WellFed()
+    for i = 1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        if not aura then return false end
+        local icon = aura.icon
+        if icon and not (issecretvalue and issecretvalue(icon)) and icon == WELL_FED_ICON then return true end
+    end
+    return false
+end
+
+--- Consumables this player lacks, or "?" when the game hides their buffs.
+local function MissingConsumables()
+    local restricted = InCombatLockdown()
+        or (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted and CludesUI.AuraKit.AurasRestricted())
+    if restricted then return "?" end
+    local prep = CludesUI.RAID_PREP_IDS or {}
+    local out = {}
+    if not HasAnyAura(prep.flask) then out[#out + 1] = "Flask" end
+    local ok, fed = pcall(WellFed)
+    if not (ok and fed) then out[#out + 1] = "Food" end
+    if not HasAnyAura(prep.rune) then out[#out + 1] = "Rune" end
+    local stone = false
+    for _, id in ipairs(HEALTHSTONES) do
+        if (C_Item.GetItemCount(id) or 0) > 0 then stone = true end
+    end
+    if not stone then out[#out + 1] = "Healthstone" end
+    return table.concat(out, ",")
+end
+ns.MissingConsumables = MissingConsumables
+
+--- The report this player sends: "dur|ilvl|enchants,..|cooldowns,..|consumables,..".
 function ns.MyReadyReport()
     local _, equipped = GetAverageItemLevel()
-    return ("%d|%d|%s|%s"):format(LowestDurability(), math.floor((equipped or 0) + 0.5),
-        table.concat(MissingEnchants(), ","), table.concat(CooldownsNotReady(), ","))
+    return ("%d|%d|%s|%s|%s"):format(LowestDurability(), math.floor((equipped or 0) + 0.5),
+        table.concat(MissingEnchants(), ","), table.concat(CooldownsNotReady(), ","), MissingConsumables())
 end
 
 -------------------------------------------------------------------------------
@@ -154,6 +200,13 @@ function ns.RefreshReadyWindow()
             if r.dur < s.minDurability then problems[#problems + 1] = "|cffff6040" .. r.dur .. "% durability|r" end
             if #r.enchants > 0 then problems[#problems + 1] = "|cffffb040no enchant: " .. table.concat(r.enchants, ", ") .. "|r" end
             if #r.cds > 0 then problems[#problems + 1] = "|cffffd060on cooldown: " .. table.concat(r.cds, ", ") .. "|r" end
+            if s.consumables then
+                if r.cons == "?" then
+                    problems[#problems + 1] = "|cff9aa6b2buffs hidden by the game|r"
+                elseif r.cons and r.cons ~= "" then
+                    problems[#problems + 1] = "|cffff9050missing: " .. r.cons:gsub(",", ", ") .. "|r"
+                end
+            end
             lines[#lines + 1] = { bad = #problems > 0, text = ("%s  |cff9aa6b2%d ilvl|r  %s"):format(name, r.ilvl,
                 #problems > 0 and table.concat(problems, "   ") or "|cff60d080all good|r") }
         end
@@ -173,14 +226,18 @@ end
 
 --- Called by Comms.lua with a player's report.
 function ns.ReceiveReadyReport(name, report)
-    local dur, ilvl, ench, cds = report:match("^(%d+)|(%d+)|([^|]*)|(.*)$")
+    -- The consumables field is new; a report from an older CludesUI has four fields.
+    local dur, ilvl, ench, cds, cons = report:match("^(%d+)|(%d+)|([^|]*)|([^|]*)|(.*)$")
+    if not dur then
+        dur, ilvl, ench, cds = report:match("^(%d+)|(%d+)|([^|]*)|(.*)$")
+    end
     if not dur then return end
     local function List(s)
         local t = {}
         for v in s:gmatch("[^,]+") do t[#t + 1] = v end
         return t
     end
-    reports[name] = { dur = tonumber(dur), ilvl = tonumber(ilvl), enchants = List(ench), cds = List(cds) }
+    reports[name] = { dur = tonumber(dur), ilvl = tonumber(ilvl), enchants = List(ench), cds = List(cds), cons = cons }
     ns.RefreshReadyWindow()
 end
 

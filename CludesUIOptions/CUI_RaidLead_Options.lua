@@ -99,7 +99,10 @@ initFrame:SetScript("OnEvent", function(self)
             { type = "labeledButton", text = "See Your Own Report", buttonText = "Show", width = 90,
               tooltip = "Opens the ready check list with just your own report.",
               onClick = function() ns.ShowReadyWindow() end },
-            { type = "label", text = "Enchants checked: head, shoulders, chest, feet, rings and weapons." }
+            { type = "toggle", text = "Consumables Check",
+              tooltip = "Adds missing flask, food, augment rune and healthstone to each report. Food counts any buff with the Well Fed icon. If the game is hiding buffs from addons at that moment, the report says so.",
+              getValue = function() return rc.consumables end,
+              setValue = function(v) rc.consumables = v and true or false end }
         );  y = y - h
 
         _, h = W:SectionHeader(parent, "VERSIONS", y);  y = y - h
