@@ -721,6 +721,37 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  MANA BAR AND FIVE-SECOND RULE
+    ---------------------------------------------------------------------------
+    local DM = CludesUI._DruidMana
+    if DM then
+        local function dmOff() return not DM.Get("enabled") end
+        local function DMSet(key, v) DM.Cfg()[key] = v; DM.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "MANA BAR", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_ManaBar", disabled = dmOff, disabledTooltip = "Mana Bar" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Mana Bar",
+              tooltip = "Shows a druid's mana while in Bear, Cat or another form that hides it.",
+              getValue = function() return not dmOff() end,
+              setValue = function(v) DMSet("enabled", v and true or false) end },
+            { type = "toggle", text = "Five-Second Rule", disabled = dmOff,
+              tooltip = "A line under the bar counts down five seconds after you spend mana, while spirit regen is paused.",
+              getValue = function() return DM.Get("fiveSecond") end,
+              setValue = function(v) DMSet("fiveSecond", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Always Show", disabled = dmOff,
+              tooltip = "Show the bar all the time, for any class with mana, not only a druid in a form.",
+              getValue = function() return DM.Get("always") end,
+              setValue = function(v) DMSet("always", v and true or false) end },
+            { type = "slider", text = "Width", min = 80, max = 400, step = 1, isPercent = false, disabled = dmOff,
+              getValue = function() return DM.Get("width") end,
+              setValue = function(v) DMSet("width", math.floor(v + 0.5)) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
