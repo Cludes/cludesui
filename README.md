@@ -72,7 +72,7 @@ Damage dealers are counted as melee or ranged by class, which is a guess for Dru
 
 On WoW Forever, Forever Tools has a Training page in the CludesUI panel. It lists the spells your trainer has for you right now with their total price, then what each of the next levels brings and costs. Spells that wait on a talent or a quest are listed apart, with the spell they need. When you level up, a chat line says what is new; turn it off on the same page. Prices are the trainer's base prices, so a reputation discount makes the real bill a little lower.
 
-Forever Tools > General also has a **Tracking Reminder**: a row of icons for tracking you know but have not turned on (Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons, and optionally Find Herbs and Find Minerals). Click one to turn it on. The row hides in combat; move it in Layout Mode.
+Forever Tools > General also has a **Tracking Reminder**: a row of icons for tracking you know but have not turned on (Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons, and optionally Find Herbs and Find Minerals). Click one to turn it on. The row hides in combat; move it in Layout Mode. The same page has a **Swing Timer**: a bar per weapon (main hand, off hand, ranged) filling to your next auto attack, using the swing length the game sends.
 
 The spell list and prices come from [What's Training](https://github.com/fusionpit/WhatsTraining) (MIT licence).
 

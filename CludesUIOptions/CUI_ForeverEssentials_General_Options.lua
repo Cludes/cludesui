@@ -683,6 +683,44 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  SWING TIMER
+    ---------------------------------------------------------------------------
+    local STm = CludesUI._SwingTimer
+    if STm then
+        local function stOff() return not STm.Get("enabled") end
+        local function STSet(key, v) STm.Cfg()[key] = v; STm.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "SWING TIMER", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_SwingTimer", disabled = stOff, disabledTooltip = "Swing Timer" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Swing Timer",
+              tooltip = "A bar per weapon that fills to your next auto attack. The game sends each swing's real length, so haste and parry haste are already counted.",
+              getValue = function() return not stOff() end,
+              setValue = function(v) STSet("enabled", v and true or false) end },
+            { type = "toggle", text = "Hide When Idle", disabled = stOff,
+              tooltip = "Hide a bar when that weapon has not swung for a moment.",
+              getValue = function() return STm.Get("hideIdle") end,
+              setValue = function(v) STSet("hideIdle", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Off Hand Bar", disabled = stOff,
+              getValue = function() return STm.Get("offHand") end,
+              setValue = function(v) STSet("offHand", v and true or false) end },
+            { type = "toggle", text = "Ranged Bar", disabled = stOff,
+              getValue = function() return STm.Get("ranged") end,
+              setValue = function(v) STSet("ranged", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Width", min = 80, max = 400, step = 1, isPercent = false, disabled = stOff,
+              getValue = function() return STm.Get("width") end,
+              setValue = function(v) STSet("width", math.floor(v + 0.5)) end },
+            { type = "slider", text = "Height", min = 6, max = 30, step = 1, isPercent = false, disabled = stOff,
+              getValue = function() return STm.Get("height") end,
+              setValue = function(v) STSet("height", math.floor(v + 0.5)) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
