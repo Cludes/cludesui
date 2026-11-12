@@ -348,16 +348,7 @@ local function InitializeFrame()
             ns.Options:Open()
         end
     end)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", function(self)
-        if not InCombatLockdown() and not (CludesUITankDB and CludesUITankDB.frameLocked) then
-            self:StartMoving()
-        end
-    end)
-    frame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        ns.SavePosition(self)
-    end)
+    -- Placed with CludesUI Layout Mode (modules/externals.lua registers it).
 
     -- Apply saved position
     ns.ApplyPosition(frame)
@@ -449,7 +440,7 @@ local function handleSlashCommand(msg)
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00sound set|r <name> - use that sound for alerts")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00test|r          - toggle test mode (watch yourself)")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00reset|r         - reset frame position to center")
-        DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00lock|r / |cffffff00unlock|r  - lock/unlock frame position")
+        DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00move|r          - open Layout Mode to move the frames")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00pin|r [name]    - pin current (or named) co-tank")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00unpin|r         - clear pin, auto-detect co-tank")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00help|r          - show this list")
@@ -495,17 +486,11 @@ local function handleSlashCommand(msg)
         return
     end
 
-    if cmd == "lock" then
-        local db = ns.DB(); db.frameLocked = true
-        ns.Print("Frame " .. ON .. " locked.")
-        ns.Options:SyncTestButton()
-        return
-    end
-
-    if cmd == "unlock" then
-        local db = ns.DB(); db.frameLocked = false
-        ns.Print("Frame " .. OFF .. " unlocked.")
-        ns.Options:SyncTestButton()
+    if cmd == "lock" or cmd == "unlock" or cmd == "move" then
+        -- The frame is placed with CludesUI Layout Mode.
+        if InCombatLockdown() then ns.Print("Layout Mode cannot open in combat."); return end
+        CludesUI:EnsureUnlockCore()
+        if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
         return
     end
 

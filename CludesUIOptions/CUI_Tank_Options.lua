@@ -187,6 +187,25 @@ initFrame:SetScript("OnEvent", function(self)
             end, "Your co-tank's active defensive cooldowns. 0 hides the row.")
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "EXTERNALS ON YOU", y);  y = y - h
+
+        local EXT = ns.EXT
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Externals on You",
+              tooltip = "A row of the big defensives other players put on you, such as Pain Suppression or Ironbark. It shows only in a tank spec. Move it in Layout Mode.",
+              getValue = function() return ns.ExternalsEnabled() end,
+              setValue = function(v) DB().extEnabled = v and true or false; ns.RefreshExternals() end },
+            Slider("Icons", "extCount", EXT.DEFAULT_COUNT, 0, EXT.MAX_COUNT, 1, ns.RefreshExternals,
+                "How many externals the row can show at once. 0 hides it.")
+        );  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            Slider("Icon Size", "extSize", EXT.DEFAULT_SIZE, EXT.MIN_SIZE, EXT.MAX_SIZE, 1, function()
+                ns.RefreshExternals(); ns.RestyleAuraButtons()
+            end),
+            Slider("Icon Gap", "extSpacing", K.DEBUFF_SPACING, K.ICON_SPACING_MIN, K.ICON_SPACING_MAX, 1, ns.RefreshExternals)
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "ICON LABELS", y);  y = y - h
 
         local posValues, posOrder = Choices(K.STACK_COUNT_POSITIONS)
@@ -384,7 +403,13 @@ initFrame:SetScript("OnEvent", function(self)
               setValue = function(v)
                   if not ns.SetTestMode(v and true or false) then Rebuild() end
               end },
-            Toggle("Lock Frame", "frameLocked", nil, "Stops the frame being dragged. Unlocked, drag it with the left mouse button.")
+            { type = "labeledButton", text = "Move the Co-Tank Frame and Externals", buttonText = "Layout Mode", width = 120,
+              tooltip = "Opens Layout Mode, where every CludesUI frame is moved and resized.",
+              onClick = function()
+                  if InCombatLockdown() then return end
+                  CludesUI:EnsureUnlockCore()
+                  if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+              end }
         );  y = y - h
 
         _, h = W:DualRow(parent, y,
@@ -397,8 +422,8 @@ initFrame:SetScript("OnEvent", function(self)
                   local f = Frame()
                   if f then f:EnableMouse(not v) end
               end },
-            { type = "labeledButton", text = "Frame Position", buttonText = "Reset", width = 90,
-              tooltip = "Moves the frame back to the middle of the screen. Not available in combat.",
+            { type = "labeledButton", text = "Co-Tank Frame Position", buttonText = "Reset", width = 90,
+              tooltip = "Moves the co-tank frame back to the middle of the screen. Not available in combat.",
               onClick = function()
                   local f = Frame()
                   if f and not InCombatLockdown() then ns.ResetPosition(f) end

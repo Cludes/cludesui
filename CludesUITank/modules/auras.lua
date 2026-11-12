@@ -117,6 +117,9 @@ end
 -- Icon edge length for each group. Defensives sit inside the health bar, so
 -- their size follows the configured frame height rather than the default one.
 function ns.AuraIconSize(kind)
+    if kind == "external" then
+        return ns.SettingNumber("extSize", ns.EXT and ns.EXT.DEFAULT_SIZE or 36)
+    end
     if kind == "defensive" then
         local height = ns.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
         return math.max(height - K.POWER_BAR_HEIGHT - 16, 8)
@@ -283,6 +286,8 @@ local function StyleAuraButton(btn, kind)
 
     ApplyButtonSettings(btn)
 end
+
+ns.StyleAuraButton = StyleAuraButton
 
 -- ── Container construction ────────────────────────────────────────────────
 -- AuraContainers cannot be created in combat, so this only runs from the

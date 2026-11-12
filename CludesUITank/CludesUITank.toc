@@ -17,4 +17,5 @@ modules\spells.lua
 modules\auras.lua
 modules\mixin.lua
 modules\alerts.lua
+modules\externals.lua
 modules\options.lua
