@@ -124,6 +124,35 @@ initFrame:SetScript("OnEvent", function(self)
               onClick = function() ns.StartBreak(0) end }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "KICK ROTATION", y);  y = y - h
+        local ks = ns.KickSettings()
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Kick Rotation",
+              tooltip = "Shows whose interrupt is next. The order comes from an intstart / intend block in the boss's note (one line of names per rotation), or the Kick Order below for other fights. Each cast of the tracked unit moves the turn on.",
+              getValue = function() return ks.enabled end,
+              setValue = function(v) ks.enabled = v and true or false end },
+            { type = "dropdown", text = "Track", values = { focus = "Focus", boss1 = "Boss 1" }, order = { "focus", "boss1" },
+              tooltip = "The unit whose casts count. Put the mob you kick on focus.",
+              getValue = function() return ks.unit end,
+              setValue = function(v) ks.unit = v end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Kick Order", inputWidth = 160, inputStyle = "popup",
+              placeholder = "Alice Bob Carol",
+              tooltip = "Names in kick order, separated by spaces, for fights without a note block. Nicknames work.",
+              getValue = function() return ks.order end,
+              setValue = function(text) ks.order = (text or ""):match("^%s*(.-)%s*$") end },
+            { type = "labeledButton", text = "Preview", buttonText = "Show", width = 90,
+              tooltip = "Shows the box for a few seconds so you can place it in Layout Mode.",
+              onClick = function() ns.PreviewKicks() end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Sound on Your Turn",
+              getValue = function() return ks.sound end,
+              setValue = function(v) ks.sound = v and true or false end },
+            { type = "label", text = "" }
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "VERSIONS", y);  y = y - h
 
         _, h = W:DualRow(parent, y,

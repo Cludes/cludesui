@@ -52,6 +52,7 @@ Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI pa
 - `/raidlead split` makes two balanced halves for split runs.
 - `/raidlead undo` puts everyone back where they were.
 - `/raidlead stop` stops a sort that is under way.
+- **Kick rotation.** Put an `intstart` / `intend` block in a boss note, one line of names per rotation, or type a Kick Order under Setup. A box shows whose interrupt is next, yellow when you are next and red with a sound when it is your turn. Each cast of your focus (or boss 1) moves it on.
 - `/raidlead break 5` starts a 5 minute break bar for every CludesUI user in the group; `/raidlead break 0` ends it.
 
 Raid Lead also has:

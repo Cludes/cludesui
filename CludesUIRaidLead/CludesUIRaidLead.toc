@@ -22,3 +22,4 @@ ReadyCheck.lua
 Nicknames.lua
 BossPace.lua
 BreakTimer.lua
+Interrupts.lua

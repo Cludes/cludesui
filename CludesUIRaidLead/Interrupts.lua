@@ -1,0 +1,226 @@
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+-------------------------------------------------------------------------------
+--  Interrupts.lua -- Raid Lead: kick rotation.
+--
+--  A box that says whose interrupt is next: the cast number and the name,
+--  lit yellow when you are next and red, with a sound, when it is yours now.
+--
+--  The order comes from the boss's note (Raid Lead > Reminders), as a block:
+--      intstart
+--      Alice Bob Carol
+--      Dave Erin
+--      intend
+--  Each line is one rotation (one mob or one team); you follow the line
+--  with your name or nickname on it. Without a note, the Kick Order typed
+--  on the Setup page is used. Each time the tracked unit (your focus, or
+--  boss1) finishes or loses a cast, the turn moves to the next name.
+--
+--  Under 12.1 an addon cannot tell which spell a boss casts in combat, so
+--  every cast of the tracked unit counts. Put the mob you kick on focus.
+-------------------------------------------------------------------------------
+local _, ns = ...
+
+local W, H = 180, 34
+
+function ns.KickSettings()
+    local p = ns.RaidLeadDB()
+    p.kicks = p.kicks or {}
+    local s = p.kicks
+    if s.enabled == nil then s.enabled = true end
+    if s.unit == nil then s.unit = "focus" end
+    if s.sound == nil then s.sound = true end
+    if s.order == nil then s.order = "" end
+    return s
+end
+
+local function Lower(s) return (s or ""):lower() end
+
+--- The rotation lines between intstart and intend in a note.
+function ns.ParseKickBlock(text)
+    local lines, inside = {}, false
+    for raw in (text or ""):gmatch("[^\r\n]+") do
+        local line = raw:gsub("|+c%x%x%x%x%x%x%x%x", ""):gsub("|+r", ""):match("^%s*(.-)%s*$")
+        local l = Lower(line)
+        if l == "intstart" then inside = true
+        elseif l == "intend" then break
+        elseif inside and line ~= "" then
+            local names = {}
+            for n in line:gmatch("%S+") do names[#names + 1] = n end
+            if #names > 0 then lines[#lines + 1] = names end
+        end
+    end
+    return lines
+end
+
+local function IsMe(name)
+    local me = UnitName("player")
+    local nick = CludesUI.GetNickname and CludesUI.GetNickname(me)
+    local n = Lower(name):gsub("%-.*$", "")
+    return n == Lower(me) or (nick and n == Lower(nick))
+end
+
+--- The rotation you are on, from a note's block or the typed order.
+function ns.MyKickRotation(noteText)
+    local lines = ns.ParseKickBlock(noteText)
+    if #lines == 0 then
+        local typed = ns.KickSettings().order
+        if typed ~= "" then lines = { {} } for n in typed:gmatch("%S+") do table.insert(lines[1], n) end end
+    end
+    for _, names in ipairs(lines) do
+        for i, n in ipairs(names) do
+            if IsMe(n) then return names, i end
+        end
+    end
+    return nil
+end
+
+-------------------------------------------------------------------------------
+--  Display
+-------------------------------------------------------------------------------
+local box, num, label
+local rot              -- { names, mine, count, casting }
+
+local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+
+local function Build()
+    if box then return end
+    box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent, "BackdropTemplate")
+    box:SetSize(W, H)
+    box:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    box:SetBackdropBorderColor(0, 0, 0, 1)
+    num = box:CreateFontString(nil, "OVERLAY")
+    num:SetFont(Font(), 20, "OUTLINE")
+    num:SetPoint("LEFT", 8, 0)
+    label = box:CreateFontString(nil, "OVERLAY")
+    label:SetFont(Font(), 15, "OUTLINE")
+    label:SetPoint("LEFT", num, "RIGHT", 10, 0)
+    box:Hide()
+    ns.ApplyKickPosition()
+end
+
+function ns.ApplyKickPosition()
+    if not box or InCombatLockdown() then return end
+    local p = ns.KickSettings().pos
+    box:ClearAllPoints()
+    if p then
+        box:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+    else
+        box:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
+    end
+end
+
+local function Paint()
+    if not (box and rot) then return end
+    local n = #rot.names
+    local who = rot.names[rot.count]
+    local nextUp = rot.count % n + 1
+    local display = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
+    num:SetText(rot.count)
+    if rot.count == rot.mine and rot.casting then
+        box:SetBackdropColor(0.80, 0.15, 0.12, 0.95)
+        label:SetText("KICK NOW")
+    elseif rot.count == rot.mine then
+        box:SetBackdropColor(0.85, 0.65, 0.10, 0.95)
+        label:SetText("You are next")
+    elseif nextUp == rot.mine then
+        box:SetBackdropColor(0.10, 0.11, 0.14, 0.92)
+        label:SetText(display .. "  |cffffd060then you|r")
+    else
+        box:SetBackdropColor(0.10, 0.11, 0.14, 0.92)
+        label:SetText(display)
+    end
+    box:Show()
+end
+
+local ev = CreateFrame("Frame")
+
+local function Stop()
+    rot = nil
+    ev:UnregisterEvent("UNIT_SPELLCAST_START")
+    ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+    ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
+    ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+    ev:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+    if box then box:Hide() end
+end
+ns.StopKicks = Stop
+
+--- Starts the rotation from a note (nil: the typed order).
+function ns.StartKicks(noteText)
+    local s = ns.KickSettings()
+    if not s.enabled then return end
+    local names, mine = ns.MyKickRotation(noteText)
+    if not names then return Stop() end
+    Build()
+    rot = { names = names, mine = mine, count = 1, casting = false }
+    for _, e in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_STOP",
+                         "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTED" }) do
+        ev:RegisterUnitEvent(e, s.unit)
+    end
+    Paint()
+end
+
+ev:SetScript("OnEvent", function(_, event)
+    if event == "ENCOUNTER_START" or event == "PLAYER_REGEN_DISABLED" then return end
+    if not rot then return end
+    if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
+        rot.casting = true
+        if rot.count == rot.mine and ns.KickSettings().sound then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
+    elseif rot.casting then
+        -- A cast that ended (kicked or not) passes the turn on.
+        rot.casting = false
+        rot.count = rot.count % #rot.names + 1
+    end
+    Paint()
+end)
+
+local boss = CreateFrame("Frame")
+boss:RegisterEvent("ENCOUNTER_START")
+boss:RegisterEvent("ENCOUNTER_END")
+boss:RegisterEvent("PLAYER_REGEN_DISABLED")
+boss:RegisterEvent("PLAYER_REGEN_ENABLED")
+boss:RegisterEvent("PLAYER_ENTERING_WORLD")
+local registered, inEncounter
+boss:SetScript("OnEvent", function(_, event, _, encounterName)
+    if event == "PLAYER_ENTERING_WORLD" then
+        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+        Build()
+        registered = true
+        CludesUI:RegisterUnlockElements({
+            CludesUI.MakeUnlockElement({
+                key = "RLEAD_Kicks", label = "Kick Rotation", group = "Raid Lead", order = 664,
+                noAnchorTarget = true, noResize = true,
+                isHidden = function() return not ns.KickSettings().enabled end,
+                getFrame = function() return box end,
+                getSize = function() return W, H end,
+                savePos = function(_, point, relPoint, x, y)
+                    ns.KickSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
+                end,
+                loadPos = function() return ns.KickSettings().pos end,
+                clearPos = function() ns.KickSettings().pos = nil end,
+                applyPos = ns.ApplyKickPosition,
+            }),
+        }, "CludesUIRaidLead")
+    elseif event == "ENCOUNTER_START" then
+        inEncounter = true
+        local note = type(encounterName) == "string" and not (issecretvalue and issecretvalue(encounterName))
+            and ns.NoteFor and ns.NoteFor(encounterName)
+        ns.StartKicks(note or nil)
+    elseif event == "ENCOUNTER_END" then
+        inEncounter = false
+        Stop()
+    elseif event == "PLAYER_REGEN_DISABLED" then
+        -- Trash and keys: the typed order runs for any fight in a group.
+        if not inEncounter and IsInGroup() and ns.KickSettings().order ~= "" then ns.StartKicks(nil) end
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        if not inEncounter then Stop() end
+    end
+end)
+
+--- Shows the box with a sample rotation, for placing and checking it.
+function ns.PreviewKicks()
+    Build()
+    rot = { names = { UnitName("player"), "Alice", "Bob" }, mine = 1, count = 1, casting = false }
+    Paint()
+    C_Timer.After(8, function() if rot and rot.names[2] == "Alice" then Stop() end end)
+end
