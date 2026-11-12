@@ -789,6 +789,43 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  RAID DEBUFFS
+    ---------------------------------------------------------------------------
+    local RD = CludesUI._RaidDebuffs
+    if RD then
+        local function rdOff() return not RD.Get("enabled") end
+        local function RDSet(key, v) RD.Cfg()[key] = v; RD.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "RAID DEBUFFS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_RaidDebuffs", disabled = rdOff, disabledTooltip = "Raid Debuffs" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Raid Debuffs",
+              tooltip = "Icons on your enemy target for the raid debuffs you pick: bright while up with their time, dim while missing. Changes to the picks apply out of combat.",
+              getValue = function() return not rdOff() end,
+              setValue = function(v) RDSet("enabled", v and true or false) end },
+            { type = "toggle", text = "Only in a Group", disabled = rdOff,
+              getValue = function() return RD.Get("groupOnly") end,
+              setValue = function(v) RDSet("groupOnly", v and true or false) end }
+        );  y = y - h
+        local list = RD.Debuffs
+        for i = 1, #list, 2 do
+            local function Toggle(d)
+                if not d then return { type = "label", text = "" } end
+                return { type = "toggle", text = d.label, disabled = rdOff,
+                         getValue = function() return RD.Get("pick_" .. d.key) end,
+                         setValue = function(v) RDSet("pick_" .. d.key, v and true or false) end }
+            end
+            _, h = W:DualRow(parent, y, Toggle(list[i]), Toggle(list[i + 1]));  y = y - h
+        end
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Icon Size", min = 16, max = 64, step = 1, isPercent = false, disabled = rdOff,
+              getValue = function() return RD.Get("iconSize") end,
+              setValue = function(v) RDSet("iconSize", math.floor(v + 0.5)) end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
