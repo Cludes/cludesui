@@ -654,6 +654,35 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  TRACKING REMINDER
+    ---------------------------------------------------------------------------
+    local TR = CludesUI._TrackingReminder
+    if TR then
+        local function trOff() return not TR.Get("enabled") end
+        local function TRSet(key, v) TR.Cfg()[key] = v; TR.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "TRACKING REMINDER", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_TrackingReminder", disabled = trOff, disabledTooltip = "Tracking Reminder" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Tracking Reminder",
+              tooltip = "A row of icons for the tracking you know but have not turned on: Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons. Click one to turn it on. Hidden in combat.",
+              getValue = function() return not trOff() end,
+              setValue = function(v) TRSet("enabled", v and true or false) end },
+            { type = "toggle", text = "Include Find Herbs and Minerals",
+              disabled = trOff,
+              getValue = function() return TR.Get("gathering") end,
+              setValue = function(v) TRSet("gathering", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Icon Size", min = 16, max = 64, step = 1, isPercent = false,
+              disabled = trOff,
+              getValue = function() return TR.Get("iconSize") end,
+              setValue = function(v) TRSet("iconSize", math.floor(v + 0.5)) end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------

@@ -1,0 +1,175 @@
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
+-------------------------------------------------------------------------------
+--  CludesUIForeverEssentials_TrackingReminder.lua  (WoW Forever only)
+--  Tracking Reminder: a row of icons for the tracking you know but have not
+--  turned on (Find Treasure, the hunter tracks, Druid Track Humanoids, Sense
+--  Undead, Sense Demons, and Find Herbs / Find Minerals unless turned off).
+--  Click an icon to cast it. Forever can track several things at once, so
+--  each one missing gets its own icon.
+--
+--  The icons are secure spell buttons. They are laid out only out of
+--  combat, and a state driver hides the row in combat, so nothing protected
+--  changes while fighting. What is on comes from the minimap's tracking list
+--  (C_Minimap.GetTrackingInfo); a spell missing from that list is checked
+--  on the player's buffs instead.
+-------------------------------------------------------------------------------
+local _, module = ...
+
+local DEFAULTS = { enabled = false, iconSize = 32, gathering = true }
+local F = module.Feature("trackingReminder", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 260, y = 170 })
+local Get, Enabled = F.Get, F.Enabled
+
+-- Spell IDs checked against the Forever spell table (wago.tools SpellName,
+-- build 1.60.1.70888).
+local SPELLS = {
+    2481,                                               -- Find Treasure (Dwarf)
+    1494, 19883, 19884, 19885, 19880, 19878, 19882, 19879, -- Hunter tracks
+    5225,                                               -- Track Humanoids (Druid, Cat Form only)
+    5502,                                               -- Sense Undead (Paladin)
+    5500,                                               -- Sense Demons (Warlock)
+}
+local GATHERING = { 2383, 2580 }                        -- Find Herbs, Find Minerals
+local CAT_ONLY = { [5225] = true }
+local CAT_FORM = 1                                      -- GetShapeshiftFormID() in Cat Form
+
+local GAP = 4
+local holder
+local buttons = {}
+local dirty = true
+
+local function Known(id)
+    if C_SpellBook and C_SpellBook.IsSpellKnown then return C_SpellBook.IsSpellKnown(id) end
+    return IsSpellKnown and IsSpellKnown(id) or false
+end
+
+-- [spellID] = true for each tracking that is on, and whether the list was read.
+local function ActiveTracking()
+    local on, listed = {}, {}
+    local n = C_Minimap and C_Minimap.GetNumTrackingTypes and C_Minimap.GetNumTrackingTypes() or 0
+    for i = 1, n do
+        local a, _, c, _, _, f = C_Minimap.GetTrackingInfo(i)
+        local spellID, active
+        if type(a) == "table" then spellID, active = a.spellID, a.active
+        else spellID, active = f, c end
+        if spellID then
+            listed[spellID] = true
+            if active then on[spellID] = true end
+        end
+    end
+    return on, listed
+end
+
+local function HasBuff(id)
+    local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
+    return ok and aura ~= nil
+end
+
+-- The spells to remind about now, in list order.
+local function Missing()
+    local on, listed = ActiveTracking()
+    local cat = GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM
+    local out = {}
+    local function Consider(id)
+        if not Known(id) or on[id] then return end
+        if CAT_ONLY[id] and not cat then return end
+        if not listed[id] and HasBuff(id) then return end
+        out[#out + 1] = id
+    end
+    for _, id in ipairs(SPELLS) do Consider(id) end
+    if Get("gathering") then
+        for _, id in ipairs(GATHERING) do Consider(id) end
+    end
+    return out
+end
+
+local function Build()
+    if holder then return holder end
+    holder = CreateFrame("Frame", "CludesUITrackingReminder", UIParent)
+    holder:SetSize(Get("iconSize"), Get("iconSize"))
+    RegisterStateDriver(holder, "visibility", "[combat] hide; show")
+    return holder
+end
+
+local function Button(i)
+    local b = buttons[i]
+    if b then return b end
+    b = CreateFrame("Button", nil, holder, "SecureActionButtonTemplate")
+    b:RegisterForClicks("AnyUp", "AnyDown")
+    b:SetAttribute("type", "spell")
+    b.icon = b:CreateTexture(nil, "ARTWORK")
+    b.icon:SetAllPoints()
+    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local border = b:CreateTexture(nil, "BACKGROUND")
+    border:SetPoint("TOPLEFT", -1, 1)
+    border:SetPoint("BOTTOMRIGHT", 1, -1)
+    border:SetColorTexture(0, 0, 0, 1)
+    b:SetScript("OnEnter", function(self)
+        if not self.spellID then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetSpellByID(self.spellID)
+        GameTooltip:AddLine(CludesUI.L("Click to turn this tracking on."), 0.6, 0.8, 1)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    buttons[i] = b
+    return b
+end
+
+-- Lays the row out again. Out of combat only: the buttons are secure.
+local function Refresh()
+    if not holder then return end
+    if InCombatLockdown() then dirty = true; return end
+    dirty = false
+    local size = Get("iconSize")
+    local list = Enabled() and Missing() or {}
+    for i, id in ipairs(list) do
+        local b = Button(i)
+        b.spellID = id
+        b:SetAttribute("spell", id)
+        b.icon:SetTexture(C_Spell.GetSpellTexture(id))
+        b:SetSize(size, size)
+        b:ClearAllPoints()
+        b:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
+        b:Show()
+    end
+    for i = #list + 1, #buttons do buttons[i]:Hide(); buttons[i].spellID = nil end
+    holder:SetSize(math.max(1, #list) * (size + GAP) - GAP, size)
+end
+
+local ev = CreateFrame("Frame")
+local EVENTS = { "MINIMAP_UPDATE_TRACKING", "SPELLS_CHANGED", "UPDATE_SHAPESHIFT_FORM",
+                 "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
+local queued
+ev:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_ENABLED" and not dirty then return end
+    -- Aura and spell events come in bursts: one layout once they settle.
+    if queued then return end
+    queued = true
+    C_Timer.After(0.3, function() queued = nil; Refresh() end)
+end)
+
+local function Apply()
+    if Enabled() then
+        Build()
+        for _, e in ipairs(EVENTS) do ev:RegisterEvent(e) end
+        ev:RegisterUnitEvent("UNIT_AURA", "player")
+        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holder) end
+    else
+        ev:UnregisterAllEvents()
+    end
+    Refresh()
+end
+
+-- Entry points for the options page.
+CludesUI._TrackingReminder = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
+
+F.Start(Apply, {
+    key = "CUI_TrackingReminder", label = "Tracking Reminder", order = 735,
+    frame = function(build) if build then Build() end; return holder end,
+    size = function()
+        local size = Get("iconSize")
+        return size * 3 + GAP * 2, size
+    end,
+    noAnchorTarget = true, noSizeMatchTarget = true,
+})
