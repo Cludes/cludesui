@@ -62,6 +62,7 @@ Raid Lead also has:
 - **Version check.** See who in the group runs CludesUI and which version.
 - **Ready check gear and cooldowns.** On a ready check, every CludesUI user reports their lowest durability, item level, missing enchants (head, shoulders, chest, feet, rings, weapons), raid cooldowns that are not ready, and a missing flask, food, augment rune or healthstone. The leader and assistants get a list, with anyone who did not answer.
 - **Immunities on You.** Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you; add more by spell ID.
+- **Aura Glows.** Add buffs or debuffs by spell ID; while one is on you, its icon shows with a glowing border and its time. Works in boss fights.
 - **Boss Pace.** Set a target kill time per boss. A bar shows the boss's health against where it should be by now: green ahead, red behind. The pace is a straight line, so phases and intermissions throw it off.
 - **Nicknames.** Set your nickname once; CludesUI sends it to your guild and group, and shows everyone's on raid frames (and unit frames, with their Show Nicknames setting on). You can also paste `Character=Nickname` lines.
 

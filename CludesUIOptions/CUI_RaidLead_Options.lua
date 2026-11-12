@@ -212,6 +212,35 @@ initFrame:SetScript("OnEvent", function(self)
               or { type = "label", text = "" }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "AURA GLOWS", y);  y = y - h
+        local ag = ns.AuraGlowSettings()
+        local glowNames = {}
+        for _, id in ipairs(ag.spells) do
+            local n = C_Spell.GetSpellName(id)
+            glowNames[#glowNames + 1] = (type(n) == "string" and n or "Spell") .. " (" .. id .. ")"
+        end
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Aura Glows",
+              tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Layout Mode.",
+              getValue = function() return ag.enabled end,
+              setValue = function(v) ag.enabled = v and true or false; ns.RebuildAuraGlows() end },
+            { type = "slider", text = "Icon Size", min = 20, max = 80, step = 1,
+              getValue = function() return ag.size end,
+              setValue = function(v) ag.size = math.floor(v + 0.5); ns.RebuildAuraGlows() end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Add an Aura", inputStyle = "popup", placeholder = "Spell IDs", inputWidth = 110,
+              tooltip = "The spell ID of a buff or debuff to glow for. Several, separated by commas or spaces, work too.",
+              getValue = function() return "" end,
+              setValue = function(text)
+                  for _, id in ipairs(ns.ParseSpellIDs(text)) do table.insert(ag.spells, id) end
+                  ns.RebuildAuraGlows(); Refresh()
+              end },
+            #glowNames > 0 and { type = "labeledButton", text = "Added: " .. table.concat(glowNames, ", "), buttonText = "Clear", width = 90,
+              onClick = function() wipe(ag.spells); ns.RebuildAuraGlows(); Refresh() end }
+              or { type = "label", text = "" }
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "BOSS PACE", y);  y = y - h
         _, h = W:DualRow(parent, y,
             { type = "toggle", text = "Show Boss Pace",
