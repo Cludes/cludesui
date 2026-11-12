@@ -47,6 +47,8 @@ local ADDON_DB_MAP = {
     -- v6.6 split-out addons (were previously bundled under the retired
     -- CludesUIBasics, removed from the suite v8.7.x).
     { folder = "CludesUIQoL",               display = "Utilities",     svName = "CludesUIQoLDB",               suffix = "QoL"               },
+    { folder = "CludesUITank",              display = "Tank Kit",      svName = "CludesUITankDB",              suffix = "Tank"              },
+    { folder = "CludesUIRaidLead",          display = "Raid Lead",     svName = "CludesUIRaidLeadDB",          suffix = "RaidLead"          },
     -- BlizzardSkin itself is excluded: it stores settings on the shared
     -- CludesUIDB root, not through NewDB, so it has no module profile
     -- (its few per-profile keys -- disableWindowSkins, the character sheet
@@ -185,6 +187,7 @@ local KEY_PREFIX_FOLDER = {
     ["RF_"]    = "CludesUIRaidFrames",
     ["ECL_"]   = "CludesUIQoL",
     ["CUI_"]   = "CludesUIQoL",
+    ["TANK_"]  = "CludesUITank",
 }
 -- Bare-word (un-prefixed) keys, by owning module. These appear as anchor TARGETS
 -- (e.g. a castbar anchored to "player", a bar anchored to "Bar4") even when the

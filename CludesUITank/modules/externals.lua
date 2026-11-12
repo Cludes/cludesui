@@ -145,7 +145,7 @@ local function RegisterLayoutMode()
 
     CludesUI:RegisterUnlockElements({
         MK({
-            key   = "CUI_TankCoTank",
+            key   = "TANK_CoTank",
             label = "Co-Tank",
             group = "Tank Kit",
             order = 650,
@@ -157,7 +157,7 @@ local function RegisterLayoutMode()
                 w = math.max(K.MIN_WIDTH, math.min(K.MAX_WIDTH, math.floor(w + 0.5)))
                 DB().frameWidth = w
                 if not InCombatLockdown() then frame:SetWidth(w); frame:FitNameToWidth() end
-                Reposition("CUI_TankCoTank")
+                Reposition("TANK_CoTank")
             end,
             setHeight = function(_, h)
                 h = math.max(K.MIN_HEIGHT, math.min(K.MAX_HEIGHT, math.floor(h + 0.5)))
@@ -165,7 +165,7 @@ local function RegisterLayoutMode()
                 if not InCombatLockdown() then frame:SetHeight(h) end
                 ns.RefreshAuraContainerLayout(frame)
                 ns.RestyleAuraButtons()
-                Reposition("CUI_TankCoTank")
+                Reposition("TANK_CoTank")
             end,
             savePos = function(_, point, relPoint, x, y)
                 local db = DB()
@@ -183,7 +183,7 @@ local function RegisterLayoutMode()
             applyPos = function() ns.ApplyPosition(frame) end,
         }),
         MK({
-            key   = "CUI_TankExternals",
+            key   = "TANK_Externals",
             label = "Externals on You",
             group = "Tank Kit",
             order = 651,
@@ -198,7 +198,7 @@ local function RegisterLayoutMode()
             setHeight = function(_, h)
                 DB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(h + 0.5)))
                 ns.RefreshExternals()
-                Reposition("CUI_TankExternals")
+                Reposition("TANK_Externals")
             end,
             savePos = function(_, point, relPoint, x, y)
                 DB().extPos = { point = point, relPoint = relPoint, x = x, y = y }
@@ -207,7 +207,7 @@ local function RegisterLayoutMode()
             clearPos = function() DB().extPos = nil end,
             applyPos = ApplyAnchorPosition,
         }),
-    })
+    }, addonName)
 end
 
 -------------------------------------------------------------------------------

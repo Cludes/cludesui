@@ -53,6 +53,8 @@ Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI pa
 - `/raidlead undo` puts everyone back where they were.
 - `/raidlead stop` stops a sort that is under way.
 
+Raid Lead also has Aura Sounds: pick a spell ID and it plays a sound when that aura is applied to you, gains a stack or falls off. The game plays the sound itself, so it works in boss fights and keys.
+
 Damage dealers are counted as melee or ranged by class, which is a guess for Druids, Shamans and Hunters.
 
 ## Profiles

@@ -139,13 +139,19 @@ ns.ADDON_COLOR = CreateColorFromHexString("ff5ab4ff")
 ns.isTestMode  = false
 
 -- ── Helper functions ───────────────────────────────────────────────────────
+-- Settings live in the active CludesUI profile (CludesUIDB.profiles[name]
+-- .addons.CludesUITank), so they save, export, import and switch with it.
+-- db.profile is re-pointed by the profile system, so always read it here.
+local profileDB
 function ns.DB()
-    CludesUITankDB = CludesUITankDB or {}
-    return CludesUITankDB
+    if not profileDB then
+        profileDB = CludesUI.Lite.NewDB("CludesUITankDB", { profile = {} })
+    end
+    return profileDB.profile
 end
 
 function ns.SettingNumber(key, default)
-    local val = CludesUITankDB and CludesUITankDB[key]
+    local val = ns.DB()[key]
     return tonumber(val) or default
 end
 
@@ -157,7 +163,7 @@ function ns.IsInEditMode()
 end
 
 function ns.CalculateScaleFactor()
-    return (CludesUITankDB and CludesUITankDB.scaleFactorPrivateAuras)
+    return ns.DB().scaleFactorPrivateAuras
            or ns.K.PRIVATE_AURAS_DEFAULT_SCALE_FACTOR
 end
 
@@ -167,7 +173,7 @@ function ns.FindCoTank()
     if not groupType then return nil end
     local count = GetNumGroupMembers()
     -- Prefer pinned tank if set
-    local pinned = CludesUITankDB and CludesUITankDB.pinnedTank
+    local pinned = ns.DB().pinnedTank
     if pinned then
         for i = 1, count do
             local unit = groupType .. i
@@ -257,7 +263,7 @@ end
 -- ── Frame initialization ───────────────────────────────────────────────────
 -- Called after all modules have loaded (ADDON_LOADED fires after all TOC files run).
 local function InitializeFrame()
-    CludesUITankDB = CludesUITankDB or {}
+    ns.DB()
 
     if InCombatLockdown() then return end
 

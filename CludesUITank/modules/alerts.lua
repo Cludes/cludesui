@@ -336,8 +336,8 @@ function ns.Alert:RegisterAuraSounds(unit)
     if attempted > 0 and #auraSoundIDs == 0 and not soundWarned then
         soundWarned = true
         ns.Print("|cffff4040Alert sounds were rejected by the game.|r " ..
-                 "Set CludesUITankDB.alertSoundFileID to a valid sound file ID, " ..
-                 "or CludesUITankDB.alertSoundFile to a valid sound path, " ..
+                 "Pick another one with /ctank sounds and /ctank sound set <name>, " ..
+                 "or check the sound file still exists, " ..
                  "then run |cffffff00/ctank sound|r again.")
     end
 
@@ -429,7 +429,7 @@ function ns.Alert:PrintSoundNames(filter)
     local names = self:ListSoundNames()
     if not names then
         ns.Print("LibSharedMedia is not loaded, so there are no shared sound " ..
-                 "names. Set CludesUITankDB.alertSoundFile to a sound file path instead.")
+                 "names, so only the built-in alert sound is available.")
         return
     end
 

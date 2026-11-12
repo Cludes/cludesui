@@ -41,7 +41,7 @@ end
 -- Resolves the stored setting to a usable font file path. Older configs store
 -- a path directly, newer ones store a LibSharedMedia name.
 function ns.FontPath()
-    local value = CludesUITankDB and CludesUITankDB.fontFace
+    local value = ns.DB().fontFace
     if value == nil then
         -- No font chosen: follow the CludesUI global font.
         local path = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
@@ -60,7 +60,7 @@ function ns.FontPath()
 end
 
 function ns.FontFlags()
-    local flags = CludesUITankDB and CludesUITankDB.fontFlags
+    local flags = ns.DB().fontFlags
     for _, f in ipairs(ns.K.FONT_FLAGS) do
         if f.id == flags then return f.flags end
     end
@@ -69,7 +69,7 @@ end
 
 -- Per-element text colour, stored as {r, g, b}.
 function ns.FontColor(key)
-    local stored  = CludesUITankDB and CludesUITankDB[key]
+    local stored  = ns.DB()[key]
     local default = ns.K.FONT_COLOR_DEFAULTS[key] or {1, 1, 1}
     if type(stored) ~= "table" then return default[1], default[2], default[3] end
     return tonumber(stored[1]) or default[1],

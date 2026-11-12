@@ -443,7 +443,7 @@ end
 -- runs during normal play - only while the test or edit preview is up.
 local timerUpdater = CreateFrame("Frame")
 timerUpdater:SetScript("OnUpdate", function()
-    if not (CludesUITankDB and CludesUITankDB.cdAbove) then return end
+    if not ns.DB().cdAbove then return end
     if not CoTankAuras then return end
     if not (ns.isTestMode or ns.IsInEditMode()) then return end
     local now = GetTime()
