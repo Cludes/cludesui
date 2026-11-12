@@ -906,6 +906,20 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  GROUP INSPECT
+    ---------------------------------------------------------------------------
+    if CludesUI._GroupInspect then
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "GROUP INSPECT", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Group Inspect", buttonText = "Open", width = 90,
+              tooltip = "Everyone in your group with their level, item level and unenchanted slots. Click a name to open the game's inspect window on them. /cinspect opens it too.",
+              onClick = function() CludesUI._GroupInspect.Show() end },
+            { type = "label", text = "Players out of range answer when they come closer." }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
