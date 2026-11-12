@@ -826,6 +826,45 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  GEAR SETS
+    ---------------------------------------------------------------------------
+    local GS = CludesUI._GearSets
+    if GS then
+        local function gsOff() return not GS.Get("enabled") end
+        local function GSSet(key, v) GS.Cfg()[key] = v; GS.Apply() end
+        local function SetChoices()
+            local values, order = { [""] = "None" }, { "" }
+            for _, s in ipairs(GS.List()) do values[s.name] = s.name; order[#order + 1] = s.name end
+            return values, order
+        end
+        local values, order = SetChoices()
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "GEAR SETS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_GearSets", disabled = gsOff, disabledTooltip = "Gear Sets" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Gear Sets Bar",
+              tooltip = "Your equipment sets on a bar; click one to wear it. The set you are wearing is lit. Armour cannot change in combat, so a click in combat waits for the fight to end.",
+              getValue = function() return not gsOff() end,
+              setValue = function(v) GSSet("enabled", v and true or false) end },
+            { type = "input", text = "Save What You Wear", inputWidth = 140, inputStyle = "popup",
+              placeholder = "Set name",
+              tooltip = "Type a name to save the gear you have on as a set. Using an existing name saves over it.",
+              getValue = function() return "" end,
+              setValue = function(text) GS.Save(text); C_Timer.After(0.5, function() CludesUI:RefreshPage(true) end) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "dropdown", text = "While Mounted", values = values, order = order, disabled = gsOff,
+              tooltip = "Wear this set while mounted, and put your gear back when you dismount.",
+              getValue = function() return GS.Get("mountedSet") end,
+              setValue = function(v) GSSet("mountedSet", v) end },
+            { type = "dropdown", text = "While Resting", values = values, order = order, disabled = gsOff,
+              tooltip = "Wear this set in an inn or a city, and put your gear back when you leave.",
+              getValue = function() return GS.Get("restingSet") end,
+              setValue = function(v) GSSet("restingSet", v) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
