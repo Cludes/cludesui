@@ -752,6 +752,43 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  CONSUMABLE BAR
+    ---------------------------------------------------------------------------
+    local CB = CludesUI._ConsumableBar
+    if CB then
+        local function cbOff() return not CB.Get("enabled") end
+        local function CBSet(key, v) CB.Cfg()[key] = v; CB.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "CONSUMABLE BAR", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_ConsumableBar", disabled = cbOff, disabledTooltip = "Consumable Bar" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Consumable Bar",
+              tooltip = "The consumables in your bags on a bar you can click, with how many you carry and their cooldowns. It works in combat; an item you run out of in a fight keeps its icon until the fight ends.",
+              getValue = function() return not cbOff() end,
+              setValue = function(v) CBSet("enabled", v and true or false) end },
+            { type = "slider", text = "Icon Size", min = 16, max = 64, step = 1, isPercent = false, disabled = cbOff,
+              getValue = function() return CB.Get("iconSize") end,
+              setValue = function(v) CBSet("iconSize", math.floor(v + 0.5)) end }
+        );  y = y - h
+        local cats = CB.Categories
+        for i = 1, #cats, 2 do
+            local function Toggle(c)
+                if not c then return { type = "label", text = "" } end
+                return { type = "toggle", text = c.label, disabled = cbOff,
+                         getValue = function() return CB.Get(c.key) end,
+                         setValue = function(v) CBSet(c.key, v and true or false) end }
+            end
+            _, h = W:DualRow(parent, y, Toggle(cats[i]), Toggle(cats[i + 1]));  y = y - h
+        end
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Most Icons", min = 1, max = 30, step = 1, isPercent = false, disabled = cbOff,
+              getValue = function() return CB.Get("maxIcons") end,
+              setValue = function(v) CBSet("maxIcons", math.floor(v + 0.5)) end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
