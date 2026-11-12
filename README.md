@@ -53,7 +53,13 @@ Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI pa
 - `/raidlead undo` puts everyone back where they were.
 - `/raidlead stop` stops a sort that is under way.
 
-Raid Lead also has Aura Sounds: pick a spell ID and it plays a sound when that aura is applied to you, gains a stack or falls off. The game plays the sound itself, so it works in boss fights and keys.
+Raid Lead also has:
+
+- **Encounter reminders.** Under Raid Lead > Reminders, add a boss and paste its note from wowutils, wowaudit or a Method Raid Tools note. When the boss is pulled, the lines meant for you show a few seconds before their time with a countdown, and can be spoken and play a sound. A line with player names on it is for those players; `{tank}`, `{healer}`, `{dps}` and `{everyone}` work too. The leader or an assistant can send a note to every CludesUI user in the group. Phase timers (`{time:1:30,p2}`) are skipped, because the game gives addons no phase events. Move the reminders in Layout Mode.
+- **Invites and assistants.** Save a roster and invite it in one click; promote a list of assistants, or have them promoted as they join.
+- **Version check.** See who in the group runs CludesUI and which version.
+
+Aura Sounds: pick a spell ID and it plays a sound when that aura is applied to you, gains a stack or falls off. The game plays the sound itself, so it works in boss fights and keys.
 
 Damage dealers are counted as melee or ranged by class, which is a guess for Druids, Shamans and Hunters.
 

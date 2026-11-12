@@ -188,6 +188,7 @@ local KEY_PREFIX_FOLDER = {
     ["ECL_"]   = "CludesUIQoL",
     ["CUI_"]   = "CludesUIQoL",
     ["TANK_"]  = "CludesUITank",
+    ["RLEAD_"] = "CludesUIRaidLead",
 }
 -- Bare-word (un-prefixed) keys, by owning module. These appear as anchor TARGETS
 -- (e.g. a castbar anchored to "player", a bar anchored to "Bar4") even when the

@@ -3,7 +3,7 @@
 ## Title: |cff4cc9f0CludesUI|r Raid Lead
 ## Category: |cff4cc9f0Cludes|rUI
 ## Group: CludesUI
-## Notes: For raid leaders: sort or split the raid. Plus sounds for auras on you.
+## Notes: For raid leaders: encounter reminders, invites, version check, raid sorting. Plus sounds for auras on you.
 ## Author: Cludes
 ## Version: 1.0.0
 ## Dependencies: CludesUI
@@ -11,5 +11,9 @@
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
 
 Planner.lua
+NoteParser.lua
 Setup.lua
 AuraSounds.lua
+Comms.lua
+Reminders.lua
+Invite.lua

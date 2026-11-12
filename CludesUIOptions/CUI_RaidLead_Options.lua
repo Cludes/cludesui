@@ -52,6 +52,171 @@ initFrame:SetScript("OnEvent", function(self)
             { type = "label", text = "" }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "INVITES", y);  y = y - h
+
+        local inv = ns.InviteSettings()
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Roster", inputWidth = 220, placeholder = "Name, Name-Realm, ...",
+              tooltip = "Everyone to invite, separated by commas or spaces. Press Enter to save.",
+              getValue = function() return inv.list end,
+              setValue = function(v) inv.list = v or "" end },
+            { type = "labeledButton", text = "Invite the Roster", buttonText = "Invite", width = 90,
+              tooltip = "Invites everyone on the roster who is not in the group yet. A party becomes a raid when it needs to.",
+              onClick = function() ns.InviteList() end }
+        );  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Assistants", inputWidth = 220, placeholder = "Name, Name, ...",
+              tooltip = "Players to make raid assistants. Press Enter to save.",
+              getValue = function() return inv.promote end,
+              setValue = function(v) inv.promote = v or "" end },
+            { type = "labeledButton", text = "Promote Assistants Now", buttonText = "Promote", width = 90,
+              onClick = function() ns.PromoteList(false) end }
+        );  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Promote Assistants When They Join",
+              tooltip = "While you lead the raid, everyone on the assistants list is promoted as they join.",
+              getValue = function() return inv.autoPromote end,
+              setValue = function(v) inv.autoPromote = v and true or false end },
+            { type = "label", text = "" }
+        );  y = y - h
+
+        _, h = W:SectionHeader(parent, "VERSIONS", y);  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Check CludesUI Versions", buttonText = "Check", width = 90,
+              tooltip = "Asks everyone in the group which CludesUI version they run. The answer prints in chat after a few seconds.",
+              onClick = function() ns.VersionCheck() end },
+            { type = "label", text = "" }
+        );  y = y - h
+
+        return math.abs(y)
+    end
+
+    ---------------------------------------------------------------------------
+    --  Reminders page
+    ---------------------------------------------------------------------------
+    local PAGE_REMINDERS = "Reminders"
+
+    local function Redraw()
+        CludesUI:InvalidatePageCache()
+        CludesUI:RefreshPage(true)
+    end
+    ns.OnSharedChanged = function()
+        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then Redraw() end
+    end
+
+    local function Summary(text)
+        local list, skipped = ns.NoteParser.Parse(text or "", function(id)
+            local n = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id)
+            return type(n) == "string" and n or nil
+        end)
+        local s = #list .. " reminder" .. (#list == 1 and "" or "s")
+        if skipped > 0 then s = s .. ", " .. skipped .. " phase line" .. (skipped == 1 and "" or "s") .. " skipped" end
+        return s
+    end
+
+    local function BuildRemindersPage(_, parent, yOffset)
+        local W = CludesUI.Widgets
+        local y = yOffset
+        local _, h
+        local r = ns.ReminderSettings()
+
+        CludesUI:ClearContentHeader()
+
+        _, h = W:SectionHeader(parent, "REMINDERS", y);  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Encounter Reminders",
+              tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Layout Mode.",
+              getValue = function() return r.enabled end,
+              setValue = function(v) r.enabled = v and true or false end },
+            { type = "toggle", text = "Accept Reminders From the Raid Leader",
+              tooltip = "Notes the leader or an assistant sends replace your own for that boss, for this session.",
+              getValue = function() return r.acceptShared end,
+              setValue = function(v) r.acceptShared = v and true or false end }
+        );  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Show Seconds Before", min = 1, max = 10, step = 1,
+              getValue = function() return r.lead end,
+              setValue = function(v) r.lead = math.floor(v + 0.5) end },
+            { type = "slider", text = "Text Size", min = 14, max = 48, step = 1,
+              getValue = function() return r.fontSize end,
+              setValue = function(v) r.fontSize = math.floor(v + 0.5); ns.ApplyReminderLook() end }
+        );  y = y - h
+
+        local soundValues, soundOrder = { [""] = "None" }, { "" }
+        for _, f in ipairs(ns.SOUND_FILES) do
+            soundValues[f] = f:gsub("%.%a+$", ""):gsub("(%l)(%u)", "%1 %2")
+            soundOrder[#soundOrder + 1] = f
+        end
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Speak Reminders",
+              tooltip = "Reads each reminder aloud with the game's text to speech voice.",
+              getValue = function() return r.tts end,
+              setValue = function(v) r.tts = v and true or false end },
+            { type = "dropdown", text = "Reminder Sound", values = soundValues, order = soundOrder,
+              getValue = function() return r.sound or "" end,
+              setValue = function(v) r.sound = v; if v ~= "" then ns.PreviewSound(v) end end }
+        );  y = y - h
+
+        _, h = W:SectionHeader(parent, "BOSS NOTES", y);  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Add a Boss", inputStyle = "popup", placeholder = "Boss name", inputWidth = 160,
+              tooltip = "The boss's name as the game shows it at the pull. Use \"any\" for a note that runs on every boss.",
+              getValue = function() return "" end,
+              setValue = function(text)
+                  text = text and text:match("^%s*(.-)%s*$") or ""
+                  if text == "" then return end
+                  table.insert(r.notes, { boss = text, text = "" })
+                  Redraw()
+              end },
+            { type = "label", text = "Lines are {time:1:30} then the text. Names on a line make it theirs; {tank}, {healer}, {dps} and {everyone} work too." }
+        );  y = y - h
+
+        for i, note in ipairs(r.notes) do
+            _, h = W:SectionHeader(parent, note.boss:upper() .. "  -  " .. Summary(note.text), y);  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Paste or Replace the Note", buttonText = "Paste", width = 90,
+                  tooltip = "Paste a note from wowutils, wowaudit or a Method Raid Tools note.",
+                  onClick = function()
+                      CludesUI:ShowImportPopup(function(str)
+                          note.text = str or ""
+                          Redraw()
+                      end, "Reminders for " .. note.boss, "Paste the note, then press Save")
+                  end },
+                { type = "labeledButton", text = "Try It Now", buttonText = "Test", width = 90,
+                  tooltip = "Runs the note as if the boss was pulled now. Lines for you appear on screen.",
+                  onClick = function()
+                      local n, skipped = ns.RunNote(note.text)
+                      CludesUI.Print(("|cff4cc9f0Raid Lead:|r testing %s: %d reminder%s for you%s."):format(
+                          note.boss, n, n == 1 and "" or "s", skipped > 0 and (", " .. skipped .. " phase lines skipped") or ""))
+                  end }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Send to the Group", buttonText = "Send", width = 90,
+                  tooltip = "Sends this note to everyone in the group who runs CludesUI. Leader or assistant only.",
+                  onClick = function() ns.ShareNote(note.boss, note.text) end },
+                { type = "labeledButton", text = "Remove This Note", buttonText = "Remove", width = 90,
+                  onClick = function() table.remove(r.notes, i); Redraw() end }
+            );  y = y - h
+        end
+
+        local sharedAny = next(ns.sharedNotes)
+        if sharedAny then
+            _, h = W:SectionHeader(parent, "SENT BY THE RAID LEADER (THIS SESSION)", y);  y = y - h
+            for boss, s in pairs(ns.sharedNotes) do
+                _, h = W:DualRow(parent, y,
+                    { type = "label", text = boss .. ", from " .. s.from .. ": " .. Summary(s.text) },
+                    { type = "labeledButton", text = "Forget It", buttonText = "Forget", width = 90,
+                      onClick = function() ns.sharedNotes[boss] = nil; Redraw() end }
+                );  y = y - h
+            end
+        end
+
         return math.abs(y)
     end
 
@@ -132,9 +297,10 @@ initFrame:SetScript("OnEvent", function(self)
     CludesUI:RegisterModule(ADDON_NAME, {
         title       = "Raid Lead",
         description = "Tools for raid leaders: sort or split the raid, and sounds for auras on you.",
-        pages       = { PAGE, PAGE_SOUNDS },
+        pages       = { PAGE, PAGE_REMINDERS, PAGE_SOUNDS },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE then return BuildPage(pageName, parent, yOffset) end
+            if pageName == PAGE_REMINDERS then return BuildRemindersPage(pageName, parent, yOffset) end
             if pageName == PAGE_SOUNDS then return BuildSoundsPage(pageName, parent, yOffset) end
         end,
     })

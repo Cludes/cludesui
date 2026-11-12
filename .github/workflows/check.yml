@@ -26,7 +26,9 @@ jobs:
           exit $fail
 
       - name: Raid Lead planner tests
-        run: luajit tools/test-raidlead.lua
+        run: |
+          luajit tools/test-raidlead.lua
+          luajit tools/test-notes.lua
 
       - name: Every file a .toc lists exists
         run: |
