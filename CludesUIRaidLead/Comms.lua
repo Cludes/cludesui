@@ -8,6 +8,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    N|<id>|<i>|<n>|<boss>|<part>   one part of a shared reminder note
 --    R|<report>            a ready check report (ReadyCheck.lua)
 --    K|<nickname>          a player's nickname (Nicknames.lua), also to the guild
+--    B|<seconds>           a break of that length, 0 ends it (BreakTimer.lua)
 --
 --  The game allows 255 characters a message and about one message a second
 --  per prefix after a burst of ten, so long notes are split and paced. It also
@@ -147,6 +148,8 @@ function ns.SendReadyReport(report) Send("R|" .. report) end
 --- channel nil = the group; "GUILD" = the guild.
 function ns.SendNickname(nick, channel) Send("K|" .. nick, channel) end
 
+function ns.SendBreak(seconds) return Send("B|" .. seconds) end
+
 -------------------------------------------------------------------------------
 --  Receiving
 -------------------------------------------------------------------------------
@@ -161,6 +164,12 @@ frame:SetScript("OnEvent", function(_, _, prefix, msg, channel, sender)
         if ns.ReceiveReadyReport then ns.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3)) end
     elseif msg:sub(1, 2) == "K|" then
         if ns.ReceiveNickname then ns.ReceiveNickname(sender, msg:sub(3, 40)) end
+    elseif msg:sub(1, 2) == "B|" then
+        local seconds = tonumber(msg:match("^B|(%d+)$"))
+        if seconds and IsLeaderOrAssist(sender) and ns.ReceiveBreak then
+            local who = Ambiguate(sender, "none")
+            ns.ReceiveBreak(seconds, not UnitIsUnit(who, "player") and who or nil)
+        end
     elseif msg:sub(1, 2) == "V|" then
         versions[Ambiguate(sender, "none")] = msg:sub(3, 40)
     elseif msg:sub(1, 2) == "N|" then

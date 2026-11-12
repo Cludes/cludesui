@@ -52,6 +52,7 @@ Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI pa
 - `/raidlead split` makes two balanced halves for split runs.
 - `/raidlead undo` puts everyone back where they were.
 - `/raidlead stop` stops a sort that is under way.
+- `/raidlead break 5` starts a 5 minute break bar for every CludesUI user in the group; `/raidlead break 0` ends it.
 
 Raid Lead also has:
 

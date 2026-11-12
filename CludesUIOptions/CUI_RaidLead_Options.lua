@@ -105,6 +105,25 @@ initFrame:SetScript("OnEvent", function(self)
               setValue = function(v) rc.consumables = v and true or false end }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "BREAK TIMER", y);  y = y - h
+        local bt = ns.BreakSettings()
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Break Timers",
+              tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Layout Mode.",
+              getValue = function() return bt.enabled end,
+              setValue = function(v) bt.enabled = v and true or false end },
+            { type = "toggle", text = "Sound When It Ends",
+              getValue = function() return bt.sound end,
+              setValue = function(v) bt.sound = v and true or false end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Start a Break", buttonText = "5 min", width = 90,
+              tooltip = "Starts a 5 minute break for the group. /raidlead break 10 starts one of any length.",
+              onClick = function() ns.StartBreak(5) end },
+            { type = "labeledButton", text = "End the Break", buttonText = "End", width = 90,
+              onClick = function() ns.StartBreak(0) end }
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "VERSIONS", y);  y = y - h
 
         _, h = W:DualRow(parent, y,

@@ -130,6 +130,9 @@ local function Command(msg)
         if job then Finish("stopped.") else Say("nothing is being sorted.") end
         return
     end
+    if cmd == "break" then
+        return ns.StartBreak((msg or ""):match("^%s*%S+%s+(%S+)") or "")
+    end
     if cmd == "" then
         if InCombatLockdown() then return Say("the settings panel cannot open in combat.") end
         C_Timer.After(0, function()
@@ -145,6 +148,7 @@ local function Command(msg)
         Say("/raidlead split  -  two balanced halves")
         Say("/raidlead undo   -  back to how the groups were before the last sort")
         Say("/raidlead stop   -  stop a sort that is under way")
+        Say("/raidlead break 5  -  a 5 minute break for the group (0 ends it)")
         return
     end
     if job then return Say("a sort is already under way. Type /raidlead stop first.") end
