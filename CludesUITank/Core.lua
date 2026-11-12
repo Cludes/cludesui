@@ -185,7 +185,7 @@ function ns.FindCoTank()
 end
 
 function ns.Print(msg)
-    print(ns.ADDON_COLOR:WrapTextInColorCode("[CoTank]") .. " " .. tostring(msg))
+    print("|cff4cc9f0Tank Kit:|r " .. tostring(msg))
 end
 
 -- Points the frame at the co-tank while the player is tanking alongside one,
@@ -207,7 +207,7 @@ function ns.AssignCoTank(frame)
     end
 end
 
--- Turns test mode on or off. Shared by /ccta test and the options panel,
+-- Turns test mode on or off. Shared by /ctank test and the options panel,
 -- which used to do this separately and had drifted: the panel never refreshed
 -- the preview icons, so its test mode showed no mock debuffs. Returns false
 -- in combat, where changing a secure frame's unit or visibility is blocked.
@@ -402,8 +402,6 @@ local function InitializeFrame()
     -- normally assign the co-tank have already fired, so run that pass now.
     if IsLoggedIn() then OnGroupEvent("PLAYER_REGEN_ENABLED") end
 
-    local version = C_AddOns.GetAddOnMetadata(addonName, "Version") or "1.0.0"
-    ns.Print("v" .. version .. " loaded  |cff888888(/ccta or /cta  |  right-click frame)|r")
 end
 
 -- ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -425,12 +423,12 @@ loader:SetScript("OnEvent", function(self, event, name)
     end
     local ok, err = pcall(InitializeFrame)
     if not ok then
-        print("|cffff4040CoTankAuras load error:|r " .. tostring(err))
+        print("|cffff4040Tank Kit load error:|r " .. tostring(err))
     end
 end)
 
 -- ── Slash Commands ─────────────────────────────────────────────────────────
-local CMD = "|cffffff00/ccta|r"
+local CMD = "|cffffff00/ctank|r"
 local ON  = "|cff55ff55ON|r"
 local OFF = "|cffff5555OFF|r"
 
@@ -444,7 +442,7 @@ local function handleSlashCommand(msg)
 
     if cmd == "help" then
         ns.Print("|cffaaaaaa--- Commands ---")
-        DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " (or |cffffff00/cta|r)    - open settings panel")
+        DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " (or |cffffff00/tankkit|r) - open the Tank Kit settings")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00debuffs|r       - toggle the tank debuff row on/off")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00sound|r         - check the alert sound is registered")
         DEFAULT_CHAT_FRAME:AddMessage("  " .. CMD .. " |cffffff00sounds|r [text] - list selectable sound names")
@@ -524,7 +522,7 @@ local function handleSlashCommand(msg)
                 ns.DB().pinnedTank = name
                 ns.Print("Pinned co-tank: |cff5ab4ff" .. name .. "|r")
             else
-                ns.Print("|cffff4040No co-tank found. Use /ccta pin PlayerName|r")
+                ns.Print("|cffff4040No co-tank found. Use /ctank pin PlayerName|r")
             end
         end
         return
@@ -539,8 +537,8 @@ local function handleSlashCommand(msg)
     ns.Print("Unknown command - use " .. CMD .. " help")
 end
 
-SLASH_COTANKAURAS1 = "/ccta"
-SLASH_COTANKAURAS2 = "/cta"
+SLASH_COTANKAURAS1 = "/ctank"
+SLASH_COTANKAURAS2 = "/tankkit"
 SlashCmdList["COTANKAURAS"] = function(msg)
     local ok, err = pcall(handleSlashCommand, msg)
     if not ok then

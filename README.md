@@ -42,7 +42,7 @@ Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a
 
 ## Tank Kit
 
-Tank Kit is for tanks. It shows your co-tank's health, debuffs and defensives in a small frame and alerts you when to taunt. Open its settings with `/ccta`. If you also run the standalone CoTankAuras addon, that one takes over and this module stays off.
+Tank Kit is for tanks. It shows your co-tank's health, debuffs and defensives in a small frame and alerts you when to taunt. Its settings are in the CludesUI panel under Tank Kit; `/ctank` opens them, and so does right-clicking the frame. If you also run the standalone CoTankAuras addon, that one takes over and this module stays off.
 
 ## Raid Lead
 

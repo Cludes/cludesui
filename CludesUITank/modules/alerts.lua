@@ -297,7 +297,7 @@ function ns.Alert:RegisterAuraSounds(unit)
             soundWarned = true
             ns.Print("|cffff4040Alert sound '" .. tostring(soundPath) ..
                      "' is not a known sound.|r Pick one with " ..
-                     "|cffffff00/ccta sounds|r then |cffffff00/ccta sound set <name>|r.")
+                     "|cffffff00/ctank sounds|r then |cffffff00/ctank sound set <name>|r.")
         end
         return 0, 0
     end
@@ -338,7 +338,7 @@ function ns.Alert:RegisterAuraSounds(unit)
         ns.Print("|cffff4040Alert sounds were rejected by the game.|r " ..
                  "Set CludesUITankDB.alertSoundFileID to a valid sound file ID, " ..
                  "or CludesUITankDB.alertSoundFile to a valid sound path, " ..
-                 "then run |cffffff00/ccta sound|r again.")
+                 "then run |cffffff00/ctank sound|r again.")
     end
 
     return #auraSoundIDs, attempted
@@ -369,11 +369,11 @@ function ns.Alert:ReportAuraSounds()
     end
 
     if attempted == 0 then
-        ns.Print("No alert spells are enabled - turn some on under |cffffff00/ccta|r > Alerts.")
+        ns.Print("No alert spells are enabled - turn some on under |cffffff00/ctank|r > Alerts.")
     elseif registered == 0 then
         ns.Print("Alert sounds registered: |cffff66660/" .. attempted ..
                  "|r - the game rejected " .. using ..
-                 ". Use |cffffff00/ccta sounds|r to list valid names.")
+                 ". Use |cffffff00/ctank sounds|r to list valid names.")
     elseif registered == attempted then
         ns.Print("Alert sounds registered: |cff44ff88" .. registered .. "/" .. attempted ..
                  "|r using " .. using)
@@ -451,9 +451,9 @@ function ns.Alert:PrintSoundNames(filter)
     DEFAULT_CHAT_FRAME:AddMessage("  " .. table.concat(shown, ", "))
     if total > #shown then
         DEFAULT_CHAT_FRAME:AddMessage("  ...and " .. (total - #shown) ..
-            " more. Narrow it with |cffffff00/ccta sounds <text>|r.")
+            " more. Narrow it with |cffffff00/ctank sounds <text>|r.")
     end
-    DEFAULT_CHAT_FRAME:AddMessage("  Pick one with |cffffff00/ccta sound set <name>|r.")
+    DEFAULT_CHAT_FRAME:AddMessage("  Pick one with |cffffff00/ctank sound set <name>|r.")
 end
 
 -- Sets the alert sound by name (or literal path) and re-registers.
@@ -469,7 +469,7 @@ function ns.Alert:SetSound(name)
     local resolved = self:ResolveSoundPath()
     if resolved == name and not name:find("\\") then
         ns.Print("|cffff4040No sound named '" .. name .. "' is registered.|r " ..
-                 "Use |cffffff00/ccta sounds|r to list them.")
+                 "Use |cffffff00/ctank sounds|r to list them.")
         return
     end
 

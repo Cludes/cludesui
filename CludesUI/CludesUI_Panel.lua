@@ -4289,6 +4289,7 @@ do
         CludesUIResourceBars = true,
         CludesUIUnitFrames = true,
         CludesUIMythicTimer = true,
+        CludesUITank = true,
         -- v6.6 split
         CludesUIQoL = true,
         CludesUIBlizzardSkin = true,

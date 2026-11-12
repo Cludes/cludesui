@@ -410,7 +410,7 @@ function ns.MigratePrivateAuraRow()
     end
     ns.Print("Private auras now appear in the tank debuff row, so the separate " ..
              "private aura row has been turned off to stop icons showing twice. " ..
-             "Turn it back on under |cffffff00/ccta|r > General if you prefer the old layout.")
+             "Turn it back on under |cffffff00/ctank|r > Frame if you prefer the old layout.")
 end
 
 -- ── Tank debuff toggle ────────────────────────────────────────────────────

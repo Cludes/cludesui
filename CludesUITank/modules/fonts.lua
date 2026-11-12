@@ -41,7 +41,13 @@ end
 -- Resolves the stored setting to a usable font file path. Older configs store
 -- a path directly, newer ones store a LibSharedMedia name.
 function ns.FontPath()
-    local value = (CludesUITankDB and CludesUITankDB.fontFace) or ns.K.DEFAULT_FONT_FACE
+    local value = CludesUITankDB and CludesUITankDB.fontFace
+    if value == nil then
+        -- No font chosen: follow the CludesUI global font.
+        local path = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
+        if type(path) == "string" and path ~= "" then return path end
+        value = ns.K.DEFAULT_FONT_FACE
+    end
     if type(value) ~= "string" or value == "" then return ns.K.DEFAULT_FONT_FACE end
     if value:find("\\", 1, true) or value:find("/", 1, true) then return value end
 
