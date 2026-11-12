@@ -865,6 +865,47 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  INSTANCE TRACKER
+    ---------------------------------------------------------------------------
+    local IT = CludesUI._InstanceTracker
+    if IT then
+        local function itOff() return not IT.Get("enabled") end
+        local function ITSet(key, v) IT.Cfg()[key] = v; IT.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "INSTANCE TRACKER", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_InstanceTracker", disabled = itOff, disabledTooltip = "Instance Tracker" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Instance Tracker",
+              tooltip = "Counts the new dungeons and raids your account enters in a rolling hour against the cap, times your runs, and prints a summary when you leave. Re-entering the same copy does not count again.",
+              getValue = function() return not itOff() end,
+              setValue = function(v) ITSet("enabled", v and true or false) end },
+            { type = "slider", text = "Hourly Cap", min = 1, max = 30, step = 1, isPercent = false, disabled = itOff,
+              tooltip = "WoW Forever allows 10 new instances an hour per account. Change this only if the game does.",
+              getValue = function() return IT.Get("cap") end,
+              setValue = function(v) ITSet("cap", math.floor(v + 0.5)) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show the Counter", disabled = itOff,
+              getValue = function() return IT.Get("hud") end,
+              setValue = function(v) ITSet("hud", v and true or false) end },
+            { type = "toggle", text = "Summary When You Leave", disabled = itOff,
+              getValue = function() return IT.Get("summary") end,
+              setValue = function(v) ITSet("summary", v and true or false) end }
+        );  y = y - h
+        if not itOff() then
+            local runs = IT.Runs()
+            for i = 1, math.min(#runs, 6), 2 do
+                local function Run(r)
+                    if not r then return { type = "label", text = "" } end
+                    return { type = "label", text = ("%s  |cff9aa6b2%d:%02d, %d deaths, %d items|r"):format(
+                        r.name or "?", math.floor(r.seconds / 60), r.seconds % 60, r.deaths or 0, r.items or 0) }
+                end
+                _, h = W:DualRow(parent, y, Run(runs[i]), Run(runs[i + 1]));  y = y - h
+            end
+        end
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
