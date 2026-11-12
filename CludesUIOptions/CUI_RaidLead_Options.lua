@@ -82,6 +82,26 @@ initFrame:SetScript("OnEvent", function(self)
             { type = "label", text = "" }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "READY CHECK", y);  y = y - h
+
+        local rc = ns.ReadyCheckSettings()
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Gear and Cooldown Check",
+              tooltip = "On every ready check, CludesUI users report their durability, item level, missing enchants and raid cooldowns that are not ready. The leader and assistants see a list.",
+              getValue = function() return rc.enabled end,
+              setValue = function(v) rc.enabled = v and true or false end },
+            { type = "slider", text = "Flag Durability Below", min = 0, max = 100, step = 5,
+              getValue = function() return rc.minDurability end,
+              setValue = function(v) rc.minDurability = math.floor(v + 0.5) end }
+        );  y = y - h
+
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "See Your Own Report", buttonText = "Show", width = 90,
+              tooltip = "Opens the ready check list with just your own report.",
+              onClick = function() ns.ShowReadyWindow() end },
+            { type = "label", text = "Enchants checked: head, shoulders, chest, feet, rings and weapons." }
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "VERSIONS", y);  y = y - h
 
         _, h = W:DualRow(parent, y,
@@ -89,6 +109,121 @@ initFrame:SetScript("OnEvent", function(self)
               tooltip = "Asks everyone in the group which CludesUI version they run. The answer prints in chat after a few seconds.",
               onClick = function() ns.VersionCheck() end },
             { type = "label", text = "" }
+        );  y = y - h
+
+        return math.abs(y)
+    end
+
+    ---------------------------------------------------------------------------
+    --  Tracking page: Immunities on You and Boss Pace
+    ---------------------------------------------------------------------------
+    local PAGE_TRACKING = "Tracking"
+    local PAGE_NICKNAMES = "Nicknames"
+
+    local function Refresh()
+        CludesUI:InvalidatePageCache()
+        CludesUI:RefreshPage(true)
+    end
+
+    local function BuildTrackingPage(_, parent, yOffset)
+        local W = CludesUI.Widgets
+        local y = yOffset
+        local _, h
+        local im, pace = ns.ImmunitySettings(), ns.PaceSettings()
+
+        CludesUI:ClearContentHeader()
+
+        _, h = W:SectionHeader(parent, "IMMUNITIES ON YOU", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Immunities on You",
+              tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Layout Mode.",
+              getValue = function() return im.enabled end,
+              setValue = function(v) im.enabled = v and true or false; ns.RefreshImmunities() end },
+            { type = "slider", text = "Icon Size", min = 20, max = 64, step = 1,
+              getValue = function() return im.size end,
+              setValue = function(v) im.size = math.floor(v + 0.5); ns.RefreshImmunities() end }
+        );  y = y - h
+        local extra = {}
+        for _, id in ipairs(im.extra) do
+            local n = C_Spell.GetSpellName(id)
+            extra[#extra + 1] = (type(n) == "string" and n or "Spell") .. " (" .. id .. ")"
+        end
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Add an Immunity", inputStyle = "popup", placeholder = "Spell ID", inputWidth = 110,
+              tooltip = "The spell ID of another immunity buff to show.",
+              getValue = function() return "" end,
+              setValue = function(text)
+                  local id = tonumber(text)
+                  if id and id > 0 then table.insert(im.extra, math.floor(id)); ns.RefreshImmunities(); Refresh() end
+              end },
+            #extra > 0 and { type = "labeledButton", text = "Added: " .. table.concat(extra, ", "), buttonText = "Clear", width = 90,
+              onClick = function() wipe(im.extra); ns.RefreshImmunities(); Refresh() end }
+              or { type = "label", text = "" }
+        );  y = y - h
+
+        _, h = W:SectionHeader(parent, "BOSS PACE", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Boss Pace",
+              tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Layout Mode.",
+              getValue = function() return pace.enabled end,
+              setValue = function(v) pace.enabled = v and true or false end },
+            { type = "input", text = "Add a Boss", inputStyle = "popup", placeholder = "Boss name", inputWidth = 160,
+              tooltip = "The boss's name as the game shows it at the pull. Set its target kill time below.",
+              getValue = function() return "" end,
+              setValue = function(text)
+                  text = text and text:match("^%s*(.-)%s*$") or ""
+                  if text ~= "" then table.insert(pace.targets, { boss = text, seconds = 300 }); Refresh() end
+              end }
+        );  y = y - h
+        for i, t in ipairs(pace.targets) do
+            _, h = W:DualRow(parent, y,
+                { type = "input", text = t.boss .. ": Target Kill Time", inputWidth = 80, placeholder = "5:00",
+                  tooltip = "Minutes and seconds, like 5:30. Press Enter to save.",
+                  getValue = function() return ns.FormatDuration(t.seconds) end,
+                  setValue = function(text) local s = ns.ParseDuration(text); if s and s > 0 then t.seconds = s end end },
+                { type = "labeledButton", text = "Try It Now", buttonText = "Test", width = 70,
+                  tooltip = "Shows the bar for this boss now, with your target as the clock. With no boss targeted the bar stays empty.",
+                  onClick = function() ns.StartPace(t.boss, t.seconds) end }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Remove " .. t.boss, buttonText = "Remove", width = 90,
+                  onClick = function() table.remove(pace.targets, i); Refresh() end },
+                { type = "label", text = "" }
+            );  y = y - h
+        end
+
+        return math.abs(y)
+    end
+
+    local function BuildNicknamesPage(_, parent, yOffset)
+        local W = CludesUI.Widgets
+        local y = yOffset
+        local _, h
+
+        CludesUI:ClearContentHeader()
+
+        _, h = W:SectionHeader(parent, "NICKNAMES", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Your Nickname", inputWidth = 160, placeholder = "Nickname",
+              tooltip = "Sent to your guild when you log in and to your group when it changes. Other CludesUI users see it on their raid and unit frames. Press Enter to save.",
+              getValue = function() return ns.MyNickname() end,
+              setValue = function(text) ns.SetMyNickname(text); Refresh() end },
+            { type = "toggle", text = "Show CludesUI Nicknames",
+              tooltip = "Raid frames show nicknames in place of character names. Unit frames also need their own Show Nicknames setting on.",
+              getValue = function() return not CludesUIDB.cuiNicknamesOff end,
+              setValue = function(v) CludesUIDB.cuiNicknamesOff = not v or nil end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Paste Nicknames", buttonText = "Paste", width = 90,
+              tooltip = "One \"Character=Nickname\" per line.",
+              onClick = function()
+                  CludesUI:ShowImportPopup(function(str)
+                      local n = ns.ImportNicknames(str)
+                      CludesUI.Print(("|cff4cc9f0Raid Lead:|r added %d nickname%s."):format(n, n == 1 and "" or "s"))
+                      Refresh()
+                  end, "Nicknames", "One Character=Nickname per line")
+              end },
+            { type = "label", text = "Known nicknames: " .. ns.NicknameCount() }
         );  y = y - h
 
         return math.abs(y)
@@ -297,10 +432,12 @@ initFrame:SetScript("OnEvent", function(self)
     CludesUI:RegisterModule(ADDON_NAME, {
         title       = "Raid Lead",
         description = "Tools for raid leaders: sort or split the raid, and sounds for auras on you.",
-        pages       = { PAGE, PAGE_REMINDERS, PAGE_SOUNDS },
+        pages       = { PAGE, PAGE_REMINDERS, PAGE_TRACKING, PAGE_SOUNDS, PAGE_NICKNAMES },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE then return BuildPage(pageName, parent, yOffset) end
             if pageName == PAGE_REMINDERS then return BuildRemindersPage(pageName, parent, yOffset) end
+            if pageName == PAGE_TRACKING then return BuildTrackingPage(pageName, parent, yOffset) end
+            if pageName == PAGE_NICKNAMES then return BuildNicknamesPage(pageName, parent, yOffset) end
             if pageName == PAGE_SOUNDS then return BuildSoundsPage(pageName, parent, yOffset) end
         end,
     })

@@ -647,6 +647,11 @@ function ns.ResolveUnitNickname(unit)
     -- skip the remaining provider lookups and show the raw unit name (display-safe;
     -- with the surname on WoW Forever).
     if not (db and db.profile and db.profile.showNicknames) then return CludesUI.WithSurname(name, surname) end
+    -- CludesUI's own nicknames (Raid Lead > Nicknames), set and synced with the guild.
+    if not nameSecret and CludesUI.GetNickname then
+        local own = CludesUI.GetNickname(name)
+        if own then return own end
+    end
     if not nameSecret and NSAPI and NSAPI.GetName then
         local ok, dn = pcall(NSAPI.GetName, NSAPI, name, ns.EXT_NICK.nsKey)
         if ok and type(dn) == "string"

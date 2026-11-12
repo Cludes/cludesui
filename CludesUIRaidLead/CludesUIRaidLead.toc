@@ -17,3 +17,7 @@ AuraSounds.lua
 Comms.lua
 Reminders.lua
 Invite.lua
+Immunities.lua
+ReadyCheck.lua
+Nicknames.lua
+BossPace.lua

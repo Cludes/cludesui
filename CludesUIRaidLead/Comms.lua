@@ -6,6 +6,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    V?                    asks every CludesUI user for their version
 --    V|<version>           the answer
 --    N|<id>|<i>|<n>|<boss>|<part>   one part of a shared reminder note
+--    R|<report>            a ready check report (ReadyCheck.lua)
+--    K|<nickname>          a player's nickname (Nicknames.lua), also to the guild
 --
 --  The game allows 255 characters a message and about one message a second
 --  per prefix after a burst of ten, so long notes are split and paced. It also
@@ -32,9 +34,9 @@ local queue, sending, sentInBurst = {}, false, 0
 local failedWarned = false
 
 local function Pump()
-    local msg = table.remove(queue, 1)
-    if not msg then sending, sentInBurst = false, 0; return end
-    local channel = Channel()
+    local item = table.remove(queue, 1)
+    if not item then sending, sentInBurst = false, 0; return end
+    local msg, channel = item[1], item[2] or Channel()
     if channel then
         local ok, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel)
         local code = ok and (type(result) == "number" and result or 0) or 9
@@ -48,9 +50,9 @@ local function Pump()
     C_Timer.After(sentInBurst < BURST and 0.05 or PACE, Pump)
 end
 
-local function Send(msg)
-    if not Channel() then return false end
-    queue[#queue + 1] = msg
+local function Send(msg, channel)
+    if not (channel or Channel()) then return false end
+    queue[#queue + 1] = { msg, channel }
     if not sending then
         sending, failedWarned = true, false
         Pump()
@@ -138,6 +140,14 @@ local function OnNotePart(sender, id, i, n, boss, part)
 end
 
 -------------------------------------------------------------------------------
+--  Ready check reports and nicknames
+-------------------------------------------------------------------------------
+function ns.SendReadyReport(report) Send("R|" .. report) end
+
+--- channel nil = the group; "GUILD" = the guild.
+function ns.SendNickname(nick, channel) Send("K|" .. nick, channel) end
+
+-------------------------------------------------------------------------------
 --  Receiving
 -------------------------------------------------------------------------------
 local frame = CreateFrame("Frame")
@@ -147,6 +157,10 @@ frame:SetScript("OnEvent", function(_, _, prefix, msg, channel, sender)
     if issecretvalue and (issecretvalue(msg) or issecretvalue(sender)) then return end
     if msg == "V?" then
         Send("V|" .. MyVersion())
+    elseif msg:sub(1, 2) == "R|" then
+        if ns.ReceiveReadyReport then ns.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3)) end
+    elseif msg:sub(1, 2) == "K|" then
+        if ns.ReceiveNickname then ns.ReceiveNickname(sender, msg:sub(3, 40)) end
     elseif msg:sub(1, 2) == "V|" then
         versions[Ambiguate(sender, "none")] = msg:sub(3, 40)
     elseif msg:sub(1, 2) == "N|" then

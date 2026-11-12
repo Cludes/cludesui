@@ -499,8 +499,8 @@ ns.RF_NAME_WIDTH_FRACTION = 1.0
 local function ResolveDisplayName(unit, applyCap, s, fmt)
     local name, surname = UnitName(unit)
     name = name or ""
-    local display
-    if NSAPI and NSAPI.GetName then
+    local display = CludesUI.GetNickname and CludesUI.GetNickname(name)
+    if not display and NSAPI and NSAPI.GetName then
         local ok, dn = pcall(NSAPI.GetName, NSAPI, name, ns.EXT_NICK.nsKey)
         if ok and type(dn) == "string"
            and not (issecretvalue and issecretvalue(dn)) and dn ~= "" and dn ~= name then
