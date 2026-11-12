@@ -67,6 +67,8 @@ CUI_ForeverEssentials_MacroModel_Options.lua
 CUI_ForeverEssentials_Macros_Options.lua
 CUI_Friends_Options.lua
 CUI_Tank_Options.lua
+CUI_TitleLine_Options.lua
+CUI_RaidLead_Options.lua
 CUI_LoadoutManager_Options.lua
 CUI_GroupFinder_Options.lua
 CUI_SimpleLootCouncil_Options.lua

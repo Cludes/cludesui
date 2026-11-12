@@ -17,6 +17,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 local Planner = ns.Planner
+CludesUI._ModuleNS["CludesUIRaidLead"] = ns
 local CludesUI = _G.CludesUI
 
 local MAX_MOVES = 120       -- a 40-player raid needs under 40; this is the runaway stop
@@ -129,6 +130,15 @@ local function Command(msg)
         if job then Finish("stopped.") else Say("nothing is being sorted.") end
         return
     end
+    if cmd == "" then
+        if InCombatLockdown() then return Say("the settings panel cannot open in combat.") end
+        C_Timer.After(0, function()
+            if InCombatLockdown() then return end
+            if CludesUI.EnsureOptionsLoaded and not CludesUI.EnsureOptionsLoaded() then return end
+            CludesUI:ShowModule("CludesUIRaidLead")
+        end)
+        return
+    end
     if cmd ~= "roles" and cmd ~= "split" and cmd ~= "undo" then
         Say("commands:")
         Say("/raidlead roles  -  tanks, melee, ranged, healers, from group 1 up")
@@ -154,6 +164,8 @@ local function Command(msg)
         Start("Split", target, members)
     end
 end
+
+ns.Command = Command
 
 SLASH_CUIRAIDLEAD1 = "/raidlead"
 SLASH_CUIRAIDLEAD2 = "/crl"

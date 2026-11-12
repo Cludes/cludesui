@@ -38,7 +38,7 @@ Each addon has a shortcut to its own settings page:
 
 ## Title Line
 
-Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Open it with `/titleline`. Its cutoff numbers come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If you also run the standalone TitleLine addon, that one takes over and this module stays off.
+Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Its settings are in the CludesUI panel under Title Line, which also opens the graph; `/titleline` opens the graph directly. Its cutoff numbers come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If you also run the standalone TitleLine addon, that one takes over and this module stays off.
 
 ## Tank Kit
 
@@ -46,7 +46,7 @@ Tank Kit is for tanks. It shows your co-tank's health, debuffs and defensives in
 
 ## Raid Lead
 
-Raid Lead is for raid leaders and assistants. Out of combat:
+Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI panel under Raid Lead (`/raidlead` opens it), or use the commands, out of combat:
 
 - `/raidlead roles` sorts the raid into tanks, melee, ranged and healers, filling group 1 upward.
 - `/raidlead split` makes two balanced halves for split runs.

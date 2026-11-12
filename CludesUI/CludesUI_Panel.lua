@@ -4290,6 +4290,8 @@ do
         CludesUIUnitFrames = true,
         CludesUIMythicTimer = true,
         CludesUITank = true,
+        CludesUIRaidLead = true,
+        CludesUITitleLine = true,
         -- v6.6 split
         CludesUIQoL = true,
         CludesUIBlizzardSkin = true,
