@@ -67,6 +67,12 @@ Aura Sounds: pick a spell ID and it plays a sound when that aura is applied to y
 
 Damage dealers are counted as melee or ranged by class, which is a guess for Druids, Shamans and Hunters.
 
+## WoW Forever: Training Planner
+
+On WoW Forever, Forever Tools has a Training page in the CludesUI panel. It lists the spells your trainer has for you right now with their total price, then what each of the next levels brings and costs. Spells that wait on a talent or a quest are listed apart, with the spell they need. When you level up, a chat line says what is new; turn it off on the same page. Prices are the trainer's base prices, so a reputation discount makes the real bill a little lower.
+
+The spell list and prices come from [What's Training](https://github.com/fusionpit/WhatsTraining) (MIT licence).
+
 ## Profiles
 
 Profiles > Import Profile accepts CludesUI strings (they start with `!CUI_`) and strings in the older `!EUI_` format, which it converts as it imports.

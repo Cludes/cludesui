@@ -51,3 +51,7 @@ CludesUIForeverEssentials_MacroManager.lua
 
 # Fishing (key, double-click, bobber indicator, sounds)
 CludesUIForeverEssentials_Fishing.lua
+
+# Training planner (spell list from What's Training, MIT)
+CludesUIForeverEssentials_TrainingData.lua
+CludesUIForeverEssentials_Training.lua
