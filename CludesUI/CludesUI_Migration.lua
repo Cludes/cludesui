@@ -4179,6 +4179,26 @@ CludesUI.RegisterMigration({
 })
 
 --------------------------------------------------------------------------------
+--  The CludesUI minimap button is a LibDBIcon button now (LibDBIcon10_CludesUI,
+--  13 Nov 2026). A profile that placed the old CludesUIMinimapButton on the
+--  minimap button row keeps that place under the new name.
+--------------------------------------------------------------------------------
+CludesUI.RegisterMigration({
+    id          = "minimap_button_libdbicon_v1",
+    scope       = "profile",
+    description = "Move the CludesUI minimap button's button-row placement to its LibDBIcon name.",
+    body        = function(ctx)
+        local mod = ctx.profile and ctx.profile.addons and ctx.profile.addons.CludesUIMinimap
+        local mm = type(mod) == "table" and mod.minimap
+        local ug = type(mm) == "table" and mm.ungroupedButtons
+        if type(ug) == "table" and ug.CludesUIMinimapButton ~= nil then
+            if ug.LibDBIcon10_CludesUI == nil then ug.LibDBIcon10_CludesUI = ug.CludesUIMinimapButton end
+            ug.CludesUIMinimapButton = nil
+        end
+    end,
+})
+
+--------------------------------------------------------------------------------
 --  Expressway is the default font again (Barlow Condensed was the default for
 --  a short while from 11 Nov 2026). Installs and profiles left on Barlow
 --  Condensed go back to Expressway once; it stays in the font list to pick.

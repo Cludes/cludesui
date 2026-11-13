@@ -1372,7 +1372,7 @@ local function CaptureBlizzardMinimap()
         local ug = p.ungroupedButtons
         if type(ug) ~= "table" then ug = {}; p.ungroupedButtons = ug end
         if next(ug) == nil then
-            ug.CludesUIMinimapButton = 1
+            ug.LibDBIcon10_CludesUI = 1
             ug.LibDBIcon10_BugSack = 2
         end
     end

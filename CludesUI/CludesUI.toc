@@ -4,7 +4,7 @@
 ## Author: Cludes
 ## Version: 1.0.0
 ## SavedVariables: CludesUIDB
-## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+## IconTexture: Interface\AddOns\CludesUI\media\HappyBufo
 ## X-License: All Rights Reserved (see license.txt)
 
 # Pre-12.1 client failsafe -- MUST load first (arms the per-file guard line)
@@ -14,6 +14,7 @@ CludesUI_ClientGate.lua
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
 Libs\LibDeflate\LibDeflate.lua
 Libs\LibKeystone\LibKeystone.lua [AllowLoadGameType standard]

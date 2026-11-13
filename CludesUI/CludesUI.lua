@@ -3935,148 +3935,71 @@ end
 
 
 -------------------------------------------------------------------------------
---  Native Minimap Button (no library dependencies)
+--  Minimap Button: a LibDBIcon button (LibDBIcon10_CludesUI), so minimap
+--  button bins and the addon compartment handle it like any other addon's.
+--  CludesUIDB.showMinimapButton stays the on/off switch the options read;
+--  CludesUIDB.minimapIcon is LibDBIcon's own record (position, hidden).
 -------------------------------------------------------------------------------
 do
-    local ICON_PATH = "Interface\\AddOns\\CludesUI\\media\\eg-logo.tga"
-    local BUTTON_SIZE = 32
-    local btn
-    local currentAngle
+    local NAME = "CludesUI"
+    local ICON_PATH = "Interface\\AddOns\\CludesUI\\media\\HappyBufo"
+    local LDBIcon
 
-    local function GetAngle()
-        if currentAngle then return currentAngle end
-        currentAngle = (CludesUIDB and CludesUIDB.minimapButtonAngle) or 220
-        return currentAngle
-    end
-
-    local function SaveAngle()
+    local function IconDB()
         if not CludesUIDB then CludesUIDB = {} end
-        CludesUIDB.minimapButtonAngle = currentAngle
-    end
-
-    local function UpdatePosition()
-        if not btn then return end
-        local angle = math.rad(GetAngle())
-        local mw, mh = Minimap:GetWidth(), Minimap:GetHeight()
-        local radius = (math.max(mw, mh) / 2) + 5
-        btn:ClearAllPoints()
-        btn:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
-    end
-
-    -- Persistent OnUpdate handler for drag (avoids closure creation per drag)
-    local function DragOnUpdate()
-        local mx, my = Minimap:GetCenter()
-        local cx, cy = GetCursorPosition()
-        local scale = Minimap:GetEffectiveScale()
-        cx, cy = cx / scale, cy / scale
-        currentAngle = math.deg(math.atan2(cy - my, cx - mx))
-        UpdatePosition()
+        local db = CludesUIDB.minimapIcon
+        if type(db) ~= "table" then
+            -- First run on LibDBIcon: carry over the old button's angle.
+            db = { minimapPos = CludesUIDB.minimapButtonAngle or 220 }
+            CludesUIDB.minimapIcon = db
+        end
+        db.hide = CludesUIDB.showMinimapButton == false or nil
+        return db
     end
 
     function CludesUI.CreateMinimapButton()
-        if btn then return btn end
+        if LDBIcon then return LDBIcon:GetMinimapButton(NAME) end
+        local LDB = LibStub and LibStub("LibDataBroker-1.1", true)
+        LDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
+        if not (LDB and LDBIcon) then return end
 
-        btn = CreateFrame("Button", "CludesUIMinimapButton", Minimap)
-        btn:SetSize(BUTTON_SIZE, BUTTON_SIZE)
-        btn:SetFrameStrata("MEDIUM")
-        btn:SetFrameLevel(8)
-        btn:SetClampedToScreen(true)
-        btn:SetMovable(true)
-        btn:RegisterForClicks("anyUp")
-        btn:RegisterForDrag("LeftButton")
-
-        -- Background fill (black circle behind the icon)
-        local bg = btn:CreateTexture(nil, "BACKGROUND")
-        bg:SetSize(25, 25)
-        bg:SetPoint("CENTER", 0, 0)
-        bg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
-        bg:SetVertexColor(0, 0, 0, 1)
-
-        -- Icon
-        local icon = btn:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(17, 17)
-        icon:SetPoint("CENTER", 0, 0)
-        icon:SetTexture(ICON_PATH)
-
-        -- Border overlay (standard minimap button look)
-        local overlay = btn:CreateTexture(nil, "OVERLAY")
-        overlay:SetSize(53, 53)
-        overlay:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-        overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-
-        -- Highlight (circular, not square)
-        btn:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-
-        -- Click handler (only fires when mouse-up without drag)
-        local isDragging = false
-        btn:SetScript("OnClick", function(_, button)
-            if InCombatLockdown() then return end
-            if button == "LeftButton" then
-                if CludesUI then CludesUI:Toggle() end
-            elseif button == "RightButton" then
-                if CludesUI then CludesUI:EnsureUnlockCore() end
-                if CludesUI and CludesUI._openUnlockMode then
-                    CludesUI._openUnlockMode()
+        local launcher = LDB:NewDataObject(NAME, {
+            type = "launcher",
+            text = NAME,
+            icon = ICON_PATH,
+            OnClick = function(_, button)
+                if InCombatLockdown() then return end
+                if button == "LeftButton" then
+                    CludesUI:Toggle()
+                elseif button == "RightButton" then
+                    CludesUI:EnsureUnlockCore()
+                    if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+                elseif button == "MiddleButton" then
+                    CludesUIDB.showMinimapButton = false
+                    CludesUI.HideMinimapButton()
+                    -- an open page re-reads its rows (a closed panel catches up when it next shows)
+                    local rl = CludesUI._widgetRefreshList
+                    if rl and #rl > 0 then CludesUI:RefreshPage() end
                 end
-            elseif button == "MiddleButton" then
-                if not CludesUIDB then CludesUIDB = {} end
-                CludesUIDB.showMinimapButton = false
-                btn:Hide()
-                -- an open page re-reads its rows (a closed panel catches up when it next shows)
-                local rl = CludesUI and CludesUI._widgetRefreshList
-                if rl and #rl > 0 then CludesUI:RefreshPage() end
-            end
-        end)
-
-        -- Drag handlers (left-drag repositions around minimap)
-        btn:SetScript("OnDragStart", function(self)
-            if InCombatLockdown() then return end
-            isDragging = true
-            self:LockHighlight()
-            self:SetScript("OnUpdate", DragOnUpdate)
-            GameTooltip:Hide()
-        end)
-
-        btn:SetScript("OnDragStop", function(self)
-            self:SetScript("OnUpdate", nil)
-            self:UnlockHighlight()
-            isDragging = false
-            SaveAngle()
-            UpdatePosition()
-        end)
-
-        -- Tooltip
-        btn:SetScript("OnEnter", function(self)
-            if isDragging or InCombatLockdown() then return end
-            GameTooltip:SetOwner(self, "ANCHOR_NONE")
-            GameTooltip:SetPoint("TOPRIGHT", self, "TOPLEFT", -2, 0)
-            GameTooltip:AddLine("|cff4cc9f0CludesUI|r")
-            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
-            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
-            GameTooltip:AddLine(CludesUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
-            GameTooltip:Show()
-        end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        UpdatePosition()
-
-        -- Respect saved visibility
-        if CludesUIDB and CludesUIDB.showMinimapButton == false then
-            btn:Hide()
-        else
-            btn:Show()
-        end
-
-        _CludesUI_MinimapRegistered = true
-        return btn
+            end,
+            OnTooltipShow = function(tt)
+                tt:AddLine("|cff4cc9f0CludesUI|r")
+                tt:AddLine(CludesUI.L("|cff4cc9f0Left-click:|r |cffE0E0E0Toggle CludesUI|r"))
+                tt:AddLine(CludesUI.L("|cff4cc9f0Right-click:|r |cffE0E0E0Enter Layout Mode|r"))
+                tt:AddLine(CludesUI.L("|cff4cc9f0Middle-click:|r |cffE0E0E0Hide Minimap Button|r"))
+            end,
+        })
+        LDBIcon:Register(NAME, launcher, IconDB())
+        return LDBIcon:GetMinimapButton(NAME)
     end
 
     function CludesUI.ShowMinimapButton()
-        if not btn then CludesUI.CreateMinimapButton() end
-        if btn then btn:Show() end
+        if not LDBIcon then CludesUI.CreateMinimapButton() end
+        if LDBIcon then IconDB(); LDBIcon:Show(NAME) end
     end
 
     function CludesUI.HideMinimapButton()
-        if btn then btn:Hide() end
+        if LDBIcon then IconDB(); LDBIcon:Hide(NAME) end
     end
 end
 
