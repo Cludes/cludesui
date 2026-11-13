@@ -286,15 +286,12 @@ local function BuildFrame()
     -- window): one table, so they cost this function a single local. See tbox.Paint.
     local tbox = {}
 
-    -- Accent hue via desaturate + vertex tint: base images are teal, so desaturating
-    -- removes the hue and vertex color re-tints to the chosen accent. Horde/Alliance
-    -- have dedicated background images and are used as-is (never desaturated/tinted).
-    -- TintColor returns nil for those, else the vertex colour of the desaturated art.
+    -- Accent hue via desaturate + vertex tint: every theme draws the one CludesUI
+    -- frame (frost blue), so desaturating removes the hue and vertex colour re-tints
+    -- it to the theme's accent. The house themes show the frame as drawn: TintColor
+    -- returns nil for those, else the vertex colour of the desaturated art.
     function tbox.TintColor(theme, r, g, b)
-        if theme == "CludesUI" or theme == "CludesUI Original" or theme == "CludesUI Forever"
-           or theme == "Horde" or theme == "Alliance" or theme == "Midnight" or theme == "Dark"
-           or theme == "Pixels" then
-            -- These themes use their native bg as-is (or no bg for Dark)
+        if theme == "CludesUI" or theme == "CludesUI Original" then
             return nil
         end
         local minBright = 1.10

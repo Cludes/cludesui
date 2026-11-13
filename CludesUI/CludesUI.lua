@@ -63,12 +63,12 @@ CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or 
 local THEME_BG_FILES = {
     ["CludesUI"]   = "backgrounds\\cui-bg-new.png",
     ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
-    ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
-    ["Horde"]         = "backgrounds\\cui-bg-horde-compressed.png",
-    ["Alliance"]      = "backgrounds\\cui-bg-alliance-compressed.png",
-    ["Midnight"]      = "backgrounds\\cui-bg-midnight-compressed.png",
-    ["Dark"]          = "backgrounds\\cui-bg-dark-compressed.png",
-    ["Pixels"]        = "backgrounds\\cui-bg-pixels-compressed.png",
+    ["CludesUI Forever"] = "backgrounds\\cui-bg-new.png",
+    ["Horde"]         = "backgrounds\\cui-bg-new.png",
+    ["Alliance"]      = "backgrounds\\cui-bg-new.png",
+    ["Midnight"]      = "backgrounds\\cui-bg-new.png",
+    ["Dark"]          = "backgrounds\\cui-bg-new.png",
+    ["Pixels"]        = "backgrounds\\cui-bg-new.png",
     -- The six colour schemes share the tintable art: the panel desaturates it
     -- and tints it to the scheme's accent, as it does for Class Colored.
     ["Ember"]         = "backgrounds\\cui-bg-new.png",
@@ -90,7 +90,6 @@ local THEME_BG_FILES = {
 -- offset; w, h = size, all in canvas units). Drawn above the theme art and tinted
 -- with the live UI accent; built on the theme's first apply (CreateMainFrame).
 CludesUI.THEME_ACCENT_OVERLAYS = {
-    ["Pixels"] = { file = "backgrounds\\cui-bg-pixels-accent.png", x = 102, y = 127, w = 1295, h = 110 },
 }
 -- The close box painted into each theme art file, in canvas units: x, y, w, h =
 -- tight rect around its border; bx, by, bw, bh = outer rect of the border line
@@ -102,27 +101,9 @@ CludesUI.THEME_ACCENT_OVERLAYS = {
 -- rb = the logo badge ring colour. The collapse button and the collapsed mini
 -- window rebuild their boxes and badge from these rects of the art on screen.
 CludesUI.THEME_CLOSE_BOX = {
-    ["backgrounds\\cui-bg-new.png"] = { x = 1347, y = 117, w = 40, h = 39, gx = 1367, gy = 136,
-        bx = 1348, by = 118, bw = 38, bh = 37, bd = 2,
-        r = 0.685, g = 0.719, b = 0.715, sh = 0.5, ex = 118, ey = 110, rr = 0.324, rg = 0.345, rb = 0.363 },
-    ["backgrounds\\cui-bg-forever-compressed.png"] = { x = 1346, y = 114, w = 43, h = 41, gx = 1368, gy = 134,
-        bx = 1348, by = 116, bw = 40, bh = 38, bd = 3,
-        r = 0.894, g = 0.788, b = 0.617, sh = 0.5, ex = 122, ey = 109, rr = 0.417, rg = 0.311, rb = 0.231 },
-    ["backgrounds\\cui-bg-midnight-compressed.png"] = { x = 1347, y = 117, w = 40, h = 39, gx = 1367, gy = 136,
-        bx = 1348, by = 118, bw = 38, bh = 37, bd = 2,
-        r = 0.738, g = 0.617, b = 0.834, sh = 0.5, ex = 118, ey = 110, rr = 0.335, rg = 0.296, rb = 0.440 },
-    ["backgrounds\\cui-bg-dark-compressed.png"] = { x = 1347, y = 117, w = 40, h = 39, gx = 1367, gy = 136,
-        bx = 1348, by = 118, bw = 38, bh = 37, bd = 2,
-        r = 0.502, g = 0.502, b = 0.502, sh = 0.5, ex = 118, ey = 110, rr = 0.258, rg = 0.258, rb = 0.258 },
-    ["backgrounds\\cui-bg-horde-compressed.png"] = { x = 1348, y = 116, w = 39, h = 40, gx = 1367, gy = 135,
-        bx = 1349, by = 117, bw = 37, bh = 38, bd = 2, gs = 20,
-        r = 0.467, g = 0.357, b = 0.323, sh = 0, ex = 118, ey = 110, rr = 0.354, rg = 0.225, rb = 0.182 },
-    ["backgrounds\\cui-bg-alliance-compressed.png"] = { x = 1345, y = 115, w = 43, h = 43, gx = 1367, gy = 136,
-        bx = 1347, by = 117, bw = 39, bh = 39, bd = 2, gs = 18,
-        r = 1, g = 1, b = 1, sh = 0.5, ex = 118, ey = 110, rr = 0.323, rg = 0.377, rb = 0.483 },
-    ["backgrounds\\cui-bg-pixels-compressed.png"] = { x = 1344, y = 115, w = 43, h = 42, gx = 1366, gy = 136,
-        bx = 1346, by = 117, bw = 39, bh = 38, bd = 3, gs = 18,
-        r = 0.604, g = 0.608, b = 0.604, sh = 0.9, acc = 0.70, ex = 105, ey = 110, rr = 0.371, rg = 0.363, rb = 0.374 },
+    ["backgrounds\\cui-bg-new.png"] = { x = 1345, y = 115, w = 44, h = 43, gx = 1367, gy = 136,
+        bx = 1346, by = 116, bw = 42, bh = 41, bd = 2,
+        r = 0.686, g = 0.718, b = 0.714, sh = 0.5, ex = 118, ey = 110, rr = 0.324, rg = 0.345, rb = 0.363 },
 }
 
 --- Resolve "Faction (Auto)" to Horde/Alliance by player faction; other themes unchanged.
