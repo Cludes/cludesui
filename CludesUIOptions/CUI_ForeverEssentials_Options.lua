@@ -19,6 +19,7 @@ local PAGE_THREAT  = "Threat"
 local PAGE_LOOT    = "Loot"
 local PAGE_MACROS  = "Macros"
 local PAGE_TRAINING = "Training"
+local PAGE_PVP = "PvP"
 
 -- Item quality dropdown values and order from Poor up to last, each in its
 -- colour (the General and Loot pages).
@@ -48,8 +49,8 @@ initFrame:SetScript("OnEvent", function(self)
     CludesUI:RegisterModule("CludesUIForeverEssentials", {
         title       = "Forever Tools",
         description = "Essential tools for WoW Forever.",
-        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING },
-        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "loot", "loot feed", "training", "trainer", "spells to train", "reputation", "currency", "uprank", "spell rank", "junk", "junk items", "macro", "macros", "macro manager", "simplified stats", "item stats", "stat colors", "tooltip stats", "world map", "map", "reveal", "unexplored", "fog of war", "fishing skill", "quest reward", "quest rewards", "sell value", "boat", "zeppelin", "zone exit", "dungeon entrance", "instance" },
+        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
+        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "loot", "loot feed", "training", "trainer", "pvp", "spy", "kill on sight", "enemy players", "spells to train", "reputation", "currency", "uprank", "spell rank", "junk", "junk items", "macro", "macros", "macro manager", "simplified stats", "item stats", "stat colors", "tooltip stats", "world map", "map", "reveal", "unexplored", "fog of war", "fishing skill", "quest reward", "quest rewards", "sell value", "boat", "zeppelin", "zone exit", "dungeon entrance", "instance" },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
                 return _G._CUI_BuildForeverGeneralPage(pageName, parent, yOffset)
@@ -68,6 +69,9 @@ initFrame:SetScript("OnEvent", function(self)
             end
             if pageName == PAGE_TRAINING and _G._CUI_BuildForeverTrainingPage then
                 return _G._CUI_BuildForeverTrainingPage(pageName, parent, yOffset)
+            end
+            if pageName == PAGE_PVP and _G._CUI_BuildForeverPvPPage then
+                return _G._CUI_BuildForeverPvPPage(pageName, parent, yOffset)
             end
         end,
         -- The Travel, Threat, Loot and Macros headers live in the content header; declaring a
