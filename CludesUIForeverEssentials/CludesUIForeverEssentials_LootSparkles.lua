@@ -18,7 +18,8 @@ local _, module = ...
 local CVAR = "outlineModeShowLootEffectWhenDisabled"
 local WATCHED = { graphicsquality = true, raidgraphicsquality = true, [CVAR:lower()] = true }
 
-local F = module.Feature("lootSparkles", { enabled = false })
+-- On by default, as in Forever Loot Sparkles: it only keeps a game sparkle visible.
+local F = module.Feature("lootSparkles", { enabled = true })
 local Enabled = F.Enabled
 
 local applying, pending = false, false
