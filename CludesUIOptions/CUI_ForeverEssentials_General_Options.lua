@@ -1412,6 +1412,34 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  PROFESSIONS
+    ---------------------------------------------------------------------------
+    local PF = CludesUI._Professions
+    if PF then
+        local function pOff() return not PF.Get("enabled") end
+        local function Set(key, v) PF.Cfg()[key] = v; PF.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "PROFESSIONS", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Professions",
+              tooltip = "A window (/cprof) for each of your professions: the next rank and where to get it, the recipes you know that still give skill, and every recipe you have not learned with where it comes from. Open your profession window once so it knows what you have learned.",
+              getValue = function() return not pOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "labeledButton", text = "Professions Window", buttonText = "Open", width = 90, disabled = pOff,
+              tooltip = "Opens the Professions window. Also /cprof.",
+              onClick = function() PF.Open() end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Next Rank Alert", disabled = pOff,
+              tooltip = "A chat line once when a profession is ready for its next rank, with where to train it. /cprof rank checks now.",
+              getValue = function() return PF.Get("rankAlert") end,
+              setValue = function(v) Set("rankAlert", v and true or false) end },
+            { type = "toggle", text = "List Recipes for Later", disabled = pOff,
+              tooltip = "The Recipe Finder also lists the recipes your skill is not high enough for yet.",
+              getValue = function() return PF.Get("showLater") end,
+              setValue = function(v) Set("showLater", v and true or false) end });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts

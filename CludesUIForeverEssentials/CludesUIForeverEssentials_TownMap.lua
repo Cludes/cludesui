@@ -75,6 +75,9 @@ local function Data()
     return data
 end
 
+--- The service NPCs by map, for other features (Professions' gathering trainers).
+function module.TownNPCList() return Data().npcs end
+
 local function SameMap(map) return map and (Data().same[map] or map) end
 local function Faction() return UnitFactionGroup("player") == "Horde" and "H" or "A" end
 
