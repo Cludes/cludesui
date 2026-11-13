@@ -1105,6 +1105,54 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  STAT WEIGHTS
+    ---------------------------------------------------------------------------
+    local SWt = CludesUI._StatWeights
+    if SWt then
+        local cfg = SWt.Cfg()
+        local function Rebuild() C_Timer.After(0.05, function() CludesUI:RefreshPage(true) end) end
+        local values, order = { [""] = "Automatic (talents)" }, { "" }
+        for _, s in ipairs(SWt.Specs()) do values[s.key] = s.name; order[#order + 1] = s.key end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "STAT WEIGHTS", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Upgrades on Tooltips",
+              tooltip = "Gear that is an upgrade for your spec says so on its tooltip, as a percent over what you wear. The BiS window shows each pick's gain too. An estimate from these weights.",
+              getValue = function() return SWt.Get("enabled") end,
+              setValue = function(v) cfg.enabled = v and true or false; Rebuild() end },
+            { type = "dropdown", text = "Spec", values = values, order = order,
+              tooltip = "Automatic weighs by the talent tree you spent most points in.",
+              getValue = function() return cfg.spec or "" end,
+              setValue = function(v) cfg.spec = v; Rebuild() end }
+        );  y = y - h
+        if SWt.Get("enabled") then
+            local key = SWt.ActiveSpec()
+            local weights = SWt.For(key) or {}
+            local list = {}
+            for _, st in ipairs(SWt.Stats) do
+                if (weights[st[1]] or 0) ~= 0 then list[#list + 1] = st end
+            end
+            local function Slider(st)
+                if not st then return { type = "label", text = "" } end
+                local max = st[3]
+                local step = max >= 20 and 0.5 or (max >= 5 and 0.1 or (max >= 1 and 0.05 or 0.005))
+                return { type = "slider", text = st[2], min = 0, max = max, step = step, isPercent = false,
+                         getValue = function() return (SWt.For(key) or {})[st[1]] or 0 end,
+                         setValue = function(v) SWt.Set(key, st[1], v) end }
+            end
+            for i = 1, #list, 2 do
+                _, h = W:DualRow(parent, y, Slider(list[i]), Slider(list[i + 1]));  y = y - h
+            end
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Weights for " .. (SWt.Spec(key) and SWt.Spec(key).name or "?"), buttonText = "Reset", width = 90,
+                  tooltip = "Put this spec's weights back to the defaults.",
+                  onClick = function() SWt.Reset(key); Rebuild() end },
+                { type = "label", text = "Main stat, Spell Damage, Healing or Stamina is 1." }
+            );  y = y - h
+        end
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------

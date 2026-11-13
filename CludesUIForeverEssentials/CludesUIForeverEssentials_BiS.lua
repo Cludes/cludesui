@@ -45,6 +45,8 @@ local BY_EQUIP = {
     INVTYPE_THROWN = { 18 }, INVTYPE_RELIC = { 18 },
 }
 
+module.BIS_EQUIP_SLOTS = BY_EQUIP
+
 local _, CLASS = UnitClass("player")
 
 -- lists[class] = { [invSlot] = itemID }
@@ -279,7 +281,9 @@ Refresh = function()
             r.icon:Show()
             local mine = module.Owned(id)
             if mine then have = have + 1 end
-            r.text:SetText((link or name or ("item " .. id)) .. (mine and "  |cff60d080yours|r" or "  |cff9aa6b2needed|r"))
+            local gain = not mine and module.ItemGain and module.ItemGain(id, link)
+            r.text:SetText((link or name or ("item " .. id)) .. (mine and "  |cff60d080yours|r" or "  |cff9aa6b2needed|r")
+                .. (gain and ("  |cff60d080+%.1f%%|r"):format(gain) or ""))
         else
             r.icon:Hide()
             r.text:SetText("|cff606870none picked|r")
