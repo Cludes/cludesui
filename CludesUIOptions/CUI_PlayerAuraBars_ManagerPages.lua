@@ -2997,8 +2997,9 @@ function ns.PABMP_BuildPage(pageName, parent, yOffset)
         L.hp, L.wp = hp, wp
         local pad = math.max(1, math.floor(2 * k + 0.5))
         local d = math.max(2, hp - 2 * pad)
-        CludesUI.SetPillArt(L.track, hp)
-        CludesUI.SetCircleArt(L.knob, d)
+        -- Square, as the settings toggle is (CludesUI_Widgets.lua PX).
+        L.track:SetColorTexture(1, 1, 1, 1)
+        L.knob:SetColorTexture(1, 1, 1, 1)
         L.knob:SetSize(d, d)
         L.knob:ClearAllPoints()
         L.knob:SetPoint("TOPLEFT", L._frame, "TOPLEFT", L.on and (wp - pad - d) or pad, -pad)

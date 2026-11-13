@@ -40,7 +40,6 @@ local DARK_BG          = CludesUI.DARK_BG
 local BORDER_COLOR     = CludesUI.BORDER_COLOR
 local TEXT_WHITE       = CludesUI.TEXT_WHITE
 local TEXT_DIM         = CludesUI.TEXT_DIM
-local TEXT_SECTION     = CludesUI.TEXT_SECTION
 local MEDIA_PATH       = CludesUI.MEDIA_PATH
 local CS               = CludesUI.CS
 
@@ -87,14 +86,16 @@ local CB = {
     BRD_A = CludesUI.CB_BRD_A, ACT_BRD_A = CludesUI.CB_ACT_BRD_A,
 }
 
--- The toggle's and slider's round shapes, drawn texel to pixel on a pixel
--- layer (CludesUI_RoundedCorners.lua; packed into a table to reduce the
--- upvalue count). Each fit sizes its art in whole pixels for the layer's
--- scale and sets a piece again only when its size moved.
+-- The toggle's and slider's shapes on a pixel layer (packed into a table to
+-- reduce the upvalue count). CludesUI draws them square: each piece is a
+-- plain white fill coloured through its vertex colour, so the track, knob,
+-- fill and thumb are sharp rectangles placed in whole pixels. Each fit sizes
+-- its pieces for the layer's scale and sets one again only when its size moved.
+local function SquareArt(tex) tex:SetColorTexture(1, 1, 1, 1) end
 local PX = {
     Layer = CludesUI.MakePixelLayer,
-    Pill = CludesUI.SetPillArt,
-    Circle = CludesUI.SetCircleArt,
+    Pill = SquareArt,
+    Circle = SquareArt,
 }
 -- Toggle: the track's width and height, the knob's pad and size (two pads
 -- off the height keep its parity, so the knob sits centred on a whole
@@ -2148,7 +2149,8 @@ function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
     PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, 40)
     PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
 
-    local label = MakeFont(frame, 12, nil, TEXT_SECTION.r, TEXT_SECTION.g, TEXT_SECTION.b, TEXT_SECTION.a)
+    -- A plain heading over a visible rule: white, a size up from the rows.
+    local label = MakeFont(frame, 14, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b, 0.92)
     PP.Point(label, "BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 8)
     label:SetText(CludesUI.L(text))
     frame._label = label
@@ -2167,7 +2169,7 @@ function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
     -- Separator spans full width when in split mode
     local sepParent = splitParent or frame
     local sep = sepParent:CreateTexture(nil, "ARTWORK")
-    sep:SetColorTexture(BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.02)
+    sep:SetColorTexture(BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.10)
     if splitParent then
         sep:SetHeight(1)
         PP.Point(sep, "LEFT", splitParent, "LEFT", CONTENT_PAD, 0)
