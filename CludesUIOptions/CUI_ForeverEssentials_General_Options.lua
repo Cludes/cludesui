@@ -920,6 +920,44 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  COMBAT EXTRAS
+    ---------------------------------------------------------------------------
+    local CE = CludesUI._CombatExtras
+    if CE then
+        local function Set(f, key, v) f.Cfg()[key] = v; f.Apply() end
+        local function Off(f) return function() return not f.Get("enabled") end end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "COMBAT EXTRAS", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Combat Timer",
+              tooltip = "How long the current fight has run, held for a few seconds after it ends. Move it in Layout Mode.",
+              getValue = function() return CE.timer.Get("enabled") end,
+              setValue = function(v) Set(CE.timer, "enabled", v and true or false) end },
+            { type = "toggle", text = "Fight Length in Chat", disabled = Off(CE.timer),
+              getValue = function() return CE.timer.Get("chat") end,
+              setValue = function(v) Set(CE.timer, "chat", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Combat Alert",
+              tooltip = "+ Combat and - Combat fade in the middle of the screen as you enter and leave combat.",
+              getValue = function() return CE.alert.Get("enabled") end,
+              setValue = function(v) Set(CE.alert, "enabled", v and true or false) end },
+            { type = "toggle", text = "Alert Sound", disabled = Off(CE.alert),
+              getValue = function() return CE.alert.Get("sound") end,
+              setValue = function(v) Set(CE.alert, "sound", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Stealth Reminder",
+              tooltip = "For rogues, and druids in Cat Form: Not stealthed shows while you are out of combat and out of stealth. Never in an inn or a city, or while mounted.",
+              getValue = function() return CE.stealth.Get("enabled") end,
+              setValue = function(v) Set(CE.stealth, "enabled", v and true or false) end },
+            { type = "toggle", text = "Only in a Group", disabled = Off(CE.stealth),
+              getValue = function() return CE.stealth.Get("groupOnly") end,
+              setValue = function(v) Set(CE.stealth, "groupOnly", v and true or false) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
