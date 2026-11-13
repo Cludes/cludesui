@@ -1293,6 +1293,53 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  DISCOVERY
+    ---------------------------------------------------------------------------
+    local DC = CludesUI._Discovery
+    if DC then
+        local function dOff() return not DC.Get("enabled") end
+        local function Set(key, v) DC.Cfg()[key] = v; DC.Apply() end
+        local function Tog(key, text, tip)
+            return { type = "toggle", text = text, tooltip = tip, disabled = dOff,
+                     getValue = function() return DC.Get(key) end,
+                     setValue = function(v) Set(key, v and true or false) end }
+        end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "DISCOVERY", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_DiscoveryTracker", disabled = dOff, disabledTooltip = "Discovery Tracker" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Discovery",
+              tooltip = "A window (/cdiscovery) of the library books, the Cozy Sleeping Bag's hidden chain, the Field Journal, and every quest and rare by zone, with trackers and map pins.",
+              getValue = function() return not dOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "labeledButton", text = "Discovery Window", buttonText = "Open", width = 90, disabled = dOff,
+              tooltip = "Opens the Discovery window. Also /cdiscovery.",
+              onClick = function() DC.Open() end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("tracker", "Library Books Tracker", "Lists the books still to find in your zone, and the ones you carry. Its X closes it until you enter another zone. Move it in Layout Mode."),
+            Tog("bagTracker", "Sleeping Bag Tracker", "From level 14 until you have the bag, the chain's next step on the same tracker."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("mapPins", "Library Book Pins", "A pin on the world map for each book you still need."),
+            Tog("mapTurnIn", "Librarian Pin", "While you carry books, a pin at the librarian or mage trainer who takes them."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("bagMapPins", "Sleeping Bag Pins", "A pin on the world map at the chain's next step."),
+            Tog("fieldJournal", "Count the Field Journal", "Counts the fish you catch, the herbs you pick from their nodes and the dishes you cook, for this character."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("nearby", "Nearby Book Alert", "A ping and a chat line when you come within range of a book you still need."),
+            { type = "slider", text = "Alert Range (yards)", min = 10, max = 100, step = 5, isPercent = false, disabled = dOff,
+              getValue = function() return DC.Get("nearbyRange") end,
+              setValue = function(v) Set("nearbyRange", math.floor(v + 0.5)) end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("nearbyPing", "Alert Sound", "The map ping sound with the alert."),
+            Tog("nearbyChat", "Alert Chat Line", "A chat line with the book's name and how far it is."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Map Pin Size", min = 12, max = 36, step = 1, isPercent = false, disabled = dOff,
+              getValue = function() return DC.Get("pinSize") end,
+              setValue = function(v) Set("pinSize", math.floor(v + 0.5)) end },
+            { type = "label", text = "" });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts
