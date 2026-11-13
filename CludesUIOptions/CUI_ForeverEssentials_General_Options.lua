@@ -1212,6 +1212,87 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  PALADIN BLESSINGS
+    ---------------------------------------------------------------------------
+    local BL = CludesUI._Blessings
+    if BL then
+        local function bOff() return not BL.Get("enabled") end
+        local function Set(key, v) BL.Cfg()[key] = v; BL.Apply() end
+        local function Tog(key, text, tip)
+            return { type = "toggle", text = text, tooltip = tip, disabled = bOff,
+                     getValue = function() return BL.Get(key) end,
+                     setValue = function(v) Set(key, v and true or false) end }
+        end
+        local function Slider(key, text, lo, hi, tip)
+            return { type = "slider", text = text, tooltip = tip, min = lo, max = hi, step = 1, isPercent = false, disabled = bOff,
+                     getValue = function() return BL.Get(key) end,
+                     setValue = function(v) Set(key, math.floor(v + 0.5)) end }
+        end
+        local ROLE_VALUES = { none = "None", might = "Blessing of Might", wisdom = "Blessing of Wisdom", kings = "Blessing of Kings" }
+        local ROLE_ORDER = { "none", "might", "wisdom", "kings" }
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "PALADIN BLESSINGS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_BlessingBar", disabled = bOff, disabledTooltip = "Blessing Bar" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Blessing Bar",
+              tooltip = "For paladins: your aura and a button per class in the group. Left-click a class to bless the next member who needs it, missing first; in combat each click steps to the next. Right-click a class for its blessing, its player list or the assignments. Plans are shared with the group's other paladins, and PallyPower users' plans are read too.",
+              getValue = function() return not bOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "labeledButton", text = "Assignments", buttonText = "Open", width = 90, disabled = bOff,
+              tooltip = "Every paladin's blessing for each class and their aura, with Auto-Assign, a saved preset and a report to chat. Also /cbless.",
+              onClick = function() BL.Open() end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("showAura", "Aura Button", "Casts your aura. Right-click it to choose which, wheel to cycle."),
+            Tog("showFury", "Righteous Fury Button", "Casts Righteous Fury on yourself. A red ! means it is not up."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("showSeal", "Seal Button", "Casts your seal. Right-click it to choose which, wheel to cycle."),
+            Tog("showAuto", "Auto Buff Button", "Left-click blesses the next player in need, right-click the next Greater Blessing."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("autoGreater", "Auto Buff Greater First", "Swaps the Auto Buff button: left-click casts a Greater Blessing, right-click a single one."),
+            Tog("showClasses", "Class Buttons", "Off leaves only the Auto Buff button and the key bindings."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("playerList", "Player List", "Right-click a class to list its players: bless one, or give one their own blessing."),
+            Tog("tooltips", "Show Tooltips", "A tooltip on each bar button."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("labels", "Class Labels", "Each class's name under its button, or beside it when the bar is vertical."),
+            Tog("timers", "Minutes Left", "Minutes left on each class's shortest blessing, and on each player's."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("smart", "Smart Blessings", "No Wisdom for warriors and rogues, no Might for priests, mages and warlocks in the menus."),
+            Tog("respect", "Respect Blessing Time", "Only bless players who are missing a blessing or running out."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("wait", "Wait for Players", "Cast a Greater Blessing only when the whole class is in range."),
+            Tog("bench", "Hide the Bench", "In a raid dungeon, leave out the players outside its usual groups."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("inParty", "Use in Party", "Show the bar in a party. It always shows in a raid."),
+            Tog("solo", "Use When Solo", "Show the bar when you are not in a group."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "dropdown", text = "Main Tank Blessing", values = ROLE_VALUES, order = ROLE_ORDER, disabled = bOff,
+              tooltip = "A warrior, druid or paladin marked as tank or main tank gets this instead of their class blessing.",
+              getValue = function() return BL.Get("tank") end,
+              setValue = function(v) Set("tank", v) end },
+            { type = "dropdown", text = "Main Assist Blessing", values = ROLE_VALUES, order = ROLE_ORDER, disabled = bOff,
+              tooltip = "A warrior, druid or paladin marked as main assist gets this instead of their class blessing.",
+              getValue = function() return BL.Get("assist") end,
+              setValue = function(v) Set("assist", v) end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("vertical", "Vertical Bar", "The bar grows down instead of right, with the class names beside the buttons."),
+            { type = "dropdown", text = "Button Border", disabled = bOff,
+              values = { black = "Black", status = "Status Color", none = "None" }, order = { "black", "status", "none" },
+              tooltip = "With Status Color the class buttons show their state on their edge instead of tinting the icon: red missing, yellow running out, blue only players with their own.",
+              getValue = function() return BL.Get("border") end,
+              setValue = function(v) Set("border", v) end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Slider("size", "Button Size", 20, 60),
+            Slider("spacing", "Button Spacing", 0, 30));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Slider("groupGap", "Aura / Class Gap", 0, 40, "The extra gap between your own buttons and the class buttons."),
+            Slider("perRow", "Class Buttons per Row", 1, 9));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Slider("timerSize", "Timer Text Size", 8, 20),
+            { type = "label", text = "Key bindings: Next Blessing and Next Greater Blessing, under CludesUI in the game's Key Bindings." });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts

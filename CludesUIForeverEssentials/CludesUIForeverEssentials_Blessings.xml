@@ -1,0 +1,6 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <!-- The button template the Blessing Bar's group headers build their buttons from. -->
+    <Button name="CludesUIBlessButtonTemplate" inherits="SecureActionButtonTemplate" virtual="true">
+        <Size x="30" y="30"/>
+    </Button>
+</Ui>

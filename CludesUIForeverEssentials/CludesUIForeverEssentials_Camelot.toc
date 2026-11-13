@@ -57,6 +57,8 @@ CludesUIForeverEssentials_MapTravelData.lua
 CludesUIForeverEssentials_MapTravel.lua
 CludesUIForeverEssentials_TownMapData.lua
 CludesUIForeverEssentials_TownMap.lua
+CludesUIForeverEssentials_Blessings.xml
+CludesUIForeverEssentials_Blessings.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)
