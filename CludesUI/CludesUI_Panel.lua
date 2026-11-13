@@ -896,7 +896,7 @@ local function BuildSidebar()
 
     -- Nav buttons -- start below the logo area with proper spacing
     local NAV_TOP     = -114   -- distance from sidebar top to first nav item
-    local NAV_ROW_H   = 40    -- height per nav row (Unlock / Global / Patch Notes / Profiles / Legends)
+    local NAV_ROW_H   = 40    -- height per nav row (Layout Mode / Global / Profiles / Patch Notes)
     local NAV_ICON_W  = 45    -- the 52x37 icon art drawn at 52:37 (45:32 is the
     local NAV_ICON_H  = 32    -- nearest whole-pixel pair); even height centres on a 40px row
     local NAV_LEFT    = 20    -- left padding for icon
@@ -1110,7 +1110,7 @@ local function BuildSidebar()
     do
         local btn = CreateFrame("Button", nil, sidebar)
         btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 2)
+        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 3)
         btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
 
         DecorateSidebarButton(btn)
@@ -1228,12 +1228,12 @@ local function BuildSidebar()
     end
 
     -------------------------------------------------------------------
-    --  Profiles & Presets button  (own page -- selects the _CUIProfiles module)
+    --  Profiles button  (own page -- selects the _CUIProfiles module)
     -------------------------------------------------------------------
     do
         local btn = CreateFrame("Button", nil, sidebar)
         btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 3)
+        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 2)
         btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
 
         DecorateSidebarButton(btn)
@@ -1307,7 +1307,7 @@ local function BuildSidebar()
         CludesUI._profilesSidebarBtn = btn
     end
 
-    -- First addon starts four rows down (Unlock, Global, Patch Notes, Profiles)
+    -- First addon starts four rows down (Layout Mode, Global, Profiles, Patch Notes)
     local ORIG_ADDON_NAV_TOP = NAV_TOP - NAV_ROW_H * 4
 
     -----------------------------------------------------------------------

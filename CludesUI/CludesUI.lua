@@ -746,7 +746,8 @@ local ADDON_ROSTER = {
 }
 
 -------------------------------------------------------------------------------
---  Addon Groups -- ordered sidebar categories (group = header the player can
+--  Addon Groups -- ordered sidebar categories, by what the player is doing
+--  (Combat, Raid & Dungeon, Interface, Tools). Group = header the player can
 --  collapse; members = child rows, order authoritative, coming-soon last). Keys
 --  stay stable when a label changes: other addons look groups up by key. On
 --  CludesUI, not a file local, to stay under the 200-local / CreateMainFrame
@@ -754,52 +755,52 @@ local ADDON_ROSTER = {
 -------------------------------------------------------------------------------
 CludesUI.ADDON_GROUPS = {
     {
-        key     = "core",
-        label   = "Core Addons",
+        key     = "combat",
+        label   = "Combat",
         members = {
             "CludesUIActionBars",
-            "CludesUINameplates",
             "CludesUIUnitFrames",
+            "CludesUINameplates",
+            "CludesUIRaidFrames",
             "CludesUICooldownManager",
             "CludesUIResourceBars",
-            "CludesUIRaidFrames",
+            "CludesUIAuraBuffReminders",
+            "CludesUIDamageMeters",
         },
     },
     {
-        key     = "secondary",
-        label   = "Secondary Addons",
+        key     = "group",
+        label   = "Raid & Dungeon",
         members = {
             "CludesUIMythicTimer",
-            "CludesUIDamageMeters",
-            "CludesUIAuraBuffReminders",
-            "CludesUITank",
             "CludesUIRaidLead",
+            "CludesUITank",
             "CludesUITitleLine",
+            "CludesUIGroupFinder",
             "CludesUILoadoutManager",
             "CludesUISimpleLootCouncil",
         },
     },
     {
-        key     = "qol",
-        label   = "Utility Addons",
-        members = {
-            "CludesUIQoL",
-            "CludesUIForeverEssentials",
-            "CludesUIDataBars",
-            "CludesUIQuickdraw",
-        },
-    },
-    {
-        key     = "reskin",
-        label   = "UI Enhancements",
+        key     = "interface",
+        label   = "Interface",
         members = {
             "CludesUIBlizzardSkin",
+            "CludesUIMinimap",
             "CludesUIChat",
             "CludesUIBags",
             "CludesUIQuestTracker",
-            "CludesUIGroupFinder",
             "CludesUIFriends",
-            "CludesUIMinimap",
+            "CludesUIDataBars",
+        },
+    },
+    {
+        key     = "tools",
+        label   = "Tools",
+        members = {
+            "CludesUIQoL",
+            "CludesUIForeverEssentials",
+            "CludesUIQuickdraw",
         },
     },
 }
