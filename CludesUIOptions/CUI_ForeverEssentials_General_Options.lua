@@ -977,6 +977,42 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  QUEST AUTOMATION
+    ---------------------------------------------------------------------------
+    local QA = CludesUI._QuestAutomation
+    if QA then
+        local function qaOff() return not QA.Get("enabled") end
+        local function QASet(key, v) QA.Cfg()[key] = v and true or false; QA.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "QUEST AUTOMATION", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Quest Automation",
+              tooltip = "Accepts and turns in quests for you. Hold Shift while talking to an NPC to do it yourself. With a choice of rewards it always stops for you to pick.",
+              getValue = function() return not qaOff() end,
+              setValue = function(v) QASet("enabled", v) end },
+            { type = "toggle", text = "Skip Grey Quests", disabled = qaOff,
+              tooltip = "Leave quests far below your level alone.",
+              getValue = function() return QA.Get("skipGrey") end,
+              setValue = function(v) QASet("skipGrey", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Auto Accept", disabled = qaOff,
+              getValue = function() return QA.Get("accept") end,
+              setValue = function(v) QASet("accept", v) end },
+            { type = "toggle", text = "Auto Turn In", disabled = qaOff,
+              getValue = function() return QA.Get("turnIn") end,
+              setValue = function(v) QASet("turnIn", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Progress to Party", disabled = qaOff,
+              tooltip = "Says your quest objective progress (Kobold Vermin slain: 4/10) in party chat. Never in a raid.",
+              getValue = function() return QA.Get("progress") end,
+              setValue = function(v) QASet("progress", v) end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
