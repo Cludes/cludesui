@@ -958,6 +958,25 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  BAG SPACE
+    ---------------------------------------------------------------------------
+    local BS = CludesUI._BagSpace
+    if BS then
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "BAG SPACE", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_BagSpace", disabled = function() return not BS.Get("enabled") end, disabledTooltip = "Bag Space" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Bag Space",
+              tooltip = "Free bag slots on screen, amber when nearly full and red when full. Hover it for the cheapest items you carry; click it to open your bags.",
+              getValue = function() return BS.Get("enabled") end,
+              setValue = function(v) BS.Cfg().enabled = v and true or false; BS.Apply() end },
+            { type = "toggle", text = "Warn When Nearly Full", disabled = function() return not BS.Get("enabled") end,
+              getValue = function() return BS.Get("warn") end,
+              setValue = function(v) BS.Cfg().warn = v and true or false; BS.Apply() end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
