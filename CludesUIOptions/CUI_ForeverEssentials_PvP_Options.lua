@@ -73,5 +73,19 @@ function _G._CUI_BuildForeverPvPPage(_, parent, yOffset)
         Tog("minimapTip", "Minimap Enemy Details", "With humanoid tracking, the minimap tooltip shows the level and class of enemies you know.", Off)
     );  y = y - h
 
+    _, h = W:SectionHeader(parent, "WATCH LIST, COMBAT MAP AND ZONES", y);  y = y - h
+    _, h = W:DualRow(parent, y,
+        Tog("watchWarn", "Warn When a Watched Player Is Near", "Watch players of your own faction (a ninja looter, a griefer) from their right-click menu, or /cpvp watch First Last: reason. /cpvp watchlist lists them.", Off),
+        Tog("watchGroupWarn", "Warn When One Is in Your Group", nil, Off)
+    );  y = y - h
+    _, h = W:DualRow(parent, y,
+        Tog("combatMap", "Combat Map", "Every win and loss as a skull on the world map where you stood: green a win, red a loss.", Off),
+        { type = "input", text = "Stay Off In", inputWidth = 160, inputStyle = "popup", placeholder = "Booty Bay, Gadgetzan",
+          tooltip = "Zones or subzones, separated by commas, where enemy detection stays off.",
+          disabled = Off,
+          getValue = function() return P.Get("offZones") end,
+          setValue = function(text) cfg.offZones = text or "" end }
+    );  y = y - h
+
     return math.abs(y)
 end

@@ -15,9 +15,16 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 --    Sharing      sightings go to your party, raid and guild, and theirs come
 --                 back, in Spy's own message format, so Spy users and CludesUI
 --                 users see each other's sightings.
---    Extras       announce an enemy to a chat channel; a Kill on Sight button
---                 on an enemy target's frame; level and class of known enemies
---                 on the minimap tracking tooltip.
+--    Extras       announce an enemy to a chat channel (Local Defense too: the
+--                 game lets only you post there, so the message is put in your
+--                 chat box for Enter); a Kill on Sight button on an enemy
+--                 target's frame; level and class of known enemies on the
+--                 minimap tracking tooltip.
+--    Watch List   players of your OWN faction to remember (a ninja looter):
+--                 a warning when one is near you or in your group.
+--    Combat Map   every win and loss as a skull on the world map where you
+--                 stood (green a win, red a loss).
+--    Off Zones    zones (or subzones) to stay off in, by name.
 --  WoW Forever gives addons no combat log, so a win is your (or your pet's)
 --  killing blow from PARTY_KILL, and a loss is the killer in your death
 --  recap, else the only enemy who had you targeted just before you died.
@@ -30,6 +37,7 @@ local F = module.Feature("pvp", {
     enabled = false, sound = true, stealthWarn = true, kosWarn = true, kosGuildWarn = true,
     share = true, useShared = true, announceKoS = false, removeAfter = 60, battlegrounds = false,
     autoShow = true, rows = 10, kosButton = true, minimapTip = true,
+    watchWarn = true, watchGroupWarn = true, combatMap = true, offZones = "",
 }, { point = "TOPLEFT", relPoint = "TOPLEFT", x = 20, y = -220 })
 local Get, Enabled = F.Get, F.Enabled
 
@@ -60,6 +68,8 @@ local function Store()
     c.kos = c.kos or {}           -- name -> time added
     c.reasons = c.reasons or {}   -- name -> { reason = true }
     c.ignore = c.ignore or {}     -- name -> time added
+    c.watch = c.watch or {}       -- own-faction name -> { added, reason, class, level, guild, seen, zone }
+    c.fights = c.fights or {}     -- { name, result "W"|"L", map, x, y, when }, newest last
     return c
 end
 
@@ -81,7 +91,18 @@ local function Zoned()
     return zoneType ~= "sanctuary"
 end
 
-local function Live() return Enabled() and Zoned() end
+local function OffZone()
+    local list = Get("offZones")
+    if type(list) ~= "string" or list == "" then return false end
+    local zone, sub = (R(GetZoneText()) or ""):lower(), (R(GetSubZoneText()) or ""):lower()
+    for name in list:gmatch("[^,]+") do
+        name = name:match("^%s*(.-)%s*$"):lower()
+        if name ~= "" and (name == zone or name == sub) then return true end
+    end
+    return false
+end
+
+local function Live() return Enabled() and Zoned() and not OffZone() end
 
 local function PlayerName(unit)
     if not R(UnitExists(unit)) or not R(UnitIsPlayer(unit)) then return nil end
@@ -199,6 +220,7 @@ local function ScanUnit(unit)
     local guid = R(UnitGUID(unit))
     if type(guid) == "string" then guidNames[guid] = name end
     local enemy = R(UnitIsEnemy("player", unit))
+    if enemy == false and module.PvPWatchSeen then module.PvPWatchSeen(name, unit) end
     if not enemy then return nil end
     local p = Data(name, true)
     p.class = R((select(2, UnitClass(unit)))) or p.class
@@ -284,6 +306,7 @@ local function OnPartyKill(attacker, victim)
     local p = name and Data(name)
     if p then
         p.wins = (p.wins or 0) + 1
+        if module.PvPRecordFight then module.PvPRecordFight(name, "W") end
         Say(("you killed %s (%d win%s, %d loss%s)."):format(Label(name), p.wins, p.wins == 1 and "" or "s",
             p.losses or 0, (p.losses or 0) == 1 and "" or "es"))
         if Refresh then Refresh() end
@@ -307,6 +330,8 @@ local function KillerFromRecap()
 end
 
 local function OnDeath()
+    -- Where we fell, read now: the recap comes later, maybe after a release.
+    local where = module.PvPPosition and module.PvPPosition()
     local suspects, now = {}, GetTime()
     for name, when in pairs(targetingMe) do if now - when <= TARGETING_WINDOW then suspects[#suspects + 1] = name end end
     C_Timer.After(0.5, function()
@@ -315,6 +340,7 @@ local function OnDeath()
         local p = killer and Data(killer)
         if p then
             p.losses = (p.losses or 0) + 1
+            if module.PvPRecordFight then module.PvPRecordFight(killer, "L", where) end
             Say(("%s killed you (%d win%s, %d loss%s)."):format(Label(killer), p.wins or 0, (p.wins or 0) == 1 and "" or "s",
                 p.losses, p.losses == 1 and "" or "es"))
             if Refresh then Refresh() end
@@ -369,6 +395,24 @@ local function Announce(name, channel)
         p.class and (" " .. (LOCALIZED_CLASS_NAMES_MALE[p.class] or p.class)) or "",
         p.guild and (" <" .. p.guild .. ">") or "", zone, sub ~= "" and (", " .. sub) or "")
     if channel == "SELF" then return Say(text) end
+    if channel == "LOCALDEFENSE" then
+        -- The game refuses an addon post in a public channel: the message goes in
+        -- the chat box, and your Enter sends it.
+        local id
+        local list = { GetChannelList() }
+        for i = 1, #list, 3 do
+            local cid, cname = R(list[i]), R(list[i + 1])
+            local lower = type(cname) == "string" and cname:lower() or ""
+            if type(cid) == "number" and (lower:find("^localdefense") or lower:find("^local defense")) then
+                id = cid
+                break
+            end
+        end
+        if not id then return Say("you are not in the Local Defense channel.") end
+        local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
+        if open then pcall(open, "/" .. id .. " " .. text) end
+        return
+    end
     SendChatMessage(text, channel)
 end
 
@@ -414,7 +458,7 @@ local function RowMenu(owner, name)
             end
         end
         local ann = root:CreateButton("Announce")
-        for _, c in ipairs({ { "Say", "SAY" }, { "Party", "PARTY" }, { "Raid", "RAID" }, { "Guild", "GUILD" }, { "Yourself", "SELF" } }) do
+        for _, c in ipairs({ { "Say", "SAY" }, { "Party", "PARTY" }, { "Raid", "RAID" }, { "Guild", "GUILD" }, { "Local Defense", "LOCALDEFENSE" }, { "Yourself", "SELF" } }) do
             ann:CreateButton(c[1], function() Announce(name, c[2]) end)
         end
         root:CreateButton("Remove from List", function() nearby[name], lastHour[name] = nil, nil; if Refresh then Refresh() end end)
@@ -723,6 +767,194 @@ local function DecorateMinimapTip()
 end
 
 -------------------------------------------------------------------------------
+--  Watch list (own faction)
+-------------------------------------------------------------------------------
+local WATCH_COOLDOWN = 300
+local watchAlerted, watchInGroup = {}, {}
+
+local function WatchRemember(entry, unit)
+    if unit then
+        entry.class = R((select(2, UnitClass(unit)))) or entry.class
+        local level = tonumber(R(UnitLevel(unit)))
+        if level and level > 0 then entry.level = level end
+        entry.guild = R((GetGuildInfo(unit))) or entry.guild
+    end
+    entry.seen = time()
+    local zone, sub = Here()
+    entry.zone = (sub ~= "" and sub ~= zone) and (sub .. ", " .. zone) or zone
+end
+
+local function WatchAlert(name, how)
+    local e = Store().watch[name]
+    if not e then return end
+    local text = (how == "group" and "Watched player in your group: " or "Watched player nearby: ") .. (name:gsub("%-", " "))
+        .. (e.reason and (" (" .. e.reason .. ")") or "")
+    Say(text)
+    Warn(text, 1, 0.75, 0.2, true)
+end
+
+function module.PvPWatchSeen(name, unit)
+    local e = Store().watch[name]
+    if not e then return end
+    WatchRemember(e, unit)
+    if not Get("watchWarn") then return end
+    if watchAlerted[name] and GetTime() - watchAlerted[name] < WATCH_COOLDOWN then return end
+    watchAlerted[name] = GetTime()
+    WatchAlert(name, "nearby")
+end
+
+local function CheckWatchedGroup()
+    local present = {}
+    local count = GetNumGroupMembers() or 0
+    if count > 0 then
+        local raid = IsInRaid()
+        for i = 1, raid and count or math.min(count, 4) do
+            local unit = (raid and "raid" or "party") .. i
+            local name = PlayerName(unit)
+            if name and Store().watch[name] then present[name] = unit end
+        end
+    end
+    for name, unit in pairs(present) do
+        if not watchInGroup[name] then
+            WatchRemember(Store().watch[name], unit)
+            watchAlerted[name] = GetTime()
+            if Enabled() and Get("watchGroupWarn") then WatchAlert(name, "group") end
+        end
+    end
+    watchInGroup = present
+end
+
+function module.PvPToggleWatch(name, reason)
+    local w = Store().watch
+    if w[name] then
+        w[name] = nil
+        Say((name:gsub("%-", " ")) .. " removed from your watch list.")
+    else
+        w[name] = { added = time(), reason = reason }
+        Say((name:gsub("%-", " ")) .. " added to your watch list" .. (reason and (" (" .. reason .. ")") or "") .. ".")
+        CheckWatchedGroup()
+    end
+end
+
+-- Kill on Sight and Watch on the game's own player menus (target, party, raid, chat names).
+local menusAdded
+local function AddMenus()
+    if menusAdded or not (Menu and Menu.ModifyMenu) then return end
+    menusAdded = true
+    local function Entries(_, root, ctx)
+        if not Enabled() or type(ctx) ~= "table" then return end
+        local name, enemy
+        local unit = R(ctx.unit)
+        if type(unit) == "string" then
+            if R(UnitIsUnit(unit, "player")) then return end
+            name, enemy = PlayerName(unit), R(UnitIsEnemy("player", unit))
+        else
+            name = R(ctx.name)
+            if type(name) ~= "string" or name == "" or name == UnitName("player") then return end
+            local server = R(ctx.server)
+            if not name:find("-", 1, true) and type(server) == "string" and server ~= "" then name = name .. "-" .. server end
+            local p = Store().players[name]
+            enemy = p and p.faction and p.faction ~= UnitFactionGroup("player")
+        end
+        if not name then return end
+        root:CreateDivider()
+        root:CreateTitle("CludesUI PvP")
+        if enemy then
+            root:CreateButton(Store().kos[name] and "Remove Kill on Sight" or "Kill on Sight", function() module.PvPToggleKoS(name) end)
+        else
+            root:CreateButton(Store().watch[name] and "Stop Watching" or "Watch This Player", function() module.PvPToggleWatch(name) end)
+        end
+    end
+    for _, which in ipairs({ "PLAYER", "TARGET", "FOCUS", "PARTY", "RAID_PLAYER", "RAID", "FRIEND", "ENEMY_PLAYER",
+                             "CHAT_ROSTER", "COMMUNITIES_GUILD_MEMBER", "COMMUNITIES_WOW_MEMBER", "GUILD" }) do
+        pcall(Menu.ModifyMenu, "MENU_UNIT_" .. which, function(owner, root, ctx) pcall(Entries, owner, root, ctx) end)
+    end
+end
+
+-------------------------------------------------------------------------------
+--  Combat map
+-------------------------------------------------------------------------------
+local FIGHT_LIMIT = 500
+local SKULL_TEX = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
+
+function module.PvPPosition()
+    local mapID = R(C_Map.GetBestMapForUnit("player"))
+    if type(mapID) ~= "number" then return nil end
+    local pos = C_Map.GetPlayerMapPosition(mapID, "player")
+    if not pos or Secret(pos) then return nil end
+    local x, y = pos:GetXY()
+    if not (R(x) and R(y)) then return nil end
+    return { map = mapID, x = x, y = y }
+end
+
+local mapLayer, mapProvider, mapPins, mapAdded = nil, nil, {}, false
+local function DrawFights()
+    if not mapLayer then return end
+    for _, pin in ipairs(mapPins) do pin:Hide() end
+    if not (Enabled() and Get("combatMap")) then return end
+    local mapID = WorldMapFrame:GetMapID()
+    local w, h = mapLayer:GetWidth(), mapLayer:GetHeight()
+    local scale = 1 / math.max(WorldMapFrame:GetCanvasScale() or 1, 0.1)
+    local n = 0
+    for _, f in ipairs(Store().fights) do
+        if f.map == mapID then
+            n = n + 1
+            local pin = mapPins[n]
+            if not pin then
+                pin = CreateFrame("Frame", nil, mapLayer)
+                pin.tex = pin:CreateTexture(nil, "OVERLAY")
+                pin.tex:SetAllPoints()
+                pin.tex:SetTexture(SKULL_TEX)
+                pin:SetScript("OnEnter", function(self)
+                    local fight = self.fight
+                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                    GameTooltip:AddLine((fight.result == "W" and "|cff60ff60Win|r against " or "|cffff6060Loss|r to ") .. Label(fight.name))
+                    GameTooltip:AddLine(date("%d %b %Y %H:%M", fight.when), 0.7, 0.7, 0.7)
+                    GameTooltip:Show()
+                end)
+                pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                mapPins[n] = pin
+            end
+            pin.fight = f
+            pin:SetSize(16 * scale, 16 * scale)
+            if f.result == "W" then pin.tex:SetVertexColor(0.3, 1, 0.3) else pin.tex:SetVertexColor(1, 0.3, 0.3) end
+            pin:ClearAllPoints()
+            pin:SetPoint("CENTER", mapLayer, "TOPLEFT", f.x * w, -f.y * h)
+            pin:Show()
+        end
+    end
+end
+
+local function MapApply()
+    local want = Enabled() and Get("combatMap")
+    if not want then
+        if mapAdded then WorldMapFrame:RemoveDataProvider(mapProvider); mapAdded = false end
+        for _, pin in ipairs(mapPins) do pin:Hide() end
+        return
+    end
+    if not (WorldMapFrame and C_AddOns.IsAddOnLoaded("Blizzard_WorldMap")) then return end
+    if not mapProvider then
+        mapLayer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
+        mapLayer:SetAllPoints()
+        mapLayer:SetFrameLevel(WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_MAP_LINK"))
+        mapProvider = CreateFromMixins(MapCanvasDataProviderMixin)
+        mapProvider.OnMapChanged = DrawFights
+        mapProvider.RefreshAllData = DrawFights
+        mapProvider.RemoveAllData = function() for _, pin in ipairs(mapPins) do pin:Hide() end end
+        mapProvider.OnCanvasScaleChanged = DrawFights
+    end
+    if not mapAdded then WorldMapFrame:AddDataProvider(mapProvider); mapAdded = true end
+end
+
+function module.PvPRecordFight(name, result, where)
+    where = where or module.PvPPosition()
+    if not where then return end
+    local list = Store().fights
+    list[#list + 1] = { name = name, result = result, map = where.map, x = where.x, y = where.y, when = time() }
+    while #list > FIGHT_LIMIT do table.remove(list, 1) end
+end
+
+-------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
 local ev = CreateFrame("Frame")
@@ -733,6 +965,11 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         return
     end
     if event == "PLAYER_TARGET_CHANGED" then KoSButtonUpdate() end
+    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then CheckWatchedGroup() end
+    if event == "ADDON_LOADED" then
+        if a1 == "Blizzard_WorldMap" then MapApply() end
+        return
+    end
     if not Live() then
         if event == "PLAYER_REGEN_ENABLED" and dirtyInCombat then Refresh() end
         return
@@ -751,7 +988,7 @@ end)
 
 local EVENTS = { "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT",
     "PLAYER_FOCUS_CHANGED", "UNIT_SPELLCAST_SUCCEEDED", "PARTY_KILL", "PLAYER_DEAD", "PLAYER_REGEN_ENABLED",
-    "CHAT_MSG_ADDON", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD" }
+    "CHAT_MSG_ADDON", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD", "GROUP_ROSTER_UPDATE", "ADDON_LOADED" }
 
 local tipHooked
 local function Apply()
@@ -767,6 +1004,7 @@ local function Apply()
             GameTooltip:HookScript("OnHide", function() lastTip = nil end)
         end
         Purge()
+        AddMenus()
         if GetCVar and GetCVar("nameplateShowEnemies") == "0" then
             Say("enemy nameplates are off, so only your target, focus and mouseover are seen. Turn them on (Ctrl+V) for the full picture.")
         end
@@ -776,6 +1014,7 @@ local function Apply()
         if win and not InCombatLockdown() then win:Hide() end
     end
     KoSButtonUpdate()
+    MapApply()
 end
 
 CludesUI._PvP = { Get = Get, Cfg = F.Cfg, Apply = Apply, Show = function() module.ShowPvP() end,
@@ -788,6 +1027,22 @@ SlashCmdList.CUIPVP = function(msg)
     if cmd == "stats" then module.ShowPvPStats()
     elseif cmd == "kos" and rest ~= "" then module.PvPToggleKoS((rest:gsub(" ", "-")))
     elseif cmd == "ignore" and rest ~= "" then module.PvPToggleIgnore((rest:gsub(" ", "-")))
+    elseif cmd == "watch" then
+        local typed, reason = rest:match("^([^:]*):(.*)$")
+        typed = (typed or rest):match("^%s*(.-)%s*$")
+        reason = reason and reason:match("^%s*(.-)%s*$") or nil
+        if reason == "" then reason = nil end
+        local name = typed ~= "" and (typed:gsub(" ", "-")) or PlayerName("target")
+        if not name then return Say("target a player or type /cpvp watch First Last: reason") end
+        module.PvPToggleWatch(name, reason)
+    elseif cmd == "watchlist" then
+        local n = 0
+        for name, e in pairs(Store().watch) do
+            n = n + 1
+            Say(("%s%s%s"):format(name:gsub("%-", " "), e.reason and (" (" .. e.reason .. ")") or "",
+                e.seen and (", last seen " .. Ago(time() - e.seen) .. " ago in " .. (e.zone or "?")) or ""))
+        end
+        if n == 0 then Say("your watch list is empty.") end
     elseif cmd == "clear" then wipe(nearby); wipe(active); if Refresh then Refresh() end
     else module.ShowPvP() end
 end
