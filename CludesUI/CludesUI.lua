@@ -57,7 +57,7 @@ local THEME_ORDER = { "CludesUI", "CludesUI Forever", "Horde", "Alliance", "Fact
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
 if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
 -- The theme in force when none was chosen: the Forever client opens on its own
--- backdrop, every other client on the player's class colour. A chosen theme always wins.
+-- backdrop, every other client on the blue CludesUI theme. A chosen theme always wins.
 CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or "CludesUI"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
 local THEME_BG_FILES = {
