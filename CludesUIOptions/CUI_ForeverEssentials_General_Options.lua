@@ -1052,6 +1052,22 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  LOOT SPARKLES
+    ---------------------------------------------------------------------------
+    local LS = CludesUI._LootSparkles
+    if LS then
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "LOOT SPARKLES", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Quest Item Sparkles",
+              tooltip = "Keeps the game's sparkle on lootable quest items, even after a graphics preset turns it off. Your outline mode is left as you set it. Switching this off takes effect after restarting the game.",
+              getValue = function() return LS.Get("enabled") end,
+              setValue = function(v) LS.SetEnabled(v) end },
+            { type = "label", text = "Turning it off needs a game restart." }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
