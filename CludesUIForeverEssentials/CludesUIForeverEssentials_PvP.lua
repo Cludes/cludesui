@@ -54,7 +54,10 @@ local STEALTH = { [1784] = true, [1785] = true, [1786] = true, [1787] = true, [1
 local PROWL = { [5215] = true, [6783] = true, [9913] = true }
 local WATCHED = { target = true, focus = true, mouseover = true }
 
-local function Say(text) CludesUI.Print("|cffff5050PvP:|r " .. text) end
+-- The CludesUI theme colour, read each time so a theme change follows.
+local function Accent() return CludesUI.GetAccentColor() end
+local function AccentHex() return CludesUI.HexColor(Accent()) end
+local function Say(text) CludesUI.Print(AccentHex() .. "PvP:|r " .. text) end
 local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function R(v) if v == nil or Secret(v) then return nil end return v end
@@ -192,7 +195,7 @@ local function Detected(name, acted, fromShare)
         warned[name] = now
         local kos = Store().kos[name]
         if kos and Get("kosWarn") then
-            Warn("Kill on Sight: " .. Label(name), 1, 0.2, 0.2, true)
+            Warn("Kill on Sight: " .. Label(name), 1, 0.35, 0.35, true)
             if Get("announceKoS") and IsInGroup() then
                 SendChatMessage(("Kill on Sight nearby: %s%s"):format(name:gsub("%-", " "), p.level and (" (" .. p.level .. ")") or ""), IsInRaid() and "RAID" or "PARTY")
             end
@@ -549,7 +552,9 @@ Refresh = function()
     if not (win and win:IsShown()) then return end
     if InCombatLockdown() then dirtyInCombat = true; return end
     dirtyInCombat = false
-    win.title:SetText("|cffff5050" .. TABS[tab] .. "|r")
+    win.title:SetText(AccentHex() .. TABS[tab] .. "|r")
+    local ar, ag, ab = Accent()
+    win:SetBackdropBorderColor(ar, ag, ab, 0.8)
     local list = Entries()
     local n = math.min(#list, Get("rows"))
     local s = Store()
@@ -564,9 +569,9 @@ Refresh = function()
         r.text:SetText(Label(e.name) .. (p.level and ("  |cff9aa6b2" .. (p.guess and "~" or "") .. p.level .. "|r") or ""))
         local when = tab == 1 and (GetTime() - e.at) or (time() - e.at)
         r.right:SetText("|cff9aa6b2" .. Ago(when) .. "|r")
-        if s.kos[e.name] then r.bg:SetColorTexture(0.6, 0.05, 0.05, 0.35)
-        elseif tab == 1 and e.act == 1 then r.bg:SetColorTexture(0.6, 0.45, 0.05, 0.25)
-        else r.bg:SetColorTexture(0, 0, 0, 0.2) end
+        if s.kos[e.name] then r.bg:SetColorTexture(1, 0.35, 0.35, 0.22)
+        elseif tab == 1 and e.act == 1 then r.bg:SetColorTexture(ar, ag, ab, 0.22)
+        else r.bg:SetColorTexture(1, 1, 1, 0.03) end
         r:Show()
     end
     for i = n + 1, #rows do rows[i]:Hide(); rows[i].player = nil end
@@ -579,7 +584,7 @@ local function Build()
     win:SetSize(W, 50)
     win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
     win:SetBackdropColor(0.06, 0.07, 0.09, 0.9)
-    win:SetBackdropBorderColor(0.8, 0.25, 0.25, 0.8)
+    win:SetBackdropBorderColor(0, 0, 0, 1)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", function(self)
@@ -600,8 +605,12 @@ local function Build()
         b.t:SetPoint("CENTER")
         b.t:SetText(text)
         b:SetScript("OnClick", fn)
-        b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(tip); GameTooltip:Show() end)
-        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        b.t:SetTextColor(0.8, 0.8, 0.8)
+        b:SetScript("OnEnter", function(self)
+            self.t:SetTextColor(Accent())
+            GameTooltip:SetOwner(self, "ANCHOR_TOP"); GameTooltip:SetText(tip); GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function(self) self.t:SetTextColor(0.8, 0.8, 0.8); GameTooltip:Hide() end)
     end
     Btn("x", -2, function() if not InCombatLockdown() then win:Hide() end end, "Close (it opens again when an enemy is seen)")
     Btn(">", -22, function() tab = tab % #TABS + 1; Refresh() end, "Next list")
@@ -652,7 +661,7 @@ local function StatsRefresh()
         local p = e.p
         r:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
         r:SetText(("%s%s  |cff9aa6b2%s%s|r  |cff60d080W %d|r |cffff6060L %d|r  |cff9aa6b2%s ago|r"):format(
-            s.kos[e.name] and "|cffff3030KoS|r " or "", Label(e.name),
+            s.kos[e.name] and "|cffff5959KoS|r " or "", Label(e.name),
             p.level and ((p.guess and "~" or "") .. p.level .. " ") or "", p.guild and ("<" .. p.guild .. ">") or "",
             p.wins or 0, p.losses or 0, Ago(time() - (p.last or time()))))
         r:Show()
@@ -669,7 +678,7 @@ function module.ShowPvPStats()
         stats:SetPoint("CENTER")
         stats:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
         stats:SetBackdropColor(0.06, 0.07, 0.09, 0.95)
-        stats:SetBackdropBorderColor(0.8, 0.25, 0.25, 0.8)
+        stats:SetBackdropBorderColor(Accent())
         stats:SetMovable(true); stats:EnableMouse(true); stats:RegisterForDrag("LeftButton")
         stats:SetScript("OnDragStart", stats.StartMoving)
         stats:SetScript("OnDragStop", stats.StopMovingOrSizing)
@@ -677,12 +686,22 @@ function module.ShowPvPStats()
         local t = stats:CreateFontString(nil, "OVERLAY")
         t:SetFont(Font(), 15, "OUTLINE")
         t:SetPoint("TOPLEFT", 10, -8)
-        t:SetText("|cffff5050PvP Statistics|r")
+        t:SetText("PvP Statistics")
+        stats.title = t
         stats.count = stats:CreateFontString(nil, "OVERLAY")
         stats.count:SetFont(Font(), 11, "")
         stats.count:SetPoint("LEFT", t, "RIGHT", 10, 0)
-        local close = CreateFrame("Button", nil, stats, "UIPanelCloseButton")
-        close:SetPoint("TOPRIGHT", 2, 2)
+        local close = CreateFrame("Button", nil, stats)
+        close:SetSize(20, 20)
+        close:SetPoint("TOPRIGHT", -4, -4)
+        close.t = close:CreateFontString(nil, "OVERLAY")
+        close.t:SetFont(Font(), 14, "OUTLINE")
+        close.t:SetPoint("CENTER")
+        close.t:SetText("x")
+        close.t:SetTextColor(0.8, 0.8, 0.8)
+        close:SetScript("OnClick", function() stats:Hide() end)
+        close:SetScript("OnEnter", function(self) self.t:SetTextColor(Accent()) end)
+        close:SetScript("OnLeave", function(self) self.t:SetTextColor(0.8, 0.8, 0.8) end)
         statSearch = CreateFrame("EditBox", nil, stats, "InputBoxTemplate")
         statSearch:SetSize(200, 20)
         statSearch:SetPoint("TOPLEFT", 14, -30)
@@ -700,6 +719,9 @@ function module.ShowPvPStats()
         statScroll:SetScrollChild(statContent)
         tinsert(UISpecialFrames, "CludesUIPvPStats")
     end
+    stats.title:SetTextColor(Accent())
+    local ar, ag, ab = Accent()
+    stats:SetBackdropBorderColor(ar, ag, ab, 0.8)
     stats:Show()
     StatsRefresh()
 end
@@ -713,7 +735,7 @@ local function KoSButtonUpdate()
     local name = Get("kosButton") and Enabled() and PlayerName("target")
     if name and R(UnitIsEnemy("player", "target")) then
         kosButton.player = name
-        kosButton.t:SetText(Store().kos[name] and "|cffff3030KoS|r" or "|cff9aa6b2KoS|r")
+        kosButton.t:SetText(Store().kos[name] and "|cffff5959KoS|r" or (AccentHex() .. "KoS|r"))
         kosButton:Show()
     else
         kosButton:Hide()
