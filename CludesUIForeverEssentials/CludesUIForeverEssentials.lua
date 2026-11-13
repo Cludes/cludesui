@@ -168,10 +168,16 @@ function ns.AuctionAPI()
     return api and api.GetAuctionPriceByItemLink and api or nil
 end
 
--- What Auctionator last saw one of the item listed for, when it has a price.
+-- A price source for Junk Items and the Loot Feed: Auctionator, or Auction Prices.
+function ns.AuctionSource()
+    return ns.AuctionAPI() ~= nil or (CludesUIDB and CludesUIDB.auction and CludesUIDB.auction.enabled == true) or false
+end
+
+-- What Auctionator last saw one of the item listed for, when it has a price;
+-- without Auctionator, CludesUI's own Auction Prices (Auction.lua) when on.
 function ns.AuctionPrice(link)
     local api = ns.AuctionAPI()
-    if not api then return end
+    if not api then return ns.MarketPrice and (ns.MarketPrice(link)) or nil end
     local ok, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", link)
     if ok and type(price) == "number" and price > 0 then return price end
 end

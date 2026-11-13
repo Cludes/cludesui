@@ -63,6 +63,8 @@ CludesUIForeverEssentials_DiscoveryData.lua
 CludesUIForeverEssentials_Discovery.lua
 CludesUIForeverEssentials_QuestData.lua
 CludesUIForeverEssentials_QuestList.lua
+CludesUIForeverEssentials_AuctionFeed.lua
+CludesUIForeverEssentials_Auction.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)

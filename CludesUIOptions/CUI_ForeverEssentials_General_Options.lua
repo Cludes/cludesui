@@ -1381,6 +1381,37 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  AUCTION PRICES
+    ---------------------------------------------------------------------------
+    local AU = CludesUI._Auction
+    if AU then
+        local function aOff() return not AU.Get("enabled") end
+        local function Set(key, v) AU.Cfg()[key] = v; AU.Apply(); CludesUI:RefreshPage() end
+        local function Tog(key, text, tip)
+            return { type = "toggle", text = text, tooltip = tip, disabled = aOff,
+                     getValue = function() return AU.Get(key) end,
+                     setValue = function(v) Set(key, v and true or false) end }
+        end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "AUCTION PRICES", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Auction Prices",
+              tooltip = "The lowest buyout of every item for your realm and faction: the prices of every Forever auction house when this version was built, then your own scans. Junk Items and the Loot Feed use them when Auctionator is not loaded.",
+              getValue = function() return not aOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            Tog("tooltip", "Price on Item Tooltips", "Item tooltips show the price of one and how old it is."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("panel", "Market Panel", "A panel beside the auction house with Scan Prices, your Watch List (/cwatch) and what your bags would fetch."),
+            Tog("capture", "Keep Other Addons' Scans", "Also keeps the prices from full scans that other addons start, such as Auctionator."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("autoScan", "Scan on Opening", "Scans when you open the auction house and your last scan is old."),
+            { type = "slider", text = "Scan When Older Than (min)", min = 5, max = 120, step = 5, isPercent = false,
+              disabled = function() return aOff() or not AU.Get("autoScan") end,
+              getValue = function() return AU.Get("autoMinutes") end,
+              setValue = function(v) Set("autoMinutes", math.floor(v + 0.5)) end });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts
@@ -1823,7 +1854,7 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
               setValue = function(v) JunkSet("showFreeSlots", v) end }
         );  y = y - h
 
-        -- Only Show When Bag Space Is Low (its threshold in the cog) | Use Auctionator Prices
+        -- Only Show When Bag Space Is Low (its threshold in the cog) | Use Auction Prices
         local lowRow
         lowRow, h = W:DualRow(parent, y,
             { type = "toggle", text = "Only Show When Bag Space Is Low",
@@ -1833,12 +1864,12 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
                   JunkSet("onlyLowBagSpace", v)
                   CludesUI:RefreshPage()  -- the cog's disabled state
               end },
-            { type = "toggle", text = "Use Auctionator Prices",
-              tooltip = "Prices items from Auctionator scans.",
+            { type = "toggle", text = "Use Auction Prices",
+              tooltip = "Prices items from Auctionator scans, or CludesUI's Auction Prices when Auctionator is not loaded.",
               disabled = function()
-                  return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() == nil
+                  return not CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionSource()
               end,
-              disabledTooltip = "This option requires Auctionator to be loaded.",
+              disabledTooltip = "This option requires Auctionator, or Auction Prices in this page's AUCTION PRICES section.",
               getValue = function() return JI.Get("auctionPrices") == true end,
               setValue = function(v) JunkSet("auctionPrices", v) end }
         );  y = y - h
