@@ -3825,6 +3825,8 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
     if CludesUI._onInlineSearch then CludesUI._onInlineSearch(query or "") end
 
     RecycleAllSearchHighlights()
+    -- Section cards (CludesUI_Widgets.lua) step aside while a query moves rows.
+    if CludesUI._SetSectionCardsShown then CludesUI._SetSectionCardsShown(not query or query == "") end
 
     local sections, orphans = CollectAllChildren(cached.wrapper)
 
@@ -4592,6 +4594,7 @@ local function PagePassBody(cacheKey, pageName, config, refresh)
         CludesUI._buildingPage = pageName
         local h
         ok, h = xpcall(config.buildPage, CUI_NS.ReportError, pageName, wrapper, -6)
+        if CludesUI._CloseSectionCards then CludesUI._CloseSectionCards() end
         CludesUI._buildingModule = nil
         CludesUI._buildingPage = nil
         CludesUI._buildingSelector = nil

@@ -2140,19 +2140,131 @@ CludesUI.DD_STYLE = {
     ITEM_HL_A = DD_ITEM_HL_A, ITEM_SEL_A = DD_ITEM_SEL_A,
 }
 
+-------------------------------------------------------------------------------
+--  Section cards: every section is drawn as its own panel, a raised body with a
+--  header band, from its heading down to the next heading on the same parent
+--  (or, for the last one, the lowest row on it once the page is built). The
+--  pieces are textures on the parent, under every row. They hide while a
+--  settings search is filtering the page, which moves and hides rows, and come
+--  back when it clears.
+-------------------------------------------------------------------------------
+local CARD = {
+    INSET = 14,      -- the card's edge outside the rows, left and right
+    TOP = 10,        -- the card's top below its heading frame's top
+    GAP = 2,         -- the card's bottom above the next heading frame's top
+    BODY_A = 0.025, BAND_A = 0.035, EDGE_A = 0.10,
+    open = {},       -- parent -> the card still waiting for its bottom
+    all = setmetatable({}, { __mode = "k" }),  -- every card, for the search toggle
+}
+
+-- bottomY: where the card ends, as an offset from the parent's TOPLEFT (the
+-- frame of reference every heading and row is placed in).
+local function CardSetBottom(card, bottomY)
+    for _, tex in ipairs(card.bottomed) do
+        tex:ClearAllPoints()
+    end
+    local body, l, r, b = card.body, card.edgeL, card.edgeR, card.edgeB
+    local dy = bottomY - card.y
+    body:SetPoint("TOPLEFT", card.frame, "TOPLEFT", -CARD.INSET, -CARD.TOP)
+    body:SetPoint("TOPRIGHT", card.frame, "TOPRIGHT", CARD.INSET, -CARD.TOP)
+    body:SetPoint("BOTTOMLEFT", card.frame, "TOPLEFT", -CARD.INSET, dy)
+    body:SetPoint("BOTTOMRIGHT", card.frame, "TOPRIGHT", CARD.INSET, dy)
+    l:SetPoint("TOPLEFT", body, "TOPLEFT", 0, 0)
+    l:SetPoint("BOTTOMLEFT", body, "BOTTOMLEFT", 0, 0)
+    r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, 0)
+    r:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", 0, 0)
+    b:SetPoint("BOTTOMLEFT", body, "BOTTOMLEFT", 0, 0)
+    b:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", 0, 0)
+end
+
+local function BuildSectionCard(parent, frame, y)
+    local function Tex(sub, a)
+        local t = parent:CreateTexture(nil, "BACKGROUND", nil, sub)
+        t:SetColorTexture(1, 1, 1, a)
+        return t
+    end
+    local card = { frame = frame, y = y }
+    card.body  = Tex(-6, CARD.BODY_A)
+    card.band  = Tex(-5, CARD.BAND_A)
+    card.edgeL = Tex(-4, 0); card.edgeR = Tex(-4, 0)
+    card.edgeT = Tex(-4, 0); card.edgeB = Tex(-4, 0); card.divider = Tex(-4, 0)
+    for _, k in ipairs({ "edgeL", "edgeR", "edgeT", "edgeB", "divider" }) do
+        card[k]:SetColorTexture(BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, CARD.EDGE_A)
+    end
+    card.edgeL:SetWidth(1); card.edgeR:SetWidth(1)
+    card.edgeT:SetHeight(1); card.edgeB:SetHeight(1); card.divider:SetHeight(1)
+    -- The band runs from the card's top to the heading frame's bottom edge,
+    -- with a divider under it; the top edge closes the card.
+    card.band:SetPoint("TOPLEFT", card.body, "TOPLEFT", 0, 0)
+    card.band:SetPoint("TOPRIGHT", card.body, "TOPRIGHT", 0, 0)
+    card.band:SetPoint("BOTTOM", frame, "BOTTOM", 0, 0)
+    card.divider:SetPoint("TOPLEFT", card.band, "BOTTOMLEFT", 0, 0)
+    card.divider:SetPoint("TOPRIGHT", card.band, "BOTTOMRIGHT", 0, 0)
+    card.edgeT:SetPoint("TOPLEFT", card.body, "TOPLEFT", 0, 0)
+    card.edgeT:SetPoint("TOPRIGHT", card.body, "TOPRIGHT", 0, 0)
+    card.bottomed = { card.body, card.edgeL, card.edgeR, card.edgeB }
+    card.pieces = { card.body, card.band, card.edgeL, card.edgeR, card.edgeT, card.edgeB, card.divider }
+    -- Until it is closed, a card ends just under its own heading.
+    CardSetBottom(card, y - 50)
+    -- A heading that hides (a section folded away) takes its card with it.
+    frame:HookScript("OnHide", function()
+        for _, t in ipairs(card.pieces) do t:Hide() end
+    end)
+    frame:HookScript("OnShow", function()
+        if CARD.searching then return end
+        for _, t in ipairs(card.pieces) do t:Show() end
+    end)
+    CARD.all[card] = true
+    return card
+end
+
+-- The lowest point (in parent TOPLEFT offsets) of the rows placed on parent.
+local function LowestRowOffset(parent)
+    local lowest
+    for _, child in ipairs({ parent:GetChildren() }) do
+        local n = child:GetNumPoints()
+        if n and n > 0 and child:IsShown() then
+            local p, rel, rp, _, y = child:GetPoint(1)
+            if rel == parent and p == "TOPLEFT" and rp == "TOPLEFT" and y then
+                local bottom = y - (child:GetHeight() or 0)
+                if not lowest or bottom < lowest then lowest = bottom end
+            end
+        end
+    end
+    return lowest
+end
+
+-- Called by the panel once a page is built: each parent's last card ends
+-- below the lowest row on it.
+function CludesUI._CloseSectionCards()
+    for parent, card in pairs(CARD.open) do
+        local lowest = LowestRowOffset(parent)
+        if lowest then CardSetBottom(card, lowest - 10) end
+        CARD.open[parent] = nil
+    end
+end
+
+-- Called by the panel's settings search: cards hide while a query filters the
+-- page and come back (for headings still shown) when it clears.
+function CludesUI._SetSectionCardsShown(shown)
+    CARD.searching = not shown or nil
+    for card in pairs(CARD.all) do
+        local on = shown and card.frame:IsShown()
+        for _, t in ipairs(card.pieces) do t:SetShown(on) end
+    end
+end
+
 -- Section header  (e.g. "APPEARANCE", "KEY BINDING TEXT"). tooltip (optional):
--- shown while the title is hovered.
+-- shown while the title is hovered. Each one opens a section card (above).
 function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
-    local splitParent = parent._splitParent
-    local fullW = (splitParent or parent):GetWidth() - CONTENT_PAD * 2
     local frame = CreateFrame("Frame", nil, parent)
     PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, 40)
     PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
 
-    -- A plain heading over a visible rule: white, a size up from the rows.
-    local label = MakeFont(frame, 14, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b, 0.92)
-    PP.Point(label, "BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 8)
-    label:SetText(CludesUI.L(text))
+    -- The card's title: white capitals in its header band.
+    local label = MakeFont(frame, 13, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b, 0.92)
+    PP.Point(label, "BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 9)
+    label:SetText(CludesUI.L(text):upper())
     frame._label = label
 
     -- Title tooltip: a hit frame round the title, as a row label's; clicks
@@ -2166,18 +2278,13 @@ function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
         hit:SetMouseClickEnabled(false)
     end
 
-    -- Separator spans full width when in split mode
-    local sepParent = splitParent or frame
-    local sep = sepParent:CreateTexture(nil, "ARTWORK")
-    sep:SetColorTexture(BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.10)
-    if splitParent then
-        sep:SetHeight(1)
-        PP.Point(sep, "LEFT", splitParent, "LEFT", CONTENT_PAD, 0)
-        PP.Point(sep, "RIGHT", splitParent, "RIGHT", -CONTENT_PAD, 0)
-        PP.Point(sep, "BOTTOM", frame, "BOTTOM", 0, 0)
-    else
-        PP.Size(sep, fullW, 1)
-        PP.Point(sep, "BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+    -- The section's card: the one before it on this parent ends above this
+    -- heading, and this one stays open until the next heading or the page end.
+    local prev = CARD.open[parent]
+    if prev then CardSetBottom(prev, yOffset - CARD.GAP) end
+    CARD.open[parent] = BuildSectionCard(parent, frame, yOffset)
+    if CARD.searching then
+        for _, t in ipairs(CARD.open[parent].pieces) do t:Hide() end
     end
 
     -- Restart the alternating row counter so each section begins fresh
