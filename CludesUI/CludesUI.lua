@@ -63,7 +63,7 @@ CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or 
 local THEME_BG_FILES = {
     ["CludesUI"]   = "backgrounds\\cui-bg-new.png",
     ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
-    ["CludesUI Forever"] = "backgrounds\\cui-bg-new.png",
+    ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
     ["Horde"]         = "backgrounds\\cui-bg-new.png",
     ["Alliance"]      = "backgrounds\\cui-bg-new.png",
     ["Midnight"]      = "backgrounds\\cui-bg-new.png",
@@ -104,6 +104,9 @@ CludesUI.THEME_CLOSE_BOX = {
     ["backgrounds\\cui-bg-new.png"] = { x = 1345, y = 115, w = 44, h = 43, gx = 1367, gy = 136,
         bx = 1346, by = 116, bw = 42, bh = 41, bd = 2,
         r = 0.686, g = 0.718, b = 0.714, sh = 0.5, ex = 118, ey = 110, rr = 0.324, rg = 0.345, rb = 0.363 },
+    ["backgrounds\\cui-bg-forever-compressed.png"] = { x = 1346, y = 114, w = 43, h = 41, gx = 1368, gy = 134,
+        bx = 1348, by = 116, bw = 40, bh = 38, bd = 3,
+        r = 0.894, g = 0.788, b = 0.617, sh = 0.5, ex = 122, ey = 109, rr = 0.417, rg = 0.311, rb = 0.231 },
 }
 
 --- Resolve "Faction (Auto)" to Horde/Alliance by player faction; other themes unchanged.

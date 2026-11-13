@@ -291,7 +291,8 @@ local function BuildFrame()
     -- it to the theme's accent. The house themes show the frame as drawn: TintColor
     -- returns nil for those, else the vertex colour of the desaturated art.
     function tbox.TintColor(theme, r, g, b)
-        if theme == "CludesUI" or theme == "CludesUI Original" then
+        -- CludesUI Forever has its own frame art (bronze, its own logo), also as drawn.
+        if theme == "CludesUI" or theme == "CludesUI Original" or theme == "CludesUI Forever" then
             return nil
         end
         local minBright = 1.10
