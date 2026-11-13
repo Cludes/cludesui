@@ -21,6 +21,14 @@ local J = { dungeons = {}, byKey = {} }
 module.Journal = J
 
 --- Called by JournalData.lua for each dungeon.
+J.factions = {}
+
+--- Called by JournalData.lua for each faction (reputation and PvP).
+function J.AddFaction(key, f)
+    f.key, f.faction = key, true
+    J.factions[#J.factions + 1] = f
+end
+
 function J.AddDungeon(key, d)
     d.key = key
     J.dungeons[#J.dungeons + 1] = d
@@ -141,7 +149,15 @@ end
 local function FillList()
     Prepare()
     local y = 0
-    for i, d in ipairs(J.dungeons) do
+    -- Dungeons, then a Reputation heading and the factions (sorted by name).
+    local entries = {}
+    for _, d in ipairs(J.dungeons) do entries[#entries + 1] = d end
+    if #J.factions > 0 then
+        table.sort(J.factions, function(a, b) return a.name < b.name end)
+        entries[#entries + 1] = { heading = "Reputation" }
+        for _, f in ipairs(J.factions) do entries[#entries + 1] = f end
+    end
+    for i, d in ipairs(entries) do
         local b = listButtons[i]
         if not b then
             b = CreateFrame("Button", nil, list.child)
@@ -161,9 +177,18 @@ local function FillList()
             b:SetScript("OnClick", function(self) Show(self.dungeon) end)
             listButtons[i] = b
         end
-        b.dungeon = d
-        b.text:SetText((d.raid and "|cffffb040" or "") .. d.name .. (d.raid and "|r" or "") .. (d.closed and " |cff9aa6b2(closed)|r" or ""))
-        b.lv:SetText(LevelText(d))
+        b.dungeon = not d.heading and d or nil
+        b:EnableMouse(not d.heading)
+        if d.heading then
+            b.text:SetText("|cff4cc9f0" .. d.heading .. "|r")
+            b.lv:SetText("")
+        elseif d.faction then
+            b.text:SetText(d.name .. (d.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
+            b.lv:SetText("")
+        else
+            b.text:SetText((d.raid and "|cffffb040" or "") .. d.name .. (d.raid and "|r" or "") .. (d.closed and " |cff9aa6b2(closed)|r" or ""))
+            b.lv:SetText(LevelText(d))
+        end
         b:SetPoint("TOPLEFT", 0, -y)
         b.sel:SetShown(d == current)
         b:Show()
@@ -265,6 +290,57 @@ Show = function(d)
     used, y = 0, 0
     local dd = current
     if not dd then return end
+
+    if dd.faction then
+        -- Your standing now, when the game will say.
+        local standing
+        if C_Reputation and C_Reputation.GetFactionDataByID then
+            local ok, data = pcall(C_Reputation.GetFactionDataByID, dd.id)
+            if ok and type(data) == "table" then standing = data.reaction end
+        elseif GetFactionInfoByID then
+            standing = select(3, GetFactionInfoByID(dd.id))
+        end
+        Line(dd.name .. (dd.tab == "pvp" and "  |cffff6060PvP|r" or ""), 16, 0, { 0.30, 0.79, 0.94 })
+        local facts = {}
+        if dd.zone then facts[#facts + 1] = dd.zone end
+        if standing then facts[#facts + 1] = "You: " .. (_G["FACTION_STANDING_LABEL" .. standing] or standing) end
+        Line(table.concat(facts, "   "), 12, 0, { 0.6, 0.65, 0.7 })
+        local qm = dd.quartermaster
+        if qm then
+            local mapInfo = qm.map and C_Map.GetMapInfo(qm.map)
+            Line(("Quartermaster: %s%s"):format(qm.name, mapInfo and (" (" .. mapInfo.name .. " " .. qm.x .. ", " .. qm.y .. ")") or ""), 12, 0)
+        end
+        if dd.dungeons and #dd.dungeons > 0 then Line("Reputation from: " .. table.concat(dd.dungeons, ", "), 12, 0) end
+        local mySide = SIDE[UnitFactionGroup("player") or ""]
+        if dd.turnins and #dd.turnins > 0 then
+            y = y + 4
+            Line("Turn-ins", 14, 0, { 1, 0.82, 0 })
+            for _, t in ipairs(dd.turnins) do
+                local takes = t.takes and t.takes[1]
+                local itemName = takes and (select(1, C_Item.GetItemInfo(takes)) or ("item " .. takes))
+                Line(("%s  |cff9aa6b2+%d rep%s%s|r"):format(t.name, t.rep or 0,
+                    t.level and (", level " .. t.level) or "",
+                    takes and (", hand in " .. (t.takes[2] or 1) .. "x " .. itemName) or ""), 12, 0)
+                for _, q in ipairs(t.quests or {}) do
+                    if q[2] == "B" or q[2] == mySide then Line(q[3], 11, 14, { 0.55, 0.6, 0.65 }) end
+                end
+                for _, from in ipairs(t.from or {}) do
+                    local mobs = {}
+                    for i = 3, #from do mobs[#mobs + 1] = from[i] end
+                    Line(("%s: %s%s"):format(from[1], table.concat(mobs, ", "), (from[2] or 0) > #mobs and " ..." or ""), 11, 14, { 0.55, 0.6, 0.65 })
+                end
+            end
+        end
+        for _, tier in ipairs(dd.tiers or {}) do
+            y = y + 4
+            local label = _G["FACTION_STANDING_LABEL" .. tier.standing] or ("Standing " .. tier.standing)
+            local reached = standing and standing >= tier.standing
+            Line(label .. (reached and "  |cff60d080reached|r" or ""), 14, 0, { 1, 0.82, 0 })
+            for _, id in ipairs(tier.items or {}) do ItemLine(id) end
+        end
+        content:SetHeight(y + 10)
+        return
+    end
 
     Line(dd.name .. (dd.raid and "  |cffffb040Raid|r" or ""), 16, 0, { 0.30, 0.79, 0.94 })
     local facts = {}

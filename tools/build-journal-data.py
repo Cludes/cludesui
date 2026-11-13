@@ -33,10 +33,12 @@ parts = [
 heads = ("local ns =", "local J =")
 for f in sorted(glob.glob(os.path.join(data, "Dungeons", "*.lua"))):
     parts.append(body(f, heads).replace("J.AddDungeon(", "J.AddDungeon("))
+for f in sorted(glob.glob(os.path.join(data, "Factions", "*.lua"))):
+    parts.append(body(f, heads))
 parts.append(body(os.path.join(data, "Tips.lua"), heads))
 parts.append(body(os.path.join(data, "Quests.lua"), heads))
 parts.append(body(os.path.join(data, "Items.lua"), heads))
 text = "\n".join(parts)
 assert "NaowhForever" not in re.sub(r"--[^\n]*", "", text), "a namespace line was left"
 open(out, "w", encoding="utf-8", newline="\r\n").write(text)
-print("wrote", len(text), "bytes,", text.count("J.AddDungeon("), "dungeons")
+print("wrote", len(text), "bytes,", text.count("J.AddDungeon("), "dungeons,", text.count("J.AddFaction("), "factions")
