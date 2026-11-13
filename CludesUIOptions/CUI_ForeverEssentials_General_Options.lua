@@ -1105,6 +1105,71 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  RESTOCK AND REMINDERS
+    ---------------------------------------------------------------------------
+    local RM = CludesUI._Reminders
+    if RM then
+        local rs, lk, gr, tp = RM.restock, RM.lock, RM.gear, RM.talents
+        local function Set(f, key, v) f.Cfg()[key] = v; if f.Apply then f.Apply() end end
+        local function Tog(f, key, text, tip, off)
+            return { type = "toggle", text = text, tooltip = tip, disabled = off,
+                     getValue = function() return f.Get(key) end,
+                     setValue = function(v) Set(f, key, v and true or false) end }
+        end
+        local function Num(f, key, text, min, max, step, off)
+            return { type = "slider", text = text, min = min, max = max, step = step, isPercent = false, disabled = off,
+                     getValue = function() return f.Get(key) end,
+                     setValue = function(v) Set(f, key, math.floor(v + 0.5)) end }
+        end
+        local function rsOff() return not rs.Get("enabled") end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "RESTOCK REMINDER", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_Restock", disabled = rsOff, disabledTooltip = "Restock Reminder" })
+        _, h = W:DualRow(parent, y,
+            Tog(rs, "enabled", "Restock Reminder", "When you reach a city or inn, a flashing list of what you are short on. It stays up until you have what you need or leave."),
+            Tog(rs, "buy", "Buy at Vendors", "At a vendor who sells them, tops your class reagents and ammo up to what you carry, and prints what it spent. Off by default: it spends gold for you.", rsOff)
+        );  y = y - h
+        _, h = W:DualRow(parent, y, Tog(rs, "reagents", "Class Reagents", nil, rsOff), Tog(rs, "ammo", "Ammo (thrown, arrows, shot)", nil, rsOff));  y = y - h
+        _, h = W:DualRow(parent, y, Num(rs, "ammoTarget", "Ammo to Carry", 50, 4000, 50, rsOff), Tog(rs, "food", "Food & Drink", "Warriors and rogues do not need drink.", rsOff));  y = y - h
+        _, h = W:DualRow(parent, y, Num(rs, "foodBelow", "Food & Drink Below", 1, 40, 1, rsOff), Tog(rs, "vendor", "Junk & Full Bags", nil, rsOff));  y = y - h
+        _, h = W:DualRow(parent, y, Num(rs, "foodMinLevel", "Food Minimum Level", 0, 60, 1, rsOff), Num(rs, "foodMaxLevel", "Food Maximum Level", 0, 60, 1, rsOff));  y = y - h
+        if rs.Class == "HUNTER" then
+            _, h = W:DualRow(parent, y, Tog(rs, "hunterAmmo", "Hunter Ammo Reminder", "Reminds about your equipped ammo at its own amount.", rsOff),
+                Num(rs, "hunterAmmoBelow", "Remind When Ammo Falls To", 50, 4000, 50, rsOff));  y = y - h
+        end
+        _, h = W:DualRow(parent, y, Num(rs, "bagsBelow", "Free Slots Below", 1, 20, 1, rsOff), Num(rs, "size", "Text Size", 10, 32, 1, rsOff));  y = y - h
+        local reagents = rs.Reagents()
+        for i = 1, #reagents, 2 do
+            local function Carry(r)
+                if not r then return { type = "label", text = "" } end
+                return { type = "slider", text = r.name .. " to Carry", min = 0, max = 200, step = 1, isPercent = false, disabled = rsOff,
+                         tooltip = "How many to carry. 0 stops reminding you about it.",
+                         getValue = function() return rs.Target(r.item) end,
+                         setValue = function(v)
+                             local c = rs.Cfg(); c.targets = c.targets or {}; c.targets[r.item] = math.floor(v + 0.5); rs.Apply()
+                         end }
+            end
+            _, h = W:DualRow(parent, y, Carry(reagents[i]), Carry(reagents[i + 1]));  y = y - h
+        end
+
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "OTHER REMINDERS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_GearReminders", disabled = function() return not (gr.Get("worn") or gr.Get("pole")) end, disabledTooltip = "Gear Reminders" })
+        _, h = W:DualRow(parent, y,
+            Tog(lk, "enabled", "Lockpicking Skill", "Lockbox tooltips show the Lockpicking needed to open them, coloured by yours."),
+            Tog(tp, "enabled", "Unspent Talent Points", "Text on screen while you have talent points to spend. Hidden in combat."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog(gr, "worn", "Worn Gear Reminder", "An icon while you wear Cloak of Hermitic Bliss in Wailing Caverns, so you remember to swap it."),
+            Tog(gr, "pole", "Fishing Pole Reminder", "An icon while you have a fishing pole equipped."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "dropdown", text = "Fishing Pole Shows In", values = { always = "Everywhere", instance = "Dungeons & Raids" }, order = { "always", "instance" },
+              disabled = function() return not gr.Get("pole") end,
+              getValue = function() return gr.Get("poleWhere") end,
+              setValue = function(v) Set(gr, "poleWhere", v) end },
+            Num(gr, "size", "Gear Icon Size", 20, 96, 1));  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MANA EFFICIENCY
     ---------------------------------------------------------------------------
     local SE = CludesUI._SpellEfficiency
