@@ -1105,6 +1105,58 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  MANA EFFICIENCY
+    ---------------------------------------------------------------------------
+    local SE = CludesUI._SpellEfficiency
+    if SE then
+        local function seOff() return not SE.Get("enabled") end
+        local function SESet(key, v) SE.Cfg()[key] = v end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "MANA EFFICIENCY", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Mana Efficiency",
+              tooltip = "A line on a mana spell's tooltip (and a macro that casts one) with its healing or damage per mana and per second, with your spell power and talents counted.",
+              getValue = function() return not seOff() end,
+              setValue = function(v) SESet("enabled", v and true or false) end },
+            { type = "dropdown", text = "Show", disabled = seOff,
+              values = { all = "Healing and Damage", heal = "Healing Only", damage = "Damage Only" }, order = { "all", "heal", "damage" },
+              getValue = function() return SE.Get("show") end,
+              setValue = function(v) SESet("show", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Per Mana", disabled = seOff,
+              getValue = function() return SE.Get("perMana") end,
+              setValue = function(v) SESet("perMana", v and true or false) end },
+            { type = "toggle", text = "Per Second", disabled = seOff,
+              getValue = function() return SE.Get("perSecond") end,
+              setValue = function(v) SESet("perSecond", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Per Mana per Second", disabled = seOff,
+              getValue = function() return SE.Get("perManaSecond") end,
+              setValue = function(v) SESet("perManaSecond", v and true or false) end },
+            { type = "dropdown", text = "Style", disabled = seOff,
+              values = { long = "Words (healing per mana)", short = "Short (HPM, HPS)" }, order = { "long", "short" },
+              getValue = function() return SE.Get("style") end,
+              setValue = function(v) SESet("style", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Count Spell Power", disabled = seOff,
+              getValue = function() return SE.Get("bonus") end,
+              setValue = function(v) SESet("bonus", v and true or false) end },
+            { type = "toggle", text = "Count Talents", disabled = seOff,
+              getValue = function() return SE.Get("talents") end,
+              setValue = function(v) SESet("talents", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Decimals", min = 0, max = 2, step = 1, isPercent = false, disabled = seOff,
+              getValue = function() return SE.Get("decimals") end,
+              setValue = function(v) SESet("decimals", math.floor(v + 0.5)) end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  HEALER MANA AND PET TRACKER
     ---------------------------------------------------------------------------
     local GW = CludesUI._GroupWatch
