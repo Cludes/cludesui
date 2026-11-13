@@ -47,6 +47,7 @@ CludesUIForeverEssentials_Reminders.lua
 CludesUIForeverEssentials_PvP.lua
 CludesUIForeverEssentials_XP.lua
 CludesUIForeverEssentials_Layers.lua
+CludesUIForeverEssentials_MailAlts.lua
 CludesUIForeverEssentials_MapRevealData.lua
 CludesUIForeverEssentials_MapReveal.lua
 CludesUIForeverEssentials_MapTravelData.lua

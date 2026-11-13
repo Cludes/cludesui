@@ -1105,6 +1105,31 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  MAIL AND ALTS
+    ---------------------------------------------------------------------------
+    local MA = CludesUI._MailAlts
+    if MA then
+        local function Tog(key, text, tip)
+            return { type = "toggle", text = text, tooltip = tip,
+                     getValue = function() return MA.Get(key) end,
+                     setValue = function(v) MA.Cfg()[key] = v and true or false; MA.Apply() end }
+        end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "MAIL AND ALTS", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("altCounts", "Alt Item Counts", "Item tooltips show how many your characters on this realm and faction hold in their bags, bank and mailbox. Each is counted once you log in on it, its bank once you open it."),
+            Tog("mailAlts", "Alts Button on Mail", "An Alts button beside the mailbox's Send tab lists your characters with level and gold; pick one to fill the To box."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("quickAttach", "Quick Attach", "An Attach button beside the Send tab: attach every trade good, one type of trade good, or your unbound gear in one click."),
+            Tog("expiry", "Mail Expiry Warning", "At login, names any of your characters with mail expiring within three days."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Forget a Character", buttonText = "Forget", width = 90,
+              tooltip = "Removes a deleted or moved character from the counts and the Alts list.",
+              onClick = function(self) MA.Forget(self) end },
+            { type = "label", text = "" });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  LAYERS
     ---------------------------------------------------------------------------
     local LY = CludesUI._Layers
