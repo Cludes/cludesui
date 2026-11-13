@@ -1340,6 +1340,47 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  QUEST LIST AND RARES (Discovery's last two tabs)
+    ---------------------------------------------------------------------------
+    local QL = CludesUI._QuestList
+    if QL and DC then
+        local function qOff() return not DC.Get("enabled") end
+        local function Set(key, v) QL.Cfg()[key] = v; QL.Apply() end
+        local function Tog(key, text, tip)
+            return { type = "toggle", text = text, tooltip = tip, disabled = qOff,
+                     getValue = function() return QL.Get(key) end,
+                     setValue = function(v) Set(key, v and true or false) end }
+        end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "QUEST LIST AND RARES", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_RareAlert", disabled = function() return qOff() or not QL.Get("rareAlert") end, disabledTooltip = "Rare Alert" })
+        _, h = W:DualRow(parent, y,
+            Tog("questPins", "Quest Giver Pins", "A ! on the world map at each quest giver with a quest you can take now. Green for dungeon quests, blue for repeatable ones."),
+            Tog("pinGrey", "Low Level Quests", "Pins givers whose quests are grey to you too."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("chainsOnly", "Chains Only", "Pins only quests that are part of a chain, and dungeon quests."),
+            Tog("rarePins", "Rare Pins", "A star on the world map where each rare spawns."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("rarePinsKilled", "Pins for Killed Rares", "Keeps the stars of rares you have killed, greyed."),
+            { type = "slider", text = "Quest and Rare Pin Size", min = 12, max = 36, step = 1, isPercent = false, disabled = qOff,
+              getValue = function() return QL.Get("pinSize") end,
+              setValue = function(v) Set("pinSize", math.floor(v + 0.5)) end });  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("rareAlert", "Rare Alerts", "A card and a sound when a rare's nameplate, your target, your mouseover or the minimap shows one. Left-click the card to target it, right-click to close it. Move it in Layout Mode."),
+            Tog("rareAlertKilled", "Alert for Killed Rares", "Also alerts for rares you have killed before."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("rareSound", "Alert Sound", "The Gruntling Horn with each alert."),
+            Tog("rareAlertSkull", "Skull on Click", "Clicking the card also puts a skull on the rare. Your whole group sees the mark."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Alert Time (seconds)", min = 5, max = 60, step = 1, isPercent = false, disabled = qOff,
+              getValue = function() return QL.Get("rareAlertTime") end,
+              setValue = function(v) Set("rareAlertTime", math.floor(v + 0.5)) end },
+            { type = "labeledButton", text = "Test the Alert", buttonText = "Test", width = 90, disabled = qOff,
+              tooltip = "Shows the card for your target, or a sample rare.",
+              onClick = function() QL.TestAlert() end });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts
