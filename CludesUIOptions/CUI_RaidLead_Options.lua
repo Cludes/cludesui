@@ -241,6 +241,29 @@ initFrame:SetScript("OnEvent", function(self)
               or { type = "label", text = "" }
         );  y = y - h
 
+        _, h = W:SectionHeader(parent, "GROUP HELPERS", y);  y = y - h
+        local hs = ns.HelperSettings()
+        local function HSet(key, v) hs[key] = v and true or false; ns.RefreshHelpers() end
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Feast and Cauldron Alerts",
+              tooltip = "A chat line naming who dropped a feast, cauldron, Soulwell or repair bot. Only drops by CludesUI users are seen: the game shows addons no one else's casts.",
+              getValue = function() return hs.drops end,
+              setValue = function(v) HSet("drops", v) end },
+            { type = "toggle", text = "Alert Sound",
+              getValue = function() return hs.dropSound end,
+              setValue = function(v) HSet("dropSound", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Gateway Usable",
+              tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Layout Mode.",
+              getValue = function() return hs.gateway end,
+              setValue = function(v) HSet("gateway", v) end },
+            { type = "toggle", text = "Stats Panel",
+              tooltip = "Your crit, haste, mastery and versatility on screen, kept up to date through procs. Move it in Layout Mode.",
+              getValue = function() return hs.stats end,
+              setValue = function(v) HSet("stats", v) end }
+        );  y = y - h
+
         _, h = W:SectionHeader(parent, "BOSS PACE", y);  y = y - h
         _, h = W:DualRow(parent, y,
             { type = "toggle", text = "Show Boss Pace",
