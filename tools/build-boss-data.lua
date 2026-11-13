@@ -61,22 +61,56 @@ for encID, init in pairs(NSI.InitializeAlerts) do
     end
 end
 
--- Keep only plain timed alerts: text and timers per difficulty, nothing that
--- needs NSRT's own displays.
-local KEEP = { "internalID", "name", "group", "text", "DisplayType", "encID", "phase", "TTS", "TTSTimer", "dur",
+-- Keep the timed alerts, each as phases[difficulty][phase] = { times from
+-- that phase's start }; leave out the ones that need NSRT's own displays.
+local KEEP = { "internalID", "name", "group", "text", "DisplayType", "encID", "TTS", "TTSTimer", "dur",
     "spellID", "countdown", "sound", "textColors", "barColors", "Ticks", "loadConditions", "isConditional" }
+local function Plain(v) return type(v) ~= "table" or getmetatable(v) == nil end
+local function IsPhaseTable(t)
+    for _, v in pairs(t) do if type(v) == "table" then return true end end
+    return false
+end
+local function Primary(phase)
+    if type(phase) == "table" then
+        local low
+        for _, v in ipairs(phase) do v = tonumber(v); if v and (not low or v < low) then low = v end end
+        return low or 1
+    end
+    return tonumber(phase) or 1
+end
 local kept = {}
 local skipped = 0
 for _, a in ipairs(alerts) do
-    if type(a.timers) == "table" and next(a.timers) and type(a.encID) == "number" then
+    local phases = {}
+    local any = false
+    local source = a.phaseTimers or a.timers
+    if type(source) == "table" and type(a.encID) == "number" then
+        for diff, list in pairs(source) do
+            if type(list) == "table" and next(list) then
+                phases[diff] = {}
+                if a.phaseTimers or IsPhaseTable(list) then
+                    for phase, times in pairs(list) do
+                        if type(times) == "table" and #times > 0 then phases[diff][phase] = times; any = true end
+                    end
+                else
+                    phases[diff][Primary(a.phase)] = list
+                    any = true
+                end
+            end
+        end
+    end
+    if any then
         local k = {}
         for _, key in ipairs(KEEP) do
-            local v = a[key]
-            if type(v) ~= "table" or getmetatable(v) == nil then k[key] = v end
+            if Plain(a[key]) then k[key] = a[key] end
         end
-        k.timers = a.timers
-        if type(k.name) == "table" or type(k.group) == "table" then k.name, k.group = k.internalID, nil end
-        if type(k.phase) == "table" then k.phase = k.phase[1] end
+        k.phases = phases
+        local name = a.name
+        if type(name) == "table" then name = nil end
+        k.name = name or k.internalID
+        if type(k.group) == "table" then k.group = nil end
+        if type(k.text) == "table" then k.text = nil end
+        if not k.text then k.text = k.name end
         kept[#kept + 1] = k
     else
         skipped = skipped + 1

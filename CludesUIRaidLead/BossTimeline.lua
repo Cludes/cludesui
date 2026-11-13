@@ -13,8 +13,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    Encounter alerts  timed calls on the reminder display ("Soak", "Spread",
 --                      "Defensives") a few seconds before each mechanic, for
 --                      your role, spoken if you like
---  Timings run from the pull. Phases after the first start at their usual
---  time, so later bars are estimates and alerts run for the first phase only.
+--  Phase changes are read from the boss's timeline (BossPhases.lua): each
+--  phase's bars and alerts run from when it really began. Bosses with no
+--  phase rule, and phases not reached yet, run at their usual time.
 -------------------------------------------------------------------------------
 local _, ns = ...
 
@@ -45,6 +46,7 @@ local function Settings()
     if s.count == nil then s.count = 6 end
     if s.ahead == nil then s.ahead = 30 end
     if s.tts == nil then s.tts = true end
+    if s.phaseChat == nil then s.phaseChat = false end
     return s
 end
 ns.TimelineSettings = Settings
@@ -87,31 +89,56 @@ local function ForRole(ability, role)
     return false
 end
 
--- Every cast as { at, ability } from the pull, later phases at their usual start.
-local function Casts(timeline)
-    local starts, maxPhase = {}, 0
-    for n, phase in pairs(timeline.phases or {}) do
-        starts[n] = phase.start or 0
-        if n > maxPhase then maxPhase = n end
-    end
-    local out = {}
-    for _, ability in ipairs(timeline.abilities or {}) do
-        local start = starts[ability.phase] or 0
-        local nextStart = ability.phase < maxPhase and starts[ability.phase + 1] or nil
-        for _, t in ipairs(ability.times) do
-            local at = start + t
-            if not nextStart or at < nextStart then out[#out + 1] = { at = at, ability = ability } end
-        end
-    end
-    table.sort(out, function(a, b) return a.at < b.at end)
-    return out
-end
-
 local function Timeline(encID, difficulty)
     local boss = Data().timelines[encID]
     if not boss then return end
     local name = difficulty and DIFFICULTY[difficulty]
     return boss[name or "Mythic"] or boss.Mythic or boss.Heroic, boss[name or "Mythic"] and name or (boss.Mythic and "Mythic" or "Heroic")
+end
+
+-- Every cast still to come, as { due (GetTime), ability }: the phase you are in
+-- from when it really began, later phases at their usual distance from it.
+local function Casts(f)
+    local timeline = f.timeline
+    local defaults, keys = {}, {}
+    for n, phase in pairs(timeline.phases or {}) do
+        defaults[n] = phase.start or 0
+        keys[#keys + 1] = n
+    end
+    table.sort(keys)
+    local cur = f.Phase
+    local curStart = f.phaseAt[cur] or f.pulled
+    local curDefault = defaults[cur]
+    if not curDefault then
+        -- A phase the timeline has no row for (1.5, 2.5): its abilities follow the
+        -- last listed phase before it.
+        for _, n in ipairs(keys) do if n <= cur then curDefault = defaults[n] end end
+        curDefault = curDefault or 0
+    end
+    local out = {}
+    for _, ability in ipairs(timeline.abilities or {}) do
+        local p = ability.phase
+        if p >= cur or (defaults[cur] == nil and p == math.floor(cur)) then
+            local start
+            if f.phaseAt[p] then
+                start = f.phaseAt[p]
+            elseif defaults[p] then
+                start = curStart + (defaults[p] - curDefault)
+            end
+            if start then
+                local nextStart
+                for _, n in ipairs(keys) do
+                    if n > p then nextStart = defaults[n] - defaults[p] + start; break end
+                end
+                for _, t in ipairs(ability.times) do
+                    local due = start + t
+                    if not nextStart or due < nextStart then out[#out + 1] = { due = due, ability = ability, guess = p > cur } end
+                end
+            end
+        end
+    end
+    table.sort(out, function(a, b) return a.due < b.due end)
+    return out
 end
 
 -------------------------------------------------------------------------------
@@ -164,27 +191,26 @@ end
 local function Tick()
     if not fight then return HideBars() end
     local s = Settings()
-    local now = GetTime() - fight.pulled
+    local now = GetTime()
     local n = 0
     for _, cast in ipairs(fight.casts) do
-        local left = cast.at - now
+        local left = cast.due - now
         if left > -1 and left <= s.ahead and (not s.mine or ForRole(cast.ability, fight.role)) then
             n = n + 1
             if n > s.count then break end
             local b = Bar(n)
             local c = Colour(cast.ability.category)
-            b:SetStatusBarColor(c[1], c[2], c[3], 0.9)
+            b:SetStatusBarColor(c[1], c[2], c[3], cast.guess and 0.5 or 0.9)
             b:SetMinMaxValues(0, s.ahead)
             b:SetValue(math.max(0, s.ahead - left))
             local icon = C_Spell.GetSpellTexture(cast.ability.spellID)
             b.icon:SetTexture((not Secret(icon) and icon) or 134400)
-            b.name:SetText(cast.ability.name .. (cast.ability.phase > 1 and " |cffaaaaaa(P" .. cast.ability.phase .. ")|r" or ""))
+            b.name:SetText(cast.ability.name .. (cast.guess and (" |cffaaaaaa(P" .. cast.ability.phase .. ", est.)|r") or ""))
             b.time:SetText(left > 0 and ("%.0f"):format(left) or "NOW")
             b:Show()
         end
     end
     for i = n + 1, #bars do bars[i]:Hide() end
-    if n == 0 and fight.casts[#fight.casts] and now > fight.casts[#fight.casts].at + 2 then fight.done = true end
 end
 
 -------------------------------------------------------------------------------
@@ -217,26 +243,30 @@ local function Condition(alert)
     return not ok2 or result == true
 end
 
-local function StartAlerts(encID, difficulty)
+-- The phase's alerts, timed from when the phase began (start, a GetTime).
+local function StartAlerts(f, phase, start)
     run = run + 1
     local mine = run
     local s = Settings()
     if not (s.alerts and ns.ShowReminder) then return 0 end
-    local diff = ALERT_DIFF[difficulty]
+    local diff = ALERT_DIFF[f.difficulty]
     if not diff then return 0 end
     local role, specID = MyRole()
     local n = 0
+    local now = GetTime()
     for _, alert in ipairs(Data().alerts) do
-        local timers = alert.encID == encID and alert.timers[diff]
-        if type(timers) == "table" and (alert.phase or 1) == 1 and Loads(alert, role, specID) then
+        local byPhase = alert.encID == f.encID and alert.phases[diff]
+        local times = byPhase and byPhase[phase]
+        if type(times) == "table" and Loads(alert, role, specID) then
             local lead = alert.TTSTimer or alert.dur or 5
-            for _, t in ipairs(timers) do
-                if type(t) == "number" then
+            for _, t in ipairs(times) do
+                local due = start + t
+                if type(t) == "number" and due > now then
                     n = n + 1
-                    C_Timer.After(math.max(0, t - lead), function()
-                        if run ~= mine or not Condition(alert) then return end
+                    C_Timer.After(math.max(0, due - lead - now), function()
+                        if run ~= mine or fight ~= f or not Condition(alert) then return end
                         local speak = s.tts and (alert.TTS ~= false) and (type(alert.TTS) == "string" and alert.TTS or true) or false
-                        ns.ShowReminder(alert.text or alert.name or "?", t - (GetTime() - fight.pulled), speak, false)
+                        ns.ShowReminder(alert.text or alert.name or "?", due - GetTime(), speak, false)
                     end)
                 end
             end
@@ -246,36 +276,164 @@ local function StartAlerts(encID, difficulty)
 end
 
 -------------------------------------------------------------------------------
+--  The fight: what the phase rules (BossPhases.lua) read and call
+-------------------------------------------------------------------------------
+local Fight = {}
+Fight.__index = Fight
+
+function Fight:DifficultyCheck(list)
+    local diff = self.testDifficulty or select(3, GetInstanceInfo()) or 0
+    if diff == 233 then diff = 16 end
+    return tContains(list, diff) and diff or nil
+end
+
+function Fight:StartReminders(phase)
+    self.phaseAt[phase] = GetTime()
+    self.casts = Casts(self)
+    StartAlerts(self, phase, self.phaseAt[phase])
+    if Settings().phaseChat then Say(("phase %s."):format(phase)) end
+end
+
+-- The phase began late by `delay` seconds: everything still to come moves.
+function Fight:DelayAllReminders(delay)
+    local phase = self.Phase
+    self.phaseAt[phase] = (self.phaseAt[phase] or GetTime()) + delay
+    self.casts = Casts(self)
+    StartAlerts(self, phase, self.phaseAt[phase])
+end
+
+function Fight:EncounterRegister(name, event, enable, units)
+    self.frames[name] = self.frames[name] or CreateFrame("Frame")
+    local frame = self.frames[name]
+    if type(event) == "table" then
+        for _, e in ipairs(event) do self:EncounterRegister(name, e, enable, units) end
+        return
+    end
+    if enable then
+        if type(units) == "table" then
+            frame:RegisterUnitEvent(event, units[1], units[2], units[3], units[4])
+        elseif units then
+            frame:RegisterUnitEvent(event, units)
+        else
+            frame:RegisterEvent(event)
+        end
+    elseif event then
+        frame:UnregisterEvent(event)
+    end
+end
+
+function Fight:EncounterFunction(name, fn)
+    self.frames[name] = self.frames[name] or CreateFrame("Frame")
+    self.frames[name]:SetScript("OnEvent", function(...)
+        if fight == self then fn(...) end
+    end)
+end
+
+function Fight:GetActiveEncounterTimelineEventCount()
+    if not (C_EncounterTimeline and C_EncounterTimeline.GetEventList) then return 0 end
+    local count = 0
+    for _, eventID in ipairs(C_EncounterTimeline.GetEventList()) do
+        local info = C_EncounterTimeline.GetEventInfo(eventID)
+        if info and info.source == Enum.EncounterTimelineEventSource.Encounter
+            and C_EncounterTimeline.GetEventState(eventID) == Enum.EncounterTimelineEventState.Active then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-------------------------------------------------------------------------------
 --  Fight start and end
 -------------------------------------------------------------------------------
 local ticker
+local timelineEvents = CreateFrame("Frame")
+local custom = {}
+
 local function Stop()
+    if fight then
+        for _, frame in pairs(fight.frames) do frame:UnregisterAllEvents() end
+        if fight.VaelgorPhaseTimer then fight.VaelgorPhaseTimer:Cancel() end
+    end
     fight = nil
     run = run + 1
+    wipe(custom)
+    timelineEvents:UnregisterAllEvents()
     if ticker then ticker:Cancel(); ticker = nil end
     HideBars()
 end
 
-function ns.StartTimeline(encID, difficulty)
+-- testDifficulty: run it as that difficulty, whatever instance you are in (/cbt Test).
+function ns.StartTimeline(encID, difficulty, testDifficulty)
     Stop()
     local timeline = Timeline(encID, difficulty)
     if not timeline then return false end
-    fight = { encID = encID, pulled = GetTime(), casts = Casts(timeline), role = (MyRole()) }
+    local now = GetTime()
+    local f = setmetatable({ encID = encID, EncounterID = encID, difficulty = difficulty, testDifficulty = testDifficulty,
+        timeline = timeline, pulled = now, Phase = 1, PhaseSwapTime = now, phaseAt = { [1] = now },
+        Timelines = {}, RemovedTimelines = {}, frames = {}, role = (MyRole()) }, Fight)
+    fight = f
+    f.casts = Casts(f)
     if Settings().bars then
         BuildBars()
         ticker = C_Timer.NewTicker(0.1, Tick)
     end
-    StartAlerts(encID, difficulty)
+    StartAlerts(f, 1, now)
+    local rules = ns.BossPhases and ns.BossPhases[encID]
+    if rules and not testDifficulty then
+        if rules.start then rules.start(f) end
+        if rules.detect then
+            for _, e in ipairs({ "ENCOUNTER_TIMELINE_EVENT_ADDED", "ENCOUNTER_TIMELINE_EVENT_REMOVED",
+                                 "ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED" }) do
+                pcall(timelineEvents.RegisterEvent, timelineEvents, e)
+            end
+            if rules.engage then timelineEvents:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT") end
+        end
+    end
     return true
 end
 ns.StopTimeline = Stop
+
+--- For testing a phase rule: change phase now, as if the rule had seen it.
+function ns.TimelinePhase(phase)
+    if not fight then return false end
+    fight.Phase = phase
+    fight:StartReminders(phase)
+    fight.PhaseSwapTime = GetTime()
+    return true
+end
+
+timelineEvents:SetScript("OnEvent", function(_, event, arg)
+    local f = fight
+    local rules = f and ns.BossPhases and ns.BossPhases[f.encID]
+    if not (rules and rules.detect) then return end
+    if event == "ENCOUNTER_TIMELINE_EVENT_ADDED" then
+        local info = arg
+        if type(info) ~= "table" then return end
+        if info.source ~= Enum.EncounterTimelineEventSource.Encounter then
+            custom[info.id] = true
+            return
+        end
+        rules.detect(f, event, info)
+    elseif event == "ENCOUNTER_TIMELINE_EVENT_REMOVED" then
+        if custom[arg] then return end
+        rules.detect(f, event, nil)
+    elseif event == "ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED" then
+        if custom[arg] then return end
+        if C_EncounterTimeline.GetEventState(arg) == Enum.EncounterTimelineEventState.Canceled then
+            rules.detect(f, "ENCOUNTER_TIMELINE_EVENT_REMOVED", nil)
+        end
+    elseif event == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
+        rules.detect(f, event)
+    end
+end)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("ENCOUNTER_START")
 events:RegisterEvent("ENCOUNTER_END")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:SetScript("OnEvent", function(_, event, encID, _, difficulty)
-    if event ~= "ENCOUNTER_START" then return Stop() end
+    if event == "ENCOUNTER_END" or event == "PLAYER_ENTERING_WORLD" then return Stop() end
+    if event ~= "ENCOUNTER_START" then return end
     if Secret(encID) or Secret(difficulty) then return end
     local s = Settings()
     if s.bars or s.alerts then ns.StartTimeline(encID, difficulty) end
@@ -418,7 +576,8 @@ local function BuildWindow()
     test:SetPoint("LEFT", diff, "RIGHT", 6, 0)
     test:SetText("Test")
     test:SetScript("OnClick", function()
-        if ns.StartTimeline(shownBoss, shownDiff == "Heroic" and 15 or 16) then Say("running this timeline as if pulled now. /cbt stop ends it.") end
+        local d = shownDiff == "Heroic" and 15 or 16
+        if ns.StartTimeline(shownBoss, d, d) then Say("running this timeline as if pulled now. /cbt stop ends it.") end
     end)
     win.boss = win:CreateFontString(nil, "OVERLAY")
     win.boss:SetFont(Font(), 13, "OUTLINE")
@@ -444,6 +603,11 @@ end
 SLASH_CUIBOSSTIMELINE1 = "/cbt"
 SlashCmdList.CUIBOSSTIMELINE = function(msg)
     if (msg or ""):lower():find("stop") then Stop(); if ns.StopReminders then ns.StopReminders() end return end
+    local phase = tonumber((msg or ""):match("^%s*phase%s+([%d.]+)"))
+    if phase then
+        if not ns.TimelinePhase(phase) then Say("no boss timeline is running.") end
+        return
+    end
     if win and win:IsShown() then win:Hide() else ns.OpenTimeline() end
 end
 

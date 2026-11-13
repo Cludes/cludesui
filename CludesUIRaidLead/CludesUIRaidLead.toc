@@ -26,4 +26,5 @@ Interrupts.lua
 AuraGlows.lua
 GroupHelpers.lua
 CludesUIRaidLead_BossData.lua
+BossPhases.lua
 BossTimeline.lua

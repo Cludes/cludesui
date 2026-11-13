@@ -300,11 +300,11 @@ initFrame:SetScript("OnEvent", function(self)
             _, h = W:SectionHeader(parent, "BOSS TIMELINES", y);  y = y - h
             _, h = W:DualRow(parent, y,
                 { type = "toggle", text = "Upcoming Ability Bars",
-                  tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Timed from the pull; later phases are estimates. Move them in Layout Mode.",
+                  tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Layout Mode.",
                   getValue = function() return tl.bars end,
                   setValue = function(v) tl.bars = v and true or false end },
                 { type = "toggle", text = "Encounter Alerts",
-                  tooltip = "Timed calls on the reminder display a few seconds before each mechanic (Soak, Spread, Defensives), only the ones for your role. First phase only.",
+                  tooltip = "Timed calls on the reminder display a few seconds before each mechanic (Soak, Spread, Defensives), only the ones for your role, restarted at each phase change.",
                   getValue = function() return tl.alerts end,
                   setValue = function(v) tl.alerts = v and true or false end }
             );  y = y - h
@@ -330,7 +330,10 @@ initFrame:SetScript("OnEvent", function(self)
                 { type = "labeledButton", text = "Boss Timeline Window", buttonText = "Open", width = 90,
                   tooltip = "Each boss's abilities and when they come, Heroic or Mythic, with Test to run one as if pulled. Also /cbt.",
                   onClick = function() ns.OpenTimeline() end },
-                { type = "label", text = "" }
+                { type = "toggle", text = "Say Phase Changes",
+                  tooltip = "A chat line when a phase change is read, to check the timings against the fight.",
+                  getValue = function() return tl.phaseChat end,
+                  setValue = function(v) tl.phaseChat = v and true or false end }
             );  y = y - h
         end
 
