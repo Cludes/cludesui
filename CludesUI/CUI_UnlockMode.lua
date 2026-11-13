@@ -459,7 +459,7 @@ end
 --  Constants
 -------------------------------------------------------------------------------
 local FONT_PATH   = (CludesUI.GetFontPath("extras"))
-    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
 -- At very low UI scale the overlays/top bar are hard to read, so they're nudged up.
 -- The `UIParent:GetEffectiveScale() < 0.6` test is inlined at each use site (not a

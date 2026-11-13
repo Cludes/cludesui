@@ -752,7 +752,7 @@ end
                         tc:SetFrameLevel(cd:GetFrameLevel() + 5)
                         local fs = tc:CreateFontString(nil, "OVERLAY")
                         local cdFont = (CludesUI.GetFontPath("cdm"))
-                            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+                            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
                         local fsScale = (scale and scale > 0.01) and scale or 1
                         local cdSize = ((ss and ss.cooldownFontSize) or (bd and bd.cooldownFontSize) or 12) / fsScale
                         if CludesUI.ApplyIconTextFont then

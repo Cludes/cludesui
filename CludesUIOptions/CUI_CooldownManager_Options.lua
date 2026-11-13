@@ -76,7 +76,7 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Inline text input helper (no W:InputBox exists)
     local FONT_PATH = (CludesUI.GetFontPath("cdm"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     local GetCDMOptOutline = CludesUI.GetFontOutlineFlag
 
@@ -2162,7 +2162,7 @@ initFrame:SetScript("OnEvent", function(self)
             _cdmButtonTip = CludesUI.BuildTipCallout(CludesUI._panelBody, {
                 width = 360, height = 105,
                 text = CludesUI.L("CDM buttons can have their glow and active states\nset per icon or synced to the bar. Click a button\nto show its settings."),
-                font = (CludesUI.GetFontPath("cdm")) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf",
+                font = (CludesUI.GetFontPath("cdm")) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
                 textTop = 15, spacing = 4, btnBottom = 11,
                 onOkay = function()
                     if CludesUIDB then CludesUIDB.cdmButtonTipSeen = true end

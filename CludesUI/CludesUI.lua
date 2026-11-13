@@ -391,7 +391,7 @@ CludesUI.PREVIEW_ROSTER = {
 }
 
 -- Font (Expressway lives in CludesUI/media)
-local EXPRESSWAY = MEDIA_PATH .. ((GetLocale() == "ruRU") and "fonts\\Expressway.ttf" or "fonts\\Barlow Condensed.ttf")
+local EXPRESSWAY = MEDIA_PATH .. "fonts\\Expressway.ttf"
 
 -- Locale system-font fallback for glyphs our fonts lack (CJK, Cyrillic). Resolved by
 -- CludesUI_Locale.lua from the EFFECTIVE locale (client or override); nil = Expressway.

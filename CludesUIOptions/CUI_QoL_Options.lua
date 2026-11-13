@@ -39,7 +39,7 @@ local function ShowTransformsPopup()
     if not data then return end
 
     if not transformsPopup then
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local PP = CludesUI.PanelPP
         local COL_W, COL_GAP = 190, 12

@@ -509,7 +509,7 @@ end
 -------------------------------------------------------------------------------
 local MEDIA_DIR = "Interface\\AddOns\\CludesUIActionBars\\Media\\"
 local FONT_PATH = (CludesUI.GetFontPath("actionBars"))
-    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 local HIGHLIGHT_TEXTURES = {
     MEDIA_DIR .. "highlight-2.png",
     MEDIA_DIR .. "highlight-3.png",

@@ -1409,7 +1409,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Preview builder: cosmetic health/power bar + portrait + castbar preview
     ---------------------------------------------------------------------------
     local PREVIEW_FONT = (CludesUI.GetFontPath("unitFrames"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
     local BORDER_BACKDROP = { edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 }
 

@@ -3340,7 +3340,7 @@ initFrame:SetScript("OnEvent", function(self)
         local EG = CludesUI.CLUDES_GREEN
         local L  = CludesUI.L
         local MakeBorder = CludesUI.MakeBorder
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
         local HERO_H = 470
         local host = CreateFrame("Frame", nil, parent)

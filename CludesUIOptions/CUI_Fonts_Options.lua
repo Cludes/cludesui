@@ -1343,7 +1343,7 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
                 fontDropOrder[#fontDropOrder + 1] = "---"
             else
                 local path = CludesUI.FONT_BLIZZARD[name]
-                    or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Barlow Condensed.ttf"))
+                    or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
                 local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name
                 fontDropValues[name] = { text = displayName, font = path }
                 fontDropOrder[#fontDropOrder + 1] = name

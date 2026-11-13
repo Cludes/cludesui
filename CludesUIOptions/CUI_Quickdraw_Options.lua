@@ -1353,7 +1353,7 @@ initFrame:SetScript("OnEvent", function(self)
         if pickerMenu then return pickerMenu end
 
         local FONT = (CludesUI.GetFontPath())
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local bgR  = CludesUI.DD_BG_R or 0.075
         local bgG  = CludesUI.DD_BG_G or 0.113
         local bgB  = CludesUI.DD_BG_B or 0.141
@@ -2474,7 +2474,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function RebuildMenuRows()
         local m = EnsureMenuMenu()
         local FONT = (CludesUI.GetFontPath())
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local mH = 4
         local count = PaletteCount()
         for i = 1, count do

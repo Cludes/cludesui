@@ -355,7 +355,7 @@ do
 
         -- Build or reuse the popup
         if not specPopup then
-            local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf")
+            local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
             local COL_W = 165
             local COL_GAP = 12
             local CONTENT_LEFT = 41
@@ -771,7 +771,7 @@ do
         end
 
         -- Populate columns
-        local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf")
+        local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
         local CLASS_H = specPopup._CLASS_H
         local CLASS_PAD_TOP = specPopup._CLASS_PAD_TOP
         local CLASS_PAD_BOT = specPopup._CLASS_PAD_BOT
@@ -1169,7 +1169,7 @@ do
 
                 local presetList = allPresetKeysFn()
                 local mH = 4
-                local ITEM_FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf")
+                local ITEM_FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
 
                 for idx, entry in ipairs(presetList) do
                     local itm = items[idx]

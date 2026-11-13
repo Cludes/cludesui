@@ -363,7 +363,7 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
     -- The options font once it has loaded, else the locale-aware core font
     -- (the picker runs before the options addon loads).
     local FONT = CludesUI._font or CludesUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     opts = opts or {}
 
     local DEFS = {

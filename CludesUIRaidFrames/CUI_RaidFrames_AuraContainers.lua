@@ -19,7 +19,7 @@ local AKWorker = CludesUI.AuraKit.NewBuildWorker()
 -- really do stream, so an unbound container renders the local player's buffs onto
 -- whoever the button later shows.
 local NO_UNIT = "none"
-local FALLBACK_FONT = "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+local FALLBACK_FONT = "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
 -- Marks debuff rendering as container-owned; the legacy UpdateDebuffs body
 -- early-returns on this flag (single gate covering all seven call sites).

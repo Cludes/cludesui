@@ -321,7 +321,7 @@ local defaults = {
     friendlyShowLevel = false,
     friendlyLevelDiffColor = false,
     showEnemyPets = false,
-    font = "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf",
+    font = "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
     textSlotTop = "enemyName",
     textSlotRight = "healthPercent",
     -- WoW Forever shows the level by default (retail leaves the slot empty).

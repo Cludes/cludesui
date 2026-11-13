@@ -87,7 +87,7 @@ local function ShowStyleChoicePopup()
         return
     end
     local FONT = CludesUI._font or CludesUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local EG = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
     local POPUP_W, POPUP_H = math.max(700, CludesUI.STYLE_CARDS_W + 32), 480

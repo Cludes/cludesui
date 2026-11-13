@@ -2758,7 +2758,7 @@ initFrame:SetScript("OnEvent", function(self)
         local y = yOffset
         local _, h
         local fontPath = (CludesUI.GetFontPath("auraBuff"))
-            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+            or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
         parent._showRowDivider = true
 

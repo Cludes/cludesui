@@ -4179,6 +4179,31 @@ CludesUI.RegisterMigration({
 })
 
 --------------------------------------------------------------------------------
+--  Expressway is the default font again (Barlow Condensed was the default for
+--  a short while from 11 Nov 2026). Installs and profiles left on Barlow
+--  Condensed go back to Expressway once; it stays in the font list to pick.
+--------------------------------------------------------------------------------
+CludesUI.RegisterMigration({
+    id          = "default_font_back_to_expressway_v1",
+    scope       = "global",
+    description = "Move the saved global font from Barlow Condensed back to Expressway, the default again.",
+    body        = function(ctx)
+        local fonts = ctx.db and ctx.db.fonts
+        if fonts and fonts.global == "Barlow Condensed" then fonts.global = "Expressway" end
+    end,
+})
+
+CludesUI.RegisterMigration({
+    id          = "default_font_back_to_expressway_profile_v1",
+    scope       = "profile",
+    description = "Move a profile's global font from Barlow Condensed back to Expressway, the default again.",
+    body        = function(ctx)
+        local fonts = ctx.profile and ctx.profile.fonts
+        if fonts and fonts.global == "Barlow Condensed" then fonts.global = "Expressway" end
+    end,
+})
+
+--------------------------------------------------------------------------------
 --  Power Bar's per-form threshold mode used to resolve Moonkin into the same
 --  "mana" entry as Caster (both report PT.MANA from GetPrimaryPowerType()).
 --  Now that Moonkin is checked by form ID and gets its own "moonkin" bucket,

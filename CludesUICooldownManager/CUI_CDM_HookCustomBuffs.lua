@@ -189,7 +189,7 @@ function _AC.BuildStyle(bd, fixedIcon)
     end
     local brdA = (bd and bd.borderA) or 1
     local cdFont = (CludesUI.GetFontPath("cdm"))
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Barlow Condensed.ttf"
+        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     -- Icon rect. A shaped icon samples OUTSIDE its texture to fill the mask, so
     -- the coords come from the shape's inset, not the bar's zoom -- same math as

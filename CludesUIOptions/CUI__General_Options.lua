@@ -101,7 +101,7 @@ end
 -- font from the locale system's own glyph table beats a multi-script family.
 local function LP_FontFor(locale)
     local fn = CludesUI.LocaleGlyphFont
-    return (fn and fn(locale)) or (CludesUI.MEDIA_PATH .. "fonts\\Barlow Condensed.ttf")
+    return (fn and fn(locale)) or (CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF")
 end
 
 -------------------------------------------------------------------------------
@@ -260,8 +260,8 @@ CludesUI._WHATSNEW_PATCHES = {
               title  = "Five new colour themes",
               desc   = "Ember, Blood, Arcane, Gold and Toxic join the theme list." },
             { module = "Global Settings",
-              title  = "Barlow Condensed is the default font",
-              desc   = "Change it under Fonts. Expressway and the other fonts are still in the list." },
+              title  = "Expressway is the default font",
+              desc   = "Change it under Fonts. Barlow Condensed and the other fonts are still in the list." },
             { module = "Profiles",
               title  = "Import older profile strings",
               desc   = "Import Profile also accepts strings in the older format and converts them as it imports." },
