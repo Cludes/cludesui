@@ -8,7 +8,6 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 --  back to 0. This turns it on at login, and again a second after a change
 --  to the graphics quality (or to the setting itself) resets it. Your
 --  outline mode is left alone. In combat it waits for the fight to end.
---  Idea from Forever Loot Sparkles by Ashtar Senior; this is our own code.
 --
 --  Turning it off writes 0, but the game keeps drawing sparkles it has
 --  started until it restarts (a /reload is not enough).
@@ -18,7 +17,7 @@ local _, module = ...
 local CVAR = "outlineModeShowLootEffectWhenDisabled"
 local WATCHED = { graphicsquality = true, raidgraphicsquality = true, [CVAR:lower()] = true }
 
--- On by default, as in Forever Loot Sparkles: it only keeps a game sparkle visible.
+-- On by default: it only keeps a game sparkle visible.
 local F = module.Feature("lootSparkles", { enabled = true })
 local Enabled = F.Enabled
 
