@@ -1013,6 +1013,45 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  ACTION BAR PROFILES
+    ---------------------------------------------------------------------------
+    local AP = CludesUI._ActionBarProfiles
+    if AP then
+        local cfg = AP.Cfg()
+        local names = AP.Names()
+        local values, order = {}, {}
+        for _, n in ipairs(names) do values[n] = n; order[#order + 1] = n end
+        if #names == 0 then values[""] = "None saved"; order[1] = "" end
+        if not values[cfg.selected or ""] then cfg.selected = names[1] or "" end
+        local function Rebuild() C_Timer.After(0.1, function() CludesUI:RefreshPage(true) end) end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "ACTION BAR PROFILES", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Save Your Bars", inputWidth = 140, inputStyle = "popup", placeholder = "Profile name",
+              tooltip = "Saves every action bar slot under this name, for any character of your class on this account. /cbars save <name> does the same.",
+              getValue = function() return "" end,
+              setValue = function(text) AP.Save(text); cfg.selected = (text or ""):match("^%s*(.-)%s*$"); Rebuild() end },
+            { type = "toggle", text = "Include Keybinds",
+              tooltip = "Also save and load your keybinds with the bars.",
+              getValue = function() return AP.Get("bindings") end,
+              setValue = function(v) cfg.bindings = v and true or false end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "dropdown", text = "Profile", values = values, order = order,
+              getValue = function() return cfg.selected or "" end,
+              setValue = function(v) cfg.selected = v end },
+            { type = "labeledButton", text = "Load It", buttonText = "Load", width = 90,
+              tooltip = "Puts the profile on your bars. Spells you have not learned and items you do not carry are skipped. Out of combat only.",
+              onClick = function() if cfg.selected and cfg.selected ~= "" then AP.Load(cfg.selected) end end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Delete It", buttonText = "Delete", width = 90,
+              onClick = function() if cfg.selected and cfg.selected ~= "" then AP.Delete(cfg.selected); cfg.selected = nil; Rebuild() end end },
+            { type = "label", text = "" }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
