@@ -1105,6 +1105,20 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  DUNGEON JOURNAL
+    ---------------------------------------------------------------------------
+    if CludesUI._Journal then
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "DUNGEON JOURNAL", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Dungeon Journal", buttonText = "Open", width = 90,
+              tooltip = "Every dungeon and raid: bosses in kill order, their loot and drop chances, a tip per boss, and the quests. Alt+Shift-click an item to add it to your BiS list. /cjournal opens it too.",
+              onClick = function() CludesUI._Journal.Show() end },
+            { type = "label", text = "Opens on the dungeon you are in." }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  STAT WEIGHTS
     ---------------------------------------------------------------------------
     local SWt = CludesUI._StatWeights
