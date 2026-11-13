@@ -295,6 +295,45 @@ initFrame:SetScript("OnEvent", function(self)
             );  y = y - h
         end
 
+        if ns.TimelineSettings then
+            local tl = ns.TimelineSettings()
+            _, h = W:SectionHeader(parent, "BOSS TIMELINES", y);  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "toggle", text = "Upcoming Ability Bars",
+                  tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Timed from the pull; later phases are estimates. Move them in Layout Mode.",
+                  getValue = function() return tl.bars end,
+                  setValue = function(v) tl.bars = v and true or false end },
+                { type = "toggle", text = "Encounter Alerts",
+                  tooltip = "Timed calls on the reminder display a few seconds before each mechanic (Soak, Spread, Defensives), only the ones for your role. First phase only.",
+                  getValue = function() return tl.alerts end,
+                  setValue = function(v) tl.alerts = v and true or false end }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "toggle", text = "Only My Role",
+                  tooltip = "Bars and the timeline window show only the mechanics for your role: raid damage and soaks for healers, tankbusters and frontals for tanks.",
+                  getValue = function() return tl.mine end,
+                  setValue = function(v) tl.mine = v and true or false end },
+                { type = "toggle", text = "Speak Alerts",
+                  tooltip = "Text to speech says each alert as it shows.",
+                  getValue = function() return tl.tts end,
+                  setValue = function(v) tl.tts = v and true or false end }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "slider", text = "Bars Shown", min = 3, max = 12, step = 1, isPercent = false,
+                  getValue = function() return tl.count end,
+                  setValue = function(v) tl.count = math.floor(v + 0.5) end },
+                { type = "slider", text = "Look Ahead (seconds)", min = 10, max = 60, step = 5, isPercent = false,
+                  getValue = function() return tl.ahead end,
+                  setValue = function(v) tl.ahead = math.floor(v + 0.5) end }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Boss Timeline Window", buttonText = "Open", width = 90,
+                  tooltip = "Each boss's abilities and when they come, Heroic or Mythic, with Test to run one as if pulled. Also /cbt.",
+                  onClick = function() ns.OpenTimeline() end },
+                { type = "label", text = "" }
+            );  y = y - h
+        end
+
         return math.abs(y)
     end
 

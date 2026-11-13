@@ -25,3 +25,5 @@ BreakTimer.lua
 Interrupts.lua
 AuraGlows.lua
 GroupHelpers.lua
+CludesUIRaidLead_BossData.lua
+BossTimeline.lua

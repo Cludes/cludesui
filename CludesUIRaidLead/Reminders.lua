@@ -149,6 +149,20 @@ local function Show(entry)
     Repaint()
 end
 
+--- One line on the reminder display, due in `at` seconds (Boss Timelines'
+--- encounter alerts). speak: false for silence, true to say the text, or
+--- other words to say; sound: whether to play the reminder sound.
+function ns.ShowReminder(text, at, speak, sound)
+    BuildDisplay()
+    table.insert(active, { text = text, at = GetTime() + math.max(0, at) })
+    while #active > MAX_LINES do table.remove(active, 1) end
+    if speak then Speak(type(speak) == "string" and speak or text) end
+    local r = Settings()
+    if sound and r.sound and r.sound ~= "" then PlaySoundFile(SOUND_DIR .. r.sound, "Master") end
+    anchor:SetScript("OnUpdate", Repaint)
+    Repaint()
+end
+
 -------------------------------------------------------------------------------
 --  Running a note
 -------------------------------------------------------------------------------
