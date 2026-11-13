@@ -1171,6 +1171,47 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  TOWN MAP
+    ---------------------------------------------------------------------------
+    local TWN = CludesUI._TownMap
+    if TWN then
+        local function nOff() return not TWN.Get("enabled") end
+        local function Tog(key, text, tip, dis)
+            return { type = "toggle", text = text, tooltip = tip, disabled = dis or nOff,
+                     getValue = function() return TWN.Get(key) end,
+                     setValue = function(v) TWN.Cfg()[key] = v and true or false; TWN.Apply() end }
+        end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "TOWN MAP", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("enabled", "Town Map", "Service NPCs for your faction, mailboxes and spirit healers on the world map. Hover a pin for its name.", function() return false end),
+            Tog("capitalsOnly", "Vendors and Trainers Only in Cities", "Keeps vendors, trainers and the bank off questing maps. Flight masters, innkeepers and stable masters still show everywhere."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("minimapMail", "Mailboxes on Minimap", "Pins the mailboxes near you on the minimap."),
+            Tog("minimapSpirit", "Spirit Healers on Minimap", "Pins the spirit healers near you on the minimap."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("mail", "Mailboxes", "Every mailbox, in towns and out in the world."),
+            Tog("spirit", "Spirit Healers", "Every graveyard's spirit healer, in towns and out in the world."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("class", "Class Trainers", "Your own class's trainers only."),
+            Tog("profession", "Profession Trainers"));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("flight", "Flight Masters", "Left to Map Markers when its Flight Points pins are on."),
+            Tog("inn", "Innkeepers"));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("bank", "Bank and Auction House"),
+            Tog("repair", "Repairs"));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("supplies", "Reagents, Ammo and Food"),
+            Tog("stable", "Stable Masters", "Hunters only."));  y = y - h
+        _, h = W:DualRow(parent, y,
+            Tog("vendors", "Other Vendors", "Trade goods and every other merchant."),
+            { type = "slider", text = "Pin Size", min = 10, max = 32, step = 1, isPercent = false, disabled = nOff,
+              getValue = function() return TWN.Get("size") end,
+              setValue = function(v) TWN.Cfg().size = math.floor(v + 0.5); TWN.Apply() end });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts

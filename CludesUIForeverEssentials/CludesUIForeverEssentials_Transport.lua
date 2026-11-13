@@ -515,6 +515,9 @@ function Layer:Set(mapID, spots, count)
     self.Live()
 end
 
+--- Minimap pins for other features (the town map): NewLayer({ max, new, paint, xy }).
+module.MinimapLayer = NewLayer
+
 -------------------------------------------------------------------------------
 --  Tooltips, pins, Zone Timer
 -------------------------------------------------------------------------------

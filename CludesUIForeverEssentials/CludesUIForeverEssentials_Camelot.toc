@@ -55,6 +55,8 @@ CludesUIForeverEssentials_MapRevealData.lua
 CludesUIForeverEssentials_MapReveal.lua
 CludesUIForeverEssentials_MapTravelData.lua
 CludesUIForeverEssentials_MapTravel.lua
+CludesUIForeverEssentials_TownMapData.lua
+CludesUIForeverEssentials_TownMap.lua
 CludesUIForeverEssentials_QuestRewards.lua
 
 # Travel (flight timer)
