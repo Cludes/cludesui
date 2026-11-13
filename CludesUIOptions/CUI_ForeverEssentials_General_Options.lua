@@ -1105,6 +1105,44 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  XP PER HOUR AND GROUP XP
+    ---------------------------------------------------------------------------
+    local XP = CludesUI._XP
+    if XP then
+        local xt, gx = XP.ticker, XP.group
+        local function Set(f, key, v) f.Cfg()[key] = v; f.Apply() end
+        local function Tog(f, key, text, tip, off)
+            return { type = "toggle", text = text, tooltip = tip, disabled = off,
+                     getValue = function() return f.Get(key) end,
+                     setValue = function(v) Set(f, key, v and true or false) end }
+        end
+        local function Num(f, key, text, min, max, step, off)
+            return { type = "slider", text = text, min = min, max = max, step = step, isPercent = false, disabled = off,
+                     getValue = function() return f.Get(key) end,
+                     setValue = function(v) Set(f, key, math.floor(v + 0.5)) end }
+        end
+        local function xOff() return not xt.Get("enabled") end
+        local function gOff() return not gx.Get("enabled") end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "XP PER HOUR", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_XPTicker", disabled = xOff, disabledTooltip = "XP per Hour" })
+        _, h = W:DualRow(parent, y,
+            Tog(xt, "enabled", "XP per Hour", "This session's XP per hour, the time to your next level, the session's time and how long your last levels took. Pause and reset on the card, or /cxp start, pause, reset."),
+            Tog(xt, "hideResting", "Hide While Resting", nil, xOff));  y = y - h
+        _, h = W:DualRow(parent, y, Tog(xt, "splits", "Show Level Times", nil, xOff), Num(xt, "history", "Levels Shown", 1, 10, 1, xOff));  y = y - h
+        _, h = W:DualRow(parent, y, Num(xt, "size", "Text Size", 10, 28, 1, xOff), { type = "label", text = "" });  y = y - h
+
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "GROUP XP", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_GroupXP", disabled = gOff, disabledTooltip = "Group XP" })
+        _, h = W:DualRow(parent, y,
+            Tog(gx, "enabled", "Group XP", "A bar per group member with their level and XP. They need CludesUI or Naowh Forever, which share the same message."),
+            Tog(gx, "showSelf", "Show Yourself", nil, gOff));  y = y - h
+        _, h = W:DualRow(parent, y, Tog(gx, "raid", "Also in Raids", nil, gOff), Num(gx, "width", "Width", 160, 500, 10, gOff));  y = y - h
+        _, h = W:DualRow(parent, y, Num(gx, "size", "Text Size", 8, 20, 1, gOff), { type = "label", text = "" });  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  RESTOCK AND REMINDERS
     ---------------------------------------------------------------------------
     local RM = CludesUI._Reminders
