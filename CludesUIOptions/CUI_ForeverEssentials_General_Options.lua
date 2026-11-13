@@ -1068,6 +1068,43 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  BEST IN SLOT
+    ---------------------------------------------------------------------------
+    local BI = CludesUI._BiS
+    if BI then
+        local function BSet(key, v) BI.Cfg()[key] = v and true or false end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "BEST IN SLOT", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Your BiS List", buttonText = "Open", width = 90,
+              tooltip = "Your pick for every gear slot and whether you have it. Alt+Shift-click any item to add or remove it. Shared by your characters of this class. /cbis opens it too.",
+              onClick = function() BI.Show() end },
+            { type = "toggle", text = "Alt+Shift-Click to Add",
+              getValue = function() return BI.Get("enabled") end,
+              setValue = function(v) BSet("enabled", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Mark BiS on Tooltips",
+              getValue = function() return BI.Get("tooltip") end,
+              setValue = function(v) BSet("tooltip", v) end },
+            { type = "toggle", text = "Drop Alert",
+              tooltip = "A warning, a sound and a chat line when a BiS item you do not have drops: in the loot window, or looted by anyone near you.",
+              getValue = function() return BI.Get("alert") end,
+              setValue = function(v) BSet("alert", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "input", text = "Export", inputWidth = 160, inputStyle = "popup",
+              tooltip = "Copy this line to share your list.",
+              getValue = function() return BI.Export() end,
+              setValue = function() end },
+            { type = "input", text = "Import", inputWidth = 160, inputStyle = "popup", placeholder = "CUIBIS1:...",
+              tooltip = "Paste a CludesUI BiS line for your class. It replaces your list.",
+              getValue = function() return "" end,
+              setValue = function(text) BI.Import(text) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  JUNK ITEMS (the rows after the toggle are built while the window is
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
