@@ -1105,6 +1105,37 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  BOAT AND ZEPPELIN TIMERS
+    ---------------------------------------------------------------------------
+    local TR2 = CludesUI._Transport
+    if TR2 then
+        local function tOff() return not TR2.Get("enabled") end
+        local function Set(key, v) TR2.Cfg()[key] = v; TR2.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "BOAT AND ZEPPELIN TIMERS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_ShipTimer", disabled = tOff, disabledTooltip = "Boat and Zeppelin Timer" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Boat and Zeppelin Timers",
+              tooltip = "When each ship leaves and arrives, on minimap pins at its docks. A ship is timed when you ride it, when you click its pin as it arrives (left) or leaves (right), or from players who share timings.",
+              getValue = function() return not tOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "toggle", text = "Zone Timer", disabled = tOff,
+              tooltip = "A list of the boats and zeppelins in your zone with their times. Move it in Layout Mode.",
+              getValue = function() return TR2.Get("zone") end,
+              setValue = function(v) Set("zone", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Share Timings", disabled = tOff,
+              tooltip = "Sends the ships you time to your group and guild, and takes theirs, and the timings of ForeverTransport and NauticusClassic users.",
+              getValue = function() return TR2.Get("share") end,
+              setValue = function(v) Set("share", v and true or false) end },
+            { type = "slider", text = "Text Size", min = 10, max = 24, step = 1, isPercent = false, disabled = tOff,
+              getValue = function() return TR2.Get("size") end,
+              setValue = function(v) Set("size", math.floor(v + 0.5)) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  MAIL AND ALTS
     ---------------------------------------------------------------------------
     local MA = CludesUI._MailAlts
