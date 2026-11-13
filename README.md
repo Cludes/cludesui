@@ -92,3 +92,7 @@ Other addons can add a settings page to the CludesUI panel. See [PLUGINS_API.md]
 3. GitHub builds `CludesUI-v1.0.1.zip` and attaches it to a new release.
 
 Every push to `master` runs a Lua syntax check and confirms that each file a `.toc` lists exists.
+
+## Licence
+
+Copyright (c) 2026 Cludes. All rights reserved. CludesUI is not open source: you may install and use it for yourself, but you may not copy, share, re-upload, modify for others, rebrand or reuse any part of it without written permission. See [LICENSE](LICENSE) for the full terms.

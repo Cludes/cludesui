@@ -5,6 +5,7 @@
 ## Version: 1.0.0
 ## SavedVariables: CludesUIDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
+## X-License: All Rights Reserved (see license.txt)
 
 # Pre-12.1 client failsafe -- MUST load first (arms the per-file guard line)
 CludesUI_ClientGate.lua

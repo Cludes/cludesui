@@ -1,0 +1,127 @@
+CludesUI Proprietary Licence
+Version 1.0, 13 November 2026
+
+Copyright (c) 2026 Cludes. All rights reserved.
+
+1. OWNERSHIP
+
+1.1 CludesUI (the "Software") is the property of Cludes (the "Owner"). The Software
+    means every file in this repository and in any release of CludesUI, including its
+    source code, data files, artwork, images, textures, fonts produced for it, names,
+    logos, layout, documentation and the arrangement of all of them.
+
+1.2 The Software is protected by the Copyright Act 1968 (Cth) of Australia and by the
+    copyright laws of every country that is party to the Berne Convention, the TRIPS
+    Agreement or the WIPO Copyright Treaty. Copyright in the Software exists
+    automatically and does not depend on registration or on this notice.
+
+1.3 Third-party components. Some files contain or are based on work owned by others,
+    including the libraries under any "Libs" folder and work used under its owner's
+    licence or permission. Those components remain the property of their owners and
+    are used under their own terms, which take precedence for those components. This
+    Licence covers everything else, and the Owner's selection, arrangement, changes and
+    additions throughout the Software, including within those files.
+
+2. WHAT YOU MAY DO
+
+2.1 Subject to your continued compliance with this Licence, the Owner grants you a
+    personal, non-exclusive, non-transferable, non-sublicensable, revocable licence to:
+
+    (a) download the Software from the Owner's official release channels;
+    (b) install it in your own copy of World of Warcraft and use it while playing; and
+    (c) change your own installed copy for your personal use, provided you do not share
+        the changed copy or any part of it with anyone.
+
+2.2 Where the Software is hosted on GitHub, you may view it and fork it on GitHub only
+    to the extent GitHub's Terms of Service require. Such a fork is subject to every
+    other term of this Licence.
+
+2.3 No other right is granted, whether expressly, by implication, by estoppel or
+    otherwise. All rights not expressly granted are reserved by the Owner.
+
+3. WHAT YOU MAY NOT DO
+
+    Except with the Owner's prior written permission, you must not, and must not allow
+    or help anyone else to:
+
+    (a) copy, reproduce, publish, upload, mirror, share or distribute the Software, or
+        any part of it, in any form or by any means, including on CurseForge, Wago,
+        WoWInterface, GitHub (beyond section 2.2), Discord, websites or file-sharing
+        services;
+    (b) create, publish or distribute any work based on or derived from the Software,
+        including modified versions, forks, ports, translations, "lite" editions,
+        rebranded or renamed copies, and other addons that contain or reproduce any
+        part of its code, data, artwork or design;
+    (c) use any part of the Software's code, data or artwork in any other addon,
+        program, user interface, compilation, pack or bundle;
+    (d) remove, alter or obscure any copyright notice, licence notice or attribution in
+        the Software;
+    (e) sell, rent, lease, license, sublicense or otherwise commercially exploit the
+        Software, or charge for access to it, for installing it, or for any service
+        built on it;
+    (f) claim authorship or ownership of the Software or any part of it, or present it
+        as your own work;
+    (g) use the Software, or any part of it, to train, fine-tune, evaluate or build any
+        machine-learning or artificial-intelligence model or dataset; or
+    (h) use the names "CludesUI" or "Cludes", or the CludesUI logos, for any other
+        product or in any way that suggests an association with or endorsement by the
+        Owner.
+
+4. CONTRIBUTIONS
+
+    Any suggestion, report, patch or other material you send to the Owner about the
+    Software may be used by the Owner freely and without obligation to you, and you
+    assign to the Owner all rights in any changes to the Software you submit for
+    inclusion.
+
+5. TERMINATION
+
+5.1 This Licence ends automatically, without notice, if you break any of its terms.
+    The Owner may also end it at any time by notice.
+
+5.2 When it ends you must stop using the Software and delete every copy in your
+    possession or control. Sections 1, 3, 4, 6, 7 and 8 survive termination.
+
+6. ENFORCEMENT
+
+    The Owner may enforce this Licence by any lawful means, including takedown notices
+    under the United States Digital Millennium Copyright Act, the Copyright Act 1968
+    (Cth) and similar laws, notices to hosting providers and platforms, and legal
+    proceedings for injunctions, damages, an account of profits and costs. Any use of
+    the Software outside this Licence infringes the Owner's copyright.
+
+7. NO WARRANTY AND LIMITATION OF LIABILITY
+
+7.1 The Software is provided "as is", without warranty of any kind, express or implied,
+    including warranties of merchantability, fitness for a particular purpose and
+    non-infringement.
+
+7.2 To the fullest extent the law allows, the Owner is not liable for any loss or
+    damage of any kind arising from the Software or its use, including loss of data,
+    game settings or game progress.
+
+7.3 Nothing in this Licence excludes, restricts or modifies any guarantee, right or
+    remedy you have under the Australian Consumer Law or any other law that cannot be
+    excluded. Where liability for such a guarantee can be limited, it is limited to
+    supplying the Software again.
+
+8. GENERAL
+
+8.1 This Licence is governed by the laws of Victoria, Australia. You submit to the
+    non-exclusive jurisdiction of the courts of Victoria and the Commonwealth of
+    Australia.
+
+8.2 If any part of this Licence is found unenforceable, that part is limited to the
+    minimum extent necessary and the rest remains in full force.
+
+8.3 A failure or delay by the Owner to enforce any term is not a waiver of it.
+
+8.4 This Licence is the entire agreement between you and the Owner about the Software.
+    You may not assign it. The Owner may change it for future releases; the version
+    supplied with a release applies to that release.
+
+8.5 World of Warcraft is a trademark of Blizzard Entertainment, Inc. The Software is
+    not made, endorsed or supported by Blizzard Entertainment.
+
+For permission to do anything this Licence does not allow, contact the Owner through
+the CludesUI GitHub repository: https://github.com/Cludes/cludesui
