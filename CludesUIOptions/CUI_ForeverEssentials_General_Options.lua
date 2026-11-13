@@ -1105,6 +1105,37 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  LAYERS
+    ---------------------------------------------------------------------------
+    local LY = CludesUI._Layers
+    if LY then
+        local lt, ls = LY.tracker, LY.swap
+        local function lOff() return not lt.Get("enabled") end
+        local function Set(key, v) lt.Cfg()[key] = v; lt.Apply() end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "LAYERS", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_LayerTracker", disabled = lOff, disabledTooltip = "Layer Tracker" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Layer Tracker",
+              tooltip = "Which layer of the zone you are on, read from the NPCs around you. Hover it for the layers seen in this zone.",
+              getValue = function() return not lOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "toggle", text = "Auto-Accept Layer Swap",
+              tooltip = "Confirms the game's layer swap prompt when you join a group.",
+              getValue = function() return ls.Get("enabled") end,
+              setValue = function(v) ls.Cfg().enabled = v and true or false end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Countdown to a Layer Change", disabled = lOff,
+              getValue = function() return lt.Get("countdown") end,
+              setValue = function(v) Set("countdown", v and true or false) end },
+            { type = "toggle", text = "Say When You Move", disabled = lOff,
+              getValue = function() return lt.Get("chat") end,
+              setValue = function(v) Set("chat", v and true or false) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  XP PER HOUR AND GROUP XP
     ---------------------------------------------------------------------------
     local XP = CludesUI._XP
