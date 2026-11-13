@@ -24,7 +24,7 @@ local buttons = {}
 local queuedSet          -- a set to wear once combat ends
 local previous           -- the set worn before an automatic swap
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Say(text) CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. text) end
 
 --- { {id, name, icon, equipped}, ... } sorted by name.
@@ -83,9 +83,10 @@ local function Button(i)
     b.lit = b:CreateTexture(nil, "OVERLAY")
     b.lit:SetPoint("TOPLEFT", -2, 2)
     b.lit:SetPoint("BOTTOMRIGHT", 2, -2)
-    b.lit:SetColorTexture(0.30, 0.79, 0.94, 0.35)
+    local ar, ag, ab = CludesUI.Kit.Accent()
+    b.lit:SetColorTexture(ar, ag, ab, 0.35)
     b.name = b:CreateFontString(nil, "OVERLAY")
-    b.name:SetFont(Font(), 10, "OUTLINE")
+    CludesUI.Kit.Font(b.name, 10, "essentials")
     b.name:SetPoint("TOP", b, "BOTTOM", 0, -2)
     b:SetScript("OnClick", function(self)
         if InCombatLockdown() then Say("you will change into " .. (self.setName or "it") .. " when the fight ends.") end

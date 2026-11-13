@@ -28,11 +28,11 @@ local SPOT_MAP, SPOT_X, SPOT_Y, SPOT_PLACE, SPOT_NOTE = 1, 2, 3, 4, 5
 local TURN_IN = "librarian"
 local SLEEPING_BAG = 211527
 local CHECK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
-local ACCENT = { 0.30, 0.79, 0.94 }
+local ACCENT = CludesUI.Kit.SyncAccent({})  -- refreshed on each draw
 local MUTED = { 0.6, 0.65, 0.7 }
 local GOLD = { 1, 0.82, 0 }
 local READY = { 0.38, 0.85, 0.5 }
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Print(msg) CludesUI.Print("|cff4cc9f0Discovery:|r " .. msg) end
 local function Muted(text) return "|cff9aa6b2" .. text .. "|r" end
 
@@ -500,7 +500,7 @@ local function NewRows(content)
         local width = content:GetWidth()
         local indent = opts.indent or 0
         local size = opts.size or 12
-        r.text:SetFont(Font(), size, size >= 14 and "OUTLINE" or "")
+        CludesUI.Kit.Font(r.text, size, "essentials")
         r.text:SetTextColor(unpack(opts.colour or { 1, 1, 1 }))
         local left = indent
         if opts.icon then
@@ -513,7 +513,7 @@ local function NewRows(content)
         r.text:SetPoint("TOPLEFT", r, "TOPLEFT", left, -2)
         local rightW = 0
         if opts.right then
-            r.right:SetFont(Font(), 11, "")
+            CludesUI.Kit.Font(r.right, 11, "essentials")
             r.right:SetTextColor(unpack(opts.rightColour or MUTED))
             r.right:SetText(opts.right)
             r.right:ClearAllPoints()
@@ -554,30 +554,29 @@ local function TabOrder()
 end
 
 local function BuildWindow()
-    win = CreateFrame("Frame", "CludesUIDiscovery", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIDiscovery", UIParent)
     win:SetSize(WIN_W, WIN_H)
     win:SetPoint("CENTER", 0, 30)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.96)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.96)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     win:SetClampedToScreen(true)
     local title = win:CreateFontString(nil, "OVERLAY")
-    title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff4cc9f0Discovery|r")
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    title:SetText("Discovery")
+    CludesUI.Kit.AccentText(title)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    close:SetPoint("TOPRIGHT", -5, -5)
     win.tabBar = CreateFrame("Frame", nil, win)
     win.tabBar:SetPoint("TOPLEFT", 10, -32)
     win.tabBar:SetSize(WIN_W - 20, 22)
     win.tools = CreateFrame("Frame", nil, win)
     win.tools:SetPoint("TOPLEFT", 10, -58)
     win.tools:SetSize(WIN_W - 20, 24)
-    scroll = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
+    scroll = (CludesUI.Kit.Scroll(win))
     scroll:SetPoint("TOPLEFT", 10, -86)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     content = CreateFrame("Frame", nil, scroll)
@@ -593,16 +592,16 @@ local function PaintTabs()
     for i, tab in ipairs(TabOrder()) do
         local b = tabButtons[i]
         if not b then
-            b = CreateFrame("Button", nil, win.tabBar, "UIPanelButtonTemplate")
+            b = CludesUI.Kit.Button(win.tabBar, "", 90, 22, nil, { key = "essentials" })
             b:SetHeight(22)
             tabButtons[i] = b
         end
         b:SetText(tab.label)
-        b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
+        b:SetWidth(math.max(80, b:GetTextWidth() + 24))
         b:ClearAllPoints()
         b:SetPoint("LEFT", win.tabBar, "LEFT", x, 0)
         b:SetScript("OnClick", function() currentTab = tab.key; Redraw() end)
-        if tab.key == currentTab then b:LockHighlight() else b:UnlockHighlight() end
+        if tab.key == currentTab then b:SetActive(true) else b:SetActive(false) end
         b:Show()
         x = x + b:GetWidth() + 4
     end
@@ -610,6 +609,7 @@ end
 
 function Redraw()
     if not (win and win:IsShown()) then return end
+    CludesUI.Kit.SyncAccent(ACCENT)
     PaintTabs()
     rows:Reset()
     for _, child in ipairs({ win.tools:GetChildren() }) do child:Hide() end
@@ -758,7 +758,7 @@ local function DrawField(R, tools)
         fieldSwitch = {}
         local x = 0
         for _, page in ipairs(PAGES) do
-            local b = CreateFrame("Button", nil, tools, "UIPanelButtonTemplate")
+            local b = CludesUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
             b:SetSize(90, 22)
             b:SetPoint("LEFT", tools, "LEFT", x, 0)
             b:SetText(PAGE_NAMES[page])
@@ -769,7 +769,7 @@ local function DrawField(R, tools)
     end
     for page, b in pairs(fieldSwitch) do
         b:Show()
-        if page == fieldPage then b:LockHighlight() else b:UnlockHighlight() end
+        if page == fieldPage then b:SetActive(true) else b:SetActive(false) end
     end
     local page = fieldPage
     local done, total = Field.Progress(page)
@@ -839,20 +839,18 @@ local function TrackerWanted()
 end
 
 local function BuildTracker()
-    tracker = CreateFrame("Frame", "CludesUIDiscoveryTracker", UIParent, "BackdropTemplate")
+    tracker = CreateFrame("Frame", "CludesUIDiscoveryTracker", UIParent)
     tracker:SetSize(TRACK_W, 60)
-    tracker:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    tracker:SetBackdropColor(0.06, 0.07, 0.09, 0.85)
-    tracker:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Panel(tracker, 0.85)
     tracker:SetClampedToScreen(true)
     tracker.title = tracker:CreateFontString(nil, "OVERLAY")
-    tracker.title:SetFont(Font(), 12, "OUTLINE")
+    CludesUI.Kit.Font(tracker.title, 12, "essentials")
     tracker.title:SetTextColor(unpack(ACCENT))
     tracker.title:SetPoint("TOPLEFT", 8, -6)
     tracker.title:SetText("DISCOVERY")
-    local close = CreateFrame("Button", nil, tracker, "UIPanelCloseButton")
+    local close = CludesUI.Kit.Glyph(tracker, "x", function() tracker:Hide() end, nil, "essentials")
     close:SetSize(20, 20)
-    close:SetPoint("TOPRIGHT", 0, 0)
+    close:SetPoint("TOPRIGHT", -4, -4)
     close:SetScript("OnClick", function() dismissedZone = PlayerZone(); tracker:Hide() end)
     local open = CreateFrame("Button", nil, tracker)
     open:SetPoint("TOPLEFT", 4, -2)

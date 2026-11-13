@@ -27,11 +27,11 @@ local RANK_LEVEL = { [150] = 10, [225] = 20, [300] = 35 }
 local RANK_TITLE = { [150] = "Journeyman", [225] = "Expert", [300] = "Artisan" }
 local GATHERING = { [182] = "Herbalism Trainer", [393] = "Skinning Trainer" }
 local MINING = 186
-local ACCENT, MUTED, GOLD = { 0.30, 0.79, 0.94 }, { 0.6, 0.65, 0.7 }, { 1, 0.82, 0 }
+local ACCENT, MUTED, GOLD = CludesUI.Kit.SyncAccent({}), { 0.6, 0.65, 0.7 }, { 1, 0.82, 0 }
 local ORANGE, YELLOW, GREEN, GREY = { 1, 0.5, 0.25 }, { 1, 1, 0 }, { 0.25, 0.75, 0.25 }, { 0.5, 0.5, 0.5 }
 local function Muted(text) return "|cff9aa6b2" .. text .. "|r" end
 local function Print(msg) CludesUI.Print("|cff4cc9f0Professions:|r " .. msg) end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local RD
 local function RecipeData()
@@ -370,18 +370,19 @@ end
 
 local function Draw()
     if not (win and win:IsShown()) then return end
+    CludesUI.Kit.SyncAccent(ACCENT)
     rows:Reset()
     local profs = Professions()
     local x = 0
     for i, p in ipairs(profs) do
         local b = tabButtons[i]
         if not b then
-            b = CreateFrame("Button", nil, win.tabBar, "UIPanelButtonTemplate")
+            b = CludesUI.Kit.Button(win.tabBar, "", 90, 22, nil, { key = "essentials" })
             b:SetHeight(22)
             tabButtons[i] = b
         end
         b:SetText(p.name)
-        b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
+        b:SetWidth(math.max(80, b:GetTextWidth() + 24))
         b:ClearAllPoints()
         b:SetPoint("LEFT", win.tabBar, "LEFT", x, 0)
         b:SetScript("OnClick", function() currentLine = p.line; Draw() end)
@@ -393,7 +394,7 @@ local function Draw()
     for _, p in ipairs(profs) do if p.line == currentLine then prof = p end end
     prof = prof or profs[1]
     for i, p in ipairs(profs) do
-        if p == prof then tabButtons[i]:LockHighlight() else tabButtons[i]:UnlockHighlight() end
+        if p == prof then tabButtons[i]:SetActive(true) else tabButtons[i]:SetActive(false) end
     end
     if not prof then
         rows:Line("You have no professions yet.", { colour = MUTED })
@@ -487,27 +488,26 @@ local function Draw()
 end
 
 local function BuildWindow()
-    win = CreateFrame("Frame", "CludesUIProfessions", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIProfessions", UIParent)
     win:SetSize(WIN_W, WIN_H)
     win:SetPoint("CENTER", 0, 30)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.96)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.96)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     win:SetClampedToScreen(true)
     local title = win:CreateFontString(nil, "OVERLAY")
-    title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff4cc9f0Professions|r")
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    title:SetText("Professions")
+    CludesUI.Kit.AccentText(title)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    close:SetPoint("TOPRIGHT", -5, -5)
     win.tabBar = CreateFrame("Frame", nil, win)
     win.tabBar:SetPoint("TOPLEFT", 10, -32)
     win.tabBar:SetSize(WIN_W - 20, 22)
-    local scroll = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
+    local scroll = (CludesUI.Kit.Scroll(win))
     scroll:SetPoint("TOPLEFT", 10, -60)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     content = CreateFrame("Frame", nil, scroll)

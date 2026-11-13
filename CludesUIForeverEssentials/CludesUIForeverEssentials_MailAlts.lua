@@ -196,7 +196,7 @@ local clicking = false
 local mEv = CreateFrame("Frame")
 
 local function Menu(owner, fill)
-    if MenuUtil and MenuUtil.CreateContextMenu then MenuUtil.CreateContextMenu(owner, fill) end
+    CludesUI.Kit.ContextMenu(owner, fill)
 end
 
 local function OpenAltsMenu(owner)
@@ -339,12 +339,7 @@ local function OpenAttachMenu(owner)
 end
 
 local function MailButton(text, tip, fn)
-    local b = CreateFrame("Button", nil, SendMailFrame, "UIPanelButtonTemplate")
-    b:SetSize(64, 22)
-    b:SetText(text)
-    b:SetScript("OnClick", fn)
-    b:SetScript("OnEnter", function(self) GameTooltip:SetOwner(self, "ANCHOR_RIGHT"); GameTooltip:SetText(tip, 1, 1, 1, 1, true); GameTooltip:Show() end)
-    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    local b = CludesUI.Kit.Button(SendMailFrame, text, 64, 22, fn, { key = "essentials", tip = tip })
     return b
 end
 

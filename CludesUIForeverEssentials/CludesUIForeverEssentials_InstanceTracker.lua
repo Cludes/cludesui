@@ -24,7 +24,7 @@ local HOUR = 3600
 local KEEP_RUNS = 20
 
 local function Say(text) CludesUI.Print("|cff4cc9f0Instances:|r " .. text) end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 -- Account store: entries = { {t, map, copy}, ... } for the last hour;
@@ -156,7 +156,7 @@ local function Build()
     hud = CreateFrame("Frame", "CludesUIInstanceTracker", UIParent)
     hud:SetSize(170, 30)
     hudText = hud:CreateFontString(nil, "OVERLAY")
-    hudText:SetFont(Font(), 12, "OUTLINE")
+    CludesUI.Kit.Font(hudText, 12, "essentials")
     hudText:SetPoint("TOPLEFT")
     hudText:SetJustifyH("LEFT")
     return hud
@@ -170,7 +170,7 @@ local function PaintHud()
     hud:SetShown(show and true or false)
     if not show then return end
     local cap = Get("cap")
-    local colour = n >= cap and "|cffff6040" or (n >= cap - 2 and "|cffffb040" or "|cff4cc9f0")
+    local colour = n >= cap and "|cffff6040" or (n >= cap - 2 and "|cffffb040" or CludesUI.Kit.AccentHex())
     local line = ("%sInstances %d/%d|r"):format(colour, n, cap)
     if frees and n > 0 then line = line .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60)) end
     if visit then

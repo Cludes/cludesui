@@ -136,26 +136,25 @@ end
 local reports = {}       -- name -> { dur, ilvl, enchants = {}, cds = {} }
 local win, rows = nil, {}
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath(nil) end
 
 local function BuildWindow()
     if win then return end
-    win = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent)
     win:SetSize(520, 60)
     win:SetPoint("TOP", UIParent, "TOP", 0, -140)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.92)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.92)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     local title = win:CreateFontString(nil, "OVERLAY")
-    title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(title, 15, nil)
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff4cc9f0Ready Check|r")
+    title:SetText("Ready Check")
+    CludesUI.Kit.AccentText(title)
     win.title = title
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, nil)
+    close:SetPoint("TOPRIGHT", -5, -5)
     win:Hide()
     tinsert(UISpecialFrames, "CludesUIRaidLeadReadyCheck")
 end
@@ -164,7 +163,7 @@ local function Row(i)
     local fs = rows[i]
     if not fs then
         fs = win:CreateFontString(nil, "OVERLAY")
-        fs:SetFont(Font(), 13, "")
+        CludesUI.Kit.Font(fs, 13, nil)
         fs:SetJustifyH("LEFT")
         fs:SetWidth(500)
         fs:SetWordWrap(false)

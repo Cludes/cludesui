@@ -13,11 +13,11 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local function Text(parent, size)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(Font(), size, "OUTLINE")
+    CludesUI.Kit.Font(fs, size, "essentials")
     fs:SetPoint("CENTER")
     return fs
 end
@@ -61,7 +61,7 @@ timerEv:SetScript("OnEvent", function(_, event)
         started = nil
         if ticker then ticker:Cancel(); ticker = nil end
         timerText:SetText(Clock(length))
-        timerText:SetTextColor(0.30, 0.79, 0.94)
+        timerText:SetTextColor(CludesUI.Kit.Accent())
         if T.Get("chat") and length >= 3 then
             CludesUI.Print("|cff4cc9f0Combat:|r that fight took " .. Clock(length) .. ".")
         end

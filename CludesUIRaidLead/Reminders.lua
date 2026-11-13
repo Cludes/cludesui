@@ -93,7 +93,7 @@ function ns.ApplyReminderLook()
         end
     end
     for i = 1, MAX_LINES do
-        lines[i]:SetFont(Font(), r.fontSize, "OUTLINE")
+        CludesUI.Kit.Font(lines[i], r.fontSize, nil)
         lines[i]:SetPoint("TOP", anchor, "TOP", 0, -(i - 1) * (r.fontSize + 12))
     end
 end
@@ -107,7 +107,7 @@ local function Repaint()
         local a = active[i]
         if a then
             local left = a.at - now
-            local tail = left > 0.05 and ("  |cff4cc9f0" .. math.ceil(left) .. "|r") or "  |cffff6040NOW|r"
+            local tail = left > 0.05 and ("  " .. CludesUI.Kit.AccentHex() .. math.ceil(left) .. "|r") or "  |cffff6040NOW|r"
             lines[i]:SetText(a.text .. tail)
             lines[i]:Show()
         else

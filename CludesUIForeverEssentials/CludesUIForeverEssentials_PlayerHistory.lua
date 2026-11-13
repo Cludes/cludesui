@@ -38,7 +38,7 @@ local CHANNEL = {
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function Readable(v) return type(v) == "string" and not Secret(v) and v ~= "" end
 local function IsPlayerGUID(g) return type(g) == "string" and not Secret(g) and #g <= 64 and g:find("^Player%-") ~= nil end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local function Cap(text, max)
     if #text <= max then return text end
@@ -262,7 +262,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
             if t then
                 if t.good then tooltip:AddLine(t.label, 0.4, 0.9, 0.5) else tooltip:AddLine(t.label, 1, 0.3, 0.3) end
             else
-                tooltip:AddLine("Note", 0.3, 0.79, 0.94)
+                tooltip:AddLine("Note", CludesUI.Kit.Accent())
             end
             if note.text then tooltip:AddLine(note.text, 1, 1, 1, true) end
         end
@@ -367,7 +367,7 @@ local function Refresh()
         local r = rows[i]
         if not r then
             r = content:CreateFontString(nil, "OVERLAY")
-            r:SetFont(Font(), 12, "")
+            CludesUI.Kit.Font(r, 12, "essentials")
             r:SetJustifyH("LEFT")
             r:SetWidth(500)
             r:SetWordWrap(false)
@@ -392,31 +392,28 @@ end
 
 function module.ShowPlayerHistory()
     if not win then
-        win = CreateFrame("Frame", "CludesUIPlayerHistory", UIParent, "BackdropTemplate")
+        win = CreateFrame("Frame", "CludesUIPlayerHistory", UIParent)
         win:SetSize(540, 420)
         win:SetPoint("CENTER")
-        win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-        win:SetBackdropColor(0.06, 0.07, 0.09, 0.95)
-        win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+        CludesUI.Kit.Panel(win, 0.95)
         win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
         win:SetScript("OnDragStart", win.StartMoving)
         win:SetScript("OnDragStop", win.StopMovingOrSizing)
         win:SetFrameStrata("HIGH")
         local t = win:CreateFontString(nil, "OVERLAY")
-        t:SetFont(Font(), 15, "OUTLINE")
+        CludesUI.Kit.Font(t, 15, "essentials")
         t:SetPoint("TOPLEFT", 10, -8)
-        t:SetText("|cff4cc9f0Player History|r")
+        t:SetText("Player History")
+    CludesUI.Kit.AccentText(t)
         win.count = win:CreateFontString(nil, "OVERLAY")
-        win.count:SetFont(Font(), 11, "")
+        CludesUI.Kit.Font(win.count, 11, "essentials")
         win.count:SetPoint("LEFT", t, "RIGHT", 10, 0)
-        local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-        close:SetPoint("TOPRIGHT", 2, 2)
-        search = CreateFrame("EditBox", nil, win, "InputBoxTemplate")
-        search:SetSize(200, 20)
-        search:SetPoint("TOPLEFT", 14, -30)
-        search:SetAutoFocus(false)
-        search:SetScript("OnTextChanged", Refresh)
-        scroll = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
+        local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+        close:SetPoint("TOPRIGHT", -5, -5)
+        search = CludesUI.Kit.Input(win, 200, 20, "Search a name or tag", "essentials")
+        search:SetPoint("TOPLEFT", 10, -34)
+        search:HookScript("OnTextChanged", Refresh)
+        scroll = (CludesUI.Kit.Scroll(win))
         scroll:SetPoint("TOPLEFT", 10, -58)
         scroll:SetPoint("BOTTOMRIGHT", -30, 10)
         content = CreateFrame("Frame", nil, scroll)

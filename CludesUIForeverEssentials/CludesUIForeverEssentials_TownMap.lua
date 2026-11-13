@@ -136,7 +136,7 @@ local function ShowTip(pin)
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
     local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then GameTooltip:AddLine(title, 0.3, 0.79, 0.94) end
+    if title ~= npc[4] then GameTooltip:AddLine(title, CludesUI.Kit.Accent()) end
     GameTooltip:Show()
 end
 

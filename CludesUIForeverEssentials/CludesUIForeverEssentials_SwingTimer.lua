@@ -23,7 +23,7 @@ local SWING = Enum.PlayerSwingType
 local ORDER = { SWING.MainHand, SWING.OffHand, SWING.Ranged }
 local LABEL = { [SWING.MainHand] = "MH", [SWING.OffHand] = "OH", [SWING.Ranged] = "R" }
 local COLOR = {
-    [SWING.MainHand] = { 0.30, 0.79, 0.94 },
+    [SWING.MainHand] = {},  -- the theme accent, read when the bar is made
     [SWING.OffHand]  = { 0.55, 0.65, 0.95 },
     [SWING.Ranged]   = { 0.45, 0.85, 0.50 },
 }
@@ -33,7 +33,7 @@ local IDLE_AFTER = 0.4     -- seconds past a swing's end before its bar counts a
 local holder
 local bars = {}            -- [swingType] = StatusBar with .started, .duration
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -- Whether the player has a weapon for this swing type right now.
 local function HasWeapon(t)
@@ -67,20 +67,19 @@ end
 local function Bar(t)
     local b = bars[t]
     if b then return b end
-    b = CreateFrame("StatusBar", nil, holder, "BackdropTemplate")
+    b = CreateFrame("StatusBar", nil, holder)
     b:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    if t == SWING.MainHand then CludesUI.Kit.SyncAccent(COLOR[t]) end
     b:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
-    b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    b:SetBackdropColor(0.05, 0.06, 0.08, 0.85)
-    b:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Panel(b, 0.85)
     b:SetMinMaxValues(0, 1)
     b:SetValue(0)
     b.label = b:CreateFontString(nil, "OVERLAY")
-    b.label:SetFont(Font(), 10, "OUTLINE")
+    CludesUI.Kit.Font(b.label, 10, "essentials")
     b.label:SetPoint("LEFT", 3, 0)
     b.label:SetText(LABEL[t])
     b.text = b:CreateFontString(nil, "OVERLAY")
-    b.text:SetFont(Font(), 10, "OUTLINE")
+    CludesUI.Kit.Font(b.text, 10, "essentials")
     b.text:SetPoint("RIGHT", -3, 0)
     bars[t] = b
     return b

@@ -19,7 +19,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function Known(id) return C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(id) end
 local _, CLASS = UnitClass("player")
@@ -186,7 +186,7 @@ local function BuildAlert()
     alert:SetSize(240, 60)
     alert.title = alert:CreateFontString(nil, "OVERLAY")
     alert.title:SetPoint("TOP", 0, -4)
-    alert.title:SetTextColor(0.30, 0.79, 0.94)
+    alert.title:SetTextColor(CludesUI.Kit.Accent())
     alert.title:SetText("Restock")
     alert.text = alert:CreateFontString(nil, "OVERLAY")
     alert.text:SetPoint("TOP", alert.title, "BOTTOM", 0, -4)
@@ -208,8 +208,8 @@ local function HideAlert() if alert then flash:Stop(); alert:Hide() end end
 local function ShowAlert(lines)
     BuildAlert()
     local size = R.Get("size")
-    alert.title:SetFont(Font(), size + 6, "OUTLINE")
-    alert.text:SetFont(Font(), size, "OUTLINE")
+    CludesUI.Kit.Font(alert.title, size + 6, "essentials")
+    CludesUI.Kit.Font(alert.text, size, "essentials")
     alert.text:SetText(table.concat(lines, "\n"))
     alert:SetSize(math.max(alert.title:GetStringWidth(), alert.text:GetStringWidth()) + 16,
         alert.title:GetStringHeight() + alert.text:GetStringHeight() + 12)
@@ -410,7 +410,7 @@ local function Icon(i)
         if not self.slot then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetInventoryItem("player", self.slot)
-        GameTooltip:AddLine(CludesUI.L("You are wearing this."), 0.3, 0.79, 0.94)
+        GameTooltip:AddLine(CludesUI.L("You are wearing this."), CludesUI.Kit.Accent())
         GameTooltip:AddLine(CludesUI.L("Ctrl-click to hide it until you take it off."), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
@@ -500,7 +500,7 @@ local function TBuild()
 end
 local function TUpdate()
     if not tFrame then return end
-    tFrame.text:SetFont(Font(), T.Get("size"), "OUTLINE")
+    CludesUI.Kit.Font(tFrame.text, T.Get("size"), "essentials")
     local points
     if CludesUI._unlockActive and T.Enabled() then
         points = 2

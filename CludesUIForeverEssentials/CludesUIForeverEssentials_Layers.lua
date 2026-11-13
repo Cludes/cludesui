@@ -19,7 +19,7 @@ local Get, Enabled = F.Get, F.Enabled
 local SEEN_MAX = 12
 local NPC_KINDS = { Creature = true, Vehicle = true }
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 local function LayerOf(guid)
@@ -87,7 +87,7 @@ end
 local function Update()
     if not frame then return end
     if not Enabled() or (inside and not CludesUI._unlockActive) then frame:Hide() return end
-    frame.text:SetFont(Font(), Get("size"), "OUTLINE")
+    CludesUI.Kit.Font(frame.text, Get("size"), "essentials")
     frame.text:SetText(Text())
     frame:SetSize(frame.text:GetStringWidth() + 16, Get("size") + 8)
     frame:Show()
@@ -168,7 +168,7 @@ local function Build()
         if #order == 0 then GameTooltip:AddLine("Target or mouse over an NPC to read your layer.", 0.6, 0.6, 0.6, true) end
         for _, e in ipairs(order) do
             if e.key == layer then
-                GameTooltip:AddDoubleLine(Label(e.key, e.zone), "You are here", 1, 1, 1, 0.3, 0.79, 0.94)
+                GameTooltip:AddDoubleLine(Label(e.key, e.zone), "You are here", 1, 1, 1, CludesUI.Kit.Accent())
             else
                 local ago = time() - e.at
                 GameTooltip:AddDoubleLine(Label(e.key, e.zone), ago < 60 and (ago .. "s ago") or (math.floor(ago / 60) .. "m ago"), 1, 1, 1, 0.6, 0.6, 0.6)

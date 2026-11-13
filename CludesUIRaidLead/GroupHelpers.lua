@@ -31,7 +31,7 @@ local DROP_TEXT = {
 }
 local GATEWAY_SHARD = 188152
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath(nil) end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 function ns.HelperSettings()
@@ -172,14 +172,14 @@ ev:SetScript("OnEvent", function(_, event)
         gate = Movable("CludesUIRaidLeadGateway", "gatewayPos", "Gateway Usable", 666, 160, 24,
             { "CENTER", UIParent, "CENTER", 0, -60 }, function() return not ns.HelperSettings().gateway end)
         gateText = gate:CreateFontString(nil, "OVERLAY")
-        gateText:SetFont(Font(), 18, "OUTLINE")
+        CludesUI.Kit.Font(gateText, 18, nil)
         gateText:SetPoint("CENTER")
         gateText:SetText("|cffb070ffGateway usable|r")
         gate:Hide()
         stats = Movable("CludesUIRaidLeadStats", "statsPos", "Stats", 667, 110, 60,
             { "RIGHT", UIParent, "RIGHT", -260, 0 }, function() return not ns.HelperSettings().stats end)
         statsText = stats:CreateFontString(nil, "OVERLAY")
-        statsText:SetFont(Font(), 12, "OUTLINE")
+        CludesUI.Kit.Font(statsText, 12, nil)
         statsText:SetPoint("TOPLEFT")
         statsText:SetJustifyH("LEFT")
         stats:Hide()

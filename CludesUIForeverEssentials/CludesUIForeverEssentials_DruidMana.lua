@@ -21,7 +21,7 @@ local LINE_H = 3
 local holder, bar, line, text
 local lastMana, ruleEnds
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 local function UsesMana()
@@ -40,17 +40,15 @@ end
 local function Build()
     if holder then return holder end
     holder = CreateFrame("Frame", "CludesUIManaBar", UIParent)
-    bar = CreateFrame("StatusBar", nil, holder, "BackdropTemplate")
+    bar = CreateFrame("StatusBar", nil, holder)
     bar:SetPoint("TOPLEFT")
     bar:SetPoint("TOPRIGHT")
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local c = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
     bar:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
-    bar:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    bar:SetBackdropColor(0.05, 0.06, 0.08, 0.85)
-    bar:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Panel(bar, 0.85)
     text = bar:CreateFontString(nil, "OVERLAY")
-    text:SetFont(Font(), 10, "OUTLINE")
+    CludesUI.Kit.Font(text, 10, "essentials")
     text:SetPoint("CENTER")
     line = CreateFrame("StatusBar", nil, holder)
     line:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")

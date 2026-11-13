@@ -24,7 +24,7 @@ local F = module.Feature("bis", { enabled = true, tooltip = true, alert = true }
 local Get = F.Get
 
 local function Say(text) CludesUI.Print("|cff4cc9f0BiS:|r " .. text) end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 local SLOTS = {   -- inventory slot, name, in window order
@@ -141,7 +141,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if type(id) ~= "number" or Secret(id) then return end
         local slot = module.BisSlotOf(id)
         if slot then
-            tooltip:AddLine(("|cffff9933*|r |cff4cc9f0BiS for %s|r%s"):format(SLOT_NAME[slot],
+            tooltip:AddLine(("|cffff9933*|r %sBiS for %s|r%s"):format(CludesUI.Kit.AccentHex(), SLOT_NAME[slot],
                 module.Owned(id) and "  |cff60d080(yours)|r" or ""))
         end
     end)
@@ -200,23 +200,21 @@ local win, rows = nil, {}
 
 local function Build()
     if win then return end
-    win = CreateFrame("Frame", "CludesUIBiSWindow", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIBiSWindow", UIParent)
     win:SetSize(420, 74 + #SLOTS * ROW_H)
     win:SetPoint("CENTER", 0, 40)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.95)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.95)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     win.title = win:CreateFontString(nil, "OVERLAY")
-    win.title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(win.title, 15, "essentials")
     win.title:SetPoint("TOPLEFT", 10, -8)
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    close:SetPoint("TOPRIGHT", -5, -5)
     win.hint = win:CreateFontString(nil, "OVERLAY")
-    win.hint:SetFont(Font(), 11, "")
+    CludesUI.Kit.Font(win.hint, 11, "essentials")
     win.hint:SetPoint("BOTTOMLEFT", 10, 8)
     win.hint:SetText("|cff9aa6b2Alt+Shift-click an item to add or remove it. Right-click a row to clear it.|r")
 
@@ -227,7 +225,7 @@ local function Build()
         r:RegisterForClicks("AnyUp")
         r.slot = s[1]
         r.label = r:CreateFontString(nil, "OVERLAY")
-        r.label:SetFont(Font(), 12, "")
+        CludesUI.Kit.Font(r.label, 12, "essentials")
         r.label:SetPoint("LEFT")
         r.label:SetWidth(70)
         r.label:SetJustifyH("LEFT")
@@ -237,7 +235,7 @@ local function Build()
         r.icon:SetPoint("LEFT", 74, 0)
         r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         r.text = r:CreateFontString(nil, "OVERLAY")
-        r.text:SetFont(Font(), 12, "")
+        CludesUI.Kit.Font(r.text, 12, "essentials")
         r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
         r.text:SetWidth(310)
         r.text:SetJustifyH("LEFT")
@@ -289,7 +287,7 @@ Refresh = function()
             r.text:SetText("|cff606870none picked|r")
         end
     end
-    win.title:SetText(("|cff4cc9f0Best in Slot|r  |cff9aa6b2%d of %d yours|r"):format(have, total))
+    win.title:SetText(("%sBest in Slot|r  |cff9aa6b2%d of %d yours|r"):format(CludesUI.Kit.AccentHex(), have, total))
 end
 
 function module.ShowBis()

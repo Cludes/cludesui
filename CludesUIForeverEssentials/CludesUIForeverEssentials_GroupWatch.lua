@@ -15,7 +15,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function AurasSecret() return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() end
 
@@ -200,8 +200,8 @@ local function PaintRows(entries)
         r:SetPoint("TOPLEFT", PAD, -PAD - (i - 1) * step)
         r:SetPoint("TOPRIGHT", -PAD, -PAD - (i - 1) * step)
         r:SetHeight(step)
-        r.name:SetFont(Font(), size, "OUTLINE")
-        r.pct:SetFont(Font(), size, "OUTLINE")
+        CludesUI.Kit.Font(r.name, size, "essentials")
+        CludesUI.Kit.Font(r.pct, size, "essentials")
         r.icon:SetSize(size, size)
         r.name:ClearAllPoints()
         r.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
@@ -291,10 +291,8 @@ HMApply = function()
         return
     end
     if not hmFrame then
-        hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent, "BackdropTemplate")
-        hmFrame:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-        hmFrame:SetBackdropColor(0.05, 0.06, 0.08, 0.75)
-        hmFrame:SetBackdropBorderColor(0, 0, 0, 1)
+        hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
+        CludesUI.Kit.Panel(hmFrame, 0.75)
     end
     for _, e in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do hmEvents:RegisterEvent(e) end
     wipe(list); wipe(tracked)
@@ -354,7 +352,7 @@ end
 
 local function Restyle()
     local size = PT.Get("size")
-    ptFrame.text:SetFont(Font(), size, "OUTLINE")
+    CludesUI.Kit.Font(ptFrame.text, size, "essentials")
     ptFrame.text:ClearAllPoints()
     if PT.Get("showIcon") then
         ptFrame.icon:SetSize(size + 12, size + 12)

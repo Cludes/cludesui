@@ -58,6 +58,7 @@ CludesUI_ProfileSync.lua
 CludesUI_RetailAtlas.lua
 CludesUI_BuffPresets.lua
 CludesUI_UICore.lua
+CludesUI_Kit.lua
 CludesUI_Ticker.lua
 CludesUI_Mouse.lua
 CludesUI_BlizzardParty.lua

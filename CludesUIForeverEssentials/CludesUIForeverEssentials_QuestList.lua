@@ -29,14 +29,14 @@ local F = module.Feature("questList", {
 local Get = F.Get
 local function On() return DF.Enabled() end
 
-local ACCENT = { 0.30, 0.79, 0.94 }
+local ACCENT = CludesUI.Kit.SyncAccent({})  -- refreshed on each draw
 local MUTED = { 0.6, 0.65, 0.7 }
 local GOLD = { 1, 0.82, 0 }
 local CHECK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
 local NONE = {}
 local function Muted(text) return "|cff9aa6b2" .. text .. "|r" end
 local function Secret(v) return issecretvalue ~= nil and issecretvalue(v) end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local SAME_MAPS = { [2665] = 2521 }
 local function SameMap(map) return map and (SAME_MAPS[map] or map) end
 
@@ -878,7 +878,7 @@ do
             local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item[LOOT_QUALITY]] or { r = 1, g = 1, b = 1 }
             local icon = C_Item.GetItemIconByID(item[LOOT_ID])
             local name = (icon and ("|T%s:14:14|t "):format(icon) or "") .. item[LOOT_NAME]
-                .. (item[LOOT_NEW] == 1 and " |cff4cc9f0(new in Forever)|r" or "")
+                .. (item[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
                 .. (R.Dropped(npc, item[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
             local chance = item[LOOT_CHANCE]
             tip:AddDoubleLine(name, chance >= 1 and ("%d%%"):format(math.floor(chance + 0.5)) or ("%.1f%%"):format(chance),
@@ -1028,13 +1028,11 @@ do
     end
 
     local function Build()
-        card = CreateFrame("Button", "CludesUIRareAlert", UIParent, "BackdropTemplate")
+        card = CreateFrame("Button", "CludesUIRareAlert", UIParent)
         card:SetSize(W, H)
         card:SetFrameStrata("HIGH")
         card:SetClampedToScreen(true)
-        card:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-        card:SetBackdropColor(0.06, 0.07, 0.09, 0.92)
-        card:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.9)
+        CludesUI.Kit.Panel(card, 0.92)
         card:RegisterForClicks("RightButtonUp")
         card:SetScript("OnClick", function(_, button) if button == "RightButton" then HideAlert() end end)
         card:SetScript("OnEnter", function()
@@ -1057,13 +1055,13 @@ do
         card.star:SetPoint("CENTER", card.model, "CENTER")
         card.star:SetAtlas("VignetteKill")
         card.name = card:CreateFontString(nil, "OVERLAY")
-        card.name:SetFont(Font(), 14, "OUTLINE")
+        CludesUI.Kit.Font(card.name, 14, "essentials")
         card.name:SetPoint("TOPLEFT", card.model, "TOPRIGHT", 8, -4)
         card.name:SetPoint("RIGHT", -8, 0)
         card.name:SetJustifyH("LEFT")
         card.name:SetWordWrap(false)
         card.detail = card:CreateFontString(nil, "OVERLAY")
-        card.detail:SetFont(Font(), 11, "")
+        CludesUI.Kit.Font(card.detail, 11, "essentials")
         card.detail:SetPoint("TOPLEFT", card.name, "BOTTOMLEFT", 0, -4)
         card.detail:SetPoint("RIGHT", -8, 0)
         card.detail:SetJustifyH("LEFT")
@@ -1315,6 +1313,7 @@ local function RareTip(npc)
 end
 
 local function DrawPins()
+    CludesUI.Kit.SyncAccent(ACCENT)
     ClearPins()
     if not PinsWanted() then return end
     local mapID = WorldMapFrame:GetMapID()
@@ -1396,7 +1395,7 @@ local tools = {}
 local STATE_COLOUR = { done = MUTED, log = GOLD, open = { 1, 1, 1 }, low = { 1, 0.5, 0.25 } }
 
 local function ZoneMenu(owner, zones, progress, choose)
-    MenuUtil.CreateContextMenu(owner, function(_, root)
+    CludesUI.Kit.ContextMenu(owner, function(_, root)
         root:CreateButton("Your zone", function() choose(nil) end)
         root:CreateButton("All zones", function() choose(false) end)
         for _, part in ipairs({ { 0, "Eastern Kingdoms" }, { 1, "Kalimdor" } }) do
@@ -1423,34 +1422,20 @@ local function Tools(parent, key, onZone, onSearch, getSearch, extra)
     local t = tools[key]
     if not t then
         t = {}
-        t.zone = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+        t.zone = CludesUI.Kit.Button(parent, "", 90, 22, nil, { key = "essentials" })
         t.zone:SetSize(200, 22)
         t.zone:SetPoint("LEFT", parent, "LEFT", 0, 0)
         t.zone:SetScript("OnClick", function(self) onZone(self) end)
-        t.search = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
-        t.search:SetSize(160, 20)
-        t.search:SetAutoFocus(false)
-        t.search:SetPoint("LEFT", t.zone, "RIGHT", 14, 0)
-        t.search:SetScript("OnTextChanged", function(self, user) if user then onSearch(self:GetText()) end end)
-        t.search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-        t.hint = t.search:CreateFontString(nil, "OVERLAY")
-        t.hint:SetFont(Font(), 11, "")
-        t.hint:SetTextColor(unpack(MUTED))
-        t.hint:SetPoint("LEFT", 4, 0)
-        t.hint:SetText("Search")
-        t.check = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-        t.check:SetSize(22, 22)
-        t.check:SetPoint("LEFT", t.search, "RIGHT", 10, 0)
-        t.check.text = t.check:CreateFontString(nil, "OVERLAY")
-        t.check.text:SetFont(Font(), 11, "")
-        t.check.text:SetPoint("LEFT", t.check, "RIGHT", 2, 0)
-        t.check:SetScript("OnClick", function(self) extra.set(self:GetChecked()) end)
+        t.search = CludesUI.Kit.Input(parent, 160, 22, "Search", "essentials")
+        t.search:SetPoint("LEFT", t.zone, "RIGHT", 10, 0)
+        t.search:HookScript("OnTextChanged", function(self, user) if user then onSearch(self:GetText()) end end)
+        t.check = CludesUI.Kit.Check(parent, "", function(self) extra.set(self:GetChecked()) end, "essentials")
+        t.check:SetPoint("LEFT", t.search, "RIGHT", 12, 0)
         tools[key] = t
     end
     t.zone:Show(); t.search:Show(); t.check:Show()
-    t.check.text:SetText(extra.label)
+    t.check:SetLabel(extra.label)
     t.check:SetChecked(extra.get())
-    t.hint:SetShown(getSearch() == "" and not t.search:HasFocus())
     return t
 end
 
@@ -1513,6 +1498,7 @@ local function DrawQuestZone(R2, zone)
 end
 
 local function DrawQuests(R2, parent)
+    CludesUI.Kit.SyncAccent(ACCENT)
     Q.Refresh()
     local t = Tools(parent, "quests", function(self)
         ZoneMenu(self, Q.Zones(), Q.ZoneProgress, function(zone) questZone = zone; module.DiscoveryRedraw() end)
@@ -1571,6 +1557,7 @@ local function RareRow(R2, npc)
 end
 
 local function DrawRares(R2, parent)
+    CludesUI.Kit.SyncAccent(ACCENT)
     local t = Tools(parent, "rares", function(self)
         ZoneMenu(self, R.Zones(), R.ZoneProgress, function(zone) rareZone = zone; module.DiscoveryRedraw() end)
     end, function(text) rareSearch = text; module.DiscoveryRedraw() end, function() return rareSearch end,

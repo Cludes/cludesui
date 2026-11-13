@@ -19,7 +19,7 @@ local CHEAPEST = 6
 local frame, text
 local warnedAt
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 --- free, total for general bags.
 local function Space()
@@ -56,7 +56,7 @@ local function Paint()
     if not frame then return end
     if not Enabled() then frame:Hide(); return end
     local free, total = Space()
-    local colour = free == 0 and "|cffff4040" or (free < total / 10 and "|cffffb040" or "|cff4cc9f0")
+    local colour = free == 0 and "|cffff4040" or (free < total / 10 and "|cffffb040" or CludesUI.Kit.AccentHex())
     text:SetText(("%sBags %d/%d|r"):format(colour, free, total))
     frame:SetWidth(text:GetStringWidth() + 8)
     frame:Show()
@@ -75,12 +75,12 @@ local function Build()
     frame = CreateFrame("Button", "CludesUIBagSpace", UIParent)
     frame:SetSize(90, 20)
     text = frame:CreateFontString(nil, "OVERLAY")
-    text:SetFont(Font(), 13, "OUTLINE")
+    CludesUI.Kit.Font(text, 13, "essentials")
     text:SetPoint("CENTER")
     frame:SetScript("OnClick", function() if ToggleAllBags then ToggleAllBags() end end)
     frame:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine(CludesUI.L("Cheapest items you carry"), 0.3, 0.79, 0.94)
+        GameTooltip:AddLine(CludesUI.L("Cheapest items you carry"), CludesUI.Kit.Accent())
         local list = Cheapest()
         if #list == 0 then GameTooltip:AddLine(CludesUI.L("Nothing a vendor buys."), 0.6, 0.6, 0.6) end
         for i = 1, math.min(CHEAPEST, #list) do

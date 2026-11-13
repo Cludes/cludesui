@@ -40,7 +40,7 @@ local holder
 local buttons = {}
 local dirty = true
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
@@ -90,7 +90,7 @@ local function Button(i)
     b.cd = CreateFrame("Cooldown", nil, b, "CooldownFrameTemplate")
     b.cd:SetAllPoints()
     b.count = b:CreateFontString(nil, "OVERLAY")
-    b.count:SetFont(Font(), 11, "OUTLINE")
+    CludesUI.Kit.Font(b.count, 11, "essentials")
     b.count:SetPoint("BOTTOMRIGHT", -2, 2)
     b:SetScript("OnEnter", function(self)
         if not self.itemID then return end

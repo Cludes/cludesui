@@ -40,7 +40,7 @@ end
 local QUEST_ID, QUEST_NAME, QUEST_LEVEL, QUEST_SIDE, QUEST_SHARE, QUEST_WHERE = 1, 2, 3, 4, 5, 6
 local NOTYET_NAME, NOTYET_ICON = 7, 6
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -- Quest lists and levels, matched to dungeons by instance map or name.
 local prepared
@@ -102,7 +102,7 @@ local Show
 
 local function Text(parent, size, colour)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(Font(), size, "")
+    CludesUI.Kit.Font(fs, size, "essentials")
     fs:SetJustifyH("LEFT")
     if colour then fs:SetTextColor(unpack(colour)) end
     return fs
@@ -110,25 +110,24 @@ end
 
 local function Build()
     if win then return end
-    win = CreateFrame("Frame", "CludesUIJournal", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIJournal", UIParent)
     win:SetSize(W, H)
     win:SetPoint("CENTER", 0, 30)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.96)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.96)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     local title = Text(win, 15)
-    title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff4cc9f0Dungeon Journal|r")
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    title:SetText("Dungeon Journal")
+    CludesUI.Kit.AccentText(title)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    close:SetPoint("TOPRIGHT", -5, -5)
 
     -- Dungeon list
-    list = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
+    list = (CludesUI.Kit.Scroll(win))
     list:SetPoint("TOPLEFT", 8, -32)
     list:SetSize(LIST_W - 24, H - 42)
     local lc = CreateFrame("Frame", nil, list)
@@ -137,7 +136,7 @@ local function Build()
     list.child = lc
 
     -- Detail
-    scroll = CreateFrame("ScrollFrame", nil, win, "UIPanelScrollFrameTemplate")
+    scroll = (CludesUI.Kit.Scroll(win))
     scroll:SetPoint("TOPLEFT", LIST_W + 4, -32)
     scroll:SetSize(W - LIST_W - 36, H - 42)
     content = CreateFrame("Frame", nil, scroll)
@@ -172,7 +171,8 @@ local function FillList()
             b.lv:SetPoint("RIGHT", -2, 0)
             b.sel = b:CreateTexture(nil, "BACKGROUND")
             b.sel:SetAllPoints()
-            b.sel:SetColorTexture(0.30, 0.79, 0.94, 0.18)
+            local ar, ag, ab = CludesUI.Kit.Accent()
+            b.sel:SetColorTexture(ar, ag, ab, 0.18)
             local hl = b:CreateTexture(nil, "HIGHLIGHT")
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, 0.06)
@@ -182,7 +182,7 @@ local function FillList()
         b.dungeon = not d.heading and d or nil
         b:EnableMouse(not d.heading)
         if d.heading then
-            b.text:SetText("|cff4cc9f0" .. d.heading .. "|r")
+            b.text:SetText(CludesUI.Kit.AccentHex() .. d.heading .. "|r")
             b.lv:SetText("")
         elseif d.faction then
             b.text:SetText(d.name .. (d.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
@@ -242,7 +242,7 @@ end
 local y
 local function Line(text, size, indent, colour)
     local r = Acquire()
-    r.text:SetFont(Font(), size or 12, size and size >= 14 and "OUTLINE" or "")
+    CludesUI.Kit.Font(r.text, size or 12, "essentials")
     r.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
     r.text:SetPoint("TOPLEFT", r, "TOPLEFT", indent or 0, 0)
     r.text:SetWidth(content:GetWidth() - (indent or 0) - 8)
@@ -270,7 +270,7 @@ local function ItemLine(id, chance)
     if module.BisSlotOf and module.BisSlotOf(id) then
         extra[#extra + 1] = (module.Owned and module.Owned(id)) and "|cffff9933*|r |cff60d080BiS, yours|r" or "|cffff9933* BiS|r"
     end
-    r.text:SetFont(Font(), 12, "")
+    CludesUI.Kit.Font(r.text, 12, "essentials")
     r.text:SetTextColor(1, 1, 1)
     r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
     r.text:SetWidth(content:GetWidth() - 50)
@@ -321,7 +321,8 @@ local function PinEnter(pin)
     local tag = BossTag(boss)
     if tag then GameTooltip:AddLine(TAG_WORDS[tag], 0.6, 0.65, 0.7) end
     local tip = boss.npc and J.Tips and J.Tips[boss.npc]
-    if tip then GameTooltip:AddLine(tip, 0.3, 0.79, 0.94, true) end
+    local ar, ag, ab = CludesUI.Kit.Accent()
+    if tip then GameTooltip:AddLine(tip, ar, ag, ab, true) end
     GameTooltip:Show()
 end
 
@@ -338,7 +339,7 @@ local function NewMapPin(canvas)
     pin.plate:SetColorTexture(0.06, 0.07, 0.09, 1)
     Round(pin, pin.plate)
     pin.text = pin:CreateFontString(nil, "OVERLAY")
-    pin.text:SetFont(Font(), 13, "OUTLINE")
+    CludesUI.Kit.Font(pin.text, 13, "essentials")
     pin.text:SetPoint("CENTER")
     pin:SetScript("OnEnter", PinEnter)
     pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -358,19 +359,18 @@ local function MapBuild()
         v.floor = v.floors[(at - 1 + by) % #v.floors + 1]
         v:Draw()
     end
-    v.down = CreateFrame("Button", nil, v.bar, "UIPanelButtonTemplate")
+    v.down = CludesUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
     v.down:SetSize(24, 20); v.down:SetPoint("LEFT", 0, 0); v.down:SetText("<")
     v.down:SetScript("OnClick", function() Step(-1) end)
     v.name = Text(v.bar, 12)
     v.name:SetPoint("LEFT", v.down, "RIGHT", 8, 0)
-    v.up = CreateFrame("Button", nil, v.bar, "UIPanelButtonTemplate")
+    v.up = CludesUI.Kit.Button(v.bar, "", 90, 22, nil, { key = "essentials" })
     v.up:SetSize(24, 20); v.up:SetPoint("LEFT", v.name, "RIGHT", 8, 0); v.up:SetText(">")
     v.up:SetScript("OnClick", function() Step(1) end)
-    v.canvas = CreateFrame("Frame", nil, content, "BackdropTemplate")
+    v.canvas = CreateFrame("Frame", nil, content)
     v.canvas:SetSize(width, v.h)
     v.canvas:SetClipsChildren(true)
-    v.canvas:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    v.canvas:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Border(v.canvas, 0, 0, 0, 1)
     v.picture = v.canvas:CreateTexture(nil, "BACKGROUND")
     v.picture:SetAllPoints()
     v.door = CreateFrame("Frame", nil, v.canvas)
@@ -379,7 +379,7 @@ local function MapBuild()
     v.door.icon:SetAllPoints()
     v.door.icon:SetAtlas("dungeon")
     v.door.text = v.door:CreateFontString(nil, "OVERLAY")
-    v.door.text:SetFont(Font(), 12, "OUTLINE")
+    CludesUI.Kit.Font(v.door.text, 12, "essentials")
     v.door.text:SetPoint("LEFT", v.door, "RIGHT", 2, 0)
     v.door.text:SetText("Entrance")
 
@@ -410,7 +410,7 @@ local function MapBuild()
                     self.pins[used] = pin
                     pin.boss, pin.number = boss, numbered and number or nil
                     pin.text:SetText(pin.number or TAG_SHORT[tag] or "")
-                    if numbered then pin.ring:SetColorTexture(0.30, 0.79, 0.94, 1) else pin.ring:SetColorTexture(0.6, 0.65, 0.7, 1) end
+                    if numbered then pin.ring:SetColorTexture(CludesUI.Kit.Accent()) else pin.ring:SetColorTexture(0.6, 0.65, 0.7, 1) end
                     self:At(pin, spot[2], spot[3])
                     pin:Show()
                 end
@@ -497,7 +497,7 @@ Show = function(d)
         elseif GetFactionInfoByID then
             standing = select(3, GetFactionInfoByID(dd.id))
         end
-        Line(dd.name .. (dd.tab == "pvp" and "  |cffff6060PvP|r" or ""), 16, 0, { 0.30, 0.79, 0.94 })
+        Line(dd.name .. (dd.tab == "pvp" and "  |cffff6060PvP|r" or ""), 16, 0, CludesUI.Kit.SyncAccent({}))
         local facts = {}
         if dd.zone then facts[#facts + 1] = dd.zone end
         if standing then facts[#facts + 1] = "You: " .. (_G["FACTION_STANDING_LABEL" .. standing] or standing) end
@@ -539,7 +539,7 @@ Show = function(d)
         return
     end
 
-    Line(dd.name .. (dd.raid and "  |cffffb040Raid|r" or ""), 16, 0, { 0.30, 0.79, 0.94 })
+    Line(dd.name .. (dd.raid and "  |cffffb040Raid|r" or ""), 16, 0, CludesUI.Kit.SyncAccent({}))
     local facts = {}
     if dd.levels then facts[#facts + 1] = "Levels " .. LevelText(dd) end
     if dd.zone then facts[#facts + 1] = dd.zone end

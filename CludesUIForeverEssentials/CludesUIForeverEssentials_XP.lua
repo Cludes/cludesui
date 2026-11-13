@@ -13,7 +13,7 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 local HOUR, MINUTE = 3600, 60
 
@@ -89,7 +89,7 @@ local function Btn(parent, text, tip, fn)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(16, 16)
     b.t = b:CreateFontString(nil, "OVERLAY")
-    b.t:SetFont(Font(), 12, "OUTLINE")
+    CludesUI.Kit.Font(b.t, 12, "essentials")
     b.t:SetPoint("CENTER")
     b.t:SetText(text)
     b:SetScript("OnClick", fn)
@@ -121,11 +121,9 @@ end
 
 local function Build()
     if card then return card end
-    card = CreateFrame("Frame", "CludesUIXPTicker", UIParent, "BackdropTemplate")
+    card = CreateFrame("Frame", "CludesUIXPTicker", UIParent)
     card:SetSize(190, 60)
-    card:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    card:SetBackdropColor(0.05, 0.06, 0.08, 0.75)
-    card:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Panel(card, 0.75)
     card.rate = card:CreateFontString(nil, "OVERLAY")
     card.rate:SetPoint("TOPLEFT", 8, -6)
     card.info = card:CreateFontString(nil, "OVERLAY")
@@ -156,8 +154,8 @@ Update = function()
         return
     end
     local size = X.Get("size")
-    card.rate:SetFont(Font(), size + 4, "OUTLINE")
-    card.info:SetFont(Font(), size - 3, "")
+    CludesUI.Kit.Font(card.rate, size + 4, "essentials")
+    CludesUI.Kit.Font(card.info, size - 3, "essentials")
     local now = GetTime()
     local elapsed = now - sessionStart - pausedTotal - (paused and now - pausedAt or 0)
     local rate = sessionXP / (math.max(elapsed, MINUTE) / HOUR)
@@ -168,7 +166,7 @@ Update = function()
     end
     local arrow = trendDir > 0 and " |cff60d080+|r" or (trendDir < 0 and " |cffff6060-|r" or "")
     if sessionXP > 0 then
-        card.rate:SetText(("|cff4cc9f0%s|r |cff9aa6b2xp/hr|r%s"):format(Short(rate), arrow))
+        card.rate:SetText(("%s%s|r |cff9aa6b2xp/hr|r%s"):format(CludesUI.Kit.AccentHex(), Short(rate), arrow))
     else
         card.rate:SetText("|cff9aa6b2no XP yet|r")
     end
@@ -334,14 +332,12 @@ local function Row(i)
     r.name:SetPoint("LEFT")
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
-    r.bar = CreateFrame("StatusBar", nil, r, "BackdropTemplate")
+    r.bar = CreateFrame("StatusBar", nil, r)
     r.bar:SetPoint("BOTTOMRIGHT")
     r.bar:SetMinMaxValues(0, 1)
     r.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    r.bar:SetStatusBarColor(0.30, 0.79, 0.94)
-    r.bar:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    r.bar:SetBackdropColor(0.05, 0.06, 0.08, 0.85)
-    r.bar:SetBackdropBorderColor(0, 0, 0, 1)
+    r.bar:SetStatusBarColor(CludesUI.Kit.Accent())
+    CludesUI.Kit.Panel(r.bar, 0.85)
     r.text = r.bar:CreateFontString(nil, "OVERLAY")
     r.text:SetPoint("CENTER")
     rows[i] = r
@@ -383,9 +379,9 @@ local function GRefresh()
         r:SetPoint("TOPLEFT", 0, -(i - 1) * (rowH + 2))
         r:SetPoint("TOPRIGHT", 0, -(i - 1) * (rowH + 2))
         r:SetHeight(rowH)
-        r.name:SetFont(Font(), size, "OUTLINE")
+        CludesUI.Kit.Font(r.name, size, "essentials")
         r.name:SetWidth(nameW - 4)
-        r.text:SetFont(Font(), size - 1, "OUTLINE")
+        CludesUI.Kit.Font(r.text, size - 1, "essentials")
         r.bar:SetPoint("TOPLEFT", nameW, 0)
         local c = m.class and RAID_CLASS_COLORS[m.class]
         r.name:SetText(m.name)

@@ -80,19 +80,18 @@ end
 local box, num, label
 local rot              -- { names, mine, count, casting }
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath(nil) end
 
 local function Build()
     if box then return end
-    box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent, "BackdropTemplate")
+    box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
     box:SetSize(W, H)
-    box:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    box:SetBackdropBorderColor(0, 0, 0, 1)
+    CludesUI.Kit.Panel(box)
     num = box:CreateFontString(nil, "OVERLAY")
-    num:SetFont(Font(), 20, "OUTLINE")
+    CludesUI.Kit.Font(num, 20, nil)
     num:SetPoint("LEFT", 8, 0)
     label = box:CreateFontString(nil, "OVERLAY")
-    label:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(label, 15, nil)
     label:SetPoint("LEFT", num, "RIGHT", 10, 0)
     box:Hide()
     ns.ApplyKickPosition()
@@ -117,16 +116,16 @@ local function Paint()
     local display = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
     num:SetText(rot.count)
     if rot.count == rot.mine and rot.casting then
-        box:SetBackdropColor(0.80, 0.15, 0.12, 0.95)
+        box._kitBg:SetColorTexture(0.80, 0.15, 0.12, 0.95)
         label:SetText("KICK NOW")
     elseif rot.count == rot.mine then
-        box:SetBackdropColor(0.85, 0.65, 0.10, 0.95)
+        box._kitBg:SetColorTexture(0.85, 0.65, 0.10, 0.95)
         label:SetText("You are next")
     elseif nextUp == rot.mine then
-        box:SetBackdropColor(0.10, 0.11, 0.14, 0.92)
+        box._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
         label:SetText(display .. "  |cffffd060then you|r")
     else
-        box:SetBackdropColor(0.10, 0.11, 0.14, 0.92)
+        box._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
         label:SetText(display)
     end
     box:Show()

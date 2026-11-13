@@ -31,7 +31,7 @@ local ARRIVAL, DEPARTURE = "arrival", "departure"
 local SAME_MAP = { [2665] = 2521 }
 local function SameMap(map) return SAME_MAP[map] or map end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -------------------------------------------------------------------------------
 --  Times (server clock, per realm)
@@ -607,10 +607,8 @@ end
 
 local function HudBuild()
     if hud then return hud end
-    hud = CreateFrame("Frame", "CludesUIShipTimer", UIParent, "BackdropTemplate")
-    hud:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    hud:SetBackdropColor(0.05, 0.06, 0.08, 0.7)
-    hud:SetBackdropBorderColor(0, 0, 0, 1)
+    hud = CreateFrame("Frame", "CludesUIShipTimer", UIParent)
+    CludesUI.Kit.Panel(hud, 0.7)
     hud.names = hud:CreateFontString(nil, "OVERLAY")
     hud.names:SetPoint("TOPLEFT", 8, -6)
     hud.names:SetJustifyH("LEFT")
@@ -639,8 +637,8 @@ function module.TransportDrawZone()
     end
     if #names == 0 then names[1], times[1] = "Boat to Booty Bay", Tinted("Departs in 0:42", DOCKED) end
     local size = Get("size")
-    hud.names:SetFont(Font(), size, "OUTLINE")
-    hud.times:SetFont(Font(), size, "OUTLINE")
+    CludesUI.Kit.Font(hud.names, size, "essentials")
+    CludesUI.Kit.Font(hud.times, size, "essentials")
     hud.names:SetText(table.concat(names, "\n"))
     hud.times:SetText(table.concat(times, "\n"))
     hud:SetSize(hud.names:GetStringWidth() + 12 + hud.times:GetStringWidth() + 16, hud.names:GetStringHeight() + 12)

@@ -22,7 +22,7 @@ local cache = {}          -- guid -> { name, class, level, ilvl, bare = {...}, w
 local queue, asking = {}, nil
 local win, rows = nil, {}
 
-local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
+local function Font() return CludesUI.GetFontPath("essentials") end
 local function Secret(v) return issecretvalue and issecretvalue(v) end
 
 local function Members()
@@ -117,22 +117,21 @@ local ROW_H = 18
 
 local function Build()
     if win then return end
-    win = CreateFrame("Frame", "CludesUIGroupInspect", UIParent, "BackdropTemplate")
+    win = CreateFrame("Frame", "CludesUIGroupInspect", UIParent)
     win:SetSize(460, 60)
     win:SetPoint("CENTER", 0, 120)
-    win:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
-    win:SetBackdropColor(0.06, 0.07, 0.09, 0.94)
-    win:SetBackdropBorderColor(0.30, 0.79, 0.94, 0.8)
+    CludesUI.Kit.Panel(win, 0.94)
     win:SetMovable(true); win:EnableMouse(true); win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
     win:SetFrameStrata("HIGH")
     local title = win:CreateFontString(nil, "OVERLAY")
-    title:SetFont(Font(), 15, "OUTLINE")
+    CludesUI.Kit.Font(title, 15, "essentials")
     title:SetPoint("TOPLEFT", 10, -8)
-    title:SetText("|cff4cc9f0Group Inspect|r")
-    local close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", 2, 2)
+    title:SetText("Group Inspect")
+    CludesUI.Kit.AccentText(title)
+    local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
+    close:SetPoint("TOPRIGHT", -5, -5)
     win:Hide()
     tinsert(UISpecialFrames, "CludesUIGroupInspect")
 end
@@ -143,7 +142,7 @@ local function Row(i)
         r = CreateFrame("Button", nil, win)
         r:SetSize(440, ROW_H)
         r.text = r:CreateFontString(nil, "OVERLAY")
-        r.text:SetFont(Font(), 12, "")
+        CludesUI.Kit.Font(r.text, 12, "essentials")
         r.text:SetPoint("LEFT")
         r.text:SetJustifyH("LEFT")
         r.text:SetWidth(440)
