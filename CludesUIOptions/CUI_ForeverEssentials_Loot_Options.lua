@@ -43,7 +43,7 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
     -- Auction prices count only while the tracker or an item price shows, and
     -- only with the price addon's API at hand.
     local function auctionSource()
-        return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionSource()
+        return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() ~= nil
     end
     local function pricesUnused()
         return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice")))
@@ -53,7 +53,7 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
     end
     local function auctionTip()
         if off() then return "Loot Feed" end
-        if not auctionSource() then return "This option requires Auctionator, or Auction Prices in Forever Tools > General." end
+        if not auctionSource() then return "This option requires Auctionator to be loaded." end
         return "This option requires Gold per Hour Tracker or Show Item Price to be enabled."
     end
     local function style()
@@ -203,9 +203,9 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
         Toggle("showPrice", "Show Item Price", "Shows what the looted stack is worth.",
             function()
                 LF.RefreshPreview()
-                CludesUI:RefreshPage()  -- Use Auction Prices greys with it
+                CludesUI:RefreshPage()  -- Use Auctionator Prices greys with it
             end, itemsOff, "Items"),
-        Toggle("auctionPrices", "Use Auction Prices", "Prices items from Auctionator scans, or CludesUI's Auction Prices when Auctionator is not loaded.",
+        Toggle("auctionPrices", "Use Auctionator Prices", "Prices items from Auctionator scans.",
             LF.RefreshPreview, auctionOff, auctionTip)
     );  y = y - h
 
