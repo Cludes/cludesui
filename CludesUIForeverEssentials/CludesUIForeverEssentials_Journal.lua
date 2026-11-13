@@ -12,6 +12,8 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 --                       items have a star; ones you own say so.
 --    A quest            ticked when handed in, marked while in your log; only
 --                       your side's quests are listed.
+--    The map          each floor's art with a pin per boss (hover for it)
+--                       and the entrance.
 --  The data (bosses, loot, chances, tips, quests) is in JournalData.lua;
 --  this file is the window around it.
 -------------------------------------------------------------------------------
@@ -278,6 +280,200 @@ local function ItemLine(id, chance)
     y = y + 20
 end
 
+-------------------------------------------------------------------------------
+--  Dungeon map: the dungeon's art per floor, a pin per boss (numbered in kill
+--  order; R, O, Q, C for rares, optional and quest bosses and chests) and the
+--  entrance. Hover a pin for its boss. Several floors: < and > step through
+--  those that hold a boss or the entrance, in the order you walk them.
+-------------------------------------------------------------------------------
+local MAP_PIN, MAP_ENTRANCE = 26, 26
+local ROUND_MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
+local TAG_SHORT = { rare = "R", optional = "O", quest = "Q", chest = "C" }
+local TAG_WORDS = { rare = "Rare", optional = "Optional", quest = "Quest boss", chest = "Chest" }
+local mapView
+
+local function BossTag(boss)
+    return boss.rare and "rare" or boss.optional and "optional" or boss.quest and "quest" or boss.chest and "chest" or nil
+end
+
+local function BossKey(boss) return boss.npc or (boss.chest and -boss.chest) or nil end
+
+local function Walked(map, n)
+    for i, f in ipairs(map.order or {}) do if f == n then return i end end
+    return n
+end
+
+local function FloorName(map, n)
+    return map.names and map.names[n] or ("Floor %d"):format(Walked(map, n))
+end
+
+local function Round(frame, tex)
+    local mask = frame:CreateMaskTexture()
+    mask:SetAllPoints(tex)
+    mask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    tex:AddMaskTexture(mask)
+end
+
+local function PinEnter(pin)
+    local boss = pin.boss
+    GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
+    GameTooltip:SetText((pin.number and (pin.number .. ". ") or "") .. boss.name, 1, 1, 1)
+    local tag = BossTag(boss)
+    if tag then GameTooltip:AddLine(TAG_WORDS[tag], 0.6, 0.65, 0.7) end
+    local tip = boss.npc and J.Tips and J.Tips[boss.npc]
+    if tip then GameTooltip:AddLine(tip, 0.3, 0.79, 0.94, true) end
+    GameTooltip:Show()
+end
+
+local function NewMapPin(canvas)
+    local pin = CreateFrame("Frame", nil, canvas)
+    pin:SetSize(MAP_PIN, MAP_PIN)
+    pin:SetMouseMotionEnabled(true)
+    pin.ring = pin:CreateTexture(nil, "BORDER")
+    pin.ring:SetPoint("CENTER")
+    pin.ring:SetSize(MAP_PIN + 4, MAP_PIN + 4)
+    Round(pin, pin.ring)
+    pin.plate = pin:CreateTexture(nil, "ARTWORK")
+    pin.plate:SetAllPoints()
+    pin.plate:SetColorTexture(0.06, 0.07, 0.09, 1)
+    Round(pin, pin.plate)
+    pin.text = pin:CreateFontString(nil, "OVERLAY")
+    pin.text:SetFont(Font(), 13, "OUTLINE")
+    pin.text:SetPoint("CENTER")
+    pin:SetScript("OnEnter", PinEnter)
+    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return pin
+end
+
+local function MapBuild()
+    if mapView then return mapView end
+    local v = { pins = {}, floors = {} }
+    local width = W - LIST_W - 44
+    v.w, v.h = width, math.floor(width * 2 / 3)
+    v.bar = CreateFrame("Frame", nil, content)
+    v.bar:SetSize(width, 22)
+    local function Step(by)
+        local at = 1
+        for i, f in ipairs(v.floors) do if f == v.floor then at = i end end
+        v.floor = v.floors[(at - 1 + by) % #v.floors + 1]
+        v:Draw()
+    end
+    v.down = CreateFrame("Button", nil, v.bar, "UIPanelButtonTemplate")
+    v.down:SetSize(24, 20); v.down:SetPoint("LEFT", 0, 0); v.down:SetText("<")
+    v.down:SetScript("OnClick", function() Step(-1) end)
+    v.name = Text(v.bar, 12)
+    v.name:SetPoint("LEFT", v.down, "RIGHT", 8, 0)
+    v.up = CreateFrame("Button", nil, v.bar, "UIPanelButtonTemplate")
+    v.up:SetSize(24, 20); v.up:SetPoint("LEFT", v.name, "RIGHT", 8, 0); v.up:SetText(">")
+    v.up:SetScript("OnClick", function() Step(1) end)
+    v.canvas = CreateFrame("Frame", nil, content, "BackdropTemplate")
+    v.canvas:SetSize(width, v.h)
+    v.canvas:SetClipsChildren(true)
+    v.canvas:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    v.canvas:SetBackdropBorderColor(0, 0, 0, 1)
+    v.picture = v.canvas:CreateTexture(nil, "BACKGROUND")
+    v.picture:SetAllPoints()
+    v.door = CreateFrame("Frame", nil, v.canvas)
+    v.door:SetSize(MAP_ENTRANCE, MAP_ENTRANCE)
+    v.door.icon = v.door:CreateTexture(nil, "ARTWORK")
+    v.door.icon:SetAllPoints()
+    v.door.icon:SetAtlas("dungeon")
+    v.door.text = v.door:CreateFontString(nil, "OVERLAY")
+    v.door.text:SetFont(Font(), 12, "OUTLINE")
+    v.door.text:SetPoint("LEFT", v.door, "RIGHT", 2, 0)
+    v.door.text:SetText("Entrance")
+
+    function v:At(frame, x, y)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", self.canvas, "TOPLEFT", x * self.w, -y * self.h)
+    end
+
+    function v:Draw()
+        local map = self.map
+        local image = map.images and map.images[self.floor]
+        if not image and map.image then image = self.floor > 1 and map.image .. self.floor or map.image end
+        self.picture:SetTexture(image, nil, nil, "TRILINEAR")
+        self.picture:SetTexCoord(0, 1, 0, map.imageBottom or (683 / 1024))
+        for _, pin in ipairs(self.pins) do pin:Hide() end
+        local used = 0
+        for _, wing in ipairs(self.dungeon.wings or {}) do
+            local number = 0
+            for _, boss in ipairs(wing.bosses or {}) do
+                local tag = BossTag(boss)
+                local numbered = not (tag or boss.trash)
+                if numbered then number = number + 1 end
+                local key = BossKey(boss)
+                local spot = key and map.pins[key]
+                if spot and spot[1] == self.floor then
+                    used = used + 1
+                    local pin = self.pins[used] or NewMapPin(self.canvas)
+                    self.pins[used] = pin
+                    pin.boss, pin.number = boss, numbered and number or nil
+                    pin.text:SetText(pin.number or TAG_SHORT[tag] or "")
+                    if numbered then pin.ring:SetColorTexture(0.30, 0.79, 0.94, 1) else pin.ring:SetColorTexture(0.6, 0.65, 0.7, 1) end
+                    self:At(pin, spot[2], spot[3])
+                    pin:Show()
+                end
+            end
+        end
+        local door = map.entrance
+        local here = door and door[1] == self.floor
+        self.door:SetShown(here or false)
+        if here then self:At(self.door, door[2], door[3]) end
+        self.bar:SetShown(#self.floors > 1)
+        self.name:SetText(FloorName(map, self.floor))
+    end
+
+    function v:Open(dungeon)
+        local map = J.Maps[dungeon.key]
+        self.dungeon, self.map = dungeon, map
+        wipe(self.floors)
+        local seen = {}
+        local function Offer(spot)
+            if type(spot) == "table" and spot[1] <= map.floors and not seen[spot[1]] then
+                seen[spot[1]] = true
+                self.floors[#self.floors + 1] = spot[1]
+            end
+        end
+        Offer(map.entrance)
+        for _, wing in ipairs(dungeon.wings or {}) do
+            for _, boss in ipairs(wing.bosses or {}) do
+                local key = BossKey(boss)
+                Offer(key and map.pins[key])
+            end
+        end
+        table.sort(self.floors, function(a, b) return Walked(map, a) < Walked(map, b) end)
+        if #self.floors == 0 then
+            for n = 1, map.order and #map.order or map.floors do self.floors[n] = map.order and map.order[n] or n end
+        end
+        self.floor = self.floors[1]
+    end
+
+    mapView = v
+    return v
+end
+
+local function MapHide()
+    if mapView then mapView.bar:Hide(); mapView.canvas:Hide() end
+end
+
+-- The map at y in the detail pane; returns the new y.
+local function MapShow(d, at)
+    if not (J.Maps and J.Maps[d.key]) then MapHide() return at end
+    local v = MapBuild()
+    if v.dungeon ~= d then v:Open(d) end
+    v:Draw()
+    if v.bar:IsShown() then
+        v.bar:ClearAllPoints()
+        v.bar:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -at)
+        at = at + 26
+    end
+    v.canvas:ClearAllPoints()
+    v.canvas:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -at)
+    v.canvas:Show()
+    return at + v.h + 8
+end
+
 local SIDE = { Alliance = "A", Horde = "H" }
 
 Show = function(d)
@@ -288,6 +484,7 @@ Show = function(d)
     FillList()
     for i = 1, used do pool[i]:Hide() end
     used, y = 0, 0
+    MapHide()
     local dd = current
     if not dd then return end
 
@@ -351,6 +548,7 @@ Show = function(d)
     Line(table.concat(facts, "   "), 12, 0, { 0.6, 0.65, 0.7 })
     if dd.note then Line(dd.note, 12, 0, { 1, 0.8, 0.3 }) end
     y = y + 6
+    y = MapShow(dd, y)
 
     local n = 0
     for _, wing in ipairs(dd.wings or {}) do

@@ -38,6 +38,8 @@ for f in sorted(glob.glob(os.path.join(data, "Factions", "*.lua"))):
 parts.append(body(os.path.join(data, "Tips.lua"), heads))
 parts.append(body(os.path.join(data, "Quests.lua"), heads))
 parts.append(body(os.path.join(data, "Items.lua"), heads))
+parts.append(body(os.path.join(data, "Maps.lua"), heads).replace(
+    "NaowhForever_DungeonJournal\\\\Media\\\\Maps", "CludesUIForeverEssentials\\\\Media\\\\Maps"))
 text = "\n".join(parts)
 assert "NaowhForever" not in re.sub(r"--[^\n]*", "", text), "a namespace line was left"
 open(out, "w", encoding="utf-8", newline="\r\n").write(text)
