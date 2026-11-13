@@ -1105,6 +1105,83 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  HEALER MANA AND PET TRACKER
+    ---------------------------------------------------------------------------
+    local GW = CludesUI._GroupWatch
+    if GW then
+        local hm, pt = GW.healer, GW.pet
+        local function Set(f, key, v) f.Cfg()[key] = v; f.Apply() end
+        local function hmOff() return not hm.Get("enabled") end
+        local function ptOff() return not pt.Get("enabled") end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "HEALER MANA", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_HealerMana", disabled = hmOff, disabledTooltip = "Healer Mana" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Healer Mana",
+              tooltip = "Your group's healers and their mana, lowest first, with a cup beside anyone drinking. Move it in Layout Mode.",
+              getValue = function() return not hmOff() end,
+              setValue = function(v) Set(hm, "enabled", v and true or false) end },
+            { type = "dropdown", text = "Show In", disabled = hmOff,
+              values = { instance = "Dungeons & Raids", group = "Any Group" }, order = { "instance", "group" },
+              getValue = function() return hm.Get("where") end,
+              setValue = function(v) Set(hm, "where", v) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Show Yourself", disabled = hmOff,
+              getValue = function() return hm.Get("showSelf") end,
+              setValue = function(v) Set(hm, "showSelf", v and true or false) end },
+            { type = "toggle", text = "Mark Drinking", disabled = hmOff,
+              getValue = function() return hm.Get("drinking") end,
+              setValue = function(v) Set(hm, "drinking", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Width", min = 100, max = 300, step = 5, isPercent = false, disabled = hmOff,
+              getValue = function() return hm.Get("width") end,
+              setValue = function(v) Set(hm, "width", math.floor(v + 0.5)) end },
+            { type = "slider", text = "Text Size", min = 8, max = 20, step = 1, isPercent = false, disabled = hmOff,
+              getValue = function() return hm.Get("size") end,
+              setValue = function(v) Set(hm, "size", math.floor(v + 0.5)) end }
+        );  y = y - h
+
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        hdr, h = W:SectionHeader(parent, "PET TRACKER", y);  y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_PetTracker", disabled = ptOff, disabledTooltip = "Pet Tracker" })
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Pet Tracker",
+              tooltip = "A warning while a hunter or warlock has no pet out. A warlock who sacrificed their demon, and a hunter with Lone Wolf, are left alone.",
+              getValue = function() return not ptOff() end,
+              setValue = function(v) Set(pt, "enabled", v and true or false) end },
+            { type = "toggle", text = "Warn While Passive", disabled = ptOff,
+              getValue = function() return pt.Get("passive") end,
+              setValue = function(v) Set(pt, "passive", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Warn on Low Pet Health", disabled = ptOff,
+              getValue = function() return pt.Get("lowHealth") end,
+              setValue = function(v) Set(pt, "lowHealth", v and true or false) end },
+            { type = "slider", text = "Low Health Below", min = 5, max = 90, step = 1, isPercent = false, disabled = ptOff,
+              getValue = function() return pt.Get("lowBelow") end,
+              setValue = function(v) Set(pt, "lowBelow", math.floor(v + 0.5)) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Only In Combat", disabled = ptOff,
+              getValue = function() return pt.Get("combatOnly") end,
+              setValue = function(v) Set(pt, "combatOnly", v and true or false) end },
+            { type = "toggle", text = "Only In Dungeons & Raids", disabled = ptOff,
+              getValue = function() return pt.Get("instanceOnly") end,
+              setValue = function(v) Set(pt, "instanceOnly", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Hide While Mounted", disabled = ptOff,
+              getValue = function() return pt.Get("hideMounted") end,
+              setValue = function(v) Set(pt, "hideMounted", v and true or false) end },
+            { type = "toggle", text = "Show Icon", disabled = ptOff,
+              getValue = function() return pt.Get("showIcon") end,
+              setValue = function(v) Set(pt, "showIcon", v and true or false) end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  DUNGEON JOURNAL
     ---------------------------------------------------------------------------
     if CludesUI._Journal then
