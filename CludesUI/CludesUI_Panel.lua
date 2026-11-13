@@ -914,14 +914,13 @@ local function BuildSidebar()
         return g
     end
 
-    -- Horizontal gradient glow on a sidebar button, anchored top+bottom so it scales
-    -- with the row height (group headers and child rows differ).
+    -- Flat wash across a sidebar button, anchored top+bottom so it scales with
+    -- the row height (group headers and child rows differ).
     local function MakeNavGradient(btn, r, g, b, startA)
         local tex = btn:CreateTexture(nil, "BACKGROUND")
         tex:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
         tex:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
-        tex:SetColorTexture(r, g, b, 1)
-        tex:SetGradient("HORIZONTAL", CreateColor(r, g, b, startA), CreateColor(r, g, b, 0))
+        tex:SetColorTexture(r, g, b, startA)
         tex:Hide()
         return tex
     end
@@ -937,13 +936,13 @@ local function BuildSidebar()
         btn._indicator:Hide()
         RegAccent({ type="solid", obj=btn._indicator, a=1 })
 
-        btn._glow    = MakeNavGradient(btn, EG.r, EG.g, EG.b, 0.15)
-        RegAccent({ type="gradient", obj=btn._glow, startA=0.15 })
+        btn._glow    = MakeNavGradient(btn, EG.r, EG.g, EG.b, 0.13)
+        RegAccent({ type="solid", obj=btn._glow, a=0.13 })
         btn._glowTop = MakeNavEdgeLine(btn, "TOP")
         btn._glowBot = MakeNavEdgeLine(btn, "BOTTOM")
 
         local hR, hG, hB = 0.85, 0.95, 0.90
-        btn._hoverGlow = MakeNavGradient(btn, hR, hG, hB, 0.03)
+        btn._hoverGlow = MakeNavGradient(btn, hR, hG, hB, 0.04)
         btn._hoverIndicator = SolidTex(btn, "ARTWORK", hR, hG, hB, 0.25)
         btn._hoverIndicator:SetWidth(3)
         btn._hoverIndicator:SetPoint("TOPLEFT", btn, "TOPLEFT", -1, 0)
@@ -2899,7 +2898,7 @@ local function BuildFooter(rightW, rightX)
         btn:SetFrameLevel(parent:GetFrameLevel() + 1)
         local bg = SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, .92)
         bg:SetAllPoints()
-        local brd = CludesUI.MakeRoundedBorder(btn, brdR, brdG, brdB, brdA, bg)
+        local brd = CludesUI.MakeRoundedBorder(btn, brdR, brdG, brdB, brdA, bg, 2)
         local lbl = MakeFont(btn, 13, nil, textR, textG, textB)
         lbl:SetAlpha(textA); lbl:SetPoint("CENTER"); lbl:SetText(CludesUI.L(label))
         btn._label = lbl
@@ -2925,11 +2924,11 @@ local function BuildFooter(rightW, rightX)
         return btn
     end
 
-    local FOOTER_BTN_W, FOOTER_BTN_H = 180, 36
-    local FOOTER_BTN_GAP = 20   -- gap between Reset and Reload
-    local DONE_BTN_W = 160      -- Done button width
+    local FOOTER_BTN_W, FOOTER_BTN_H = 150, 30
+    local FOOTER_BTN_GAP = 10   -- gap between Reset and Reload
+    local DONE_BTN_W = 120      -- Done button width
     local FOOTER_PAD = 24       -- symmetric inset from left/right edges
-    local FOOTER_Y   = 24       -- vertical offset from bottom
+    local FOOTER_Y   = 27       -- vertical offset from bottom (centres the 30px buttons where the 36px ones sat)
 
     -- Reset button  (left side, FOOTER_PAD from left edge). Plugin and other addons'
     -- pages only: the suite's own resets are in Global Settings' Reset CUI Module
@@ -3124,7 +3123,7 @@ local function BuildFooter(rightW, rightX)
         btn:SetFrameLevel(footerFrame:GetFrameLevel() + 1)
         local bg = SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, .92)
         bg:SetAllPoints()
-        local brd = CludesUI.MakeRoundedBorder(btn, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.7, bg)
+        local brd = CludesUI.MakeRoundedBorder(btn, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.7, bg, 2)
         local lbl = MakeFont(btn, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
         lbl:SetAlpha(0.7); lbl:SetPoint("CENTER"); lbl:SetText(CludesUI.L("Close"))
         -- Hover animation reads from CLUDES_GREEN live
@@ -3199,13 +3198,29 @@ CreateTabButton = function(index, name)
         btn:SetHeight(TAB_BAR_H)
         btn:SetFrameLevel(tabBar:GetFrameLevel() + 1)
 
-        local label = MakeFont(btn, 16, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        -- A tab is a squared chip, 6px inside the bar top and bottom: a faint
+        -- plate always, and for the active tab an accent wash with an accent cap
+        -- along its top edge.
+        local chip = SolidTex(btn, "BACKGROUND", 1, 1, 1, 0.045)
+        chip:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, -6)
+        chip:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 6)
+        btn._chip = chip
+
+        local fill = SolidTex(btn, "BORDER", CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.16)
+        fill:SetAllPoints(chip)
+        fill:Hide()
+        btn._fill = fill
+        RegAccent({ type="solid", obj=fill, a=0.16 })
+
+        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
         label:SetPoint("CENTER", 0, 0)
         btn._label = label
 
-        -- Teal underline for active tab
+        -- Accent cap on the active tab (kept under the old field name).
         local underline = SolidTex(btn, "ARTWORK", CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        underline:SetPoint("BOTTOM", btn, "BOTTOM", 0, 0)
+        underline:SetHeight(2)
+        underline:SetPoint("TOPLEFT", chip, "TOPLEFT", 0, 0)
+        underline:SetPoint("TOPRIGHT", chip, "TOPRIGHT", 0, 0)
         btn._underline = underline
         RegAccent({ type="solid", obj=underline, a=1 })
 
@@ -3240,9 +3255,9 @@ CreateTabButton = function(index, name)
     label:SetAlpha(1)
 
     local textW = label:GetStringWidth() or 60
-    btn:SetWidth(textW + 30)
-    btn._underline:SetSize(textW + 14, 2)
+    btn:SetWidth(textW + 28)
     btn._underline:Hide()
+    btn._fill:Hide()
     btn:ClearAllPoints()
     btn:Show()
 
@@ -3261,7 +3276,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
     for i, name in ipairs(pageNames) do
         local btn = CreateTabButton(i, name)
         btn:SetPoint("BOTTOMLEFT", tabBar, "BOTTOMLEFT", xOff, 0)
-        xOff = xOff + btn:GetWidth() + 6
+        xOff = xOff + btn:GetWidth() + 4
         tabBar._tabButtons[i] = btn
         -- Disable tab if in disabledPages list
         if disabledSet[name] then
@@ -3394,11 +3409,10 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         local x = CONTENT_PAD
         for _, b in ipairs(self._tabButtons) do
             local tw = b._label:GetStringWidth() or 60
-            b:SetWidth(tw + 30)
-            if b._underline then b._underline:SetWidth(tw + 14) end
+            b:SetWidth(tw + 28)
             b:ClearAllPoints()
             b:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT", x, 0)
-            x = x + b:GetWidth() + 6
+            x = x + b:GetWidth() + 4
         end
     end)
 end
@@ -3406,13 +3420,15 @@ end
 UpdateTabHighlight = function(selectedName)
     for _, btn in ipairs(tabBar._tabButtons) do
         if btn._disabled then
-            -- disabled tab: keep dimmed, no underline
+            -- disabled tab: keep dimmed, no accent
         elseif btn._name == selectedName then
             btn._label:SetTextColor(1, 1, 1, 1)
             btn._underline:Show()
+            btn._fill:Show()
         else
             btn._label:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
             btn._underline:Hide()
+            btn._fill:Hide()
         end
     end
 end
@@ -4128,8 +4144,6 @@ UpdateSidebarHighlight = function(selectedFolder)
         if folder == selectedFolder then
             btn._indicator:Show()
             btn._glow:Show()
-            btn._glowTop:Show()
-            btn._glowBot:Show()
             btn._label:SetTextColor(NAV_SELECTED_TEXT.r, NAV_SELECTED_TEXT.g, NAV_SELECTED_TEXT.b, NAV_SELECTED_TEXT.a)
             if btn._icon then
                 btn._icon:SetTexture(btn._iconOff)
