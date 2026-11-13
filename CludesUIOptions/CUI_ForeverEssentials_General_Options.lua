@@ -1105,6 +1105,41 @@ _G._CUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
     end
 
     ---------------------------------------------------------------------------
+    --  PLAYER HISTORY
+    ---------------------------------------------------------------------------
+    local PH = CludesUI._PlayerHistory
+    if PH then
+        local function Set(key, v) PH.Cfg()[key] = v; PH.Apply() end
+        local function pOff() return not PH.Get("enabled") end
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:SectionHeader(parent, "PLAYER HISTORY", y);  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "toggle", text = "Player History",
+              tooltip = "Remembers the players you group with on this computer: how often, the dungeons and raids together, and your last sessions. /chistory lists them. Right-click a player for Player Note to tag them and write a note.",
+              getValue = function() return not pOff() end,
+              setValue = function(v) Set("enabled", v and true or false) end },
+            { type = "toggle", text = "Record Chats", disabled = pOff,
+              tooltip = "Also keeps your last whispers and group chat lines with each player.",
+              getValue = function() return PH.Get("chats") end,
+              setValue = function(v) Set("chats", v and true or false) end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "slider", text = "Forget After (days)", min = 7, max = 365, step = 1, isPercent = false, disabled = pOff,
+              getValue = function() return PH.Get("days") end,
+              setValue = function(v) PH.Cfg().days = math.floor(v + 0.5) end },
+            { type = "toggle", text = "Notes on Tooltips",
+              getValue = function() return PH.Get("tooltip") end,
+              setValue = function(v) PH.Cfg().tooltip = v and true or false end }
+        );  y = y - h
+        _, h = W:DualRow(parent, y,
+            { type = "labeledButton", text = "Player History", buttonText = "Open", width = 90,
+              onClick = function() PH.Show() end },
+            { type = "labeledButton", text = "Clear History (keeps notes)", buttonText = "Clear", width = 90,
+              onClick = function() PH.Clear("history") end }
+        );  y = y - h
+    end
+
+    ---------------------------------------------------------------------------
     --  BOAT AND ZEPPELIN TIMERS
     ---------------------------------------------------------------------------
     local TR2 = CludesUI._Transport
