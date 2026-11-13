@@ -488,7 +488,8 @@ end
 -- health text keeps its own inline budget.
 ns.RF_NAME_WIDTH_FRACTION = 1.0
 
--- Display name for a unit. Nickname sources in order: Northern Sky Raid Tools (NSAPI), MethodInternal
+-- Display name for a unit. Nickname sources in order: CludesUI's own (Raid Lead nicknames,
+-- CludesUI.GetNickname), then other addons' lists for players with none: Northern Sky Raid Tools (NSAPI), MethodInternal
 -- (EasyNicknameAPI), TimelineReminders, the Liquid addon (LiquidAPI), RakGaming Aliases
 -- (RG_UnitName), then CustomNames; falls back to the short character name. NSAPI
 -- gets our addon key "CUI" (it has a dedicated per-addon setting + CUI_NICKNAME_TOGGLE callback):
