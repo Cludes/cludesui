@@ -438,16 +438,10 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -------------------------------------------------------------------
-        --  TOP SECTION: one row, Reset CUI Module Settings | Optimize My FPS
-        --  and Graphics | Uninstall CUI. While a graphics backup exists the
-        --  Optimize card restores it instead.
+        --  The actions Maintenance (at the foot of the page) runs: Reset CUI
+        --  Module Settings, Optimize My FPS and Graphics (Restore while a
+        --  graphics backup exists) and Uninstall CUI.
         -------------------------------------------------------------------
-        local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
-        -- Red for stop (Reset ALL, Uninstall, Restore), CludesUI's own green
-        -- (#4cc9f0) for go (Optimize and its link): fixed, never the theme accent.
-        local WARN = { r = 0.9, g = 0.3, b = 0.3 }
-        local GO = { r = 0x0c / 255, g = 0xd2 / 255, b = 0x9d / 255 }
-
         -- Reset ALL's wipe: every CUI addon back to its defaults.
         local function ResetAllNow()
             -- Nuclear wipe: same logic as the beta-exit popup
@@ -590,41 +584,10 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        -- The first card's two forms: Optimize, or Restore while a backup exists
-        -- (restore given: that form, else the current one).
+        -- A saved graphics backup means Optimize has run: Maintenance offers Restore.
         local function HasGfxBackup() return (CludesUIDB and CludesUIDB.gfxBackup) ~= nil end
-        local function GfxCardContent(restore)
-            if restore == nil then restore = HasGfxBackup() end
-            if restore then
-                return MEDIA_ICONS .. "undo.png", CludesUI.L("Restore My Graphics Settings"),
-                    CludesUI.L("Put back your graphics from before optimizing.")
-            end
-            return MEDIA_ICONS .. "optimize.png", CludesUI.L("Optimize My FPS and Graphics"),
-                CludesUI.L("Tune graphics for higher FPS and clarity.")
-        end
-
-        -- One row of plain text buttons: Reset ALL, then in the middle Optimize
-        -- (a boxed button, with its "What Does This Do?" link under it) or
-        -- Restore (plain and red like the others), then Uninstall.
-        local GFX_GAP = 8
-
-        -- "What Does This Do?": what Optimize changes. Built first, so the
-        -- card's footer can take its measured height.
-        local infoBtn = CreateFrame("Button", nil, parent)
-        infoBtn:SetFrameLevel(parent:GetFrameLevel() + 5)
-        local infoH
-        do
-            local EG = GO
-            local infoFS = infoBtn:CreateFontString(nil, "OVERLAY")
-            infoFS:SetFont(CludesUI.EXPRESSWAY, 12, CludesUI.GetFontOutlineFlag())
-            infoFS:SetTextColor(EG.r, EG.g, EG.b, 0.70)
-            infoFS:SetText(CludesUI.L("What Does This Do?"))
-            infoFS:SetPoint("TOP")
-            infoH = math.ceil(infoFS:GetStringHeight())
-            infoBtn:SetSize(infoFS:GetStringWidth() + 10, infoH)
-            infoBtn:SetScript("OnEnter", function() infoFS:SetTextColor(EG.r, EG.g, EG.b, 1) end)
-            infoBtn:SetScript("OnLeave", function() infoFS:SetTextColor(EG.r, EG.g, EG.b, 0.70) end)
-            -- Three parts, each its own translation.
+        -- What Optimize changes, for Maintenance's Details button.
+        local function ShowOptimizeInfo()
             local CHANGES = "What we change:\n\n"
                 .. "Shadow Quality - Fair (balanced quality/FPS)\n"
                 .. "Liquid Detail - Disabled\n"
@@ -644,52 +607,13 @@ initFrame:SetScript("OnEvent", function(self)
                 .. "Contrast - Boosted by +10 (if currently 55 or below)\n"
                 .. "Enable Reverb - Disabled (spell and interrupt audio cues stay crisp)\n\n"
                 .. "These settings prioritize frame rate and visual clarity over environmental detail. Textures stay high quality so your character and the world still look perfect."
-            infoBtn:SetScript("OnClick", function()
-                CludesUI:ShowInfoPopup({
-                    title = "FPS & Graphics Optimization",
-                    content = CludesUI.L("This feature optimizes your in-game graphics settings to give you the best combination of high FPS and visual clarity.")
-                        .. "\n\n" .. CludesUI.L("After optimizing, the button changes to 'Restore My Graphics Settings', which reverts every change.")
-                        .. "\n\n\n" .. CludesUI.L(CHANGES),
-                })
-            end)
+            CludesUI:ShowInfoPopup({
+                title = "FPS & Graphics Optimization",
+                content = CludesUI.L("This feature optimizes your in-game graphics settings to give you the best combination of high FPS and visual clarity.")
+                    .. "\n\n" .. CludesUI.L("After optimizing, the button changes to 'Restore My Graphics Settings', which reverts every change.")
+                    .. "\n\n\n" .. CludesUI.L(CHANGES),
+            })
         end
-
-        -- "What Does This Do?" explains Optimize, so it and its gap exist only
-        -- in the Optimize form: under Restore the row has no footer and the
-        -- page below moves up. A click that changes the form rebuilds the
-        -- page for it. Its text keeps one width for both forms.
-        local showInfo = not HasGfxBackup()
-        local gfxIcon, gfxTitle, gfxDesc = GfxCardContent()
-        local _, altTitle, altDesc = GfxCardContent(showInfo)
-        local cards
-        y, cards = CludesUI.BuildActionCardRow(parent, y, {
-            -- A menu of ALL Settings and each module's own reset (CludesUI_Panel.lua).
-            { icon = MEDIA_ICONS .. "sync.png", accent = WARN,
-              title = CludesUI.L("Reset CUI Module Settings"),
-              desc = CludesUI.L("Pick a module, or ALL, to return to defaults."),
-              onClick = function(card) CludesUI._ShowModuleResetMenu(card, ConfirmResetAll) end },
-            { icon = gfxIcon, title = gfxTitle, desc = gfxDesc,
-              hero = showInfo, accent = showInfo and GO or WARN,
-              sizeAlso = { altTitle, altDesc },
-              onClick = function()
-                  local had = HasGfxBackup()
-                  if had then RestoreGfxSettings() else ApplyOptimizedGfx() end
-                  if HasGfxBackup() ~= had then CludesUI:RefreshPage(true) end
-              end },
-            -- power.png's glyph fills its whole canvas: drawn smaller, it matches sync.png.
-            { icon = MEDIA_ICONS .. "power.png", accent = WARN, iconSize = 22,
-              title = CludesUI.L("Uninstall CUI"), desc = CludesUI.L("Revert CUI's changes and disable."),
-              onClick = ConfirmUninstall },
-        }, { inline = true, footer = showInfo and (GFX_GAP + infoH) or nil })
-        local gfxCard = cards[2]
-        -- The link rides the card: clearing the page search shows every
-        -- top-level page frame again, which would bring it back over Restore.
-        infoBtn:SetParent(gfxCard)
-        infoBtn:SetFrameLevel(gfxCard:GetFrameLevel() + 5)
-        infoBtn:SetShown(showInfo)
-        CludesUI.RegisterWidgetRefresh(function() gfxCard:SetCardContent(GfxCardContent()) end)
-        PP.Point(infoBtn, "TOP", gfxCard, "BOTTOM", 0, -GFX_GAP)
-        y = y - 6
 
         -------------------------------------------------------------------
         --  DISPLAY
@@ -701,9 +625,24 @@ initFrame:SetScript("OnEvent", function(self)
             themeValues[name] = name
         end
 
-        -- Row 1: UI Accent Color | CUI Options Theme
+        -- Row 1: CUI Options Theme | UI Accent Color (the accent follows the theme)
         local themeRow
         themeRow, h = W:DualRow(parent, y,
+            { type="dropdown", text="CUI Options Theme",
+              values=themeValues,
+              order=CludesUI.THEME_ORDER,
+              getValue=function()
+                return CludesUI.GetActiveTheme()
+              end,
+              setValue=function(v)
+                CludesUI.SetActiveTheme(v)
+                -- Re-resolve the accent so the sidebar highlight tracks the theme.
+                if CludesUI.RefreshAccent then
+                    CludesUI.RefreshAccent()  -- ApplyAccentLive already refreshes the page
+                else
+                    CludesUI:RefreshPage()
+                end
+              end },
             { type="multiSwatch", text="UI Accent Color",
               tooltip="Sets the accent color used across all CludesUI elements (tabs, glows, highlights, borders). Defaults to your theme color.",
               swatches = {
@@ -746,27 +685,12 @@ initFrame:SetScript("OnEvent", function(self)
                   refreshAlpha = function()
                       return (select(1, CludesUI.GetActiveAccentState())) and 0.3 or 1
                   end },
-              } },
-            { type="dropdown", text="CUI Options Theme",
-              values=themeValues,
-              order=CludesUI.THEME_ORDER,
-              getValue=function()
-                return CludesUI.GetActiveTheme()
-              end,
-              setValue=function(v)
-                CludesUI.SetActiveTheme(v)
-                -- Re-resolve the accent so the sidebar highlight tracks the theme.
-                if CludesUI.RefreshAccent then
-                    CludesUI.RefreshAccent()  -- ApplyAccentLive already refreshes the page
-                else
-                    CludesUI:RefreshPage()
-                end
-              end }
+              } }
         );  y = y - h
 
-        -- Inline color swatch on CUI Options Theme (right region)
+        -- Inline color swatch on CUI Options Theme (left region)
         if not CludesUI._prebuilding then
-            local rightRgn = themeRow._rightRegion
+            local rightRgn = themeRow._leftRegion  -- the theme dropdown's slot
             local function isCustomColorOff()
                 return CludesUI.GetActiveTheme() ~= "Custom Color"
             end
@@ -1258,6 +1182,44 @@ initFrame:SetScript("OnEvent", function(self)
               end },
             swiftmendCfg
         ); y = y - h
+
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+
+        -------------------------------------------------------------------
+        --  MAINTENANCE: the account-wide actions, kept at the foot of the page
+        --  so they are at hand without being the first thing on it.
+        -------------------------------------------------------------------
+        _, h = W:SectionHeader(parent, "MAINTENANCE", y);  y = y - h
+        do
+            local restore = HasGfxBackup()
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton",
+                  text = restore and "Restore My Graphics Settings" or "Optimize My FPS and Graphics",
+                  buttonText = restore and "Restore" or "Optimize", width = 110,
+                  tooltip = restore and "Put back your graphics from before optimizing."
+                      or "Tune graphics for higher FPS and clarity. Details lists every change.",
+                  onClick = function()
+                      local had = HasGfxBackup()
+                      if had then RestoreGfxSettings() else ApplyOptimizedGfx() end
+                      if HasGfxBackup() ~= had then CludesUI:RefreshPage(true) end
+                  end },
+                { type = "labeledButton", text = "What Optimize Changes", buttonText = "Details", width = 110,
+                  tooltip = "Every graphics setting Optimize My FPS and Graphics changes, and why.",
+                  onClick = ShowOptimizeInfo }
+            );  y = y - h
+            _, h = W:DualRow(parent, y,
+                { type = "labeledButton", text = "Reset CUI Module Settings", buttonText = "Reset", width = 110,
+                  tooltip = "Pick a module, or ALL, to return to its defaults.",
+                  onClick = function()
+                      local foci = GetMouseFoci and GetMouseFoci()
+                      local anchor = (foci and foci[1]) or (GetMouseFocus and GetMouseFocus()) or UIParent
+                      CludesUI._ShowModuleResetMenu(anchor, ConfirmResetAll)
+                  end },
+                { type = "labeledButton", text = "Uninstall CUI", buttonText = "Uninstall", width = 110,
+                  tooltip = "Revert CUI's changes to your game settings, turn it off for every character and reload. Your profiles are kept.",
+                  onClick = ConfirmUninstall }
+            );  y = y - h
+        end
 
         _, h = W:Spacer(parent, y, 20);  y = y - h
 
