@@ -2475,11 +2475,19 @@ end
 -------------------------------------------------------------------------------
 --  Bar frame resolution  (works for both action bars and registered elements)
 -------------------------------------------------------------------------------
+-- A module's getFrame builds its frame on first use. An error in one must not
+-- end the position pass for every other module (it once stopped Unit Frames
+-- finishing its login), so it is reported and read as "no frame".
+UM.SafeGetFrame = function(elem, key)
+    local ok, frame = xpcall(elem.getFrame, geterrorhandler(), key)
+    if ok then return frame end
+end
+
 UM.GetBarFrame = function(barKey)
     -- Registered element?
     local elem = registeredElements[barKey]
     if elem and elem.getFrame then
-        return elem.getFrame(barKey)
+        return UM.SafeGetFrame(elem, barKey)
     end
     -- Action bars (BAR_LOOKUP has frameName + fallbackFrame)
     local info = BAR_LOOKUP[barKey]
@@ -2596,7 +2604,7 @@ local function ApplySavedPositions()
             elseif true then
             -- Let the addon initialize/build (CDM's BuildAllCDMBars); skip protected frames during combat to avoid ADDON_ACTION_BLOCKED
             if elem.applyPosition then
-                local apFrame = elem.getFrame and elem.getFrame(key)
+                local apFrame = elem.getFrame and UM.SafeGetFrame(elem, key)
                 if not inCombat or not apFrame or not apFrame:IsProtected() then
                     pcall(elem.applyPosition, key)
                 end

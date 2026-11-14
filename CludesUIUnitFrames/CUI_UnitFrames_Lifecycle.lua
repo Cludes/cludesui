@@ -87,10 +87,12 @@ local function EnableBody()
     -- Re-fire it now -- still inside the same PLAYER_LOGIN dispatch, so anchored unit
     -- frames are placed within the combat-reload pre-lockdown window. The pass is
     -- re-entrant by design (CDM and the PEW fallback both re-fire it).
+    -- The options page registers from SetupOptionsPanel: queue it first, so no
+    -- error in the shared position pass can leave Unit Frames without one.
+    C_Timer.After(0, SetupOptionsPanel)
     if CludesUI and CludesUI._applySavedPositions then
         CludesUI._applySavedPositions()
     end
-    C_Timer.After(0, SetupOptionsPanel)
     C_Timer.After(0, function()
         -- Restore the threat watchers saved enabled (nothing registers when off).
         ns.SyncPlayerThreat()

@@ -466,6 +466,10 @@ local function NewRows(content)
             r.text:SetWordWrap(true)
             r.right = r:CreateFontString(nil, "OVERLAY")
             r.right:SetJustifyH("RIGHT")
+            -- Fonts now: Acquire clears the right text before Line sizes it,
+            -- and the client refuses text on a FontString without a font.
+            CludesUI.Kit.Font(r.text, 12, "essentials")
+            CludesUI.Kit.Font(r.right, 11, "essentials")
             r.hl = r:CreateTexture(nil, "HIGHLIGHT")
             r.hl:SetAllPoints()
             r.hl:SetColorTexture(1, 1, 1, 0.05)

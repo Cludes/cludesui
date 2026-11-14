@@ -184,13 +184,16 @@ local function BuildAlert()
     if alert then return alert end
     alert = CreateFrame("Frame", "CludesUIRestock", UIParent)
     alert:SetSize(240, 60)
+    -- A font first: the client refuses text on a FontString without one.
     alert.title = alert:CreateFontString(nil, "OVERLAY")
     alert.title:SetPoint("TOP", 0, -4)
+    CludesUI.Kit.Font(alert.title, R.Get("size") + 6, "essentials")
     alert.title:SetTextColor(CludesUI.Kit.Accent())
     alert.title:SetText("Restock")
     alert.text = alert:CreateFontString(nil, "OVERLAY")
     alert.text:SetPoint("TOP", alert.title, "BOTTOM", 0, -4)
     alert.text:SetJustifyH("CENTER")
+    CludesUI.Kit.Font(alert.text, R.Get("size"), "essentials")
     flash = alert:CreateAnimationGroup()
     flash:SetLooping("BOUNCE")
     flash:SetScript("OnLoop", function(self)
@@ -203,7 +206,7 @@ local function BuildAlert()
     return alert
 end
 
-local function HideAlert() if alert then flash:Stop(); alert:Hide() end end
+local function HideAlert() if alert then if flash then flash:Stop() end; alert:Hide() end end
 
 local function ShowAlert(lines)
     BuildAlert()

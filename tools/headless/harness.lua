@@ -135,8 +135,13 @@ function methods.GetFrameLevel(o) return o.__v.FrameLevel or 1 end
 function methods.GetFrameStrata(o) return o.__v.FrameStrata or "MEDIUM" end
 function methods.GetDrawLayer(o) return o.__v.DrawLayer or "ARTWORK", 0 end
 function methods.GetText(o) return o.__v.Text end
-function methods.SetText(o, t) o.__v.Text = t ~= nil and tostring(t) or nil end
-function methods.SetFormattedText(o, f, ...) o.__v.Text = string.format(f, ...) end
+-- The client refuses text on a FontString that has no font yet.
+local function NeedFont(o, fn)
+    if o.__kind == "FontString" and not o.__v.Font then error("FontString:" .. fn .. "(): Font not set", 3) end
+end
+function methods.SetText(o, t) NeedFont(o, "SetText"); o.__v.Text = t ~= nil and tostring(t) or nil end
+function methods.SetFormattedText(o, f, ...) NeedFont(o, "SetFormattedText"); o.__v.Text = string.format(f, ...) end
+function methods.SetFontObject(o, f) o.__v.Font = o.__v.Font or { "Fonts/FRIZQT__.TTF", 12, "" } end
 function methods.GetStringWidth(o) return #(o.__v.Text or "") * 7 end
 function methods.GetUnboundedStringWidth(o) return #(o.__v.Text or "") * 7 end
 function methods.GetStringHeight() return 12 end
@@ -192,7 +197,12 @@ function methods.IsEventRegistered(o, e) return o.__events and o.__events[e] or 
 function methods.CreateTexture(o, name) local t = New("Texture", name, o); if name then realG[name] = t end; return t end
 function methods.CreateMaskTexture(o) return New("MaskTexture", nil, o) end
 function methods.CreateLine(o) return New("Line", nil, o) end
-function methods.CreateFontString(o, name) local t = New("FontString", name, o); if name then realG[name] = t end; return t end
+function methods.CreateFontString(o, name, layer, inherits)
+    local t = New("FontString", name, o)
+    if inherits then t.__v.Font = { "Fonts/FRIZQT__.TTF", 12, "" } end
+    if name then realG[name] = t end
+    return t
+end
 function methods.CreateAnimationGroup(o) return New("AnimationGroup", nil, o) end
 function methods.CreateAnimation(o, kind) return New(kind or "Animation", nil, o) end
 function methods.GetAnimations(o) return unpack(o.__children) end
