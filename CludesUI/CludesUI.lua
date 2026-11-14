@@ -216,8 +216,8 @@ local STYLE = {
     DD_BRD_HA = 0.30,                                      -- border alpha hovered
     DD_TXT_A = 0.50,                                       -- selected value text alpha (colour = white)
     DD_TXT_HA = 0.60,                                      -- selected value text alpha hovered
-    DD_ITEM_HL_A = 0.08,                                   -- menu item highlight alpha (hover)
-    DD_ITEM_SEL_A = 0.04,                                  -- menu item highlight alpha (active selection)
+    DD_ITEM_HL_A = 0.12,                                   -- menu item highlight alpha (hover)
+    DD_ITEM_SEL_A = 0.08,                                  -- menu item highlight alpha (active selection)
 
     -- Multi-widget layout  (dual = 2-up, triple = 3-up -- shared by all widget types)
     DUAL_ITEM_W = 350,                                     -- width of each item in a 2-up row

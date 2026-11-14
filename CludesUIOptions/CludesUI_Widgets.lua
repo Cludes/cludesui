@@ -544,6 +544,13 @@ local function BuildDropdownMenu(ddBtn, menuW, order, values, getValue, setValue
     local menuBg = SolidTex(menu, "BACKGROUND", mBgR, mBgG, mBgB, mBgA)
     menuBg:SetAllPoints()
     menu._ddBrd = MakeRoundedBorder(menu, mBrR, mBrG, mBrB, mBrA, menuBg, nil, true)
+    -- House look: an accent cap along the list's top edge.
+    do
+        local cap = menu:CreateTexture(nil, "OVERLAY", nil, 7)
+        cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+        local c = CludesUI.CLUDES_GREEN
+        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    end
 
     if _moSearchable then
         -- Options panel is Expressway-locked by design; CludesUI.EXPRESSWAY is locale-aware (CJK/Cyrillic get the system glyph font). The user's global font intentionally never restyles the settings UI.
@@ -946,7 +953,8 @@ local function BuildDropdownMenu(ddBtn, menuW, order, values, getValue, setValue
                 iNote:SetPoint("LEFT", iLbl, "RIGHT", 4, 0)
                 iNote:SetText(TR(noteText))
             end
-            local iHl = SolidTex(item, "ARTWORK", 1, 1, 1, 1); iHl:SetAlpha(0)
+            -- Hover and selection wash in the accent colour (house look).
+            local iHl = SolidTex(item, "ARTWORK", CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 1); iHl:SetAlpha(0)
             iHl:SetAllPoints()
             item._key, item._label, item._highlight, item._note = key, iLbl, iHl, iNote
             -- Full display name for the dropdown button label
