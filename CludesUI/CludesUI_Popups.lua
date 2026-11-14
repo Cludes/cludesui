@@ -386,10 +386,48 @@ local function ShowPopupCheckbox(popup, label, y)
     popup._cbRow:Show()
 end
 
+-- The house dialog look: an accent cap along the top, a header band behind
+-- the title (DIALOG_HEAD tall) and a footer band behind the buttons
+-- (DIALOG_FOOT tall), each with a hairline divider. Titles sit left in the
+-- header band, buttons right in the footer.
+local DIALOG_HEAD, DIALOG_FOOT, DIALOG_PAD = 40, 46, 18
+local function DressDialog(popup)
+    local function Tex(layer, sub, a)
+        local tx = popup:CreateTexture(nil, layer, nil, sub)
+        tx:SetColorTexture(1, 1, 1, a)
+        return tx
+    end
+    local head = Tex("BACKGROUND", 2, 0.035)
+    head:SetPoint("TOPLEFT"); head:SetPoint("TOPRIGHT"); head:SetHeight(DIALOG_HEAD)
+    local hl = Tex("ARTWORK", 0, 0.08)
+    hl:SetPoint("TOPLEFT", head, "BOTTOMLEFT"); hl:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT"); hl:SetHeight(1)
+    local foot = Tex("BACKGROUND", 2, 0.025)
+    foot:SetPoint("BOTTOMLEFT"); foot:SetPoint("BOTTOMRIGHT"); foot:SetHeight(DIALOG_FOOT)
+    local fl = Tex("ARTWORK", 0, 0.08)
+    fl:SetPoint("BOTTOMLEFT", foot, "TOPLEFT"); fl:SetPoint("BOTTOMRIGHT", foot, "TOPRIGHT"); fl:SetHeight(1)
+    local cap = popup:CreateTexture(nil, "ARTWORK", nil, 1)
+    cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+    local function Paint()
+        local c = CLUDES_GREEN
+        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    end
+    Paint()
+    popup:HookScript("OnShow", Paint)
+end
+
+-- A dialog title, left in the header band.
+local function PlaceDialogTitle(popup, title, w)
+    title:ClearAllPoints()
+    title:SetPoint("LEFT", popup, "TOPLEFT", DIALOG_PAD, -DIALOG_HEAD / 2)
+    title:SetWidth(w - 2 * DIALOG_PAD)
+    title:SetJustifyH("LEFT")
+    title:SetWordWrap(false)
+end
+
 local function CreateConfirmPopup()
     if confirmPopup then return confirmPopup end
 
-    local POPUP_W, POPUP_H = 390, 176
+    local POPUP_W, POPUP_H = 400, 186
 
     -- Full-screen dimming overlay
     local dimmer = CreateFrame("Frame", "CUIConfirmDimmer", UIParent)
@@ -432,17 +470,18 @@ local function CreateConfirmPopup()
     popup._brd = CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
     CludesUI.RoundBody(popup, popBgAtlas)
     CludesUI.RoundBody(popup, popBgOverlay)
+    DressDialog(popup)
 
-    -- Title
-    local title = MakeFont(popup, 16, "", 1, 1, 1)
-    title:SetPoint("TOP", popup, "TOP", 0, -20)
+    -- Title, left in the header band
+    local title = MakeFont(popup, 15, "", 1, 1, 1)
+    PlaceDialogTitle(popup, title, POPUP_W)
     popup._title = title
 
-    -- Message
+    -- Message, left-aligned under the header
     local msg = MakeFont(popup, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-    msg:SetPoint("TOP", title, "BOTTOM", 0, -10)
-    msg:SetWidth(POPUP_W - 60)
-    msg:SetJustifyH("CENTER")
+    msg:SetPoint("TOPLEFT", popup, "TOPLEFT", DIALOG_PAD, -(DIALOG_HEAD + 14))
+    msg:SetWidth(POPUP_W - 2 * DIALOG_PAD)
+    msg:SetJustifyH("LEFT")
     msg:SetWordWrap(true)
     msg:SetSpacing(4)
     popup._msg = msg
@@ -451,40 +490,41 @@ local function CreateConfirmPopup()
     local disc = popup:CreateFontString(nil, "OVERLAY")
     disc:SetFont(CludesUI.EXPRESSWAY, 11, "")
     disc:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a * 0.7)
-    disc:SetPoint("TOP", msg, "BOTTOM", 0, -8)
-    disc:SetWidth(POPUP_W - 60)
-    disc:SetJustifyH("CENTER")
+    disc:SetPoint("TOPLEFT", msg, "BOTTOMLEFT", 0, -8)
+    disc:SetWidth(POPUP_W - 2 * DIALOG_PAD)
+    disc:SetJustifyH("LEFT")
     disc:SetWordWrap(true)
     disc:Hide()
     popup._disclaimer = disc
 
     -- Scale/resolution mismatch warning (red, below disclaimer)
     local scaleWarn = MakeFont(popup, 10, nil, 1, 0.2, 0.2, 1)
-    scaleWarn:SetWidth(POPUP_W - 40)
-    scaleWarn:SetJustifyH("CENTER")
+    scaleWarn:SetWidth(POPUP_W - 2 * DIALOG_PAD)
+    scaleWarn:SetJustifyH("LEFT")
     scaleWarn:SetWordWrap(true)
     scaleWarn:SetSpacing(2)
     scaleWarn:Hide()
     popup._scaleWarnLabel = scaleWarn
     popup._baseH = POPUP_H
 
-    -- Button dimensions
-    local BTN_GAP = 16
-    local BTN_Y = 13
+    -- Buttons, right in the footer band: Confirm at the corner, Cancel left of it
+    local BTN_GAP = 8
+    local BTN_Y = 10
+    local BTN_W = 125
 
-    -- Cancel button (left) -- dim white style
+    -- Cancel button -- dim white style
     local EG = CLUDES_GREEN
     local cancelBtn = CludesUI.MakePopupButton(popup,
-        "BOTTOMRIGHT", popup, "BOTTOM", -(BTN_GAP / 2), BTN_Y,
+        "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -(14 + BTN_W + BTN_GAP), BTN_Y,
         1, 1, 1, 0.7,                                         -- default text
         1, 1, 1, 0.9,                                         -- hovered text
         1, 1, 1, 0.5,                                         -- default border
         1, 1, 1, 0.6                                           -- hovered border
     )
 
-    -- Confirm button (right) -- green style
+    -- Confirm button -- accent style
     local confirmBtn = CludesUI.MakePopupButton(popup,
-        "BOTTOMLEFT", popup, "BOTTOM", BTN_GAP / 2, BTN_Y,
+        "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, BTN_Y,
         EG.r, EG.g, EG.b, 0.9,        -- default text
         EG.r, EG.g, EG.b, 1,           -- hovered text
         EG.r, EG.g, EG.b, 0.9,         -- default border
@@ -584,9 +624,9 @@ function CludesUI:ShowConfirmPopup(opts)
     if opts.scaleWarning and opts.scaleWarning ~= "" then
         popup._scaleWarnLabel:ClearAllPoints()
         if opts.disclaimer and opts.disclaimer ~= "" then
-            popup._scaleWarnLabel:SetPoint("TOP", popup._disclaimer, "BOTTOM", 0, -14)
+            popup._scaleWarnLabel:SetPoint("TOPLEFT", popup._disclaimer, "BOTTOMLEFT", 0, -14)
         else
-            popup._scaleWarnLabel:SetPoint("TOP", popup._msg, "BOTTOM", 0, -14)
+            popup._scaleWarnLabel:SetPoint("TOPLEFT", popup._msg, "BOTTOMLEFT", 0, -14)
         end
         popup._scaleWarnLabel:SetText(CludesUI.L(opts.scaleWarning))
         popup._scaleWarnLabel:Show()
@@ -712,11 +752,11 @@ function CludesUI:ShowConfirmPopup(opts)
     if opts.hideCancel then
         popup._cancelBtn:Hide()
         popup._confirmBtn:ClearAllPoints()
-        popup._confirmBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 13)
+        popup._confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, 10)
     else
         popup._cancelBtn:Show()
         popup._confirmBtn:ClearAllPoints()
-        popup._confirmBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 8, 13)
+        popup._confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, 10)
     end
     -- Controller cursor: its cancel press backs out through the visible Cancel,
     -- which is also its first stop, only when Cancel is what Escape does (not
@@ -852,16 +892,17 @@ local function CreateInfoPopup()
     local popBg = SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBg)
+    DressDialog(popup)
 
-    -- Title
+    -- Title, left in the header band
     local title = MakeFont(popup, 15, "", 1, 1, 1)
-    title:SetPoint("TOP", popup, "TOP", 0, -20)
+    PlaceDialogTitle(popup, title, POPUP_W)
     popup._title = title
 
     -- Scroll frame
     local sf = CreateFrame("ScrollFrame", nil, popup)
-    sf:SetPoint("TOPLEFT", popup, "TOPLEFT", 28, -50)
-    sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -20, 52)
+    sf:SetPoint("TOPLEFT", popup, "TOPLEFT", DIALOG_PAD, -(DIALOG_HEAD + 12))
+    sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -DIALOG_PAD, DIALOG_FOOT + 8)
     sf:SetFrameLevel(popup:GetFrameLevel() + 1)
     sf:EnableMouseWheel(true)
 
@@ -886,7 +927,7 @@ local function CreateInfoPopup()
     -- Close button
     local closeBtn = CreateFrame("Button", nil, popup)
     closeBtn:SetSize(100, 26)
-    closeBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 16)
+    closeBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, 10)
     closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
     CludesUI.MakeStyledButton(closeBtn, "Close", 11,
         CludesUI.RB_COLOURS, function() dimmer:Hide() end)
@@ -1042,9 +1083,10 @@ function CludesUI:ShowInputPopup(opts)
         popup._brd = CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
         CludesUI.RoundBody(popup, popBgAtlas)
         CludesUI.RoundBody(popup, popBgOverlay)
+        DressDialog(popup)
 
-        local title = MakeFont(popup, 16, "", 1, 1, 1)
-        title:SetPoint("TOP", popup, "TOP", 0, -20)
+        local title = MakeFont(popup, 15, "", 1, 1, 1)
+        PlaceDialogTitle(popup, title, POPUP_W)
         popup._title = title
 
         -- Optional info badge left of the input (opts.infoTooltip): hover text only.
@@ -1077,7 +1119,7 @@ function CludesUI:ShowInputPopup(opts)
         popup._info = info
 
         local msg = MakeFont(popup, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        msg:SetPoint("TOP", title, "BOTTOM", 0, -8)
+        msg:SetPoint("TOP", popup, "TOP", 0, -(DIALOG_HEAD + 12))
         msg:SetWidth(POPUP_W - 60)
         msg:SetJustifyH("CENTER")
         msg:SetWordWrap(true)
@@ -1229,17 +1271,17 @@ function CludesUI:ShowInputPopup(opts)
         popup._extraBtn = extraBtn
         popup._extraLbl = extraLbl
 
-        local BTN_GAP = 16
-        local BTN_Y = 18
+        local BTN_GAP = 8
+        local BTN_Y = 10
 
         local EG = CLUDES_GREEN
         local cancelBtn = CludesUI.MakePopupButton(popup,
-            "BOTTOMRIGHT", popup, "BOTTOM", -(BTN_GAP / 2), BTN_Y,
+            "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -(14 + 125 + BTN_GAP), BTN_Y,
             1, 1, 1, 0.7,   1, 1, 1, 0.9,
             1, 1, 1, 0.5,   1, 1, 1, 0.6
         )
         local confirmBtn = CludesUI.MakePopupButton(popup,
-            "BOTTOMLEFT", popup, "BOTTOM", BTN_GAP / 2, BTN_Y,
+            "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, BTN_Y,
             EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1,
             EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1
         )
@@ -1397,9 +1439,9 @@ function CludesUI:ShowInputPopup(opts)
     popup._cancelBtn:SetShown(not opts.hideCancel)
     popup._confirmBtn:ClearAllPoints()
     if opts.hideCancel then
-        popup._confirmBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, popup._btnY)
+        popup._confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, popup._btnY)
     else
-        popup._confirmBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", popup._btnGap / 2, popup._btnY)
+        popup._confirmBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, popup._btnY)
     end
     popup._selectText = opts.selectText == true
     popup._onCancel = opts.onDismiss or opts.onCancel or nil
