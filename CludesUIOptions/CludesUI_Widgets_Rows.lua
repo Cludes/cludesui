@@ -420,6 +420,30 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- A row's hint: the first sentence of its tooltip, shown in small dim text under
     -- the setting's name (the whole tooltip still shows on hover). nil when the
     -- tooltip is not plain text or has nothing to show.
+    -- A toggle row answers a click anywhere on its name or the space before
+    -- the switch, not only on the switch itself. Clicks only: the name's
+    -- tooltip still shows on hover (its hover frame lets clicks through), and
+    -- the cogs and swatches beside a name sit above this and keep their own
+    -- clicks. A switch that is disabled (its mouse off) ignores it too.
+    local function ClickRowToToggle(regionFrame, toggle)
+        local catcher = CreateFrame("Button", nil, regionFrame)
+        catcher:SetPoint("TOPLEFT", regionFrame, "TOPLEFT")
+        catcher:SetPoint("BOTTOM", regionFrame, "BOTTOM")
+        catcher:SetPoint("RIGHT", toggle, "LEFT", -6, 0)
+        catcher:SetFrameLevel(regionFrame:GetFrameLevel() + 1)
+        catcher:SetMouseMotionEnabled(false)
+        catcher:RegisterForClicks("LeftButtonUp")
+        catcher:SetScript("OnClick", function()
+            if not toggle:IsMouseEnabled() then
+                return
+            end
+            local click = toggle:GetScript("OnClick")
+            if click then
+                click(toggle, "LeftButton")
+            end
+        end)
+    end
+
     local function RowHintText(tipText)
         if type(tipText) ~= "string" then
             return nil
@@ -816,6 +840,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local toggle, _, tgSnap =
                     BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, conf.getValue, conf.setValue)
                 toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                ClickRowToToggle(regionFrame, toggle)
                 controlFrame = toggle
                 controlAnchor = toggle
                 AddControlDisabledTooltip(toggle, conf)
@@ -1378,6 +1403,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local toggle, _, tgSnap =
                     BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, conf.getValue, conf.setValue)
                 toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                ClickRowToToggle(regionFrame, toggle)
                 controlFrame = toggle
                 AddControlDisabledTooltip(toggle, conf)
                 RegisterWidgetRefresh(function()

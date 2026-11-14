@@ -2,7 +2,12 @@
 and against the working tree, snapshot what the UI shows, and print every
 difference.
 
-    python -I tools/headless/compare.py <old-commit> <scenario.lua> [retail|forever]
+    python -I tools/headless/compare.py <old-commit> <scenario.lua> [retail|forever] [--content]
+
+--content compares what is drawn without where it sits in the frame tree:
+adding one frame renumbers its siblings, which floods the normal diff, so
+this lists only lines (paths removed) that exist in one version and not the
+other.
 
 The scenario is a harness probe (see harness.lua's HARNESS_PROBE). It gets
 the loaded suite, does things (open a dialog, hover a button), and calls
@@ -42,7 +47,7 @@ def run(tree, scenario, flavor, out):
 
 def main():
     old, scenario = sys.argv[1], os.path.abspath(sys.argv[2])
-    flavor = sys.argv[3] if len(sys.argv) > 3 else "retail"
+    flavor = sys.argv[3] if len(sys.argv) > 3 and not sys.argv[3].startswith("--") else "retail"
     wt = os.path.join(tempfile.gettempdir(), "cui_compare_old")
     subprocess.run(["git", "-C", REPO, "worktree", "remove", "--force", wt], capture_output=True)
     subprocess.run(["git", "-C", REPO, "worktree", "add", "--detach", wt, old], capture_output=True, check=True)
@@ -53,6 +58,21 @@ def main():
         print("new:", " | ".join(run(REPO, scenario, flavor, b_out)))
         a = open(a_out, encoding="utf-8").read().splitlines()
         b = open(b_out, encoding="utf-8").read().splitlines()
+        if "--content" in sys.argv:
+            import collections, re
+            def bag(lines):
+                c = collections.Counter()
+                for l in lines:
+                    if not l.startswith("=="):
+                        # Drop tree paths (label/Kind1/Kind2...), keep what is drawn.
+                        c[re.sub(r"@?[^ @,(){}]+(/[A-Za-z]+\d+)+|^[^ ]+", "@", l)] += 1
+                return c
+            ca, cb = bag(a), bag(b)
+            new, old_ = cb - ca, ca - cb
+            print("content: only in new %d, only in old %d" % (sum(new.values()), sum(old_.values())))
+            for l, n in new.most_common(): print("  + %dx %s" % (n, l))
+            for l, n in old_.most_common(): print("  - %dx %s" % (n, l))
+            return
         diff = list(difflib.unified_diff(a, b, "old", "new", lineterm="", n=0))
         print("snapshot lines: old %d, new %d, differences %d" % (len(a), len(b), sum(1 for l in diff if l[:1] in "+-" and l[:3] not in ("+++", "---"))))
         for l in diff:
