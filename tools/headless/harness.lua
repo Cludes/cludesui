@@ -709,11 +709,29 @@ local function Discover()
     table.sort(addonOrder)
 end
 
+-- HARNESS_PROFILE=1: time each file load and each event handler (CPU seconds
+-- of plain Lua work, which the fake client runs as the game would), and list
+-- the costliest at the end.
+local PROFILE = os.getenv("HARNESS_PROFILE") and {} or nil
+local function Timed(label, fn, ...)
+    if not PROFILE then return Safe(fn, ...) end
+    local t0 = os.clock()
+    local r = Safe(fn, ...)
+    PROFILE[label] = (PROFILE[label] or 0) + (os.clock() - t0)
+    return r
+end
+local function HandlerLabel(fn, event)
+    local info = debug.getinfo(fn, "S")
+    return event .. " " .. (info.short_src or "?"):gsub("^.*AddOns/", "") .. ":" .. (info.linedefined or 0)
+end
 local function FireEvent(event, ...)
     local list = {}
     for _, f in ipairs(allFrames) do if f.__events and f.__events[event] and f.__scripts.OnEvent then list[#list + 1] = f end end
     for _, f in ipairs(list) do
-        if f.__events and f.__events[event] then Safe(f.__scripts.OnEvent, f, event, ...) end
+        if f.__events and f.__events[event] then
+            local fn = f.__scripts.OnEvent
+            Timed(PROFILE and HandlerLabel(fn, event) or "", fn, f, event, ...)
+        end
     end
 end
 
@@ -738,7 +756,7 @@ function LoadAddon(name)
             else
                 err = "cannot open " .. name .. "/" .. file
             end
-            if not chunk then Record(err) else Safe(chunk, name, ns) end
+            if not chunk then Record(err) else Timed("load " .. name .. "/" .. file, chunk, name, ns) end
         end
     end
     e.loaded = true
@@ -832,6 +850,13 @@ for i, e in ipairs(errors) do
             end
         end
     end
+end
+if PROFILE then
+    local rows, total = {}, 0
+    for k, v in pairs(PROFILE) do rows[#rows + 1] = { k, v }; total = total + v end
+    table.sort(rows, function(a, b) return a[2] > b[2] end)
+    io.write(("\nProfile: %.0f ms of file loads and event handlers; the costliest:\n"):format(total * 1000))
+    for i = 1, math.min(25, #rows) do io.write(("  %7.1f ms  %s\n"):format(rows[i][2] * 1000, rows[i][1])) end
 end
 if VERBOSE then
     local names = {}
