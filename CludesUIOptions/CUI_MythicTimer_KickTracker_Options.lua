@@ -451,7 +451,7 @@ ns._KT_BuildPage = function(pageName, parent, yOffset)
         local texValues, texOrder = {}, {}
         if ns._MT_BuildBarTexDropdown then texValues, texOrder = ns._MT_BuildBarTexDropdown() end
         _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Grow Direction",
+            { type="segmented", text="Grow Direction",
               tooltip="Which way the rows stack.",
               disabled=BarsOff, disabledTooltip=REQ_BARS,
               values={ DOWN="Down", UP="Up" }, order={ "DOWN", "UP" },

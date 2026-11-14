@@ -2157,9 +2157,29 @@ local CARD = {
     all = setmetatable({}, { __mode = "k" }),  -- every card, for the search toggle
 }
 
+-- A card with an on/off box in its header (SectionHeader's enable) dims its
+-- rows while off: every row placed on the parent between the heading and the
+-- card's end. A cue only; the rows stay usable.
+local function CardDimRows(card)
+    if not (card.enable and card.bottomY) then return end
+    local on = card.enable.getValue() and true or false
+    local parent = card.frame:GetParent()
+    for _, child in ipairs({ parent:GetChildren() }) do
+        if child ~= card.frame and child:GetNumPoints() > 0 then
+            local p, rel, rp, _, y = child:GetPoint(1)
+            if rel == parent and p == "TOPLEFT" and rp == "TOPLEFT" and y
+               and not (issecretvalue and issecretvalue(y))
+               and y < card.y and y > card.bottomY then
+                child:SetAlpha(on and 1 or 0.35)
+            end
+        end
+    end
+end
+
 -- bottomY: where the card ends, as an offset from the parent's TOPLEFT (the
 -- frame of reference every heading and row is placed in).
 local function CardSetBottom(card, bottomY)
+    card.bottomY = bottomY
     for _, tex in ipairs(card.bottomed) do
         tex:ClearAllPoints()
     end
@@ -2250,7 +2270,7 @@ function CludesUI._CloseSectionCards()
     for parent, card in pairs(open) do
         pcall(function()
             local lowest = LowestRowOffset(parent)
-            if lowest then CardSetBottom(card, lowest - 10) end
+            if lowest then CardSetBottom(card, lowest - 10); CardDimRows(card) end
         end)
     end
 end
@@ -2271,7 +2291,10 @@ end
 
 -- Section header  (e.g. "APPEARANCE", "KEY BINDING TEXT"). tooltip (optional):
 -- shown while the title is hovered. Each one opens a section card (above).
-function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
+-- enable (optional, opt-in): { getValue, setValue, tooltip } puts an on/off
+-- box at the right of the card's header, for a section with a master switch
+-- (which then needs no row of its own); the card's rows dim while it is off.
+function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip, enable)
     local frame = CreateFrame("Frame", nil, parent)
     PP.Size(frame, parent:GetWidth() - CONTENT_PAD * 2, 40)
     PP.Point(frame, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, yOffset)
@@ -2300,9 +2323,49 @@ function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
     pcall(function()
         local cy = tonumber(yOffset) or 0
         local prev = CARD.open[parent]
-        if prev then CardSetBottom(prev, cy - CARD.GAP) end
+        if prev then CardSetBottom(prev, cy - CARD.GAP); CardDimRows(prev) end
         local card = BuildSectionCard(parent, frame, cy)
         CARD.open[parent] = card
+        if type(enable) == "table" and enable.getValue and enable.setValue then
+            card.enable = enable
+            local btn = CreateFrame("Button", nil, frame)
+            btn:SetSize(18, 18)
+            btn:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 6)
+            btn:SetFrameLevel(frame:GetFrameLevel() + 2)
+            local box, _, _, apply = BuildCheckboxControl(btn, btn:GetFrameLevel() + 1)
+            box:SetAllPoints(btn)
+            box:EnableMouse(false)
+            -- "On" / "Off" beside the box, so a bare box in a header reads as a switch.
+            local state = MakeFont(frame, 11, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B)
+            state:SetPoint("RIGHT", btn, "LEFT", -6, 0)
+            local function Paint(hover)
+                local on = enable.getValue() and true or false
+                apply(on, hover)
+                state:SetText(CludesUI.L(on and "On" or "Off"))
+                state:SetAlpha(on and 0.9 or 0.6)
+            end
+            btn:SetScript("OnEnter", function()
+                Paint(true)
+                if enable.tooltip then ShowWidgetTooltip(btn, enable.tooltip) end
+            end)
+            btn:SetScript("OnLeave", function() Paint(false); HideWidgetTooltip() end)
+            btn:SetScript("OnClick", function()
+                local g = PoolGen(frame)
+                enable.setValue(not enable.getValue())
+                CludesUI._settingsChanged = true
+                -- A setter that rebuilt the page dressed this heading again: its new build paints.
+                if PoolGen(frame) ~= g then return end
+                Paint(true)
+                CardDimRows(card)
+            end)
+            RegisterWidgetRefresh(function()
+                if PoolGen(frame) ~= card.gen then return end
+                Paint(false)
+                CardDimRows(card)
+            end)
+            Paint(false)
+            frame._enableBox = btn
+        end
         if CARD.searching then
             for _, t in ipairs(card.pieces) do t:Hide() end
         end

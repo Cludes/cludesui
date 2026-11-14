@@ -239,7 +239,7 @@ initFrame:SetScript("OnEvent", function(self)
               values = { __placeholder = "..." }, order = { "__placeholder" },
               getValue = function() return "__placeholder" end,
               setValue = function() end },
-            { type = "dropdown", text = "Results Visibility",
+            { type = "segmented", text = "Results Visibility",
               tooltip = "Groups your filters leave out: hidden from the list, or shown dimmed.",
               values = { dimmed = "Dimmed", hidden = "Hidden" }, order = { "dimmed", "hidden" },
               getValue = function() return ns.OwnListGet("visibility") end,
@@ -318,7 +318,7 @@ initFrame:SetScript("OnEvent", function(self)
         _, h = W:SectionHeader(parent, "DISPLAY", y); y = y - h
         local function Circle() return ns.OwnListGet("iconShape") ~= "square" end
         _, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Icon Shape",
+            { type = "segmented", text = "Icon Shape",
               tooltip = "The member and specialization icon shape.",
               values = { circle = "Circle", square = "Square" }, order = { "circle", "square" },
               getValue = function() return ns.OwnListGet("iconShape") end,

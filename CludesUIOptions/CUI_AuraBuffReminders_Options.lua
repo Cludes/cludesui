@@ -1350,20 +1350,30 @@ initFrame:SetScript("OnEvent", function(self)
         --  CORE section
         -----------------------------------------------------------------------
         local coreSection
-        coreSection, h = W:SectionHeader(parent, SECTION_CORE, y);  y = y - h
+        -- The module's master switch sits in the card header (the box at its right).
+        coreSection, h = W:SectionHeader(parent, SECTION_CORE, y, nil, {
+            tooltip = "Master toggle for all aura, buff, and consumable reminders. Talent reminders are not affected.",
+            getValue = function() local d = DDB(); return d and d.remindersEnabled ~= false end,
+            setValue = function(v)
+                local d = DDB(); if not d then return end; d.remindersEnabled = v
+                if _G._EABR_UpdateGroupAuraRegistration then _G._EABR_UpdateGroupAuraRegistration() end
+                RefreshAll()
+                CludesUI:RefreshPage()
+            end,
+        });  y = y - h
         CludesUI.BuildSectionUnlockJump(coreSection, { key = "EABR_Reminders" })
 
-        -- Row 1: Enable Reminders | Scale
+        -- Row 1: Grow Direction | Scale
         local row1
         row1, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Buff Reminders",
-              tooltip="Master toggle for all aura, buff, and consumable reminders. Talent reminders are not affected.",
-              getValue=function() local d = DDB(); return d and d.remindersEnabled ~= false end,
+            { type="dropdown", text="Grow Direction",
+              values=GROW_DIR_VALUES, order=GROW_DIR_ORDER,
+              tooltip="Which part of the row stays in place as reminders appear and disappear.",
+              getValue=function() local d = DDB(); return d and d.growDirection or "CENTER" end,
               setValue=function(v)
-                  local d = DDB(); if not d then return end; d.remindersEnabled = v
-                  if _G._EABR_UpdateGroupAuraRegistration then _G._EABR_UpdateGroupAuraRegistration() end
+                  CludesUI.SetAuraBuffGrowDir(v)
                   RefreshAll()
-                  CludesUI:RefreshPage()
+                  RelayoutPreviewIcons()
               end },
             { type="slider", text="Scale", min=0.5, max=3.0, step=0.05,
               getValue=function() local d = DDB(); return d and d.scale or 1.0 end,
@@ -1374,20 +1384,10 @@ initFrame:SetScript("OnEvent", function(self)
               end }
         );  y = y - h
 
-        -- Row 2: Grow Direction | Beacon M+ Reminders (retail Holy Paladins only)
-        _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Grow Direction",
-              values=GROW_DIR_VALUES, order=GROW_DIR_ORDER,
-              tooltip="Which part of the row stays in place as reminders appear and disappear.",
-              getValue=function() local d = DDB(); return d and d.growDirection or "CENTER" end,
-              setValue=function(v)
-                  CludesUI.SetAuraBuffGrowDir(v)
-                  RefreshAll()
-                  RelayoutPreviewIcons()
-              end },
-            (function()
-                if not BeaconRowShown(parent) then return CludesUI.BlankRowCfg() end
-                return { type="toggle", text="Beacon M+ Reminders",
+        -- Row 2: Beacon M+ Reminders (retail Holy Paladins only)
+        if BeaconRowShown(parent) then
+            _, h = W:DualRow(parent, y,
+                { type="toggle", text="Beacon M+ Reminders",
                   tooltip="During Mythic+ boss fights, shows a glowing red Beacon on your tank's raid frame while they have your Beacon of Light or Beacon of Faith.",
                   disabled=function() return not CludesUI._ModuleNS["CludesUIRaidFrames"] end,
                   disabledTooltip=CludesUI.DisabledTooltip("CludesUI Raid & Party Frames"),
@@ -1396,9 +1396,10 @@ initFrame:SetScript("OnEvent", function(self)
                       local d = DDB(); if not d then return end
                       d.beaconMPlus = v or nil
                       RefreshAll()
-                  end }
-            end)()
-        );  y = y - h
+                  end },
+                CludesUI.BlankRowCfg()
+            );  y = y - h
+        end
 
         -----------------------------------------------------------------------
         --  DISPLAY section

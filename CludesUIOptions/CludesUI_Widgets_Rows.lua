@@ -387,6 +387,9 @@ function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
         if cfg.noCapture then
             region._captureCfg = nil
             region._noCapture = true
+        elseif t == "segmented" and cfg.getValue and cfg.setValue then
+            region._captureCfg = { type = "dropdown", text = cfg.text, values = cfg.values, order = cfg.order,
+                getValue = cfg.getValue, setValue = cfg.setValue }
         elseif cfg.getValue and cfg.setValue then
             region._captureCfg = cfg
         elseif t == "multiSwatch" and cfg.swatches then
@@ -518,6 +521,41 @@ function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
             end
             AttachSliderTooltip(region, label, cfg, trackFrame, slThumb, valBox)
             controlAnchor = trackFrame
+
+        elseif t == "segmented" then
+            -- A choice of two or three, as a row of square buttons: the same
+            -- cfg as a dropdown (values = { key = "Label" }, order, getValue,
+            -- setValue, disabled, tooltip), every option in view at once.
+            -- Opt-in per row: a dropdown with many or long options stays one.
+            local function Pick(key)
+                if cfg.disabled and cfg.disabled() then return end
+                if cfg.getValue() == key then return end
+                -- Spec Overrides capture and the changed flag, as the other controls report a write.
+                local snap = CludesUI._SOAttribution(region)
+                cfg.setValue(key)
+                CludesUI._NotifySettingWrite(region, snap)
+                CludesUI._settingsChanged = true
+            end
+            local segFrame, _, segRefresh = CludesUI.BuildSegmentedControl({
+                parent = region, square = true, autoWidth = true, height = 26,
+                keys = cfg.order, labels = cfg.values,
+                getChecked = function(key) return cfg.getValue() == key end,
+                isDisabled = cfg.disabled and function() return cfg.disabled() and true or false end or nil,
+                onToggle = function(key)
+                    local g = PoolGen(region)
+                    Pick(key)
+                    -- A setter that rebuilt the page dressed this region again: its new build paints.
+                    if PoolGen(region) == g and region._segRefresh then region._segRefresh() end
+                end,
+            })
+            PP.Point(segFrame, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
+            segFrame:SetFrameLevel(frame:GetFrameLevel() + 2)
+            region._segRefresh = segRefresh
+            controlFrame = segFrame
+            controlAnchor = segFrame
+            AddControlDisabledTooltip(segFrame, cfg)
+            RegisterWidgetRefresh(function() if segRefresh then segRefresh() end; ApplyDisabledState() end)
+            ApplyDisabledState()
 
         elseif t == "dropdown" then
             local DD_W = cfg.dropdownWidth or 170
@@ -810,11 +848,11 @@ function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
     rightRegion._slotLabel = rightCfg and rightCfg.text or ""
 
     -- Dropdown getValue/values stashed for dynamic search matching
-    if leftCfg and leftCfg.type == "dropdown" then
+    if leftCfg and (leftCfg.type == "dropdown" or leftCfg.type == "segmented") then
         leftRegion._ddGetValue = leftCfg.getValue
         leftRegion._ddValues  = leftCfg.values
     end
-    if rightCfg and rightCfg.type == "dropdown" then
+    if rightCfg and (rightCfg.type == "dropdown" or rightCfg.type == "segmented") then
         rightRegion._ddGetValue = rightCfg.getValue
         rightRegion._ddValues  = rightCfg.values
     end

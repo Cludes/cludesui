@@ -108,7 +108,7 @@ local function BuildSegmentedControl(cfg)
     local bg = pillBody:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0, 0, 0, 0)  -- transparent; per-segment segBg handles background
-    local boxBdr = SQUARE and CludesUI.MakeRoundedBorder(pillBody, INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A, bg)
+    local boxBdr = SQUARE and CludesUI.MakeRoundedBorder(pillBody, INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A, bg, 2)
 
     -------------------------------------------------------------------
     -- Pill caps
@@ -248,7 +248,7 @@ local function BuildSegmentedControl(cfg)
         -- Square mode: the marker, a rounded outline with segBg as its body.
         local segTop, segBot, segLeft, segRight, marker
         if SQUARE then
-            marker = CludesUI.MakeRoundedBorder(btn, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 3)
+            marker = CludesUI.MakeRoundedBorder(btn, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 1)
         else
             -- Full 1px border on all 4 sides matches MakeBorder's pixel-perfect technique: vertical edges inset by 1px to avoid overlapping corners.
             segTop = btn:CreateTexture(nil, "ARTWORK", nil, 7)
