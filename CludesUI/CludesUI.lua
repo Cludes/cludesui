@@ -3720,6 +3720,40 @@ C_Timer.After(2, function()
     end
 end)
 
+-- /cuiperf: every loaded CludesUI addon's CPU time from Blizzard's addon
+-- profiler, heaviest first, for finding what is slow when the game feels
+-- laggy. Recent = the last few seconds, Peak = its worst single frame this
+-- session. Printed to chat, so it works in combat.
+SLASH_CUIPERF1 = "/cuiperf"
+SlashCmdList.CUIPERF = function()
+    local P, M = C_AddOnProfiler, Enum and Enum.AddOnProfilerMetric
+    if not (P and P.GetAddOnMetric and M) or (P.IsEnabled and not P.IsEnabled()) then
+        CludesUI.PrintError("The addon profiler is not available on this client.")
+        return
+    end
+    local rows, totalRecent = {}, 0
+    for i = 1, C_AddOns.GetNumAddOns() do
+        local name = C_AddOns.GetAddOnInfo(i)
+        if type(name) == "string" and name:find("^CludesUI") and C_AddOns.IsAddOnLoaded(name) then
+            local recent = P.GetAddOnMetric(name, M.RecentAverageTime) or 0
+            rows[#rows + 1] = { name = name, recent = recent,
+                peak = P.GetAddOnMetric(name, M.PeakTime) or 0,
+                session = P.GetAddOnMetric(name, M.SessionAverageTime) or 0 }
+            totalRecent = totalRecent + recent
+        end
+    end
+    table.sort(rows, function(x, y) return x.recent > y.recent end)
+    local fps = GetFramerate() or 0
+    CludesUI.Print(("CPU per frame, %d addons, %.3f ms recent total (a frame at %d fps is %.1f ms):"):format(
+        #rows, totalRecent, fps, fps > 0 and 1000 / fps or 0))
+    for i = 1, math.min(10, #rows) do
+        local r = rows[i]
+        local label = r.name:gsub("^CludesUI", "")
+        if label == "" then label = "Core" end
+        print(("  %s: recent %.3f ms, session %.3f ms, peak %.1f ms"):format(label, r.recent, r.session, r.peak))
+    end
+end
+
 SLASH_CUIOPTIONS1 = "/cui"
 SLASH_CUIOPTIONS2 = "/cludes"
 SLASH_CUIOPTIONS3 = "/cludesui"
