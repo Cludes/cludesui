@@ -1477,7 +1477,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Exact pixels over borderSize (the number the icons render with) and its
             -- borderSizePx companion (CludesUI.BorderPx).
             (ns.IconShapeMasked(DDB()) and {
-              type="dropdown", text="Border Size",
+              type="segmented", text="Border Size",
               values={ none="None", strong="Strong" }, order={ "none", "strong" },
               -- The ring shows at any size above 0, so a pick keeps the square
               -- border's own size for the way back to None or Cropped.

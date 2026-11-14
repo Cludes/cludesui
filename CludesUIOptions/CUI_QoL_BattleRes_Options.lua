@@ -420,7 +420,7 @@ _G._CUI_BuildBattleResSection = function(parent, yOffset, W, PP)
     -- color swatches sit inline on the dropdown, disabled outside text mode.
     local dispRow
     dispRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Display Style",
+        { type="segmented", text="Display Style",
           tooltip="Show the tracker as the Rebirth icon or as a compact text line with charges and time until the next one.",
           values={ icon="Icon", text="Text" }, order={ "icon", "text" },
           getValue=function() return Cfg("displayMode") or "icon" end,

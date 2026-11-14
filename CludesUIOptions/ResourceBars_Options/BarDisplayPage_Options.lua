@@ -737,7 +737,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
               Refresh()
               CludesUI:RefreshPage()
           end },
-        { type = "dropdown", text = "Shift Elements if No Resource",
+        { type = "segmented", text = "Shift Elements if No Resource",
           tooltip = "Shifts any elements anchored to the class resource bar up or down to offset the missing class resource.",
           -- Mutually exclusive with "Expand Power Bar if No Resource": grey this while expand is on,
           -- but only when this is itself OFF (== "None") so a legacy profile with both on can still
@@ -825,7 +825,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
     -- Row 2: Shift Elements if No Power | Hide Power Bar if Resource
     local shiftRow2
     shiftRow2, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Shift Elements if No Power",
+        { type = "segmented", text = "Shift Elements if No Power",
           tooltip = "Shifts any elements anchored to the power bar up or down to offset the missing power bar. Applies both when the Power Bar is disabled and for specs that have no power (for example, Beast Mastery and Marksmanship Hunters, whose Focus shows as the class resource bar).",
           -- Intentionally NOT disabled when the Power Bar is off: this setting is meant to fire precisely when the bar is disabled, so it must stay configurable in that state.
           values = { None = "None", Up = "Up", Down = "Down" },
@@ -1041,7 +1041,7 @@ function ns.ERB_BuildBarDisplayPage(pageName, parent, yOffset)
             end
             if playerClass == "DRUID" then
                 _, h = W:DualRow(parent, y,
-                    { type="dropdown", text="Power Type",
+                    { type="segmented", text="Power Type",
                       tooltip="Mana keeps the bar on Mana in Bear and Cat Form.",
                       values = { ["default"] = "Match Form", ["alt"] = "Mana" },
                       order = { "default", "alt" },

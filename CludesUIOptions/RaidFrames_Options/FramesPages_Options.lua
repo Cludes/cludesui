@@ -1181,7 +1181,7 @@ local function BuildMainPage(pageName, parent, yOffset)
               values={ __placeholder = "Group" }, order={ "__placeholder" },
               getValue=function() return "__placeholder" end,
               setValue=function() end },
-            { type="dropdown", text="Self Position",
+            { type="segmented", text="Self Position",
               values={ none = "Default", first = "First", last = "Last" },
               order={ "none", "first", "last" },
               getValue=function()
@@ -1758,7 +1758,7 @@ local function BuildPartyPage(pageName, parent, yOffset)
     end
 
     _, h = W:DualRow(parent, y,
-        { type="dropdown", text="Self Position",
+        { type="segmented", text="Self Position",
           values={ none = "Default", first = "First", last = "Last" },
           order={ "none", "first", "last" },
           getValue=function()

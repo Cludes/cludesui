@@ -1826,7 +1826,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Orientation | Theme (inline cog = CludesUI Backdrop Dim)
         local themeRow
         themeRow, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Orientation",
+            { type = "segmented", text = "Orientation",
               tooltip = "Horizontal bars lay blocks left to right; vertical bars stack them top to bottom.",
               values = { H = "Horizontal", V = "Vertical" }, order = { "H", "V" },
               getValue = function()
@@ -1846,7 +1846,7 @@ initFrame:SetScript("OnEvent", function(self)
                   ns.ApplyBar(barId)
                   HardRefresh()
               end },
-            { type = "dropdown", text = "Background Style",
+            { type = "segmented", text = "Background Style",
               tooltip = "CludesUI matches the window-skin shell; Modern is a flat color.",
               values = { cui = "CludesUI", modern = "Modern" }, order = { "cui", "modern" },
               getValue = function()
@@ -2865,7 +2865,7 @@ initFrame:SetScript("OnEvent", function(self)
                 }
             elseif b.type == "ms" then
                 typeRows = {
-                    { type = "dropdown", text = "Latency",
+                    { type = "segmented", text = "Latency",
                       tooltip = "Which latency to show: home, world, or both side by side.",
                       values = { home = "Home", world = "World", both = "Both" },
                       order = { "home", "world", "both" },
@@ -2897,7 +2897,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local INERT_TIP = "This bar sizes its blocks itself, so the width is not this block's to choose."
                 typeRows = {
-                    { type = "dropdown", text = "Width",
+                    { type = "segmented", text = "Width",
                       tooltip = "Automatic follows the zone name. Manual holds the block at a fixed width and clips longer names, so it never shifts the blocks beside it.",
                       values = { auto = "Automatic", manual = "Manual" },
                       order = { "auto", "manual" },
@@ -3000,7 +3000,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             elseif b.type == "profession" or b.type == "profession2" then
                 typeRows = {
-                    { type = "dropdown", text = "Text Display",
+                    { type = "segmented", text = "Text Display",
                       values = { name = "Name and Bar", values = "Values" },
                       order = { "name", "values" },
                       getValue = function() return s.textDisplay or "name" end,
@@ -3296,7 +3296,7 @@ initFrame:SetScript("OnEvent", function(self)
             elseif b.type == "ilvl" then
                 -- Prefix rides the Icon Color row's right slot above.
                 typeRows = {
-                    { type = "dropdown", text = "Item Level",
+                    { type = "segmented", text = "Item Level",
                       tooltip = "Equipped counts your worn gear. Total also counts upgrades sitting in your bags.",
                       values = { equipped = "Equipped", total = "Total", both = "Both" },
                       order = { "equipped", "total", "both" },
@@ -3372,7 +3372,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- style-dependent swatches.
             local iconStyleCfg
             if ns.BlockHasIconStyle(b.type) then
-                iconStyleCfg = { type = "dropdown", text = "Icon Style",
+                iconStyleCfg = { type = "segmented", text = "Icon Style",
                     values = { custom = "Custom", wow = "Blizzard" },
                     order = { "custom", "wow" },
                     -- Item Level shows its icon only as the "Icon" prefix.

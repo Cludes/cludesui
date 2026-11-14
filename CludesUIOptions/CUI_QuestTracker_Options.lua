@@ -197,7 +197,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Grow Direction | Scrollbar
             _, h = W:DualRow(parent, y,
-                { type="dropdown", text="Grow Direction",
+                { type="segmented", text="Grow Direction",
                   tooltip="Which way the tracker grows as quests are added. Up keeps its bottom edge in place.",
                   values = { DOWN = "Down", UP = "Up" },
                   order  = { "DOWN", "UP" },

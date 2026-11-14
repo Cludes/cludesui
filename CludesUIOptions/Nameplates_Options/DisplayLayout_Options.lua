@@ -155,7 +155,7 @@ local function BuildDisplayLayout(parent, y, ctx)
     -- Both stock styles gate both slots: they draw their own art (the stock background, the vanilla border sheets) and stand every CUI border down.
     local borderStyleRow
     borderStyleRow, h = W:DualRow(parent, y,
-        CludesUI.BlizzStyle.Gate("nameplates", { type="dropdown", text="Border",
+        CludesUI.BlizzStyle.Gate("nameplates", { type="segmented", text="Border",
           values={ none = "None", basic = "Basic", custom = "Custom" },
           order={ "none", "basic", "custom" },
           getValue=function()

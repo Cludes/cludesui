@@ -69,7 +69,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Bank Display: a view over bankListView + bankCompactView (List wins when both are set)
                 _, h = W:DualRow(parent, y,
-                    { type="dropdown", text="Bank Display",
+                    { type="segmented", text="Bank Display",
                       tooltip="How items are arranged in the bank window.",
                       values = { grid="Grid", list="List", compact="Compact" },
                       order  = { "grid", "list", "compact" },
@@ -288,7 +288,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Slot Size | Slot Spacing | Auto-Size to Fit (not in List) |
             -- Background Color | Background Opacity | Slot Background, two per row
             local layoutSlots = {
-                { type="dropdown", text="Bag Style",
+                { type="segmented", text="Bag Style",
                   values = { grid="Grid", list="List", compact="Compact" },
                   order  = { "grid", "list", "compact" },
                   getValue=function() return BagDisplayValue() end,

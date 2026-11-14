@@ -1393,7 +1393,7 @@ local function BuildTileDetail(frame, fontPath, t)
         _, hh = W:SectionHeader(frame, "CORE", sy); sy = sy - hh
         local coreRow
         coreRow, hh = W:DualRow(frame, sy,
-            { type = "dropdown", text = "Orientation",
+            { type = "segmented", text = "Orientation",
               values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
               order = { "HORIZONTAL", "VERTICAL" },
               getValue = function() return t.orientation or "HORIZONTAL" end,

@@ -131,7 +131,7 @@ initFrame:SetScript("OnEvent", function(self)
               tooltip = "Shows whose interrupt is next. The order comes from an intstart / intend block in the boss's note (one line of names per rotation), or the Kick Order below for other fights. Each cast of the tracked unit moves the turn on.",
               getValue = function() return ks.enabled end,
               setValue = function(v) ks.enabled = v and true or false end },
-            { type = "dropdown", text = "Track", values = { focus = "Focus", boss1 = "Boss 1" }, order = { "focus", "boss1" },
+            { type = "segmented", text = "Track", values = { focus = "Focus", boss1 = "Boss 1" }, order = { "focus", "boss1" },
               tooltip = "The unit whose casts count. Put the mob you kick on focus.",
               getValue = function() return ks.unit end,
               setValue = function(v) ks.unit = v end }

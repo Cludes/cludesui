@@ -1761,7 +1761,7 @@ function ns.UFO_BuildPetOptions(W, parent, y)
             -- Row 2: Position (+ offsets cog) | blank (odd last slot)
             local posRow
             posRow, hh = Ww:DualRow(pp, yy,
-                { type="dropdown", text="Position",
+                { type="segmented", text="Position",
                   values={ left="Left", right="Right", top="Top" }, order={ "left", "right", "top" },
                   disabled=happyOff, disabledTooltip="Show Happiness",
                   getValue=function() return P.happinessAlign or "right" end,
@@ -1852,7 +1852,7 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         -- From changes later.
         if anyOn() then
             _, h = W:DualRow(parent, y,
-                { type="dropdown", text="Copy Auras From",
+                { type="segmented", text="Copy Auras From",
                   tooltip="The frame whose aura look the pet copies.",
                   values={ target="Target", focus="Focus", player="Player" },
                   order={ "target", "focus", "player" },
@@ -2052,7 +2052,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         local total = eh
         if isCUI then
             local castRow, ch = Ww:DualRow(pp, yy - eh,
-                { type="dropdown", text="Stack Direction", values={ up="Up", down="Down" }, order={ "up", "down" },
+                { type="segmented", text="Stack Direction", values={ up="Up", down="Down" }, order={ "up", "down" },
                   getValue=function() return db.profile.boss.bossStackDirection or "down" end,
                   setValue=function(v) db.profile.boss.bossStackDirection = v; ReloadAndUpdate() end },
                 -- Top-to-top step; Stack Direction sets the side, so no negatives.
@@ -2111,7 +2111,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             or not db.profile.boss.simpleBuffShowCooldownText
         end
         simpleBuffRow, hh = Ww:DualRow(pp, yy,
-            { type="dropdown", text="Simple Buff Display",
+            { type="segmented", text="Simple Buff Display",
               disabled = function()
                   return BossBuffLocationActive()
               end,
@@ -2253,7 +2253,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             or not db.profile.boss.simpleDebuffShowCooldownText
         end
         simpleRow, hh = Ww:DualRow(pp, yy,
-            { type="dropdown", text="Simple Debuff Display",
+            { type="segmented", text="Simple Debuff Display",
               disabled = function()
                   return BossDebuffLocationActive()
               end,
@@ -3270,7 +3270,7 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 end
                 ReloadAndUpdate(); CludesUI:RefreshPage()
               end },
-            { type="dropdown", text="Duration",
+            { type="segmented", text="Duration",
               values={ none="None", right="Right", left="Left" },
               order={ "none", "right", "left" },
               getValue=function()

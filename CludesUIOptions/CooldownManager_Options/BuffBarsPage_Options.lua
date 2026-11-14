@@ -3234,7 +3234,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                       ns.BuildTrackedBuffBars()
                       CludesUI:RefreshPage(true)
                   end },
-                { type = "dropdown", text = "Shift Elements If No Bars",
+                { type = "segmented", text = "Shift Elements If No Bars",
                   tooltip = "When the current spec has no bars in this group, keeps elements anchored to the group in place and shifts them up or down by one bar height (tune with the cog's Extra Y Offset) to cover its empty slot.",
                   disabled = function() return GlobalEntry() == nil end,
                   disabledTooltip = "Global Group",

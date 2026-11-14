@@ -698,7 +698,7 @@ function ns.UFO_BuildCastBarSection(parent, y, ctx)
             end
             ReloadAndUpdate(); UpdatePreview(); CludesUI:RefreshPage()
           end },
-        { type="dropdown", text="Duration",
+        { type="segmented", text="Duration",
           values={ none = "None", right = "Right", left = "Left" },
           order={ "none", "right", "left" },
           getValue=function()

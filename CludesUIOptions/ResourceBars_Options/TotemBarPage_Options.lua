@@ -267,7 +267,7 @@ local function BuildTotemSection(parent, y, S)
               local t = T(); if not t then return end
               t.frameStrata = v; RefreshTotem()
           end },
-        { type = "dropdown", text = "Orientation",
+        { type = "segmented", text = "Orientation",
           disabled = totemOff,
           disabledTooltip = req, rawTooltip = raw,
           values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },

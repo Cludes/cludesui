@@ -1410,7 +1410,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Grow Direction",
+            { type="segmented", text="Grow Direction",
               disabled=Off, disabledTooltip=REQ,
               tooltip="Which way new bars stack as more enemies start casting.",
               values={ DOWN="Down", UP="Up" }, order={ "DOWN", "UP" },

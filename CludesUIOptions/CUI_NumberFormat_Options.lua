@@ -297,7 +297,7 @@ function _G._CUI_BuildNumberFormatPage(pageName, parent, yOffset)
     _, h = W:SectionHeader(parent, "UNITS (GLOBAL)", y);  y = y - h
 
     _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Letter Case",
+        { type = "segmented", text = "Letter Case",
           tooltip = "Upper or lower case unit letters, for every value type with a Precision other than Standard.",
           values = { upper = "K M B", lower = "k m b" },
           order = { "upper", "lower" },

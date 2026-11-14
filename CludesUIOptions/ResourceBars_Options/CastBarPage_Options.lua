@@ -833,7 +833,7 @@ function ns.ERB_BuildCastBarPage(pageName, parent, yOffset)
     -- Row 4: Duration Text (cog RESIZE: timer size + x/y) | Show Total Duration
     local timerRow
     timerRow, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Duration Text",
+        { type = "segmented", text = "Duration Text",
           disabled = castOff,
           disabledTooltip = "Player Cast Bar",
           values = { none = "None", right = "Right", left = "Left" },

@@ -4196,7 +4196,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- The cog holds the full-charge chime and, for the gems, their scale.
         local vigorRow
         vigorRow, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Vigor Style",
+            { type = "segmented", text = "Vigor Style",
               values = { bars = "Bars", gems = "Classic Gems" },
               order  = { "bars", "gems" },
               tooltip = "Classic Gems brings back Blizzard's original vigor display above the bars.",

@@ -223,7 +223,7 @@ initFrame:SetScript("OnEvent", function(self)
         );  y = y - h
 
         _, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Timer Position",
+            { type = "segmented", text = "Timer Position",
               values = { icon = "On Icon", above = "Above Icon" }, order = { "icon", "above" },
               getValue = function() return DB().cdAbove and "above" or "icon" end,
               setValue = function(v) DB().cdAbove = (v == "above"); ns.RefreshAllIconSettings() end },

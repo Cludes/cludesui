@@ -227,7 +227,7 @@ _G._CUI_BuildLootFeedPage = function(pageName, parent, yOffset)
     );  y = y - h
 
     _, h = W:DualRow(parent, y,
-        Bind({ type = "dropdown", text = "Grow Direction",
+        Bind({ type = "segmented", text = "Grow Direction",
                values = { UP = "Up", DOWN = "Down" }, order = { "UP", "DOWN" } }, "grow", LF.ApplyStyle),
         Slider("textSize", "Text Size", 8, 24)
     );  y = y - h

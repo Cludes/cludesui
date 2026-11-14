@@ -212,7 +212,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Circle (the WoW Forever look's Forever Circle exactly) or Square
             -- (the default there: the same square layout in the slim bronze
             -- line). Latched with the look, as above.
-            shapeCfg = { type="dropdown", text="Border Style",
+            shapeCfg = { type="segmented", text="Border Style",
               tooltip="Circle: the round map in WoW Forever's ring. Square: the CludesUI square map in a thin bronze frame, with the zone name in its title bar. Applies after a UI reload.",
               values = { circle = "Circle", square = "Square" },
               order  = { "circle", "square" },

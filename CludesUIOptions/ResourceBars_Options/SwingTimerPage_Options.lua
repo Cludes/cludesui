@@ -661,7 +661,7 @@ function ns.ERB_BuildSwingTimerPage(pageName, parent, yOffset)
           disabled = stOff, disabledTooltip = ST_TIP,
           getValue = function() local p = DB(); return p and p.swingTimer.rangeCheck ~= false end,
           setValue = function(v) local p = DB(); if not p then return end; p.swingTimer.rangeCheck = v; RefreshST() end },
-        { type = "dropdown", text = "Attack State",
+        { type = "segmented", text = "Attack State",
           tooltip = "Queued Only colors and names a queued attack; Full also colors rows while the attack is on or waiting.",
           disabled = stOff, disabledTooltip = ST_TIP,
           values = { off = "Off", queued = "Queued Only", full = "Full" },

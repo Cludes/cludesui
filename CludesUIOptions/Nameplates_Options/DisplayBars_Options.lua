@@ -299,7 +299,7 @@ local function BuildDisplayBars(parent, y, ctx)
     -- Cast Timer: position dropdown (None/Right/Left), styled like the duration dropdowns. "None" hides it; Right/Left choose the side (reserving space, pushing shared-side cast text); Size/X/Y live in the inline cog.
     local castTimerRow
     castTimerRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Cast Timer",
+        { type="segmented", text="Cast Timer",
           values={ none = "None", right = "Right", left = "Left" },
           order={ "none", "right", "left" },
           getValue=function()
@@ -1687,7 +1687,7 @@ local function BuildDisplayBars(parent, y, ctx)
     -- Row 2: Position (with inline cog for X/Y) | Size
     local classResourceRow2
     classResourceRow2, h = W:DualRow(parent, y,
-        { type="dropdown", text="Position",
+        { type="segmented", text="Position",
           values={ top = "Top", bottom = "Bottom" },
           getValue=function() return DBVal("classPowerPos") or defaults.classPowerPos end,
           setValue=function(v)

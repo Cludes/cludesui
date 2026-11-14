@@ -673,7 +673,7 @@ local function BuildVisualIndicators(parent, y, W, onSection, EYE, CustomBorderO
     -- (The dropdown is also the leader icon's on/off switch, so under the
     -- kit it keeps that job: shown at the stock spot, or None.)
     row, h = W:DualRow(parent, y,
-        ns.RF_OptPartyKit() and { type="dropdown", text="Leader Icon",
+        ns.RF_OptPartyKit() and { type="segmented", text="Leader Icon",
           values={ kit = "Party Frame", none = "None" }, order={ "kit", "none" },
           getValue=function() return SVal("showLeaderIcon", false) and "kit" or "none" end,
           setValue=function(v)
@@ -1198,7 +1198,7 @@ local function BuildVisualIndicators(parent, y, W, onSection, EYE, CustomBorderO
     -- Align dropdown plus a custom/class swatch pair that doubles as the color-mode selector (as with Health Text). Defaults to class.
     local tnbRow3
     tnbRow3, h = W:DualRow(parent, y,
-        { type="dropdown", text="Alignment & Color",
+        { type="segmented", text="Alignment & Color",
           values={ center="Center", left="Left", right="Right" },
           order={ "center", "left", "right" },
           getValue=function() return SVal("topNameBarTextAlign", "center") end,
@@ -1309,7 +1309,7 @@ local function BuildVisualIndicators(parent, y, W, onSection, EYE, CustomBorderO
         local FB_DISABLED_TIP = "This option requires Add Friendly Boss Group to be set to Healers or Always."
 
         row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Add Friendly Boss Group",
+            { type="segmented", text="Add Friendly Boss Group",
               values = { never="Never", healers="Healers", always="Always" },
               order  = { "never", "healers", "always" },
               getValue = function() return FBSet().display or "never" end,
