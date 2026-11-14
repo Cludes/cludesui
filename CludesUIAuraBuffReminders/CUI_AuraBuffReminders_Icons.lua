@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Icons.lua
 --
@@ -11,7 +13,9 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor, max = math.floor, math.max
@@ -24,41 +28,64 @@ local RAID_BUFFS, _dismissedUntilLoad = I.RAID_BUFFS, I._dismissedUntilLoad
 local GLOW_VIEW, StopAllGlows = I.GLOW_VIEW, I.StopAllGlows
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -------------------------------------------------------------------------------
 --  Icon Pool SecureActionButton based for click-to-cast
 -------------------------------------------------------------------------------
 local ICON_SIZE = 40
 local iconAnchor
-I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v) iconAnchor = v end
-local iconPool = {}     -- all created icon buttons
-local activeIcons = {}  -- currently visible icons
+I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v)
+    iconAnchor = v
+end
+local iconPool = {} -- all created icon buttons
+local activeIcons = {} -- currently visible icons
 
 -- Shape settings are shared with the split runtime and load-on-demand options.
 do
     function ns.IconShapeValues()
         if not ns._iconShapeValues then
             ns._iconShapeValues = {
-                none = "None", cropped = "Cropped", square = "Square", circle = "Circle",
-                csquare = "Curved Square", diamond = "Diamond", hexagon = "Hexagon",
-                portrait = "Portrait", shield = "Shield",
+                none = "None",
+                cropped = "Cropped",
+                square = "Square",
+                circle = "Circle",
+                csquare = "Curved Square",
+                diamond = "Diamond",
+                hexagon = "Hexagon",
+                portrait = "Portrait",
+                shield = "Shield",
             }
-            ns._iconShapeOrder = { "none", "cropped", "---", "square", "circle", "csquare",
-                "diamond", "hexagon", "portrait", "shield" }
+            ns._iconShapeOrder = {
+                "none",
+                "cropped",
+                "---",
+                "square",
+                "circle",
+                "csquare",
+                "diamond",
+                "hexagon",
+                "portrait",
+                "shield",
+            }
         end
         return ns._iconShapeValues, ns._iconShapeOrder
     end
 
     function ns.IconShapeMasked(p)
         local shape = p and p.iconShape
-        return shape and shape ~= "none" and shape ~= "cropped"
-            and CludesUI.SHAPE_MASKS[shape] ~= nil
+        return shape and shape ~= "none" and shape ~= "cropped" and CludesUI.SHAPE_MASKS[shape] ~= nil
     end
 
     function ns.CropPercent(p)
         local pct = tonumber(p and p.iconCropPercent) or 10
-        if pct < 5 then pct = 5 elseif pct > 25 then pct = 25 end
+        if pct < 5 then
+            pct = 5
+        elseif pct > 25 then
+            pct = 25
+        end
         return pct
     end
 
@@ -66,13 +93,17 @@ do
         if p and p.iconShape == "cropped" then
             return size, math.floor(size * (1 - 2 * ns.CropPercent(p) / 100) + 0.5)
         end
-        if ns.IconShapeMasked(p) then return size + 8, size + 8 end
+        if ns.IconShapeMasked(p) then
+            return size + 8, size + 8
+        end
         return size, size
     end
 
     -- Only addon-owned icons reach this helper. Secure owners are gated by the caller.
     function ns.ApplyIconShape(f, p)
-        if not (f and f._icon) then return end
+        if not (f and f._icon) then
+            return
+        end
         local shape = (p and p.iconShape) or "none"
         local masked = ns.IconShapeMasked(p)
         local zoom = (p and p.iconZoom) or 0.07
@@ -80,15 +111,26 @@ do
         local inset = masked and ((p and p.borderSize) or 1) > 0 and 1 or 0
         local state = f._eabrShape
         if not state then
-            if shape == "none" and not (p and p.iconZoom) then return end
+            if shape == "none" and not (p and p.iconZoom) then
+                return
+            end
             state = {}
             f._eabrShape = state
         end
-        if state.shape == shape and state.zoom == zoom and state.crop == crop
-            and state.inset == inset and state.highlight == f._hl then return end
+        if
+            state.shape == shape
+            and state.zoom == zoom
+            and state.crop == crop
+            and state.inset == inset
+            and state.highlight == f._hl
+        then
+            return
+        end
         local icon = f._icon
         if masked then
-            if not state.mask then state.mask = f:CreateMaskTexture() end
+            if not state.mask then
+                state.mask = f:CreateMaskTexture()
+            end
             state.mask:SetTexture(CludesUI.SHAPE_MASKS[shape], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
             state.mask:ClearAllPoints()
             if inset > 0 then
@@ -107,7 +149,9 @@ do
                 f._hl:AddMaskTexture(state.mask)
                 state.highlightAttached = true
             end
-            if not state.glowExtra then state.glowExtra = {} end
+            if not state.glowExtra then
+                state.glowExtra = {}
+            end
             -- Outline glows extend beyond the inset icon mask, like CDM's proc glows.
             state.glowExtra.shapeMask = state.mask
             state.glowExtra.maskPath = CludesUI.SHAPE_MASKS[shape]
@@ -118,11 +162,15 @@ do
         else
             if state.attached then
                 icon:RemoveMaskTexture(state.mask)
-                if state.highlight then state.highlight:RemoveMaskTexture(state.mask) end
+                if state.highlight then
+                    state.highlight:RemoveMaskTexture(state.mask)
+                end
                 state.attached = nil
                 state.highlightAttached = nil
             end
-            if state.mask then state.mask:Hide() end
+            if state.mask then
+                state.mask:Hide()
+            end
             icon:SetTexCoord(zoom, 1 - zoom, zoom + crop / 100, 1 - zoom - crop / 100)
         end
         if icon.SetSnapToPixelGrid then
@@ -146,7 +194,9 @@ do
     -- refresh lays them out again with the shape.
     function ns.RefreshIconShapes()
         I.EABR.ApplyAllIconBorders()
-        if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+        if _G._CUABR_RequestRefresh then
+            _G._CUABR_RequestRefresh()
+        end
     end
 end
 
@@ -155,10 +205,12 @@ end
 -------------------------------------------------------------------------------
 --  Combat Icon Pool -- non-secure frames for visual-only display during combat.
 -------------------------------------------------------------------------------
-local combatAnchor      -- created in OnEnable, follows iconAnchor position
-I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v) combatAnchor = v end
+local combatAnchor -- created in OnEnable, follows iconAnchor position
+I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v)
+    combatAnchor = v
+end
 local combatIconPool = {}
-local receiverIconPool = {}  -- a groupmate's raid buff the player cannot cast
+local receiverIconPool = {} -- a groupmate's raid buff the player cannot cast
 local combatActiveIcons = {}
 
 -------------------------------------------------------------------------------
@@ -173,7 +225,9 @@ local CURSOR_IMPORTANT = {
     -- are the player's own casts, so their cursor treatment already fits.
 }
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v) cursorAnchor = v end
+I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
+    cursorAnchor = v
+end
 local cursorIconPool = {}
 local cursorActiveIcons = {}
 
@@ -193,7 +247,9 @@ end
 do
     local POOL = CludesUI._Pool
     function EABR.ApplyIconBorder(f, protectedOwner)
-        if not f or (protectedOwner and InCombatLockdown()) then return end
+        if not f or (protectedOwner and InCombatLockdown()) then
+            return
+        end
         local p = db and db.profile and db.profile.display
         if (p and ((p.iconShape and p.iconShape ~= "none") or p.iconZoom)) or f._eabrShape then
             ns.ApplyIconShape(f, p)
@@ -211,8 +267,8 @@ do
 
         local size = (p and p.borderSize) or 1
         local texture = (p and p.borderTexture) or "solid"
-        local r, g, b, a = (p and p.borderR) or 0, (p and p.borderG) or 0,
-            (p and p.borderB) or 0, (p and p.borderA) or 1
+        local r, g, b, a =
+            (p and p.borderR) or 0, (p and p.borderG) or 0, (p and p.borderB) or 0, (p and p.borderA) or 1
         local ox, oy = p and p.borderTextureOffset, p and p.borderTextureOffsetY
         local sx, sy = p and p.borderTextureShiftX, p and p.borderTextureShiftY
         local behind = p and p.borderBehind == true
@@ -231,9 +287,19 @@ do
             end
             border:SetFrameLevel(level)
             -- Clearing rectangular art at size zero also hides its host.
-            if not border:IsShown() then border:Show() end
-            CludesUI.PP:ApplyMaskedShapeBorder(border, nil,
-                CludesUI.SHAPE_BORDERS[p.iconShape], size > 0 and 7 or 0, r, g, b, a)
+            if not border:IsShown() then
+                border:Show()
+            end
+            CludesUI.PP:ApplyMaskedShapeBorder(
+                border,
+                nil,
+                CludesUI.SHAPE_BORDERS[p.iconShape],
+                size > 0 and 7 or 0,
+                r,
+                g,
+                b,
+                a
+            )
             return
         elseif f._eabrShape then
             CludesUI.PP:HideMaskedShapeBorder(border)
@@ -242,17 +308,42 @@ do
         -- Layout refreshes can be frequent in a raid. Restyle only when an actual
         -- setting or owner-level change occurred; size changes are handled by the
         -- border frame's anchors/BackdropTemplate size hook.
-        if border._eabrSize == size and border._eabrTexture == texture and border._eabrPx == pxRaw
-            and border._eabrR == r and border._eabrG == g and border._eabrB == b and border._eabrA == a
-            and border._eabrOX == ox and border._eabrOY == oy and border._eabrSX == sx and border._eabrSY == sy
-            and border._eabrBehind == behind and border._eabrLevel == level then
+        if
+            border._eabrSize == size
+            and border._eabrTexture == texture
+            and border._eabrPx == pxRaw
+            and border._eabrR == r
+            and border._eabrG == g
+            and border._eabrB == b
+            and border._eabrA == a
+            and border._eabrOX == ox
+            and border._eabrOY == oy
+            and border._eabrSX == sx
+            and border._eabrSY == sy
+            and border._eabrBehind == behind
+            and border._eabrLevel == level
+        then
             return
         end
 
         border:SetFrameLevel(level)
-        CludesUI.ApplyBorderStyle(border, size, r, g, b, a, texture,
-            ox, oy, sx, sy, "aurabuffreminders", size, nil,
-            CludesUI.BorderPx(pxRaw, size, texture))
+        CludesUI.ApplyBorderStyle(
+            border,
+            size,
+            r,
+            g,
+            b,
+            a,
+            texture,
+            ox,
+            oy,
+            sx,
+            sy,
+            "aurabuffreminders",
+            size,
+            nil,
+            CludesUI.BorderPx(pxRaw, size, texture)
+        )
         border._eabrSize, border._eabrTexture, border._eabrPx = size, texture, pxRaw
         border._eabrR, border._eabrG, border._eabrB, border._eabrA = r, g, b, a
         border._eabrOX, border._eabrOY, border._eabrSX, border._eabrSY = ox, oy, sx, sy
@@ -261,18 +352,32 @@ do
 end
 
 function EABR.ApplyAllIconBorders()
-    for _, f in pairs(iconPool) do EABR.ApplyIconBorder(f, true) end
-    for _, f in pairs(combatIconPool) do EABR.ApplyIconBorder(f, false) end
-    for _, f in pairs(receiverIconPool) do EABR.ApplyIconBorder(f, false) end
-    for _, f in pairs(cursorIconPool) do EABR.ApplyIconBorder(f, false) end
-    if EABR._providerCastBtn then EABR.ApplyIconBorder(EABR._providerCastBtn, true) end
+    for _, f in pairs(iconPool) do
+        EABR.ApplyIconBorder(f, true)
+    end
+    for _, f in pairs(combatIconPool) do
+        EABR.ApplyIconBorder(f, false)
+    end
+    for _, f in pairs(receiverIconPool) do
+        EABR.ApplyIconBorder(f, false)
+    end
+    for _, f in pairs(cursorIconPool) do
+        EABR.ApplyIconBorder(f, false)
+    end
+    if EABR._providerCastBtn then
+        EABR.ApplyIconBorder(EABR._providerCastBtn, true)
+    end
     if _B.icons then
-        for _, f in pairs(_B.icons) do EABR.ApplyIconBorder(f, false) end
+        for _, f in pairs(_B.icons) do
+            EABR.ApplyIconBorder(f, false)
+        end
     end
 end
 
 function EABR.GetIconTextOverlay(f)
-    if f._textOverlay then return f._textOverlay end
+    if f._textOverlay then
+        return f._textOverlay
+    end
     local overlay = CreateFrame("Frame", nil, f)
     overlay:SetAllPoints()
     overlay:SetFrameLevel(f:GetFrameLevel() + 5)
@@ -287,7 +392,8 @@ local function BuildCombatIcon(name)
     f:SetFrameLevel(120)
     f:Hide()
     local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(); icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     f._icon = icon
     EABR.ApplyIconBorder(f, false)
     local text = EABR.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
@@ -307,7 +413,7 @@ end
 local function GetOrCreateCombatIcon(index)
     local f = combatIconPool[index]
     if not f then
-        f = BuildCombatIcon("EABR_CombatIcon"..index)
+        f = BuildCombatIcon("EABR_CombatIcon" .. index)
         combatIconPool[index] = f
     end
     return f
@@ -335,7 +441,7 @@ end
 local function GetOrCreateReceiverIcon(index)
     local f = receiverIconPool[index]
     if not f then
-        f = BuildCombatIcon("EABR_ReceiverIcon"..index)
+        f = BuildCombatIcon("EABR_ReceiverIcon" .. index)
         EABR.SetIconHighlight(f, false)
         RouteReceiverIcon(f)
         receiverIconPool[index] = f
@@ -351,8 +457,11 @@ local function HideCombatIcons()
         local f = combatActiveIcons[i]
         if f then
             EABR.ClearEatingVisual(f)
-            if f._eabrGlowWrapper then f._eabrGlowWrapper:Hide() end
-            f._text:SetText(""); f:Hide()
+            if f._eabrGlowWrapper then
+                f._eabrGlowWrapper:Hide()
+            end
+            f._text:SetText("")
+            f:Hide()
         end
     end
     wipe(combatActiveIcons)
@@ -360,13 +469,17 @@ local function HideCombatIcons()
     if receiversUnrouted and not InCombatLockdown() then
         receiversUnrouted = false
         for _, f in pairs(receiverIconPool) do
-            if not f._routed then RouteReceiverIcon(f) end
+            if not f._routed then
+                RouteReceiverIcon(f)
+            end
         end
     end
     if EABR.SetProviderCastCombatVisible then
         EABR.SetProviderCastCombatVisible(false)
     end
-    if combatAnchor then CludesUI.SetElementVisibility(combatAnchor, false) end
+    if combatAnchor then
+        CludesUI.SetElementVisibility(combatAnchor, false)
+    end
 end
 
 local function ShowCombatIcon(m)
@@ -406,12 +519,15 @@ local function ShowCombatIcon(m)
     if m.groupTotal then
         EABR.ApplyIconGroupCoverage(f, m.groupHave, m.groupTotal)
     else
-        EABR.ApplyIconBagCount(f, (not m.isEating) and m.bagCount or nil,
+        EABR.ApplyIconBagCount(
+            f,
+            (not m.isEating) and m.bagCount or nil,
             (not m.isEating) and m.desaturated or nil,
-            (not m.isEating) and m.substitute or nil)
+            (not m.isEating) and m.substitute or nil
+        )
     end
     f:Show()
-    combatActiveIcons[#combatActiveIcons+1] = f
+    combatActiveIcons[#combatActiveIcons + 1] = f
 end
 
 -- Left-aligned from the anchor's left edge; Grow Left right-aligns from its
@@ -422,13 +538,17 @@ end
 local function LayoutCombatIcons()
     local reserveSlot = EABR._providerCastVisible or EABR._providerCastCombatReserved
     local count = #combatActiveIcons
-    if count == 0 and not reserveSlot then return end
+    if count == 0 and not reserveSlot then
+        return
+    end
     local p = db.profile.display
     local spacing = p.iconSpacing or 8
     local baseScale = p.scale or 1.0
     local sz = floor(ICON_SIZE * baseScale + 0.5)
     local iconH = sz
-    if p.iconShape and p.iconShape ~= "none" then sz, iconH = ns.IconDimensions(sz, p) end
+    if p.iconShape and p.iconShape ~= "none" then
+        sz, iconH = ns.IconDimensions(sz, p)
+    end
     local xOff = reserveSlot and (sz + spacing) or 0
     local pt = "TOPLEFT"
     if p.growDirection == "LEFT" and not reserveSlot then
@@ -441,7 +561,7 @@ local function LayoutCombatIcons()
         EABR.SizeIconQuality(f, sz)
         EABR.SizeIconBagCount(f, sz)
         f:ClearAllPoints()
-        f:SetPoint(pt, combatAnchor, pt, xOff + (i-1)*(sz+spacing), 0)
+        f:SetPoint(pt, combatAnchor, pt, xOff + (i - 1) * (sz + spacing), 0)
     end
 end
 
@@ -449,14 +569,17 @@ end
 --  Cursor Icon Pool: same visual style as combat icons, parented to cursorAnchor (follows the cursor frame).
 -------------------------------------------------------------------------------
 local function GetOrCreateCursorIcon(index)
-    if cursorIconPool[index] then return cursorIconPool[index] end
-    local f = CreateFrame("Frame", "EABR_CursorIcon"..index, cursorAnchor)
+    if cursorIconPool[index] then
+        return cursorIconPool[index]
+    end
+    local f = CreateFrame("Frame", "EABR_CursorIcon" .. index, cursorAnchor)
     f:SetSize(ICON_SIZE, ICON_SIZE)
     f:SetFrameStrata("TOOLTIP")
     f:SetFrameLevel(9980)
     f:Hide()
     local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(); icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     f._icon = icon
     EABR.ApplyIconBorder(f, false)
     local text = EABR.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
@@ -488,12 +611,17 @@ local function HideCursorIcons()
         local f = cursorActiveIcons[i]
         if f then
             EABR.ClearEatingVisual(f)
-            if f._eabrGlowWrapper then f._eabrGlowWrapper:Hide() end
-            f._text:SetText(""); f:Hide()
+            if f._eabrGlowWrapper then
+                f._eabrGlowWrapper:Hide()
+            end
+            f._text:SetText("")
+            f:Hide()
         end
     end
     wipe(cursorActiveIcons)
-    if cursorAnchor then CludesUI.SetElementVisibility(cursorAnchor, false) end
+    if cursorAnchor then
+        CludesUI.SetElementVisibility(cursorAnchor, false)
+    end
     ReleaseCursorAnchor()
 end
 
@@ -527,24 +655,32 @@ local function ShowCursorIcon(iconIdx, m)
     if m.groupTotal then
         EABR.ApplyIconGroupCoverage(f, m.groupHave, m.groupTotal)
     else
-        EABR.ApplyIconBagCount(f, (not m.isEating) and m.bagCount or nil,
+        EABR.ApplyIconBagCount(
+            f,
+            (not m.isEating) and m.bagCount or nil,
             (not m.isEating) and m.desaturated or nil,
-            (not m.isEating) and m.substitute or nil)
+            (not m.isEating) and m.substitute or nil
+        )
     end
     f:Show()
-    cursorActiveIcons[#cursorActiveIcons+1] = f
+    cursorActiveIcons[#cursorActiveIcons + 1] = f
 end
 
 local function LayoutCursorIcons()
-    local count = #cursorActiveIcons; if count == 0 then return end
+    local count = #cursorActiveIcons
+    if count == 0 then
+        return
+    end
     local p = db.profile.display
     local spacing = p.iconSpacing or 8
     local baseScale = p.scale or 1.0
     local sz = floor(ICON_SIZE * baseScale + 0.5)
     local iconH = sz
-    if p.iconShape and p.iconShape ~= "none" then sz, iconH = ns.IconDimensions(sz, p) end
-    local totalW = (count * sz) + ((count-1) * spacing)
-    local startX = -(totalW/2) + (sz/2)
+    if p.iconShape and p.iconShape ~= "none" then
+        sz, iconH = ns.IconDimensions(sz, p)
+    end
+    local totalW = (count * sz) + ((count - 1) * spacing)
+    local startX = -(totalW / 2) + (sz / 2)
     for i, f in ipairs(cursorActiveIcons) do
         f:SetSize(sz, iconH)
         f:SetAlpha(p.opacity or 1.0)
@@ -552,7 +688,7 @@ local function LayoutCursorIcons()
         EABR.SizeIconQuality(f, sz)
         EABR.SizeIconBagCount(f, sz)
         f:ClearAllPoints()
-        f:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (i-1)*(sz+spacing), 0)
+        f:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (i - 1) * (sz + spacing), 0)
     end
 end
 
@@ -564,14 +700,20 @@ end
 --  to UIParent so anchor mouse states never swallow its clicks.
 -------------------------------------------------------------------------------
 function EABR.LayoutProviderCastHome()
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     local btn = EABR._providerCastBtn
-    if not btn or not iconAnchor then return end
+    if not btn or not iconAnchor then
+        return
+    end
     local p = db and db.profile and db.profile.display
     local baseScale = (p and p.scale) or 1.0
     local sz = floor(ICON_SIZE * baseScale + 0.5)
     local iconH = sz
-    if p and p.iconShape and p.iconShape ~= "none" then sz, iconH = ns.IconDimensions(sz, p) end
+    if p and p.iconShape and p.iconShape ~= "none" then
+        sz, iconH = ns.IconDimensions(sz, p)
+    end
     btn:SetSize(sz, iconH)
     EABR.ApplyIconBorder(btn, true)
     btn:ClearAllPoints()
@@ -582,12 +724,19 @@ end
 
 function EABR.ParkProviderCastButton()
     local btn = EABR._providerCastBtn
-    if not btn then return end
+    if not btn then
+        return
+    end
     local wasVisible = EABR._providerCastVisible
     EABR._providerCastVisible = false
     btn:SetAlpha(0)
-    if btn._text then btn._text:SetText(""); btn._text:Hide() end
-    if btn._eabrGlowWrapper then btn._eabrGlowWrapper:Hide() end
+    if btn._text then
+        btn._text:SetText("")
+        btn._text:Hide()
+    end
+    if btn._eabrGlowWrapper then
+        btn._eabrGlowWrapper:Hide()
+    end
     if InCombatLockdown() then
         -- Slot stays reserved; move/mouse changes are protected under lockdown.
         if wasVisible or EABR._providerCastCombatReserved then
@@ -602,8 +751,12 @@ function EABR.ParkProviderCastButton()
 end
 
 function EABR.EnsureProviderCastButton()
-    if EABR._providerCastBtn then return EABR._providerCastBtn end
-    if not iconAnchor or InCombatLockdown() then return nil end
+    if EABR._providerCastBtn then
+        return EABR._providerCastBtn
+    end
+    if not iconAnchor or InCombatLockdown() then
+        return nil
+    end
     local btn = CreateFrame("Button", "EABR_ProviderCast", UIParent, "SecureActionButtonTemplate")
     btn:SetSize(ICON_SIZE, ICON_SIZE)
     btn:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp")
@@ -614,11 +767,14 @@ function EABR.EnsureProviderCastButton()
     btn:HookScript("PostClick", function(self, button)
         if button == "MiddleButton" and self._dismissKey then
             _dismissedUntilLoad[self._dismissKey] = true
-            if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
         end
     end)
     local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(); icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     btn._icon = icon
     EABR.ApplyIconBorder(btn, true)
     local text = EABR.GetIconTextOverlay(btn):CreateFontString(nil, "OVERLAY")
@@ -643,14 +799,20 @@ end
 -- Raid Buffs pass picked (a rank and the member to cast it on) and builds the
 -- button only once there is one.
 function EABR.SyncProviderCastSpell()
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     local spellID, unit
     if EABR.FOREVER then
         spellID, unit = EABR._fvCastSpell, EABR._fvCastUnit
-        if not (spellID or EABR._providerCastBtn) then return end
+        if not (spellID or EABR._providerCastBtn) then
+            return
+        end
     end
     local btn = EABR.EnsureProviderCastButton()
-    if not btn then return end
+    if not btn then
+        return
+    end
     if not EABR.FOREVER then
         local playerClass = GetPlayerClass()
         for _, buff in ipairs(RAID_BUFFS) do
@@ -666,7 +828,9 @@ function EABR.SyncProviderCastSpell()
     -- spellID (covers spec/known changes via SPELLS_CHANGED refreshes) and
     -- the unit (WoW Forever's target member).
     if spellID == EABR._providerCastSpell and unit == EABR._providerCastUnit then
-        if not EABR._providerCastVisible then EABR.ParkProviderCastButton() end
+        if not EABR._providerCastVisible then
+            EABR.ParkProviderCastButton()
+        end
         return
     end
     EABR._providerCastSpell = spellID
@@ -735,7 +899,9 @@ local function IsImportantBuff(m)
     -- Cursor-worthy = a buff YOU can cast that others are missing (provider
     -- entries, mode "spell"). The receiver view (mode "texture" -- a
     -- groupmate's buff the PLAYER lacks) stays on the normal rows.
-    if m.cat == "raidbuff" then return m.mode == "spell" end
+    if m.cat == "raidbuff" then
+        return m.mode == "spell"
+    end
     local key = m.data and m.data.key
     return key and CURSOR_IMPORTANT[key] or false
 end
@@ -748,8 +914,13 @@ local function FadeOutSecureIcons()
             btn:SetAlpha(0)
             -- A faded button still takes clicks: no buff request from it.
             btn._requestKey = nil
-            if btn._text then btn._text:SetAlpha(0) end
-            if btn._eabrGlowWrapper then StopAllGlows(btn._eabrGlowWrapper); btn._eabrGlowWrapper:SetAlpha(0) end
+            if btn._text then
+                btn._text:SetAlpha(0)
+            end
+            if btn._eabrGlowWrapper then
+                StopAllGlows(btn._eabrGlowWrapper)
+                btn._eabrGlowWrapper:SetAlpha(0)
+            end
         end
     end
 end
@@ -761,7 +932,9 @@ do
     local SPEC = {}
     local function GlowSpec(p, out)
         local shared = p and GLOW_VIEW.toShared[p.glowType or 0]
-        if not shared then return nil end
+        if not shared then
+            return nil
+        end
         out = out or SPEC
         out.style = shared
         out.r, out.g, out.b = ResolveGlowTint(p)
@@ -771,7 +944,7 @@ do
         out.bgR, out.bgG, out.bgB = bgc and bgc.r, bgc and bgc.g, bgc and bgc.b
         return out
     end
-    _G._EABR_GlowSpec = GlowSpec
+    _G._CUABR_GlowSpec = GlowSpec
 
     -- Also clears the glow when it is off, so callers need no RemoveGlow first
     -- (that would reset StartSpecGlow's signature and restart every refresh).
@@ -779,20 +952,31 @@ do
         local spec = GlowSpec(p)
         if not spec then
             local w = btn._eabrGlowWrapper
-            if w then StopAllGlows(w); w:Hide() end
+            if w then
+                StopAllGlows(w)
+                w:Hide()
+            end
             return
         end
         if not btn._eabrGlowWrapper then
-            local w = CreateFrame("Frame", nil, btn); w:SetAllPoints(btn); w:SetFrameLevel(btn:GetFrameLevel()+4)
+            local w = CreateFrame("Frame", nil, btn)
+            w:SetAllPoints(btn)
+            w:SetFrameLevel(btn:GetFrameLevel() + 4)
             btn._eabrGlowWrapper = w
         end
-        local wrapper = btn._eabrGlowWrapper; local sz = overrideSz or btn:GetWidth() or ICON_SIZE
+        local wrapper = btn._eabrGlowWrapper
+        local sz = overrideSz or btn:GetWidth() or ICON_SIZE
         local h, extra = sz
         if p.iconShape and p.iconShape ~= "none" then
-            if overrideSz then sz, h = ns.IconDimensions(sz, p)
-            else h = btn:GetHeight() end
+            if overrideSz then
+                sz, h = ns.IconDimensions(sz, p)
+            else
+                h = btn:GetHeight()
+            end
         end
-        if btn._eabrShape then extra = ns.IconGlowExtra(btn) end
+        if btn._eabrShape then
+            extra = ns.IconGlowExtra(btn)
+        end
         CludesUI.Glows.StartSpecGlow(wrapper, spec, sz, h, "icon", extra)
         wrapper:SetAlpha(1)
         wrapper:Show()
@@ -800,7 +984,10 @@ do
 end
 
 local function RemoveGlow(btn)
-    if btn._eabrGlowWrapper then StopAllGlows(btn._eabrGlowWrapper); btn._eabrGlowWrapper:Hide() end
+    if btn._eabrGlowWrapper then
+        StopAllGlows(btn._eabrGlowWrapper)
+        btn._eabrGlowWrapper:Hide()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -810,7 +997,9 @@ end
 --  hangs on EABR.
 -------------------------------------------------------------------------------
 function EABR.AttachIconHover(f)
-    if f._eabrHoverAttached then return end
+    if f._eabrHoverAttached then
+        return
+    end
     local icon = f._icon
     if f:IsObjectType("Button") then
         local hl = f:CreateTexture(nil, "HIGHLIGHT")
@@ -825,8 +1014,14 @@ function EABR.AttachIconHover(f)
         hl:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         hl:SetColorTexture(1, 1, 1, 0.2)
         hl:Hide()
-        f:HookScript("OnEnter", function(self) if not self._hlOff then hl:Show() end end)
-        f:HookScript("OnLeave", function() hl:Hide() end)
+        f:HookScript("OnEnter", function(self)
+            if not self._hlOff then
+                hl:Show()
+            end
+        end)
+        f:HookScript("OnLeave", function()
+            hl:Hide()
+        end)
     end
     f._eabrHoverAttached = true
 end
@@ -842,13 +1037,19 @@ end
 -- layer (hidden as a texture); the plain pools gate their OnEnter on the flag.
 function EABR.SetIconHighlight(f, on)
     local off = not on
-    if f._hlOff == off then return end
+    if f._hlOff == off then
+        return
+    end
     f._hlOff = off
-    if f._hl then f._hl:SetShown(on) end
+    if f._hl then
+        f._hl:SetShown(on)
+    end
 end
 
 function EABR.ApplyIconTooltipData(f, m)
-    if not f then return end
+    if not f then
+        return
+    end
     if not m then
         f._tooltipItem = nil
         f._tooltipSpell = nil
@@ -862,8 +1063,12 @@ end
 
 function EABR.ShowIconTooltip(f)
     local d = db and db.profile and db.profile.display
-    if not d or d.showTooltips == false then return end
-    if not f then return end
+    if not d or d.showTooltips == false then
+        return
+    end
+    if not f then
+        return
+    end
     if f._tooltipItem or f._tooltipSpell then
         -- Item/spell data tooltips render through GameTooltip (the only
         -- game-data renderer). pcall-armored: 12.1 restricted-tooltip ACLs
@@ -878,11 +1083,19 @@ function EABR.ShowIconTooltip(f)
             if f._outOfStock then
                 GameTooltip:AddLine(CludesUI.L("You don't have this item in your bags"), 1, 0.3, 0.3, true)
             elseif f._substitute then
-                GameTooltip:AddLine(CludesUI.L("Your preferred food is out - using a backup you own"), 1, 0.82, 0, true)
+                GameTooltip:AddLine(
+                    CludesUI.L("Your preferred food is out - using a backup you own"),
+                    1,
+                    0.82,
+                    0,
+                    true
+                )
             end
             GameTooltip:Show()
         end)
-        if not ok then GameTooltip:Hide() end
+        if not ok then
+            GameTooltip:Hide()
+        end
     elseif f._tooltipLabel and f._tooltipLabel ~= "" then
         -- Plain-text reminders use the suite tooltip, never GameTooltip.
         CludesUI.ShowWidgetTooltip(f, tostring(f._tooltipLabel))
@@ -898,17 +1111,25 @@ function EABR.HideIconTooltip(f)
 end
 
 function EABR.AttachIconTooltip(f)
-    if f._eabrTooltipAttached then return end
+    if f._eabrTooltipAttached then
+        return
+    end
     f:EnableMouse(true)
-    f:HookScript("OnEnter", function(self) EABR.ShowIconTooltip(self) end)
-    f:HookScript("OnLeave", function(self) EABR.HideIconTooltip(self) end)
+    f:HookScript("OnEnter", function(self)
+        EABR.ShowIconTooltip(self)
+    end)
+    f:HookScript("OnLeave", function(self)
+        EABR.HideIconTooltip(self)
+    end)
     f._eabrTooltipAttached = true
 end
 
 -- Visual-only combat/cursor icons: tell the player why left-click does nothing.
 function EABR.NotifyCombatClickDisabled()
     local now = GetTime()
-    if EABR._clickHintAt and now - EABR._clickHintAt < 2.5 then return end
+    if EABR._clickHintAt and now - EABR._clickHintAt < 2.5 then
+        return
+    end
     EABR._clickHintAt = now
     if UIErrorsFrame then
         UIErrorsFrame:AddMessage(CludesUI.L("Click-to-use is disabled in combat"), 1.0, 0.3, 0.3, 1.0)
@@ -923,21 +1144,27 @@ end
 do
     local REQUEST_THROTTLE = 10
     local REQUEST_TOKEN = "[spell]"
-    local TOKEN_PATTERN = "%[[Ss][Pp][Ee][Ll][Ll]%]"  -- any case
+    local TOKEN_PATTERN = "%[[Ss][Pp][Ee][Ll][Ll]%]" -- any case
     local sentAt = {}
 
     -- Cuts s to at most n bytes without splitting a UTF-8 character.
     local function CutBytes(s, n)
-        if #s <= n then return s end
+        if #s <= n then
+            return s
+        end
         return (s:sub(1, n):gsub("[\192-\255][\128-\191]*$", ""))
     end
 
     -- Custom text as saved: "|" and control characters dropped (the chat API
     -- rejects stray escape codes), trimmed, capped; nil when empty.
     local function CleanRequestText(text)
-        if type(text) ~= "string" then return nil end
+        if type(text) ~= "string" then
+            return nil
+        end
         text = CutBytes(strtrim((text:gsub("[%c|]", ""))), 200)
-        if text == "" then return nil end
+        if text == "" then
+            return nil
+        end
         return text
     end
     -- Custom text until the player saves their own (shows where the token goes).
@@ -947,30 +1174,50 @@ do
     local function HasRequestToken(text)
         return text:find(TOKEN_PATTERN) ~= nil
     end
-    _G._EABR_REQUEST_TOKEN = REQUEST_TOKEN
-    _G._EABR_HasRequestToken = HasRequestToken
-    _G._EABR_CleanRequestText = CleanRequestText
-    _G._EABR_RequestExample = RequestExample
+    _G._CUABR_REQUEST_TOKEN = REQUEST_TOKEN
+    _G._CUABR_HasRequestToken = HasRequestToken
+    _G._CUABR_CleanRequestText = CleanRequestText
+    _G._CUABR_RequestExample = RequestExample
 
     local function RequestChannel()
-        if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
-        if IsInRaid() then return "RAID" end
-        if IsInGroup() then return "PARTY" end
+        if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+            return "INSTANCE_CHAT"
+        end
+        if IsInRaid() then
+            return "RAID"
+        end
+        if IsInGroup() then
+            return "PARTY"
+        end
     end
 
     function EABR.SendBuffRequest(key, name)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         local channel = RequestChannel()
-        if not channel then return end
-        if not name then return end
+        if not channel then
+            return
+        end
+        if not name then
+            return
+        end
         if C_ChatInfo.InChatMessagingLockdown() then
             if UIErrorsFrame then
-                UIErrorsFrame:AddMessage(CludesUI.L("Buff requests cannot be sent right now"), 1.0, 0.3, 0.3, 1.0)
+                UIErrorsFrame:AddMessage(
+                    CludesUI.L("Buff requests cannot be sent right now"),
+                    1.0,
+                    0.3,
+                    0.3,
+                    1.0
+                )
             end
             return
         end
         local now = GetTime()
-        if sentAt[key] and now - sentAt[key] < REQUEST_THROTTLE then return end
+        if sentAt[key] and now - sentAt[key] < REQUEST_THROTTLE then
+            return
+        end
         sentAt[key] = now
         local rb = db.profile.raidBuffs
         local custom = rb.requestCustom and CleanRequestText(rb.requestText or RequestExample())
@@ -988,21 +1235,27 @@ end
 -- Middle-click dismisses here too. These are plain frames rather than the OOC
 -- secure buttons, so the click carries no action of its own.
 function EABR.AttachCombatClickHint(f)
-    if f._eabrCombatClickHint then return end
+    if f._eabrCombatClickHint then
+        return
+    end
     f:EnableMouse(true)
     f:HookScript("OnMouseUp", function(self, button)
         if button == "LeftButton" then
             EABR.NotifyCombatClickDisabled()
         elseif button == "MiddleButton" and self._dismissKey then
             _dismissedUntilLoad[self._dismissKey] = true
-            if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
         end
     end)
     f._eabrCombatClickHint = true
 end
 
 function EABR.CreateIconCountOverlay(f)
-    if f._count then return f._count end
+    if f._count then
+        return f._count
+    end
     local count = EABR.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY", "NumberFontNormalLarge")
     count:SetPoint("CENTER", f._icon, "CENTER", 0, 0)
     count:Hide()
@@ -1014,9 +1267,13 @@ end
 -- Crafted quality is immutable per item, so only positive hits are cached.
 EABR._qualityAtlasCache = EABR._qualityAtlasCache or {}
 function EABR.GetItemQualityAtlas(itemID)
-    if not itemID then return nil end
+    if not itemID then
+        return nil
+    end
     local cached = EABR._qualityAtlasCache[itemID]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
     local atlas
     if C_TradeSkillUI and C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
         local ok, q = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, itemID)
@@ -1028,15 +1285,21 @@ function EABR.GetItemQualityAtlas(itemID)
         local link = select(2, C_Item.GetItemInfo(itemID))
         if link then
             local suffix = link:match("Quality%-[%w%-]*Tier%d")
-            if suffix then atlas = "Professions-Icon-" .. suffix end
+            if suffix then
+                atlas = "Professions-Icon-" .. suffix
+            end
         end
     end
-    if atlas then EABR._qualityAtlasCache[itemID] = atlas end
+    if atlas then
+        EABR._qualityAtlasCache[itemID] = atlas
+    end
     return atlas
 end
 
 function EABR.CreateIconQualityOverlay(f)
-    if f._quality then return f._quality end
+    if f._quality then
+        return f._quality
+    end
     -- Keep the crafted-quality badge above the dedicated border child, just
     -- like count/name text. This matters for the wider textured styles.
     local q = EABR.GetIconTextOverlay(f):CreateTexture(nil, "OVERLAY", nil, 7)
@@ -1047,7 +1310,9 @@ end
 
 function EABR.SizeIconQuality(f, sz)
     local q = f._quality
-    if not q or not f._qualityAtlas then return end
+    if not q or not f._qualityAtlas then
+        return
+    end
     local qs = max(10, floor(sz * 0.42))
     local off = floor(sz * 0.10)
     q:SetSize(qs, qs)
@@ -1056,7 +1321,9 @@ function EABR.SizeIconQuality(f, sz)
 end
 
 function EABR.ApplyIconQuality(f, atlas)
-    if not f then return end
+    if not f then
+        return
+    end
     EABR.CreateIconQualityOverlay(f)
     f._qualityAtlas = atlas or nil
     local q = f._quality
@@ -1071,7 +1338,9 @@ end
 
 -- Bag-count badge (how many of the consumable remain), bottom-right corner.
 function EABR.CreateIconBagCountOverlay(f)
-    if f._bagCount then return f._bagCount end
+    if f._bagCount then
+        return f._bagCount
+    end
     local fs = EABR.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
     local p = db and db.profile.display
     SetABRFont(fs, ResolveFontPath(p and p.countFont), 11)
@@ -1082,7 +1351,9 @@ end
 
 function EABR.SizeIconBagCount(f, sz)
     local fs = f._bagCount
-    if not fs or not f._bagCountShown then return end
+    if not fs or not f._bagCountShown then
+        return
+    end
     local p = db and db.profile.display
     local base = (p and p.countSize) or 16
     local fsz = max(6, floor(base * (sz / ICON_SIZE) + 0.5))
@@ -1094,7 +1365,9 @@ function EABR.SizeIconBagCount(f, sz)
 end
 
 function EABR.ApplyIconBagCount(f, count, outOfStock, substitute, spellRank)
-    if not f then return end
+    if not f then
+        return
+    end
     EABR.CreateIconBagCountOverlay(f)
     f._outOfStock = outOfStock and true or nil
     f._substitute = (substitute and not outOfStock) and true or nil
@@ -1126,7 +1399,9 @@ end
 
 -- Raid-buff group coverage ("12/15") on the same corner badge as item count.
 function EABR.ApplyIconGroupCoverage(f, have, total)
-    if not f then return end
+    if not f then
+        return
+    end
     EABR.CreateIconBagCountOverlay(f)
     local fs = f._bagCount
     if have ~= nil and total and total > 0 then
@@ -1156,14 +1431,20 @@ function EABR.ClearEatingVisual(f)
         f:SetScript("OnUpdate", nil)
         f._eabrEatingOnUpdate = nil
     end
-    if f._count then f._count:Hide() end
-    if f._expiryBinding then f._expiryBinding:SetEnabled(false) end
+    if f._count then
+        f._count:Hide()
+    end
+    if f._expiryBinding then
+        f._expiryBinding:SetEnabled(false)
+    end
     f._eabrEatingIcon = nil
 end
 
 function EABR.EatingTick(self, elapsed)
     self._eatingAccum = (self._eatingAccum or 0) + elapsed
-    if self._eatingAccum < 0.2 then return end
+    if self._eatingAccum < 0.2 then
+        return
+    end
     self._eatingAccum = 0
     local rem = (self._eatingExp or 0) - GetTime()
     if rem > 0 then
@@ -1179,25 +1460,33 @@ function EABR.EatingTick(self, elapsed)
             self._count:SetText(txt)
         end
         self._count:Show()
-        if self._text then self._text:Hide() end
+        if self._text then
+            self._text:Hide()
+        end
     else
         self._count:Hide()
         self:SetScript("OnUpdate", nil)
         self._eabrEatingOnUpdate = nil
-        if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+        if _G._CUABR_RequestRefresh then
+            _G._CUABR_RequestRefresh()
+        end
     end
 end
 
 function EABR.ApplyEatingVisual(f, m)
     EABR.ClearEatingVisual(f)
-    if not (m and m.isEating) then return end
+    if not (m and m.isEating) then
+        return
+    end
     EABR.CreateIconCountOverlay(f)
     f._icon:SetDesaturated(false)
     f._icon:SetTexture(133950)
     f._eabrEatingIcon = true
     RemoveGlow(f)
     local expTime = m.eatingExpirationTime
-    if not expTime then return end
+    if not expTime then
+        return
+    end
     local p = db and db.profile.display
     local fontPath = ResolveFontPath()
     local textSize = max(14, floor(((p and p.textSize) or 11) * 1.15))
@@ -1215,10 +1504,14 @@ function EABR.ApplyIconExpiry(f, m)
     local expireAt = m and m.expireAt
     local binding = f._expiryBinding
     if not expireAt then
-        if binding then binding:SetEnabled(false) end
+        if binding then
+            binding:SetEnabled(false)
+        end
         return
     end
-    if not (C_DurationUtil and C_DurationUtil.CreateDurationTextBinding) then return end
+    if not (C_DurationUtil and C_DurationUtil.CreateDurationTextBinding) then
+        return
+    end
     local count = EABR.CreateIconCountOverlay(f)
     if not binding then
         f._expiryDuration = C_DurationUtil.CreateDuration()
@@ -1226,7 +1519,9 @@ function EABR.ApplyIconExpiry(f, m)
         binding:SetFontString(count)
         binding:SetDuration(f._expiryDuration)
         local fmt = CludesUI.AuraKit.GetDurationFormatter(false)
-        if fmt then binding:SetFormatter(fmt) end
+        if fmt then
+            binding:SetFormatter(fmt)
+        end
         f._expiryBinding = binding
     end
     local p = db and db.profile.display
@@ -1241,9 +1536,11 @@ local ShowForeverGroupMenu
 local iconPickerStyle
 
 local function GetOrCreateIcon(index)
-    if iconPool[index] then return iconPool[index] end
+    if iconPool[index] then
+        return iconPool[index]
+    end
     -- SecureActionButtonTemplate for click-to-cast in combat
-    local btn = CreateFrame("Button", "EABR_Icon"..index, iconAnchor, "SecureActionButtonTemplate")
+    local btn = CreateFrame("Button", "EABR_Icon" .. index, iconAnchor, "SecureActionButtonTemplate")
     btn:SetSize(ICON_SIZE, ICON_SIZE)
     btn:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp", "RightButtonUp")
     securecallfunction(btn.SetPassThroughButtons, btn, "RightButton")
@@ -1256,19 +1553,24 @@ local function GetOrCreateIcon(index)
     btn:HookScript("PostClick", function(self, button, down)
         if button == "MiddleButton" and self._dismissKey then
             _dismissedUntilLoad[self._dismissKey] = true
-            if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
         elseif button == "LeftButton" and self._requestKey and not down then
             EABR.SendBuffRequest(self._requestKey, self._requestName)
         elseif button == "RightButton" and self._petCycleTotal then
             EABR._petCycleIndex = ((EABR._petCycleIndex or 1) % self._petCycleTotal) + 1
-            if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
         elseif button == "RightButton" and self._foreverGroup and not InCombat() then
             ShowForeverGroupMenu(self)
         end
     end)
 
     local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(); icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     btn._icon = icon
     EABR.ApplyIconBorder(btn, true)
 
@@ -1323,7 +1625,7 @@ end
 local function SetIconItem(btn, itemID, texture, label)
     if not InCombat() then
         btn:SetAttribute("type1", "item")
-        btn:SetAttribute("item1", "item:"..itemID)
+        btn:SetAttribute("item1", "item:" .. itemID)
         btn:SetAttribute("spell1", nil)
         btn:SetAttribute("macrotext1", nil)
         btn:SetAttribute("unit1", nil)
@@ -1352,14 +1654,20 @@ function EABR.ForeverPickerSpellData(id, ranked)
     local data = pickerSpellData[id]
     if not data or (ranked and not data.rank) then
         local name = SpellName(id)
-        if not name then return end
+        if not name then
+            return
+        end
         local subtext = C_Spell.GetSpellSubtext(id)
         local rank = subtext and subtext:match("%d+")
-        if subtext and subtext ~= "" then name = name .. "(" .. subtext .. ")" end
+        if subtext and subtext ~= "" then
+            name = name .. "(" .. subtext .. ")"
+        end
         -- A faded pooled button can still receive clicks during lockdown.
         data = { macro = "/cast [@player,nocombat] " .. name, rank = rank }
         -- Retry incomplete metadata for spells with more than one known rank.
-        if rank or not ranked then pickerSpellData[id] = data end
+        if rank or not ranked then
+            pickerSpellData[id] = data
+        end
     end
     return data.macro, data.rank
 end
@@ -1369,7 +1677,9 @@ ShowForeverGroupMenu = function(btn)
     local profile = db.profile
     local forever = profile.forever
     local settings = group.settings
-    if not group.actions then settings = group end
+    if not group.actions then
+        settings = group
+    end
     local function SaveSettings()
         if not settings then
             settings = {}
@@ -1396,10 +1706,20 @@ ShowForeverGroupMenu = function(btn)
         return btn._tooltipSpell == EABR.ForeverGroupCastSpell(group, spellID)
     end
     local function IsCurrent()
-        if InCombat() or db.profile ~= profile or profile.forever ~= forever or not (forever and forever.pickerEnabled)
-            or btn._foreverGroup ~= group or not btn:IsVisible() then return false end
+        if
+            InCombat()
+            or db.profile ~= profile
+            or profile.forever ~= forever
+            or not (forever and forever.pickerEnabled)
+            or btn._foreverGroup ~= group
+            or not btn:IsVisible()
+        then
+            return false
+        end
         if group.actions then
-            return forever and forever.classBuffActions == group.actions and group.actions[group.key] == settings
+            return forever
+                and forever.classBuffActions == group.actions
+                and group.actions[group.key] == settings
         end
         return forever and forever.customGroups and tContains(forever.customGroups, group)
     end
@@ -1408,14 +1728,20 @@ ShowForeverGroupMenu = function(btn)
     end
     local function ApplySpell(id, ranked)
         local macro, rank = EABR.ForeverPickerSpellData(id, ranked)
-        if not macro then return end
+        if not macro then
+            return
+        end
         SetIconMacro(btn, macro, Tex(id), id)
         EABR.ApplyIconBagCount(btn, nil, nil, nil, rank)
     end
     local function SelectSpell(spellID)
-        if not CanChange(spellID) then return end
+        if not CanChange(spellID) then
+            return
+        end
         local id, ranks = EABR.ForeverGroupCastSpell(group, spellID)
-        if not id or (group.actions and not C_SpellBook.IsSpellKnown(id)) then return end
+        if not id or (group.actions and not C_SpellBook.IsSpellKnown(id)) then
+            return
+        end
         SaveSettings().castSpellID = spellID
         ApplySpell(id, #ranks > 1)
     end
@@ -1428,32 +1754,52 @@ ShowForeverGroupMenu = function(btn)
             badge:SetJustifyH("RIGHT")
             badge:SetPoint("CENTER", frame, "CENTER", 0, -10)
             local id, ranks = EABR.ForeverGroupCastSpell(group, spellID)
-            if not id then return end
+            if not id then
+                return
+            end
             local _, rank = EABR.ForeverPickerSpellData(id, #ranks > 1)
             badge:SetText(rank or "")
-            if #ranks < 2 then return end
+            if #ranks < 2 then
+                return
+            end
             frame:EnableMouseWheel(true)
             frame:SetScript("OnMouseWheel", function(_, delta)
-                if delta == 0 or not CanChange(spellID) then return end
+                if delta == 0 or not CanChange(spellID) then
+                    return
+                end
                 local current, known, at = EABR.ForeverGroupCastSpell(group, spellID)
-                if not current then return end
+                if not current then
+                    return
+                end
                 local nextRank = at + (delta > 0 and 1 or -1)
                 local nextID = known[nextRank]
-                if not nextID or (group.actions and not C_SpellBook.IsSpellKnown(nextID)) then return end
+                if not nextID or (group.actions and not C_SpellBook.IsSpellKnown(nextID)) then
+                    return
+                end
                 local _, rank = EABR.ForeverPickerSpellData(nextID, true)
-                if nextRank < #known and not rank then return end
+                if nextRank < #known and not rank then
+                    return
+                end
                 local selected = btn._tooltipSpell == current
                 if nextRank < #known then
                     local saved = SaveSettings()
-                    if not saved.castRanks then saved.castRanks = {} end
+                    if not saved.castRanks then
+                        saved.castRanks = {}
+                    end
                     saved.castRanks[spellID] = nextID
                 elseif settings and settings.castRanks then
                     settings.castRanks[spellID] = nil
-                    if not next(settings.castRanks) then settings.castRanks = nil end
+                    if not next(settings.castRanks) then
+                        settings.castRanks = nil
+                    end
                 end
-                if selected then ApplySpell(nextID, true) end
+                if selected then
+                    ApplySpell(nextID, true)
+                end
                 badge:SetText(rank or "")
-                if GameTooltip:IsOwned(frame) then GameTooltip:SetSpellByID(nextID) end
+                if GameTooltip:IsOwned(frame) then
+                    GameTooltip:SetSpellByID(nextID)
+                end
             end)
         end)
         button:AddResetter(function(frame)
@@ -1461,15 +1807,29 @@ ShowForeverGroupMenu = function(btn)
             frame:EnableMouseWheel(false)
         end)
     end
-    if #ids < 2 or not (MenuUtil and MenuUtil.CreateContextMenu and MenuVariants
-        and MenuConstants and MenuConstants.HorizontalGridDirection) then return end
+    if
+        #ids < 2
+        or not (
+            MenuUtil
+            and MenuUtil.CreateContextMenu
+            and MenuVariants
+            and MenuConstants
+            and MenuConstants.HorizontalGridDirection
+        )
+    then
+        return
+    end
     EABR.HideIconTooltip(btn)
     if not iconPickerStyle then
         local inset = { left = 4, right = 4, top = 4, bottom = 4 }
         local padding = { width = 0, height = 0 }
         iconPickerStyle = CreateFromMixins(MenuVariants.GetDefaultContextMenuMixin(), {
-            GetInset = function() return inset end,
-            GetChildExtentPadding = function() return padding end,
+            GetInset = function()
+                return inset
+            end,
+            GetChildExtentPadding = function()
+                return padding
+            end,
             Generate = function(frame)
                 local background = frame:AttachTexture()
                 background:SetAtlas("common-dropdown-bg")
@@ -1481,7 +1841,9 @@ ShowForeverGroupMenu = function(btn)
     local previousStyle = btn.menuMixin
     btn.menuMixin = iconPickerStyle
     local menu = MenuUtil.CreateContextMenu(btn, function(_, root)
-        root:AddMenuReleasedCallback(function() EABR.ValidateOpenPicker = nil end)
+        root:AddMenuReleasedCallback(function()
+            EABR.ValidateOpenPicker = nil
+        end)
         local columns = math.min(#ids, max(1, floor((UIParent:GetWidth() - 32) / 42)))
         root:SetGridMode(MenuConstants.HorizontalGridDirection, columns, 2)
         -- The context menu otherwise applies a minimum width meant for text rows.
@@ -1509,7 +1871,9 @@ ShowForeverGroupMenu = function(btn)
                 tooltip:ClearAllPoints()
                 tooltip:SetPoint("BOTTOMLEFT", owner, "TOPRIGHT", 4, 4)
                 local spellID = EABR.ForeverGroupCastSpell(group, description:GetData())
-                if spellID then tooltip:SetSpellByID(spellID) end
+                if spellID then
+                    tooltip:SetSpellByID(spellID)
+                end
             end)
             AddRankControl(button, id)
         end
@@ -1517,7 +1881,9 @@ ShowForeverGroupMenu = function(btn)
     btn.menuMixin = previousStyle
     if menu then
         EABR.ValidateOpenPicker = function()
-            if not IsCurrent() then menu:Close() end
+            if not IsCurrent() then
+                menu:Close()
+            end
         end
     end
     if menu and not InputUtil.IsGamepadUIEnabled() then
@@ -1543,18 +1909,30 @@ do
             e = {}
             pool[inUse] = e
         end
-        e.mode = nil; e.spellID = nil; e.itemID = nil; e.macro = nil
-        e.texture = nil; e.label = nil; e.unit = nil; e.desaturated = false
+        e.mode = nil
+        e.spellID = nil
+        e.itemID = nil
+        e.macro = nil
+        e.texture = nil
+        e.label = nil
+        e.unit = nil
+        e.desaturated = false
         e.tooltipItem = nil
-        e.cat = nil; e.data = nil; e.dismissKey = nil; e.petCycleTotal = nil
-        e.isEating = nil; e.eatingExpirationTime = nil
-        e.expireAt = nil; e.expireTotal = nil
+        e.cat = nil
+        e.data = nil
+        e.dismissKey = nil
+        e.petCycleTotal = nil
+        e.isEating = nil
+        e.eatingExpirationTime = nil
+        e.expireAt = nil
+        e.expireTotal = nil
         e.qualityAtlas = nil
         e.bagCount = nil
         e.substitute = nil
         e.groupHave = nil
         e.groupTotal = nil
-        e.requestKey = nil; e.requestName = nil
+        e.requestKey = nil
+        e.requestName = nil
         e.foreverGroup = nil
         e.spellRank = nil
         return e
@@ -1578,8 +1956,12 @@ do
             btn._tooltipItem = m.tooltipItem
         else -- "texture"
             SetIconTexture(btn, m.texture, m.label)
-            if m.spellID then btn._tooltipSpell = m.spellID end
-            if m.tooltipItem then btn._tooltipItem = m.tooltipItem end
+            if m.spellID then
+                btn._tooltipSpell = m.spellID
+            end
+            if m.tooltipItem then
+                btn._tooltipItem = m.tooltipItem
+            end
         end
         btn._text:SetText(m.label or "")
         btn._icon:SetDesaturated(m.desaturated or false)

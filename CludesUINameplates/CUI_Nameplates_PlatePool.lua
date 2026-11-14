@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_PlatePool.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local pairs, ipairs = pairs, ipairs
@@ -28,7 +32,9 @@ local GetStackSpacingScale, IsBorderEnabled = I.GetStackSpacingScale, I.IsBorder
 local SetProfile = I.SetProfile
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v) p = v end
+I.profileSetters[#I.profileSetters + 1] = function(v)
+    p = v
+end
 
 local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(plate)
     plate:SetFlattensRenderLayers(true)
@@ -72,7 +78,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     local function AddBorder(parent)
         local PP = CludesUI and CludesUI.PP
         if PP then
-            PP.CreateBorder(parent, 0, 0, 0, 1, 1, "OVERLAY", 5, true)  -- scaleGuard: NP frame
+            PP.CreateBorder(parent, 0, 0, 0, 1, 1, "OVERLAY", 5, true) -- scaleGuard: NP frame
         end
     end
     -- Border: single pixel-perfect PP.CreateBorder (BackdropTemplate).
@@ -82,12 +88,16 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     bc.r, bc.g, bc.b = GetBorderColor()
     if PP and PP.CreateBorder then
         local sz = ns.NP_BorderSize()
-        PP.CreateBorder(plate.health, bc.r, bc.g, bc.b, 1, sz, "OVERLAY", 7, true)  -- scaleGuard: NP frame
-        if not IsBorderEnabled() or ns.NP_Classic() then PP.HideBorder(plate.health) end
+        PP.CreateBorder(plate.health, bc.r, bc.g, bc.b, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
+        if not IsBorderEnabled() or ns.NP_Classic() then
+            PP.HideBorder(plate.health)
+        end
     end
 
     function plate:ApplyBorder()
-        if not PP then return end
+        if not PP then
+            return
+        end
         if ns.NP_Classic() then
             -- Classic WoW UI: the vanilla border art replaces every CUI border.
             PP.HideBorder(plate.health)
@@ -112,15 +122,21 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         end
         -- WoW Forever: the level box right of the bar, sized to it (the
         -- style latched at enable, before any plate).
-        if ns._npForever then ns.NP_ApplyForeverLevelBox(plate) end
+        if ns._npForever then
+            ns.NP_ApplyForeverLevelBox(plate)
+        end
         -- The spell icon border and divider follow border style edits.
-        if (p and (p.castIconCustomBorder or p.castIconSeparator)) or (plate.cast and plate.cast._iconSeam) then
+        if
+            (p and (p.castIconCustomBorder or p.castIconSeparator)) or (plate.cast and plate.cast._iconSeam)
+        then
             ns.ApplyCastIconBorder(plate)
         end
         ns.NP_ApplyRounding(plate)
     end
     function plate:ApplyBorderColor()
-        if not PP then return end
+        if not PP then
+            return
+        end
         -- Threat Colors "Border" channel: UpdateHealthColor parks the resolved threat color
         -- on the plate and this stays the single funnel that paints the BASE border, so
         -- every caller that restores it -- RefreshBorderColor, ApplyTarget's else-branch,
@@ -133,11 +149,18 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
             if ns.IsCustomBorderEnabled() then
                 -- Same lazy build ApplyTarget does: a plate can take the threat tint before
                 -- its first ApplyBorder ever ran.
-                if not plate._customBorder then ns.ApplyCustomBorderStyle(plate) end
+                if not plate._customBorder then
+                    ns.ApplyCustomBorderStyle(plate)
+                end
                 if plate._customBorder then
                     local a = (p and p.customBorderAlpha) or defaults.customBorderAlpha or 1
-                    CludesUI.SetBorderStyleColor(plate._customBorder,
-                        plate._threatBdR, plate._threatBdG, plate._threatBdB, a)
+                    CludesUI.SetBorderStyleColor(
+                        plate._customBorder,
+                        plate._threatBdR,
+                        plate._threatBdG,
+                        plate._threatBdB,
+                        a
+                    )
                 end
                 plate._hbThreatTint = nil
             else
@@ -157,7 +180,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         end
         -- ...and border colour edits and the target tint's restore (a tint only), on the
         -- threat path too: untargeting a threat-tinted plate drops the target colour here.
-        if (p and (p.castIconCustomBorder or p.castIconSeparator)) or (plate.cast and plate.cast._iconSeam) then
+        if
+            (p and (p.castIconCustomBorder or p.castIconSeparator)) or (plate.cast and plate.cast._iconSeam)
+        then
             ns.ApplyCastIconBorder(plate)
         end
     end
@@ -272,18 +297,22 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     -- Cast bar border: pixel-perfect PP.CreateBorder, lazy-created (size 0 default, costs
     -- nothing unless enabled). Mirrors the health border; a child of plate.cast.
     function plate:ApplyCastBorder()
-        if not PP or not PP.CreateBorder then return end
+        if not PP or not PP.CreateBorder then
+            return
+        end
         local sz = (p and p.castBorderSize) or defaults.castBorderSize or 0
         -- The stock styles carry their own cast bar art (the stock art, the
         -- vanilla cast border): no CUI border.
-        if ns.NP_Blizz() then sz = 0 end
+        if ns.NP_Blizz() then
+            sz = 0
+        end
         if sz and sz > 0 then
             if PP.GetBorders(plate.cast) then
                 PP.SetBorderSize(plate.cast, sz)
                 PP.ShowBorder(plate.cast)
             else
                 local cr, cg, cb = ns.NP_CastBorderColor()
-                PP.CreateBorder(plate.cast, cr, cg, cb, 1, sz, "OVERLAY", 7, true)  -- scaleGuard: NP frame
+                PP.CreateBorder(plate.cast, cr, cg, cb, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
             end
         elseif PP.GetBorders(plate.cast) then
             PP.HideBorder(plate.cast)
@@ -291,7 +320,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         ns.NP_ApplyRounding(plate, "cast")
     end
     function plate:ApplyCastBorderColor()
-        if not PP or not PP.GetBorders or not PP.GetBorders(plate.cast) then return end
+        if not PP or not PP.GetBorders or not PP.GetBorders(plate.cast) then
+            return
+        end
         local cr, cg, cb = ns.NP_CastBorderColor()
         PP.SetBorderColor(plate.cast, cr, cg, cb, 1)
     end
@@ -309,12 +340,18 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     -- the simple PP border only; the custom border has its own branch and flag
     -- (ns.NP_UpdateCustomBorderWrap, plate._cbWrapActive), run after it.
     function plate:UpdateBorderWrap()
-        if not PP or not PP.GetBorders then return end
+        if not PP or not PP.GetBorders then
+            return
+        end
         -- Classic WoW UI: no CUI borders to wrap (the vanilla art is drawn).
-        if ns.NP_Classic() then return end
+        if ns.NP_Classic() then
+            return
+        end
         local shouldWrap = ns.GetWrapBorderCastbar()
-            and plate.cast and plate.cast:IsShown()
-            and IsBorderEnabled() and not ns.IsCustomBorderEnabled()
+            and plate.cast
+            and plate.cast:IsShown()
+            and IsBorderEnabled()
+            and not ns.IsCustomBorderEnabled()
         if shouldWrap then
             local hb = PP.GetBorders(plate.health)
             if hb then
@@ -325,11 +362,15 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 -- shrinks the border back to normal until the next target change.
                 if plate._targetBorderSized then
                     local tbsz = ns.GetTargetBorderSizeValue()
-                    if tbsz then sz = tbsz end
+                    if tbsz then
+                        sz = tbsz
+                    end
                 end
                 local col = hb._bdColor
                 local r, g, b, a = 0, 0, 0, 1
-                if col then r, g, b, a = col[1], col[2], col[3], col[4] or 1 end
+                if col then
+                    r, g, b, a = col[1], col[2], col[3], col[4] or 1
+                end
                 -- Threat Colors "Border" tint on the health border: _bdColor keeps only the
                 -- last CLEAN colour (PP leaves a secret off-tank fold out of it), so the
                 -- region and the re-snapped health border take the parked tint from the
@@ -358,14 +399,16 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                     region:SetFrameLevel(plate.castIconFrame:GetFrameLevel() + 2)
                 end
                 if not PP.GetBorders(region) then
-                    PP.CreateBorder(region, r, g, b, a, sz, "OVERLAY", 7, true)  -- scaleGuard: NP frame
+                    PP.CreateBorder(region, r, g, b, a, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
                 end
                 -- Seam flags go on the containers BEFORE (re)snapping so SnapBorderTextures
                 -- hides the two touching edges AND runs the side strips to the seam (no edge
                 -- line, no corner notch). Flags survive every later re-snap (create-border
                 -- 2-tick OnUpdate, scale changes, RefreshBorder); a one-shot :Hide() would not.
                 local rb = PP.GetBorders(region)
-                if rb then rb._hideTop = true end
+                if rb then
+                    rb._hideTop = true
+                end
                 hb._hideBottom = true
                 PP.SetBorderSize(region, sz)
                 if thr then
@@ -382,13 +425,19 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 -- Leave the cast bar's OWN border ACTIVE under the wrap (region border sits
                 -- higher and draws over it); only the icon-separator line is hidden so an
                 -- in-width icon stays seamless.
-                if plate.castLeftBorder then plate.castLeftBorder:Hide() end
+                if plate.castLeftBorder then
+                    plate.castLeftBorder:Hide()
+                end
                 -- Optional: tint the full-size icon's border with the live target border colour
                 -- to match the wrapped bar; else-branch keeps it black so toggling off resets it.
                 if plate.castIconFrame and PP.GetBorders(plate.castIconFrame) then
-                    if p and p.castIconTargetBorder
-                        and GetShowCastIcon() and ns.GetCastIconFullSize()
-                        and plate.unit and UnitIsUnit(plate.unit, "target")
+                    if
+                        p
+                        and p.castIconTargetBorder
+                        and GetShowCastIcon()
+                        and ns.GetCastIconFullSize()
+                        and plate.unit
+                        and UnitIsUnit(plate.unit, "target")
                         and ns.GetTargetGlowBorderColor()
                     then
                         PP.SetBorderColor(plate.castIconFrame, r, g, b, a)
@@ -408,7 +457,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 local sz = ns.NP_BorderSize()
                 if plate._targetBorderSized then
                     local tbsz = ns.GetTargetBorderSizeValue()
-                    if tbsz then sz = tbsz end
+                    if tbsz then
+                        sz = tbsz
+                    end
                 end
                 PP.SetBorderSize(plate.health, sz)
                 -- The re-snap re-applied the last clean colour: put a threat tint back.
@@ -418,11 +469,17 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
             end
             if plate.castWrapRegion then
                 local crb = PP.GetBorders(plate.castWrapRegion)
-                if crb then crb._hideTop = nil end
-                if crb then PP.HideBorder(plate.castWrapRegion) end
+                if crb then
+                    crb._hideTop = nil
+                end
+                if crb then
+                    PP.HideBorder(plate.castWrapRegion)
+                end
                 plate.castWrapRegion:Hide()
             end
-            if plate.castLeftBorder then plate.castLeftBorder:Show() end
+            if plate.castLeftBorder then
+                plate.castLeftBorder:Show()
+            end
             if plate.castIconFrame and PP.GetBorders(plate.castIconFrame) then
                 PP.SetBorderColor(plate.castIconFrame, 0, 0, 0, 1)
             end
@@ -455,7 +512,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     -- icon to the unsnapped border strips so they translate together under plate motion.
     plate.castIcon:SetPoint("TOPLEFT", plate.castIconFrame, "TOPLEFT", 0, 0)
     plate.castIcon:SetPoint("BOTTOMRIGHT", plate.castIconFrame, "BOTTOMRIGHT", 0, 0)
-    if PP and PP.DisablePixelSnap then PP.DisablePixelSnap(plate.castIcon) end
+    if PP and PP.DisablePixelSnap then
+        PP.DisablePixelSnap(plate.castIcon)
+    end
     -- Stock styles draw the whole icon (zoom 0); the CUI look trims the art's rim.
     if ns.NP_Blizz() then
         plate.castIcon:SetTexCoord(0, 1, 0, 1)
@@ -571,8 +630,12 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         local owner = self._timerPlate
         -- force = the synchronous arm-time paint from NotifyCastStarted, which fires BEFORE
         -- the caller sets isCasting (Notify IS the rising-edge detector).
-        if not owner or not owner.unit or (not owner.isCasting and not force) then return end
-        if not owner._showCastTimer then return true end
+        if not owner or not owner.unit or (not owner.isCasting and not force) then
+            return
+        end
+        if not owner._showCastTimer then
+            return true
+        end
         if UnitCastingDuration then
             local durObj = UnitCastingDuration(owner.unit)
                 or (UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(owner.unit, true))
@@ -588,7 +651,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
             local val = owner.cast:GetValue()
             if max and max > 0 then
                 local remaining = max - val
-                if remaining < 0 then remaining = 0 end
+                if remaining < 0 then
+                    remaining = 0
+                end
                 owner.castTimer:SetFormattedText("%.1f", remaining)
             else
                 owner.castTimer:SetText("")
@@ -609,14 +674,22 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         end
         -- Wrap-border driver, gated so when the feature is off (plate not wrapped) nothing
         -- runs beyond a field read + setting lookup.
-        if owner and owner.UpdateBorderWrap and (owner._wrapActive or owner._cbWrapActive or ns.GetWrapBorderCastbar()) then
+        if
+            owner
+            and owner.UpdateBorderWrap
+            and (owner._wrapActive or owner._cbWrapActive or ns.GetWrapBorderCastbar())
+        then
             owner:UpdateBorderWrap()
         end
         -- Bottom text slots drop below the cast bar while it shows (one flag read when unused).
-        if owner and ns._npBottomUsed then owner:AnchorBottomTexts() end
+        if owner and ns._npBottomUsed then
+            owner:AnchorBottomTexts()
+        end
         -- Rounded corners, Join Cast Bar: the health bar's bottom corners follow the cast bar
         -- (a corners-only pass while nothing else about the health bar's rounding moved).
-        if owner and owner._npJoinCast then ns.NP_ApplyRounding(owner, "health", true) end
+        if owner and owner._npJoinCast then
+            ns.NP_ApplyRounding(owner, "health", true)
+        end
         -- A cast end may turn the caster back (cast starts repaint in Cast.lua). The
         -- unit check skips a plate ClearUnit is releasing.
         if ns._npTgtTexts and owner and owner.unit and not self:IsShown() then
@@ -627,7 +700,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     plate.cast:HookScript("OnHide", OnCastVisibilityChanged)
     plate:SetScript("OnEvent", function(self, event, ...)
         local handler = self[event]
-        if handler then handler(self, ...) end
+        if handler then
+            handler(self, ...)
+        end
     end)
 end)
 
@@ -650,7 +725,9 @@ do
             ticker = C_Timer.NewTicker(0.1, function()
                 made = made + 1
                 if made > target then
-                    for i = 1, #held do frameCache:Release(held[i]) end
+                    for i = 1, #held do
+                        frameCache:Release(held[i])
+                    end
                     ticker:Cancel()
                     return
                 end
@@ -680,17 +757,23 @@ local ComputeCastBarTint = ns.ComputeCastBarTint
 -- edits during a wrapped mid-cast plate keep the unified border in sync.
 function ns.ApplyBorderWrapToAll()
     for _, plate in pairs(ns.plates) do
-        if plate.UpdateBorderWrap then plate:UpdateBorderWrap() end
+        if plate.UpdateBorderWrap then
+            plate:UpdateBorderWrap()
+        end
     end
 end
 function ns.RefreshBorder()
     -- Bump appearance gen so pooled/off-screen plates pick up the change on their next SetUnit.
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
     for _, plate in pairs(ns.plates) do
-        if plate.ApplyBorder then plate:ApplyBorder() end
+        if plate.ApplyBorder then
+            plate:ApplyBorder()
+        end
         -- ApplyBorder draws the base colour (custom rebuild) or the last clean one (re-snap)
         -- over a Threat Colors tint, and the _threatBdK memo would skip the repaint.
-        if plate._threatBdOn and plate.unit then plate:RepaintThreatBorder(plate.unit) end
+        if plate._threatBdOn and plate.unit then
+            plate:RepaintThreatBorder(plate.unit)
+        end
     end
     -- Friendly plates mirror the enemy border settings 1:1.
     if ns.friendlyPlates then
@@ -698,25 +781,37 @@ function ns.RefreshBorder()
         -- and tint, so its ApplyTarget puts them back. One field read while off.
         local fx = p and p.friendlyTargetBorderFx
         for _, plate in pairs(ns.friendlyPlates) do
-            if plate.ApplyBorder then plate:ApplyBorder() end
-            if fx and plate._isTarget then plate:ApplyTarget() end
+            if plate.ApplyBorder then
+                plate:ApplyBorder()
+            end
+            if fx and plate._isTarget then
+                plate:ApplyTarget()
+            end
         end
     end
     -- Additive: no-op unless the wrap feature is enabled.
-    if ns.GetWrapBorderCastbar() then ns.ApplyBorderWrapToAll() end
+    if ns.GetWrapBorderCastbar() then
+        ns.ApplyBorderWrapToAll()
+    end
     -- Custom Border on Aura Icons: the aura styles carry the custom border, so a border
     -- edit restyles them (fingerprint-gated). One field read while off.
-    if p and p.auraIconCustomBorder and ns.NPC_ReloadAll then ns.NPC_ReloadAll() end
+    if p and p.auraIconCustomBorder and ns.NPC_ReloadAll then
+        ns.NPC_ReloadAll()
+    end
     -- Debuff Coloring's Color Border is drawn from the border's own numbers
     -- (fingerprint-gated, one profile read while off).
-    if ns.DebuffColors_RequestRefresh then ns.DebuffColors_RequestRefresh() end
+    if ns.DebuffColors_RequestRefresh then
+        ns.DebuffColors_RequestRefresh()
+    end
 end
 ns.RefreshBorderStyle = ns.RefreshBorder
 ns.RefreshSimpleBorderSize = ns.RefreshBorder
 function ns.RefreshBorderColor()
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
     for _, plate in pairs(ns.plates) do
-        if plate.ApplyBorderColor then plate:ApplyBorderColor() end
+        if plate.ApplyBorderColor then
+            plate:ApplyBorderColor()
+        end
     end
     -- Friendly plates mirror the enemy border settings 1:1.
     if ns.friendlyPlates then
@@ -730,23 +825,35 @@ function ns.RefreshBorderColor()
         end
     end
     -- Additive: no-op unless the wrap feature is enabled.
-    if ns.GetWrapBorderCastbar() then ns.ApplyBorderWrapToAll() end
-    if p and p.auraIconCustomBorder and ns.NPC_ReloadAll then ns.NPC_ReloadAll() end
+    if ns.GetWrapBorderCastbar() then
+        ns.ApplyBorderWrapToAll()
+    end
+    if p and p.auraIconCustomBorder and ns.NPC_ReloadAll then
+        ns.NPC_ReloadAll()
+    end
 end
 function ns.RefreshCastBorder()
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
     for _, plate in pairs(ns.plates) do
-        if plate.ApplyCastBorder then plate:ApplyCastBorder() end
+        if plate.ApplyCastBorder then
+            plate:ApplyCastBorder()
+        end
     end
     -- ApplyCastBorder re-shows/re-sizes the cast border, so a wrapped mid-cast plate must re-merge.
-    if ns.GetWrapBorderCastbar() then ns.ApplyBorderWrapToAll() end
+    if ns.GetWrapBorderCastbar() then
+        ns.ApplyBorderWrapToAll()
+    end
 end
 function ns.RefreshCastBorderColor()
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
     for _, plate in pairs(ns.plates) do
-        if plate.ApplyCastBorderColor then plate:ApplyCastBorderColor() end
+        if plate.ApplyCastBorderColor then
+            plate:ApplyCastBorderColor()
+        end
     end
-    if ns.GetWrapBorderCastbar() then ns.ApplyBorderWrapToAll() end
+    if ns.GetWrapBorderCastbar() then
+        ns.ApplyBorderWrapToAll()
+    end
 end
 
 function ns.RefreshStackingBounds()
@@ -764,15 +871,27 @@ function ns.RefreshStackingBounds()
 end
 
 function ns.RefreshStackingMotion()
-    if not (Enum and Enum.NamePlateStackType) then return end
+    if not (Enum and Enum.NamePlateStackType) then
+        return
+    end
     local db = p or defaults
     -- Enemy stacking is always CUI-owned; apply every time. Must NOT be gated on friendly
     -- players, or enemy plates stop stacking for anyone who hands friendly plates to Blizzard.
-    CludesUI.SetCVarBitfield("nameplateStackingTypes", Enum.NamePlateStackType.Enemy, db.stackingEnabled ~= false, "CludesUINameplates")
+    CludesUI.SetCVarBitfield(
+        "nameplateStackingTypes",
+        Enum.NamePlateStackType.Enemy,
+        db.stackingEnabled ~= false,
+        "CludesUINameplates"
+    )
     -- Friendly stacking is only ours to write while we manage friendly players; when
     -- Blizzard-managed, leave the friendly bit untouched so the user's setting survives.
-    if (db.showFriendlyPlayers ~= false) then
-        CludesUI.SetCVarBitfield("nameplateStackingTypes", Enum.NamePlateStackType.Friendly, db.stackingFriendly == true, "CludesUINameplates")
+    if db.showFriendlyPlayers ~= false then
+        CludesUI.SetCVarBitfield(
+            "nameplateStackingTypes",
+            Enum.NamePlateStackType.Friendly,
+            db.stackingFriendly == true,
+            "CludesUINameplates"
+        )
     end
 end
 
@@ -781,22 +900,38 @@ end
 -- on top, their art reaching past the bar. The setting itself is untouched.
 function ns.NP_HitboxHeight(db)
     local h = GetHealthBarHeight() * ((db.hitboxScaleY or 100) / 100)
-    if ns.NP_Blizz() then h = h + 6 end
+    if ns.NP_Blizz() then
+        h = h + 6
+    end
     return h
 end
 
 function ns.RefreshHitboxSize()
-    if InCombatLockdown() then return end
-    if not C_NamePlate or not C_NamePlate.SetNamePlateSize then return end
+    if InCombatLockdown() then
+        return
+    end
+    if not C_NamePlate or not C_NamePlate.SetNamePlateSize then
+        return
+    end
     local db = p or defaults
     local sx = (db.hitboxScaleX or 100) / 100
     C_NamePlate.SetNamePlateSize(GetHealthBarWidth() * sx, ns.NP_HitboxHeight(db))
     -- The frame grows from its CENTER, so a taller size enlarges the hitbox evenly above and
     -- below the unit. -10000 insets let the hit rect fill the full (centered) frame.
-    if C_NamePlateManager and C_NamePlateManager.SetNamePlateHitTestInsets
-       and Enum and Enum.NamePlateType then
+    if
+        C_NamePlateManager
+        and C_NamePlateManager.SetNamePlateHitTestInsets
+        and Enum
+        and Enum.NamePlateType
+    then
         C_NamePlateManager.SetNamePlateHitTestInsets(Enum.NamePlateType.Enemy, -10000, -10000, -10000, -10000)
-        C_NamePlateManager.SetNamePlateHitTestInsets(Enum.NamePlateType.Friendly, -10000, -10000, -10000, -10000)
+        C_NamePlateManager.SetNamePlateHitTestInsets(
+            Enum.NamePlateType.Friendly,
+            -10000,
+            -10000,
+            -10000,
+            -10000
+        )
     end
     -- Anchor content at the frame center (GetHitboxYShift is 0): the frame grows
     -- centered, so the bar stays put and the hitbox stays centered on it.
@@ -812,7 +947,9 @@ end
 -- Runtime-only (resets on reload), created lazily so it costs nothing when off. On ns (cap).
 function ns._ApplyHitboxOverlay(plate)
     local np = plate and plate.nameplate
-    if not np then return end
+    if not np then
+        return
+    end
     if ns._hitboxOverlayShown then
         local ov = plate.hitboxOverlay
         if not ov then
@@ -826,10 +963,18 @@ function ns._ApplyHitboxOverlay(plate)
                 return t
             end
             local top, bottom, left, right = Edge(), Edge(), Edge(), Edge()
-            top:SetPoint("TOPLEFT");    top:SetPoint("TOPRIGHT");    top:SetHeight(1)
-            bottom:SetPoint("BOTTOMLEFT"); bottom:SetPoint("BOTTOMRIGHT"); bottom:SetHeight(1)
-            left:SetPoint("TOPLEFT");   left:SetPoint("BOTTOMLEFT");  left:SetWidth(1)
-            right:SetPoint("TOPRIGHT"); right:SetPoint("BOTTOMRIGHT"); right:SetWidth(1)
+            top:SetPoint("TOPLEFT")
+            top:SetPoint("TOPRIGHT")
+            top:SetHeight(1)
+            bottom:SetPoint("BOTTOMLEFT")
+            bottom:SetPoint("BOTTOMRIGHT")
+            bottom:SetHeight(1)
+            left:SetPoint("TOPLEFT")
+            left:SetPoint("BOTTOMLEFT")
+            left:SetWidth(1)
+            right:SetPoint("TOPRIGHT")
+            right:SetPoint("BOTTOMRIGHT")
+            right:SetWidth(1)
             plate.hitboxOverlay = ov
         end
         -- Re-parent + re-anchor each apply: pooled plates get reused on a fresh nameplate.
@@ -867,7 +1012,9 @@ function ns.RefreshAllSettings()
     -- cache-hit re-spawns skip the static appearance work and new settings never apply.
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
     -- Color Casting Enemies tint colors, before the loop below repaints the plates.
-    if ns.NP_CastTintsDirty then ns.NP_CastTintsDirty() end
+    if ns.NP_CastTintsDirty then
+        ns.NP_CastTintsDirty()
+    end
     for _, plate in pairs(ns.plates) do
         if plate.unit and plate.nameplate then
             plate:SetUnit(plate.unit, plate.nameplate)
@@ -878,19 +1025,35 @@ function ns.RefreshAllSettings()
     -- WoW Forever's Show Level Box (per profile): on a flip the level
     -- watchers follow it and the friendly plates gain or park their boxes
     -- (the enemy plates followed through the appearance pass above).
-    if ns._npForever and ns.NP_ForeverWatchLevels() then ns.NP_ForeverFriendlyBoxes() end
-    if ns.NT_RefreshSetting then ns.NT_RefreshSetting() end
-    if ns.NP_RefreshTypeScaleSetting then ns.NP_RefreshTypeScaleSetting() end
-    if ns.RangeText_Apply then ns.RangeText_Apply() end
-    if ns.ApplyClassPowerSetting then ns.ApplyClassPowerSetting() end
-    if ns.DebuffColors_Refresh then ns.DebuffColors_Refresh() end
+    if ns._npForever and ns.NP_ForeverWatchLevels() then
+        ns.NP_ForeverFriendlyBoxes()
+    end
+    if ns.NT_RefreshSetting then
+        ns.NT_RefreshSetting()
+    end
+    if ns.NP_RefreshTypeScaleSetting then
+        ns.NP_RefreshTypeScaleSetting()
+    end
+    if ns.RangeText_Apply then
+        ns.RangeText_Apply()
+    end
+    if ns.ApplyClassPowerSetting then
+        ns.ApplyClassPowerSetting()
+    end
+    if ns.DebuffColors_Refresh then
+        ns.DebuffColors_Refresh()
+    end
     -- Aura containers: fingerprint-guarded, near-free when no aura setting changed.
-    if ns.NPC_ReloadAll then ns.NPC_ReloadAll() end
+    if ns.NPC_ReloadAll then
+        ns.NPC_ReloadAll()
+    end
     -- Hide Enemy Nameplates OOC is CVar + event driven, and its options setter plus
     -- PLAYER_LOGIN were its only callers: a value written straight into the profile
     -- (override group, profile switch, import) flipped the checkbox while plates kept
     -- the old behaviour. Self-guarded, so an unchanged key costs nothing.
-    if ns.ApplyOOCPlates then ns.ApplyOOCPlates() end
+    if ns.ApplyOOCPlates then
+        ns.ApplyOOCPlates()
+    end
     -- Friendly faction badges: redraw for this profile's faction settings.
     ns.NP_RefreshFriendlyFaction()
     -- Friendly Target Border Effects: a profile or override flip reaches the friendly
@@ -898,16 +1061,22 @@ function ns.RefreshAllSettings()
     if ns.friendlyPlates then
         local fx = p and p.friendlyTargetBorderFx
         for _, fp in pairs(ns.friendlyPlates) do
-            if fx or fp._targetBorderSized or fp._fxBorderTinted then fp:ApplyTarget() end
+            if fx or fp._targetBorderSized or fp._fxBorderTinted then
+                fp:ApplyTarget()
+            end
         end
     end
     -- Friendly bar and name colours: a profile or override flip of the class colour
     -- toggles reaches the live full plates.
-    if ns.RefreshFriendlyColors then ns.RefreshFriendlyColors() end
+    if ns.RefreshFriendlyColors then
+        ns.RefreshFriendlyColors()
+    end
     -- A profile or override flip of the friendly Name Format, the Subtitle Text
     -- mode or its guild brackets reaches the live friendly names (one compare
     -- while they are unchanged).
-    if ns.NP_SyncFriendlyNameFormat then ns.NP_SyncFriendlyNameFormat() end
+    if ns.NP_SyncFriendlyNameFormat then
+        ns.NP_SyncFriendlyNameFormat()
+    end
 end
 
 I.frameCache, I.GetActiveKickSpell = frameCache, GetActiveKickSpell

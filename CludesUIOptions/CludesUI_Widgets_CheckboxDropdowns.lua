@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_CheckboxDropdowns.lua
 --  Checkbox dropdowns shared by the options pages: the empty-filter
@@ -19,7 +21,9 @@ local CreateFrame, PoolKept, PoolGen = Pool.CreateFrame, Pool.Kept, Pool.Gen
 -- control on an absorber row (PrebuildStandIn, CludesUI_Widgets.lua). Nil
 -- outside the pass and for a real parent.
 local function StandIn(parent)
-    if not CludesUI._prebuilding then return nil end
+    if not CludesUI._prebuilding then
+        return nil
+    end
     return CludesUI._widgetInternals.PrebuildStandIn(parent)
 end
 
@@ -38,9 +42,9 @@ end
 -- warning): a button in the bubble's own dress sits beside it, the
 -- pair centred over the control, and a click runs it and re-reads; the
 -- caller's hasContentFn honours the flag it keeps.
-local WARN_WRAP = 300       -- px of text a warning bubble holds on one line
-local WARN_GAP = 4          -- px between the bubble and its dismiss button
-local DISMISS_MAX = 22      -- px the dismiss button grows to beside a wrapped bubble
+local WARN_WRAP = 300 -- px of text a warning bubble holds on one line
+local WARN_GAP = 4 -- px between the bubble and its dismiss button
+local DISMISS_MAX = 22 -- px the dismiss button grows to beside a wrapped bubble
 
 local function WarnDress(frame)
     local bg = frame:CreateTexture(nil, "BACKGROUND")
@@ -52,7 +56,9 @@ end
 function CludesUI.AttachEmptyFilterWarn(rgn, cbDD, warnText, hasContentFn, opts)
     -- Search prebuild on an absorber row: the warning indexes nothing, so none is built.
     local standIn = StandIn(rgn) or StandIn(cbDD)
-    if standIn then return standIn end
+    if standIn then
+        return standIn
+    end
     local PP = CludesUI.PanelPP
     local onDismiss = opts and opts.onDismiss
     local Update
@@ -116,29 +122,43 @@ function CludesUI.AttachEmptyFilterWarn(rgn, cbDD, warnText, hasContentFn, opts)
     flash:SetAlpha(0)
     local ag = flash:CreateAnimationGroup()
     local a1 = ag:CreateAnimation("Alpha")
-    a1:SetFromAlpha(0); a1:SetToAlpha(1); a1:SetDuration(0.10); a1:SetOrder(1)
+    a1:SetFromAlpha(0)
+    a1:SetToAlpha(1)
+    a1:SetDuration(0.10)
+    a1:SetOrder(1)
     local a2 = ag:CreateAnimation("Alpha")
-    a2:SetFromAlpha(1); a2:SetToAlpha(0); a2:SetDuration(0.45); a2:SetOrder(2)
+    a2:SetFromAlpha(1)
+    a2:SetToAlpha(0)
+    a2:SetDuration(0.45)
+    a2:SetOrder(2)
     -- Two pulses read as a deliberate alert; one reads as a rendering glitch.
     ag:SetLooping("REPEAT")
     local loops = 0
-    ag:SetScript("OnPlay", function() loops = 0 end)
+    ag:SetScript("OnPlay", function()
+        loops = 0
+    end)
     ag:SetScript("OnLoop", function(self)
         loops = loops + 1
-        if loops >= 2 then self:Stop() end
+        if loops >= 2 then
+            self:Stop()
+        end
     end)
 
     Update = function()
         local empty = not hasContentFn()
         bubble:SetShown(empty)
         warnBorder:SetShown(empty)
-        if not empty and ag:IsPlaying() then ag:Stop() end
+        if not empty and ag:IsPlaying() then
+            ag:Stop()
+        end
     end
     Update()
     CludesUI.RegisterWidgetRefresh(Update)
     return function()
         Update()
-        if not hasContentFn() then ag:Restart() end
+        if not hasContentFn() then
+            ag:Restart()
+        end
     end
 end
 
@@ -161,10 +181,25 @@ end
 --  Returns: ddBtn, refreshFn. refreshFn(true) also reads a dynamic items list
 --  again while the menu is closed, for a change made outside the menu.
 -------------------------------------------------------------------------------
-function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn, setFn, onChanged, maxVisibleItems, searchable, closeButton, onMenuClosed, opts)
+function CludesUI.BuildVisOptsCBDropdown(
+    parentFrame,
+    ddW,
+    fLevel,
+    items,
+    getFn,
+    setFn,
+    onChanged,
+    maxVisibleItems,
+    searchable,
+    closeButton,
+    onMenuClosed,
+    opts
+)
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then return standIn, standIn end
+    if standIn then
+        return standIn, standIn
+    end
     local PP = CludesUI.PanelPP
     opts = opts or {}
     -- Opt-in dynamic items: pass a FUNCTION returning the items array and it re-evaluates on every menu OPEN (the menu rebuilds), so lists that depend on other settings never go stale. A table stays static.
@@ -209,19 +244,29 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         local held = opts.ovHeldFn and opts.ovHeldFn()
         if held then
             for _, item in ipairs(items) do
-                if item.key == held then return CludesUI.L(item.label) end
+                if item.key == held then
+                    return CludesUI.L(item.label)
+                end
             end
         end
         for _, item in ipairs(items) do
             -- isModifier rows (the Visibility match toggle) are not conditions: excluded
             -- from the summary and from the "All" shortcut. item.excludeFromSummaryFn
             -- opts a row out the same way (e.g. locked behind an unlearned talent).
-            if not item.isHeader and not item.isTopAction and not item.isModifier
-               and not (item.excludeFromSummaryFn and item.excludeFromSummaryFn()) then
+            if
+                not item.isHeader
+                and not item.isTopAction
+                and not item.isModifier
+                and not (item.excludeFromSummaryFn and item.excludeFromSummaryFn())
+            then
                 total = total + 1
-                if getFn(item.key) then names[#names + 1] = CludesUI.L(item.label) end
+                if getFn(item.key) then
+                    names[#names + 1] = CludesUI.L(item.label)
+                end
                 -- Dual-lane rows: the hide lane reads through getFn(key, true).
-                if item.dual and getFn(item.key, true) then hiddenCount = hiddenCount + 1 end
+                if item.dual and getFn(item.key, true) then
+                    hiddenCount = hiddenCount + 1
+                end
             end
         end
         local base
@@ -230,15 +275,24 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         -- opts.separatorFn lets a modifier row rename the join, so the summary reads
         -- the way the conditions actually combine.
         local sep = opts.separatorFn and opts.separatorFn() or ", "
-        if #names == 0 then base = opts.emptyLabel and CludesUI.L(opts.emptyLabel) or CludesUI.L("None")
-        elseif #names == total and not opts.noAllLabel then base = CludesUI.L("All")
-        elseif opts.countLabel then base = CludesUI.Lf("%1$d of %2$d", #names, total)
-        else base = table.concat(names, sep) end
-        if hiddenCount > 0 then base = base .. " (-" .. hiddenCount .. ")" end
+        if #names == 0 then
+            base = opts.emptyLabel and CludesUI.L(opts.emptyLabel) or CludesUI.L("None")
+        elseif #names == total and not opts.noAllLabel then
+            base = CludesUI.L("All")
+        elseif opts.countLabel then
+            base = CludesUI.Lf("%1$d of %2$d", #names, total)
+        else
+            base = table.concat(names, sep)
+        end
+        if hiddenCount > 0 then
+            base = base .. " (-" .. hiddenCount .. ")"
+        end
         return base
     end
     local function UpdateLabel()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetText(SummaryLabel())
     end
     UpdateLabel()
@@ -258,7 +312,10 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     local rowPools = {}
     local function AcquireRow(kind, make, arg)
         local pool = rowPools[kind]
-        if not pool then pool = { used = 0 }; rowPools[kind] = pool end
+        if not pool then
+            pool = { used = 0 }
+            rowPools[kind] = pool
+        end
         pool.used = pool.used + 1
         local row = pool[pool.used]
         if not row then
@@ -365,10 +422,11 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         if item.swatch then
             -- The swatch reads and writes the swatch spec of the item the row shows (row._swSpec).
             row._swSpec = item.swatch
-            local sw, swUpdate = CludesUI.BuildColorSwatch(row, row:GetFrameLevel() + 1,
-                function() return row._swSpec.get() end,
-                function(...) row._swSpec.set(...) end,
-                item.swatch.hasAlpha, 16)
+            local sw, swUpdate = CludesUI.BuildColorSwatch(row, row:GetFrameLevel() + 1, function()
+                return row._swSpec.get()
+            end, function(...)
+                row._swSpec.set(...)
+            end, item.swatch.hasAlpha, 16)
             sw:ClearAllPoints()
             sw:SetPoint("RIGHT", row, "RIGHT", row._negBox and -32 or -10, 0)
             lbl:SetPoint("RIGHT", sw, "LEFT", -6, 0)
@@ -378,9 +436,13 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             swBlock:EnableMouse(true)
             swBlock:SetScript("OnEnter", function()
                 local tip = CludesUI.ResolveDisabledTip(row._swSpec)
-                if tip then CludesUI.ShowWidgetTooltip(sw, tip) end
+                if tip then
+                    CludesUI.ShowWidgetTooltip(sw, tip)
+                end
             end)
-            swBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            swBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             swBlock:Hide()
             row._sw, row._swUpdate, row._swBlock = sw, swUpdate, swBlock
         end
@@ -388,22 +450,30 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     end
 
     local function EnsureMenu()
-        if menu and not menuStale then return end
+        if menu and not menuStale then
+            return
+        end
         menuStale = nil
         local firstBuild = not menu
         -- Opt-in top-action rows (item.isTopAction with label + onClick): accent clickable entries pinned ABOVE the search box with a divider under the group -- the "Custom Spell ID at the top" pattern from the CDM spell pickers. Excluded from the scroll list, the checkable count, and the summary label.
         local topActions = {}
         wipe(_taTints)
         for _, item in ipairs(items) do
-            if item.isTopAction then topActions[#topActions + 1] = item end
+            if item.isTopAction then
+                topActions[#topActions + 1] = item
+            end
         end
         local TOP_H = (#topActions > 0) and (#topActions * ITEM_H + 7) or 0
         local checkableCount = 0
         local contentH = 8
         for _, item in ipairs(items) do
             if item.isTopAction then -- rendered above the search box
-            elseif item.isHeader then contentH = contentH + HDR_H
-            else contentH = contentH + ITEM_H; checkableCount = checkableCount + 1 end
+            elseif item.isHeader then
+                contentH = contentH + HDR_H
+            else
+                contentH = contentH + ITEM_H
+                checkableCount = checkableCount + 1
+            end
         end
         local SEARCH_H = searchable and 26 or 0
         -- The box plus its 4-unit gap: the menu reserves exactly what the scroll area skips.
@@ -412,7 +482,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         contentH = contentH + CLOSE_BTN_H
         local needsScroll = maxVisibleItems and checkableCount > maxVisibleItems
         -- +2 accounts for scroll frame 1px top + 1px bottom insets so non-scrolling menus don't scroll
-        local menuH = (needsScroll and (4 + maxVisibleItems * ITEM_H + 4 + CLOSE_BTN_H) or (contentH + 4)) + SEARCH_PAD + TOP_H
+        local menuH = (needsScroll and (4 + maxVisibleItems * ITEM_H + 4 + CLOSE_BTN_H) or (contentH + 4))
+            + SEARCH_PAD
+            + TOP_H
         if firstBuild then
             -- One menu per dropdown button for the session: a build that dresses
             -- the button again gets this frame back here, reset to new.
@@ -440,7 +512,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         end
         local ppScale = CludesUI.GetPopupScale() or 1
         menu:SetScale(ppScale)
-        for _, pool in pairs(rowPools) do pool.used = 0 end
+        for _, pool in pairs(rowPools) do
+            pool.used = 0
+        end
 
         -- Top-action rows above the search box, divider under the group.
         if #topActions > 0 then
@@ -453,7 +527,12 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 row:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, ay)
                 row:SetFrameLevel(menu:GetFrameLevel() + 2)
                 local lbl, hl = row._lbl, row._hl
-                lbl:SetTextColor(CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 0.8)
+                lbl:SetTextColor(
+                    CludesUI.CLUDES_GREEN.r,
+                    CludesUI.CLUDES_GREEN.g,
+                    CludesUI.CLUDES_GREEN.b,
+                    0.8
+                )
                 lbl:SetText(CludesUI.L(item.label))
                 hl:SetColorTexture(1, 1, 1, 0)
                 -- Opt-in locked state (item.lockedFn + item.lockedTooltip): evaluated LIVE on hover/click (checkbox toggles can flip it while the menu is open), plus once at build for the initial tint.
@@ -464,7 +543,12 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     if TALocked() then
                         lbl:SetTextColor(1, 1, 1, 0.3)
                     else
-                        lbl:SetTextColor(CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 0.8)
+                        lbl:SetTextColor(
+                            CludesUI.CLUDES_GREEN.r,
+                            CludesUI.CLUDES_GREEN.g,
+                            CludesUI.CLUDES_GREEN.b,
+                            0.8
+                        )
                     end
                 end
                 TATint()
@@ -486,9 +570,13 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     TATint()
                 end)
                 row:SetScript("OnClick", function()
-                    if TALocked() then return end
+                    if TALocked() then
+                        return
+                    end
                     menu:Hide()
-                    if item.onClick then item.onClick() end
+                    if item.onClick then
+                        item.onClick()
+                    end
                 end)
                 ay = ay - ITEM_H
             end
@@ -527,7 +615,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 searchPlaceholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
                 searchPlaceholder:SetPoint("LEFT", searchEdit, "LEFT", 10, 0)
                 searchPlaceholder:SetText(CludesUI.L("Search..."))
-                searchEdit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+                searchEdit:SetScript("OnEscapePressed", function(self)
+                    self:ClearFocus()
+                end)
             end
             -- The list's flush first row: inside the border (below the top
             -- actions), its last unit the divider, the scroll area right below.
@@ -572,7 +662,10 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
 
             UpdateCBThumb = function()
                 local maxScroll = SafeMaxScroll()
-                if maxScroll <= 0 then cbTrack:Hide(); return end
+                if maxScroll <= 0 then
+                    cbTrack:Hide()
+                    return
+                end
                 cbTrack:Show()
                 local trackH = cbTrack:GetHeight()
                 local visH = sf:GetHeight()
@@ -587,7 +680,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
 
             -- Thumb drag
             cbThumb:SetScript("OnMouseDown", function(self, button)
-                if button ~= "LeftButton" then return end
+                if button ~= "LeftButton" then
+                    return
+                end
                 local _, cursorY = GetCursorPosition()
                 local dragStartY = cursorY / self:GetEffectiveScale()
                 local dragStartScroll = sf:GetVerticalScroll()
@@ -601,22 +696,28 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     local deltaY = dragStartY - cy
                     local trackH = cbTrack:GetHeight()
                     local maxTravel = trackH - self2:GetHeight()
-                    if maxTravel <= 0 then return end
+                    if maxTravel <= 0 then
+                        return
+                    end
                     local maxScroll = SafeMaxScroll()
-                    local newScroll = math.max(0, math.min(maxScroll,
-                        dragStartScroll + (deltaY / maxTravel) * maxScroll))
+                    local newScroll =
+                        math.max(0, math.min(maxScroll, dragStartScroll + (deltaY / maxTravel) * maxScroll))
                     sf:SetVerticalScroll(newScroll)
                     UpdateCBThumb()
                 end)
             end)
             cbThumb:SetScript("OnMouseUp", function(self, button)
-                if button ~= "LeftButton" then return end
+                if button ~= "LeftButton" then
+                    return
+                end
                 self:SetScript("OnUpdate", nil)
             end)
 
             sf:SetScript("OnMouseWheel", function(self, delta)
                 local maxScroll = SafeMaxScroll()
-                if maxScroll <= 0 then return end
+                if maxScroll <= 0 then
+                    return
+                end
                 local cur = self:GetVerticalScroll()
                 self:SetVerticalScroll(math.max(0, math.min(maxScroll, cur - delta * ITEM_H)))
                 UpdateCBThumb()
@@ -662,7 +763,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     hdrR:Show()
                     hdrLine:SetPoint("RIGHT", hdrR, "LEFT", -6, 0)
                 else
-                    if hdr._right then hdr._right:Hide() end
+                    if hdr._right then
+                        hdr._right:Hide()
+                    end
                     hdrLine:SetPoint("RIGHT", hdr, "RIGHT", -10, 0)
                 end
                 if item.tooltip then
@@ -688,14 +791,22 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, yOff)
                 row:SetFrameLevel(menu:GetFrameLevel() + 2)
                 local lbl, hl = row._lbl, row._hl
-                lbl:SetTextColor(CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 0.8)
+                lbl:SetTextColor(
+                    CludesUI.CLUDES_GREEN.r,
+                    CludesUI.CLUDES_GREEN.g,
+                    CludesUI.CLUDES_GREEN.b,
+                    0.8
+                )
                 lbl:SetText(CludesUI.L(item.labelFn and item.labelFn() or item.label))
                 local function UpdateActionLabel()
-                    if item.labelFn then lbl:SetText(CludesUI.L(item.labelFn())) end
+                    if item.labelFn then
+                        lbl:SetText(CludesUI.L(item.labelFn()))
+                    end
                 end
                 row._updateActionLabel = UpdateActionLabel
                 hl:SetColorTexture(1, 1, 1, 0)
-                local EG_r, EG_g, EG_b = CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
+                local EG_r, EG_g, EG_b =
+                    CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
                 local function UpdateActionLocked()
                     local isLocked = item.lockedFn and item.lockedFn()
                     if isLocked then
@@ -708,287 +819,351 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 end
                 row._updateLocked = UpdateActionLocked
                 UpdateActionLocked()
-                row:SetScript("OnEnter", function() lbl:SetTextColor(1, 1, 1, 1); hl:SetColorTexture(1, 1, 1, 0.04) end)
-                row:SetScript("OnLeave", function() UpdateActionLocked(); hl:SetColorTexture(1, 1, 1, 0) end)
+                row:SetScript("OnEnter", function()
+                    lbl:SetTextColor(1, 1, 1, 1)
+                    hl:SetColorTexture(1, 1, 1, 0.04)
+                end)
+                row:SetScript("OnLeave", function()
+                    UpdateActionLocked()
+                    hl:SetColorTexture(1, 1, 1, 0)
+                end)
                 row:SetScript("OnClick", function()
-                    if item.lockedFn and item.lockedFn() then return end
+                    if item.lockedFn and item.lockedFn() then
+                        return
+                    end
                     setFn(item.key, true)
                     -- Refresh all checkbox visuals + dynamic action labels
                     for _, r in ipairs(_allRows) do
-                        if r.frame._updateCheck then r.frame._updateCheck() end
-                        if r.frame._updateActionLabel then r.frame._updateActionLabel() end
-                        if r.frame._updateLocked then r.frame._updateLocked() end
+                        if r.frame._updateCheck then
+                            r.frame._updateCheck()
+                        end
+                        if r.frame._updateActionLabel then
+                            r.frame._updateActionLabel()
+                        end
+                        if r.frame._updateLocked then
+                            r.frame._updateLocked()
+                        end
                     end
-                    for i = 1, #_taTints do _taTints[i]() end
+                    for i = 1, #_taTints do
+                        _taTints[i]()
+                    end
                     UpdateLabel()
                 end)
-                _allRows[#_allRows + 1] = { frame = row, isHeader = false, isAction = true, label = item.label, height = ITEM_H }
+                _allRows[#_allRows + 1] =
+                    { frame = row, isHeader = false, isAction = true, label = item.label, height = ITEM_H }
                 yOff = yOff - ITEM_H
             else
-
-            -- Opt-in plain rows (item.noCheck): the identical row minus the checkbox -- the regular-dropdown look for select-style pickers. Click still routes setFn(key, not getFn(key)), so a picker whose getFn is constant-false always selects with true.
-            local shape = (item.noCheck and "n" or "c") .. (item.icon and "i" or "")
-                .. ((item.dual and not item.noCheck) and "d" or "")
-                .. (item.swatch and (item.swatch.hasAlpha and "A" or "s") or "")
-            local row = AcquireRow("chk" .. shape, MakeCheckRow, item)
-            row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, yOff)
-            row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, yOff)
-            row:SetFrameLevel(menu:GetFrameLevel() + 2)
-            row._isLocked = nil
-            local box, boxBrd, chk = row._box, row._boxBrd, row._chk
-            if chk then
-                chk:SetColorTexture(CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 1)
-                box:SetScript("OnEnter", nil)
-                box:SetScript("OnLeave", nil)
-                box:EnableMouse(false)
-                box:SetAlpha(1)
-            end
-            -- Optional icon (spell icon etc.) between checkbox and label
-            if row._ico then
-                local icoSz = item.iconSize or (ITEM_H - 6)
-                row._ico:SetSize(icoSz, icoSz)
-                row._ico:SetTexture(item.icon)
-            end
-            -- Opt-in dimmed rows (item.dimFn): a pick that has no effect here right now
-            -- (it shows somewhere else) rests dimmed but stays clickable, and hovering it
-            -- shows item.dimTooltip (string or function) in place of item.tooltip.
-            local function Dimmed()
-                return (item.dimFn and item.dimFn()) and true or false
-            end
-            -- Modifier rows rest in the accent only while active; read live, since a
-            -- sibling's click flips the checked state (UpdateCheck runs on every row).
-            local function RestColor()
-                if item.isModifier and getFn(item.key) then
-                    return CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
-                end
-                if Dimmed() then return 0.5, 0.5, 0.5 end
-                return 0.75, 0.75, 0.75
-            end
-            local lbl, hl = row._lbl, row._hl
-            lbl:SetTextColor(RestColor())
-            lbl:SetText(CludesUI.L(item.label))
-            hl:SetColorTexture(1, 1, 1, 0)
-            -- Opt-in dual-lane rows (item.dual): a second right-aligned box is the HIDE lane.
-            -- Lane state reads getFn(key, true) and writes setFn(key, v, true); the show lane
-            -- keeps the plain getFn(key)/setFn(key, v) contract, so single-lane callers are
-            -- untouched. item.showLockedFn dims the show lane; while it is locked, row clicks
-            -- fall through to the hide lane (broad "All" modes already show everything).
-            local negBox, negBrd, negChk = row._negBox, row._negBrd, row._negChk
-            -- Opt-in colour swatch (item.swatch = { get = fn -> r, g, b, a, set = fn(r, g, b, a),
-            -- hasAlpha, disabled = fn, disabledTooltip (+ rawTooltip / requireState, as
-            -- ResolveDisabledTip) }): its own button at the row's right edge, so a click
-            -- opens the colour picker and never toggles the row. While disabled it dims
-            -- and a blocker takes its clicks and explains the requirement.
-            local sw, swUpdate, swBlock = row._sw, row._swUpdate, row._swBlock
-            if sw then row._swSpec = item.swatch end
-            local function ShowLaneLocked()
-                return item.showLockedFn and item.showLockedFn() or false
-            end
-            -- item.ovLockedFn is the override-session lock: it blocks the click like any
-            -- other lock, but is painted and explained differently, because the row is not
-            -- merely unavailable here -- it cannot be captured into an override at all.
-            local function OvLocked()
-                return (item.ovLockedFn and item.ovLockedFn()) and true or false
-            end
-            local function RowLocked()
-                if OvLocked() or item.locked then return true end
-                return (item.lockedFn and item.lockedFn()) and true or false
-            end
-            local function LockedTip()
-                local lt = (OvLocked() and item.ovLockedTooltip) or item.lockedTooltip
-                if type(lt) == "function" then lt = lt() end
-                return lt
-            end
-            local function UpdateCheck()
+                -- Opt-in plain rows (item.noCheck): the identical row minus the checkbox -- the regular-dropdown look for select-style pickers. Click still routes setFn(key, not getFn(key)), so a picker whose getFn is constant-false always selects with true.
+                local shape = (item.noCheck and "n" or "c")
+                    .. (item.icon and "i" or "")
+                    .. ((item.dual and not item.noCheck) and "d" or "")
+                    .. (item.swatch and (item.swatch.hasAlpha and "A" or "s") or "")
+                local row = AcquireRow("chk" .. shape, MakeCheckRow, item)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, yOff)
+                row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, yOff)
+                row:SetFrameLevel(menu:GetFrameLevel() + 2)
+                row._isLocked = nil
+                local box, boxBrd, chk = row._box, row._boxBrd, row._chk
                 if chk then
-                    if getFn(item.key) then
-                        chk:Show()
-                        boxBrd:SetColor(CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 0.8)
-                    else
-                        chk:Hide()
-                        boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
+                    chk:SetColorTexture(
+                        CludesUI.CLUDES_GREEN.r,
+                        CludesUI.CLUDES_GREEN.g,
+                        CludesUI.CLUDES_GREEN.b,
+                        1
+                    )
+                    box:SetScript("OnEnter", nil)
+                    box:SetScript("OnLeave", nil)
+                    box:EnableMouse(false)
+                    box:SetAlpha(1)
+                end
+                -- Optional icon (spell icon etc.) between checkbox and label
+                if row._ico then
+                    local icoSz = item.iconSize or (ITEM_H - 6)
+                    row._ico:SetSize(icoSz, icoSz)
+                    row._ico:SetTexture(item.icon)
+                end
+                -- Opt-in dimmed rows (item.dimFn): a pick that has no effect here right now
+                -- (it shows somewhere else) rests dimmed but stays clickable, and hovering it
+                -- shows item.dimTooltip (string or function) in place of item.tooltip.
+                local function Dimmed()
+                    return (item.dimFn and item.dimFn()) and true or false
+                end
+                -- Modifier rows rest in the accent only while active; read live, since a
+                -- sibling's click flips the checked state (UpdateCheck runs on every row).
+                local function RestColor()
+                    if item.isModifier and getFn(item.key) then
+                        return CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
                     end
-                    if box and item.dual then
-                        local laneLocked = ShowLaneLocked()
-                        box:SetAlpha(laneLocked and 0.3 or 1)
-                        -- Mouse only while locked AND the item explains the
-                        -- dim (item.showLockedTooltip): the disabled box then
-                        -- swallows its own hover for the tooltip, and clicks,
-                        -- like any disabled control. Unlocked, the box goes
-                        -- mouse-inert again so the ROW keeps every click.
-                        box:EnableMouse((laneLocked and item.showLockedTooltip) and true or false)
+                    if Dimmed() then
+                        return 0.5, 0.5, 0.5
                     end
+                    return 0.75, 0.75, 0.75
                 end
-                if negChk then
-                    if getFn(item.key, true) then
-                        negChk:Show()
-                        negBrd:SetColor(0.85, 0.3, 0.3, 0.8)
-                    else
-                        negChk:Hide()
-                        negBrd:SetColor(0.4, 0.4, 0.4, 0.6)
-                    end
-                end
-                if sw then
-                    swUpdate()
-                    local off = item.swatch.disabled and item.swatch.disabled() or false
-                    sw:SetAlpha(off and 0.3 or 1)
-                    swBlock:SetShown(off and true or false)
-                end
-                -- Radio partners refresh each other, so this also runs on the hovered row;
-                -- repainting that one would drop its hover white until the mouse re-enters.
-                if item.isModifier and not row._isLocked and not row:IsMouseOver() then
-                    lbl:SetTextColor(RestColor())
-                end
-            end
-            UpdateCheck()
-            row._updateCheck = UpdateCheck
-            row:SetScript("OnEnter", function()
-                if row._isLocked then
-                    -- Locked rows keep the gray look (no highlight); if the item explains its lock, show that instead of the normal tooltip.
-                    local lt = LockedTip()
-                    if lt then
-                        CludesUI.ShowWidgetTooltip(row, lt)
-                    end
-                    return
-                end
-                lbl:SetTextColor(1, 1, 1, 1)
-                hl:SetColorTexture(1, 1, 1, 0.04)
-                local tip = item.tooltip
-                if item.dimTooltip and Dimmed() then tip = item.dimTooltip end
-                if type(tip) == "function" then tip = tip() end
-                if tip then
-                    CludesUI.ShowWidgetTooltip(row, tip)
-                end
-            end)
-            row:SetScript("OnLeave", function()
-                if row._isLocked then
-                    if item.lockedTooltip or item.ovLockedTooltip then
-                        CludesUI.HideWidgetTooltip()
-                    end
-                    return
-                end
+                local lbl, hl = row._lbl, row._hl
                 lbl:SetTextColor(RestColor())
+                lbl:SetText(CludesUI.L(item.label))
                 hl:SetColorTexture(1, 1, 1, 0)
-                if item.tooltip or item.dimTooltip then
-                    CludesUI.HideWidgetTooltip()
+                -- Opt-in dual-lane rows (item.dual): a second right-aligned box is the HIDE lane.
+                -- Lane state reads getFn(key, true) and writes setFn(key, v, true); the show lane
+                -- keeps the plain getFn(key)/setFn(key, v) contract, so single-lane callers are
+                -- untouched. item.showLockedFn dims the show lane; while it is locked, row clicks
+                -- fall through to the hide lane (broad "All" modes already show everything).
+                local negBox, negBrd, negChk = row._negBox, row._negBrd, row._negChk
+                -- Opt-in colour swatch (item.swatch = { get = fn -> r, g, b, a, set = fn(r, g, b, a),
+                -- hasAlpha, disabled = fn, disabledTooltip (+ rawTooltip / requireState, as
+                -- ResolveDisabledTip) }): its own button at the row's right edge, so a click
+                -- opens the colour picker and never toggles the row. While disabled it dims
+                -- and a blocker takes its clicks and explains the requirement.
+                local sw, swUpdate, swBlock = row._sw, row._swUpdate, row._swBlock
+                if sw then
+                    row._swSpec = item.swatch
                 end
-            end)
-            local function UpdateLocked()
-                local isLocked = RowLocked()
-                -- Mouse stays enabled so locked rows can explain themselves on hover; clicks are guarded independently in OnClick.
-                row._isLocked = isLocked and true or false
-                if isLocked then
-                    lbl:SetTextColor(0.4, 0.4, 0.4, 0.5)
-                else
-                    lbl:SetTextColor(RestColor())
+                local function ShowLaneLocked()
+                    return item.showLockedFn and item.showLockedFn() or false
                 end
-                -- opts.dimLocked: a locked row's checkbox dims with its label, so a
-                -- checked one reads as fixed rather than clickable (dual rows keep
-                -- their own lane dimming).
-                if opts.dimLocked and box and not item.dual then
-                    box:SetAlpha(isLocked and 0.4 or 1)
+                -- item.ovLockedFn is the override-session lock: it blocks the click like any
+                -- other lock, but is painted and explained differently, because the row is not
+                -- merely unavailable here -- it cannot be captured into an override at all.
+                local function OvLocked()
+                    return (item.ovLockedFn and item.ovLockedFn()) and true or false
                 end
-            end
-            row._updateLocked = UpdateLocked
-            UpdateLocked()
-            -- snap: the slot snapshot the click took before its setter ran
-            -- (CludesUI._SOAttribution), or nil.
-            local function AfterToggle(snap)
-                -- opts.notifyWrites: join the primary capture path every other widget's
-                -- setter uses. Without it a checklist has only the polling fallback,
-                -- whose mouse attribution is CLEARED while the menu (a UIParent child
-                -- with no popup marker) holds focus, so an override session never sees
-                -- the write when it happens. ddBtn's parent carries the row's
-                -- _captureCfg, so the slot is attributed exactly. Opt-in: every other
-                -- checklist keeps the behaviour it has always had.
-                if opts.notifyWrites then
-                    CludesUI._NotifySettingWrite(ddBtn, snap)
+                local function RowLocked()
+                    if OvLocked() or item.locked then
+                        return true
+                    end
+                    return (item.lockedFn and item.lockedFn()) and true or false
                 end
-                UpdateLabel()
-                -- Refresh checkbox visuals + dynamic action labels, so items whose checked state depends on others (e.g. "Always" in crosshair) update live. Locked visuals refresh too, so rows whose lockedFn depends on the current selection never show a stale gray/active state.
-                for _, r in ipairs(_allRows) do
-                    if r.frame._updateCheck then r.frame._updateCheck() end
-                    if r.frame._updateActionLabel then r.frame._updateActionLabel() end
-                    if r.frame._updateLocked then r.frame._updateLocked() end
+                local function LockedTip()
+                    local lt = (OvLocked() and item.ovLockedTooltip) or item.lockedTooltip
+                    if type(lt) == "function" then
+                        lt = lt()
+                    end
+                    return lt
                 end
-                for i = 1, #_taTints do _taTints[i]() end
-                if onChanged then
-                    -- Anchor menu to absolute screen position BEFORE callback so a page rebuild (which destroys
-                    -- ddBtn) can't shift us. GetCenter and SetPoint offsets are both in the menu's own coordinate
-                    -- space, so the values pass through unscaled -- scaling them by effective-scale ratios made
-                    -- the menu creep toward the bottom-left on every click when the options panel scale differs from UIParent's.
-                    local cx, cy = menu:GetCenter()
-                    menu:ClearAllPoints()
-                    menu:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
-                    onChanged()
+                local function UpdateCheck()
+                    if chk then
+                        if getFn(item.key) then
+                            chk:Show()
+                            boxBrd:SetColor(
+                                CludesUI.CLUDES_GREEN.r,
+                                CludesUI.CLUDES_GREEN.g,
+                                CludesUI.CLUDES_GREEN.b,
+                                0.8
+                            )
+                        else
+                            chk:Hide()
+                            boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
+                        end
+                        if box and item.dual then
+                            local laneLocked = ShowLaneLocked()
+                            box:SetAlpha(laneLocked and 0.3 or 1)
+                            -- Mouse only while locked AND the item explains the
+                            -- dim (item.showLockedTooltip): the disabled box then
+                            -- swallows its own hover for the tooltip, and clicks,
+                            -- like any disabled control. Unlocked, the box goes
+                            -- mouse-inert again so the ROW keeps every click.
+                            box:EnableMouse((laneLocked and item.showLockedTooltip) and true or false)
+                        end
+                    end
+                    if negChk then
+                        if getFn(item.key, true) then
+                            negChk:Show()
+                            negBrd:SetColor(0.85, 0.3, 0.3, 0.8)
+                        else
+                            negChk:Hide()
+                            negBrd:SetColor(0.4, 0.4, 0.4, 0.6)
+                        end
+                    end
+                    if sw then
+                        swUpdate()
+                        local off = item.swatch.disabled and item.swatch.disabled() or false
+                        sw:SetAlpha(off and 0.3 or 1)
+                        swBlock:SetShown(off and true or false)
+                    end
+                    -- Radio partners refresh each other, so this also runs on the hovered row;
+                    -- repainting that one would drop its hover white until the mouse re-enters.
+                    if item.isModifier and not row._isLocked and not row:IsMouseOver() then
+                        lbl:SetTextColor(RestColor())
+                    end
                 end
-            end
-            row:SetScript("OnClick", function()
-                if RowLocked() then return end
-                -- The slot the write belongs to, taken before the setter runs: a
-                -- setter that rebuilds the page can dress ddBtn for another slot.
-                local snap = opts.notifyWrites and CludesUI._SOAttribution(ddBtn) or nil
-                -- The slot's Apply to link stays a few seconds after the pick.
-                CludesUI._SyncPickNotice(ddBtn)
-                if negBox and ShowLaneLocked() then
-                    setFn(item.key, not getFn(item.key, true), true)
-                else
-                    setFn(item.key, not getFn(item.key))
-                end
-                AfterToggle(snap)
-            end)
-            if negBox then
-                negBox:SetScript("OnClick", function()
-                    if RowLocked() then return end
-                    local snap = opts.notifyWrites and CludesUI._SOAttribution(ddBtn) or nil
-                    CludesUI._SyncPickNotice(ddBtn)
-                    setFn(item.key, not getFn(item.key, true), true)
-                    AfterToggle(snap)
-                end)
-                negBox:SetScript("OnEnter", function()
+                UpdateCheck()
+                row._updateCheck = UpdateCheck
+                row:SetScript("OnEnter", function()
                     if row._isLocked then
+                        -- Locked rows keep the gray look (no highlight); if the item explains its lock, show that instead of the normal tooltip.
                         local lt = LockedTip()
-                        if lt then CludesUI.ShowWidgetTooltip(negBox, lt) end
+                        if lt then
+                            CludesUI.ShowWidgetTooltip(row, lt)
+                        end
                         return
                     end
                     lbl:SetTextColor(1, 1, 1, 1)
                     hl:SetColorTexture(1, 1, 1, 0.04)
-                    local hlt = opts.hideLaneTooltip
-                    if type(hlt) == "function" then hlt = hlt(item.key) end
-                    CludesUI.ShowWidgetTooltip(negBox,
-                        hlt and CludesUI.L(hlt)
-                        or CludesUI.L("Hide these instead of showing them"))
+                    local tip = item.tooltip
+                    if item.dimTooltip and Dimmed() then
+                        tip = item.dimTooltip
+                    end
+                    if type(tip) == "function" then
+                        tip = tip()
+                    end
+                    if tip then
+                        CludesUI.ShowWidgetTooltip(row, tip)
+                    end
                 end)
-                negBox:SetScript("OnLeave", function()
-                    if not row._isLocked then lbl:SetTextColor(RestColor()) end
+                row:SetScript("OnLeave", function()
+                    if row._isLocked then
+                        if item.lockedTooltip or item.ovLockedTooltip then
+                            CludesUI.HideWidgetTooltip()
+                        end
+                        return
+                    end
+                    lbl:SetTextColor(RestColor())
                     hl:SetColorTexture(1, 1, 1, 0)
-                    CludesUI.HideWidgetTooltip()
+                    if item.tooltip or item.dimTooltip then
+                        CludesUI.HideWidgetTooltip()
+                    end
                 end)
-                -- The SHOW box mirrors the hide box's self-explanation, but
-                -- only while a broad mode locks the lane: UpdateCheck enables
-                -- its mouse exactly then, so these scripts never fire for an
-                -- active lane and row clicks stay untouched.
-                if box then
-                    box:SetScript("OnEnter", function()
+                local function UpdateLocked()
+                    local isLocked = RowLocked()
+                    -- Mouse stays enabled so locked rows can explain themselves on hover; clicks are guarded independently in OnClick.
+                    row._isLocked = isLocked and true or false
+                    if isLocked then
+                        lbl:SetTextColor(0.4, 0.4, 0.4, 0.5)
+                    else
+                        lbl:SetTextColor(RestColor())
+                    end
+                    -- opts.dimLocked: a locked row's checkbox dims with its label, so a
+                    -- checked one reads as fixed rather than clickable (dual rows keep
+                    -- their own lane dimming).
+                    if opts.dimLocked and box and not item.dual then
+                        box:SetAlpha(isLocked and 0.4 or 1)
+                    end
+                end
+                row._updateLocked = UpdateLocked
+                UpdateLocked()
+                -- snap: the slot snapshot the click took before its setter ran
+                -- (CludesUI._SOAttribution), or nil.
+                local function AfterToggle(snap)
+                    -- opts.notifyWrites: join the primary capture path every other widget's
+                    -- setter uses. Without it a checklist has only the polling fallback,
+                    -- whose mouse attribution is CLEARED while the menu (a UIParent child
+                    -- with no popup marker) holds focus, so an override session never sees
+                    -- the write when it happens. ddBtn's parent carries the row's
+                    -- _captureCfg, so the slot is attributed exactly. Opt-in: every other
+                    -- checklist keeps the behaviour it has always had.
+                    if opts.notifyWrites then
+                        CludesUI._NotifySettingWrite(ddBtn, snap)
+                    end
+                    UpdateLabel()
+                    -- Refresh checkbox visuals + dynamic action labels, so items whose checked state depends on others (e.g. "Always" in crosshair) update live. Locked visuals refresh too, so rows whose lockedFn depends on the current selection never show a stale gray/active state.
+                    for _, r in ipairs(_allRows) do
+                        if r.frame._updateCheck then
+                            r.frame._updateCheck()
+                        end
+                        if r.frame._updateActionLabel then
+                            r.frame._updateActionLabel()
+                        end
+                        if r.frame._updateLocked then
+                            r.frame._updateLocked()
+                        end
+                    end
+                    for i = 1, #_taTints do
+                        _taTints[i]()
+                    end
+                    if onChanged then
+                        -- Anchor menu to absolute screen position BEFORE callback so a page rebuild (which destroys
+                        -- ddBtn) can't shift us. GetCenter and SetPoint offsets are both in the menu's own coordinate
+                        -- space, so the values pass through unscaled -- scaling them by effective-scale ratios made
+                        -- the menu creep toward the bottom-left on every click when the options panel scale differs from UIParent's.
+                        local cx, cy = menu:GetCenter()
+                        menu:ClearAllPoints()
+                        menu:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
+                        onChanged()
+                    end
+                end
+                row:SetScript("OnClick", function()
+                    if RowLocked() then
+                        return
+                    end
+                    -- The slot the write belongs to, taken before the setter runs: a
+                    -- setter that rebuilds the page can dress ddBtn for another slot.
+                    local snap = opts.notifyWrites and CludesUI._SOAttribution(ddBtn) or nil
+                    -- The slot's Apply to link stays a few seconds after the pick.
+                    CludesUI._SyncPickNotice(ddBtn)
+                    if negBox and ShowLaneLocked() then
+                        setFn(item.key, not getFn(item.key, true), true)
+                    else
+                        setFn(item.key, not getFn(item.key))
+                    end
+                    AfterToggle(snap)
+                end)
+                if negBox then
+                    negBox:SetScript("OnClick", function()
+                        if RowLocked() then
+                            return
+                        end
+                        local snap = opts.notifyWrites and CludesUI._SOAttribution(ddBtn) or nil
+                        CludesUI._SyncPickNotice(ddBtn)
+                        setFn(item.key, not getFn(item.key, true), true)
+                        AfterToggle(snap)
+                    end)
+                    negBox:SetScript("OnEnter", function()
+                        if row._isLocked then
+                            local lt = LockedTip()
+                            if lt then
+                                CludesUI.ShowWidgetTooltip(negBox, lt)
+                            end
+                            return
+                        end
                         lbl:SetTextColor(1, 1, 1, 1)
                         hl:SetColorTexture(1, 1, 1, 0.04)
-                        local tt = item.showLockedTooltip
-                        if type(tt) == "function" then tt = tt() end
-                        if tt then CludesUI.ShowWidgetTooltip(box, tt) end
+                        local hlt = opts.hideLaneTooltip
+                        if type(hlt) == "function" then
+                            hlt = hlt(item.key)
+                        end
+                        CludesUI.ShowWidgetTooltip(
+                            negBox,
+                            hlt and CludesUI.L(hlt) or CludesUI.L("Hide these instead of showing them")
+                        )
                     end)
-                    box:SetScript("OnLeave", function()
-                        if not row._isLocked then lbl:SetTextColor(RestColor()) end
+                    negBox:SetScript("OnLeave", function()
+                        if not row._isLocked then
+                            lbl:SetTextColor(RestColor())
+                        end
                         hl:SetColorTexture(1, 1, 1, 0)
                         CludesUI.HideWidgetTooltip()
                     end)
+                    -- The SHOW box mirrors the hide box's self-explanation, but
+                    -- only while a broad mode locks the lane: UpdateCheck enables
+                    -- its mouse exactly then, so these scripts never fire for an
+                    -- active lane and row clicks stay untouched.
+                    if box then
+                        box:SetScript("OnEnter", function()
+                            lbl:SetTextColor(1, 1, 1, 1)
+                            hl:SetColorTexture(1, 1, 1, 0.04)
+                            local tt = item.showLockedTooltip
+                            if type(tt) == "function" then
+                                tt = tt()
+                            end
+                            if tt then
+                                CludesUI.ShowWidgetTooltip(box, tt)
+                            end
+                        end)
+                        box:SetScript("OnLeave", function()
+                            if not row._isLocked then
+                                lbl:SetTextColor(RestColor())
+                            end
+                            hl:SetColorTexture(1, 1, 1, 0)
+                            CludesUI.HideWidgetTooltip()
+                        end)
+                    end
                 end
-            end
-            -- Marks the contiguous run the override overlay below seals off.
-            row._ovBlock = item.ovLockedFn and true or nil
-            _allRows[#_allRows + 1] = { frame = row, isHeader = false, label = item.label, height = ITEM_H }
-            yOff = yOff - ITEM_H
-
+                -- Marks the contiguous run the override overlay below seals off.
+                row._ovBlock = item.ovLockedFn and true or nil
+                _allRows[#_allRows + 1] =
+                    { frame = row, isHeader = false, label = item.label, height = ITEM_H }
+                yOff = yOff - ITEM_H
             end -- isHeader else
         end
 
@@ -1030,8 +1205,7 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     -- for the width of the text: the seal sits at a higher frame level than
                     -- the header, so anything it draws covers that line.
                     local plate = seal:CreateTexture(nil, "ARTWORK", nil, 6)
-                    plate:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G,
-                        CludesUI.DD_BG_B, 1)
+                    plate:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 1)
                     plate:SetPoint("TOPLEFT", sealLbl, "TOPLEFT", -5, 2)
                     plate:SetPoint("BOTTOMRIGHT", sealLbl, "BOTTOMRIGHT", 5, -2)
                     seal:EnableMouse(true)
@@ -1055,7 +1229,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 seal:SetShown(opts.ovLockedFn())
             else
                 menu._ovSeal = nil
-                if seal then seal:Hide() end
+                if seal then
+                    seal:Hide()
+                end
             end
         end
 
@@ -1079,9 +1255,15 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 closeLbl:SetPoint("CENTER")
                 closeLbl:SetText(CludesUI.L(type(closeButton) == "string" and closeButton or "Okay"))
                 closeLbl:SetTextColor(1, 1, 1, 1)
-                closeBtn:SetScript("OnClick", function() menu:Hide() end)
-                closeBtn:SetScript("OnEnter", function() closeBg:SetColorTexture(EG.r, EG.g, EG.b, 1) end)
-                closeBtn:SetScript("OnLeave", function() closeBg:SetColorTexture(EG.r, EG.g, EG.b, 0.85) end)
+                closeBtn:SetScript("OnClick", function()
+                    menu:Hide()
+                end)
+                closeBtn:SetScript("OnEnter", function()
+                    closeBg:SetColorTexture(EG.r, EG.g, EG.b, 1)
+                end)
+                closeBtn:SetScript("OnLeave", function()
+                    closeBg:SetColorTexture(EG.r, EG.g, EG.b, 0.85)
+                end)
             end
             closeBtn._bg:SetColorTexture(EG.r, EG.g, EG.b, 0.85)
             closeBtn:ClearAllPoints()
@@ -1100,7 +1282,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 r._updateCheck, r._updateLocked, r._updateActionLabel = nil, nil, nil
             end
         end
-        if not firstBuild then return end
+        if not firstBuild then
+            return
+        end
 
         -- Wire search filtering
         if searchEdit then
@@ -1114,7 +1298,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 for _, r in ipairs(_allRows) do
                     if r.isHeader then
                         -- Defer header: show only if a child is visible
-                        if lastHdr and not hdrHasVisible then lastHdr:Hide() end
+                        if lastHdr and not hdrHasVisible then
+                            lastHdr:Hide()
+                        end
                         lastHdr = r.frame
                         lastHdrY = visY
                         hdrHasVisible = false
@@ -1148,15 +1334,16 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     end
                 end
                 -- Hide trailing header with no visible children
-                if lastHdr and not hdrHasVisible then lastHdr:Hide() end
+                if lastHdr and not hdrHasVisible then
+                    lastHdr:Hide()
+                end
                 -- The override seal is anchored to the FIRST and LAST row of its run,
                 -- which this filter hides and repositions without touching the seal. Drop
                 -- it while a filter is active rather than re-deriving the run: with rows
                 -- missing there is no contiguous block left to mark, and a stale seal is a
                 -- mouse-enabled frame parked over whatever rows did survive.
                 if menu._ovSeal then
-                    menu._ovSeal:SetShown(t == "" and opts.ovLockedFn
-                        and opts.ovLockedFn() or false)
+                    menu._ovSeal:SetShown(t == "" and opts.ovLockedFn and opts.ovLockedFn() or false)
                 end
                 child:SetHeight(math.max(1, math.abs(visY)))
                 sf:SetVerticalScroll(0)
@@ -1165,7 +1352,9 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             menu:HookScript("OnShow", function()
                 searchEdit:SetText("")
                 -- Not under the controller cursor: focus would pop its on-screen keyboard over the list.
-                if not CludesUI.PadCursorShown() then searchEdit:SetFocus() end
+                if not CludesUI.PadCursorShown() then
+                    searchEdit:SetFocus()
+                end
                 UpdateCBThumb()
             end)
         end
@@ -1175,10 +1364,16 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         -- Refresh all checkbox + locked visuals on show
         menu:HookScript("OnShow", function()
             for _, rowInfo in ipairs(_allRows) do
-                if rowInfo.frame._updateCheck then rowInfo.frame._updateCheck() end
-                if rowInfo.frame._updateLocked then rowInfo.frame._updateLocked() end
+                if rowInfo.frame._updateCheck then
+                    rowInfo.frame._updateCheck()
+                end
+                if rowInfo.frame._updateLocked then
+                    rowInfo.frame._updateLocked()
+                end
             end
-            for i = 1, #_taTints do _taTints[i]() end
+            for i = 1, #_taTints do
+                _taTints[i]()
+            end
         end)
 
         if CludesUI.PadCP() then
@@ -1190,7 +1385,10 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 local first
                 for i = 1, #_allRows do
                     local r = _allRows[i]
-                    if not r.isHeader and r.frame:IsShown() then first = r.frame; break end
+                    if not r.isHeader and r.frame:IsShown() then
+                        first = r.frame
+                        break
+                    end
                 end
                 CludesUI.PadFocus(first or menu)
             end
@@ -1200,13 +1398,17 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     end
 
     local function ApplyNormal()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetTextColor(1, 1, 1, CludesUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
     end
     local function ApplyHover()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetTextColor(1, 1, 1, CludesUI.DD_TXT_HA)
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
@@ -1239,10 +1441,16 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         -- closed would show stale: refresh checked state AND locks on every open. The
         -- case that matters is an override session starting between two opens.
         for _, r in ipairs(menu._rows or {}) do
-            if r.frame._updateCheck then r.frame._updateCheck() end
-            if r.frame._updateLocked then r.frame._updateLocked() end
+            if r.frame._updateCheck then
+                r.frame._updateCheck()
+            end
+            if r.frame._updateLocked then
+                r.frame._updateLocked()
+            end
         end
-        if menu._ovSeal then menu._ovSeal:SetShown(opts.ovLockedFn()) end
+        if menu._ovSeal then
+            menu._ovSeal:SetShown(opts.ovLockedFn())
+        end
         -- Match the panel's effective scale since menu lives on UIParent
         local btnScale = ddBtn:GetEffectiveScale()
         local uiScale = UIParent:GetEffectiveScale()
@@ -1256,8 +1464,12 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             -- Close when left-clicking outside the menu and button. The shared colour
             -- picker is a separate popup a row swatch opens: working in it keeps the menu.
             local cp = CludesUI._colorPickerPopup
-            if not self:IsMouseOver() and not ddBtn:IsMouseOver() and IsMouseButtonDown("LeftButton")
-                and not (cp and cp:IsShown()) then
+            if
+                not self:IsMouseOver()
+                and not ddBtn:IsMouseOver()
+                and IsMouseButtonDown("LeftButton")
+                and not (cp and cp:IsShown())
+            then
                 self:Hide()
                 return
             end
@@ -1270,7 +1482,10 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     if scrollChild then
                         local p = ddBtn:GetParent()
                         while p do
-                            if p == scrollChild then found = true; break end
+                            if p == scrollChild then
+                                found = true
+                                break
+                            end
                             p = p:GetParent()
                         end
                     end
@@ -1281,28 +1496,44 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                     local sfBot = scrollFrame:GetBottom()
                     local btnBot = ddBtn:GetBottom()
                     if sfTop and sfBot and btnBot then
-                        if btnBot < sfBot or btnBot > sfTop then self:Hide() end
+                        if btnBot < sfBot or btnBot > sfTop then
+                            self:Hide()
+                        end
                     end
                 end
             end
         end)
         menu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
-            if CludesUI._openDropdownMenu == self then CludesUI._openDropdownMenu = nil end
+            if CludesUI._openDropdownMenu == self then
+                CludesUI._openDropdownMenu = nil
+            end
             if ddBtn:IsMouseOver() then
                 ApplyHover()
             else
                 ApplyNormal()
             end
-            if onMenuClosed then onMenuClosed() end
+            if onMenuClosed then
+                onMenuClosed()
+            end
             -- Controller cursor: back onto the dropdown button (a no-op once that is hidden too).
-            if CludesUI.PadCursorShown() then CludesUI.PadFocus(ddBtn) end
+            if CludesUI.PadCursorShown() then
+                CludesUI.PadFocus(ddBtn)
+            end
         end)
-        if menu._padFocus and CludesUI.PadCursorShown() then menu._padFocus() end
+        if menu._padFocus and CludesUI.PadCursorShown() then
+            menu._padFocus()
+        end
     end
 
-    ddBtn:SetScript("OnClick", function() ShowMenu() end)
-    ddBtn:HookScript("OnHide", function() if menu then menu:Hide() end end)
+    ddBtn:SetScript("OnClick", function()
+        ShowMenu()
+    end)
+    ddBtn:HookScript("OnHide", function()
+        if menu then
+            menu:Hide()
+        end
+    end)
 
     -- RefreshAll(true), opt-in: a dynamic list is read again first, so the summary
     -- names a change made outside the menu while it is closed (an entry typed into
@@ -1310,17 +1541,25 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     local function RefreshAll(reread)
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu) for another build.
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         if reread == true and itemsFn and not (menu and menu:IsShown()) then
             items = itemsFn() or {}
         end
         UpdateLabel()
         if menu then
             for _, r in ipairs(menu._rows or {}) do
-                if r.frame._updateCheck then r.frame._updateCheck() end
-                if r.frame._updateLocked then r.frame._updateLocked() end
+                if r.frame._updateCheck then
+                    r.frame._updateCheck()
+                end
+                if r.frame._updateLocked then
+                    r.frame._updateLocked()
+                end
             end
-            if menu._ovSeal then menu._ovSeal:SetShown(opts.ovLockedFn()) end
+            if menu._ovSeal then
+                menu._ovSeal:SetShown(opts.ovLockedFn())
+            end
         end
     end
 
@@ -1331,14 +1570,20 @@ function CludesUI.BuildVisOptsCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         block:EnableMouse(true)
         block:SetScript("OnEnter", function()
             local tip = CludesUI.ResolveDisabledTip(opts)
-            if tip then CludesUI.ShowWidgetTooltip(ddBtn, tip) end
+            if tip then
+                CludesUI.ShowWidgetTooltip(ddBtn, tip)
+            end
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local function DisabledState()
             local off = opts.disabled() and true or false
             ddBtn:SetAlpha(off and 0.4 or 1)
             block:SetShown(off)
-            if off and menu then menu:Hide() end
+            if off and menu then
+                menu:Hide()
+            end
         end
         DisabledState()
         CludesUI.RegisterWidgetRefresh(DisabledState)
@@ -1371,20 +1616,32 @@ function CludesUI.SpecPickItems(opts)
         for n = 1, #classes do
             local token = classes[n]
             local ids = CludesUI.ForeverClassSpecIDs(token)
-            items[#items + 1] = { key = token, label = CludesUI.ForeverClassName(token),
+            items[#items + 1] = {
+                key = token,
+                label = CludesUI.ForeverClassName(token),
                 lockedFn = lockedFn and function()
                     for i = 1, #ids do
-                        if lockedFn(ids[i]) then return true end
+                        if lockedFn(ids[i]) then
+                            return true
+                        end
                     end
                     return false
-                end or nil }
+                end or nil,
+            }
         end
         return items, roles
     end
     if opts.roles then
-        items[#items + 1] = { key = CludesUI.SPEC_PICK_HEALERS, label = "All Healers", isAction = true, lockedFn = allLockedFn }
-        items[#items + 1] = { key = CludesUI.SPEC_PICK_TANKS, label = "All Tanks", isAction = true, lockedFn = allLockedFn }
-        items[#items + 1] = { key = CludesUI.SPEC_PICK_DPS, label = "All DPS", isAction = true, lockedFn = allLockedFn }
+        items[#items + 1] = {
+            key = CludesUI.SPEC_PICK_HEALERS,
+            label = "All Healers",
+            isAction = true,
+            lockedFn = allLockedFn,
+        }
+        items[#items + 1] =
+            { key = CludesUI.SPEC_PICK_TANKS, label = "All Tanks", isAction = true, lockedFn = allLockedFn }
+        items[#items + 1] =
+            { key = CludesUI.SPEC_PICK_DPS, label = "All DPS", isAction = true, lockedFn = allLockedFn }
     end
     local classList = {}
     for classID = 1, (GetNumClasses and GetNumClasses() or 13) do
@@ -1393,7 +1650,9 @@ function CludesUI.SpecPickItems(opts)
             classList[#classList + 1] = { classID = classID, className = className }
         end
     end
-    table.sort(classList, function(a, b) return a.className < b.className end)
+    table.sort(classList, function(a, b)
+        return a.className < b.className
+    end)
     local healers, tanks, dps = {}, {}, {}
     for _, cls in ipairs(classList) do
         items[#items + 1] = { isHeader = true, label = cls.className }
@@ -1401,11 +1660,20 @@ function CludesUI.SpecPickItems(opts)
             local specID, specName, _, _, role = GetSpecializationInfoForClassID(cls.classID, specIndex)
             if specID and specName then
                 local sid = specID
-                items[#items + 1] = { key = specID, label = specName,
-                    lockedFn = lockedFn and function() return lockedFn(sid) end or nil }
-                if role == "HEALER" then healers[#healers + 1] = specID
-                elseif role == "TANK" then tanks[#tanks + 1] = specID
-                else dps[#dps + 1] = specID end
+                items[#items + 1] = {
+                    key = specID,
+                    label = specName,
+                    lockedFn = lockedFn and function()
+                        return lockedFn(sid)
+                    end or nil,
+                }
+                if role == "HEALER" then
+                    healers[#healers + 1] = specID
+                elseif role == "TANK" then
+                    tanks[#tanks + 1] = specID
+                else
+                    dps[#dps + 1] = specID
+                end
             end
         end
     end
@@ -1442,7 +1710,9 @@ function CludesUI.AttachRowReorder(host, spec)
     local insLine, state = spec.insLine, spec.state
     -- Read live: a host raised after this call (a cog popup lifts its open
     -- dropdown menu) would otherwise park dropped rows behind its background.
-    local function BaseLevel() return host:GetFrameLevel() + 2 end
+    local function BaseLevel()
+        return host:GetFrameLevel() + 2
+    end
     local function Park(row)
         row:SetFrameLevel(BaseLevel())
         row:SetAlpha(1)
@@ -1457,7 +1727,10 @@ function CludesUI.AttachRowReorder(host, spec)
         for i = 1, #movable do
             if i ~= fromIdx then
                 local mid = mT + SlotY(i) - ITEM_H / 2
-                if cursorY > mid then iI = i; break end
+                if cursorY > mid then
+                    iI = i
+                    break
+                end
                 iI = i + 1
             end
         end
@@ -1468,18 +1741,26 @@ function CludesUI.AttachRowReorder(host, spec)
         local dsY, dgO, dgFrom
         local DragUpdate
         row:SetScript("OnMouseDown", function(self, b)
-            if b ~= "LeftButton" then return end
+            if b ~= "LeftButton" then
+                return
+            end
             row._suppressClick = nil
-            if spec.canReorder and not spec.canReorder() then return end
+            if spec.canReorder and not spec.canReorder() then
+                return
+            end
             local _, cy = GetCursorPosition()
             dsY = cy
             self:SetScript("OnUpdate", DragUpdate)
         end)
         row:SetScript("OnMouseUp", function(self, b)
-            if b ~= "LeftButton" then return end
+            if b ~= "LeftButton" then
+                return
+            end
             dsY = nil
             self:SetScript("OnUpdate", nil)
-            if not state.dragging then return end
+            if not state.dragging then
+                return
+            end
             self._suppressClick = true
             state.dragging = false
             insLine:Hide()
@@ -1493,38 +1774,54 @@ function CludesUI.AttachRowReorder(host, spec)
             cy = cy / host:GetEffectiveScale()
             local from
             for mi = 1, #movable do
-                if movable[mi] == self._item then from = mi; break end
+                if movable[mi] == self._item then
+                    from = mi
+                    break
+                end
             end
             -- Gap -> insertion index: removing the row first shifts everything after it up one, so downward moves adjust by -1 (same as the raid frames Sort By drop).
             local iI = TargetGap(cy, from)
-            if from and from < iI then iI = iI - 1 end
+            if from and from < iI then
+                iI = iI - 1
+            end
             local to = math.max(1, math.min(iI, #movable))
             if from and from ~= to then
                 local mv = table.remove(movable, from)
                 table.insert(movable, to, mv)
                 if spec.onDrop then
                     local keys = {}
-                    for mi = 1, #movable do keys[mi] = movable[mi].key end
+                    for mi = 1, #movable do
+                        keys[mi] = movable[mi].key
+                    end
                     spec.onDrop(keys)
                 end
             end
             spec.refresh()
         end)
         DragUpdate = function(self)
-            if not dsY then return end
+            if not dsY then
+                return
+            end
             local _, cy = GetCursorPosition()
             if not state.dragging then
-                if math.abs(cy - dsY) < 3 then return end
+                if math.abs(cy - dsY) < 3 then
+                    return
+                end
                 state.dragging = true
                 local sc = host:GetEffectiveScale()
                 dgO = (cy / sc) - (self:GetTop() or 0)
                 dgFrom = nil
                 for mi = 1, #movable do
-                    if movable[mi] == self._item then dgFrom = mi; break end
+                    if movable[mi] == self._item then
+                        dgFrom = mi
+                        break
+                    end
                 end
                 self:SetFrameLevel(BaseLevel() + 8)
                 self:SetAlpha(0.8)
-                if spec.onDragStart then spec.onDragStart(self) end
+                if spec.onDragStart then
+                    spec.onDragStart(self)
+                end
             end
             local sc = host:GetEffectiveScale()
             local cY = cy / sc
@@ -1541,7 +1838,9 @@ function CludesUI.AttachRowReorder(host, spec)
             insLine:Show()
         end
         row._cancelDrag = function(self)
-            if not dsY then return end
+            if not dsY then
+                return
+            end
             dsY = nil
             self:SetScript("OnUpdate", nil)
             Park(self)
@@ -1579,7 +1878,9 @@ end
 function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn, setFn, opts)
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then return standIn, standIn end
+    if standIn then
+        return standIn, standIn
+    end
     opts = opts or {}
     local PP = CludesUI.PanelPP
     local EG = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
@@ -1589,21 +1890,30 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     -- Split movable / fixed, preserving the given order
     local movable, fixedItems = {}, {}
     for _, it in ipairs(items) do
-        if it.fixed then fixedItems[#fixedItems + 1] = it
-        else movable[#movable + 1] = it end
+        if it.fixed then
+            fixedItems[#fixedItems + 1] = it
+        else
+            movable[#movable + 1] = it
+        end
     end
     local head, tail = opts.head or {}, opts.tail or {}
     -- The movable rows' first order (opts.openOrder sorts from it).
     local baseMovable = {}
-    for i = 1, #movable do baseMovable[i] = movable[i] end
+    for i = 1, #movable do
+        baseMovable[i] = movable[i]
+    end
     local function MovableKeys()
         local keys = {}
-        for i = 1, #movable do keys[i] = movable[i].key end
+        for i = 1, #movable do
+            keys[i] = movable[i].key
+        end
         return keys
     end
     local plainPaints = {}
     local function PaintPlainRows()
-        for i = 1, #plainPaints do plainPaints[i]() end
+        for i = 1, #plainPaints do
+            plainPaints[i]()
+        end
     end
 
     local ddBtn = CreateFrame("Button", nil, parentFrame)
@@ -1626,22 +1936,33 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     ddLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
     local function SummaryLabel()
-        if opts.summaryLabel then return opts.summaryLabel(movable, fixedItems, getFn) end
+        if opts.summaryLabel then
+            return opts.summaryLabel(movable, fixedItems, getFn)
+        end
         local names = {}
         local total = 0
         local function collect(list)
             for _, item in ipairs(list) do
                 total = total + 1
-                if getFn(item.key) then names[#names + 1] = CludesUI.L(item.label) end
+                if getFn(item.key) then
+                    names[#names + 1] = CludesUI.L(item.label)
+                end
             end
         end
-        collect(movable); collect(fixedItems)
-        if #names == 0 then return CludesUI.L("None") end
-        if #names == total then return CludesUI.L("All") end
+        collect(movable)
+        collect(fixedItems)
+        if #names == 0 then
+            return CludesUI.L("None")
+        end
+        if #names == total then
+            return CludesUI.L("All")
+        end
         return table.concat(names, ", ")
     end
     local function UpdateLabel()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetText(SummaryLabel())
     end
     UpdateLabel()
@@ -1655,12 +1976,19 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     local DIV_H = 7
 
     local function EnsureMenu()
-        if menu then return end
+        if menu then
+            return
+        end
         local HEAD_H = (#head > 0) and (#head * ITEM_H + DIV_H) or 0
         local TAIL_H = (#tail > 0) and (DIV_H + #tail * ITEM_H) or 0
         local ROWS_BASE_Y = -4 - HEAD_H - HINT_H
-        local menuH = 4 + HEAD_H + HINT_H + #movable * ITEM_H
-            + ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_H) or 0) + TAIL_H + 4
+        local menuH = 4
+            + HEAD_H
+            + HINT_H
+            + #movable * ITEM_H
+            + ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_H) or 0)
+            + TAIL_H
+            + 4
         -- One menu per dropdown button for the session: a build that dresses the
         -- button again gets this frame back here, reset to new.
         menu = PoolKept(ddBtn, "reorderMenu", "Frame", CludesUI.OverlayParent())
@@ -1725,11 +2053,19 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             end
             Paint()
             plainPaints[#plainPaints + 1] = Paint
-            row:SetScript("OnEnter", function() hover = true; Paint() end)
-            row:SetScript("OnLeave", function() hover = false; Paint() end)
+            row:SetScript("OnEnter", function()
+                hover = true
+                Paint()
+            end)
+            row:SetScript("OnLeave", function()
+                hover = false
+                Paint()
+            end)
             row:SetScript("OnClick", function()
                 hover = false
-                if onPick then onPick(item.key) end
+                if onPick then
+                    onPick(item.key)
+                end
                 menu:Hide()
                 UpdateLabel()
             end)
@@ -1753,7 +2089,9 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         insLine:SetColorTexture(EG.r, EG.g, EG.b, 0.9)
         insLine:Hide()
 
-        local function SlotY(i) return ROWS_BASE_Y - (i - 1) * ITEM_H end
+        local function SlotY(i)
+            return ROWS_BASE_Y - (i - 1) * ITEM_H
+        end
 
         local function BuildRow(item, slotY, draggable)
             local row = CreateFrame("Button", nil, menu)
@@ -1809,26 +2147,41 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             row._updateCheck = UpdateCheck
             row._lbl = lbl
             row:SetScript("OnEnter", function()
-                if dragState.dragging then return end
+                if dragState.dragging then
+                    return
+                end
                 lbl:SetTextColor(1, 1, 1, 1)
                 hl:SetColorTexture(1, 1, 1, 0.04)
                 -- The row's current item (drops shuffle row contents).
                 local tip = row._item.tooltip
-                if tip then CludesUI.ShowWidgetTooltip(row, tip) end
+                if tip then
+                    CludesUI.ShowWidgetTooltip(row, tip)
+                end
             end)
             row:SetScript("OnLeave", function()
-                if dragState.dragging then return end
+                if dragState.dragging then
+                    return
+                end
                 lbl:SetTextColor(0.75, 0.75, 0.75, 1)
                 hl:SetColorTexture(1, 1, 1, 0)
-                if row._item.tooltip then CludesUI.HideWidgetTooltip() end
+                if row._item.tooltip then
+                    CludesUI.HideWidgetTooltip()
+                end
             end)
             row:SetScript("OnClick", function()
-                if row._suppressClick then row._suppressClick = nil; return end
-                if dragState.dragging then return end
+                if row._suppressClick then
+                    row._suppressClick = nil
+                    return
+                end
+                if dragState.dragging then
+                    return
+                end
                 setFn(row._item.key, not getFn(row._item.key), MovableKeys())
                 UpdateLabel()
                 for _, r in ipairs(allRows) do
-                    if r._updateCheck then r._updateCheck() end
+                    if r._updateCheck then
+                        r._updateCheck()
+                    end
                 end
                 PaintPlainRows()
             end)
@@ -1853,17 +2206,26 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
         -- The drag itself (threshold, floating row, insertion line, drop) is the
         -- shared row reorder; a drop shuffles `movable` and repaints the rows.
         CludesUI.AttachRowReorder(menu, {
-            rows = movableRows, items = movable, itemH = ITEM_H, slotY = SlotY,
-            insLine = insLine, state = dragState, canReorder = opts.canReorder,
+            rows = movableRows,
+            items = movable,
+            itemH = ITEM_H,
+            slotY = SlotY,
+            insLine = insLine,
+            state = dragState,
+            canReorder = opts.canReorder,
             refresh = RefreshMovableRows,
             onDragStart = function()
                 for _, rf in ipairs(movableRows) do
-                    if rf._lbl then rf._lbl:SetTextColor(0.75, 0.75, 0.75, 1) end
+                    if rf._lbl then
+                        rf._lbl:SetTextColor(0.75, 0.75, 0.75, 1)
+                    end
                 end
             end,
             onDrop = function(keys)
                 orderChanged = true
-                if opts.setOrder then opts.setOrder(keys) end
+                if opts.setOrder then
+                    opts.setOrder(keys)
+                end
                 UpdateLabel()
             end,
         })
@@ -1883,7 +2245,8 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
 
         -- Divider + plain tail rows at the bottom
         if #tail > 0 then
-            local tailTop = ROWS_BASE_Y - #movable * ITEM_H
+            local tailTop = ROWS_BASE_Y
+                - #movable * ITEM_H
                 - ((#fixedItems > 0) and (DIV_H + #fixedItems * ITEM_H) or 0)
             local td = menu:CreateTexture(nil, "ARTWORK")
             td:SetHeight(1)
@@ -1901,7 +2264,9 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             if opts.openOrder then
                 local keys = opts.openOrder()
                 local byKey, used, n = {}, {}, 0
-                for _, it in ipairs(baseMovable) do byKey[it.key] = it end
+                for _, it in ipairs(baseMovable) do
+                    byKey[it.key] = it
+                end
                 if keys then
                     for _, k in ipairs(keys) do
                         local it = byKey[k]
@@ -1921,22 +2286,30 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
                 RefreshMovableRows()
             end
             for _, r in ipairs(allRows) do
-                if r._updateCheck then r._updateCheck() end
+                if r._updateCheck then
+                    r._updateCheck()
+                end
             end
             PaintPlainRows()
         end)
 
         -- One close notification per open/close cycle (reload prompts hook this)
         menu:HookScript("OnHide", function()
-            for _, row in ipairs(movableRows) do row:_cancelDrag() end
+            for _, row in ipairs(movableRows) do
+                row:_cancelDrag()
+            end
             dragState.dragging = false
             insLine:Hide()
             -- Controller cursor: back onto the dropdown button before onClose, so a
             -- prompt it opens can still take the cursor (a no-op once the button is hidden).
-            if CludesUI.PadCursorShown() then CludesUI.PadFocus(ddBtn) end
+            if CludesUI.PadCursorShown() then
+                CludesUI.PadFocus(ddBtn)
+            end
             local changed = orderChanged
             orderChanged = false
-            if opts.onClose then opts.onClose(changed) end
+            if opts.onClose then
+                opts.onClose(changed)
+            end
         end)
 
         CludesUI.TrackOverlay(menu)
@@ -1944,20 +2317,26 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
     end
 
     local function ApplyNormal()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetTextColor(1, 1, 1, CludesUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
     end
     local function ApplyHover()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetTextColor(1, 1, 1, CludesUI.DD_TXT_HA)
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
     end
     ddBtn:SetScript("OnEnter", ApplyHover)
     ddBtn:SetScript("OnLeave", function()
-        if not (menu and menu:IsShown()) then ApplyNormal() end
+        if not (menu and menu:IsShown()) then
+            ApplyNormal()
+        end
     end)
 
     local function ShowMenu()
@@ -1978,18 +2357,28 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, items, getFn,
             end
         end)
         -- Controller cursor: into the opened list.
-        if CludesUI.PadCursorShown() then CludesUI.PadFocus(menu) end
+        if CludesUI.PadCursorShown() then
+            CludesUI.PadFocus(menu)
+        end
     end
     ddBtn:SetScript("OnClick", ShowMenu)
-    ddBtn:HookScript("OnHide", function() if menu then menu:Hide() end end)
+    ddBtn:HookScript("OnHide", function()
+        if menu then
+            menu:Hide()
+        end
+    end)
 
     local function RefreshAll()
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu's rows) for another build.
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         UpdateLabel()
         for _, r in ipairs(allRows) do
-            if r._updateCheck then r._updateCheck() end
+            if r._updateCheck then
+                r._updateCheck()
+            end
         end
         PaintPlainRows()
     end
@@ -2010,7 +2399,9 @@ end
 function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then return standIn, standIn end
+    if standIn then
+        return standIn, standIn
+    end
     local PP = CludesUI.PanelPP
     opts = opts or {}
     local fontPath = CludesUI.EXPRESSWAY
@@ -2032,20 +2423,30 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
     ddLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
     local function Paint(hover)
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         ddLbl:SetTextColor(1, 1, 1, hover and CludesUI.DD_TXT_HA or CludesUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, hover and CludesUI.DD_BRD_HA or CludesUI.DD_BRD_A)
-        ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B,
-            hover and CludesUI.DD_BG_HA or CludesUI.DD_BG_A)
+        ddBg:SetColorTexture(
+            CludesUI.DD_BG_R,
+            CludesUI.DD_BG_G,
+            CludesUI.DD_BG_B,
+            hover and CludesUI.DD_BG_HA or CludesUI.DD_BG_A
+        )
     end
     Paint(false)
 
     local function UpdateLabel()
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         local names = {}
         for _, item in ipairs(items) do
             local v = item.get()
-            if v and v ~= (item.min or 0) then names[#names + 1] = CludesUI.L(item.label) end
+            if v and v ~= (item.min or 0) then
+                names[#names + 1] = CludesUI.L(item.label)
+            end
         end
         if #names == 0 then
             ddLbl:SetText(CludesUI.L("None"))
@@ -2060,7 +2461,9 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
     local menu, refreshers
     local ROW_H, PAD, TRACK_W = 34, 6, 140
     local function EnsureMenu()
-        if menu then return end
+        if menu then
+            return
+        end
         -- One menu per dropdown button for the session: a build that dresses the
         -- button again gets this frame back here, reset to new.
         menu = PoolKept(ddBtn, "sliderMenu", "Frame", CludesUI.OverlayParent())
@@ -2093,8 +2496,18 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
             row:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, y)
             row:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, y)
             row:SetFrameLevel(menu:GetFrameLevel() + 2)
-            local track, valBox, refresh = CludesUI.BuildSliderCore(row, TRACK_W, 4, 14, 40, 24, 12,
-                CludesUI.SL_INPUT_A, item.min or 0, item.max or 100, item.step or 1,
+            local track, valBox, refresh = CludesUI.BuildSliderCore(
+                row,
+                TRACK_W,
+                4,
+                14,
+                40,
+                24,
+                12,
+                CludesUI.SL_INPUT_A,
+                item.min or 0,
+                item.max or 100,
+                item.step or 1,
                 item.get,
                 function(v)
                     -- Attributed to the button: its row carries the override
@@ -2105,7 +2518,9 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
                     item.set(v)
                     UpdateLabel()
                     CludesUI._NotifySettingWrite(ddBtn, snap)
-                end, true)
+                end,
+                true
+            )
             PP.Point(valBox, "RIGHT", row, "RIGHT", -12, 0)
             PP.Point(track, "RIGHT", valBox, "LEFT", -12, 0)
             refreshers[i] = refresh
@@ -2119,8 +2534,12 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
             lbl:SetText(CludesUI.L(item.label))
             if item.tooltip then
                 row:EnableMouse(true)
-                row:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(lbl, item.tooltip) end)
-                row:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                row:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(lbl, item.tooltip)
+                end)
+                row:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
             end
             if i < #items then
                 local div = row:CreateTexture(nil, "ARTWORK")
@@ -2133,12 +2552,18 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
 
         menu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
-            if CludesUI._openDropdownMenu == self then CludesUI._openDropdownMenu = nil end
+            if CludesUI._openDropdownMenu == self then
+                CludesUI._openDropdownMenu = nil
+            end
             Paint(ddBtn:IsMouseOver())
             -- Controller cursor: back onto the button (a no-op once that is hidden too).
-            if CludesUI.PadCursorShown() then CludesUI.PadFocus(ddBtn) end
+            if CludesUI.PadCursorShown() then
+                CludesUI.PadFocus(ddBtn)
+            end
         end)
-        if CludesUI.PadCP() then CludesUI.TrackOverlay(menu) end
+        if CludesUI.PadCP() then
+            CludesUI.TrackOverlay(menu)
+        end
     end
 
     -- Whether the button scrolls with the page (decided on the first open).
@@ -2149,7 +2574,9 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
             menu:Hide()
             return
         end
-        for i = 1, #refreshers do refreshers[i]() end
+        for i = 1, #refreshers do
+            refreshers[i]()
+        end
         -- The menu lives on the overlay parent: match the panel's scale.
         menu:SetScale(ddBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
         CludesUI.SeatDropdownMenu(menu)
@@ -2162,42 +2589,64 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, items, opts)
             local child = sf and sf.GetScrollChild and sf:GetScrollChild()
             local p = ddBtn:GetParent()
             while child and p do
-                if p == child then inScroll = true; break end
+                if p == child then
+                    inScroll = true
+                    break
+                end
                 p = p:GetParent()
             end
         end
         menu:SetScript("OnUpdate", function(self)
             -- A left click outside the menu and its button closes it; never
             -- mid-drag, so a slider dragged past the menu's edge keeps it.
-            if not CludesUI._sliderDragging and IsMouseButtonDown("LeftButton")
-               and not self:IsMouseOver() and not ddBtn:IsMouseOver() then
+            if
+                not CludesUI._sliderDragging
+                and IsMouseButtonDown("LeftButton")
+                and not self:IsMouseOver()
+                and not ddBtn:IsMouseOver()
+            then
                 self:Hide()
                 return
             end
             -- The button scrolled out of the page's visible area.
             if inScroll then
                 local top, bot, b = sf:GetTop(), sf:GetBottom(), ddBtn:GetBottom()
-                if top and bot and b and (b < bot or b > top) then self:Hide() end
+                if top and bot and b and (b < bot or b > top) then
+                    self:Hide()
+                end
             end
         end)
-        if CludesUI.PadCursorShown() then CludesUI.PadFocus(menu) end
+        if CludesUI.PadCursorShown() then
+            CludesUI.PadFocus(menu)
+        end
     end
-    ddBtn:SetScript("OnEnter", function() Paint(true) end)
+    ddBtn:SetScript("OnEnter", function()
+        Paint(true)
+    end)
     ddBtn:SetScript("OnLeave", function()
-        if not (menu and menu:IsShown()) then Paint(false) end
+        if not (menu and menu:IsShown()) then
+            Paint(false)
+        end
     end)
     ddBtn:SetScript("OnClick", ShowMenu)
-    ddBtn:HookScript("OnHide", function() if menu then menu:Hide() end end)
+    ddBtn:HookScript("OnHide", function()
+        if menu then
+            menu:Hide()
+        end
+    end)
 
     local function RefreshAll()
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu's sliders) for another build.
-        if PoolGen(ddBtn) ~= dressGen then return end
+        if PoolGen(ddBtn) ~= dressGen then
+            return
+        end
         UpdateLabel()
         if menu and menu:IsShown() then
-            for i = 1, #refreshers do refreshers[i]() end
+            for i = 1, #refreshers do
+                refreshers[i]()
+            end
         end
     end
     return ddBtn, RefreshAll
 end
-

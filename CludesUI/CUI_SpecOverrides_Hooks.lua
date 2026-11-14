@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Hooks.lua
 --
@@ -6,11 +8,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Reads the earlier Spec Overrides files through CUI_NS._soInternals.
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
-CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own table (CludesUI.lua)
+CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 local I = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local DeepCopy, GetStore, RunRefreshers = I.DeepCopy, I.GetStore, I.RunRefreshers
@@ -21,7 +25,9 @@ local SetCombatFolders, SetWatchResync = I.SetCombatFolders, I.SetWatchResync
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _combatFolders = nil
-I.combatFoldersSetters[#I.combatFoldersSetters + 1] = function(v) _combatFolders = v end
+I.combatFoldersSetters[#I.combatFoldersSetters + 1] = function(v)
+    _combatFolders = v
+end
 
 -------------------------------------------------------------------------------
 --  Hooks + events
@@ -43,7 +49,6 @@ if CludesUI.RefreshPage then
     end)
 end
 
-
 local evFrame = CreateFrame("Frame")
 evFrame:RegisterEvent("PLAYER_LOGIN")
 evFrame:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved unchanged by the file split; multi-event frame (login, combat end)
@@ -59,7 +64,9 @@ evFrame:SetScript("OnEvent", function(_, event)
                     for _, m in pairs(e.values) do
                         if type(m) == "table" then
                             for fkey, v in pairs(m) do
-                                if type(v) == "table" then m[fkey] = DeepCopy(v) end
+                                if type(v) == "table" then
+                                    m[fkey] = DeepCopy(v)
+                                end
                             end
                         end
                     end
@@ -67,7 +74,9 @@ evFrame:SetScript("OnEvent", function(_, event)
             end
         end
         DeAlias(GetStore())
-        if CludesUI._CondOv then DeAlias(CludesUI._CondOv.GetStore()) end
+        if CludesUI._CondOv then
+            DeAlias(CludesUI._CondOv.GetStore())
+        end
         -- One-time tidy: drop orphaned entries plus fkeys no group holds a value for.
         PruneOrphanEntries()
         PruneRedundantValues()

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI or CludesUI.IS_FOREVER then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIABR_BeaconMPlus.lua
 --  Beacon M+ Reminders (retail, Holy Paladin; CORE > Beacon M+ Reminders, off
@@ -17,7 +21,9 @@ if not CludesUI or CludesUI.IS_FOREVER then return end
 --  another spec, registers no gameplay events, and an armed one follows the
 --  roster only while a key runs.
 -------------------------------------------------------------------------------
-if select(2, UnitClass("player")) ~= "PALADIN" then return end
+if select(2, UnitClass("player")) ~= "PALADIN" then
+    return
+end
 
 local BEACON_IDS = { [53563] = true, [156910] = true } -- Beacon of Light, Beacon of Faith
 local PARTY = { "party1", "party2", "party3", "party4" }
@@ -28,13 +34,13 @@ local GLOW_SPEC = { style = 2, r = 1, g = 0.15, b = 0.15 } -- Action Button Glow
 local GLOW_NEED = { flip = true } -- the family Action Button Glow draws on an engine host
 
 local ev = CreateFrame("Frame")
-local started = false   -- the first PLAYER_ENTERING_WORLD ran the initial sync
-local level = -1        -- 0 off, 1 option on but not Holy, 2 armed (Holy)
-local tankUnit          -- cached out of the encounter; roles can read secret in M+
+local started = false -- the first PLAYER_ENTERING_WORLD ran the initial sync
+local level = -1 -- 0 off, 1 option on but not Holy, 2 armed (Holy)
+local tankUnit -- cached out of the encounter; roles can read secret in M+
 local host, container, containerUnit
 
 local function Enabled()
-    local db = _G._EABR_AceDB
+    local db = _G._CUABR_AceDB
     local d = db and db.profile and db.profile.display
     return d and d.beaconMPlus == true
 end
@@ -49,18 +55,27 @@ local function RefreshTank()
         local u = PARTY[i]
         if UnitExists(u) then
             local role = UnitGroupRolesAssigned(u)
-            if issecretvalue and issecretvalue(role) then return end -- keep the cached tank
-            if role == "TANK" then tankUnit = u; return end
+            if issecretvalue and issecretvalue(role) then
+                return
+            end -- keep the cached tank
+            if role == "TANK" then
+                tankUnit = u
+                return
+            end
         end
     end
     tankUnit = nil
 end
 
 local function FindIn(list, unit)
-    if not list then return end
+    if not list then
+        return
+    end
     for i = 1, #list do
         local b = list[i]
-        if b and b:IsVisible() and b:GetAttribute("unit") == unit then return b end
+        if b and b:IsVisible() and b:GetAttribute("unit") == unit then
+            return b
+        end
     end
 end
 
@@ -68,7 +83,9 @@ end
 -- party is shown on them.
 local function TankButton(unit)
     local rf = CludesUI._ModuleNS["CludesUIRaidFrames"]
-    if not rf then return end
+    if not rf then
+        return
+    end
     return FindIn(rf._partyAllButtons, unit) or FindIn(rf._allButtons, unit)
 end
 
@@ -93,8 +110,7 @@ local function InitButton(button, d)
     -- to re-run its visibility). Without that API the animation plays while
     -- hidden too, and the group's cap is a fixed 1: only the one button it
     -- can ever show carries the glow.
-    if not Glows.BindEngineHost(glow, button, d, icon)
-        and not CludesUI.AuraKit.ButtonCanShow(button) then
+    if not Glows.BindEngineHost(glow, button, d, icon) and not CludesUI.AuraKit.ButtonCanShow(button) then
         return
     end
     Glows.PrewarmEngineHost(glow, ICON_SIZE, ICON_SIZE, GLOW_NEED)
@@ -107,12 +123,17 @@ end
 -- again (an unchanged one returns at once).
 local function RetryGlow(button, d)
     local glow = d.abrBeaconGlow
-    if glow then CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine") end
+    if glow then
+        CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine")
+    end
 end
 
 local function EnsureContainer(unit)
     if container then
-        if containerUnit ~= unit then container:SetUnit(unit); containerUnit = unit end
+        if containerUnit ~= unit then
+            container:SetUnit(unit)
+            containerUnit = unit
+        end
         return
     end
     local AK = CludesUI.AuraKit
@@ -125,11 +146,16 @@ local function EnsureContainer(unit)
     container = AK.CreateContainer(host, unit, {
         point = { "CENTER", host, "CENTER" },
         layout = { anchorPoint = "CENTER" },
-        groups = { {
-            key = "beacon", filter = { "HELPFUL", "PLAYER" }, maxFrameCount = 1,
-            candidateFilters = { includeSpellIDs = BEACON_IDS },
-            style = STYLE_KEY, extraInit = InitButton,
-        } },
+        groups = {
+            {
+                key = "beacon",
+                filter = { "HELPFUL", "PLAYER" },
+                maxFrameCount = 1,
+                candidateFilters = { includeSpellIDs = BEACON_IDS },
+                style = STYLE_KEY,
+                extraInit = InitButton,
+            },
+        },
     })
     containerUnit = unit
 end
@@ -139,7 +165,9 @@ end
 -- number.
 local function PlaceOver(button)
     local x, y = button:GetCenter()
-    if not x or (issecretvalue and (issecretvalue(x) or issecretvalue(y))) then return false end
+    if not x or (issecretvalue and (issecretvalue(x) or issecretvalue(y))) then
+        return false
+    end
     local s = button:GetEffectiveScale() / UIParent:GetEffectiveScale()
     host:ClearAllPoints()
     host:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x * s, y * s)
@@ -147,7 +175,9 @@ local function PlaceOver(button)
 end
 
 local function Disarm()
-    if host then host:Hide() end
+    if host then
+        host:Hide()
+    end
 end
 
 -- The tank is read only inside a key, so the roster events are registered from
@@ -172,22 +202,34 @@ local function Prebuild()
 end
 
 local function Arm()
-    if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then return end
+    if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then
+        return
+    end
     local unit = tankUnit
     local button = unit and TankButton(unit)
-    if not button then return end
+    if not button then
+        return
+    end
     EnsureContainer(unit)
-    if PlaceOver(button) then host:Show() end
+    if PlaceOver(button) then
+        host:Show()
+    end
 end
 
 local function Sync()
     local want = 0
-    if Enabled() then want = IsHoly() and 2 or 1 end
-    if want == level then return end
+    if Enabled() then
+        want = IsHoly() and 2 or 1
+    end
+    if want == level then
+        return
+    end
     level = want
     ev:UnregisterAllEvents()
     Disarm()
-    if want == 0 then return end
+    if want == 0 then
+        return
+    end
     ev:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
     if want == 2 then
         ev:RegisterEvent("ENCOUNTER_START")
@@ -198,7 +240,11 @@ local function Sync()
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
         WatchRoster(C_ChallengeMode.IsChallengeModeActive())
         RefreshTank()
-        if IsEncounterInProgress() then Arm() else Prebuild() end
+        if IsEncounterInProgress() then
+            Arm()
+        else
+            Prebuild()
+        end
     end
 end
 
@@ -221,14 +267,20 @@ ev:SetScript("OnEvent", function(_, event)
             -- After every module's OnEnable, so ABR's DB and refresh exist. The
             -- options page and profile switches both go through that refresh.
             started = true
-            if _G._EABR_RequestRefresh then hooksecurefunc("_EABR_RequestRefresh", Sync) end
+            if _G._CUABR_RequestRefresh then
+                hooksecurefunc("_CUABR_RequestRefresh", Sync)
+            end
             Sync()
             return
         end
         Disarm()
         WatchRoster(C_ChallengeMode.IsChallengeModeActive())
         RefreshTank()
-        if IsEncounterInProgress() then Arm() else Prebuild() end
+        if IsEncounterInProgress() then
+            Arm()
+        else
+            Prebuild()
+        end
     else -- PLAYER_SPECIALIZATION_CHANGED
         Sync()
     end

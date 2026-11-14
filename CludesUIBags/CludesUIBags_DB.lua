@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags_DB.lua
 --  Bags profile database + login-time seeding. Lives in the resident module
@@ -9,85 +11,85 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local BAGS_DEFAULTS = {
     profile = {
-        bagScale              = 1,
-        bagItemIconZoom       = 0.08,
-        bagSlotSize           = 34,      -- item slot size, bags and bank
-        bagSlotSpacing        = 4,       -- gap between slots
-        bagColumns            = 12,
-        bagAutoSize           = false,
-        bagCatTitleSize       = 11,
-        bagCountFontSize      = 11,
-        bagSlotCountFormat    = "used_total",
+        bagScale = 1,
+        bagItemIconZoom = 0.08,
+        bagSlotSize = 34, -- item slot size, bags and bank
+        bagSlotSpacing = 4, -- gap between slots
+        bagColumns = 12,
+        bagAutoSize = false,
+        bagCatTitleSize = 11,
+        bagCountFontSize = 11,
+        bagSlotCountFormat = "used_total",
         bagSeparateReagentSlots = false,
-        itemlevelFontSize     = 12,
-        showItemlevelInBags   = true,
-        showUpgradeIndicator  = true,
-        bagShowTrackRank      = false,
+        itemlevelFontSize = 12,
+        showItemlevelInBags = true,
+        showUpgradeIndicator = true,
+        bagShowTrackRank = false,
         itemlevelUseCustomColor = false,
         bagHideEmptyCategories = true,
-        bagSplitSetGearBySet  = false,
-        bagShowSetGearName    = false,
-        bagSetNameFontSize    = 9,
-        bagMergeDuplicates    = true,    -- every display
-        bagSidebarCollapsed   = false,
+        bagSplitSetGearBySet = false,
+        bagShowSetGearName = false,
+        bagSetNameFontSize = 9,
+        bagMergeDuplicates = true, -- every display
+        bagSidebarCollapsed = false,
         bagHideSidebarIconsCollapsed = false, -- on: collapsed = no icon strip, the expand arrow sits by the title
-        bankSidebarCollapsed  = false,
-        bagShowPinnedItems    = true,
+        bankSidebarCollapsed = false,
+        bagShowPinnedItems = true,
         -- Profiles saved before these defaults carry their own value of
         -- bagShowRecentItems, bagHidePinnedInCategories and bagDefaultBagType
         -- (CludesUI_Migration.lua: bags_hide_pinned_existing_off_v1, and on
         -- WoW Forever bags_forever_defaults_existing_v1).
-        bagShowRecentItems    = CludesUI.IS_FOREVER ~= true,   -- off on WoW Forever
-        bagPinnedInOneBag     = true,
+        bagShowRecentItems = CludesUI.IS_FOREVER ~= true, -- off on WoW Forever
+        bagPinnedInOneBag = true,
         bagHidePinnedInCategories = true,
-        bagDimPinnedInOneBag  = false,   -- Dim Items in OneBag/MultiBag (the Pinned Items cog)
-        bagRecentInOneBag     = false,
-        bagShowRecentClear    = false,
+        bagDimPinnedInOneBag = false, -- Dim Items in OneBag/MultiBag (the Pinned Items cog)
+        bagRecentInOneBag = false,
+        bagShowRecentClear = false,
         -- Bag Top Bar Icons: the header's Show Bags, Junk Marker, Quick Actions and Sort icons
-        bagShowBagsIcon       = true,
-        bagShowJunkIcon       = true,    -- the Junk Marker: header coin, Junk category, Sell Junk at merchants
-        bagShowQuickIcon      = false,   -- Quick Actions: dim all but items a spell works on; click or Alt-click casts it
-        bagShowSortIcon       = true,
-        bagSortToBottom       = false,
+        bagShowBagsIcon = true,
+        bagShowJunkIcon = true, -- the Junk Marker: header coin, Junk category, Sell Junk at merchants
+        bagShowQuickIcon = false, -- Quick Actions: dim all but items a spell works on; click or Alt-click casts it
+        bagShowSortIcon = true,
+        bagSortToBottom = false,
         -- "all" | "onebag" | "multibag"; MultiBag on WoW Forever
-        bagDefaultBagType     = (CludesUI.IS_FOREVER == true) and "multibag" or "all",
-        bagDefaultOneBag      = false,   -- legacy; migrated to bagDefaultBagType
-        bagNestByExpansion    = false,
-        bankNestByExpansion   = false,
-        bankGroupByCategory   = false,
-        bankCategorySidebar   = false,
+        bagDefaultBagType = (CludesUI.IS_FOREVER == true) and "multibag" or "all",
+        bagDefaultOneBag = false, -- legacy; migrated to bagDefaultBagType
+        bagNestByExpansion = false,
+        bankNestByExpansion = false,
+        bankGroupByCategory = false,
+        bankCategorySidebar = false,
         bankHideTabsInSidebar = false,
         bankHideEmptyWhenNested = false,
-        bankListView          = false,  -- reload to apply
-        bankCompactView       = false,  -- reload to apply; bankListView wins when both are set
-        bagArmoryGroupBySlot  = false,
+        bankListView = false, -- reload to apply
+        bankCompactView = false, -- reload to apply; bankListView wins when both are set
+        bagArmoryGroupBySlot = false,
         bagCompactArmorySlotGroups = false,
-        bagHideAddCategory    = false,
-        bagBgOpacity          = 100,     -- background opacity for bags and bank (bagBgColor / bagSlotBgColor: nil = default)
-        bagWindowLocked       = false,   -- footer lock icon: no resizing or moving
-        bankWindowLocked      = false,
-        bagOpenWithCharacter  = false,
+        bagHideAddCategory = false,
+        bagBgOpacity = 100, -- background opacity for bags and bank (bagBgColor / bagSlotBgColor: nil = default)
+        bagWindowLocked = false, -- footer lock icon: no resizing or moving
+        bankWindowLocked = false,
+        bagOpenWithCharacter = false,
         -- bagFrameStrata has no default: unset reads the retired
         -- bagAllowWindowsOverBags (ns.BagFrameStrata)
-        bagStackSplitter      = false,
-        detachReagentBag      = false,
-        enhancedBags          = true,
-        bagDesaturateJunkItems = false,  -- Junk Item Visuals: grey items and Junk Marker junk, every display
-        bagShowJunkCoin       = false,   -- Junk Item Visuals: the coin badge on junk (Grid and Compact)
-        bagQualityBorder      = true,    -- Quality Item Border, every display
-        bagDisplayBindType    = false,
-        bagBindTypeFontSize   = 11,
-        bagDisplayMode        = "grid",  -- "grid" | "list" | "compact" (reload to apply)
-        bagListRoundIcons     = false,
-        bagListSplitArmor     = false,
-        bagListSplitWeapons   = false,
+        bagStackSplitter = false,
+        detachReagentBag = false,
+        enhancedBags = true,
+        bagDesaturateJunkItems = false, -- Junk Item Visuals: grey items and Junk Marker junk, every display
+        bagShowJunkCoin = false, -- Junk Item Visuals: the coin badge on junk (Grid and Compact)
+        bagQualityBorder = true, -- Quality Item Border, every display
+        bagDisplayBindType = false,
+        bagBindTypeFontSize = 11,
+        bagDisplayMode = "grid", -- "grid" | "list" | "compact" (reload to apply)
+        bagListRoundIcons = false,
+        bagListSplitArmor = false,
+        bagListSplitWeapons = false,
         bagListSplitProfessions = false,
-        bagListGapL           = 15,
-        bagListGapR           = 23,
-        bagListFontSize       = 11,
-        bagListRowHeight      = 24,
-        bagListHideStripes    = false,
-        bagListSectionValue   = false,
+        bagListGapL = 15,
+        bagListGapR = 23,
+        bagListFontSize = 11,
+        bagListRowHeight = 24,
+        bagListHideStripes = false,
+        bagListSectionValue = false,
     },
 }
 local db = CludesUI.Lite.NewDB("CludesUIBagsDB", BAGS_DEFAULTS)
@@ -98,7 +100,9 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     local p = db.profile
 
     -- The bank grouping dropdowns were replaced by two toggles. Convert the
@@ -116,7 +120,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- Default disabled categories: Housing and Quest Items off by default
     if CludesUIDB.bagDisabledCategoriesSeeded == nil then
         CludesUIDB.bagDisabledCategoriesSeeded = true
-        if not p.bagDisabledCategories then p.bagDisabledCategories = {} end
+        if not p.bagDisabledCategories then
+            p.bagDisabledCategories = {}
+        end
         p.bagDisabledCategories["Housing"] = true
         p.bagDisabledCategories["Quest Items"] = true
     end
@@ -128,10 +134,10 @@ initFrame:SetScript("OnEvent", function(self)
         if not p.bagCategoryState and not p.bagCategoryOrder then
             p.bagCategoryState = {
                 ["Weapons / Trinkets"] = { groupName = "The Armory", groupNameCustom = true },
-                ["Armor"]              = { groupName = "The Armory", groupNameCustom = true },
-                ["Item Set Gear"]      = { groupName = "The Armory", groupNameCustom = true },
-                ["Consumables"]        = { groupName = "Adventure Prep", groupNameCustom = true },
-                ["Gear Enhancements"]  = { groupName = "Adventure Prep", groupNameCustom = true },
+                ["Armor"] = { groupName = "The Armory", groupNameCustom = true },
+                ["Item Set Gear"] = { groupName = "The Armory", groupNameCustom = true },
+                ["Consumables"] = { groupName = "Adventure Prep", groupNameCustom = true },
+                ["Gear Enhancements"] = { groupName = "Adventure Prep", groupNameCustom = true },
             }
             p.bagCategoryOrder = {
                 "Pinned Items",
@@ -162,12 +168,16 @@ initFrame:SetScript("OnEvent", function(self)
         local changed = false
         for k, v in pairs(dc) do
             if type(k) == "number" then
-                if cats[k] then migrated[cats[k]._defaultName] = v end
+                if cats[k] then
+                    migrated[cats[k]._defaultName] = v
+                end
                 changed = true
             else
                 migrated[k] = v
             end
         end
-        if changed then p.bagDisabledCategories = migrated end
+        if changed then
+            p.bagDisabledCategories = migrated
+        end
     end
 end)

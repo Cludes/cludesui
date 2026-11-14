@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIDamageMeters_ForeverThreat.lua  (WoW Forever only)
 --  The "Threat" meter type: Forever Essentials' threat list in a Damage Meters
@@ -20,22 +24,29 @@ do
     ns._DM_TYPE_ICONS[THREAT] = ns._DM_TYPE_ICONS[enemy]
     local fv = ns.DM_HDR_ART.forever
     fv.types[THREAT] = fv.types[enemy]
-    ns.DM_HDR_ART.classic.types[THREAT] = { file = "Interface\\Icons\\Spell_Nature_Reincarnation", crop = 0.08, scale = 0.85 }
+    ns.DM_HDR_ART.classic.types[THREAT] =
+        { file = "Interface\\Icons\\Spell_Nature_Reincarnation", crop = 0.08, scale = 0.85 }
 end
 
 -- Repaints every shown Threat window after the list rebuilt (a hidden one
 -- repaints on its show).
 function ns.DMThreatNotify()
     for _, w in ipairs(ns._windows) do
-        if w.curDMType == THREAT and w.frame and w.frame:IsVisible() then w.Refresh() end
+        if w.curDMType == THREAT and w.frame and w.frame:IsVisible() then
+            w.Refresh()
+        end
     end
 end
 
 -- The session a visible Threat window paints. The first one starts the feed.
 function ns.DMThreatSession()
     local feed = CludesUI._ThreatFeed
-    if not feed then return nil end
-    if not feed.IsActive() then feed.Start(ns.DMThreatNotify) end
+    if not feed then
+        return nil
+    end
+    if not feed.IsActive() then
+        feed.Start(ns.DMThreatNotify)
+    end
     -- The value text follows the meter's Force English Units, as every type's does.
     local db = ns.EDM.DB()
     return feed.Session(db and db.forceEnglishUnits == true)
@@ -45,9 +56,13 @@ end
 -- the middle of hiding.
 function ns.DMThreatSync(except)
     local feed = CludesUI._ThreatFeed
-    if not (feed and feed.IsActive()) then return end
+    if not (feed and feed.IsActive()) then
+        return
+    end
     for _, w in ipairs(ns._windows) do
-        if w ~= except and w.curDMType == THREAT and w.frame and w.frame:IsVisible() then return end
+        if w ~= except and w.curDMType == THREAT and w.frame and w.frame:IsVisible() then
+            return
+        end
     end
     feed.Stop()
 end
@@ -57,14 +72,20 @@ end
 -- leave it.
 function ns.DMThreatMenu(items)
     local feed = CludesUI._ThreatFeed
-    if not feed then return end
+    if not feed then
+        return
+    end
     for i = #items, 1, -1 do
         local e = items[i]
-        if type(e) == "table" and e.noThreat then table.remove(items, i) end
+        if type(e) == "table" and e.noThreat then
+            table.remove(items, i)
+        end
     end
     local head = feed.MenuItems({})
     head[#head + 1] = "---"
-    for i = #head, 1, -1 do table.insert(items, 1, head[i]) end
+    for i = #head, 1, -1 do
+        table.insert(items, 1, head[i])
+    end
 end
 
 -- Forever Essentials loads after this addon: the type is offered from login
@@ -73,5 +94,7 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if CludesUI._ThreatFeed then ns._DM_TYPE_NAMES[THREAT] = "Threat" end
+    if CludesUI._ThreatFeed then
+        ns._DM_TYPE_NAMES[THREAT] = "Threat"
+    end
 end)

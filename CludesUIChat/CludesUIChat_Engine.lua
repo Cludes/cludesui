@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIChat_Engine.lua
 --
@@ -45,13 +47,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 local CUI = _G.CludesUI
-if not CUI then return end
+if not CUI then
+    return
+end
 
 local ECHAT = ns.ECHAT
-if not ECHAT then return end
+if not ECHAT then
+    return
+end
 
 local CFD = CUI._chatCFD
-if not CFD then return end
+if not CFD then
+    return
+end
 
 local max, min = math.max, math.min
 
@@ -86,9 +94,15 @@ ns._chatWins = WINS
 -------------------------------------------------------------------------------
 local function SetBarMouse(bar, on)
     local function Apply(f)
-        if not f then return end
-        if f.SetMouseClickEnabled then f:SetMouseClickEnabled(on) end
-        if f.SetMouseMotionEnabled then f:SetMouseMotionEnabled(on) end
+        if not f then
+            return
+        end
+        if f.SetMouseClickEnabled then
+            f:SetMouseClickEnabled(on)
+        end
+        if f.SetMouseMotionEnabled then
+            f:SetMouseMotionEnabled(on)
+        end
     end
     Apply(bar)
     Apply(bar.Track)
@@ -97,15 +111,25 @@ end
 
 local function SuppressChatFrameVisuals(cf)
     local d = CFD(cf)
-    if d.visualsSuppressed then return end
+    if d.visualsSuppressed then
+        return
+    end
     d.visualsSuppressed = true
     local fsc = cf.FontStringContainer
-    if fsc then fsc:SetAlpha(0) end
+    if fsc then
+        fsc:SetAlpha(0)
+    end
     local bar = cf.ScrollBar
     if bar then
-        if bar.Back and bar.Back:GetParent() ~= void then bar.Back:SetParent(void) end
-        if bar.Forward and bar.Forward:GetParent() ~= void then bar.Forward:SetParent(void) end
-        if bar.Track then bar.Track:SetAlpha(0) end
+        if bar.Back and bar.Back:GetParent() ~= void then
+            bar.Back:SetParent(void)
+        end
+        if bar.Forward and bar.Forward:GetParent() ~= void then
+            bar.Forward:SetParent(void)
+        end
+        if bar.Track then
+            bar.Track:SetAlpha(0)
+        end
         SetBarMouse(bar, false)
     end
 end
@@ -130,7 +154,9 @@ end
 local function LayoutWindowSMF(cf)
     local d = CFD(cf)
     local win = WINS[cf]
-    if not (win and win.smf and d.bg) then return end
+    if not (win and win.smf and d.bg) then
+        return
+    end
     local ins = d._bgIns
     local il, ir, it, ib
     if ins then
@@ -148,7 +174,9 @@ local function LayoutWindowSMF(cf)
     smf:SetPoint("BOTTOMRIGHT", d.bg, "BOTTOMRIGHT", -ir, -ib)
 end
 ECHAT.EngineLayoutWindows = function()
-    for cf in pairs(WINS) do LayoutWindowSMF(cf) end
+    for cf in pairs(WINS) do
+        LayoutWindowSMF(cf)
+    end
 end
 -- Single-window relayout: the input-on-top strip is released/reclaimed per
 -- frame as its edit box shows and hides, and only that frame's text area moves.
@@ -162,10 +190,16 @@ ECHAT.EngineLayoutWindow = LayoutWindowSMF
 function ECHAT.EngineLevelWindow(cf)
     local win = WINS[cf]
     local d = CFD(cf)
-    if not (win and win.smf and d.bg) then return end
+    if not (win and win.smf and d.bg) then
+        return
+    end
     local want = d.bg:GetFrameLevel() + 4
-    if win.smf:GetFrameLevel() ~= want then win.smf:SetFrameLevel(want) end
-    if win.track and win.track:GetFrameLevel() ~= want + 2 then win.track:SetFrameLevel(want + 2) end
+    if win.smf:GetFrameLevel() ~= want then
+        win.smf:SetFrameLevel(want)
+    end
+    if win.track and win.track:GetFrameLevel() ~= want + 2 then
+        win.track:SetFrameLevel(want + 2)
+    end
 end
 
 -- Whether a window's text is scrolled back (its thin scrollbar shows).
@@ -180,7 +214,9 @@ end
 -- that self-removes on release (no recurring work otherwise).
 local function UpdateScrollbar(win)
     local smf, track, thumb = win.smf, win.track, win.thumb
-    if not (smf and track and thumb) then return end
+    if not (smf and track and thumb) then
+        return
+    end
     local range = smf:GetMaxScrollRange()
     local offset = smf:GetScrollOffset()
     local show = (offset > 0 or win.dragging) and range > 0
@@ -188,11 +224,17 @@ local function UpdateScrollbar(win)
         track:SetShown(show)
         -- Stock sidebar: the scroll button flashes while scrolled back.
         local fs = ECHAT.SB_FlashSync
-        if fs then fs() end
+        if fs then
+            fs()
+        end
     end
-    if not show then return end
+    if not show then
+        return
+    end
     local trackH = track:GetHeight()
-    if not trackH or trackH <= 0 then return end
+    if not trackH or trackH <= 0 then
+        return
+    end
     local visible = smf:GetNumVisibleLines()
     local total = range + visible
     local frac = total > 0 and (visible / total) or 1
@@ -221,9 +263,13 @@ local function ScrollFromCursor(win)
     local trackH = track:GetHeight()
     local thumbH = win.thumb:GetHeight() or 16
     local travel = trackH - thumbH
-    if travel <= 0 then return end
+    if travel <= 0 then
+        return
+    end
     local bottom = track:GetBottom()
-    if not bottom then return end
+    if not bottom then
+        return
+    end
     local scale = track:GetEffectiveScale()
     local _, cy = GetCursorPosition()
     local localY = (cy / scale) - bottom - (win.dragOffset or thumbH / 2)
@@ -243,7 +289,11 @@ local function BuildScrollbar(win)
     local thumb = track:CreateTexture(nil, "ARTWORK")
     -- WoW Forever: a bronze thumb to match the kit's frame.
     local fc = ns.ChatForever() and ECHAT.FV.thumb
-    if fc then thumb:SetColorTexture(fc[1], fc[2], fc[3], fc[4]) else thumb:SetColorTexture(1, 1, 1, 0.27) end
+    if fc then
+        thumb:SetColorTexture(fc[1], fc[2], fc[3], fc[4])
+    else
+        thumb:SetColorTexture(1, 1, 1, 0.27)
+    end
     thumb:SetWidth(4)
     thumb:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
     win.track, win.thumb = track, thumb
@@ -258,7 +308,9 @@ local function BuildScrollbar(win)
         ScrollFromCursor(win)
     end
     track:SetScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" then return end
+        if button ~= "LeftButton" then
+            return
+        end
         local thumbTop, thumbBottom = thumb:GetTop(), thumb:GetBottom()
         local scale = self:GetEffectiveScale()
         local _, cy = GetCursorPosition()
@@ -297,14 +349,16 @@ end
 --  read an addon-written string; if secure-reader taint ever surfaces, the
 --  two write-back sites (tail + rebuild) are the single mechanism to pull.
 -------------------------------------------------------------------------------
-local _abbrevOn = false     -- Shortened Channel Names user setting
-local _stampAllOn = false   -- Timestamp All Messages user setting (resolved)
-local _stampFmt = nil       -- its resolved format string
-local _protActive = false   -- protected content / dev mode: transforms dormant
+local _abbrevOn = false -- Shortened Channel Names user setting
+local _stampAllOn = false -- Timestamp All Messages user setting (resolved)
+local _stampFmt = nil -- its resolved format string
+local _protActive = false -- protected content / dev mode: transforms dormant
 
 local function CreateWindowSMF(cf)
     local d = CFD(cf)
-    if not d.bg then return nil end
+    if not d.bg then
+        return nil
+    end
     local smf = CreateFrame("ScrollingMessageFrame", nil, d.bg)
     smf:SetMaxLines(128)
     smf:SetFading(false)
@@ -333,8 +387,12 @@ local function CreateWindowSMF(cf)
 
     WINS[cf] = win
     BuildScrollbar(win)
-    smf:SetOnScrollChangedCallback(function() UpdateScrollbar(win) end)
-    smf:AddOnDisplayRefreshedCallback(function() UpdateScrollbar(win) end)
+    smf:SetOnScrollChangedCallback(function()
+        UpdateScrollbar(win)
+    end)
+    smf:AddOnDisplayRefreshedCallback(function()
+        UpdateScrollbar(win)
+    end)
     LayoutWindowSMF(cf)
     ECHAT.EngineApplyFontTo(cf)
     return win
@@ -359,8 +417,8 @@ end
 -- (the pre-family behavior, tofu included, never an error).
 local FAMS = {}
 local CJK_FILES = {
-    korean             = "Fonts\\2002.ttf",
-    simplifiedchinese  = "Fonts\\ARKai_T.ttf",
+    korean = "Fonts\\2002.ttf",
+    simplifiedchinese = "Fonts\\ARKai_T.ttf",
     traditionalchinese = "Fonts\\blei00d.TTF",
 }
 -- The +2 below is a legibility nudge for CJK dropped INTO a western-locale
@@ -381,7 +439,9 @@ local CJK_CLIENT_ALPHABET = ({
     zhTW = "traditionalchinese",
 })[GetLocale()]
 local function CJKHeight(alphabet, size)
-    if alphabet == CJK_CLIENT_ALPHABET then return size end
+    if alphabet == CJK_CLIENT_ALPHABET then
+        return size
+    end
     return size + 2
 end
 -- Line spacing, per alphabet. Blizzard's chat family (ChatFontNormal ->
@@ -394,11 +454,16 @@ local CJK_SPACING = { korean = 3 }
 function ECHAT.EngineFontFamily(id, font, size, flags)
     flags = flags or ""
     local fam = FAMS[id]
-    if fam == false then return nil end -- failed once; never retry-loop
+    if fam == false then
+        return nil
+    end -- failed once; never retry-loop
     if not fam then
-        if not CreateFontFamily then FAMS[id] = false; return nil end
+        if not CreateFontFamily then
+            FAMS[id] = false
+            return nil
+        end
         local members = {
-            { alphabet = "roman",   file = font, height = size, flags = flags },
+            { alphabet = "roman", file = font, height = size, flags = flags },
             { alphabet = "russian", file = font, height = size, flags = flags },
         }
         -- CJK renders +2px: ideographs at latin point sizes read visibly
@@ -409,10 +474,14 @@ function ECHAT.EngineFontFamily(id, font, size, flags)
         -- alphabets keep the stock file as a tofu fallback.
         for alphabet, file in pairs(CJK_FILES) do
             local memberFile = (alphabet == CJK_CLIENT_ALPHABET) and font or file
-            members[#members + 1] = { alphabet = alphabet, file = memberFile, height = CJKHeight(alphabet, size), flags = flags }
+            members[#members + 1] =
+                { alphabet = alphabet, file = memberFile, height = CJKHeight(alphabet, size), flags = flags }
         end
         local ok, created = pcall(CreateFontFamily, "CUIChatFontFamily" .. id, members)
-        if not ok or not created then FAMS[id] = false; return nil end
+        if not ok or not created then
+            FAMS[id] = false
+            return nil
+        end
         FAMS[id] = created
         fam = created
     end
@@ -426,13 +495,17 @@ function ECHAT.EngineFontFamily(id, font, size, flags)
             member:SetSpacing(CJK_SPACING[alphabet] or 0)
         end
     end)
-    if not ok then return nil end
+    if not ok then
+        return nil
+    end
     return fam
 end
 
 function ECHAT.EngineApplyFontTo(cf)
     local win = WINS[cf]
-    if not win then return end
+    if not win then
+        return
+    end
     local font = ECHAT.EngineFontProvider and ECHAT.EngineFontProvider()
     local size = ECHAT.EngineFontSizeProvider and ECHAT.EngineFontSizeProvider(cf:GetID())
     local flags = ECHAT.EngineOutlineProvider and ECHAT.EngineOutlineProvider()
@@ -449,7 +522,9 @@ function ECHAT.EngineApplyFontTo(cf)
 end
 
 function ECHAT.EngineApplyFonts()
-    for cf in pairs(WINS) do ECHAT.EngineApplyFontTo(cf) end
+    for cf in pairs(WINS) do
+        ECHAT.EngineApplyFontTo(cf)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -491,13 +566,13 @@ local EngineUpdateProtectedState -- forward declaration (defined with the mirror
 local issecretvalue = _G.issecretvalue
 
 local CHANNEL_ABBR_LOOKUP = {
-    PARTY                = "P",
-    PARTY_LEADER         = "PL",
-    PARTY_GUIDE          = "PG",
-    RAID                 = "R",
-    GUILD                = "G",
-    BATTLEGROUND         = "BG",
-    INSTANCE_CHAT        = "I",
+    PARTY = "P",
+    PARTY_LEADER = "PL",
+    PARTY_GUIDE = "PG",
+    RAID = "R",
+    GUILD = "G",
+    BATTLEGROUND = "BG",
+    INSTANCE_CHAT = "I",
     -- Unverified keywords stay out (OFFICER, RAID_LEADER, leader variants):
     -- an unmatched keyword is a silent pass-through, never an error.
 }
@@ -507,13 +582,13 @@ local CHANNEL_ABBR_LOOKUP = {
 -- their channel number (what "/1" types); the Use Letters cog option paints
 -- these letters instead. A number with no letter stays a number either way.
 local WORLD_CHANNEL_LETTERS = {
-    ["1"]  = "Ge",
-    ["2"]  = "T",
+    ["1"] = "Ge",
+    ["2"] = "T",
     ["22"] = "LD",
     ["23"] = "WD",
     ["26"] = "LFG",
 }
-local _abbrevLetters = false  -- Shortened Channel Names > Use Letters user setting
+local _abbrevLetters = false -- Shortened Channel Names > Use Letters user setting
 
 local function ShortChannelReplacer(hyperlinkTarget)
     local abbr = CHANNEL_ABBR_LOOKUP[hyperlinkTarget:upper()]
@@ -523,7 +598,9 @@ local function ShortChannelReplacer(hyperlinkTarget)
             abbr = (_abbrevLetters and WORLD_CHANNEL_LETTERS[channelNum]) or channelNum
         end
     end
-    if not abbr then return nil end
+    if not abbr then
+        return nil
+    end
     return "|Hchannel:" .. hyperlinkTarget .. "|h[" .. abbr .. "]|h"
 end
 
@@ -533,16 +610,22 @@ local function AbbreviateChannelText(text)
     local searchPos = 1
     while true do
         local hStart = text:find(HDR, searchPos, true)
-        if not hStart then break end
+        if not hStart then
+            break
+        end
         local keyStart = hStart + HDR_LEN
         local hEnd = text:find("|h", keyStart, true)
-        if not hEnd then break end
+        if not hEnd then
+            break
+        end
         local bracketStart = hEnd + 2
         if text:sub(bracketStart, bracketStart) ~= "[" then
             searchPos = bracketStart
         else
             local closeBracket = text:find("]|h", bracketStart, true)
-            if not closeBracket then break end
+            if not closeBracket then
+                break
+            end
             local hyperlinkTarget = text:sub(keyStart, hEnd - 1)
             local replacement = ShortChannelReplacer(hyperlinkTarget)
             local segmentEnd = closeBracket + 2
@@ -577,9 +660,12 @@ end
 --  casing -- only color codes are inserted around it.
 -------------------------------------------------------------------------------
 local CCN_EVENTS = {
-    CHAT_MSG_SAY = true, CHAT_MSG_YELL = true,
-    CHAT_MSG_PARTY = true, CHAT_MSG_PARTY_LEADER = true,
-    CHAT_MSG_RAID = true, CHAT_MSG_RAID_LEADER = true,
+    CHAT_MSG_SAY = true,
+    CHAT_MSG_YELL = true,
+    CHAT_MSG_PARTY = true,
+    CHAT_MSG_PARTY_LEADER = true,
+    CHAT_MSG_RAID = true,
+    CHAT_MSG_RAID_LEADER = true,
     CHAT_MSG_RAID_WARNING = true,
 }
 
@@ -587,12 +673,20 @@ local _ccnOn = false
 local ROSTER_LOW = {} -- lowered short name -> class colorStr ("ffrrggbb")
 
 local function RosterAdd(unit, colors)
-    if not UnitExists(unit) then return end
+    if not UnitExists(unit) then
+        return
+    end
     local name = UnitName(unit)
-    if issecretvalue and issecretvalue(name) then return end
-    if type(name) ~= "string" or name == "" then return end
+    if issecretvalue and issecretvalue(name) then
+        return
+    end
+    if type(name) ~= "string" or name == "" then
+        return
+    end
     local class = (UnitClassBase and UnitClassBase(unit)) or select(2, UnitClass(unit))
-    if issecretvalue and issecretvalue(class) then return end
+    if issecretvalue and issecretvalue(class) then
+        return
+    end
     local c = class and colors[class]
     if c and c.colorStr then
         ROSTER_LOW[name:lower()] = c.colorStr
@@ -602,7 +696,9 @@ end
 local function RebuildRoster()
     wipe(ROSTER_LOW)
     local colors = _G.RAID_CLASS_COLORS
-    if not colors then return end
+    if not colors then
+        return
+    end
     if IsInRaid() then
         for i = 1, GetNumGroupMembers() do
             RosterAdd("raid" .. i, colors)
@@ -618,7 +714,9 @@ end
 local rosterFrame = CreateFrame("Frame")
 local _rosterQueued = false
 local function QueueRosterRebuild()
-    if _rosterQueued then return end
+    if _rosterQueued then
+        return
+    end
     _rosterQueued = true
     C_Timer.After(0, function()
         _rosterQueued = false
@@ -652,7 +750,9 @@ local function CollectProtected(text)
     local n, pos = 0, 1
     while true do
         local p = text:find("|", pos, true)
-        if not p then break end
+        if not p then
+            break
+        end
         local c = text:sub(p + 1, p + 1)
         local e
         if c == "c" then
@@ -690,17 +790,29 @@ end
 -- Word boundary on raw bytes: ASCII letters/digits and every UTF-8 byte
 -- (>= 128) count as word characters, so accented names stay whole.
 local function IsBoundary(text, idx)
-    if idx < 1 or idx > #text then return true end
+    if idx < 1 or idx > #text then
+        return true
+    end
     local b = text:byte(idx)
-    if b >= 128 then return false end
-    if b >= 48 and b <= 57 then return false end
-    if b >= 65 and b <= 90 then return false end
-    if b >= 97 and b <= 122 then return false end
+    if b >= 128 then
+        return false
+    end
+    if b >= 48 and b <= 57 then
+        return false
+    end
+    if b >= 65 and b <= 90 then
+        return false
+    end
+    if b >= 97 and b <= 122 then
+        return false
+    end
     return true
 end
 
 local function ColorRosterNames(text)
-    if next(ROSTER_LOW) == nil then return text end
+    if next(ROSTER_LOW) == nil then
+        return text
+    end
     local lower = text:lower()
     local nProt = CollectProtected(text)
     local nHits = 0
@@ -709,7 +821,9 @@ local function ColorRosterNames(text)
         local from = 1
         while true do
             local s = lower:find(nameLow, from, true)
-            if not s then break end
+            if not s then
+                break
+            end
             local e = s + nameLen - 1
             from = e + 1
             if IsBoundary(text, s - 1) and IsBoundary(text, e + 1) then
@@ -729,7 +843,9 @@ local function ColorRosterNames(text)
             end
         end
     end
-    if nHits == 0 then return text end
+    if nHits == 0 then
+        return text
+    end
     -- Insertion sort by start position (hit counts are tiny).
     for i = 2, nHits do
         local s, e, c = _hitS[i], _hitE[i], _hitC[i]
@@ -744,11 +860,16 @@ local function ColorRosterNames(text)
     for i = 1, nHits do
         local s, e = _hitS[i], _hitE[i]
         if s >= pos then
-            np = np + 1; pieces[np] = text:sub(pos, s - 1)
-            np = np + 1; pieces[np] = "|c"
-            np = np + 1; pieces[np] = _hitC[i]
-            np = np + 1; pieces[np] = text:sub(s, e)
-            np = np + 1; pieces[np] = "|r"
+            np = np + 1
+            pieces[np] = text:sub(pos, s - 1)
+            np = np + 1
+            pieces[np] = "|c"
+            np = np + 1
+            pieces[np] = _hitC[i]
+            np = np + 1
+            pieces[np] = text:sub(s, e)
+            np = np + 1
+            pieces[np] = "|r"
             pos = e + 1
         end
     end
@@ -763,15 +884,19 @@ end
 -- history passes no event, so name coloring never runs there (stored lines
 -- were captured in display form already).
 local function DisplayText(msg, event)
-    if not _abbrevOn and not _ccnOn then return msg end
-    if issecretvalue and issecretvalue(msg) then return msg end
-    if type(msg) ~= "string" then return msg end
+    if not _abbrevOn and not _ccnOn then
+        return msg
+    end
+    if issecretvalue and issecretvalue(msg) then
+        return msg
+    end
+    if type(msg) ~= "string" then
+        return msg
+    end
     if _abbrevOn and not _protActive and msg:find("|Hchannel:", 1, true) then
         msg = AbbreviateChannelText(msg)
     end
-    if _ccnOn and event ~= nil
-        and not (issecretvalue and issecretvalue(event))
-        and CCN_EVENTS[event] then
+    if _ccnOn and event ~= nil and not (issecretvalue and issecretvalue(event)) and CCN_EVENTS[event] then
         msg = ColorRosterNames(msg)
     end
     return msg
@@ -814,10 +939,18 @@ local function StampDisplay(msg, when)
     -- Dormant in protected content, same as the abbreviations: secret lines
     -- can never be rewritten into the buffer, so the transforms stand down
     -- whole and both surfaces stay raw-aligned.
-    if not _stampAllOn or _protActive then return msg end
-    if type(msg) ~= "string" then return msg end
-    if issecretvalue and issecretvalue(msg) then return msg end
-    if HasTimestampPrefix(msg) then return msg end
+    if not _stampAllOn or _protActive then
+        return msg
+    end
+    if type(msg) ~= "string" then
+        return msg
+    end
+    if issecretvalue and issecretvalue(msg) then
+        return msg
+    end
+    if HasTimestampPrefix(msg) then
+        return msg
+    end
     local ok, ts = pcall(date, _stampFmt, when and math.floor(when) or nil)
     if ok and type(ts) == "string" and ts ~= "" then
         return ts .. msg
@@ -835,7 +968,9 @@ end
 local function EngineTail(cf, msg, r, g, b, chatTypeID, accessID, typeID, event, eventArgs)
     -- Cheap per-message probe: catches protected-state flips that have no
     -- zone-in edge (dev mode toggles) before the next line renders.
-    if EngineUpdateProtectedState then EngineUpdateProtectedState() end
+    if EngineUpdateProtectedState then
+        EngineUpdateProtectedState()
+    end
     local win = WINS[cf]
     local display = StampDisplay(DisplayText(msg, event))
     -- Zone-alignment write-back (doctrine block above the transform section).
@@ -844,13 +979,15 @@ local function EngineTail(cf, msg, r, g, b, chatTypeID, accessID, typeID, event,
     -- skips entries another addon already rewrote, and skipping display==msg
     -- keeps this a true no-op (zero writes) when every transform is off or
     -- dormant (_protActive), preserving the zero-cost-disabled posture.
-    if not (issecretvalue and issecretvalue(msg))
-        and type(display) == "string" and display ~= msg then
+    if not (issecretvalue and issecretvalue(msg)) and type(display) == "string" and display ~= msg then
         local hb = cf.historyBuffer
         local e = hb and hb.GetEntryAtIndex and hb:GetEntryAtIndex(1)
-        if e and type(e.message) == "string"
+        if
+            e
+            and type(e.message) == "string"
             and not (issecretvalue and issecretvalue(e.message))
-            and e.message == msg then
+            and e.message == msg
+        then
             e.message = display
         end
     end
@@ -873,7 +1010,9 @@ local function EngineTail(cf, msg, r, g, b, chatTypeID, accessID, typeID, event,
         -- its count falls below ours the moment the next line lands. Both
         -- counts are cheap reads; the rebuild is deferred + coalesced.
         if cf:GetNumMessages() < win.smf:GetNumMessages() then
-            if QueueDivergedRebuild then QueueDivergedRebuild(cf) end
+            if QueueDivergedRebuild then
+                QueueDivergedRebuild(cf)
+            end
         end
     end
     if EngineTailObserver then
@@ -908,7 +1047,12 @@ end
 -- touches OUR frame only. (Our thin bar's drag pushes the other way via
 -- SetScrollOffset, which is not among the hooked methods -- no loop.)
 local SCROLL_METHODS = {
-    "ScrollUp", "ScrollDown", "PageUp", "PageDown", "ScrollToTop", "ScrollToBottom",
+    "ScrollUp",
+    "ScrollDown",
+    "PageUp",
+    "PageDown",
+    "ScrollToTop",
+    "ScrollToBottom",
 }
 
 local function MirrorScroll(cf)
@@ -933,12 +1077,24 @@ local function ChatFrameWheel(cf, delta)
     -- above its range, so the wheel stops at its clamp -- the thin scrollbar
     -- (which drives our view directly) is the lane that reaches them.
     if IsShiftKeyDown() then
-        if up then cf:ScrollToTop() else cf:ScrollToBottom() end
+        if up then
+            cf:ScrollToTop()
+        else
+            cf:ScrollToBottom()
+        end
     elseif IsControlKeyDown() and cf.PageUp then
-        if up then cf:PageUp() else cf:PageDown() end
+        if up then
+            cf:PageUp()
+        else
+            cf:PageDown()
+        end
     else
         for _ = 1, 3 do
-            if up then cf:ScrollUp() else cf:ScrollDown() end
+            if up then
+                cf:ScrollUp()
+            else
+                cf:ScrollDown()
+            end
         end
     end
 end
@@ -952,15 +1108,21 @@ end
 -- frames therefore stay unbridged; the first integrate pass after Blizzard
 -- opens one installs the bridge and backfills our window from its buffer.
 local function IsChatFrameOpen(cf)
-    if cf.isTemporary then return cf.inUse == true end
+    if cf.isTemporary then
+        return cf.inUse == true
+    end
     local id = cf:GetID()
     return id > 0 and FCF_IsChatWindowIndexActive(id)
 end
 
 local function InstallBridge(cf)
     local d = CFD(cf)
-    if d.bridged then return false end
-    if not IsChatFrameOpen(cf) then return false end
+    if d.bridged then
+        return false
+    end
+    if not IsChatFrameOpen(cf) then
+        return false
+    end
     d.bridged = true
     -- EngineTail's signature matches the hook's (self arrives as its cf);
     -- the trailing MessageFormatter argument is dropped by arity.
@@ -988,7 +1150,9 @@ end
 -------------------------------------------------------------------------------
 local function RebuildWindowFromBuffer(cf)
     local win = WINS[cf]
-    if not win then return end
+    if not win then
+        return
+    end
     local smf = win.smf
     smf:Clear()
     local n = cf:GetNumMessages()
@@ -1002,7 +1166,9 @@ local function RebuildWindowFromBuffer(cf)
     -- protected content converge here on the first rebuild after the flip
     -- out). Same gate order as the live tail: secrecy before any compare.
     local hb = cf.historyBuffer
-    if not (hb and hb.GetEntryAtIndex and hb.GetNumElements) then hb = nil end
+    if not (hb and hb.GetEntryAtIndex and hb.GetNumElements) then
+        hb = nil
+    end
     local nowT, nowG
     if _stampAllOn and not _protActive then
         nowT, nowG = time(), GetTime()
@@ -1018,11 +1184,15 @@ local function RebuildWindowFromBuffer(cf)
                     display = StampDisplay(display, nowT - (nowG - ts))
                 end
             end
-            if entry and not (issecretvalue and issecretvalue(msg))
-                and type(display) == "string" and display ~= msg
+            if
+                entry
+                and not (issecretvalue and issecretvalue(msg))
+                and type(display) == "string"
+                and display ~= msg
                 and type(entry.message) == "string"
                 and not (issecretvalue and issecretvalue(entry.message))
-                and entry.message == msg then
+                and entry.message == msg
+            then
                 entry.message = display
             end
             smf:AddMessage(display, r, g, b, chatTypeID, ExtractLineID(eventArgs), event)
@@ -1044,12 +1214,16 @@ ECHAT.EngineRebuildWindow = RebuildWindowFromBuffer
 -------------------------------------------------------------------------------
 local function IntegrateChatFrame(cf)
     local d = CFD(cf)
-    if not d.bg then return end
+    if not d.bg then
+        return
+    end
     SuppressChatFrameVisuals(cf)
     local win = WINS[cf]
     if not win then
         win = CreateWindowSMF(cf)
-        if not win then return end
+        if not win then
+            return
+        end
         InstallBridge(cf)
         RebuildWindowFromBuffer(cf)
         return
@@ -1077,7 +1251,9 @@ function ECHAT.EngineIntegrateAll()
             if not (ns._clHosted and IsCombatLog and IsCombatLog(cf)) then
                 IntegrateChatFrame(cf)
             elseif not WINS[cf] then
-                if CreateWindowSMF(cf) then InstallBridge(cf) end
+                if CreateWindowSMF(cf) then
+                    InstallBridge(cf)
+                end
             end
         end
     end
@@ -1096,28 +1272,41 @@ end
 -------------------------------------------------------------------------------
 function ECHAT.EngineUpdateCombatLogHost()
     local cf2 = _G.ChatFrame2
-    if not cf2 or not IsCombatLog or not IsCombatLog(cf2) then return end
-    local selected = GENERAL_CHAT_DOCK and FCFDock_GetSelectedWindow
+    if not cf2 or not IsCombatLog or not IsCombatLog(cf2) then
+        return
+    end
+    local selected = GENERAL_CHAT_DOCK
+        and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     local host = (selected == cf2)
-    if host == (ns._clHosted or false) then return end
+    if host == (ns._clHosted or false) then
+        return
+    end
     ns._clHosted = host
     local win = WINS[cf2]
     local fsc = cf2.FontStringContainer
     local bar = cf2.ScrollBar
     if host then
-        if fsc then fsc:SetAlpha(1) end
+        if fsc then
+            fsc:SetAlpha(1)
+        end
         if bar then
-            if bar.Track then bar.Track:SetAlpha(1) end
+            if bar.Track then
+                bar.Track:SetAlpha(1)
+            end
             SetBarMouse(bar, true)
         end
         if win then
             win.smf:Hide()
         end
     else
-        if fsc then fsc:SetAlpha(0) end
+        if fsc then
+            fsc:SetAlpha(0)
+        end
         if bar then
-            if bar.Track then bar.Track:SetAlpha(0) end
+            if bar.Track then
+                bar.Track:SetAlpha(0)
+            end
             SetBarMouse(bar, false)
         end
         if win then
@@ -1145,7 +1334,9 @@ mirrorFrame:RegisterEvent("CAUTIONARY_CHAT_MESSAGE")
 
 local _rebuildQueued = false
 local function QueueRebuildAll()
-    if _rebuildQueued then return end
+    if _rebuildQueued then
+        return
+    end
     _rebuildQueued = true
     C_Timer.After(0, function()
         _rebuildQueued = false
@@ -1171,7 +1362,9 @@ ECHAT.EngineQueueRebuildAll = QueueRebuildAll
 -- PEW edge and the per-message probe cost one comparison.
 EngineUpdateProtectedState = function()
     local prot = (CUI.InProtectedInstance()) and true or false
-    if prot == _protActive then return end
+    if prot == _protActive then
+        return
+    end
     _protActive = prot
     QueueRebuildAll()
 end
@@ -1179,7 +1372,9 @@ end
 -- Single-window rebuild for the bridge tail's divergence check.
 local _divergedQueued = {}
 QueueDivergedRebuild = function(cf)
-    if _divergedQueued[cf] then return end
+    if _divergedQueued[cf] then
+        return
+    end
     _divergedQueued[cf] = true
     C_Timer.After(0, function()
         _divergedQueued[cf] = nil
@@ -1190,7 +1385,9 @@ end
 local function RecolorOurWindows(chatType, r, g, b)
     local info = ChatTypeInfo[strupper(chatType)]
         or (ChatAdditionalColors and ChatAdditionalColors[strupper(chatType)])
-    if not info or not info.id then return end
+    if not info or not info.id then
+        return
+    end
     local targetID = info.id
     local function Recolor(message, mr, mg, mb, chatTypeID)
         if chatTypeID == targetID then
@@ -1228,7 +1425,9 @@ end)
 function ECHAT.EngineScrollToBottom(cf)
     cf = cf or _G.ChatFrame1
     local win = WINS[cf]
-    if not win then return end
+    if not win then
+        return
+    end
     -- Through Blizzard's method so the mirror brings our view along --
     -- single scroll authority, both views land at the bottom together.
     if cf.ScrollToBottom then
@@ -1244,7 +1443,9 @@ end
 -- secret lines).
 function ECHAT.EngineGetMessageLines(cf, out)
     local win = WINS[cf]
-    if not win then return 0 end
+    if not win then
+        return 0
+    end
     local smf = win.smf
     local n = smf:GetNumMessages()
     for i = 1, n do
@@ -1259,7 +1460,9 @@ end
 -- Every other link type -- items, spells, achievements, players -- resolves
 -- from stable ids and is replayed intact.
 local function StripBNetLinks(text)
-    if type(text) ~= "string" then return text end
+    if type(text) ~= "string" then
+        return text
+    end
     return (text:gsub("|HBNplayer:.-|h(.-)|h", "%1"))
 end
 
@@ -1272,7 +1475,9 @@ end
 -- replayed line is stored exactly as one of its own.
 function ECHAT.EngineBackfillLine(cf, text, r, g, b, id)
     local win = WINS[cf]
-    if not win then return false end
+    if not win then
+        return false
+    end
     -- DisplayText keeps replayed history consistent with the current
     -- abbreviation setting; the scanner is idempotent on stored lines that
     -- were captured already shortened. The SAME string lands on both
@@ -1293,7 +1498,9 @@ function ECHAT.EngineSetPassthrough(on)
                 win.pmWasShown = true
                 win.smf:Hide()
             end
-            if win.track then win.track:Hide() end
+            if win.track then
+                win.track:Hide()
+            end
         else
             if win.pmWasShown then
                 win.pmWasShown = nil

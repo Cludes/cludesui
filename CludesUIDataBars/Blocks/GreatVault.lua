@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- no Great Vault on WoW Forever: no factory, no keystone feed (the main file drops the block from BLOCK_TYPES too)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then
+    return
+end -- no Great Vault on WoW Forever: no factory, no keystone feed (the main file drops the block from BLOCK_TYPES too)
 -- Blocks\GreatVault.lua
 -- Great Vault block factory.
 
@@ -9,29 +13,29 @@ local K = ns.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
-local C_Timer     = C_Timer
-local GetTime     = GetTime
-local pairs       = pairs
-local type        = type
-local wipe        = wipe
-local format      = string.format
-local tsort       = table.sort
-local floor       = math.floor
-local max         = math.max
-local min         = math.min
+local C_Timer = C_Timer
+local GetTime = GetTime
+local pairs = pairs
+local type = type
+local wipe = wipe
+local format = string.format
+local tsort = table.sort
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
-local IconColorOf          = K.IconColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  GREAT VAULT (weekly reward progress + owned / party keystones)
@@ -44,13 +48,23 @@ local IconColorOf          = K.IconColorOf
 --  time via .pkgmeta, absent from a source checkout -- missing, the party section
 --  just never renders, same as for group members whose client broadcasts nothing).
 -------------------------------------------------------------------------------
-local GV_RAID  = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Raid) or 3
-local GV_MPLUS = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Activities) or 1
-local GV_WORLD = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.World) or 6
+local GV_RAID = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Raid)
+    or 3
+local GV_MPLUS = (
+    Enum
+    and Enum.WeeklyRewardChestThresholdType
+    and Enum.WeeklyRewardChestThresholdType.Activities
+) or 1
+local GV_WORLD = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.World)
+    or 6
 
 local function GVTokenColor(state)
-    if state == "done" then return 0.176, 0.796, 0.349 end
-    if state == "partial" then return 0.812, 0.592, 0.212 end
+    if state == "done" then
+        return 0.176, 0.796, 0.349
+    end
+    if state == "partial" then
+        return 0.812, 0.592, 0.212
+    end
     return 0.58, 0.58, 0.58
 end
 
@@ -61,12 +75,14 @@ end
 local function GVSortActivities(a, b)
     local ai = (a and a.index) or 0
     local bi = (b and b.index) or 0
-    if ai == bi then return ((a and a.threshold) or 0) < ((b and b.threshold) or 0) end
+    if ai == bi then
+        return ((a and a.threshold) or 0) < ((b and b.threshold) or 0)
+    end
     return ai < bi
 end
 
 -- Both buffers are consumed before the next call in the same row build.
-local _gvSortBuf  = {}
+local _gvSortBuf = {}
 local _gvTokenBuf = { "", "", "" }
 
 -- One reward row as three tokens, each carrying its own state color inline. Tip_AddColumns
@@ -80,7 +96,9 @@ local function GVRowTokens(activityType, isRaid)
         acts = nil
     else
         wipe(_gvSortBuf)
-        for i = 1, #acts do _gvSortBuf[i] = acts[i] end
+        for i = 1, #acts do
+            _gvSortBuf[i] = acts[i]
+        end
         tsort(_gvSortBuf, GVSortActivities)
         acts = _gvSortBuf
     end
@@ -89,9 +107,9 @@ local function GVRowTokens(activityType, isRaid)
         local info = acts and acts[i]
         local text, state = "-", "empty"
         if info then
-            local progress  = max(0, tonumber(info.progress) or 0)
+            local progress = max(0, tonumber(info.progress) or 0)
             local threshold = max(0, tonumber(info.threshold) or 0)
-            local level     = max(0, tonumber(info.level) or 0)
+            local level = max(0, tonumber(info.level) or 0)
             if threshold > 0 then
                 if progress >= threshold then
                     state = "done"
@@ -103,7 +121,9 @@ local function GVRowTokens(activityType, isRaid)
                     end
                 else
                     text = format("%d/%d", progress, threshold)
-                    if progress > 0 then state = "partial" end
+                    if progress > 0 then
+                        state = "partial"
+                    end
                 end
             end
         end
@@ -113,7 +133,9 @@ local function GVRowTokens(activityType, isRaid)
 end
 
 local function GVDungeonName(mapID)
-    if not mapID or mapID == 0 then return nil end
+    if not mapID or mapID == 0 then
+        return nil
+    end
     if C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
         return (C_ChallengeMode.GetMapUIInfo(mapID))
     end
@@ -121,24 +143,33 @@ local function GVDungeonName(mapID)
 end
 
 local function GVOwnedKeystone()
-    if not C_MythicPlus then return nil end
-    local mapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID and C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+    if not C_MythicPlus then
+        return nil
+    end
+    local mapID = C_MythicPlus.GetOwnedKeystoneChallengeMapID
+        and C_MythicPlus.GetOwnedKeystoneChallengeMapID()
     local level = C_MythicPlus.GetOwnedKeystoneLevel and C_MythicPlus.GetOwnedKeystoneLevel()
-    if not mapID or not level or level <= 0 then return nil end
+    if not mapID or not level or level <= 0 then
+        return nil
+    end
     local name = GVDungeonName(mapID)
-    if not name then return nil end
+    if not name then
+        return nil
+    end
     return name, level
 end
 
 local function GVShortName(name)
-    if not name then return nil end
+    if not name then
+        return nil
+    end
     return name:match("^([^-]+)") or name
 end
 
 -- Keystone feed: registered on the first Enable of a Great Vault block, so a user without one pays nothing per incoming keystone message.
-local _gvKeys        = {}   -- ["Name-Realm"] = { mapID = n, level = n }
-local _gvLibToken    = {}
-local _gvRegistered  = false
+local _gvKeys = {} -- ["Name-Realm"] = { mapID = n, level = n }
+local _gvLibToken = {}
+local _gvRegistered = false
 local _gvLastRequest = 0
 
 local function GVLib()
@@ -151,29 +182,42 @@ local _gvRepaintQueued = false
 
 -- Debounced like the QoL keystone popup: a request solicits a reply from every group member, and each rebuild re-lays-out the whole tooltip.
 local function GVRepaintOpenTooltip()
-    if not _gvOpenFn or _gvRepaintQueued then return end
+    if not _gvOpenFn or _gvRepaintQueued then
+        return
+    end
     _gvRepaintQueued = true
     C_Timer.After(0.2, function()
         _gvRepaintQueued = false
-        if _gvOpenFn and _gvOpenBtn and ns.Tip_IsOwned(_gvOpenBtn) then _gvOpenFn() end
+        if _gvOpenFn and _gvOpenBtn and ns.Tip_IsOwned(_gvOpenBtn) then
+            _gvOpenFn()
+        end
     end)
 end
 
-local GVInGroup  -- forward declaration; defined below with the roster helpers
+local GVInGroup -- forward declaration; defined below with the roster helpers
 
 local function GVEnsureKeystoneFeed()
-    if _gvRegistered then return end
+    if _gvRegistered then
+        return
+    end
     local lib = GVLib()
-    if not lib then return end
+    if not lib then
+        return
+    end
     _gvRegistered = true
     -- Filtered on group membership, NOT the delivery channel: a group member who is
     -- also a guildmate can have their reply arrive tagged GUILD, and dropping it
     -- blanks their row. Membership is still required so a guild-wide reply burst cannot flood the cache with unshowable players.
     lib.Register(_gvLibToken, function(keyLevel, keyMapID, _, playerName)
-        if not playerName or not GVInGroup(playerName) then return end
+        if not playerName or not GVInGroup(playerName) then
+            return
+        end
         local e = _gvKeys[playerName]
-        if e then e.mapID, e.level = keyMapID, keyLevel
-        else _gvKeys[playerName] = { mapID = keyMapID, level = keyLevel } end
+        if e then
+            e.mapID, e.level = keyMapID, keyLevel
+        else
+            _gvKeys[playerName] = { mapID = keyMapID, level = keyLevel }
+        end
         GVRepaintOpenTooltip()
     end)
 end
@@ -181,7 +225,7 @@ end
 -- Polls the group over LibKeystone. Silent: an addon-channel request, and QoL's keystone
 -- popup ignores incoming data while closed, so no window surfaces. Throttled: a filling group fires GROUP_ROSTER_UPDATE repeatedly.
 local GV_REQUEST_THROTTLE = 5
-local GV_REQUEST_FLOOR    = 1
+local GV_REQUEST_FLOOR = 1
 
 -- `emptyHand` = the caller has nothing to show for this group, exactly when the poll
 -- matters most, so it respects only a short floor: a member who just joined may not
@@ -189,28 +233,40 @@ local GV_REQUEST_FLOOR    = 1
 local function GVRequestKeys(emptyHand)
     local lib = GVLib()
     -- A party of your own: the request goes out on PARTY, which a Dungeon Finder group alone answers with "You aren't in a party."
-    if not lib or not IsInGroup(LE_PARTY_CATEGORY_HOME) then return end
+    if not lib or not IsInGroup(LE_PARTY_CATEGORY_HOME) then
+        return
+    end
     local now = GetTime()
     local wait = emptyHand and GV_REQUEST_FLOOR or GV_REQUEST_THROTTLE
-    if now - _gvLastRequest < wait then return end
+    if now - _gvLastRequest < wait then
+        return
+    end
     _gvLastRequest = now
     lib.Request("PARTY")
 end
 
 -- The player's own unit is excluded everywhere: their key has its own row, read straight from C_MythicPlus.
 local function GVGroupRange()
-    if IsInRaid() then return "raid", GetNumGroupMembers() end
+    if IsInRaid() then
+        return "raid", GetNumGroupMembers()
+    end
     return "party", GetNumGroupMembers() - 1
 end
 
 -- Matched on the short name, exactly like the render path, so a sender is recognised whether the library reports "Name" or "Name-Realm".
 function GVInGroup(playerName)
-    if not IsInGroup() then return false end
+    if not IsInGroup() then
+        return false
+    end
     local short = GVShortName(playerName)
-    if not short then return false end
+    if not short then
+        return false
+    end
     local prefix, count = GVGroupRange()
     for i = 1, count do
-        if GVShortName(GetUnitName(prefix .. i, true)) == short then return true end
+        if GVShortName(GetUnitName(prefix .. i, true)) == short then
+            return true
+        end
     end
     return false
 end
@@ -219,36 +275,53 @@ end
 -- leaves a permanent entry that can never display again, since rendering only looks
 -- at the current group. Pruning drops only names already gone, so it can never blank a member still here while the request throttle is closed.
 local function GVPruneKeys()
-    if not next(_gvKeys) then return end
-    if not IsInGroup() then wipe(_gvKeys) return end
+    if not next(_gvKeys) then
+        return
+    end
+    if not IsInGroup() then
+        wipe(_gvKeys)
+        return
+    end
 
     -- GROUP_ROSTER_UPDATE can land before units resolve; pruning an unresolved roster discards live keys and costs a request round-trip on next hover.
     local prefix, count = GVGroupRange()
     local resolved = false
     for i = 1, count do
-        if GetUnitName(prefix .. i, true) then resolved = true break end
+        if GetUnitName(prefix .. i, true) then
+            resolved = true
+            break
+        end
     end
-    if not resolved then return end
+    if not resolved then
+        return
+    end
 
     for name in pairs(_gvKeys) do
-        if not GVInGroup(name) then _gvKeys[name] = nil end
+        if not GVInGroup(name) then
+            _gvKeys[name] = nil
+        end
     end
 end
 
 local function GVSortPartyRows(a, b)
-    if a.level ~= b.level then return a.level > b.level end
+    if a.level ~= b.level then
+        return a.level > b.level
+    end
     return a.name < b.name
 end
 
 -- Reused row tables (no per-show garbage). The sort swaps table REFERENCES inside the buffer, so the row tables survive to be refilled next hover.
-local _gvPartyBuf   = {}
+local _gvPartyBuf = {}
 local _gvPartyCount = 0
-local _gvShortIdx   = {}
+local _gvShortIdx = {}
 
 local function GVAddPartyRow(name, dungeon, level, r, g, b)
     _gvPartyCount = _gvPartyCount + 1
     local e = _gvPartyBuf[_gvPartyCount]
-    if not e then e = {}; _gvPartyBuf[_gvPartyCount] = e end
+    if not e then
+        e = {}
+        _gvPartyBuf[_gvPartyCount] = e
+    end
     e.name, e.dungeon, e.level = name, dungeon, level
     e.r, e.g, e.b = r, g, b
 end
@@ -258,7 +331,9 @@ end
 -- cross-realm members CAN share a first name, so colliding short names are marked ambiguous (false) and skipped -- better nothing than the wrong key.
 local function GVBuildPartyRows()
     _gvPartyCount = 0
-    if not IsInGroup() then return 0 end
+    if not IsInGroup() then
+        return 0
+    end
 
     wipe(_gvShortIdx)
     local any = false
@@ -266,13 +341,18 @@ local function GVBuildPartyRows()
         if info and (info.level or 0) > 0 then
             local short = GVShortName(name)
             if short then
-                if _gvShortIdx[short] == nil then _gvShortIdx[short] = info
-                else _gvShortIdx[short] = false end
+                if _gvShortIdx[short] == nil then
+                    _gvShortIdx[short] = info
+                else
+                    _gvShortIdx[short] = false
+                end
                 any = true
             end
         end
     end
-    if not any then return 0 end
+    if not any then
+        return 0
+    end
 
     local prefix, count = GVGroupRange()
     for i = 1, count do
@@ -287,8 +367,14 @@ local function GVBuildPartyRows()
             if dungeon then
                 local _, classFile = UnitClass(unit)
                 local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                GVAddPartyRow(GetUnitName(unit) or unit, dungeon, info.level,
-                              (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1)
+                GVAddPartyRow(
+                    GetUnitName(unit) or unit,
+                    dungeon,
+                    info.level,
+                    (cc and cc.r) or 1,
+                    (cc and cc.g) or 1,
+                    (cc and cc.b) or 1
+                )
             end
         end
     end
@@ -379,9 +465,9 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
         ns.Tip_Begin(button)
         ns.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", ar, ag, ab)
         ns.Tip_AddLine(" ")
-        ns.Tip_AddColumns(CludesUI.L("Raids"),   GVRowTokens(GV_RAID,  true),  0.8, 0.8, 0.8)
+        ns.Tip_AddColumns(CludesUI.L("Raids"), GVRowTokens(GV_RAID, true), 0.8, 0.8, 0.8)
         ns.Tip_AddColumns(CludesUI.L("Mythic+"), GVRowTokens(GV_MPLUS, false), 0.8, 0.8, 0.8)
-        ns.Tip_AddColumns(CludesUI.L("World"),   GVRowTokens(GV_WORLD, false), 0.8, 0.8, 0.8)
+        ns.Tip_AddColumns(CludesUI.L("World"), GVRowTokens(GV_WORLD, false), 0.8, 0.8, 0.8)
 
         local myDungeon, myLevel = GVOwnedKeystone()
         if myDungeon then
@@ -396,8 +482,16 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
             ns.Tip_AddLine(CludesUI.L("Party Keystones"), ar, ag, ab)
             for i = 1, partyCount do
                 local e = _gvPartyBuf[i]
-                ns.Tip_AddDouble(e.name, e.dungeon .. " |cffffffff+" .. e.level .. "|r",
-                                 e.r, e.g, e.b, 0.6, 0.6, 0.6)
+                ns.Tip_AddDouble(
+                    e.name,
+                    e.dungeon .. " |cffffffff+" .. e.level .. "|r",
+                    e.r,
+                    e.g,
+                    e.b,
+                    0.6,
+                    0.6,
+                    0.6
+                )
             end
         end
 
@@ -424,7 +518,9 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
         inst:Refresh()
     end)
     button:SetScript("OnClick", function(_, mb)
-        if mb == "LeftButton" then CludesUI.ToggleGreatVault() end
+        if mb == "LeftButton" then
+            CludesUI.ToggleGreatVault()
+        end
     end)
 
     -- The block's visuals never change with the roster; these events exist only to drop departed members and keep the cache warm for the next hover.
@@ -436,7 +532,9 @@ ns.BlockFactories.greatvault = function(blockCfg, slot, content, barCtx)
     -- Teardown can happen while the tip is open (a bar rebuild never fires OnLeave),
     -- and _gvOpenFn is module-level: left set, it would pin this factory's whole scope for the rest of the session.
     local function ForgetOpenTip()
-        if _gvOpenBtn == button then _gvOpenBtn, _gvOpenFn = nil, nil end
+        if _gvOpenBtn == button then
+            _gvOpenBtn, _gvOpenFn = nil, nil
+        end
     end
 
     function inst:Enable()

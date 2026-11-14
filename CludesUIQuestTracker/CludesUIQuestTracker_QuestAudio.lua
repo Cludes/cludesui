@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then
+    return
+end
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker_QuestAudio.lua  (WoW Forever only)
 --
@@ -15,23 +19,31 @@ if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 local _, ns = ...
 
-local SIZE, WIDTH = 14, 16                     -- the button, and the room it takes right of a title
-local BOX = "QuestLog-icon-ticksquare"         -- the quest log's tracking box, which the button matches
-local ORIGIN = "CludesUI's quest tracker"   -- names the button in that addon's own debug log
+local SIZE, WIDTH = 14, 16 -- the button, and the room it takes right of a title
+local BOX = "QuestLog-icon-ticksquare" -- the quest log's tracking box, which the button matches
+local ORIGIN = "CludesUI's quest tracker" -- names the button in that addon's own debug log
 
 local function Install()
-    if not ns.UseCustomTracker() then return end
+    if not ns.UseCustomTracker() then
+        return
+    end
     local env, spoken = _G.VoiceOver, _G.Spoken
     local ui = type(env) == "table" and rawget(env, "QuestOverlayUI")
-    if type(ui) ~= "table" or type(spoken) ~= "table"
-       or type(ui.ShowsTrackerButton) ~= "function" or type(ui.BindPlayButton) ~= "function"
-       or type(ui.SetPlayButtonState) ~= "function" or type(ui.FollowQueue) ~= "function"
-       or type(spoken.DressBoxButton) ~= "function" or type(spoken.RegisterCallback) ~= "function" then
+    if
+        type(ui) ~= "table"
+        or type(spoken) ~= "table"
+        or type(ui.ShowsTrackerButton) ~= "function"
+        or type(ui.BindPlayButton) ~= "function"
+        or type(ui.SetPlayButtonState) ~= "function"
+        or type(ui.FollowQueue) ~= "function"
+        or type(spoken.DressBoxButton) ~= "function"
+        or type(spoken.RegisterCallback) ~= "function"
+    then
         return
     end
 
-    local buttons = {}   -- slot -> its button
-    local voiced = {}    -- questID -> whether the addon shows Play for it
+    local buttons = {} -- slot -> its button
+    local voiced = {} -- questID -> whether the addon shows Play for it
     local off = false
 
     local function Voiced(questID)
@@ -46,7 +58,9 @@ local function Install()
     local function Dress(slot, questID)
         local b = buttons[slot]
         if not Voiced(questID) then
-            if b then b:Hide() end
+            if b then
+                b:Hide()
+            end
             return
         end
         if not b then
@@ -76,16 +90,22 @@ local function Install()
     end
 
     local function Row(slot, questID)
-        if off then return end
+        if off then
+            return
+        end
         if not pcall(Dress, slot, questID) then
             off = true
-            for _, b in pairs(buttons) do b:Hide() end
+            for _, b in pairs(buttons) do
+                b:Hide()
+            end
         end
     end
     -- Under the addon's own name: should it register a row hook of its own,
     -- the first registration stands and the other is refused, so no row ever
     -- gets two buttons.
-    if not CludesUI.RegisterQuestTrackerRow("Spoken", Row, WIDTH) then return end
+    if not CludesUI.RegisterQuestTrackerRow("Spoken", Row, WIDTH) then
+        return
+    end
 
     -- What Voiced reads: the voice packs (loaded after login), the addon's
     -- quest part being on, and its tracker button setting (whose change, like
@@ -96,7 +116,9 @@ local function Install()
     end
     spoken:RegisterCallback("VOICE_PACKS_LOADED", Changed)
     spoken:RegisterCallback("PART_SWITCHED", function(part)
-        if part == "quests" then Changed() end
+        if part == "quests" then
+            Changed()
+        end
     end)
     if type(ui.UpdateTrackerButtons) == "function" then
         hooksecurefunc(ui, "UpdateTrackerButtons", Changed)

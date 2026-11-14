@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\BuffBarsPage_Options.lua
 --  Cooldown Manager options: the Tracking Bars page with its state, preview
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  order as before.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a reused page, a kept menu) is handed out again reset to fresh;
@@ -17,19 +21,27 @@ if not ns then return end  -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
 
-local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, GateBlizzardOnly, PAGE_BUFF_BARS)
+local function InitBuffBarsPage(
+    PP,
+    DB,
+    Refresh,
+    FONT_PATH,
+    GetCDMOptOutline,
+    GateBlizzardOnly,
+    PAGE_BUFF_BARS
+)
     ---------------------------------------------------------------------------
     --  Buff Bars page: per-bar tracked buff bars with individual settings
     ---------------------------------------------------------------------------
     local _tbbSelectedBar = 1
-    local _tbbSelectedGroup      -- nil = editing a bar; gid = editing that group
+    local _tbbSelectedGroup -- nil = editing a bar; gid = editing that group
     -- Deep-link helper (Global Settings > Glows): select a tracking bar by index.
     function ns._TBBSelectBar(idx)
         _tbbSelectedBar = idx
         _tbbSelectedGroup = nil
     end
-    local _tbbDDBtn              -- live management-dropdown button (picker anchor)
-    local _tbbNavigateFn         -- set per page build: click-to-scroll handler
+    local _tbbDDBtn -- live management-dropdown button (picker anchor)
+    local _tbbNavigateFn -- set per page build: click-to-scroll handler
 
     ---------------------------------------------------------------------------
     --  Popout preview docked to the options panel's left edge (raid-frame overlay
@@ -39,10 +51,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     --  bar of the group chained with its grow/spacing, each clickable to edit.
     ---------------------------------------------------------------------------
     local _tbbPopout
-    local _tbbPopoutBars = {}     -- pooled preview wraps (runtime-built)
+    local _tbbPopoutBars = {} -- pooled preview wraps (runtime-built)
 
     local function GetTBBPopout()
-        if _tbbPopout then return _tbbPopout end
+        if _tbbPopout then
+            return _tbbPopout
+        end
         local oc = CreateFrame("Frame", nil, UIParent)
         oc:SetFrameStrata("FULLSCREEN_DIALOG")
         oc:SetFrameLevel(10)
@@ -66,7 +80,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     end
 
     local function HideTBBPopout()
-        if _tbbPopout then _tbbPopout:Hide() end
+        if _tbbPopout then
+            _tbbPopout:Hide()
+        end
     end
 
     -- Pooled hover/click overlay on a preview element (green border, like unit frame
@@ -81,14 +97,18 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             btn._brd:Hide()
             btn:SetScript("OnEnter", function(self)
                 self._brd:Show()
-                if self._tip then CludesUI.ShowWidgetTooltip(self, self._tip) end
+                if self._tip then
+                    CludesUI.ShowWidgetTooltip(self, self._tip)
+                end
             end)
             btn:SetScript("OnLeave", function(self)
                 self._brd:Hide()
                 CludesUI.HideWidgetTooltip()
             end)
             btn:SetScript("OnMouseDown", function(self)
-                if self._onNav then self._onNav() end
+                if self._onNav then
+                    self._onNav()
+                end
             end)
             wrap._pvNav[key] = btn
         end
@@ -96,8 +116,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     end
 
     local function HideTBBPvNav(wrap)
-        if not wrap._pvNav then return end
-        for _, b in pairs(wrap._pvNav) do b:Hide() end
+        if not wrap._pvNav then
+            return
+        end
+        for _, b in pairs(wrap._pvNav) do
+            b:Hide()
+        end
     end
 
     -- Attach nav overlays for one preview bar. Bar mode: element overlays scroll to and
@@ -120,15 +144,23 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         end
         local sb = wrap._bar
         local function ElemBtn(key, elem, isText)
-            if not elem or not elem.IsShown or not elem:IsShown() then return end
-            if isText and (elem:GetText() or "") == "" then return end
+            if not elem or not elem.IsShown or not elem:IsShown() then
+                return
+            end
+            if isText and (elem:GetText() or "") == "" then
+                return
+            end
             local btn = TBBPvNavButton(wrap, key)
             btn:ClearAllPoints()
             if isText then
                 local tw = (elem:GetStringWidth() or 0) + 6
                 local th = (elem:GetStringHeight() or 0) + 6
-                if tw < 14 then tw = 14 end
-                if th < 14 then th = 14 end
+                if tw < 14 then
+                    tw = 14
+                end
+                if th < 14 then
+                    th = 14
+                end
                 btn:SetSize(tw, th)
                 -- Anchor by justification: FontString width > string width, so CENTER isn't where glyphs render.
                 local justify = elem.GetJustifyH and elem:GetJustifyH() or "LEFT"
@@ -145,7 +177,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             btn:SetFrameLevel(wrap:GetFrameLevel() + (isText and 32 or 30))
             btn._tip = nil
             btn._onNav = function()
-                if _tbbNavigateFn then _tbbNavigateFn(key) end
+                if _tbbNavigateFn then
+                    _tbbNavigateFn(key)
+                end
             end
             btn:Show()
         end
@@ -178,12 +212,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -- Name (same resolution as the live build)
         if wrap._nameText and wrap._nameText:IsShown() then
             local displayName = cfg.name
-            if (not displayName or displayName == "" or displayName == "New Bar")
-               and cfg.spellID and cfg.spellID > 0 then
+            if
+                (not displayName or displayName == "" or displayName == "New Bar")
+                and cfg.spellID
+                and cfg.spellID > 0
+            then
                 local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(cfg.spellID)
                 displayName = (info and info.name) or displayName
             end
-            if unassigned then displayName = "" end
+            if unassigned then
+                displayName = ""
+            end
             -- A custom name is the player's own text: shown as typed, never translated.
             wrap._nameText:SetText(ns.TBBCustomName(cfg) or CludesUI.L(displayName or ""))
         end
@@ -192,7 +231,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local iconID
             if cfg.popularKey and ns.TBB_POPULAR_BUFFS then
                 for _, pe in ipairs(ns.TBB_POPULAR_BUFFS) do
-                    if pe.key == cfg.popularKey then iconID = pe.icon; break end
+                    if pe.key == cfg.popularKey then
+                        iconID = pe.icon
+                        break
+                    end
                 end
             end
             if not iconID and cfg.spellID and cfg.spellID > 0 then
@@ -231,9 +273,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local np = cfg.verticalOrientation and "none"
             or (cfg.namePosition or ((cfg.showName ~= false) and "left" or "none"))
         local p = 0
-        if tp == side then p = math.max(p, cfg.timerSize or 11) end
-        if sp == side then p = math.max(p, cfg.stacksSize or 11) end
-        if np == side then p = math.max(p, cfg.nameSize or 11) end
+        if tp == side then
+            p = math.max(p, cfg.timerSize or 11)
+        end
+        if sp == side then
+            p = math.max(p, cfg.stacksSize or 11)
+        end
+        if np == side then
+            p = math.max(p, cfg.nameSize or 11)
+        end
         return p > 0 and (p + 8) or 0
     end
 
@@ -243,7 +291,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     -- and event-driven refreshes (saved positions, spec/instance events) rebuild this page with the panel hidden. Every show path funnels through this check.
     local function TBBPreviewAllowed()
         -- Folded to the mini window counts as closed (the page is off screen).
-        if not (CludesUI:IsShown()) or CludesUI._panelCollapsed then return false end
+        if not (CludesUI:IsShown()) or CludesUI._panelCollapsed then
+            return false
+        end
         -- nil = mid-build (page state not stamped); builders only run for the page shown, so only a definite mismatch blocks.
         local am = CludesUI:GetActiveModule()
         local ap = CludesUI:GetActivePage()
@@ -273,9 +323,14 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             end
         else
             local c = bars[_tbbSelectedBar]
-            if c then list[1] = { idx = _tbbSelectedBar, cfg = c } end
+            if c then
+                list[1] = { idx = _tbbSelectedBar, cfg = c }
+            end
         end
-        if #list == 0 then HideTBBPopout(); return end
+        if #list == 0 then
+            HideTBBPopout()
+            return
+        end
 
         local oc = GetTBBPopout()
 
@@ -291,14 +346,21 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 if wrap._bar then
                     wrap._bar:SetScript("OnSizeChanged", function(sbSelf)
                         local cfg = wrap._pvCfg
-                        if not cfg then return end
+                        if not cfg then
+                            return
+                        end
                         if ns.ApplyTBBChargeHashLines then
                             local mc = ns.GetTBBMaxCharges and ns.GetTBBMaxCharges(cfg)
                             ns.ApplyTBBChargeHashLines(wrap, cfg, mc)
                         end
                         if ns.ApplyTBBTickMarks then
-                            ns.ApplyTBBTickMarks(sbSelf, cfg, wrap._threshTicks,
-                                cfg.verticalOrientation, wrap._tickOverlay)
+                            ns.ApplyTBBTickMarks(
+                                sbSelf,
+                                cfg,
+                                wrap._threshTicks,
+                                cfg.verticalOrientation,
+                                wrap._tickOverlay
+                            )
                             wrap._ticksDirty = nil
                         end
                     end)
@@ -317,33 +379,58 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 wrap:SetFrameStrata("FULLSCREEN_DIALOG")
                 wrap:SetFrameLevel(base)
                 local sb = wrap._bar
-                if sb then sb:SetFrameLevel(base + 1) end
-                if wrap._gradClip and sb then wrap._gradClip:SetFrameLevel(sb:GetFrameLevel() + 1) end
-                if wrap._chargeHashFillClip and sb then wrap._chargeHashFillClip:SetFrameLevel(sb:GetFrameLevel() + 1) end
+                if sb then
+                    sb:SetFrameLevel(base + 1)
+                end
+                if wrap._gradClip and sb then
+                    wrap._gradClip:SetFrameLevel(sb:GetFrameLevel() + 1)
+                end
+                if wrap._chargeHashFillClip and sb then
+                    wrap._chargeHashFillClip:SetFrameLevel(sb:GetFrameLevel() + 1)
+                end
                 if wrap._threshOverlays and sb then
                     for i = 1, #wrap._threshOverlays do
                         local ov = wrap._threshOverlays[i]
-                        if ov then ov:SetFrameLevel(sb:GetFrameLevel() + 2) end
+                        if ov then
+                            ov:SetFrameLevel(sb:GetFrameLevel() + 2)
+                        end
                     end
                 end
-                if wrap._sparkOverlay and sb then wrap._sparkOverlay:SetFrameLevel(sb:GetFrameLevel() + 3) end
+                if wrap._sparkOverlay and sb then
+                    wrap._sparkOverlay:SetFrameLevel(sb:GetFrameLevel() + 3)
+                end
                 -- Tick overlay reassert; matches the live-bar block.
-                if wrap._tickOverlay and sb then wrap._tickOverlay:SetFrameLevel(sb:GetFrameLevel() + 4) end
-                if wrap._chargeHashOverlay and sb then wrap._chargeHashOverlay:SetFrameLevel(sb:GetFrameLevel() + 5) end
+                if wrap._tickOverlay and sb then
+                    wrap._tickOverlay:SetFrameLevel(sb:GetFrameLevel() + 4)
+                end
+                if wrap._chargeHashOverlay and sb then
+                    wrap._chargeHashOverlay:SetFrameLevel(sb:GetFrameLevel() + 5)
+                end
                 -- base+6 matches the live-bar reassert: keeps the border above
                 -- the tick overlay (sb+4 = base+5), which wins ties via lazy
                 -- creation.
-                if wrap._barBorder then wrap._barBorder:SetFrameLevel(base + 6) end
-                if wrap._pandemicGlowOverlay then wrap._pandemicGlowOverlay:SetFrameLevel(base + 7) end
-                if wrap._textOverlay and sb then wrap._textOverlay:SetFrameLevel(sb:GetFrameLevel() + 7) end
+                if wrap._barBorder then
+                    wrap._barBorder:SetFrameLevel(base + 6)
+                end
+                if wrap._pandemicGlowOverlay then
+                    wrap._pandemicGlowOverlay:SetFrameLevel(base + 7)
+                end
+                if wrap._textOverlay and sb then
+                    wrap._textOverlay:SetFrameLevel(sb:GetFrameLevel() + 7)
+                end
             end
             DressTBBPopoutBar(wrap, e.cfg)
             -- Reused pool bars already have a resolved size, so OnSizeChanged may never
             -- fire here: consume the deferred tick-mark pass (apply path drew hash lines itself when sized).
             local psb = wrap._bar
             if wrap._ticksDirty and psb and psb:GetWidth() > 0 and ns.ApplyTBBTickMarks then
-                ns.ApplyTBBTickMarks(psb, e.cfg, wrap._threshTicks,
-                    e.cfg.verticalOrientation, wrap._tickOverlay)
+                ns.ApplyTBBTickMarks(
+                    psb,
+                    e.cfg,
+                    wrap._threshTicks,
+                    e.cfg.verticalOrientation,
+                    wrap._tickOverlay
+                )
                 wrap._ticksDirty = nil
             end
             wrap:Show()
@@ -373,10 +460,14 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 totalW, totalH = w2, h2
             elseif horizontalChain then
                 totalW = totalW + w2 + (n > 1 and spacing or 0)
-                if h2 > totalH then totalH = h2 end
+                if h2 > totalH then
+                    totalH = h2
+                end
             else
                 totalH = totalH + h2 + (n > 1 and spacing or 0)
-                if w2 > totalW then totalW = w2 end
+                if w2 > totalW then
+                    totalW = w2
+                end
             end
         end
         local topPad, botPad = 0, 0
@@ -405,7 +496,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -- beside a panel of its own scale): a box or bar edge on a half pixel
         -- draws a doubled line along it.
         local es = oc:GetEffectiveScale()
-        local function Px(v) return CludesUI.PP.SnapForES(v, es) end
+        local function Px(v)
+            return CludesUI.PP.SnapForES(v, es)
+        end
         local ocW = Px(math.max(totalW + PAD_IN * 2, 240))
         oc:SetSize(ocW, Px(totalH + topPad + botPad + PAD_IN * 2 + TITLE_H + hintH))
 
@@ -475,17 +568,23 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         if not TBBPreviewAllowed() then
             ns._tbbPlaceholderMode = false
             for _, ph in ipairs(_tbbPlaceholders) do
-                if ph then ph:Hide() end
+                if ph then
+                    ph:Hide()
+                end
             end
             HideTBBPopout()
             return
         end
         ns._tbbPlaceholderMode = true
         -- The TBB tick may be idle-asleep; placeholders render from the tick.
-        if ns.WakeTBBTick then ns.WakeTBBTick() end
+        if ns.WakeTBBTick then
+            ns.WakeTBBTick()
+        end
         local tbb = ns.GetTrackedBuffBars()
         local bars = tbb and tbb.bars
-        if not bars then return end
+        if not bars then
+            return
+        end
         for i, _ in ipairs(bars) do
             local liveBar = ns.GetTBBFrame and ns.GetTBBFrame(i)
             if liveBar then
@@ -510,13 +609,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         end
         -- Hide any leftover placeholders from deleted bars
         for i = (#bars + 1), #_tbbPlaceholders do
-            if _tbbPlaceholders[i] then _tbbPlaceholders[i]:Hide() end
+            if _tbbPlaceholders[i] then
+                _tbbPlaceholders[i]:Hide()
+            end
         end
     end
     local function HideTBBPlaceholder()
         ns._tbbPlaceholderMode = false
         for _, ph in ipairs(_tbbPlaceholders) do
-            if ph then ph:Hide() end
+            if ph then
+                ph:Hide()
+            end
         end
         -- The popout preview lives and dies with the page, same as placeholders
         -- (runs on every page-leave/panel-close path).
@@ -540,7 +643,11 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     -- The popout sits on UIParent beside the panel: it folds away with the panel
     -- and comes back with it (the live-bar placeholders stay up as the preview).
     CludesUI:RegisterOnCollapse(function(on)
-        if on then HideTBBPopout() else ReassertTBBPreviews() end
+        if on then
+            HideTBBPopout()
+        else
+            ReassertTBBPreviews()
+        end
     end)
 
     -- Every CDM page + its selected-bar index are per-spec, but the options panel caches
@@ -552,9 +659,11 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         _tbbSelectedBar = 1
         _tbbSelectedGroup = nil
         CludesUI:InvalidateModulePageCache("CludesUICooldownManager")
-        if CludesUI:IsShown()
+        if
+            CludesUI:IsShown()
             and CludesUI:GetActiveModule() == "CludesUICooldownManager"
-            and CludesUI.RefreshPage then
+            and CludesUI.RefreshPage
+        then
             -- Panel open on a CDM page: rebuild now (content-header dropdown + body).
             CludesUI:RefreshPage(true)
         else
@@ -578,10 +687,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     -- Bars auto-added while the panel sits on Tracking Bars (e.g. user drags a new spell
     -- into Blizzard's Tracked Bars and returns): rebuild the open page immediately.
     ns.OnTBBBarsAutoAdded = function()
-        if CludesUI:IsShown()
+        if
+            CludesUI:IsShown()
             and CludesUI:GetActiveModule() == "CludesUICooldownManager"
             and CludesUI:GetActivePage() == PAGE_BUFF_BARS
-            and CludesUI.RefreshPage then
+            and CludesUI.RefreshPage
+        then
             CludesUI:RefreshPage(true)
         end
     end
@@ -589,9 +700,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     -- A spec swap while the panel is CLOSED can't rebuild (nothing shown); honor the
     -- pending cold rebuild here so reopening directly onto a CDM page rebuilds fresh.
     CludesUI:RegisterOnShow(function()
-        if not ns._cdmColdRebuildOnShow then return end
-        if CludesUI:GetActiveModule() == "CludesUICooldownManager"
-            and CludesUI.RefreshPage then
+        if not ns._cdmColdRebuildOnShow then
+            return
+        end
+        if CludesUI:GetActiveModule() == "CludesUICooldownManager" and CludesUI.RefreshPage then
             ns._cdmColdRebuildOnShow = false
             CludesUI:RefreshPage(true)
         end
@@ -601,7 +713,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     local _tbbSpellPickerMenu
 
     CludesUI:RegisterOnHide(function()
-        if _tbbSpellPickerMenu then _tbbSpellPickerMenu:Hide() end
+        if _tbbSpellPickerMenu then
+            _tbbSpellPickerMenu:Hide()
+        end
     end)
 
     -- Show the "Custom Buff ID" popup with Spell ID + Duration fields
@@ -616,7 +730,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             dimmer:EnableMouse(true)
             dimmer:Hide()
             local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
-            dimTex:SetAllPoints(); dimTex:SetColorTexture(0, 0, 0, 0.25)
+            dimTex:SetAllPoints()
+            dimTex:SetColorTexture(0, 0, 0, 0.25)
 
             popup = CreateFrame("Frame", popupName, dimmer)
             popup:SetSize(POPUP_W, POPUP_H)
@@ -625,7 +740,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
             popup:EnableMouse(true)
             local popBg = popup:CreateTexture(nil, "BACKGROUND")
-            popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
+            popBg:SetAllPoints()
+            popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
             CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
 
             local title = popup:CreateFontString(nil, "OVERLAY")
@@ -650,7 +766,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             sidBox:SetTextColor(1, 1, 1, 0.9)
             sidBox:SetJustifyH("LEFT")
             local sidBg = sidBox:CreateTexture(nil, "BACKGROUND")
-            sidBg:SetAllPoints(); sidBg:SetColorTexture(0.060, 0.049, 0.037, 1)
+            sidBg:SetAllPoints()
+            sidBg:SetColorTexture(0.060, 0.049, 0.037, 1)
             CludesUI.MakeRoundedBorder(sidBox, 1, 1, 1, 0.12, sidBg)
             local sidPh = sidBox:CreateFontString(nil, "ARTWORK")
             sidPh:SetFont(FONT_PATH, 12, GetCDMOptOutline())
@@ -658,7 +775,11 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             sidPh:SetTextColor(0.5, 0.5, 0.5, 0.5)
             sidPh:SetText(CludesUI.L("e.g. 12345"))
             sidBox:SetScript("OnTextChanged", function(self)
-                if self:GetText() == "" then sidPh:Show() else sidPh:Hide() end
+                if self:GetText() == "" then
+                    sidPh:Show()
+                else
+                    sidPh:Hide()
+                end
             end)
             popup._sidBox = sidBox
 
@@ -678,7 +799,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             durBox:SetTextColor(1, 1, 1, 0.9)
             durBox:SetJustifyH("LEFT")
             local durBg = durBox:CreateTexture(nil, "BACKGROUND")
-            durBg:SetAllPoints(); durBg:SetColorTexture(0.060, 0.049, 0.037, 1)
+            durBg:SetAllPoints()
+            durBg:SetColorTexture(0.060, 0.049, 0.037, 1)
             CludesUI.MakeRoundedBorder(durBox, 1, 1, 1, 0.12, durBg)
             local durPh = durBox:CreateFontString(nil, "ARTWORK")
             durPh:SetFont(FONT_PATH, 12, GetCDMOptOutline())
@@ -686,7 +808,11 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             durPh:SetTextColor(0.5, 0.5, 0.5, 0.5)
             durPh:SetText(CludesUI.L("e.g. 30"))
             durBox:SetScript("OnTextChanged", function(self)
-                if self:GetText() == "" then durPh:Show() else durPh:Hide() end
+                if self:GetText() == "" then
+                    durPh:Show()
+                else
+                    durPh:Hide()
+                end
             end)
             popup._durBox = durBox
 
@@ -703,39 +829,58 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             addBtn:SetSize(80, 28)
             addBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOM", -4, 16)
             local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
-            addBg:SetAllPoints(); addBg:SetColorTexture(ar, ag, ab, 0.15)
+            addBg:SetAllPoints()
+            addBg:SetColorTexture(ar, ag, ab, 0.15)
             CludesUI.MakeRoundedBorder(addBtn, ar, ag, ab, 0.3, addBg)
             local addLbl = addBtn:CreateFontString(nil, "OVERLAY")
             addLbl:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            addLbl:SetPoint("CENTER"); addLbl:SetText(CludesUI.L("Add"))
+            addLbl:SetPoint("CENTER")
+            addLbl:SetText(CludesUI.L("Add"))
             addLbl:SetTextColor(ar, ag, ab, 0.9)
-            addBtn:SetScript("OnEnter", function() addLbl:SetTextColor(1, 1, 1, 1) end)
-            addBtn:SetScript("OnLeave", function() addLbl:SetTextColor(ar, ag, ab, 0.9) end)
+            addBtn:SetScript("OnEnter", function()
+                addLbl:SetTextColor(1, 1, 1, 1)
+            end)
+            addBtn:SetScript("OnLeave", function()
+                addLbl:SetTextColor(ar, ag, ab, 0.9)
+            end)
             popup._addBtn = addBtn
 
             local cancelBtn = CreateFrame("Button", nil, popup)
             cancelBtn:SetSize(80, 28)
             cancelBtn:SetPoint("BOTTOMLEFT", popup, "BOTTOM", 4, 16)
             local cBg = cancelBtn:CreateTexture(nil, "BACKGROUND")
-            cBg:SetAllPoints(); cBg:SetColorTexture(0.12, 0.12, 0.12, 0.5)
+            cBg:SetAllPoints()
+            cBg:SetColorTexture(0.12, 0.12, 0.12, 0.5)
             CludesUI.MakeRoundedBorder(cancelBtn, 1, 1, 1, 0.10, cBg)
             local cLbl = cancelBtn:CreateFontString(nil, "OVERLAY")
             cLbl:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            cLbl:SetPoint("CENTER"); cLbl:SetText(CludesUI.L("Cancel"))
+            cLbl:SetPoint("CENTER")
+            cLbl:SetText(CludesUI.L("Cancel"))
             cLbl:SetTextColor(0.7, 0.7, 0.7, 0.8)
-            cancelBtn:SetScript("OnEnter", function() cLbl:SetTextColor(1, 1, 1, 1) end)
-            cancelBtn:SetScript("OnLeave", function() cLbl:SetTextColor(0.7, 0.7, 0.7, 0.8) end)
-            cancelBtn:SetScript("OnClick", function() dimmer:Hide() end)
+            cancelBtn:SetScript("OnEnter", function()
+                cLbl:SetTextColor(1, 1, 1, 1)
+            end)
+            cancelBtn:SetScript("OnLeave", function()
+                cLbl:SetTextColor(0.7, 0.7, 0.7, 0.8)
+            end)
+            cancelBtn:SetScript("OnClick", function()
+                dimmer:Hide()
+            end)
             popup._cancelBtn = cancelBtn
 
-            sidBox:SetScript("OnEscapePressed", function() dimmer:Hide() end)
-            durBox:SetScript("OnEscapePressed", function() dimmer:Hide() end)
+            sidBox:SetScript("OnEscapePressed", function()
+                dimmer:Hide()
+            end)
+            durBox:SetScript("OnEscapePressed", function()
+                dimmer:Hide()
+            end)
 
             popup._dimmer = dimmer
             _G[popupName] = popup
         end
 
-        local curSID = (barCfg.spellID and barCfg.spellID > 0 and not barCfg.popularKey) and barCfg.spellID or nil
+        local curSID = (barCfg.spellID and barCfg.spellID > 0 and not barCfg.popularKey) and barCfg.spellID
+            or nil
         local curDur = barCfg.customDuration or nil
         popup._sidBox:SetText(curSID and tostring(curSID) or "")
         popup._durBox:SetText(curDur and tostring(curDur) or "")
@@ -744,7 +889,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local function SetStatus(text, r, g, b)
             popup._status:SetText(CludesUI.L(text))
             popup._status:SetTextColor(r or 1, g or 0.3, b or 0.3, 1)
-            if popup._statusTimer then popup._statusTimer:Cancel() end
+            if popup._statusTimer then
+                popup._statusTimer:Cancel()
+            end
             if text ~= "" then
                 popup._statusTimer = C_Timer.NewTimer(2.5, function()
                     popup._status:SetText("")
@@ -755,47 +902,60 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         popup._addBtn:SetScript("OnClick", function()
             local sid = tonumber(popup._sidBox:GetText())
             local dur = tonumber(popup._durBox:GetText())
-            if not sid or sid <= 0 then SetStatus("Enter a valid spell ID"); return end
+            if not sid or sid <= 0 then
+                SetStatus("Enter a valid spell ID")
+                return
+            end
             sid = math.floor(sid)
-            if not C_Spell.GetSpellName(sid) then SetStatus("Unknown spell ID"); return end
-            if not dur or dur <= 0 then SetStatus("Enter a duration in seconds"); return end
+            if not C_Spell.GetSpellName(sid) then
+                SetStatus("Unknown spell ID")
+                return
+            end
+            if not dur or dur <= 0 then
+                SetStatus("Enter a duration in seconds")
+                return
+            end
             dur = math.floor(dur)
             popup._dimmer:Hide()
-            barCfg.spellID        = sid
-            barCfg.spellIDs       = nil
-            barCfg.popularKey     = nil
-            barCfg.glowBased      = nil
-            barCfg.trackType      = nil
+            barCfg.spellID = sid
+            barCfg.spellIDs = nil
+            barCfg.popularKey = nil
+            barCfg.glowBased = nil
+            barCfg.trackType = nil
             barCfg.customDuration = dur
             -- Manually-entered id has no live frame to read the base from: clear stale
             -- base; MatchFrameToConfig self-heals it once talented.
-            barCfg.baseSpellID    = nil
-            barCfg.name           = C_Spell.GetSpellName(sid)
-            barCfg.customName     = nil
+            barCfg.baseSpellID = nil
+            barCfg.name = C_Spell.GetSpellName(sid)
+            barCfg.customName = nil
             Refresh()
             ns.BuildTrackedBuffBars()
-            if onChanged then onChanged() end
+            if onChanged then
+                onChanged()
+            end
         end)
 
-        ns.PadPopupOpen(popup._dimmer, popup, popup._cancelBtn)  -- controller cursor
+        ns.PadPopupOpen(popup._dimmer, popup, popup._cancelBtn) -- controller cursor
         popup._dimmer:Show()
         popup._sidBox:SetFocus()
     end
 
     local function ShowTBBSpellPicker(anchorFrame, barCfg, onChanged)
-        if _tbbSpellPickerMenu then _tbbSpellPickerMenu:Hide() end
+        if _tbbSpellPickerMenu then
+            _tbbSpellPickerMenu:Hide()
+        end
 
         local trackedBars = ns.GetTrackedBarSpells and ns.GetTrackedBarSpells(true) or {}
         local popular = ns.TBB_POPULAR_BUFFS or {}
 
         -- No early bail on empty trackedBars -- the picker still shows popular presets and the custom spell ID input.
 
-        local mBgR  = CludesUI.DD_BG_R  or 0.075
-        local mBgG  = CludesUI.DD_BG_G  or 0.113
-        local mBgB  = CludesUI.DD_BG_B  or 0.141
-        local mBgA  = CludesUI.DD_BG_HA or 0.98
+        local mBgR = CludesUI.DD_BG_R or 0.075
+        local mBgG = CludesUI.DD_BG_G or 0.113
+        local mBgB = CludesUI.DD_BG_B or 0.141
+        local mBgA = CludesUI.DD_BG_HA or 0.98
         local mBrdA = CludesUI.DD_BRD_A or 0.20
-        local hlA   = CludesUI.DD_ITEM_HL_A or 0.08
+        local hlA = CludesUI.DD_ITEM_HL_A or 0.08
         local tDimR = CludesUI.TEXT_DIM_R or 0.7
         local tDimG = CludesUI.TEXT_DIM_G or 0.7
         local tDimB = CludesUI.TEXT_DIM_B or 0.7
@@ -814,7 +974,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         menu:SetSize(menuW, 10)
 
         local mbg = menu:CreateTexture(nil, "BACKGROUND")
-        mbg:SetAllPoints(); mbg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
+        mbg:SetAllPoints()
+        mbg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
         CludesUI.MakeRoundedBorder(menu, 1, 1, 1, mBrdA, mbg, nil, true)
 
         local inner = CreateFrame("Frame", nil, menu)
@@ -824,24 +985,42 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local mH = 4
 
         -- "Custom Buff ID" entry at the top
-        local isCustomSelected = barCfg.spellID and barCfg.spellID > 0 and not barCfg.popularKey and not barCfg.spellIDs and barCfg.trackType ~= "cooldown"
+        local isCustomSelected = barCfg.spellID
+            and barCfg.spellID > 0
+            and not barCfg.popularKey
+            and not barCfg.spellIDs
+            and barCfg.trackType ~= "cooldown"
         local csItem = CreateFrame("Button", nil, inner)
         csItem:SetHeight(ITEM_H)
         csItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
         csItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
         csItem:SetFrameLevel(menu:GetFrameLevel() + 2)
         local csHl = csItem:CreateTexture(nil, "ARTWORK", nil, -1)
-        csHl:SetAllPoints(); csHl:SetColorTexture(1, 1, 1, 0)
+        csHl:SetAllPoints()
+        csHl:SetColorTexture(1, 1, 1, 0)
         local csLbl = csItem:CreateFontString(nil, "OVERLAY")
         csLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
         csLbl:SetPoint("LEFT", 10, 0)
         csLbl:SetJustifyH("LEFT")
         csLbl:SetText(CludesUI.L("Custom Buff ID"))
-        csLbl:SetTextColor(isCustomSelected and 1 or tDimR, isCustomSelected and 1 or tDimG, isCustomSelected and 1 or tDimB, isCustomSelected and 1 or tDimA)
-        csItem:SetScript("OnEnter", function() csLbl:SetTextColor(1,1,1,1); csHl:SetColorTexture(1,1,1,hlA) end)
+        csLbl:SetTextColor(
+            isCustomSelected and 1 or tDimR,
+            isCustomSelected and 1 or tDimG,
+            isCustomSelected and 1 or tDimB,
+            isCustomSelected and 1 or tDimA
+        )
+        csItem:SetScript("OnEnter", function()
+            csLbl:SetTextColor(1, 1, 1, 1)
+            csHl:SetColorTexture(1, 1, 1, hlA)
+        end)
         csItem:SetScript("OnLeave", function()
-            csLbl:SetTextColor(isCustomSelected and 1 or tDimR, isCustomSelected and 1 or tDimG, isCustomSelected and 1 or tDimB, isCustomSelected and 1 or tDimA)
-            csHl:SetColorTexture(1,1,1,0)
+            csLbl:SetTextColor(
+                isCustomSelected and 1 or tDimR,
+                isCustomSelected and 1 or tDimG,
+                isCustomSelected and 1 or tDimB,
+                isCustomSelected and 1 or tDimA
+            )
+            csHl:SetColorTexture(1, 1, 1, 0)
         end)
         csItem:SetScript("OnClick", function()
             menu:Hide()
@@ -850,7 +1029,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         mH = mH + ITEM_H
 
         local div1 = inner:CreateTexture(nil, "ARTWORK")
-        div1:SetHeight(1); div1:SetColorTexture(1, 1, 1, 0.10)
+        div1:SetHeight(1)
+        div1:SetColorTexture(1, 1, 1, 0.10)
         div1:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
         div1:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
         mH = mH + 9
@@ -881,7 +1061,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             lbl:SetPoint("LEFT", 8, 0)
             lbl:SetPoint("RIGHT", ico, "LEFT", -4, 0)
             lbl:SetJustifyH("LEFT")
-            lbl:SetWordWrap(false); lbl:SetMaxLines(1)
+            lbl:SetWordWrap(false)
+            lbl:SetMaxLines(1)
             lbl:SetText(CludesUI.L(entry.name))
             lbl:SetTextColor(baseR, baseG, baseB, baseA)
 
@@ -889,25 +1070,30 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
 
-            item:SetScript("OnEnter", function() lbl:SetTextColor(1,1,1,1); hl:SetColorTexture(1,1,1,hlA) end)
+            item:SetScript("OnEnter", function()
+                lbl:SetTextColor(1, 1, 1, 1)
+                hl:SetColorTexture(1, 1, 1, hlA)
+            end)
             item:SetScript("OnLeave", function()
                 lbl:SetTextColor(baseR, baseG, baseB, baseA)
                 hl:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
             end)
             item:SetScript("OnClick", function()
                 menu:Hide()
-                barCfg.popularKey     = entry.key
-                barCfg.spellIDs       = entry.spellIDs
-                barCfg.glowBased      = entry.glowBased or nil
+                barCfg.popularKey = entry.key
+                barCfg.spellIDs = entry.spellIDs
+                barCfg.glowBased = entry.glowBased or nil
                 barCfg.customDuration = entry.customDuration
-                barCfg.spellID        = entry.spellIDs and entry.spellIDs[1] or 0
-                barCfg.baseSpellID    = nil
-                barCfg.trackType      = nil
-                barCfg.name           = entry.name
-                barCfg.customName     = nil
+                barCfg.spellID = entry.spellIDs and entry.spellIDs[1] or 0
+                barCfg.baseSpellID = nil
+                barCfg.trackType = nil
+                barCfg.name = entry.name
+                barCfg.customName = nil
                 Refresh()
                 ns.BuildTrackedBuffBars()
-                if onChanged then onChanged() end
+                if onChanged then
+                    onChanged()
+                end
             end)
             mH = mH + ITEM_H
         end
@@ -929,7 +1115,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             if nPopular > 0 then
                 local div2 = inner:CreateTexture(nil, "ARTWORK")
-                div2:SetHeight(1); div2:SetColorTexture(1, 1, 1, 0.10)
+                div2:SetHeight(1)
+                div2:SetColorTexture(1, 1, 1, 0.10)
                 div2:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
                 div2:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
                 mH = mH + 9
@@ -949,12 +1136,21 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- A family bar (Roll the Bones) is selected by its base id OR any member,
             -- since the row resolves to the active outcome while one is up.
             local isSelected = not barCfg.popularKey
-                             and barCfg.trackType ~= "cooldown"
-                             and barCfg.spellID and barCfg.spellID > 0 and barCfg.spellID == sp.spellID
-            if not isSelected and barCfg.spellIDs and not barCfg.popularKey
-               and barCfg.trackType ~= "cooldown" then
+                and barCfg.trackType ~= "cooldown"
+                and barCfg.spellID
+                and barCfg.spellID > 0
+                and barCfg.spellID == sp.spellID
+            if
+                not isSelected
+                and barCfg.spellIDs
+                and not barCfg.popularKey
+                and barCfg.trackType ~= "cooldown"
+            then
                 for _, sid in ipairs(barCfg.spellIDs) do
-                    if sid == sp.spellID then isSelected = true; break end
+                    if sid == sp.spellID then
+                        isSelected = true
+                        break
+                    end
                 end
             end
             local item = CreateFrame("Button", nil, inner)
@@ -967,7 +1163,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local icoSz = ITEM_H - 4
             ico:SetSize(icoSz, icoSz)
             ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-            if sp.icon then ico:SetTexture(sp.icon) end
+            if sp.icon then
+                ico:SetTexture(sp.icon)
+            end
             ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
             local baseR = isSelected and 1 or tDimR
@@ -980,7 +1178,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             lbl:SetPoint("LEFT", 8, 0)
             lbl:SetPoint("RIGHT", ico, "LEFT", -4, 0)
             lbl:SetJustifyH("LEFT")
-            lbl:SetWordWrap(false); lbl:SetMaxLines(1)
+            lbl:SetWordWrap(false)
+            lbl:SetMaxLines(1)
             lbl:SetText(CludesUI.L(sp.name))
             lbl:SetTextColor(baseR, baseG, baseB, baseA)
 
@@ -991,10 +1190,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- Gray out if already used on another bar
             if usedOnBar and not isSelected then
                 lbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                ico:SetDesaturated(true); ico:SetAlpha(0.4)
+                ico:SetDesaturated(true)
+                ico:SetAlpha(0.4)
                 item:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(item, CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar)))
-                    hl:SetColorTexture(1, 1, 1, hlA * 0.3); hl:SetAlpha(1)
+                    CludesUI.ShowWidgetTooltip(
+                        item,
+                        CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar))
+                    )
+                    hl:SetColorTexture(1, 1, 1, hlA * 0.3)
+                    hl:SetAlpha(1)
                 end)
                 item:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
@@ -1007,27 +1211,37 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- Tracked-but-untalented bar spells (no live BuffBar frame) stay clickable but
             -- render desaturated with a hint (matches CD/utility pickers), so bars can be set without swapping talents.
             local notLearned = (sp.isKnown == false)
-            if notLearned then ico:SetDesaturated(true); ico:SetAlpha(0.5) end
+            if notLearned then
+                ico:SetDesaturated(true)
+                ico:SetAlpha(0.5)
+            end
             item:SetScript("OnEnter", function()
-                lbl:SetTextColor(1,1,1,1); hl:SetColorTexture(1,1,1,hlA)
-                if notLearned then CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented")) end
+                lbl:SetTextColor(1, 1, 1, 1)
+                hl:SetColorTexture(1, 1, 1, hlA)
+                if notLearned then
+                    CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
+                end
             end)
             item:SetScript("OnLeave", function()
                 lbl:SetTextColor(baseR, baseG, baseB, baseA)
                 hl:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-                if notLearned then CludesUI.HideWidgetTooltip() end
+                if notLearned then
+                    CludesUI.HideWidgetTooltip()
+                end
             end)
             item:SetScript("OnClick", function()
-                if notLearned then CludesUI.HideWidgetTooltip() end
+                if notLearned then
+                    CludesUI.HideWidgetTooltip()
+                end
                 menu:Hide()
-                barCfg.spellID        = sp.spellID
-                barCfg.spellIDs       = nil
-                barCfg.popularKey     = nil
-                barCfg.glowBased      = nil
+                barCfg.spellID = sp.spellID
+                barCfg.spellIDs = nil
+                barCfg.popularKey = nil
+                barCfg.glowBased = nil
                 barCfg.customDuration = nil
-                barCfg.trackType      = nil
-                barCfg.name           = sp.name
-                barCfg.customName     = nil
+                barCfg.trackType = nil
+                barCfg.name = sp.name
+                barCfg.customName = nil
                 -- Capture the BASE spell id for hero-talent override spells so the bar keeps
                 -- tracking after the talent is removed (active override's cooldownInfo
                 -- reports base in info.spellID); store only when it differs from the picked id.
@@ -1037,7 +1251,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     local RTB_BASE_SPELL_ID = 1214909
                     local isSec = issecretvalue
                     local baseSID = info and info.spellID
-                    if baseSID and (isSec and isSec(baseSID)) then baseSID = nil end
+                    if baseSID and (isSec and isSec(baseSID)) then
+                        baseSID = nil
+                    end
                     if baseSID and baseSID > 0 and baseSID ~= sp.spellID then
                         barCfg.baseSpellID = baseSID
                     end
@@ -1055,22 +1271,28 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             end
                         end
                         if #ids >= 2 then
-                            barCfg.spellIDs    = ids
-                            barCfg.spellID     = baseSID
+                            barCfg.spellIDs = ids
+                            barCfg.spellID = baseSID
                             barCfg.baseSpellID = nil
                             local nm = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(baseSID)
-                            if nm and nm ~= "" then barCfg.name = nm end
+                            if nm and nm ~= "" then
+                                barCfg.name = nm
+                            end
                         end
                     end
                 end
                 Refresh()
                 ns.BuildTrackedBuffBars()
-                if onChanged then onChanged() end
+                if onChanged then
+                    onChanged()
+                end
             end)
             mH = mH + ITEM_H
         end
 
-        for _, sp in ipairs(trackedBars) do MakeSpellItem(sp) end
+        for _, sp in ipairs(trackedBars) do
+            MakeSpellItem(sp)
+        end
 
         -- "Missing Spells?" prompt (centered, accent-colored) closes CUI options and opens
         -- Blizzard's CDM; sits at the end of Buffs so it reads as the way to add more.
@@ -1089,16 +1311,22 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             mbFS:SetJustifyV("MIDDLE")
             local ar, ag, ab = CludesUI.GetAccentColor()
             mbFS:SetTextColor(ar, ag, ab, 1)
-            mbFS:SetText(CludesUI.L("Missing Spells? Add as") .. "\n" .. CludesUI.L("Tracking Bar in Blizz CDM"))
+            mbFS:SetText(
+                CludesUI.L("Missing Spells? Add as") .. "\n" .. CludesUI.L("Tracking Bar in Blizz CDM")
+            )
 
-            mbItem:SetScript("OnEnter", function() mbFS:SetTextColor(1, 1, 1, 1) end)
+            mbItem:SetScript("OnEnter", function()
+                mbFS:SetTextColor(1, 1, 1, 1)
+            end)
             mbItem:SetScript("OnLeave", function()
                 local r, g, b = CludesUI.GetAccentColor()
                 mbFS:SetTextColor(r, g, b, 1)
             end)
             mbItem:SetScript("OnClick", function()
                 menu:Hide()
-                if ns.OpenBlizzardCDMTab then ns.OpenBlizzardCDMTab(true) end
+                if ns.OpenBlizzardCDMTab then
+                    ns.OpenBlizzardCDMTab(true)
+                end
             end)
             mH = mH + FOOTER_H
         end
@@ -1108,7 +1336,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local cdSpells = ns.GetCDMSpellsForBar and ns.GetCDMSpellsForBar("cooldowns") or {}
         if #cdSpells > 0 then
             local cdDiv = inner:CreateTexture(nil, "ARTWORK")
-            cdDiv:SetHeight(1); cdDiv:SetColorTexture(1, 1, 1, 0.10)
+            cdDiv:SetHeight(1)
+            cdDiv:SetColorTexture(1, 1, 1, 0.10)
             cdDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
             cdDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
             mH = mH + 9
@@ -1122,10 +1351,14 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
             local function MakeCooldownItem(sp)
                 -- Gray-out check is scoped to OTHER cooldown-tracking bars -- a buff bar for the same spell never blocks this pick.
-                local usedOnBar = ns.SpellUsedOnAnyOtherTBB and ns.SpellUsedOnAnyOtherTBB(sp.spellID, nil, "cooldown")
+                local usedOnBar = ns.SpellUsedOnAnyOtherTBB
+                    and ns.SpellUsedOnAnyOtherTBB(sp.spellID, nil, "cooldown")
                 local isSelected = barCfg.trackType == "cooldown"
-                                 and not barCfg.popularKey and not barCfg.spellIDs
-                                 and barCfg.spellID and barCfg.spellID > 0 and barCfg.spellID == sp.spellID
+                    and not barCfg.popularKey
+                    and not barCfg.spellIDs
+                    and barCfg.spellID
+                    and barCfg.spellID > 0
+                    and barCfg.spellID == sp.spellID
                 local item = CreateFrame("Button", nil, inner)
                 item:SetHeight(ITEM_H)
                 item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
@@ -1136,7 +1369,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local icoSz = ITEM_H - 4
                 ico:SetSize(icoSz, icoSz)
                 ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-                if sp.icon then ico:SetTexture(sp.icon) end
+                if sp.icon then
+                    ico:SetTexture(sp.icon)
+                end
                 ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
                 local baseR = isSelected and 1 or tDimR
@@ -1149,7 +1384,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 lbl:SetPoint("LEFT", 8, 0)
                 lbl:SetPoint("RIGHT", ico, "LEFT", -4, 0)
                 lbl:SetJustifyH("LEFT")
-                lbl:SetWordWrap(false); lbl:SetMaxLines(1)
+                lbl:SetWordWrap(false)
+                lbl:SetMaxLines(1)
                 lbl:SetText(CludesUI.L(sp.name))
                 lbl:SetTextColor(baseR, baseG, baseB, baseA)
 
@@ -1160,10 +1396,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- Gray out if already used on another cooldown-tracking bar
                 if usedOnBar and not isSelected then
                     lbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                    ico:SetDesaturated(true); ico:SetAlpha(0.4)
+                    ico:SetDesaturated(true)
+                    ico:SetAlpha(0.4)
                     item:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(item, CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar)))
-                        hl:SetColorTexture(1, 1, 1, hlA * 0.3); hl:SetAlpha(1)
+                        CludesUI.ShowWidgetTooltip(
+                            item,
+                            CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar))
+                        )
+                        hl:SetColorTexture(1, 1, 1, hlA * 0.3)
+                        hl:SetAlpha(1)
                     end)
                     item:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
@@ -1175,27 +1416,37 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
                 -- Untalented catalog spells stay clickable but render desaturated with a hint, matching the buff rows above.
                 local notLearned = (sp.isKnown == false)
-                if notLearned then ico:SetDesaturated(true); ico:SetAlpha(0.5) end
+                if notLearned then
+                    ico:SetDesaturated(true)
+                    ico:SetAlpha(0.5)
+                end
                 item:SetScript("OnEnter", function()
-                    lbl:SetTextColor(1,1,1,1); hl:SetColorTexture(1,1,1,hlA)
-                    if notLearned then CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented")) end
+                    lbl:SetTextColor(1, 1, 1, 1)
+                    hl:SetColorTexture(1, 1, 1, hlA)
+                    if notLearned then
+                        CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
+                    end
                 end)
                 item:SetScript("OnLeave", function()
                     lbl:SetTextColor(baseR, baseG, baseB, baseA)
                     hl:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-                    if notLearned then CludesUI.HideWidgetTooltip() end
+                    if notLearned then
+                        CludesUI.HideWidgetTooltip()
+                    end
                 end)
                 item:SetScript("OnClick", function()
-                    if notLearned then CludesUI.HideWidgetTooltip() end
+                    if notLearned then
+                        CludesUI.HideWidgetTooltip()
+                    end
                     menu:Hide()
-                    barCfg.spellID        = sp.spellID
-                    barCfg.spellIDs       = nil
-                    barCfg.popularKey     = nil
-                    barCfg.glowBased      = nil
+                    barCfg.spellID = sp.spellID
+                    barCfg.spellIDs = nil
+                    barCfg.popularKey = nil
+                    barCfg.glowBased = nil
                     barCfg.customDuration = nil
-                    barCfg.trackType      = "cooldown"
-                    barCfg.name           = sp.name
-                    barCfg.customName     = nil
+                    barCfg.trackType = "cooldown"
+                    barCfg.name = sp.name
+                    barCfg.customName = nil
                     -- Capture the BASE spell id for hero-talent override spells so the bar keeps tracking after the talent is removed.
                     barCfg.baseSpellID = nil
                     if sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
@@ -1206,12 +1457,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     end
                     Refresh()
                     ns.BuildTrackedBuffBars()
-                    if onChanged then onChanged() end
+                    if onChanged then
+                        onChanged()
+                    end
                 end)
                 mH = mH + ITEM_H
             end
 
-            for _, sp in ipairs(cdSpells) do MakeCooldownItem(sp) end
+            for _, sp in ipairs(cdSpells) do
+                MakeCooldownItem(sp)
+            end
         end
 
         local totalH = mH + 4
@@ -1219,7 +1474,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         if totalH > MAX_H then
             menu:SetHeight(MAX_H)
             local sf = CreateFrame("ScrollFrame", nil, menu)
-            sf:SetPoint("TOPLEFT", 0, -1); sf:SetPoint("BOTTOMRIGHT", 0, 1)
+            sf:SetPoint("TOPLEFT", 0, -1)
+            sf:SetPoint("BOTTOMRIGHT", 0, 1)
             sf:SetFrameLevel(menu:GetFrameLevel() + 1)
             sf:EnableMouseWheel(true)
             sf:SetScrollChild(inner)
@@ -1243,7 +1499,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 m:Hide()
             end
         end)
-        menu:HookScript("OnHide", function(m) m:SetScript("OnUpdate", nil) end)
+        menu:HookScript("OnHide", function(m)
+            m:SetScript("OnUpdate", nil)
+        end)
         menu:Show()
         _tbbSpellPickerMenu = menu
     end
@@ -1270,12 +1528,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local presets = ns.GetTBBStylePresets and ns.GetTBBStylePresets() or {}
         local function taken(nm)
             for _, pr in ipairs(presets) do
-                if pr.name == nm then return true end
+                if pr.name == nm then
+                    return true
+                end
             end
             return false
         end
         local n = 1
-        while taken("Preset " .. n) do n = n + 1 end
+        while taken("Preset " .. n) do
+            n = n + 1
+        end
         return "Preset " .. n
     end
 
@@ -1297,12 +1559,14 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     local ST_PAD = 14
     local ST_GAP = 10
     local ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A = 0.8, 0.1, 0.1, 1
-    local RefreshStackThreshEditor  -- forward decl
+    local RefreshStackThreshEditor -- forward decl
 
     -- Shared explainers; literals live inside the L() calls so extract-locale-keys.sh can
     -- see them (it only reads string literals passed directly to L/Lf, never variables).
     local function StackThreshHelpTip()
-        return CludesUI.L("Color the bar differently at several stack counts. The highest count you have reached wins.")
+        return CludesUI.L(
+            "Color the bar differently at several stack counts. The highest count you have reached wins."
+        )
     end
     local function StackThreshReplacesTip()
         return CludesUI.L("The single stack threshold is off while Multiple Thresholds is on.")
@@ -1312,12 +1576,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     end
 
     local function CurrentStackThreshCfg()
-        if not _stGetCfg then return nil end
+        if not _stGetCfg then
+            return nil
+        end
         return _stGetCfg()
     end
 
     local function SortStackThresholds(list)
-        table.sort(list, function(a, b) return (a.value or 0) < (b.value or 0) end)
+        table.sort(list, function(a, b)
+            return (a.value or 0) < (b.value or 0)
+        end)
     end
 
     local function BuildStackThreshPopup()
@@ -1339,11 +1607,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         clickCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
         clickCatcher:SetFrameLevel(stPopup:GetFrameLevel() - 1)
         clickCatcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
-        clickCatcher:SetScript("OnClick", function() stPopup:Hide() end)
+        clickCatcher:SetScript("OnClick", function()
+            stPopup:Hide()
+        end)
         clickCatcher:Hide()
         -- Close on entering combat
         stPopup:SetScript("OnEvent", function(self, event)
-            if event == "PLAYER_REGEN_DISABLED" then self:Hide() end
+            if event == "PLAYER_REGEN_DISABLED" then
+                self:Hide()
+            end
         end)
         stPopup:SetScript("OnShow", function(self)
             clickCatcher:Show()
@@ -1352,7 +1624,13 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 if IsMouseButtonDown("LeftButton") then
                     local mf = CludesUI._mainFrame
                     local dm = CludesUI._openDropdownMenu
-                    if not p:IsMouseOver() and not (mf and mf:IsMouseOver()) and not (dm and dm:IsShown() and dm:IsMouseOver()) then p:Hide() end
+                    if
+                        not p:IsMouseOver()
+                        and not (mf and mf:IsMouseOver())
+                        and not (dm and dm:IsShown() and dm:IsMouseOver())
+                    then
+                        p:Hide()
+                    end
                 end
             end)
         end)
@@ -1377,25 +1655,36 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         mlbl:SetText(CludesUI.L("Use Multiple Thresholds"))
         local multiToggle, _
         multiToggle, _, _stMultiSnap = CludesUI.BuildToggleControl(
-            _stMultiRow, _stMultiRow:GetFrameLevel() + 3,
+            _stMultiRow,
+            _stMultiRow:GetFrameLevel() + 3,
             function()
                 local cfg = CurrentStackThreshCfg()
                 return cfg and cfg.stackThresholdMulti
             end,
             function(v)
-                local cfg = CurrentStackThreshCfg(); if not cfg then return end
+                local cfg = CurrentStackThreshCfg()
+                if not cfg then
+                    return
+                end
                 cfg.stackThresholdMulti = v and true or false
-                if _stRefreshFn then _stRefreshFn() end
+                if _stRefreshFn then
+                    _stRefreshFn()
+                end
                 RefreshStackThreshEditor()
                 CludesUI:RefreshPage()
             end,
-            { sizeRatio = 0.95 })
+            { sizeRatio = 0.95 }
+        )
         multiToggle:SetPoint("RIGHT", _stMultiRow, "RIGHT", 0, 0)
         local multiHit = CreateFrame("Frame", nil, _stMultiRow)
         multiHit:SetAllPoints(mlbl)
         multiHit:EnableMouse(true)
-        multiHit:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, StackThreshHelpTip()) end)
-        multiHit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        multiHit:SetScript("OnEnter", function(self)
+            CludesUI.ShowWidgetTooltip(self, StackThreshHelpTip())
+        end)
+        multiHit:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
 
         -- Add Threshold button
         _stAddBtn = CreateFrame("Button", nil, stPopup)
@@ -1416,23 +1705,36 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 return
             end
             _stAddLbl:SetAlpha(0.7)
-            if self._border and self._border.SetColor then self._border:SetColor(1, 1, 1, 0.6) end
+            if self._border and self._border.SetColor then
+                self._border:SetColor(1, 1, 1, 0.6)
+            end
         end)
         _stAddBtn:SetScript("OnLeave", function(self)
             CludesUI.HideWidgetTooltip()
             _stAddLbl:SetAlpha(0.5)
-            if self._border and self._border.SetColor then self._border:SetColor(1, 1, 1, 0.4) end
+            if self._border and self._border.SetColor then
+                self._border:SetColor(1, 1, 1, 0.4)
+            end
         end)
         _stAddBtn:SetScript("OnClick", function()
-            local cfg = CurrentStackThreshCfg(); if not cfg then return end
-            if not cfg.stackThresholds then cfg.stackThresholds = {} end
+            local cfg = CurrentStackThreshCfg()
+            if not cfg then
+                return
+            end
+            if not cfg.stackThresholds then
+                cfg.stackThresholds = {}
+            end
             local list = cfg.stackThresholds
-            if #list >= STACK_THRESH_MAX then return end
+            if #list >= STACK_THRESH_MAX then
+                return
+            end
             local last = list[#list]
             local nextVal = last and math.min(100, (last.value or 0) + 1) or 5
             list[#list + 1] = { value = nextVal, r = ST_DEF_R, g = ST_DEF_G, b = ST_DEF_B, a = ST_DEF_A }
             SortStackThresholds(list)
-            if _stRefreshFn then _stRefreshFn() end
+            if _stRefreshFn then
+                _stRefreshFn()
+            end
             RefreshStackThreshEditor()
         end)
     end
@@ -1440,7 +1742,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     -- Lazily create the widgets for threshold row k; returns the row table.
     local function EnsureStackThreshRow(k)
         local row = _stRows[k]
-        if row then return row end
+        if row then
+            return row
+        end
         row = {}
         local rf = CreateFrame("Frame", nil, stPopup)
         rf:SetSize(ST_POPUP_W - ST_PAD * 2, ST_ROW_H)
@@ -1473,41 +1777,56 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -- Commit on focus loss (Enter clears focus -> triggers this; Escape sets
         -- _cancelCommit to discard the typed text).
         local function CommitInput(self)
-            if self._cancelCommit then self._cancelCommit = nil; return end
+            if self._cancelCommit then
+                self._cancelCommit = nil
+                return
+            end
             local cfg = CurrentStackThreshCfg()
             local list = cfg and cfg.stackThresholds
             local ent = list and list[row._idx]
-            if not ent then return end
+            if not ent then
+                return
+            end
             local val = tonumber(self:GetText())
             if val then
                 -- Same range as the single-threshold slider on the Extras row.
                 ent.value = math.max(0, math.min(100, math.floor(val + 0.5)))
                 SortStackThresholds(list)
-                if _stRefreshFn then _stRefreshFn() end
+                if _stRefreshFn then
+                    _stRefreshFn()
+                end
             end
             RefreshStackThreshEditor()
         end
         input:SetScript("OnEditFocusLost", CommitInput)
-        input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-        input:SetScript("OnEscapePressed", function(self) self._cancelCommit = true; self:ClearFocus(); RefreshStackThreshEditor() end)
+        input:SetScript("OnEnterPressed", function(self)
+            self:ClearFocus()
+        end)
+        input:SetScript("OnEscapePressed", function(self)
+            self._cancelCommit = true
+            self:ClearFocus()
+            RefreshStackThreshEditor()
+        end)
 
-        local swatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3,
-            function()
-                local cfg = CurrentStackThreshCfg()
-                local list = cfg and cfg.stackThresholds
-                local ent = list and list[row._idx]
-                if not ent then return ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A end
-                return ent.r or ST_DEF_R, ent.g or ST_DEF_G, ent.b or ST_DEF_B, ent.a or ST_DEF_A
-            end,
-            function(r, g, b, a)
-                local cfg = CurrentStackThreshCfg()
-                local list = cfg and cfg.stackThresholds
-                local ent = list and list[row._idx]
-                if ent then
-                    ent.r, ent.g, ent.b, ent.a = r, g, b, a
-                    if _stRefreshFn then _stRefreshFn() end
+        local swatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
+            local cfg = CurrentStackThreshCfg()
+            local list = cfg and cfg.stackThresholds
+            local ent = list and list[row._idx]
+            if not ent then
+                return ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A
+            end
+            return ent.r or ST_DEF_R, ent.g or ST_DEF_G, ent.b or ST_DEF_B, ent.a or ST_DEF_A
+        end, function(r, g, b, a)
+            local cfg = CurrentStackThreshCfg()
+            local list = cfg and cfg.stackThresholds
+            local ent = list and list[row._idx]
+            if ent then
+                ent.r, ent.g, ent.b, ent.a = r, g, b, a
+                if _stRefreshFn then
+                    _stRefreshFn()
                 end
-            end, true, 19)
+            end
+        end, true, 19)
         swatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
         row.swatch = swatch
         row.swatchSnap = swatchSnap
@@ -1520,8 +1839,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         delIcon:SetAllPoints()
         delIcon:SetTexture(_stCloseIcon)
         delIcon:SetAlpha(0.4)
-        delBtn:SetScript("OnEnter", function() delIcon:SetAlpha(0.9) end)
-        delBtn:SetScript("OnLeave", function() delIcon:SetAlpha(0.4) end)
+        delBtn:SetScript("OnEnter", function()
+            delIcon:SetAlpha(0.9)
+        end)
+        delBtn:SetScript("OnLeave", function()
+            delIcon:SetAlpha(0.4)
+        end)
         delBtn:SetScript("OnClick", function()
             local cfg = CurrentStackThreshCfg()
             local list = cfg and cfg.stackThresholds
@@ -1533,7 +1856,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     cfg.stackThresholdMulti = false
                     CludesUI:RefreshPage()
                 end
-                if _stRefreshFn then _stRefreshFn() end
+                if _stRefreshFn then
+                    _stRefreshFn()
+                end
                 RefreshStackThreshEditor()
             end
         end)
@@ -1544,19 +1869,28 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
     end
 
     RefreshStackThreshEditor = function()
-        if not stPopup then return end
+        if not stPopup then
+            return
+        end
         local cfg = CurrentStackThreshCfg()
-        if not cfg then stPopup:Hide(); return end
-        if not cfg.stackThresholds then cfg.stackThresholds = {} end
+        if not cfg then
+            stPopup:Hide()
+            return
+        end
+        if not cfg.stackThresholds then
+            cfg.stackThresholds = {}
+        end
         local list = cfg.stackThresholds
 
-        local curY = -(ST_PAD + 24)  -- below the title
+        local curY = -(ST_PAD + 24) -- below the title
 
         _stMultiRow:ClearAllPoints()
         PP.Point(_stMultiRow, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
         PP.Point(_stMultiRow, "TOPRIGHT", stPopup, "TOPRIGHT", -ST_PAD, curY)
         _stMultiRow:Show()
-        if _stMultiSnap then _stMultiSnap() end
+        if _stMultiSnap then
+            _stMultiSnap()
+        end
         curY = curY - ST_ROW_H - ST_GAP
 
         local n = #list
@@ -1566,12 +1900,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             row.frame:ClearAllPoints()
             PP.Point(row.frame, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
             row.input:SetText(tostring(list[k].value or 5))
-            if row.swatchSnap then row.swatchSnap() end
+            if row.swatchSnap then
+                row.swatchSnap()
+            end
             row.frame:Show()
             curY = curY - ST_ROW_H - 4
         end
         for k = n + 1, #_stRows do
-            if _stRows[k] then _stRows[k].frame:Hide() end
+            if _stRows[k] then
+                _stRows[k].frame:Hide()
+            end
         end
 
         curY = curY - 4
@@ -1589,19 +1927,25 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
     -- params = { getCfg, refreshFn, anchor }
     local function ShowStackThreshEditor(params)
-        if not stPopup then BuildStackThreshPopup() end
-        _stGetCfg   = params.getCfg
+        if not stPopup then
+            BuildStackThreshPopup()
+        end
+        _stGetCfg = params.getCfg
         _stRefreshFn = params.refreshFn
         local cfg = CurrentStackThreshCfg()
         if cfg then
-            if not cfg.stackThresholds then cfg.stackThresholds = {} end
+            if not cfg.stackThresholds then
+                cfg.stackThresholds = {}
+            end
             -- Seed the first entry from the single threshold the first time; inert until
             -- stackThresholdMulti is on, so opening/closing this popup changes nothing on the bar.
             if #cfg.stackThresholds == 0 then
                 cfg.stackThresholds[1] = {
                     value = cfg.stackThreshold or 5,
-                    r = cfg.stackThresholdR or ST_DEF_R, g = cfg.stackThresholdG or ST_DEF_G,
-                    b = cfg.stackThresholdB or ST_DEF_B, a = cfg.stackThresholdA or ST_DEF_A,
+                    r = cfg.stackThresholdR or ST_DEF_R,
+                    g = cfg.stackThresholdG or ST_DEF_G,
+                    b = cfg.stackThresholdB or ST_DEF_B,
+                    a = cfg.stackThresholdA or ST_DEF_A,
                 }
             end
         end
@@ -1619,24 +1963,24 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -- If user chose Blizzard bars, show re-enable button and bail
         local usingBlizz = DB() and DB().cdmBars and DB().cdmBars.useBlizzardBuffBars
         if usingBlizz then
-            _, h = W:WideDualButton(parent,
-                "Enable Tracking Bars", "Open Blizzard CDM", y,
-                function()
-                    local p = DB()
-                    if p and p.cdmBars then
-                        p.cdmBars.useBlizzardBuffBars = false
-                    end
-                    CludesUI:ShowConfirmPopup({
-                        title = "Reload Required",
-                        message = "Switching to CludesUI Tracking Bars requires a reload.",
-                        confirmText = "Reload Now",
-                        cancelText = "Later",
-                        reload    = true,
-                    })
-                end,
-                function()
-                    if ns.OpenBlizzardCDMTab then ns.OpenBlizzardCDMTab(true) end
-                end, 310);  y = y - h
+            _, h = W:WideDualButton(parent, "Enable Tracking Bars", "Open Blizzard CDM", y, function()
+                local p = DB()
+                if p and p.cdmBars then
+                    p.cdmBars.useBlizzardBuffBars = false
+                end
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Switching to CludesUI Tracking Bars requires a reload.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+            end, function()
+                if ns.OpenBlizzardCDMTab then
+                    ns.OpenBlizzardCDMTab(true)
+                end
+            end, 310)
+            y = y - h
             return math.abs(y)
         end
 
@@ -1649,20 +1993,25 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local tbb = ns.GetTrackedBuffBars()
         -- Hold the per-group orientation invariant before any widget reads the configs
         -- (the page-tail rebuild runs after).
-        if ns.EnforceTBBGroupOrientation then ns.EnforceTBBGroupOrientation(tbb) end
+        if ns.EnforceTBBGroupOrientation then
+            ns.EnforceTBBGroupOrientation(tbb)
+        end
         local bars = tbb.bars
-        if _tbbSelectedBar > #bars then _tbbSelectedBar = math.max(1, #bars) end
+        if _tbbSelectedBar > #bars then
+            _tbbSelectedBar = math.max(1, #bars)
+        end
 
         local function SelectedTBB()
             local t = ns.GetTrackedBuffBars()
-            if _tbbSelectedBar < 1 or _tbbSelectedBar > #t.bars then return nil end
+            if _tbbSelectedBar < 1 or _tbbSelectedBar > #t.bars then
+                return nil
+            end
             return t.bars[_tbbSelectedBar]
         end
 
         local function SelectedTBBSupportsChargeHash()
             local bd = SelectedTBB()
-            return bd and ns.GetTBBMaxCharges
-                and ns.GetTBBMaxCharges(bd) ~= nil
+            return bd and ns.GetTBBMaxCharges and ns.GetTBBMaxCharges(bd) ~= nil
         end
 
         -- Validate the group selection against the live group list (groups dissolve when
@@ -1674,12 +2023,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         if _tbbSelectedGroup then
             local ok = false
             for _, g in ipairs(ns.TBBGroupIDsInUse()) do
-                if g == _tbbSelectedGroup then ok = true; break end
+                if g == _tbbSelectedGroup then
+                    ok = true
+                    break
+                end
             end
             if not ok and ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(_tbbSelectedGroup) then
                 ok = true
             end
-            if not ok then _tbbSelectedGroup = nil end
+            if not ok then
+                _tbbSelectedGroup = nil
+            end
         end
 
         -- The preview mirrors whatever is being edited: the selected bar, or the selected
@@ -1692,8 +2046,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         end
 
         local function GroupLabel(gid)
-            return (ns.TBBGroupName and ns.TBBGroupName(gid))
-                or (CludesUI.L("Group") .. " " .. gid)
+            return (ns.TBBGroupName and ns.TBBGroupName(gid)) or (CludesUI.L("Group") .. " " .. gid)
         end
 
         -------------------------------------------------------------------
@@ -1705,31 +2058,45 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
         local function NavigateToSetting(key)
             local targets = parent._tbbClickTargets
-            if not targets then return end
+            if not targets then
+                return
+            end
             local m = targets[key]
-            if not m or not m.section or not m.target then return end
+            if not m or not m.section or not m.target then
+                return
+            end
             CludesUIDB = CludesUIDB or {}
             CludesUIDB.previewHintDismissed = true
-            if _tbbPopout and _tbbPopout._hint then _tbbPopout._hint:Hide() end
+            if _tbbPopout and _tbbPopout._hint then
+                _tbbPopout._hint:Hide()
+            end
             local _, _, _, _, headerY = m.section:GetPoint(1)
-            if not headerY then return end
+            if not headerY then
+                return
+            end
             CludesUI.SmoothScrollTo(math.max(0, math.abs(headerY) - 40))
             local glowTarget = m.target
             if m.slotSide then
                 local region = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                if region then glowTarget = region end
+                if region then
+                    glowTarget = region
+                end
             end
             -- Not on a row a rebuild has meanwhile dressed again for another setting.
             local targetGen = PoolGen(glowTarget)
             C_Timer.After(0.15, function()
-                if PoolGen(glowTarget) == targetGen then PlaySettingGlow(glowTarget) end
+                if PoolGen(glowTarget) == targetGen then
+                    PlaySettingGlow(glowTarget)
+                end
             end)
         end
 
         local _tbbRefreshTimer
 
         local function RefreshTBB()
-            if _tbbRefreshTimer then _tbbRefreshTimer:Cancel() end
+            if _tbbRefreshTimer then
+                _tbbRefreshTimer:Cancel()
+            end
             _tbbRefreshTimer = C_Timer.NewTimer(0.05, function()
                 _tbbRefreshTimer = nil
                 Refresh()
@@ -1747,12 +2114,18 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         local function MoveBarToGroup(idx, gid)
             local t = ns.GetTrackedBuffBars()
             local cfg = t.bars and t.bars[idx]
-            if not cfg then return end
-            if ns.TBBBarGroupID(cfg) == gid then return end
+            if not cfg then
+                return
+            end
+            if ns.TBBBarGroupID(cfg) == gid then
+                return
+            end
             ns.TBBSetBarGroup(cfg, gid)
             if gid ~= 0 then
                 local src = ns.TBBGroupStyleSource(gid)
-                if src and src ~= cfg then ns.CopyTBBStyle(src, cfg) end
+                if src and src ~= cfg then
+                    ns.CopyTBBStyle(src, cfg)
+                end
             end
             _tbbSelectedBar = idx
             _tbbSelectedGroup = nil
@@ -1768,11 +2141,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local sel = not _tbbSelectedGroup and t.bars[_tbbSelectedBar] or nil
             ns.MoveTrackedBuffBarInGroup(idx, pos)
             for j, c in ipairs(t.bars) do
-                if c == sel then _tbbSelectedBar = j; break end
+                if c == sel then
+                    _tbbSelectedBar = j
+                    break
+                end
             end
             CludesUI:RefreshPage(true)
             C_Timer.After(0, function()
-                if _tbbDDBtn and _tbbDDBtn:IsShown() then _tbbDDBtn:Click() end
+                if _tbbDDBtn and _tbbDDBtn:IsShown() then
+                    _tbbDDBtn:Click()
+                end
             end)
         end
 
@@ -1786,17 +2164,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local ddW = 350
 
             local DDS = CludesUI.DD_STYLE
-            local mBgR  = DDS.BG_R
-            local mBgG  = DDS.BG_G
-            local mBgB  = DDS.BG_B
-            local mBgA  = DDS.BG_A
+            local mBgR = DDS.BG_R
+            local mBgG = DDS.BG_G
+            local mBgB = DDS.BG_B
+            local mBgA = DDS.BG_A
             local mBgHA = DDS.BG_HA
             local mBrdA = DDS.BRD_A
             local mBrdHA = DDS.BRD_HA or 0.30
             local mTxtA = DDS.TXT_A
             local mTxtHA = DDS.TXT_HA or 1
-            local hlA   = DDS.ITEM_HL_A
-            local selA  = DDS.ITEM_SEL_A
+            local hlA = DDS.ITEM_HL_A
+            local selA = DDS.ITEM_SEL_A
             local tDimR = CludesUI.TEXT_DIM_R or 0.7
             local tDimG = CludesUI.TEXT_DIM_G or 0.7
             local tDimB = CludesUI.TEXT_DIM_B or 0.7
@@ -1809,13 +2187,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             PP.Size(ddBtn, ddW, DD_H)
             ddBtn:SetFrameLevel(parentFrame:GetFrameLevel() + 5)
             local ddBg = ddBtn:CreateTexture(nil, "BACKGROUND")
-            ddBg:SetAllPoints(); ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
+            ddBg:SetAllPoints()
+            ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
             local ddBrd = CludesUI.MakeRoundedBorder(ddBtn, 1, 1, 1, mBrdA, ddBg)
             local ddLbl = ddBtn:CreateFontString(nil, "OVERLAY")
             ddLbl:SetFont(FONT_PATH, 13, GetCDMOptOutline())
             ddLbl:SetAlpha(mTxtA)
             ddLbl:SetJustifyH("LEFT")
-            ddLbl:SetWordWrap(false); ddLbl:SetMaxLines(1)
+            ddLbl:SetWordWrap(false)
+            ddLbl:SetMaxLines(1)
             ddLbl:SetPoint("LEFT", ddBtn, "LEFT", 12, 0)
             local arrow = CludesUI.MakeDropdownArrow(ddBtn, 12, CludesUI.PanelPP)
             ddLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
@@ -1823,8 +2203,13 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local function UpdateDDLabel()
                 if _tbbSelectedGroup then
                     local n = ns.TBBGroupedCount(_tbbSelectedGroup)
-                    ddLbl:SetText(GroupLabel(_tbbSelectedGroup)
-                        .. "  -  " .. n .. " " .. CludesUI.L(n == 1 and "Bar" or "Bars"))
+                    ddLbl:SetText(
+                        GroupLabel(_tbbSelectedGroup)
+                            .. "  -  "
+                            .. n
+                            .. " "
+                            .. CludesUI.L(n == 1 and "Bar" or "Bars")
+                    )
                     return
                 end
                 local bd = SelectedTBB()
@@ -1832,7 +2217,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     local label = (bd.name and CludesUI.L(bd.name)) or "Bar"
                     if not bd.popularKey and bd.spellID and bd.spellID > 0 then
                         local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(bd.spellID)
-                        if info and info.name then label = info.name end
+                        if info and info.name then
+                            label = info.name
+                        end
                     end
                     local gid = ns.TBBBarGroupID and ns.TBBBarGroupID(bd) or 0
                     if gid ~= 0 then
@@ -1859,8 +2246,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- cooldown-tracking bar), and the runtime needs an edge source for it (a
             -- Blizzard buff viewer frame, or a self-timed preset).
             local function BarTakesSound(b)
-                if not b or b.trackType == "cooldown" then return false end
-                if not ((b.spellID and b.spellID > 0) or b.glowBased) then return false end
+                if not b or b.trackType == "cooldown" then
+                    return false
+                end
+                if not ((b.spellID and b.spellID > 0) or b.glowBased) then
+                    return false
+                end
                 return ns.TBB_BarCanCue(b) and true or false
             end
 
@@ -1872,8 +2263,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local function OpenBarSoundMenu(idx, anchorRow)
                 local t = ns.GetTrackedBuffBars()
                 local cfg = t.bars and t.bars[idx]
-                if not cfg then return end
-                if ddBtn._tbbSndMenu then ddBtn._tbbSndMenu:Hide() end
+                if not cfg then
+                    return
+                end
+                if ddBtn._tbbSndMenu then
+                    ddBtn._tbbSndMenu:Hide()
+                end
                 local W = 240
                 -- One sound menu frame for the session, dressed again on every open.
                 local sm = PoolKept(ns, "tbbSoundMenu", "Frame", UIParent)
@@ -1884,7 +2279,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 sm:EnableMouse(true)
                 sm:SetSize(W, 8 + ITEM_H * 2)
                 local smBg = sm:CreateTexture(nil, "BACKGROUND")
-                smBg:SetAllPoints(); smBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
+                smBg:SetAllPoints()
+                smBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
                 CludesUI.MakeRoundedBorder(sm, 1, 1, 1, mBrdA, smBg, nil, true)
                 -- A fixed spot, as the CDM icon menu sits under its icon: beside the clicked
                 -- row, just outside the bar menu, so it covers no other bar.
@@ -1913,12 +2309,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     val:SetPoint("LEFT", lbl, "RIGHT", 8, 0)
                     val:SetPoint("RIGHT", arrow, "LEFT", -6, 0)
                     val:SetJustifyH("RIGHT")
-                    val:SetWordWrap(false); val:SetMaxLines(1)
+                    val:SetWordWrap(false)
+                    val:SetMaxLines(1)
                     val:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     local hl = row:CreateTexture(nil, "ARTWORK")
-                    hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 1); hl:SetAlpha(0)
+                    hl:SetAllPoints()
+                    hl:SetColorTexture(1, 1, 1, 1)
+                    hl:SetAlpha(0)
 
-                    local function Get() return cfg[field] or "none" end
+                    local function Get()
+                        return cfg[field] or "none"
+                    end
                     -- Accent label while a sound is chosen, like the icon menu's rows.
                     local function Paint()
                         local k = cfg[field]
@@ -1936,28 +2337,38 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             -- Flip the 0-cost gate live and hook the bar frames already
                             -- out of the pool, so the next edge plays without a reload.
                             ns._cdmAnyBuffSound = true
-                            if ns.EnsureTBBSoundHooks then ns.EnsureTBBSoundHooks() end
+                            if ns.EnsureTBBSoundHooks then
+                                ns.EnsureTBBSoundHooks()
+                            end
                         end
                         Paint()
                         -- The bar row's speaker button follows (dimmed with no sound).
-                        if anchorRow._sndPaint then anchorRow._sndPaint() end
+                        if anchorRow._sndPaint then
+                            anchorRow._sndPaint()
+                        end
                     end
                     local function ShowFlyout()
                         hl:SetAlpha(hlA)
                         for f, fly in pairs(flyouts) do
-                            if f ~= field then fly:Hide() end
+                            if f ~= field then
+                                fly:Hide()
+                            end
                         end
                         local fly = flyouts[field]
                         if not fly then
                             local values, order = CludesUI.BuildSoundDropdownValues(
-                                ns.FOCUSKICK_SOUND_PATHS, names, ns.FOCUSKICK_SOUND_ORDER)
+                                ns.FOCUSKICK_SOUND_PATHS,
+                                names,
+                                ns.FOCUSKICK_SOUND_ORDER
+                            )
                             values._menuOpts.anchor = "RIGHT"
                             -- Match the CDM icon menu's flyouts: the CDM options font at 11 and
                             -- the speaker atlas in its own colour.
                             values._menuOpts.labelFont = { FONT_PATH, 11, GetCDMOptOutline() }
                             values._menuOpts.iconNativeColor = true
                             local refresh
-                            fly, _, refresh = CludesUI.BuildDropdownMenu(row, 200, order, values, Get, Set, val, "regular")
+                            fly, _, refresh =
+                                CludesUI.BuildDropdownMenu(row, 200, order, values, Get, Set, val, "regular")
                             -- BuildDropdownMenu creates it at FULLSCREEN_DIALOG 200, under both menus.
                             fly:SetFrameStrata(sm:GetFrameStrata())
                             fly:SetFrameLevel(sm:GetFrameLevel() + 30)
@@ -1965,33 +2376,45 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             flyouts[field] = fly
                         end
                         if not fly:IsShown() then
-                            if fly._refresh then fly._refresh() end
+                            if fly._refresh then
+                                fly._refresh()
+                            end
                             fly:Show()
                         end
                     end
                     row:SetScript("OnEnter", ShowFlyout)
                     row:SetScript("OnClick", ShowFlyout)
-                    row:SetScript("OnLeave", function() hl:SetAlpha(0) end)
+                    row:SetScript("OnLeave", function()
+                        hl:SetAlpha(0)
+                    end)
                 end
                 MakeSoundRow(1, "Audio on Buff Gain", "buffActiveSoundKey")
                 MakeSoundRow(2, "Audio on Buff Loss", "buffLostSoundKey")
 
                 local function OverAny()
-                    if sm:IsMouseOver() then return true end
+                    if sm:IsMouseOver() then
+                        return true
+                    end
                     for _, fly in pairs(flyouts) do
-                        if fly:IsShown() and fly:IsMouseOver() then return true end
+                        if fly:IsShown() and fly:IsMouseOver() then
+                            return true
+                        end
                     end
                     return false
                 end
                 sm:SetScript("OnUpdate", function(m)
-                    if (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton"))
-                       and not OverAny() then
+                    if
+                        (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton"))
+                        and not OverAny()
+                    then
                         m:Hide()
                     end
                 end)
                 sm:HookScript("OnHide", function(m)
                     m:SetScript("OnUpdate", nil)
-                    for _, fly in pairs(flyouts) do fly:Hide() end
+                    for _, fly in pairs(flyouts) do
+                        fly:Hide()
+                    end
                 end)
                 -- The bar menu underneath asks this before dismissing itself on a click.
                 sm._overAny = OverAny
@@ -2003,7 +2426,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- each, an independent section, and new-group/independent-bar creation at the bottom.
             local ddMenu
             local function BuildDDMenu()
-                if ddMenu then ddMenu:Hide(); ddMenu = nil end
+                if ddMenu then
+                    ddMenu:Hide()
+                    ddMenu = nil
+                end
                 local t = ns.GetTrackedBuffBars()
                 -- Screen-level overlay: hidden while it is dressed, tracked once its
                 -- scripts are set. One menu frame for the session, dressed again on
@@ -2016,7 +2442,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 menu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
                 menu:SetPoint("TOPRIGHT", ddBtn, "BOTTOMRIGHT", 0, -2)
                 local bg = menu:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints(); bg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
+                bg:SetAllPoints()
+                bg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
                 CludesUI.MakeRoundedBorder(menu, 1, 1, 1, mBrdA, bg, nil, true)
 
                 -- Rows build on an inner frame so tall menus can scroll.
@@ -2035,14 +2462,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- section is a drop target. Inside the bar's own group the drop reorders
                 -- instead, at the gap a green insertion line marks. Drag flag declared
                 -- before any OnUpdate reads it.
-                local dropZones = {}   -- { gid, label, frames = {rows...}, rows = {{frame, idx}...}, head, tail }
+                local dropZones = {} -- { gid, label, frames = {rows...}, rows = {{frame, idx}...}, head, tail }
                 local dragState = { idx = nil, name = nil }
                 menu._dragActive = false
 
                 local function HoveredZone()
                     for _, z in ipairs(dropZones) do
                         for _, f in ipairs(z.frames) do
-                            if f and f:IsMouseOver() then return z, f end
+                            if f and f:IsMouseOver() then
+                                return z, f
+                            end
                         end
                     end
                     return nil
@@ -2054,18 +2483,28 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- the drop would leave the order as it is.
                 local function ReorderTarget(z, f)
                     local rows = z and z.rows
-                    if not (rows and f and dragState.idx) then return nil end
+                    if not (rows and f and dragState.idx) then
+                        return nil
+                    end
                     local from, gap
                     for k, r in ipairs(rows) do
-                        if r.idx == dragState.idx then from = k end
+                        if r.idx == dragState.idx then
+                            from = k
+                        end
                         if r.frame == f then
                             local _, cy = GetCursorPosition()
                             local mid = (f:GetTop() + f:GetBottom()) / 2
                             gap = (cy / f:GetEffectiveScale() > mid) and k or k + 1
                         end
                     end
-                    if f == z.head then gap = 1 elseif f == z.tail then gap = #rows + 1 end
-                    if not (from and gap) or gap == from or gap == from + 1 then return nil end
+                    if f == z.head then
+                        gap = 1
+                    elseif f == z.tail then
+                        gap = #rows + 1
+                    end
+                    if not (from and gap) or gap == from or gap == from + 1 then
+                        return nil
+                    end
                     return (gap > from) and gap - 1 or gap, gap
                 end
 
@@ -2111,7 +2550,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     dragGhost._lbl:SetTextColor(1, 1, 1, 0.8)
                 end
                 local function EnsureGhost()
-                    if dragGhost then return dragGhost end
+                    if dragGhost then
+                        return dragGhost
+                    end
                     -- One ghost frame for the session, dressed again by the first
                     -- drag of each menu open.
                     dragGhost = PoolKept(ns, "tbbDragGhost", "Frame", UIParent)
@@ -2139,18 +2580,24 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local function BarIconID(b)
                     if b.popularKey and ns.TBB_POPULAR_BUFFS then
                         for _, pe in ipairs(ns.TBB_POPULAR_BUFFS) do
-                            if pe.key == b.popularKey then return pe.icon end
+                            if pe.key == b.popularKey then
+                                return pe.icon
+                            end
                         end
                     end
                     if b.spellID and b.spellID > 0 then
                         local tex = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(b.spellID)
-                        if tex then return tex end
+                        if tex then
+                            return tex
+                        end
                     end
                     return 134400
                 end
 
                 local function AddHeaderRow(text)
-                    if mH > 4 then mH = mH + 4 end
+                    if mH > 4 then
+                        mH = mH + 4
+                    end
                     local hLbl = inner:CreateFontString(nil, "OVERLAY")
                     hLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                     hLbl:SetTextColor(1, 1, 1, 0.9)
@@ -2163,7 +2610,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- settings replace per-bar sections). gkey (optional) = group's globalKey,
                 -- adds the GLOBAL tag + a delete button that removes it for every spec (with confirmation).
                 local function AddGroupHeaderRow(gid, gkey)
-                    if mH > 4 then mH = mH + 4 end
+                    if mH > 4 then
+                        mH = mH + 4
+                    end
                     local item = CreateFrame("Button", nil, inner)
                     item:SetHeight(22)
                     item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
@@ -2196,12 +2645,18 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                         delIcon:SetSize(ICON_SZ, ICON_SZ)
                         delIcon:SetPoint("CENTER")
-                        if delIcon.SetSnapToPixelGrid then delIcon:SetSnapToPixelGrid(false); delIcon:SetTexelSnappingBias(0) end
+                        if delIcon.SetSnapToPixelGrid then
+                            delIcon:SetSnapToPixelGrid(false)
+                            delIcon:SetTexelSnappingBias(0)
+                        end
                         delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
                         delBtn:SetAlpha(0.6)
                         delBtn:SetScript("OnEnter", function()
                             delBtn:SetAlpha(1)
-                            CludesUI.ShowWidgetTooltip(delBtn, CludesUI.L("Delete this global group for all specs"))
+                            CludesUI.ShowWidgetTooltip(
+                                delBtn,
+                                CludesUI.L("Delete this global group for all specs")
+                            )
                         end)
                         delBtn:SetScript("OnLeave", function()
                             delBtn:SetAlpha(0.6)
@@ -2211,11 +2666,19 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             menu:Hide()
                             CludesUI:ShowConfirmPopup({
                                 title = "Delete Global Group",
-                                message = CludesUI.Lf("Delete \"%1$s\" for ALL specs? Bars keep their current positions.", groupDisplayName),
-                                confirmText = "Delete", cancelText = "Cancel",
+                                message = CludesUI.Lf(
+                                    'Delete "%1$s" for ALL specs? Bars keep their current positions.',
+                                    groupDisplayName
+                                ),
+                                confirmText = "Delete",
+                                cancelText = "Cancel",
                                 onConfirm = function()
-                                    if ns.TBBDeleteGlobalGroup then ns.TBBDeleteGlobalGroup(gkey) end
-                                    if _tbbSelectedGroup == gid then _tbbSelectedGroup = nil end
+                                    if ns.TBBDeleteGlobalGroup then
+                                        ns.TBBDeleteGlobalGroup(gkey)
+                                    end
+                                    if _tbbSelectedGroup == gid then
+                                        _tbbSelectedGroup = nil
+                                    end
                                     ns.BuildTrackedBuffBars()
                                     CludesUI:RefreshPage(true)
                                 end,
@@ -2226,14 +2689,18 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         eLbl:SetPoint("RIGHT", item, "RIGHT", -10, 0)
                     end
                     local hl = item:CreateTexture(nil, "ARTWORK")
-                    hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 1)
+                    hl:SetAllPoints()
+                    hl:SetColorTexture(1, 1, 1, 1)
                     local isSel = _tbbSelectedGroup == gid
                     hl:SetAlpha(isSel and selA or 0)
                     item:SetScript("OnEnter", function()
-                        hLbl:SetTextColor(1, 1, 1, 1); eLbl:SetTextColor(1, 1, 1, 0.9); hl:SetAlpha(hlA)
+                        hLbl:SetTextColor(1, 1, 1, 1)
+                        eLbl:SetTextColor(1, 1, 1, 0.9)
+                        hl:SetAlpha(hlA)
                     end)
                     item:SetScript("OnLeave", function()
-                        hLbl:SetTextColor(1, 1, 1, 0.9); eLbl:SetTextColor(ar, ag, ab, 0.85)
+                        hLbl:SetTextColor(1, 1, 1, 0.9)
+                        eLbl:SetTextColor(ar, ag, ab, 0.85)
                         hl:SetAlpha(isSel and selA or 0)
                     end)
                     item:SetScript("OnClick", function()
@@ -2258,7 +2725,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     spIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                     local unassigned = (not b.spellID or b.spellID == 0) and not b.glowBased
                     spIco:SetTexture(BarIconID(b))
-                    if unassigned then spIco:SetDesaturated(true); spIco:SetAlpha(0.35) end
+                    if unassigned then
+                        spIco:SetDesaturated(true)
+                        spIco:SetAlpha(0.35)
+                    end
 
                     -- Icon = change this bar's buff (green border affordance)
                     local icoBtn = CreateFrame("Button", nil, item)
@@ -2266,13 +2736,19 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     icoBtn:SetFrameLevel(item:GetFrameLevel() + 3)
                     local egc = CludesUI.CLUDES_GREEN
                     local icoBrd = PP.CreateBorder(icoBtn, egc.r, egc.g, egc.b, 1, 1, "OVERLAY", 7)
-                    if icoBrd then icoBrd:Hide() end
+                    if icoBrd then
+                        icoBrd:Hide()
+                    end
                     icoBtn:SetScript("OnEnter", function()
-                        if icoBrd then icoBrd:Show() end
+                        if icoBrd then
+                            icoBrd:Show()
+                        end
                         CludesUI.ShowWidgetTooltip(icoBtn, CludesUI.L("Change buff"))
                     end)
                     icoBtn:SetScript("OnLeave", function()
-                        if icoBrd then icoBrd:Hide() end
+                        if icoBrd then
+                            icoBrd:Hide()
+                        end
                         CludesUI.HideWidgetTooltip()
                     end)
                     icoBtn:SetScript("OnClick", function()
@@ -2284,12 +2760,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
-                    iLbl:SetWordWrap(false); iLbl:SetMaxLines(1)
+                    iLbl:SetWordWrap(false)
+                    iLbl:SetMaxLines(1)
                     iLbl:SetPoint("LEFT", spIco, "RIGHT", 6, 0)
                     local displayName = (b.name and CludesUI.L(b.name)) or CludesUI.Lf("Bar %d", idx)
                     if not b.popularKey and b.spellID and b.spellID > 0 then
                         local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(b.spellID)
-                        if info and info.name then displayName = info.name end
+                        if info and info.name then
+                            displayName = info.name
+                        end
                     end
                     if unassigned then
                         displayName = displayName .. "  (" .. CludesUI.L("no buff assigned") .. ")"
@@ -2297,7 +2776,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     iLbl:SetText(displayName)
 
                     local iHl = item:CreateTexture(nil, "ARTWORK")
-                    iHl:SetAllPoints(); iHl:SetColorTexture(1, 1, 1, 1)
+                    iHl:SetAllPoints()
+                    iHl:SetColorTexture(1, 1, 1, 1)
                     iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
 
                     local delBtn = CreateFrame("Button", nil, item)
@@ -2307,7 +2787,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                     delIcon:SetSize(ICON_SZ, ICON_SZ)
                     delIcon:SetPoint("CENTER")
-                    if delIcon.SetSnapToPixelGrid then delIcon:SetSnapToPixelGrid(false); delIcon:SetTexelSnappingBias(0) end
+                    if delIcon.SetSnapToPixelGrid then
+                        delIcon:SetSnapToPixelGrid(false)
+                        delIcon:SetTexelSnappingBias(0)
+                    end
                     delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
                     delBtn:SetAlpha(0.75)
                     iLbl:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
@@ -2329,37 +2812,61 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             local g, l = b.buffActiveSoundKey, b.buffLostSoundKey
                             return (g and g ~= "none") or (l and l ~= "none")
                         end
-                        local function RestAlpha() return HasSound() and 0.8 or 0.3 end
+                        local function RestAlpha()
+                            return HasSound() and 0.8 or 0.3
+                        end
                         item._sndPaint = function()
-                            if not sndBtn:IsMouseOver() then sndBtn:SetAlpha(RestAlpha()) end
+                            if not sndBtn:IsMouseOver() then
+                                sndBtn:SetAlpha(RestAlpha())
+                            end
                         end
                         sndBtn:SetAlpha(RestAlpha())
                         sndBtn:SetScript("OnEnter", function(self)
-                            self:SetAlpha(1); iLbl:SetTextColor(1,1,1,1); iHl:SetAlpha(hlA)
-                            CludesUI.ShowWidgetTooltip(self, HasSound() and CludesUI.L("Edit Audio Effect") or CludesUI.L("Add Audio Effect"))
+                            self:SetAlpha(1)
+                            iLbl:SetTextColor(1, 1, 1, 1)
+                            iHl:SetAlpha(hlA)
+                            CludesUI.ShowWidgetTooltip(
+                                self,
+                                HasSound() and CludesUI.L("Edit Audio Effect")
+                                    or CludesUI.L("Add Audio Effect")
+                            )
                         end)
                         sndBtn:SetScript("OnLeave", function(self)
                             CludesUI.HideWidgetTooltip()
                             self:SetAlpha(RestAlpha())
-                            if item:IsMouseOver() then return end
-                            iLbl:SetTextColor(tDimR,tDimG,tDimB,tDimA); iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
+                            if item:IsMouseOver() then
+                                return
+                            end
+                            iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                            iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
                         end)
                         -- The bar menu stays open underneath, as with the row right-click.
-                        sndBtn:SetScript("OnClick", function() OpenBarSoundMenu(idx, item) end)
+                        sndBtn:SetScript("OnClick", function()
+                            OpenBarSoundMenu(idx, item)
+                        end)
                         iLbl:SetPoint("RIGHT", sndBtn, "LEFT", -4, 0)
                     end
 
-                    delBtn:SetScript("OnEnter", function() delBtn:SetAlpha(1); iLbl:SetTextColor(1,1,1,1); iHl:SetAlpha(hlA) end)
+                    delBtn:SetScript("OnEnter", function()
+                        delBtn:SetAlpha(1)
+                        iLbl:SetTextColor(1, 1, 1, 1)
+                        iHl:SetAlpha(hlA)
+                    end)
                     delBtn:SetScript("OnLeave", function()
-                        if item:IsMouseOver() then return end
-                        delBtn:SetAlpha(0.75); iLbl:SetTextColor(tDimR,tDimG,tDimB,tDimA); iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
+                        if item:IsMouseOver() then
+                            return
+                        end
+                        delBtn:SetAlpha(0.75)
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
                     end)
                     delBtn:SetScript("OnClick", function()
                         menu:Hide()
                         CludesUI:ShowConfirmPopup({
                             title = "Delete Bar",
-                            message = CludesUI.Lf("Delete \"%1$s\"?", displayName),
-                            confirmText = "Delete", cancelText = "Cancel",
+                            message = CludesUI.Lf('Delete "%1$s"?', displayName),
+                            confirmText = "Delete",
+                            cancelText = "Cancel",
                             onConfirm = function()
                                 ns.RemoveTrackedBuffBar(idx)
                                 CludesUI:RefreshPage(true)
@@ -2367,12 +2874,22 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         })
                     end)
 
-                    item:SetScript("OnEnter", function() iLbl:SetTextColor(1,1,1,1); iHl:SetAlpha(hlA); delBtn:SetAlpha(1) end)
-                    item:SetScript("OnLeave", function() iLbl:SetTextColor(tDimR,tDimG,tDimB,tDimA); iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0); delBtn:SetAlpha(0.75) end)
+                    item:SetScript("OnEnter", function()
+                        iLbl:SetTextColor(1, 1, 1, 1)
+                        iHl:SetAlpha(hlA)
+                        delBtn:SetAlpha(1)
+                    end)
+                    item:SetScript("OnLeave", function()
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
+                        delBtn:SetAlpha(0.75)
+                    end)
                     item:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                     item:SetScript("OnClick", function(_, mouseButton)
                         if mouseButton == "RightButton" then
-                            if not soundable then return end
+                            if not soundable then
+                                return
+                            end
                             -- The bar menu stays open underneath, like the CDM icon menu.
                             OpenBarSoundMenu(idx, item)
                             return
@@ -2429,9 +2946,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     lbl:SetText(text)
                     lbl:SetTextColor(ar, ag, ab, 0.85)
                     local hl = item:CreateTexture(nil, "ARTWORK")
-                    hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 1); hl:SetAlpha(0)
-                    item:SetScript("OnEnter", function() lbl:SetTextColor(1,1,1,1); hl:SetAlpha(hlA) end)
-                    item:SetScript("OnLeave", function() lbl:SetTextColor(ar, ag, ab, 0.85); hl:SetAlpha(0) end)
+                    hl:SetAllPoints()
+                    hl:SetColorTexture(1, 1, 1, 1)
+                    hl:SetAlpha(0)
+                    item:SetScript("OnEnter", function()
+                        lbl:SetTextColor(1, 1, 1, 1)
+                        hl:SetAlpha(hlA)
+                    end)
+                    item:SetScript("OnLeave", function()
+                        lbl:SetTextColor(ar, ag, ab, 0.85)
+                        hl:SetAlpha(0)
+                    end)
                     item:SetScript("OnClick", onClick)
                     mH = mH + ITEM_H
                     return item
@@ -2448,7 +2973,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local renderedGlobal = {}
                 for _, gid in ipairs(gids) do
                     local gkey = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid) or nil
-                    if gkey then renderedGlobal[gkey] = true end
+                    if gkey then
+                        renderedGlobal[gkey] = true
+                    end
                     local zone = {
                         gid = gid,
                         label = (ns.TBBGroupName and ns.TBBGroupName(gid))
@@ -2487,9 +3014,13 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                                 }
                                 dropZones[#dropZones + 1] = zone
                                 zone.frames[#zone.frames + 1] = AddGroupHeaderRow(lgid, gkey)
-                                zone.frames[#zone.frames + 1] = AddActionItem(CludesUI.L("+ Add Bar to Group"), 8, function()
-                                    SelectNewBar(ns.AddTrackedBuffBar(lgid))
-                                end)
+                                zone.frames[#zone.frames + 1] = AddActionItem(
+                                    CludesUI.L("+ Add Bar to Group"),
+                                    8,
+                                    function()
+                                        SelectNewBar(ns.AddTrackedBuffBar(lgid))
+                                    end
+                                )
                             end
                         end
                     end
@@ -2500,7 +3031,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 dropZones[#dropZones + 1] = indepZone
                 local anyIndependent = false
                 for _, b in ipairs(t.bars) do
-                    if ns.TBBBarGroupID(b) == 0 then anyIndependent = true; break end
+                    if ns.TBBBarGroupID(b) == 0 then
+                        anyIndependent = true
+                        break
+                    end
                 end
                 if anyIndependent then
                     AddHeaderRow(CludesUI.L("INDEPENDENT BARS"))
@@ -2513,19 +3047,26 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
                 -- Divider + creation actions
                 local div = inner:CreateTexture(nil, "ARTWORK")
-                div:SetHeight(1); div:SetColorTexture(1, 1, 1, 0.10)
+                div:SetHeight(1)
+                div:SetColorTexture(1, 1, 1, 0.10)
                 div:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
                 div:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
                 mH = mH + 9
 
                 AddActionItem(CludesUI.L("+ Add New Group"), 0, function()
                     local gid = ns.TBBNextGroupID()
-                    if ns.TBBResetGroupSettings then ns.TBBResetGroupSettings(gid) end
+                    if ns.TBBResetGroupSettings then
+                        ns.TBBResetGroupSettings(gid)
+                    end
                     SelectNewBar(ns.AddTrackedBuffBar(gid))
                 end)
-                indepZone.frames[#indepZone.frames + 1] = AddActionItem(CludesUI.L("+ Add Independent Bar"), 0, function()
-                    SelectNewBar(ns.AddTrackedBuffBar(0))
-                end)
+                indepZone.frames[#indepZone.frames + 1] = AddActionItem(
+                    CludesUI.L("+ Add Independent Bar"),
+                    0,
+                    function()
+                        SelectNewBar(ns.AddTrackedBuffBar(0))
+                    end
+                )
 
                 if #t.bars > 1 then
                     local dragHint = inner:CreateFontString(nil, "OVERLAY")
@@ -2539,7 +3080,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- while any bar can take a sound.
                 local anySoundable = false
                 for _, b in ipairs(t.bars) do
-                    if BarTakesSound(b) then anySoundable = true; break end
+                    if BarTakesSound(b) then
+                        anySoundable = true
+                        break
+                    end
                 end
                 if anySoundable then
                     local soundHint = inner:CreateFontString(nil, "OVERLAY")
@@ -2555,7 +3099,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 if totalH > MENU_MAX_H then
                     menu:SetHeight(MENU_MAX_H)
                     local sf = CreateFrame("ScrollFrame", nil, menu)
-                    sf:SetPoint("TOPLEFT", 0, -1); sf:SetPoint("BOTTOMRIGHT", 0, 1)
+                    sf:SetPoint("TOPLEFT", 0, -1)
+                    sf:SetPoint("BOTTOMRIGHT", 0, 1)
                     sf:SetFrameLevel(menu:GetFrameLevel() + 1)
                     sf:EnableMouseWheel(true)
                     sf:SetScrollChild(inner)
@@ -2570,17 +3115,27 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 end
                 menu:SetScript("OnUpdate", function(m)
                     -- Never dismiss mid-drag: dragging naturally leaves the menu bounds with the button held down.
-                    if m._dragActive then return end
+                    if m._dragActive then
+                        return
+                    end
                     -- A click in the row's sound menu or its flyouts is not a click outside.
                     local snd = ddBtn._tbbSndMenu
-                    if snd and snd:IsShown() and snd._overAny and snd._overAny() then return end
-                    if not m:IsMouseOver() and not ddBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                    if snd and snd:IsShown() and snd._overAny and snd._overAny() then
+                        return
+                    end
+                    if
+                        not m:IsMouseOver()
+                        and not ddBtn:IsMouseOver()
+                        and IsMouseButtonDown("LeftButton")
+                    then
                         m:Hide()
                     end
                 end)
                 menu:HookScript("OnHide", function(m)
                     m:SetScript("OnUpdate", nil)
-                    if ddBtn._tbbSndMenu then ddBtn._tbbSndMenu:Hide() end
+                    if ddBtn._tbbSndMenu then
+                        ddBtn._tbbSndMenu:Hide()
+                    end
                 end)
                 -- A no-op unless the menu sits on the controller-cursor overlay layer.
                 CludesUI.TrackOverlay(menu)
@@ -2588,21 +3143,37 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 ddMenu = menu
             end
 
-            ddBtn:SetScript("OnEnter", function() ddLbl:SetAlpha(mTxtHA); ddBrd:SetColor(1,1,1,mBrdHA); ddBg:SetColorTexture(mBgR,mBgG,mBgB,mBgHA) end)
+            ddBtn:SetScript("OnEnter", function()
+                ddLbl:SetAlpha(mTxtHA)
+                ddBrd:SetColor(1, 1, 1, mBrdHA)
+                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
+            end)
             ddBtn:SetScript("OnLeave", function()
-                if ddMenu and ddMenu:IsShown() then return end
-                ddLbl:SetAlpha(mTxtA); ddBrd:SetColor(1,1,1,mBrdA); ddBg:SetColorTexture(mBgR,mBgG,mBgB,mBgA)
+                if ddMenu and ddMenu:IsShown() then
+                    return
+                end
+                ddLbl:SetAlpha(mTxtA)
+                ddBrd:SetColor(1, 1, 1, mBrdA)
+                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
             end)
             ddBtn:SetScript("OnClick", function()
                 -- An open buff picker (e.g. from "+ Add Bar to Group") yields to the management menu.
                 if _tbbSpellPickerMenu and _tbbSpellPickerMenu:IsShown() then
                     _tbbSpellPickerMenu:Hide()
                 end
-                if ddMenu and ddMenu:IsShown() then ddMenu:Hide() else BuildDDMenu() end
+                if ddMenu and ddMenu:IsShown() then
+                    ddMenu:Hide()
+                else
+                    BuildDDMenu()
+                end
             end)
             ddBtn:HookScript("OnHide", function()
-                if ddMenu then ddMenu:Hide() end
-                if ddBtn._tbbSndMenu then ddBtn._tbbSndMenu:Hide() end
+                if ddMenu then
+                    ddMenu:Hide()
+                end
+                if ddBtn._tbbSndMenu then
+                    ddBtn._tbbSndMenu:Hide()
+                end
             end)
 
             -- Keep the label current when settings refresh in place (e.g. a group rename commits without a full page rebuild).
@@ -2625,14 +3196,17 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- "Remove Bar from All Specs" (the inverse); dimmed unless a preset/custom-buff bar is selected.
             local _selForBroadcast = (not _tbbSelectedGroup) and SelectedTBB() or nil
             local _canBroadcast = ns.IsTrackedBuffBarBroadcastable
-                and ns.IsTrackedBuffBarBroadcastable(_selForBroadcast) or false
+                    and ns.IsTrackedBuffBarBroadcastable(_selForBroadcast)
+                or false
             -- WoW Forever: the class runs on one spec, so there is nowhere to copy to.
-            if CludesUI.IS_FOREVER then _canBroadcast = false end
+            if CludesUI.IS_FOREVER then
+                _canBroadcast = false
+            end
             local _isBroadcast = _canBroadcast
-                and ns.IsTrackedBuffBarBroadcast
-                and ns.IsTrackedBuffBarBroadcast(_selForBroadcast) or false
-            local _broadcastLabel = _isBroadcast and "Remove Bar from All Specs"
-                                                  or "Add Bar to All Specs"
+                    and ns.IsTrackedBuffBarBroadcast
+                    and ns.IsTrackedBuffBarBroadcast(_selForBroadcast)
+                or false
+            local _broadcastLabel = _isBroadcast and "Remove Bar from All Specs" or "Add Bar to All Specs"
             local EGc = CludesUI.CLUDES_GREEN
             local PADc = CludesUI.CONTENT_PAD or 10
             local CARD_H, CARD_GAP, CARD_ICON = 60, 12, 24
@@ -2661,7 +3235,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 cIcon:SetTexture(iconPath)
                 cIcon:SetVertexColor(EGc.r, EGc.g, EGc.b)
                 cIcon:SetAlpha(0.6)
-                if cIcon.SetSnapToPixelGrid then cIcon:SetSnapToPixelGrid(false); cIcon:SetTexelSnappingBias(0) end
+                if cIcon.SetSnapToPixelGrid then
+                    cIcon:SetSnapToPixelGrid(false)
+                    cIcon:SetTexelSnappingBias(0)
+                end
 
                 local titleFs = CludesUI.MakeFont(card, 12, nil, 1, 1, 1, 0.9)
                 PP.Point(titleFs, "TOPLEFT", cIcon, "TOPRIGHT", 14, 1)
@@ -2682,7 +3259,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     card:SetScript("OnEnter", function()
                         CludesUI.ShowWidgetTooltip(card, disabledTip)
                     end)
-                    card:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                    card:SetScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
                 else
                     card:SetScript("OnEnter", function()
                         cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
@@ -2702,8 +3281,12 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             end
 
             local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
-            MakeActionCard(0, MEDIA_ICONS .. "power.png",
-                "Use Blizzard CDM Bars", "Switch back to Blizzard's bars.", function()
+            MakeActionCard(
+                0,
+                MEDIA_ICONS .. "power.png",
+                "Use Blizzard CDM Bars",
+                "Switch back to Blizzard's bars.",
+                function()
                     CludesUI:ShowConfirmPopup({
                         title = "Use Blizzard Bars",
                         message = "This will disable CludesUI Tracking Bars and show Blizzard's default Tracked Bars display instead.",
@@ -2717,51 +3300,74 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             end
                         end,
                     })
-                end)
-            MakeActionCard(CARD_W + CARD_GAP, MEDIA_ICONS .. "cui-open.png",
-                "Open Blizzard CDM", "Manage your tracked bars.", function()
+                end
+            )
+            MakeActionCard(
+                CARD_W + CARD_GAP,
+                MEDIA_ICONS .. "cui-open.png",
+                "Open Blizzard CDM",
+                "Manage your tracked bars.",
+                function()
                     if ns.OpenBlizzardCDMTab then
                         ns.OpenBlizzardCDMTab(true)
                     end
-                end)
-            MakeActionCard((CARD_W + CARD_GAP) * 2, MEDIA_ICONS .. "sync.png",
-                _broadcastLabel, "Copy this bar to every spec.", function()
+                end
+            )
+            MakeActionCard(
+                (CARD_W + CARD_GAP) * 2,
+                MEDIA_ICONS .. "sync.png",
+                _broadcastLabel,
+                "Copy this bar to every spec.",
+                function()
                     local sel = SelectedTBB()
-                    if _tbbSelectedGroup or not ns.IsTrackedBuffBarBroadcastable(sel) then return end
+                    if _tbbSelectedGroup or not ns.IsTrackedBuffBarBroadcastable(sel) then
+                        return
+                    end
                     local nm = sel.name or "Bar"
                     if (not sel.popularKey or sel.popularKey == "") and sel.spellID and sel.spellID > 0 then
                         local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(sel.spellID)
-                        if info and info.name then nm = info.name end
+                        if info and info.name then
+                            nm = info.name
+                        end
                     end
                     if ns.IsTrackedBuffBarBroadcast and ns.IsTrackedBuffBarBroadcast(sel) then
                         CludesUI:ShowConfirmPopup({
                             title = "Remove Bar from All Specs",
-                            message = CludesUI.Lf("Remove \"%1$s\" from every other spec? The bar in this spec is kept.", nm),
+                            message = CludesUI.Lf(
+                                'Remove "%1$s" from every other spec? The bar in this spec is kept.',
+                                nm
+                            ),
                             confirmText = "Remove from All",
                             cancelText = "Cancel",
                             onConfirm = function()
-                                if ns.RemoveBarFromAllSpecs then ns.RemoveBarFromAllSpecs(_tbbSelectedBar) end
+                                if ns.RemoveBarFromAllSpecs then
+                                    ns.RemoveBarFromAllSpecs(_tbbSelectedBar)
+                                end
                                 CludesUI:RefreshPage(true)
                             end,
                         })
                     else
                         CludesUI:ShowConfirmPopup({
                             title = "Add Bar to All Specs",
-                            message = CludesUI.Lf("Add \"%1$s\" to every spec? It will be copied to each of your specs that doesn't already have it.", nm),
+                            message = CludesUI.Lf(
+                                'Add "%1$s" to every spec? It will be copied to each of your specs that doesn\'t already have it.',
+                                nm
+                            ),
                             confirmText = "Add to All Specs",
                             cancelText = "Cancel",
                             onConfirm = function()
-                                if ns.AddBarToAllSpecs then ns.AddBarToAllSpecs(_tbbSelectedBar) end
+                                if ns.AddBarToAllSpecs then
+                                    ns.AddBarToAllSpecs(_tbbSelectedBar)
+                                end
                                 CludesUI:RefreshPage(true)
                             end,
                         })
                     end
                 end,
-                (not _canBroadcast) and ((CludesUI.IS_FOREVER
-                    and "WoW Forever has no other specs to copy this bar to")
-                    or (_tbbSelectedGroup
-                    and "Select a bar to broadcast it to other specs"
-                    or "Only preset or custom buff bars can be added to all specs")) or nil)
+                not _canBroadcast
+                        and ((CludesUI.IS_FOREVER and "WoW Forever has no other specs to copy this bar to") or (_tbbSelectedGroup and "Select a bar to broadcast it to other specs" or "Only preset or custom buff bars can be added to all specs"))
+                    or nil
+            )
             y = y - CARD_H - 12
 
             -- Preset Style panel (styled like Profiles & Presets "Active Profile"): pick a
@@ -2769,21 +3375,42 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- style as one. Presets are profile-wide; new bars resolve one by association at creation.
             local _wc = CludesUI.WB_COLOURS
             local PROF_BTN_COLOURS = {
-                _wc[1],  _wc[2],  _wc[3],  _wc[4],   _wc[5],  _wc[6],  _wc[7],  _wc[8],
-                1, 1, 1, CludesUI.DD_BRD_A,   1, 1, 1, CludesUI.DD_BRD_HA or 0.30,
-                _wc[17], _wc[18], _wc[19], _wc[20],  _wc[21], _wc[22], _wc[23], _wc[24],
+                _wc[1],
+                _wc[2],
+                _wc[3],
+                _wc[4],
+                _wc[5],
+                _wc[6],
+                _wc[7],
+                _wc[8],
+                1,
+                1,
+                1,
+                CludesUI.DD_BRD_A,
+                1,
+                1,
+                1,
+                CludesUI.DD_BRD_HA or 0.30,
+                _wc[17],
+                _wc[18],
+                _wc[19],
+                _wc[20],
+                _wc[21],
+                _wc[22],
+                _wc[23],
+                _wc[24],
             }
-            local LABEL_H  = 16
-            local CTRL_H   = 30
-            local PAD_X    = 24
-            local PAD_Y    = 20
-            local GAP_DD   = 30
-            local GAP_BTN  = 14
+            local LABEL_H = 16
+            local CTRL_H = 30
+            local PAD_X = 24
+            local PAD_Y = 20
+            local GAP_DD = 30
+            local GAP_BTN = 14
             local PR_ROW_H = PAD_Y + LABEL_H + 4 + CTRL_H + PAD_Y
 
             local innerW = cardTotalW - PAD_X * 2
-            local DD_W   = math.floor(innerW * 0.30)
-            local BTN_W  = math.floor((innerW - DD_W - GAP_DD - GAP_BTN * 2) / 3)
+            local DD_W = math.floor(innerW * 0.30)
+            local BTN_W = math.floor((innerW - DD_W - GAP_DD - GAP_BTN * 2) / 3)
 
             local prRow = CreateFrame("Frame", nil, parent)
             PP.Size(prRow, cardTotalW, PR_ROW_H)
@@ -2809,7 +3436,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             end
             local function SelectedPreset()
                 local nm = SelectedPresetName()
-                if not nm then return nil end
+                if not nm then
+                    return nil
+                end
                 return ns.FindTBBStylePreset and ns.FindTBBStylePreset(nm)
             end
 
@@ -2856,7 +3485,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 self:SetScale(sc)
                 self:SetScript("OnUpdate", function(m)
                     if not prDD:IsMouseOver() and not m:IsMouseOver() then
-                        if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then m:Hide() end
+                        if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
+                            m:Hide()
+                        end
                     end
                 end)
             end)
@@ -2866,7 +3497,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local prItems = {}
 
             local function RebuildPresetMenu()
-                for _, itm in ipairs(prItems) do itm:Hide() end
+                for _, itm in ipairs(prItems) do
+                    itm:Hide()
+                end
                 local presets = (ns.GetTBBStylePresets and ns.GetTBBStylePresets()) or {}
                 local selName = SelectedPresetName()
                 local mH = 4
@@ -2879,7 +3512,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
                         local lbl = itm:CreateFontString(nil, "OVERLAY")
                         lbl:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-                        lbl:SetPoint("LEFT",  itm, "LEFT",  10, 0)
+                        lbl:SetPoint("LEFT", itm, "LEFT", 10, 0)
                         lbl:SetPoint("RIGHT", itm, "RIGHT", -(X_SZ * 2 + 26), 0)
                         lbl:SetJustifyH("LEFT")
                         lbl:SetWordWrap(false)
@@ -2888,7 +3521,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         itm._lbl = lbl
 
                         local hl = itm:CreateTexture(nil, "ARTWORK")
-                        hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 1); hl:SetAlpha(0)
+                        hl:SetAllPoints()
+                        hl:SetColorTexture(1, 1, 1, 1)
+                        hl:SetAlpha(0)
                         itm._hl = hl
 
                         local xBtn = CreateFrame("Button", nil, itm)
@@ -2897,7 +3532,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         xBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
                         local xIcon = xBtn:CreateTexture(nil, "OVERLAY")
                         xIcon:SetAllPoints()
-                        if xIcon.SetSnapToPixelGrid then xIcon:SetSnapToPixelGrid(false); xIcon:SetTexelSnappingBias(0) end
+                        if xIcon.SetSnapToPixelGrid then
+                            xIcon:SetSnapToPixelGrid(false)
+                            xIcon:SetTexelSnappingBias(0)
+                        end
                         xIcon:SetTexture(MEDIA_PR .. "cui-close.png")
                         xBtn:SetAlpha(0.4)
                         itm._xBtn = xBtn
@@ -2908,7 +3546,10 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         editBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
                         local editIcon = editBtn:CreateTexture(nil, "OVERLAY")
                         editIcon:SetAllPoints()
-                        if editIcon.SetSnapToPixelGrid then editIcon:SetSnapToPixelGrid(false); editIcon:SetTexelSnappingBias(0) end
+                        if editIcon.SetSnapToPixelGrid then
+                            editIcon:SetSnapToPixelGrid(false)
+                            editIcon:SetTexelSnappingBias(0)
+                        end
                         editIcon:SetTexture(MEDIA_PR .. "cui-edit.png")
                         editBtn:SetAlpha(0.4)
                         itm._editBtn = editBtn
@@ -2917,18 +3558,25 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                             return xBtn:IsMouseOver() or editBtn:IsMouseOver()
                         end
                         local function SetAllInlineAlpha(a)
-                            xBtn:SetAlpha(a); editBtn:SetAlpha(a)
+                            xBtn:SetAlpha(a)
+                            editBtn:SetAlpha(a)
                         end
 
                         itm:SetScript("OnEnter", function()
-                            if itm._isEmpty then return end
+                            if itm._isEmpty then
+                                return
+                            end
                             lbl:SetTextColor(1, 1, 1, 1)
                             hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
                             SetAllInlineAlpha(0.8)
                         end)
                         itm:SetScript("OnLeave", function()
-                            if itm._isEmpty then return end
-                            if IsOverInlineBtn() then return end
+                            if itm._isEmpty then
+                                return
+                            end
+                            if IsOverInlineBtn() then
+                                return
+                            end
                             lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                             hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                             SetAllInlineAlpha(0.4)
@@ -2969,7 +3617,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         prItems[i] = itm
                     end
 
-                    itm:SetPoint("TOPLEFT",  prMenu, "TOPLEFT",  1, -mH)
+                    itm:SetPoint("TOPLEFT", prMenu, "TOPLEFT", 1, -mH)
                     itm:SetPoint("TOPRIGHT", prMenu, "TOPRIGHT", -1, -mH)
 
                     local pr = presets[i]
@@ -2982,7 +3630,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         itm._hl:SetAlpha(0)
                         itm._xBtn:Hide()
                         itm._editBtn:Hide()
-                        itm:SetScript("OnClick", function() prMenu:Hide() end)
+                        itm:SetScript("OnClick", function()
+                            prMenu:Hide()
+                        end)
                     else
                         local capName = pr.name
                         itm._isEmpty = false
@@ -2997,18 +3647,22 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         itm:SetScript("OnClick", function()
                             prMenu:Hide()
                             local p = DB()
-                            if p then p.tbbSelectedStylePreset = capName end
+                            if p then
+                                p.tbbSelectedStylePreset = capName
+                            end
                             UpdatePrDDLabel()
                         end)
                         itm._xBtn:SetScript("OnClick", function()
                             prMenu:Hide()
                             CludesUI:ShowConfirmPopup({
-                                title       = CludesUI.L("Delete Preset"),
-                                message     = CludesUI.Lf("Delete \"%1$s\"?", capName),
+                                title = CludesUI.L("Delete Preset"),
+                                message = CludesUI.Lf('Delete "%1$s"?', capName),
                                 confirmText = CludesUI.L("Delete"),
-                                cancelText  = CludesUI.L("Cancel"),
-                                onConfirm   = function()
-                                    if ns.DeleteTBBStylePreset then ns.DeleteTBBStylePreset(capName) end
+                                cancelText = CludesUI.L("Cancel"),
+                                onConfirm = function()
+                                    if ns.DeleteTBBStylePreset then
+                                        ns.DeleteTBBStylePreset(capName)
+                                    end
                                     CludesUI:RefreshPage(true)
                                 end,
                             })
@@ -3016,19 +3670,25 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                         itm._editBtn:SetScript("OnClick", function()
                             prMenu:Hide()
                             CludesUI:ShowInputPopup({
-                                title       = CludesUI.L("Rename Preset"),
-                                message     = CludesUI.Lf("Enter a new name for \"%1$s\":", capName),
+                                title = CludesUI.L("Rename Preset"),
+                                message = CludesUI.Lf('Enter a new name for "%1$s":', capName),
                                 placeholder = capName,
                                 confirmText = CludesUI.L("Rename"),
-                                cancelText  = CludesUI.L("Cancel"),
-                                onConfirm   = function(newName)
+                                cancelText = CludesUI.L("Cancel"),
+                                onConfirm = function(newName)
                                     newName = newName and strtrim(newName) or ""
-                                    if newName == "" or newName == capName then return end
-                                    if ns.FindTBBStylePreset and ns.FindTBBStylePreset(newName) then
-                                        CludesUI.PrintError(CludesUI.Lf("A preset named \"%1$s\" already exists.", newName))
+                                    if newName == "" or newName == capName then
                                         return
                                     end
-                                    if ns.RenameTBBStylePreset then ns.RenameTBBStylePreset(capName, newName) end
+                                    if ns.FindTBBStylePreset and ns.FindTBBStylePreset(newName) then
+                                        CludesUI.PrintError(
+                                            CludesUI.Lf('A preset named "%1$s" already exists.', newName)
+                                        )
+                                        return
+                                    end
+                                    if ns.RenameTBBStylePreset then
+                                        ns.RenameTBBStylePreset(capName, newName)
+                                    end
                                     CludesUI:RefreshPage(true)
                                 end,
                             })
@@ -3052,19 +3712,34 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 prDDBg:SetColorTexture(aS[5], aS[6], aS[7], aS[8])
             end
             prDD:SetScript("OnClick", function()
-                if prMenu:IsShown() then prMenu:Hide()
-                else RebuildPresetMenu(); prMenu:Show() end
+                if prMenu:IsShown() then
+                    prMenu:Hide()
+                else
+                    RebuildPresetMenu()
+                    prMenu:Show()
+                end
             end)
-            prDD:SetScript("OnEnter", function() PrApplyHover() end)
+            prDD:SetScript("OnEnter", function()
+                PrApplyHover()
+            end)
             prDD:SetScript("OnLeave", function()
-                if not prMenu:IsShown() then PrApplyNormal() end
+                if not prMenu:IsShown() then
+                    PrApplyNormal()
+                end
             end)
-            prDD:HookScript("OnHide", function() prMenu:Hide() end)
-            prMenu:HookScript("OnShow", function() PrApplyHover() end)
+            prDD:HookScript("OnHide", function()
+                prMenu:Hide()
+            end)
+            prMenu:HookScript("OnShow", function()
+                PrApplyHover()
+            end)
             prMenu:SetScript("OnHide", function(self)
                 self:SetScript("OnUpdate", nil)
-                if prDD:IsMouseOver() then PrApplyHover()
-                else PrApplyNormal() end
+                if prDD:IsMouseOver() then
+                    PrApplyHover()
+                else
+                    PrApplyNormal()
+                end
             end)
 
             -- Buttons with dim labels above, matching the profile row's "Assign to Spec" / "New Profile" columns.
@@ -3081,55 +3756,90 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 b:HookScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(b, tooltip)
                 end)
-                b:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                b:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 return b
             end
             local bx = DD_W + GAP_DD
-            PresetBtn("Apply to Bar", "Apply to Bar", bx,
-                "Apply the selected preset's style to this bar.", function()
-                    local pr = SelectedPreset(); if not pr then return end
+            PresetBtn(
+                "Apply to Bar",
+                "Apply to Bar",
+                bx,
+                "Apply the selected preset's style to this bar.",
+                function()
+                    local pr = SelectedPreset()
+                    if not pr then
+                        return
+                    end
                     local sel = (not _tbbSelectedGroup) and SelectedTBB() or nil
-                    if not sel then return end
+                    if not sel then
+                        return
+                    end
                     ns.ApplyTBBStylePresetToCfg(pr, sel)
-                    RefreshTBB(); CludesUI:RefreshPage()
-                end)
-            PresetBtn("Apply to Group", "Apply to Group", bx + BTN_W + GAP_BTN,
-                "Apply the selected preset's style to every bar in this group.", function()
-                    local pr = SelectedPreset(); if not pr then return end
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end
+            )
+            PresetBtn(
+                "Apply to Group",
+                "Apply to Group",
+                bx + BTN_W + GAP_BTN,
+                "Apply the selected preset's style to every bar in this group.",
+                function()
+                    local pr = SelectedPreset()
+                    if not pr then
+                        return
+                    end
                     local gid = _tbbSelectedGroup
                     if not gid then
                         local sel = SelectedTBB()
                         gid = sel and ns.TBBBarGroupID(sel) or 0
                     end
-                    if not gid or gid == 0 then return end
+                    if not gid or gid == 0 then
+                        return
+                    end
                     local t = ns.GetTrackedBuffBars()
                     for _, c in ipairs(t.bars or {}) do
                         if ns.TBBBarGroupID(c) == gid then
                             ns.ApplyTBBStylePresetToCfg(pr, c)
                         end
                     end
-                    RefreshTBB(); CludesUI:RefreshPage()
-                end)
-            PresetBtn("New Preset", "Save New Preset", bx + (BTN_W + GAP_BTN) * 2,
-                "Save this bar's current style as a new preset.", function()
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end
+            )
+            PresetBtn(
+                "New Preset",
+                "Save New Preset",
+                bx + (BTN_W + GAP_BTN) * 2,
+                "Save this bar's current style as a new preset.",
+                function()
                     local src = PreviewCfg()
-                    if not src then return end
+                    if not src then
+                        return
+                    end
                     CludesUI:ShowInputPopup({
-                        title       = CludesUI.L("Save Style Preset"),
-                        message     = CludesUI.L("Enter a name for the new preset:"),
+                        title = CludesUI.L("Save Style Preset"),
+                        message = CludesUI.L("Enter a name for the new preset:"),
                         placeholder = UniqueTBBPresetName(),
                         confirmText = CludesUI.L("Save"),
-                        cancelText  = CludesUI.L("Cancel"),
-                        onConfirm   = function(nm)
-                            if not nm or nm == "" then nm = UniqueTBBPresetName() end
+                        cancelText = CludesUI.L("Cancel"),
+                        onConfirm = function(nm)
+                            if not nm or nm == "" then
+                                nm = UniqueTBBPresetName()
+                            end
                             if ns.SaveTBBStylePreset and ns.SaveTBBStylePreset(nm, src) then
                                 local p = DB()
-                                if p then p.tbbSelectedStylePreset = nm end
+                                if p then
+                                    p.tbbSelectedStylePreset = nm
+                                end
                             end
                             CludesUI:RefreshPage(true)
                         end,
                     })
-                end)
+                end
+            )
 
             y = y - PR_ROW_H - 14
 
@@ -3153,68 +3863,96 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             parent._showRowDivider = true
             parent._tbbClickTargets = nil
 
-            hdr, h = W:SectionHeader(parent, "GROUP SETTINGS", y);  y = y - h
+            hdr, h = W:SectionHeader(parent, "GROUP SETTINGS", y)
+            y = y - h
             -- The group's mover: a global group's TBBG_ element, else its anchor
             -- bar's (nil while no member is enabled: the click then does nothing).
-            CludesUI.BuildSectionUnlockJump(hdr, { key = function()
-                local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
-                if gk then return "TBBG_" .. gk end
-                local ai = ns.TBBGroupAnchorIndex(gid)
-                return ai and ("TBB_" .. ai) or nil
-            end })
+            CludesUI.BuildSectionUnlockJump(hdr, {
+                key = function()
+                    local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
+                    if gk then
+                        return "TBBG_" .. gk
+                    end
+                    local ai = ns.TBBGroupAnchorIndex(gid)
+                    return ai and ("TBB_" .. ai) or nil
+                end,
+            })
 
             -- Grow Direction | Bar Spacing
-            _, h = W:DualRow(parent, y,
-                { type = "dropdown", text = "Grow Direction",
-                  values = { DOWN = "Down", UP = "Up", LEFT = "Left", RIGHT = "Right" },
-                  order = { "DOWN", "UP", "LEFT", "RIGHT" },
-                  getValue = function() return ns.TBBGroupGrow(gid) end,
-                  setValue = function(v)
-                      ns.TBBSetGroupGrow(gid, v)
-                      ns.BuildTrackedBuffBars()
-                      -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                      RefreshTBBPopout()
-                      CludesUI:RefreshPage()
-                  end },
-                { type = "slider", pixel = true, text = "Bar Spacing", min = -2, max = 20, step = 1,
-                  getValue = function() return ns.TBBGroupSpacing(gid) end,
-                  setValue = function(v)
-                      ns.TBBSetGroupSpacing(gid, v)
-                      ns.BuildTrackedBuffBars()
-                      -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                      RefreshTBBPopout()
-                      CludesUI:RefreshPage()
-                  end }
-            );  y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "dropdown",
+                text = "Grow Direction",
+                values = { DOWN = "Down", UP = "Up", LEFT = "Left", RIGHT = "Right" },
+                order = { "DOWN", "UP", "LEFT", "RIGHT" },
+                getValue = function()
+                    return ns.TBBGroupGrow(gid)
+                end,
+                setValue = function(v)
+                    ns.TBBSetGroupGrow(gid, v)
+                    ns.BuildTrackedBuffBars()
+                    -- Preview popout: RefreshPage() takes the fast path, repaint it here.
+                    RefreshTBBPopout()
+                    CludesUI:RefreshPage()
+                end,
+            }, {
+                type = "slider",
+                pixel = true,
+                text = "Bar Spacing",
+                min = -2,
+                max = 20,
+                step = 1,
+                getValue = function()
+                    return ns.TBBGroupSpacing(gid)
+                end,
+                setValue = function(v)
+                    ns.TBBSetGroupSpacing(gid, v)
+                    ns.BuildTrackedBuffBars()
+                    -- Preview popout: RefreshPage() takes the fast path, repaint it here.
+                    RefreshTBBPopout()
+                    CludesUI:RefreshPage()
+                end,
+            })
+            y = y - h
 
             -- Group Name (blank = the default "Group N" label) | Auto-Add
-            _, h = W:DualRow(parent, y,
-                { type = "input", text = "Group Name", inputWidth = 160,
-                  inputStyle = "popup",
-                  placeholder = CludesUI.L("Group") .. " " .. gid,
-                  tooltip = "Rename this group; leave blank for the default name.",
-                  getValue = function()
-                      return (ns.TBBGroupName and ns.TBBGroupName(gid)) or ""
-                  end,
-                  setValue = function(text)
-                      if ns.TBBSetGroupName then ns.TBBSetGroupName(gid, text) end
-                      RefreshTBB()
-                      -- Soft refresh so the "Currently Editing:" dropdown label picks up the new name right away.
-                      CludesUI:RefreshPage()
-                  end },
-                { type = "toggle", text = "Auto-Add New to This Group",
-                  tooltip = "Automatically add a bar to this group for every spell in Blizzard's Tracked Bars section, now and whenever a new one appears.",
-                  getValue = function() return ns.TBBGroupAutoAdd and ns.TBBGroupAutoAdd(gid) or false end,
-                  setValue = function(v)
-                      if not ns.TBBSetGroupAutoAdd then return end
-                      ns.TBBSetGroupAutoAdd(gid, v)
-                      if v and ns.PopulateTBBAutoAddGroup then
-                          ns.PopulateTBBAutoAddGroup(gid)
-                      end
-                      ns.BuildTrackedBuffBars()
-                      CludesUI:RefreshPage(true)
-                  end }
-            );  y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "input",
+                text = "Group Name",
+                inputWidth = 160,
+                inputStyle = "popup",
+                placeholder = CludesUI.L("Group") .. " " .. gid,
+                tooltip = "Rename this group; leave blank for the default name.",
+                getValue = function()
+                    return (ns.TBBGroupName and ns.TBBGroupName(gid)) or ""
+                end,
+                setValue = function(text)
+                    if ns.TBBSetGroupName then
+                        ns.TBBSetGroupName(gid, text)
+                    end
+                    RefreshTBB()
+                    -- Soft refresh so the "Currently Editing:" dropdown label picks up the new name right away.
+                    CludesUI:RefreshPage()
+                end,
+            }, {
+                type = "toggle",
+                text = "Auto-Add New to This Group",
+                tooltip = "Automatically add a bar to this group for every spell in Blizzard's Tracked Bars section, now and whenever a new one appears.",
+                getValue = function()
+                    return ns.TBBGroupAutoAdd and ns.TBBGroupAutoAdd(gid) or false
+                end,
+                setValue = function(v)
+                    if not ns.TBBSetGroupAutoAdd then
+                        return
+                    end
+                    ns.TBBSetGroupAutoAdd(gid, v)
+                    if v and ns.PopulateTBBAutoAddGroup then
+                        ns.PopulateTBBAutoAddGroup(gid)
+                    end
+                    ns.BuildTrackedBuffBars()
+                    CludesUI:RefreshPage(true)
+                end,
+            })
+            y = y - h
 
             -- Global Group | Shift Elements If No Bars
             local function GlobalEntry()
@@ -3222,40 +3960,50 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 return gk and ns.TBBGlobalGroup and ns.TBBGlobalGroup(gk) or nil
             end
             local shiftRow
-            shiftRow, h = W:DualRow(parent, y,
-                { type = "toggle", text = "Global Group",
-                  tooltip = "Share this group's name, layout, and position across all specs.",
-                  getValue = function()
-                      return (ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid) ~= nil) or false
-                  end,
-                  setValue = function(v)
-                      if not ns.TBBSetGroupGlobal then return end
-                      ns.TBBSetGroupGlobal(gid, v)
-                      ns.BuildTrackedBuffBars()
-                      CludesUI:RefreshPage(true)
-                  end },
-                { type = "segmented", text = "Shift Elements If No Bars",
-                  tooltip = "When the current spec has no bars in this group, keeps elements anchored to the group in place and shifts them up or down by one bar height (tune with the cog's Extra Y Offset) to cover its empty slot.",
-                  disabled = function() return GlobalEntry() == nil end,
-                  disabledTooltip = "Global Group",
-                  values = { None = "None", Up = "Up", Down = "Down" },
-                  order = { "None", "Up", "Down" },
-                  getValue = function()
-                      local e = GlobalEntry()
-                      return (e and e.shiftNoBar) or "None"
-                  end,
-                  setValue = function(v)
-                      local e = GlobalEntry()
-                      if not e then return end
-                      if v == "Up" or v == "Down" then
-                          e.shiftNoBar = v
-                      else
-                          e.shiftNoBar = nil
-                      end
-                      ns.BuildTrackedBuffBars()
-                      CludesUI:RefreshPage()
-                  end }
-            );  y = y - h
+            shiftRow, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Global Group",
+                tooltip = "Share this group's name, layout, and position across all specs.",
+                getValue = function()
+                    return (ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid) ~= nil) or false
+                end,
+                setValue = function(v)
+                    if not ns.TBBSetGroupGlobal then
+                        return
+                    end
+                    ns.TBBSetGroupGlobal(gid, v)
+                    ns.BuildTrackedBuffBars()
+                    CludesUI:RefreshPage(true)
+                end,
+            }, {
+                type = "segmented",
+                text = "Shift Elements If No Bars",
+                tooltip = "When the current spec has no bars in this group, keeps elements anchored to the group in place and shifts them up or down by one bar height (tune with the cog's Extra Y Offset) to cover its empty slot.",
+                disabled = function()
+                    return GlobalEntry() == nil
+                end,
+                disabledTooltip = "Global Group",
+                values = { None = "None", Up = "Up", Down = "Down" },
+                order = { "None", "Up", "Down" },
+                getValue = function()
+                    local e = GlobalEntry()
+                    return (e and e.shiftNoBar) or "None"
+                end,
+                setValue = function(v)
+                    local e = GlobalEntry()
+                    if not e then
+                        return
+                    end
+                    if v == "Up" or v == "Down" then
+                        e.shiftNoBar = v
+                    else
+                        e.shiftNoBar = nil
+                    end
+                    ns.BuildTrackedBuffBars()
+                    CludesUI:RefreshPage()
+                end,
+            })
+            y = y - h
             -- Inline reposition cog on the shift dropdown: Extra Y Offset
             -- (ResourceBars "Shift Elements if No Resource" parity).
             if not CludesUI._prebuilding then
@@ -3263,25 +4011,34 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 CludesUI.BuildInlineCog(rgn, {
                     title = "Shift Offset",
                     rows = {
-                        { type = "slider", pixel = true, label = "Extra Y Offset", min = -50, max = 50, step = 1,
-                          get = function()
-                              local e = GlobalEntry()
-                              return (e and e.shiftNoBarExtraY) or 0
-                          end,
-                          set = function(v)
-                              local e = GlobalEntry()
-                              if not e then return end
-                              e.shiftNoBarExtraY = (v ~= 0) and v or nil
-                              ns.BuildTrackedBuffBars()
-                              -- The build tail's cascade is EDGE-gated on the
-                              -- shift direction, which a magnitude edit never
-                              -- flips -- re-cascade explicitly so the slider
-                              -- applies live (deferred batch coalesces drags).
-                              local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
-                              if gk and CludesUI.PropagateAnchorChain then
-                                  CludesUI.PropagateAnchorChain("TBBG_" .. gk)
-                              end
-                          end },
+                        {
+                            type = "slider",
+                            pixel = true,
+                            label = "Extra Y Offset",
+                            min = -50,
+                            max = 50,
+                            step = 1,
+                            get = function()
+                                local e = GlobalEntry()
+                                return (e and e.shiftNoBarExtraY) or 0
+                            end,
+                            set = function(v)
+                                local e = GlobalEntry()
+                                if not e then
+                                    return
+                                end
+                                e.shiftNoBarExtraY = (v ~= 0) and v or nil
+                                ns.BuildTrackedBuffBars()
+                                -- The build tail's cascade is EDGE-gated on the
+                                -- shift direction, which a magnitude edit never
+                                -- flips -- re-cascade explicitly so the slider
+                                -- applies live (deferred batch coalesces drags).
+                                local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
+                                if gk and CludesUI.PropagateAnchorChain then
+                                    CludesUI.PropagateAnchorChain("TBBG_" .. gk)
+                                end
+                            end,
+                        },
                     },
                 })
             end
@@ -3336,21 +4093,28 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         --  BAR LAYOUT
         -------------------------------------------------------------------
         local layoutHeader
-        layoutHeader, h = W:SectionHeader(parent, "BAR LAYOUT", y);  y = y - h
+        layoutHeader, h = W:SectionHeader(parent, "BAR LAYOUT", y)
+        y = y - h
         -- The selected bar's mover; a grouped bar's is its group's (a global
         -- group's TBBG_ element, else the group anchor's), since only the anchor
         -- keeps a mover.
-        CludesUI.BuildSectionUnlockJump(layoutHeader, { key = function()
-            local bd = SelectedTBB()
-            local gid = bd and ns.TBBBarGroupID(bd) or 0
-            if gid ~= 0 then
-                local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
-                if gk then return "TBBG_" .. gk end
-                local ai = ns.TBBGroupAnchorIndex(gid)
-                if ai then return "TBB_" .. ai end
-            end
-            return "TBB_" .. _tbbSelectedBar
-        end })
+        CludesUI.BuildSectionUnlockJump(layoutHeader, {
+            key = function()
+                local bd = SelectedTBB()
+                local gid = bd and ns.TBBBarGroupID(bd) or 0
+                if gid ~= 0 then
+                    local gk = ns.TBBGroupGlobalKey and ns.TBBGroupGlobalKey(gid)
+                    if gk then
+                        return "TBBG_" .. gk
+                    end
+                    local ai = ns.TBBGroupAnchorIndex(gid)
+                    if ai then
+                        return "TBB_" .. ai
+                    end
+                end
+                return "TBB_" .. _tbbSelectedBar
+            end,
+        })
 
         -- Height | Width. The whole group shares one width/height, so a grouped member
         -- inherits the group ANCHOR's match-lock: if size-matched, every member's slider
@@ -3361,7 +4125,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local selGid = selBd and ns.TBBBarGroupID(selBd) or 0
             if selGid ~= 0 then
                 local ai = ns.TBBGroupAnchorIndex(selGid)
-                if ai then tbbKey = "TBB_" .. ai end
+                if ai then
+                    tbbKey = "TBB_" .. ai
+                end
             end
         end
         local thDis, thTip, thRaw = CludesUI.MatchGuard(tbbKey, "Height")
@@ -3374,52 +4140,80 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             selIsVert = sb0 and sb0.verticalOrientation and true or false
         end
         local hwRow
-        hwRow, h = W:DualRow(parent, y,
-            { type = "slider", text = "Height",
-              min = 1, max = 800, step = 1,
-              disabled = thDis, disabledTooltip = thTip, rawTooltip = thRaw,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.height or 24 end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.height = v
-                  -- Grouped bars share height: write the rest of the group too.
-                  local gid = ns.TBBBarGroupID(bd)
-                  if gid ~= 0 then
-                      local t = ns.GetTrackedBuffBars()
-                      for _, b in ipairs(t.bars or {}) do
-                          if b ~= bd and ns.TBBBarGroupID(b) == gid then b.height = v end
-                      end
-                  end
-                  ns.BuildTrackedBuffBars()
-                  -- BuildTrackedBuffBars() only rebuilds the LIVE bar pool; the
-                  -- preview wraps in the popout are separate frames. RefreshPage()
-                  -- takes the fast widget-refresh path here, so the page builder
-                  -- tail that repaints the popout never re-runs. Repaint it
-                  -- directly or the preview keeps the old geometry.
-                  RefreshTBBPopout()
-                  CludesUI:RefreshPage()
-              end },
-            { type = "slider", text = "Width",
-              min = 1, max = 800, step = 1,
-              disabled = twDis, disabledTooltip = twTip, rawTooltip = twRaw,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.width or 270 end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.width = v
-                  -- Grouped bars share width: write the rest of the group too.
-                  local gid = ns.TBBBarGroupID(bd)
-                  if gid ~= 0 then
-                      local t = ns.GetTrackedBuffBars()
-                      for _, b in ipairs(t.bars or {}) do
-                          if b ~= bd and ns.TBBBarGroupID(b) == gid then b.width = v end
-                      end
-                  end
-                  ns.BuildTrackedBuffBars()
-                  -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                  RefreshTBBPopout()
-                  CludesUI:RefreshPage()
-              end }
-        );  y = y - h
+        hwRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Height",
+            min = 1,
+            max = 800,
+            step = 1,
+            disabled = thDis,
+            disabledTooltip = thTip,
+            rawTooltip = thRaw,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.height or 24
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.height = v
+                -- Grouped bars share height: write the rest of the group too.
+                local gid = ns.TBBBarGroupID(bd)
+                if gid ~= 0 then
+                    local t = ns.GetTrackedBuffBars()
+                    for _, b in ipairs(t.bars or {}) do
+                        if b ~= bd and ns.TBBBarGroupID(b) == gid then
+                            b.height = v
+                        end
+                    end
+                end
+                ns.BuildTrackedBuffBars()
+                -- BuildTrackedBuffBars() only rebuilds the LIVE bar pool; the
+                -- preview wraps in the popout are separate frames. RefreshPage()
+                -- takes the fast widget-refresh path here, so the page builder
+                -- tail that repaints the popout never re-runs. Repaint it
+                -- directly or the preview keeps the old geometry.
+                RefreshTBBPopout()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Width",
+            min = 1,
+            max = 800,
+            step = 1,
+            disabled = twDis,
+            disabledTooltip = twTip,
+            rawTooltip = twRaw,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.width or 270
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.width = v
+                -- Grouped bars share width: write the rest of the group too.
+                local gid = ns.TBBBarGroupID(bd)
+                if gid ~= 0 then
+                    local t = ns.GetTrackedBuffBars()
+                    for _, b in ipairs(t.bars or {}) do
+                        if b ~= bd and ns.TBBBarGroupID(b) == gid then
+                            b.width = v
+                        end
+                    end
+                end
+                ns.BuildTrackedBuffBars()
+                -- Preview popout: RefreshPage() takes the fast path, repaint it here.
+                RefreshTBBPopout()
+                CludesUI:RefreshPage()
+            end,
+        })
+        y = y - h
 
         -- Sync icons: Apply Height/Width to all bars of the SAME orientation -- "height" is
         -- the short side of a horizontal bar but the LONG side of a vertical one, so cross-orientation copies would be nonsense.
@@ -3432,115 +4226,186 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 region = hwRow._leftRegion,
                 tooltip = "Apply Height to all " .. orientWord .. " Bars",
                 isSynced = function()
-                    local bd = SelectedTBB(); if not bd then return false end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
                     local val = bd.height or 24
                     local t = ns.GetTrackedBuffBars()
                     for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) and (b.height or 24) ~= val then return false end
+                        if SameOrientation(bd, b) and (b.height or 24) ~= val then
+                            return false
+                        end
                     end
                     return true
                 end,
                 onClick = function()
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     local val = bd.height or 24
                     local t = ns.GetTrackedBuffBars()
                     for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) then b.height = val end
+                        if SameOrientation(bd, b) then
+                            b.height = val
+                        end
                     end
-                    RefreshTBB(); CludesUI:RefreshPage()
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end,
             })
             CludesUI.BuildSyncIcon({
                 region = hwRow._rightRegion,
                 tooltip = "Apply Width to all " .. orientWord .. " Bars",
                 isSynced = function()
-                    local bd = SelectedTBB(); if not bd then return false end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
                     local val = bd.width or 270
                     local t = ns.GetTrackedBuffBars()
                     for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) and (b.width or 270) ~= val then return false end
+                        if SameOrientation(bd, b) and (b.width or 270) ~= val then
+                            return false
+                        end
                     end
                     return true
                 end,
                 onClick = function()
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     local val = bd.width or 270
                     local t = ns.GetTrackedBuffBars()
                     for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) then b.width = val end
+                        if SameOrientation(bd, b) then
+                            b.width = val
+                        end
                     end
-                    RefreshTBB(); CludesUI:RefreshPage()
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end,
             })
         end
 
         -- Vertical Orientation | Bar Texture
-        _, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Vertical Orientation",
-              tooltip = "Vertical bars fill upward; flipping a grouped bar flips its whole group.",
-              getValue = function() local bd = SelectedTBB(); return bd and bd.verticalOrientation end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  -- Swap width/height so visual dimensions stay correct
-                  local function flip(c)
-                      c.width, c.height = (c.height or 24), (c.width or 270)
-                      c.verticalOrientation = v
-                  end
-                  flip(bd)
-                  -- Groups stay orientation-uniform: shared width/height only makes sense
-                  -- when every member reads dimensions the same way, so the whole group flips together.
-                  local gid = ns.TBBBarGroupID(bd)
-                  if gid ~= 0 then
-                      local t = ns.GetTrackedBuffBars()
-                      for _, b in ipairs(t.bars or {}) do
-                          if b ~= bd and ns.TBBBarGroupID(b) == gid
-                             and (b.verticalOrientation and true or false) ~= (v and true or false) then
-                              flip(b)
-                          end
-                      end
-                      -- Rotate the grow direction so side-by-side stays side-by-side across the flip (DOWN<->RIGHT, UP<->LEFT).
-                      local rot = v and { DOWN = "RIGHT", UP = "LEFT" }
-                                    or { RIGHT = "DOWN", LEFT = "UP" }
-                      local grow = ns.TBBGroupGrow(gid)
-                      if rot[grow] then ns.TBBSetGroupGrow(gid, rot[grow]) end
-                  end
-                  RefreshTBB()
-                  -- Full rebuild: the Width slider's floor and sync tooltips are orientation-dependent.
-                  CludesUI:RefreshPage(true)
-              end },
-            GateBlizzardOnly("cdmbars", { type = "dropdown", text = "Bar Texture",
-              values = texValues, order = texOrder,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.texture or "none" end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.texture = v; RefreshTBB()
-              end })
-        );  y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "toggle",
+                text = "Vertical Orientation",
+                tooltip = "Vertical bars fill upward; flipping a grouped bar flips its whole group.",
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.verticalOrientation
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    -- Swap width/height so visual dimensions stay correct
+                    local function flip(c)
+                        c.width, c.height = (c.height or 24), (c.width or 270)
+                        c.verticalOrientation = v
+                    end
+                    flip(bd)
+                    -- Groups stay orientation-uniform: shared width/height only makes sense
+                    -- when every member reads dimensions the same way, so the whole group flips together.
+                    local gid = ns.TBBBarGroupID(bd)
+                    if gid ~= 0 then
+                        local t = ns.GetTrackedBuffBars()
+                        for _, b in ipairs(t.bars or {}) do
+                            if
+                                b ~= bd
+                                and ns.TBBBarGroupID(b) == gid
+                                and (b.verticalOrientation and true or false) ~= (v and true or false)
+                            then
+                                flip(b)
+                            end
+                        end
+                        -- Rotate the grow direction so side-by-side stays side-by-side across the flip (DOWN<->RIGHT, UP<->LEFT).
+                        local rot = v and { DOWN = "RIGHT", UP = "LEFT" } or { RIGHT = "DOWN", LEFT = "UP" }
+                        local grow = ns.TBBGroupGrow(gid)
+                        if rot[grow] then
+                            ns.TBBSetGroupGrow(gid, rot[grow])
+                        end
+                    end
+                    RefreshTBB()
+                    -- Full rebuild: the Width slider's floor and sync tooltips are orientation-dependent.
+                    CludesUI:RefreshPage(true)
+                end,
+            },
+            GateBlizzardOnly("cdmbars", {
+                type = "dropdown",
+                text = "Bar Texture",
+                values = texValues,
+                order = texOrder,
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.texture or "none"
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.texture = v
+                    RefreshTBB()
+                end,
+            })
+        )
+        y = y - h
 
         -- Name Text (dropdown + cog) | Duration Text (dropdown + cog)
-        local TBB_POS_VALUES = { none = "None", center = "Center", top = "Top", bottom = "Bottom", left = "Left", right = "Right" }
+        local TBB_POS_VALUES = {
+            none = "None",
+            center = "Center",
+            top = "Top",
+            bottom = "Bottom",
+            left = "Left",
+            right = "Right",
+        }
         local TBB_POS_ORDER = { "none", "center", "top", "bottom", "left", "right" }
 
         -- When a text element claims a position, evict any other text already there so
         -- labels never overlap. Compares EFFECTIVE (rendered) positions: name text never
         -- renders on vertical bars, so its stored slot must not evict anything there.
         local function EvictTBBTextConflicts(bd, changedKey, newPos)
-            if newPos == "none" then return end
+            if newPos == "none" then
+                return
+            end
             local function resolvePos(key)
-                if key == "namePosition" and bd.verticalOrientation then return "none" end
+                if key == "namePosition" and bd.verticalOrientation then
+                    return "none"
+                end
                 local v = bd[key]
-                if v then return v end
-                if key == "namePosition" then return (bd.showName ~= false) and "left" or "none" end
-                if key == "timerPosition" then return bd.showTimer and "right" or "none" end
-                if key == "stacksPosition" then return "center" end
+                if v then
+                    return v
+                end
+                if key == "namePosition" then
+                    return (bd.showName ~= false) and "left" or "none"
+                end
+                if key == "timerPosition" then
+                    return bd.showTimer and "right" or "none"
+                end
+                if key == "stacksPosition" then
+                    return "center"
+                end
                 return "none"
             end
             local TEXT_KEYS = { "namePosition", "timerPosition", "stacksPosition" }
             for _, k in ipairs(TEXT_KEYS) do
                 if k ~= changedKey and resolvePos(k) == newPos then
                     bd[k] = "none"
-                    if k == "namePosition" then bd.showName = false
-                    elseif k == "timerPosition" then bd.showTimer = false end
+                    if k == "namePosition" then
+                        bd.showName = false
+                    elseif k == "timerPosition" then
+                        bd.showTimer = false
+                    end
                 end
             end
         end
@@ -3549,28 +4414,45 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             local ctrl = region._control
             local function GetColor()
                 local bd = SelectedTBB()
-                if not bd then return 1, 1, 1, 0.9 end
+                if not bd then
+                    return 1, 1, 1, 0.9
+                end
                 local r = bd[prefix .. "TextR"]
                 local g = bd[prefix .. "TextG"]
                 local b = bd[prefix .. "TextB"]
                 local a = bd[prefix .. "TextA"]
-                if r == nil then r = 1 end
-                if g == nil then g = 1 end
-                if b == nil then b = 1 end
-                if a == nil then a = 0.9 end
+                if r == nil then
+                    r = 1
+                end
+                if g == nil then
+                    g = 1
+                end
+                if b == nil then
+                    b = 1
+                end
+                if a == nil then
+                    a = 0.9
+                end
                 return r, g, b, a
             end
             local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                region, row:GetFrameLevel() + 3, GetColor,
+                region,
+                row:GetFrameLevel() + 3,
+                GetColor,
                 function(r, g, b, a)
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     bd[prefix .. "TextR"] = r
                     bd[prefix .. "TextG"] = g
                     bd[prefix .. "TextB"] = b
                     bd[prefix .. "TextA"] = a
                     RefreshTBB()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(swatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
             region._lastInline = swatch
 
@@ -3590,7 +4472,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 end
                 CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(tip))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             local function UpdateSwatchState()
                 local bd = SelectedTBB()
@@ -3608,9 +4492,15 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     end
                 end
                 local enabled = position ~= nil and position ~= "none"
-                if prefix == "name" and bd and bd.verticalOrientation then enabled = false end
+                if prefix == "name" and bd and bd.verticalOrientation then
+                    enabled = false
+                end
                 swatch:SetAlpha(enabled and 1 or 0.3)
-                if enabled then block:Hide() else block:Show() end
+                if enabled then
+                    block:Hide()
+                else
+                    block:Show()
+                end
             end
 
             CludesUI.RegisterWidgetRefresh(function()
@@ -3621,41 +4511,65 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         end
 
         local nameRow
-        nameRow, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Name Text",
-              values = TBB_POS_VALUES, order = TBB_POS_ORDER,
-              disabled = function()
-                  local bd = SelectedTBB()
-                  return bd and bd.verticalOrientation and true or false
-              end,
-              disabledTooltip = "Horizontal Orientation (name text is not shown on vertical bars)",
-              getValue = function()
-                  local bd = SelectedTBB(); if not bd then return "left" end
-                  if bd.namePosition then return bd.namePosition end
-                  return (bd.showName ~= false) and "left" or "none"
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  EvictTBBTextConflicts(bd, "namePosition", v)
-                  bd.namePosition = v
-                  bd.showName = (v ~= "none")
-                  RefreshTBB(); CludesUI:RefreshPage()
-              end },
-            { type = "dropdown", text = "Duration Text",
-              values = TBB_POS_VALUES, order = TBB_POS_ORDER,
-              getValue = function()
-                  local bd = SelectedTBB(); if not bd then return "right" end
-                  if bd.timerPosition then return bd.timerPosition end
-                  return bd.showTimer and "right" or "none"
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  EvictTBBTextConflicts(bd, "timerPosition", v)
-                  bd.timerPosition = v
-                  bd.showTimer = (v ~= "none")
-                  RefreshTBB(); CludesUI:RefreshPage()
-              end }
-        );  y = y - h
+        nameRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Name Text",
+            values = TBB_POS_VALUES,
+            order = TBB_POS_ORDER,
+            disabled = function()
+                local bd = SelectedTBB()
+                return bd and bd.verticalOrientation and true or false
+            end,
+            disabledTooltip = "Horizontal Orientation (name text is not shown on vertical bars)",
+            getValue = function()
+                local bd = SelectedTBB()
+                if not bd then
+                    return "left"
+                end
+                if bd.namePosition then
+                    return bd.namePosition
+                end
+                return (bd.showName ~= false) and "left" or "none"
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                EvictTBBTextConflicts(bd, "namePosition", v)
+                bd.namePosition = v
+                bd.showName = (v ~= "none")
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Duration Text",
+            values = TBB_POS_VALUES,
+            order = TBB_POS_ORDER,
+            getValue = function()
+                local bd = SelectedTBB()
+                if not bd then
+                    return "right"
+                end
+                if bd.timerPosition then
+                    return bd.timerPosition
+                end
+                return bd.showTimer and "right" or "none"
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                EvictTBBTextConflicts(bd, "timerPosition", v)
+                bd.timerPosition = v
+                bd.showTimer = (v ~= "none")
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end,
+        })
+        y = y - h
         -- Cog on Name Text: custom name, text size, wrap + x/y
         do
             local rgn = nameRow._leftRegion
@@ -3663,53 +4577,116 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 title = "Name Text Settings",
                 disabled = function()
                     local bd = SelectedTBB()
-                    if bd and bd.verticalOrientation then return true end
+                    if bd and bd.verticalOrientation then
+                        return true
+                    end
                     local pos = bd and bd.namePosition
-                    if not pos then pos = (bd and bd.showName ~= false) and "left" or "none" end
+                    if not pos then
+                        pos = (bd and bd.showName ~= false) and "left" or "none"
+                    end
                     return pos == "none"
                 end,
                 disabledTooltip = function()
                     local bd = SelectedTBB()
-                    if bd and bd.verticalOrientation then return "Horizontal Orientation (name text is not shown on vertical bars)" end
+                    if bd and bd.verticalOrientation then
+                        return "Horizontal Orientation (name text is not shown on vertical bars)"
+                    end
                     return "This option requires a Name Text position other than None"
                 end,
                 rows = {
-                    { type = "input", label = "Custom Name", inputWidth = 120, commitOnBlur = true,
-                      tooltip = "Leave empty to show the spell's name.",
-                      get = function()
-                          local bd = SelectedTBB()
-                          return bd and bd.customName or ""
-                      end,
-                      set = function(text)
-                          local bd = SelectedTBB(); if not bd then return end
-                          text = strtrim(text or "")
-                          bd.customName = text ~= "" and text or nil
-                          RefreshTBB()
-                      end },
-                    { type = "slider", label = "Text Size", min = 8, max = 24, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.nameSize or 11 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.nameSize = v; RefreshTBB()
-                      end },
-                    { type = "toggle", label = "Text Wrap",
-                      get = function() local bd = SelectedTBB(); return bd and bd.nameWrap == true end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.nameWrap = v or nil; RefreshTBB()
-                      end },
-                    { type = "slider", label = "X Offset", min = -100, max = 100, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.nameX or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.nameX = v; RefreshTBB()
-                      end },
-                    { type = "slider", label = "Y Offset", min = -100, max = 100, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.nameY or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.nameY = v; RefreshTBB()
-                      end },
+                    {
+                        type = "input",
+                        label = "Custom Name",
+                        inputWidth = 120,
+                        commitOnBlur = true,
+                        tooltip = "Leave empty to show the spell's name.",
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.customName or ""
+                        end,
+                        set = function(text)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            text = strtrim(text or "")
+                            bd.customName = text ~= "" and text or nil
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 8,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.nameSize or 11
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.nameSize = v
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Text Wrap",
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.nameWrap == true
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.nameWrap = v or nil
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.nameX or 0
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.nameX = v
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.nameY or 0
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.nameY = v
+                            RefreshTBB()
+                        end,
+                    },
                 },
             })
         end
@@ -3718,27 +4695,36 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             local rgn = nameRow._leftRegion
             CludesUI.BuildSyncIcon({
-                region  = rgn,
+                region = rgn,
                 tooltip = "Apply Name Text to all Bars",
                 isSynced = function()
-                    local bd = SelectedTBB(); if not bd then return false end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
                     local pos = bd.namePosition or ((bd.showName ~= false) and "left" or "none")
                     local tbb = ns.GetTrackedBuffBars()
                     for _, b in ipairs(tbb.bars or {}) do
                         local bp = b.namePosition or ((b.showName ~= false) and "left" or "none")
-                        if bp ~= pos then return false end
+                        if bp ~= pos then
+                            return false
+                        end
                     end
                     return true
                 end,
                 onClick = function()
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     local pos = bd.namePosition or ((bd.showName ~= false) and "left" or "none")
                     local tbb = ns.GetTrackedBuffBars()
                     for _, b in ipairs(tbb.bars or {}) do
                         b.namePosition = pos
                         b.showName = (pos ~= "none")
                     end
-                    RefreshTBB(); CludesUI:RefreshPage()
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end,
             })
         end
@@ -3746,53 +4732,115 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             local rgn = nameRow._rightRegion
             local durationRows = {
-                    { type = "slider", label = "Timer Size", min = 8, max = 24, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.timerSize or 11 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.timerSize = v; RefreshTBB()
-                      end },
-                    { type = "slider", label = "X Offset", min = -100, max = 100, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.timerX or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.timerX = v; RefreshTBB()
-                      end },
-                    { type = "slider", label = "Y Offset", min = -100, max = 100, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.timerY or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.timerY = v; RefreshTBB()
-                      end },
+                {
+                    type = "slider",
+                    label = "Timer Size",
+                    min = 8,
+                    max = 24,
+                    step = 1,
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.timerSize or 11
+                    end,
+                    set = function(v)
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.timerSize = v
+                        RefreshTBB()
+                    end,
+                },
+                {
+                    type = "slider",
+                    label = "X Offset",
+                    min = -100,
+                    max = 100,
+                    step = 1,
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.timerX or 0
+                    end,
+                    set = function(v)
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.timerX = v
+                        RefreshTBB()
+                    end,
+                },
+                {
+                    type = "slider",
+                    label = "Y Offset",
+                    min = -100,
+                    max = 100,
+                    step = 1,
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.timerY or 0
+                    end,
+                    set = function(v)
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.timerY = v
+                        RefreshTBB()
+                    end,
+                },
             }
             -- Engine-rendered tenths below the threshold (see CludesUICdmTbbDecimals.lua).
-                table.insert(durationRows, 2,
-                    { type = "toggle", label = "Decimals",
-                      tooltip = "Cannot work for pet/totem summon bars (Call Dreadstalkers, etc.) -- they expose no readable timer.",
-                      get = function() local bd = SelectedTBB(); return bd and bd.timerDecimals == true end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.timerDecimals = v or nil; RefreshTBB()
-                      end })
-                table.insert(durationRows, 3,
-                    { type = "slider", label = "Decimal Threshold", min = 1, max = 120, step = 1,
-                      disabled = function()
-                          local bd = SelectedTBB()
-                          return not (bd and bd.timerDecimals)
-                      end,
-                      disabledTooltip = "Decimals enabled",
-                      get = function() local bd = SelectedTBB(); return bd and bd.timerDecimalThreshold or 5 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.timerDecimalThreshold = v; RefreshTBB()
-                      end })
+            table.insert(durationRows, 2, {
+                type = "toggle",
+                label = "Decimals",
+                tooltip = "Cannot work for pet/totem summon bars (Call Dreadstalkers, etc.) -- they expose no readable timer.",
+                get = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.timerDecimals == true
+                end,
+                set = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.timerDecimals = v or nil
+                    RefreshTBB()
+                end,
+            })
+            table.insert(durationRows, 3, {
+                type = "slider",
+                label = "Decimal Threshold",
+                min = 1,
+                max = 120,
+                step = 1,
+                disabled = function()
+                    local bd = SelectedTBB()
+                    return not (bd and bd.timerDecimals)
+                end,
+                disabledTooltip = "Decimals enabled",
+                get = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.timerDecimalThreshold or 5
+                end,
+                set = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.timerDecimalThreshold = v
+                    RefreshTBB()
+                end,
+            })
             CludesUI.BuildInlineCog(rgn, {
                 title = "Duration Text Settings",
                 rows = durationRows,
                 disabled = function()
                     local bd = SelectedTBB()
                     local pos = bd and bd.timerPosition
-                    if not pos then pos = (bd and bd.showTimer) and "right" or "none" end
+                    if not pos then
+                        pos = (bd and bd.showTimer) and "right" or "none"
+                    end
                     return pos == "none"
                 end,
                 disabledTooltip = "This option requires a Duration Text position other than None",
@@ -3803,61 +4851,91 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             local rgn = nameRow._rightRegion
             CludesUI.BuildSyncIcon({
-                region  = rgn,
+                region = rgn,
                 tooltip = "Apply Duration Text to all Bars",
                 isSynced = function()
-                    local bd = SelectedTBB(); if not bd then return false end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
                     local pos = bd.timerPosition or (bd.showTimer and "right" or "none")
                     local tbb = ns.GetTrackedBuffBars()
                     for _, b in ipairs(tbb.bars or {}) do
                         local bp = b.timerPosition or (b.showTimer and "right" or "none")
-                        if bp ~= pos then return false end
+                        if bp ~= pos then
+                            return false
+                        end
                     end
                     return true
                 end,
                 onClick = function()
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     local pos = bd.timerPosition or (bd.showTimer and "right" or "none")
                     local tbb = ns.GetTrackedBuffBars()
                     for _, b in ipairs(tbb.bars or {}) do
                         b.timerPosition = pos
                         b.showTimer = (pos ~= "none")
                     end
-                    RefreshTBB(); CludesUI:RefreshPage()
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end,
             })
         end
 
         -- Stacks Text (dropdown + resize cog: size, x, y) | Bar Strata
         local stacksRow
-        stacksRow, h = W:DualRow(parent, y,
-            { type = "dropdown", text = "Stacks Text",
-              values = TBB_POS_VALUES, order = TBB_POS_ORDER,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.stacksPosition or "center" end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  EvictTBBTextConflicts(bd, "stacksPosition", v)
-                  bd.stacksPosition = v; RefreshTBB(); CludesUI:RefreshPage()
-              end },
-            { type = "dropdown", text = "Bar Strata",
-              tooltip = "Screen layer the bar renders on; changing a grouped bar changes its whole group.",
-              values = CludesUI.FRAME_STRATA_LABELS,
-              order = CludesUI.FRAME_STRATA_ORDER_FULL,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.strata or "MEDIUM" end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.strata = v
-                  -- Grouped bars share one strata: write the rest of the group too.
-                  local gid = ns.TBBBarGroupID(bd)
-                  if gid ~= 0 then
-                      local t = ns.GetTrackedBuffBars()
-                      for _, b in ipairs(t.bars or {}) do
-                          if b ~= bd and ns.TBBBarGroupID(b) == gid then b.strata = v end
-                      end
-                  end
-                  RefreshTBB()
-              end }
-        );  y = y - h
+        stacksRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Stacks Text",
+            values = TBB_POS_VALUES,
+            order = TBB_POS_ORDER,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.stacksPosition or "center"
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                EvictTBBTextConflicts(bd, "stacksPosition", v)
+                bd.stacksPosition = v
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Bar Strata",
+            tooltip = "Screen layer the bar renders on; changing a grouped bar changes its whole group.",
+            values = CludesUI.FRAME_STRATA_LABELS,
+            order = CludesUI.FRAME_STRATA_ORDER_FULL,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.strata or "MEDIUM"
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.strata = v
+                -- Grouped bars share one strata: write the rest of the group too.
+                local gid = ns.TBBBarGroupID(bd)
+                if gid ~= 0 then
+                    local t = ns.GetTrackedBuffBars()
+                    for _, b in ipairs(t.bars or {}) do
+                        if b ~= bd and ns.TBBBarGroupID(b) == gid then
+                            b.strata = v
+                        end
+                    end
+                end
+                RefreshTBB()
+            end,
+        })
+        y = y - h
         do
             local rgn = stacksRow._leftRegion
             CludesUI.BuildInlineCog(rgn, {
@@ -3868,24 +4946,63 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 end,
                 disabledTooltip = "This option requires a Stacks Text position other than None",
                 rows = {
-                    { type = "slider", label = "Size", min = 6, max = 24, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.stacksSize or 11 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.stacksSize = v; RefreshTBB()
-                      end },
-                    { type = "slider", label = "X Offset", min = -250, max = 250, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.stacksX or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.stacksX = v; RefreshTBB()
-                      end },
-                    { type = "slider", label = "Y Offset", min = -250, max = 250, step = 1,
-                      get = function() local bd = SelectedTBB(); return bd and bd.stacksY or 0 end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.stacksY = v; RefreshTBB()
-                      end },
+                    {
+                        type = "slider",
+                        label = "Size",
+                        min = 6,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.stacksSize or 11
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.stacksSize = v
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -250,
+                        max = 250,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.stacksX or 0
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.stacksX = v
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -250,
+                        max = 250,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.stacksY or 0
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.stacksY = v
+                            RefreshTBB()
+                        end,
+                    },
                 },
             })
         end
@@ -3894,23 +5011,34 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             local rgn = stacksRow._leftRegion
             CludesUI.BuildSyncIcon({
-                region  = rgn,
+                region = rgn,
                 tooltip = "Apply Stacks Text to all Bars",
                 isSynced = function()
-                    local bd = SelectedTBB(); if not bd then return false end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
                     local pos = bd.stacksPosition or "center"
                     local tbb = ns.GetTrackedBuffBars()
                     for _, b in ipairs(tbb.bars or {}) do
-                        if (b.stacksPosition or "center") ~= pos then return false end
+                        if (b.stacksPosition or "center") ~= pos then
+                            return false
+                        end
                     end
                     return true
                 end,
                 onClick = function()
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     local pos = bd.stacksPosition or "center"
                     local tbb = ns.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do b.stacksPosition = pos end
-                    RefreshTBB(); CludesUI:RefreshPage()
+                    for _, b in ipairs(tbb.bars or {}) do
+                        b.stacksPosition = pos
+                    end
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end,
             })
         end
@@ -3923,176 +5051,254 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -- Named distinctly: `fillRow` is already taken further down by the
         -- Fill Color row, which preview click-nav targets by reference.
         local fillDirRow
-        fillDirRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Reverse Fill",
-              tooltip = "Mirrors which end of the bar the fill is anchored to. It does not change the direction the bar travels: use Fill Up for that.",
-              getValue = function() local bd = SelectedTBB(); return bd and bd.reverseFill end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.reverseFill = v; RefreshTBB()
-              end },
-            { type = "toggle", text = "Fill Up",
-              tooltip = "Fills the bar as the cooldown recovers instead of draining it as the cooldown runs down.",
-              disabled = function()
-                  local bd = SelectedTBB()
-                  -- Charge Hash Lines drives its own recovery bar, which
-                  -- already fills upward, so fillUp cannot do anything there.
-                  -- Leaving the toggle live would promise behaviour it has no
-                  -- way to deliver. Test the same way the Charge Hash Lines
-                  -- toggle does: the stored flag alone is not enough, because
-                  -- chargeHashLines rides in TBB_STYLE_KEYS and a style copy
-                  -- or preset can set it on a single-charge spell, where the
-                  -- hash fill never actually runs.
-                  return not bd or bd.trackType ~= "cooldown"
-                      or (bd.chargeHashLines == true
-                          and SelectedTBBSupportsChargeHash())
-              end,
-              -- rawTooltip: these are whole sentences. Without it they get
-              -- wrapped into "This option requires <text> to be enabled".
-              rawTooltip = true,
-              disabledTooltip = function()
-                  local bd = SelectedTBB()
-                  if not bd or bd.trackType ~= "cooldown" then
-                      return "This option requires a cooldown-tracking bar"
-                  end
-                  return "Charge Hash Lines already fills as charges recover"
-              end,
-              getValue = function()
-                  local bd = SelectedTBB(); return bd and bd.fillUp == true
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.fillUp = v and true or nil
-                  RefreshTBB()
-              end }
-        );  y = y - h
+        fillDirRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Reverse Fill",
+            tooltip = "Mirrors which end of the bar the fill is anchored to. It does not change the direction the bar travels: use Fill Up for that.",
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.reverseFill
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.reverseFill = v
+                RefreshTBB()
+            end,
+        }, {
+            type = "toggle",
+            text = "Fill Up",
+            tooltip = "Fills the bar as the cooldown recovers instead of draining it as the cooldown runs down.",
+            disabled = function()
+                local bd = SelectedTBB()
+                -- Charge Hash Lines drives its own recovery bar, which
+                -- already fills upward, so fillUp cannot do anything there.
+                -- Leaving the toggle live would promise behaviour it has no
+                -- way to deliver. Test the same way the Charge Hash Lines
+                -- toggle does: the stored flag alone is not enough, because
+                -- chargeHashLines rides in TBB_STYLE_KEYS and a style copy
+                -- or preset can set it on a single-charge spell, where the
+                -- hash fill never actually runs.
+                return not bd
+                    or bd.trackType ~= "cooldown"
+                    or (bd.chargeHashLines == true and SelectedTBBSupportsChargeHash())
+            end,
+            -- rawTooltip: these are whole sentences. Without it they get
+            -- wrapped into "This option requires <text> to be enabled".
+            rawTooltip = true,
+            disabledTooltip = function()
+                local bd = SelectedTBB()
+                if not bd or bd.trackType ~= "cooldown" then
+                    return "This option requires a cooldown-tracking bar"
+                end
+                return "Charge Hash Lines already fills as charges recover"
+            end,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.fillUp == true
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.fillUp = v and true or nil
+                RefreshTBB()
+            end,
+        })
+        y = y - h
 
         -- Charge Hash Lines | Smooth Bars. Hash separator count/orientation resolve
         -- automatically from the spell's max charges; Smooth Bars is profile-wide, not per bar/spec.
         local SMOOTH_ITEMS = {
-            { key = "buffs",     label = "Buffs" },
+            { key = "buffs", label = "Buffs" },
             { key = "cooldowns", label = "Cooldowns" },
         }
         local SMOOTH_DEFAULT = { buffs = true, cooldowns = false }
         local chargeHashRow
-        chargeHashRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Charge Hash Lines",
-              tooltip = "Divides a cooldown-tracking bar into one recovery section per ability charge. The timer shows the next charge's cooldown.",
-              disabled = function()
-                  local bd = SelectedTBB()
-                  return not bd or bd.trackType ~= "cooldown"
-                      or not SelectedTBBSupportsChargeHash()
-              end,
-              disabledTooltip = function()
-                  local bd = SelectedTBB()
-                  if not bd or bd.trackType ~= "cooldown" then
-                      return "This option requires a cooldown-tracking bar"
-                  end
-                  return "This option is only available for abilities with multiple charges"
-              end,
-              getValue = function()
-                  local bd = SelectedTBB()
-                  return bd and bd.chargeHashLines == true
-                      and SelectedTBBSupportsChargeHash()
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  if v and not SelectedTBBSupportsChargeHash() then return end
-                  bd.chargeHashLines = v and true or nil
-                  RefreshTBB(); CludesUI:RefreshPage()
-              end },
-            { type = "dropdown", text = "Smooth Bars",
-              tooltip = "Eases bar movement instead of snapping. Affects all Tracking Bars of that type, in every spec of this profile.",
-              values = { __placeholder = "..." }, order = { "__placeholder" },
-              getValue = function() return "__placeholder" end,
-              setValue = function() end });  y = y - h
+        chargeHashRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Charge Hash Lines",
+            tooltip = "Divides a cooldown-tracking bar into one recovery section per ability charge. The timer shows the next charge's cooldown.",
+            disabled = function()
+                local bd = SelectedTBB()
+                return not bd or bd.trackType ~= "cooldown" or not SelectedTBBSupportsChargeHash()
+            end,
+            disabledTooltip = function()
+                local bd = SelectedTBB()
+                if not bd or bd.trackType ~= "cooldown" then
+                    return "This option requires a cooldown-tracking bar"
+                end
+                return "This option is only available for abilities with multiple charges"
+            end,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.chargeHashLines == true and SelectedTBBSupportsChargeHash()
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                if v and not SelectedTBBSupportsChargeHash() then
+                    return
+                end
+                bd.chargeHashLines = v and true or nil
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Smooth Bars",
+            tooltip = "Eases bar movement instead of snapping. Affects all Tracking Bars of that type, in every spec of this profile.",
+            values = { __placeholder = "..." },
+            order = { "__placeholder" },
+            getValue = function()
+                return "__placeholder"
+            end,
+            setValue = function() end,
+        })
+        y = y - h
         do
             local rgn = chargeHashRow._leftRegion
             CludesUI.BuildInlineCog(rgn, {
                 title = "Charge Hash Line Settings",
                 disabled = function()
                     local bd = SelectedTBB()
-                    return not bd or bd.trackType ~= "cooldown"
+                    return not bd
+                        or bd.trackType ~= "cooldown"
                         or not SelectedTBBSupportsChargeHash()
                         or bd.chargeHashLines ~= true
                 end,
                 disabledTooltip = function()
                     local bd = SelectedTBB()
-                    if not bd or bd.trackType ~= "cooldown" then return "This option requires a cooldown-tracking bar" end
-                    if not SelectedTBBSupportsChargeHash() then return "This option is only available for abilities with multiple charges" end
+                    if not bd or bd.trackType ~= "cooldown" then
+                        return "This option requires a cooldown-tracking bar"
+                    end
+                    if not SelectedTBBSupportsChargeHash() then
+                        return "This option is only available for abilities with multiple charges"
+                    end
                     return "Enable Charge Hash Lines first"
                 end,
                 rawTooltip = true,
                 rows = {
-                    { type = "slider", label = "Line Width", min = 1, max = 10, step = 1,
-                      get = function()
-                          local bd = SelectedTBB()
-                          return bd and bd.chargeHashLineWidth or 2
-                      end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.chargeHashLineWidth = v
-                          RefreshTBB()
-                      end },
-                    { type = "colorpicker", label = "Line Color", hasAlpha = true,
-                      get = function()
-                          local bd = SelectedTBB()
-                          if not bd then return 0, 0, 0, 1 end
-                          local a = bd.chargeHashLineA
-                          if a == nil then a = 1 end
-                          return bd.chargeHashLineR or 0, bd.chargeHashLineG or 0,
-                              bd.chargeHashLineB or 0, a
-                      end,
-                      set = function(r, g, b, a)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.chargeHashLineR, bd.chargeHashLineG = r, g
-                          bd.chargeHashLineB, bd.chargeHashLineA = b, a
-                          RefreshTBB()
-                      end },
-                    { type = "toggle", label = "Partial Charge Shade",
-                      tooltip = "Darkens the section of the bar that is still recharging the next charge.",
-                      get = function()
-                          local bd = SelectedTBB()
-                          return bd and bd.chargeHashShade == true
-                      end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.chargeHashShade = v and true or nil
-                          RefreshTBB()
-                      end },
-                    { type = "slider", label = "Shade Darkness", min = 5, max = 95, step = 5,
-                      disabled = function()
-                          local bd = SelectedTBB()
-                          return not bd or bd.chargeHashShade ~= true
-                      end,
-                      get = function()
-                          local bd = SelectedTBB()
-                          return bd and math.floor(((bd.chargeHashShadeAlpha or 0.5) * 100) + 0.5) or 50
-                      end,
-                      set = function(v)
-                          local bd = SelectedTBB(); if not bd then return end
-                          bd.chargeHashShadeAlpha = (v or 50) / 100
-                          RefreshTBB()
-                      end },
+                    {
+                        type = "slider",
+                        label = "Line Width",
+                        min = 1,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.chargeHashLineWidth or 2
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.chargeHashLineWidth = v
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "colorpicker",
+                        label = "Line Color",
+                        hasAlpha = true,
+                        get = function()
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return 0, 0, 0, 1
+                            end
+                            local a = bd.chargeHashLineA
+                            if a == nil then
+                                a = 1
+                            end
+                            return bd.chargeHashLineR or 0,
+                                bd.chargeHashLineG or 0,
+                                bd.chargeHashLineB or 0,
+                                a
+                        end,
+                        set = function(r, g, b, a)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.chargeHashLineR, bd.chargeHashLineG = r, g
+                            bd.chargeHashLineB, bd.chargeHashLineA = b, a
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Partial Charge Shade",
+                        tooltip = "Darkens the section of the bar that is still recharging the next charge.",
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.chargeHashShade == true
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.chargeHashShade = v and true or nil
+                            RefreshTBB()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Shade Darkness",
+                        min = 5,
+                        max = 95,
+                        step = 5,
+                        disabled = function()
+                            local bd = SelectedTBB()
+                            return not bd or bd.chargeHashShade ~= true
+                        end,
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and math.floor(((bd.chargeHashShadeAlpha or 0.5) * 100) + 0.5) or 50
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.chargeHashShadeAlpha = (v or 50) / 100
+                            RefreshTBB()
+                        end,
+                    },
                 },
             })
         end
 
         do
             local rgn = chargeHashRow._rightRegion
-            if rgn._control then rgn._control:Hide() end
+            if rgn._control then
+                rgn._control:Hide()
+            end
             local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn, 210, rgn:GetFrameLevel() + 2,
+                rgn,
+                210,
+                rgn:GetFrameLevel() + 2,
                 SMOOTH_ITEMS,
                 function(k)
                     local s = ns.GetTBBSmoothSettings and ns.GetTBBSmoothSettings()
-                    if not s or s[k] == nil then return SMOOTH_DEFAULT[k] end
+                    if not s or s[k] == nil then
+                        return SMOOTH_DEFAULT[k]
+                    end
                     return s[k] == true
                 end,
                 function(k, v)
                     local s = ns.GetTBBSmoothSettings and ns.GetTBBSmoothSettings()
-                    if s then s[k] = v and true or false end
-                end)
+                    if s then
+                        s[k] = v and true or false
+                    end
+                end
+            )
             PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = cbDD
             rgn._lastInline = nil
@@ -4103,103 +5309,182 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         --  DISPLAY
         -------------------------------------------------------------------
         local displayHeader
-        displayHeader, h = W:SectionHeader(parent, "DISPLAY", y);  y = y - h
+        displayHeader, h = W:SectionHeader(parent, "DISPLAY", y)
+        y = y - h
         y = CludesUI.BlizzStyle.Note(parent, y, "cdmbars")
 
         -- Visibility: one control, the shared axis list plus the TBB-only Hide When
         -- Inactive row (single-lane, so it rides in as an extraItem). No mouseover for
         -- CDM-family bars; "Only In Combat" is the In Combat axis.
-        local _, tbbVisH = CludesUI.BuildVisibilityRow(W, parent, y,
-            { getStore = SelectedTBB, legacyKey = "barVisibility",
-              caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
-              onChanged = function() RefreshTBB() end,
-              onOptionChanged = function() RefreshTBB() end,
-              extraItems = {
-                  { key = "hideWhenInactive", label = "Hide When Inactive",
-                    tooltip = "Only show this bar while the tracked buff/cooldown is active. Unchecked keeps an empty bar on screen at all times.",
-                    -- nil means ON everywhere this is read, so it cannot go through a
-                    -- plain truthiness path.
-                    get = function()
-                        local bd = SelectedTBB()
-                        return bd and bd.hideWhenInactive ~= false
-                    end,
-                    -- No refresh here: the row fires onOptionChanged after every write.
-                    set = function(v)
-                        local bd = SelectedTBB(); if not bd then return end
-                        bd.hideWhenInactive = v
-                    end },
-              } },
+        local _, tbbVisH = CludesUI.BuildVisibilityRow(
+            W,
+            parent,
+            y,
+            {
+                getStore = SelectedTBB,
+                legacyKey = "barVisibility",
+                caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
+                onChanged = function()
+                    RefreshTBB()
+                end,
+                onOptionChanged = function()
+                    RefreshTBB()
+                end,
+                extraItems = {
+                    {
+                        key = "hideWhenInactive",
+                        label = "Hide When Inactive",
+                        tooltip = "Only show this bar while the tracked buff/cooldown is active. Unchecked keeps an empty bar on screen at all times.",
+                        -- nil means ON everywhere this is read, so it cannot go through a
+                        -- plain truthiness path.
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.hideWhenInactive ~= false
+                        end,
+                        -- No refresh here: the row fires onOptionChanged after every write.
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.hideWhenInactive = v
+                        end,
+                    },
+                },
+            },
             -- Show Icon moved up into the slot the Visibility Options dropdown left behind.
-            { type = "dropdown", text = "Show Icon",
-              values = { none = "None", left = "Left (Top)", right = "Right (Bottom)" },
-              order = { "none", "left", "right" },
-              getValue = function() local bd = SelectedTBB(); return bd and bd.iconDisplay or "none" end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.iconDisplay = v; RefreshTBB()
-              end });  y = y - tbbVisH
+            {
+                type = "dropdown",
+                text = "Show Icon",
+                values = { none = "None", left = "Left (Top)", right = "Right (Bottom)" },
+                order = { "none", "left", "right" },
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.iconDisplay or "none"
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.iconDisplay = v
+                    RefreshTBB()
+                end,
+            }
+        )
+        y = y - tbbVisH
 
         -- Opacity | Background Color (moved up from its old trailing half-row below)
         local iconRow
-        iconRow, h = W:DualRow(parent, y,
-            { type = "slider", text = "Opacity",
-              min = 0, max = 100, step = 1,
-              getValue = function()
-                  local bd = SelectedTBB()
-                  return bd and math.floor((bd.opacity or 1.0) * 100 + 0.5) or 100
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.opacity = v / 100; RefreshTBB()
-              end },
-            { type = "multiSwatch", text = "Background Color",
-              swatches = {
-                  GateBlizzardOnly("cdmbars", { tooltip = "Background Color", hasAlpha = true,
-                    getValue = function()
-                        local bd = SelectedTBB()
-                        return (bd and bd.bgR or 0), (bd and bd.bgG or 0), (bd and bd.bgB or 0), (bd and bd.bgA or 0.4)
-                    end,
-                    setValue = function(r, g, b, a)
-                        local bd = SelectedTBB(); if not bd then return end
-                        bd.bgR, bd.bgG, bd.bgB, bd.bgA = r, g, b, a; RefreshTBB()
-                    end }),
-              } }
-        );  y = y - h
+        iconRow, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "slider",
+                text = "Opacity",
+                min = 0,
+                max = 100,
+                step = 1,
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and math.floor((bd.opacity or 1.0) * 100 + 0.5) or 100
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.opacity = v / 100
+                    RefreshTBB()
+                end,
+            },
+            {
+                type = "multiSwatch",
+                text = "Background Color",
+                swatches = {
+                    GateBlizzardOnly("cdmbars", {
+                        tooltip = "Background Color",
+                        hasAlpha = true,
+                        getValue = function()
+                            local bd = SelectedTBB()
+                            return (bd and bd.bgR or 0),
+                                (bd and bd.bgG or 0),
+                                (bd and bd.bgB or 0),
+                                (bd and bd.bgA or 0.4)
+                        end,
+                        setValue = function(r, g, b, a)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.bgR, bd.bgG, bd.bgB, bd.bgA = r, g, b, a
+                            RefreshTBB()
+                        end,
+                    }),
+                },
+            }
+        )
+        y = y - h
 
         -- Fill Color (dropdown: auto/custom + gradient mode + 2 inline swatches) | Show Spark
         local fillRow
-        fillRow, h = W:DualRow(parent, y,
-            CludesUI.BlizzStyle.Gate("cdmbars", { type = "dropdown", text = "Fill Color",
-              values = {
-                  none = "Custom Color",
-                  VERTICAL = "Vertical Gradient",
-                  HORIZONTAL = "Horizontal Gradient",
-              },
-              order = { "none", "HORIZONTAL", "VERTICAL" },
-              getValue = function()
-                  local bd = SelectedTBB(); if not bd then return "none" end
-                  -- Treat legacy "auto" as "custom" (no migration needed)
-                  if not bd.gradientEnabled then return "none" end
-                  return bd.gradientDir or "HORIZONTAL"
-              end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.fillColorMode = "custom"
-                  if v == "none" then
-                      bd.gradientEnabled = false
-                  else
-                      bd.gradientEnabled = true
-                      bd.gradientDir = v
-                  end
-                  RefreshTBB(); CludesUI:RefreshPage()
-              end }),
-            { type = "toggle", text = "Show Spark",
-              getValue = function() local bd = SelectedTBB(); return bd and bd.showSpark end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.showSpark = v; RefreshTBB()
-              end }
-        );  y = y - h
+        fillRow, h = W:DualRow(
+            parent,
+            y,
+            CludesUI.BlizzStyle.Gate("cdmbars", {
+                type = "dropdown",
+                text = "Fill Color",
+                values = {
+                    none = "Custom Color",
+                    VERTICAL = "Vertical Gradient",
+                    HORIZONTAL = "Horizontal Gradient",
+                },
+                order = { "none", "HORIZONTAL", "VERTICAL" },
+                getValue = function()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return "none"
+                    end
+                    -- Treat legacy "auto" as "custom" (no migration needed)
+                    if not bd.gradientEnabled then
+                        return "none"
+                    end
+                    return bd.gradientDir or "HORIZONTAL"
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.fillColorMode = "custom"
+                    if v == "none" then
+                        bd.gradientEnabled = false
+                    else
+                        bd.gradientEnabled = true
+                        bd.gradientDir = v
+                    end
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end,
+            }),
+            {
+                type = "toggle",
+                text = "Show Spark",
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.showSpark
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.showSpark = v
+                    RefreshTBB()
+                end,
+            }
+        )
+        y = y - h
         -- Inline swatches on Fill Color dropdown: fill color + gradient end color
         do
             local rgn = fillRow._leftRegion
@@ -4207,7 +5492,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
             -- Swatch 1 (rightmost, closer to dropdown): Fill Color
             local fillSwatch, updateFillSwatch = CludesUI.BuildColorSwatch(
-                rgn, fillRow:GetFrameLevel() + 3,
+                rgn,
+                fillRow:GetFrameLevel() + 3,
                 function()
                     local bd = SelectedTBB()
                     if not bd then
@@ -4218,48 +5504,73 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     return bd.fillR, bd.fillG, bd.fillB, bd.fillA
                 end,
                 function(r, g, b, a)
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     bd.fillColorMode = "custom"
-                    bd.fillR, bd.fillG, bd.fillB, bd.fillA = r, g, b, a; RefreshTBB()
+                    bd.fillR, bd.fillG, bd.fillB, bd.fillA = r, g, b, a
+                    RefreshTBB()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(fillSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
 
             -- Swatch 2 (left of swatch 1): Gradient End Color
             local gradSwatch, updateGradSwatch = CludesUI.BuildColorSwatch(
-                rgn, fillRow:GetFrameLevel() + 3,
+                rgn,
+                fillRow:GetFrameLevel() + 3,
                 function()
                     local bd = SelectedTBB()
-                    if not bd then return 0.20, 0.20, 0.80, 1 end
+                    if not bd then
+                        return 0.20, 0.20, 0.80, 1
+                    end
                     return bd.gradientR, bd.gradientG, bd.gradientB, bd.gradientA
                 end,
                 function(r, g, b, a)
-                    local bd = SelectedTBB(); if not bd then return end
-                    bd.gradientR, bd.gradientG, bd.gradientB, bd.gradientA = r, g, b, a; RefreshTBB()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.gradientR, bd.gradientG, bd.gradientB, bd.gradientA = r, g, b, a
+                    RefreshTBB()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(gradSwatch, "RIGHT", fillSwatch, "LEFT", -4, 0)
 
             -- Disable block on fill swatch when Auto mode
             local fillBlock = CreateFrame("Frame", nil, fillSwatch)
-            fillBlock:SetAllPoints(); fillBlock:SetFrameLevel(fillSwatch:GetFrameLevel() + 10)
+            fillBlock:SetAllPoints()
+            fillBlock:SetFrameLevel(fillSwatch:GetFrameLevel() + 10)
             fillBlock:EnableMouse(true)
             fillBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(fillSwatch, CludesUI.DisabledTooltip("This option requires Fill Color to be set to Custom"))
+                CludesUI.ShowWidgetTooltip(
+                    fillSwatch,
+                    CludesUI.DisabledTooltip("This option requires Fill Color to be set to Custom")
+                )
             end)
-            fillBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            fillBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             -- Disable block on gradient swatch when gradient is off or auto mode
             local gradBlock = CreateFrame("Frame", nil, gradSwatch)
-            gradBlock:SetAllPoints(); gradBlock:SetFrameLevel(gradSwatch:GetFrameLevel() + 10)
+            gradBlock:SetAllPoints()
+            gradBlock:SetFrameLevel(gradSwatch:GetFrameLevel() + 10)
             gradBlock:EnableMouse(true)
             gradBlock:SetScript("OnEnter", function()
                 local bd = SelectedTBB()
                 local isAuto = false
-                local msg = isAuto and "Set Fill Color to a Custom option" or "This option requires a gradient to be set"
+                local msg = isAuto and "Set Fill Color to a Custom option"
+                    or "This option requires a gradient to be set"
                 CludesUI.ShowWidgetTooltip(gradSwatch, CludesUI.DisabledTooltip(msg))
             end)
-            gradBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            gradBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             local function UpdateSwatchStates()
                 local bd = SelectedTBB()
@@ -4267,13 +5578,27 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- Blizzard Style keeps the flat atlas fill, so the gradient end colour is inert there.
                 local noGrad = not bd or not bd.gradientEnabled or CludesUI.BlizzStyle.Get("cdmbars")
                 -- Fill swatch: disabled in auto mode
-                if isAuto then fillSwatch:SetAlpha(0.3); fillBlock:Show()
-                else fillSwatch:SetAlpha(1); fillBlock:Hide() end
+                if isAuto then
+                    fillSwatch:SetAlpha(0.3)
+                    fillBlock:Show()
+                else
+                    fillSwatch:SetAlpha(1)
+                    fillBlock:Hide()
+                end
                 -- Grad swatch: disabled in auto mode OR when no gradient
-                if isAuto or noGrad then gradSwatch:SetAlpha(0.3); gradBlock:Show()
-                else gradSwatch:SetAlpha(1); gradBlock:Hide() end
+                if isAuto or noGrad then
+                    gradSwatch:SetAlpha(0.3)
+                    gradBlock:Show()
+                else
+                    gradSwatch:SetAlpha(1)
+                    gradBlock:Hide()
+                end
             end
-            CludesUI.RegisterWidgetRefresh(function() updateFillSwatch(); updateGradSwatch(); UpdateSwatchStates() end)
+            CludesUI.RegisterWidgetRefresh(function()
+                updateFillSwatch()
+                updateGradSwatch()
+                UpdateSwatchStates()
+            end)
             UpdateSwatchStates()
         end
 
@@ -4281,36 +5606,92 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local tbbBsRow
-            tbbBsRow, h = W:DualRow(parent, y,
-                CludesUI.BlizzStyle.Gate("cdmbars", { type="dropdown", text="Border Texture",
-                  values=texValues, order=texOrder,
-                  getValue=function() local bd = SelectedTBB(); return bd and bd.borderTexture or "solid" end,
-                  setValue=function(v)
-                      local bd = SelectedTBB(); if not bd then return end
-                      bd.borderTexture = v; bd.borderTextureOffset = nil; bd.borderTextureOffsetY = nil; bd.borderTextureShiftX = nil; bd.borderTextureShiftY = nil
-                      local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
-                      bd.borderR = _bcol.r; bd.borderG = _bcol.g; bd.borderB = _bcol.b
-                      bd.borderBehind = _bbehind
-                      local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
-                      if defSz then bd.borderSize = defSz end
-                      if bd.borderSizePx then bd.borderSizePx = false end
-                      RefreshTBB(); CludesUI:RefreshPage(true)
-                  end }),
+            tbbBsRow, h = W:DualRow(
+                parent,
+                y,
+                CludesUI.BlizzStyle.Gate("cdmbars", {
+                    type = "dropdown",
+                    text = "Border Texture",
+                    values = texValues,
+                    order = texOrder,
+                    getValue = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.borderTexture or "solid"
+                    end,
+                    setValue = function(v)
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.borderTexture = v
+                        bd.borderTextureOffset = nil
+                        bd.borderTextureOffsetY = nil
+                        bd.borderTextureShiftX = nil
+                        bd.borderTextureShiftY = nil
+                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
+                        bd.borderR = _bcol.r
+                        bd.borderG = _bcol.g
+                        bd.borderB = _bcol.b
+                        bd.borderBehind = _bbehind
+                        local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
+                        if defSz then
+                            bd.borderSize = defSz
+                        end
+                        if bd.borderSizePx then
+                            bd.borderSizePx = false
+                        end
+                        RefreshTBB()
+                        CludesUI:RefreshPage(true)
+                    end,
+                }),
                 -- Classic WoW UI: the slot sizes the vanilla frame instead.
-                (CludesUI.BlizzStyle.Active("cdmbars") == "classic") and CludesUI.BlizzStyle.ClassicBorderSizeCfg(
-                    function() local bd = SelectedTBB(); return bd and bd.stockBorderScale end,
-                    function(v)
-                        local bd = SelectedTBB(); if not bd then return end
-                        bd.stockBorderScale = v; RefreshTBB()
-                    end) or
-                CludesUI.BlizzStyle.Gate("cdmbars", CludesUI.BorderPxSliderCfg({ text = "Border Size",
-                  getStep = function() local bd = SelectedTBB(); return bd and bd.borderSize or 0 end,
-                  setStep = function(step) local bd = SelectedTBB(); if bd then bd.borderSize = step end end,
-                  getTex = function() local bd = SelectedTBB(); return bd and bd.borderTexture or "solid" end,
-                  getPx = function() local bd = SelectedTBB(); return bd and bd.borderSizePx end,
-                  setPx = function(v) local bd = SelectedTBB(); if bd then bd.borderSizePx = v end end,
-                  apply = function() RefreshTBB() end,
-                })));  y = y - h
+                (CludesUI.BlizzStyle.Active("cdmbars") == "classic")
+                        and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
+                            local bd = SelectedTBB()
+                            return bd and bd.stockBorderScale
+                        end, function(v)
+                            local bd = SelectedTBB()
+                            if not bd then
+                                return
+                            end
+                            bd.stockBorderScale = v
+                            RefreshTBB()
+                        end)
+                    or CludesUI.BlizzStyle.Gate(
+                        "cdmbars",
+                        CludesUI.BorderPxSliderCfg({
+                            text = "Border Size",
+                            getStep = function()
+                                local bd = SelectedTBB()
+                                return bd and bd.borderSize or 0
+                            end,
+                            setStep = function(step)
+                                local bd = SelectedTBB()
+                                if bd then
+                                    bd.borderSize = step
+                                end
+                            end,
+                            getTex = function()
+                                local bd = SelectedTBB()
+                                return bd and bd.borderTexture or "solid"
+                            end,
+                            getPx = function()
+                                local bd = SelectedTBB()
+                                return bd and bd.borderSizePx
+                            end,
+                            setPx = function(v)
+                                local bd = SelectedTBB()
+                                if bd then
+                                    bd.borderSizePx = v
+                                end
+                            end,
+                            apply = function()
+                                RefreshTBB()
+                            end,
+                        })
+                    )
+            )
+            y = y - h
             -- Width Offset | Height Offset: the textured border's outward offsets,
             -- present only while a textured style is selected (built on the
             -- prebuild pass too, so the y advance is identical).
@@ -4320,19 +5701,53 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 if tex0 ~= "" and tex0 ~= "solid" then
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "resourcebars",
-                        getTex = function() local bd = SelectedTBB(); return bd and bd.borderTexture or "solid" end,
-                        getStep = function() local bd = SelectedTBB(); return bd and bd.borderSize or 0 end,
-                        getSizeKey = function() local bd = SelectedTBB(); return bd and bd.borderSize or 0 end,
-                        getPx = function() local bd = SelectedTBB(); return bd and bd.borderSizePx end,
-                        getX = function() local bd = SelectedTBB(); return bd and bd.borderTextureOffset end,
-                        setX = function(v) local bd = SelectedTBB(); if bd then bd.borderTextureOffset = v end end,
-                        getY = function() local bd = SelectedTBB(); return bd and bd.borderTextureOffsetY end,
-                        setY = function(v) local bd = SelectedTBB(); if bd then bd.borderTextureOffsetY = v end end,
-                        apply = function() RefreshTBB() end,
+                        getTex = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderTexture or "solid"
+                        end,
+                        getStep = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderSize or 0
+                        end,
+                        getSizeKey = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderSize or 0
+                        end,
+                        getPx = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderSizePx
+                        end,
+                        getX = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderTextureOffset
+                        end,
+                        setX = function(v)
+                            local bd = SelectedTBB()
+                            if bd then
+                                bd.borderTextureOffset = v
+                            end
+                        end,
+                        getY = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderTextureOffsetY
+                        end,
+                        setY = function(v)
+                            local bd = SelectedTBB()
+                            if bd then
+                                bd.borderTextureOffsetY = v
+                            end
+                        end,
+                        apply = function()
+                            RefreshTBB()
+                        end,
                     })
-                    _, h = W:DualRow(parent, y,
+                    _, h = W:DualRow(
+                        parent,
+                        y,
                         CludesUI.BlizzStyle.Gate("cdmbars", ocfgL),
-                        CludesUI.BlizzStyle.Gate("cdmbars", ocfgR));  y = y - h
+                        CludesUI.BlizzStyle.Gate("cdmbars", ocfgR)
+                    )
+                    y = y - h
                 end
             end
             -- Inline border color swatch on Border Size (right region); none
@@ -4341,18 +5756,27 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local rgn = tbbBsRow._rightRegion
                 local ctrl = rgn._control
                 local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
-                    rgn, tbbBsRow:GetFrameLevel() + 3,
+                    rgn,
+                    tbbBsRow:GetFrameLevel() + 3,
                     function()
                         local bd = SelectedTBB()
                         return (bd and bd.borderR or 0), (bd and bd.borderG or 0), (bd and bd.borderB or 0)
                     end,
                     function(r, g, b)
-                        local bd = SelectedTBB(); if not bd then return end
-                        bd.borderR, bd.borderG, bd.borderB = r, g, b; RefreshTBB()
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.borderR, bd.borderG, bd.borderB = r, g, b
+                        RefreshTBB()
                     end,
-                    false, 20)
+                    false,
+                    20
+                )
                 PP.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                CludesUI.RegisterWidgetRefresh(function() updateBorderSwatch() end)
+                CludesUI.RegisterWidgetRefresh(function()
+                    updateBorderSwatch()
+                end)
                 CludesUI.BlizzStyle.BlockInline("cdmbars", borderSwatch)
             end
             do
@@ -4360,38 +5784,84 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local cogBtn = CludesUI.BuildInlineCog(rgn, {
                     title = "Border Options",
                     rows = {
-                        { type = "slider", label = "Shift X", min = -10, max = 10, step = 1,
-                          get = function()
-                              local bd = SelectedTBB(); if not bd then return 0 end
-                              local v = bd.borderTextureShiftX
-                              if v then return v end
-                              local _, _, dsx = CludesUI.GetBorderDefaults("resourcebars", bd.borderTexture or "solid", bd.borderSize or 0)
-                              return dsx
-                          end,
-                          set = function(v)
-                              local bd = SelectedTBB(); if not bd then return end
-                              bd.borderTextureShiftX = v == 0 and nil or v; RefreshTBB()
-                          end },
-                        { type = "slider", label = "Shift Y", min = -10, max = 10, step = 1,
-                          get = function()
-                              local bd = SelectedTBB(); if not bd then return 0 end
-                              local v = bd.borderTextureShiftY
-                              if v then return v end
-                              local _, _, _, dsy = CludesUI.GetBorderDefaults("resourcebars", bd.borderTexture or "solid", bd.borderSize or 0)
-                              return dsy
-                          end,
-                          set = function(v)
-                              local bd = SelectedTBB(); if not bd then return end
-                              bd.borderTextureShiftY = v == 0 and nil or v; RefreshTBB()
-                          end },
-                        { type = "toggle", label = "Show Behind",
-                          get = function()
-                              local bd = SelectedTBB(); return bd and bd.borderBehind or false
-                          end,
-                          set = function(v)
-                              local bd = SelectedTBB(); if not bd then return end
-                              bd.borderBehind = v == false and nil or v; RefreshTBB()
-                          end },
+                        {
+                            type = "slider",
+                            label = "Shift X",
+                            min = -10,
+                            max = 10,
+                            step = 1,
+                            get = function()
+                                local bd = SelectedTBB()
+                                if not bd then
+                                    return 0
+                                end
+                                local v = bd.borderTextureShiftX
+                                if v then
+                                    return v
+                                end
+                                local _, _, dsx = CludesUI.GetBorderDefaults(
+                                    "resourcebars",
+                                    bd.borderTexture or "solid",
+                                    bd.borderSize or 0
+                                )
+                                return dsx
+                            end,
+                            set = function(v)
+                                local bd = SelectedTBB()
+                                if not bd then
+                                    return
+                                end
+                                bd.borderTextureShiftX = v == 0 and nil or v
+                                RefreshTBB()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Shift Y",
+                            min = -10,
+                            max = 10,
+                            step = 1,
+                            get = function()
+                                local bd = SelectedTBB()
+                                if not bd then
+                                    return 0
+                                end
+                                local v = bd.borderTextureShiftY
+                                if v then
+                                    return v
+                                end
+                                local _, _, _, dsy = CludesUI.GetBorderDefaults(
+                                    "resourcebars",
+                                    bd.borderTexture or "solid",
+                                    bd.borderSize or 0
+                                )
+                                return dsy
+                            end,
+                            set = function(v)
+                                local bd = SelectedTBB()
+                                if not bd then
+                                    return
+                                end
+                                bd.borderTextureShiftY = v == 0 and nil or v
+                                RefreshTBB()
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Show Behind",
+                            get = function()
+                                local bd = SelectedTBB()
+                                return bd and bd.borderBehind or false
+                            end,
+                            set = function(v)
+                                local bd = SelectedTBB()
+                                if not bd then
+                                    return
+                                end
+                                bd.borderBehind = v == false and nil or v
+                                RefreshTBB()
+                            end,
+                        },
                     },
                 })
                 if cogBtn then
@@ -4409,7 +5879,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         -----------------------------------------------------------------------
         --  EXTRAS
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "EXTRAS", y);  y = y - h
+        _, h = W:SectionHeader(parent, "EXTRAS", y)
+        y = y - h
 
         -- Row 1: Pandemic Glow (dropdown + swatch + cog + sync) | Stack Based
         -- Bar (buff bars only; page rebuilds on selection change, so cd/utility
@@ -4419,18 +5890,30 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- Shared glow controls over the bar's pandemic keys (the Glows page's
             -- Tracked Buff Bar descriptor, resolving the selected bar).
             local GO = CludesUI.GlowOptions
-            local tbbDesc = ns._CDM_TbbGlowDesc(SelectedTBB, function() RefreshTBB() end)
+            local tbbDesc = ns._CDM_TbbGlowDesc(SelectedTBB, function()
+                RefreshTBB()
+            end)
 
             local bd0 = SelectedTBB()
             local rightSlot
             if bd0 and bd0.trackType ~= "cooldown" then
-                rightSlot = { type = "toggle", text = "Stack Based Bar",
+                rightSlot = {
+                    type = "toggle",
+                    text = "Stack Based Bar",
                     tooltip = "Fill this bar from current stacks out of Max Stacks instead of remaining time (requires Enable Max Stacks below).",
-                    getValue = function() local bd = SelectedTBB(); return bd and bd.stackBasedBar end,
+                    getValue = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.stackBasedBar
+                    end,
                     setValue = function(v)
-                        local bd = SelectedTBB(); if not bd then return end
-                        bd.stackBasedBar = v and true or false; RefreshTBB()
-                    end }
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
+                        end
+                        bd.stackBasedBar = v and true or false
+                        RefreshTBB()
+                    end,
+                }
             else
                 rightSlot = { type = "label", text = "" }
             end
@@ -4438,24 +5921,47 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             -- WoW Forever: the same row is the Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua).
             local antiClip = ns.CDM_ANTI_CLIP
             local tbbPanRow
-            tbbPanRow, h = W:DualRow(parent, y, GO.DropdownSpec(tbbDesc, antiClip and "Anti-Clip Glow" or "Pandemic Glow",
-                antiClip and "Show a glow on the bar when casting the spell next, after your current cast or global cooldown, won't clip it"
-                    or "Show a glow on the bar when the remaining duration is in the pandemic window (last 30%)"), rightSlot);  y = y - h
+            tbbPanRow, h = W:DualRow(
+                parent,
+                y,
+                GO.DropdownSpec(
+                    tbbDesc,
+                    antiClip and "Anti-Clip Glow" or "Pandemic Glow",
+                    antiClip
+                            and "Show a glow on the bar when casting the spell next, after your current cast or global cooldown, won't clip it"
+                        or "Show a glow on the bar when the remaining duration is in the pandemic window (last 30%)"
+                ),
+                rightSlot
+            )
+            y = y - h
             GO.AttachInline(tbbPanRow._leftRegion, tbbDesc)
 
             -- Apply All
             if CludesUI.BuildSyncIcon and CludesUI.ApplyPandemicGlowToAll then
                 CludesUI.BuildSyncIcon({
                     region = tbbPanRow._leftRegion,
-                    tooltip = antiClip and "Apply this glow's look to the Nameplates Pandemic Glow, all CDM bars, and other tracking bars. A surface that can't show a style uses its closest match."
+                    tooltip = antiClip
+                            and "Apply this glow's look to the Nameplates Pandemic Glow, all CDM bars, and other tracking bars. A surface that can't show a style uses its closest match."
                         or "Apply this pandemic glow to Nameplates, all CDM bars, and other tracking bars. A surface that can't show a style uses its closest match.",
                     isSynced = function()
-                        local src = SelectedTBB(); if not src then return true end
-                        return CludesUI.IsPandemicGlowSyncedToAll(CludesUI.PandemicPayloadFromRectBar(src), { skipTbbBar = src })
+                        local src = SelectedTBB()
+                        if not src then
+                            return true
+                        end
+                        return CludesUI.IsPandemicGlowSyncedToAll(
+                            CludesUI.PandemicPayloadFromRectBar(src),
+                            { skipTbbBar = src }
+                        )
                     end,
                     onClick = function()
-                        local src = SelectedTBB(); if not src then return end
-                        CludesUI.ApplyPandemicGlowToAll(CludesUI.PandemicPayloadFromRectBar(src), { skipTbbBar = src })
+                        local src = SelectedTBB()
+                        if not src then
+                            return
+                        end
+                        CludesUI.ApplyPandemicGlowToAll(
+                            CludesUI.PandemicPayloadFromRectBar(src),
+                            { skipTbbBar = src }
+                        )
                         RefreshTBB()
                     end,
                 })
@@ -4468,27 +5974,63 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             return not bd or not bd.stackThresholdMaxEnabled
         end
         local maxStacksRow
-        maxStacksRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Enable Max Stacks",
-              getValue = function() local bd = SelectedTBB(); return bd and bd.stackThresholdMaxEnabled end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.stackThresholdMaxEnabled = v; RefreshTBB(); CludesUI:RefreshPage()
-              end },
-            { type = "label", text = "Ticks at Stacks",
-              tooltip = "Comma separated stack counts to put a tick mark at. Type all to mark every stack." }
-        );  y = y - h
+        maxStacksRow, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "toggle",
+                text = "Enable Max Stacks",
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd.stackThresholdMaxEnabled
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.stackThresholdMaxEnabled = v
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end,
+            },
+            {
+                type = "label",
+                text = "Ticks at Stacks",
+                tooltip = "Comma separated stack counts to put a tick mark at. Type all to mark every stack.",
+            }
+        )
+        y = y - h
         -- Inline slider on Enable Max Stacks toggle (same as inline swatch positioning)
         do
             local rgn = maxStacksRow._leftRegion
             local ctrl = rgn._control
             local SL = CludesUI.SL or {}
             local trackFrame, valBox, _, slThumb = CludesUI.BuildSliderCore(
-                rgn, 90, 4, 14, 36, 26, 13, SL.INPUT_A or 0.6,
-                1, 100, 1,
-                function() local bd = SelectedTBB(); return bd and bd.stackThresholdMax or 10 end,
-                function(v) local bd = SelectedTBB(); if bd then bd.stackThresholdMax = v; RefreshTBB() end end,
-                true)
+                rgn,
+                90,
+                4,
+                14,
+                36,
+                26,
+                13,
+                SL.INPUT_A or 0.6,
+                1,
+                100,
+                1,
+                function()
+                    local bd = SelectedTBB()
+                    return bd and bd.stackThresholdMax or 10
+                end,
+                function(v)
+                    local bd = SelectedTBB()
+                    if bd then
+                        bd.stackThresholdMax = v
+                        RefreshTBB()
+                    end
+                end,
+                true
+            )
             PP.Point(valBox, "RIGHT", ctrl, "LEFT", -6, 0)
             PP.Point(trackFrame, "RIGHT", valBox, "LEFT", -8, 0)
             -- Disable block
@@ -4500,14 +6042,22 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(trackFrame, CludesUI.DisabledTooltip("Max Stacks"))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function UpdateMaxSliderState()
                 local off = maxStacksOff()
                 trackFrame:SetAlpha(off and 0.3 or 1)
                 valBox:SetAlpha(off and 0.3 or 1)
                 valBox:EnableMouse(not off)
-                if slThumb then slThumb._sliderDisabled = off end
-                if off then block:Show() else block:Hide() end
+                if slThumb then
+                    slThumb._sliderDisabled = off
+                end
+                if off then
+                    block:Show()
+                else
+                    block:Hide()
+                end
             end
             CludesUI.RegisterWidgetRefresh(UpdateMaxSliderState)
             UpdateMaxSliderState()
@@ -4542,7 +6092,8 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 CludesUI.TEXT_DIM_R or 0.75,
                 CludesUI.TEXT_DIM_G or 0.75,
                 CludesUI.TEXT_DIM_B or 0.75,
-                CludesUI.TEXT_DIM_A or 1)
+                CludesUI.TEXT_DIM_A or 1
+            )
             -- Background matching slider input box
             local bg = box:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
@@ -4550,15 +6101,24 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 CludesUI.SL_INPUT_R or 0.08,
                 CludesUI.SL_INPUT_G or 0.08,
                 CludesUI.SL_INPUT_B or 0.08,
-                (CludesUI.SL_INPUT_A or 0.5) + (CludesUI.MW_INPUT_ALPHA_BOOST or 0.15))
+                (CludesUI.SL_INPUT_A or 0.5) + (CludesUI.MW_INPUT_ALPHA_BOOST or 0.15)
+            )
             -- Border matching slider input box (rounded, as its value box is)
-            CludesUI.MakeRoundedBorder(box, CludesUI.BORDER_R, CludesUI.BORDER_G,
-                CludesUI.BORDER_B, CludesUI.SL_INPUT_BRD_A, bg)
+            CludesUI.MakeRoundedBorder(
+                box,
+                CludesUI.BORDER_R,
+                CludesUI.BORDER_G,
+                CludesUI.BORDER_B,
+                CludesUI.SL_INPUT_BRD_A,
+                bg
+            )
 
             box:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
-                local bd = SelectedTBB(); if bd then
-                    bd.stackThresholdTicks = self:GetText(); RefreshTBB()
+                local bd = SelectedTBB()
+                if bd then
+                    bd.stackThresholdTicks = self:GetText()
+                    RefreshTBB()
                 end
             end)
             box:SetScript("OnEscapePressed", function(self)
@@ -4569,29 +6129,45 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
             -- Inline swatch for tick mark color (left of the input box)
             local tickSwatch, updateTickSwatch = CludesUI.BuildColorSwatch(
-                rgn, box:GetFrameLevel() + 1,
+                rgn,
+                box:GetFrameLevel() + 1,
                 function()
                     local bd = SelectedTBB()
-                    if not bd then return 1, 1, 1, 1 end
+                    if not bd then
+                        return 1, 1, 1, 1
+                    end
                     local a = bd.stackThresholdTickA
-                    if a == nil then a = 1 end
-                    return bd.stackThresholdTickR or 1, bd.stackThresholdTickG or 1,
-                           bd.stackThresholdTickB or 1, a
+                    if a == nil then
+                        a = 1
+                    end
+                    return bd.stackThresholdTickR or 1,
+                        bd.stackThresholdTickG or 1,
+                        bd.stackThresholdTickB or 1,
+                        a
                 end,
                 function(r, g, b, a)
-                    local bd = SelectedTBB(); if not bd then return end
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
                     bd.stackThresholdTickR, bd.stackThresholdTickG = r, g
-                    bd.stackThresholdTickB, bd.stackThresholdTickA = b, a; RefreshTBB()
+                    bd.stackThresholdTickB, bd.stackThresholdTickA = b, a
+                    RefreshTBB()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(tickSwatch, "RIGHT", box, "LEFT", -8, 0)
             local tickBlock = CreateFrame("Frame", nil, tickSwatch)
-            tickBlock:SetAllPoints(); tickBlock:SetFrameLevel(tickSwatch:GetFrameLevel() + 10)
+            tickBlock:SetAllPoints()
+            tickBlock:SetFrameLevel(tickSwatch:GetFrameLevel() + 10)
             tickBlock:EnableMouse(true)
             tickBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(tickSwatch, CludesUI.DisabledTooltip("Max Stacks"))
             end)
-            tickBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            tickBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             local function UpdateTicksInput()
                 local bd = SelectedTBB()
@@ -4599,9 +6175,16 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 local off = maxStacksOff()
                 box:SetAlpha(off and 0.3 or 1)
                 box:EnableMouse(not off)
-                if off then tickSwatch:SetAlpha(0.3); tickBlock:Show()
-                else tickSwatch:SetAlpha(1); tickBlock:Hide() end
-                if updateTickSwatch then updateTickSwatch() end
+                if off then
+                    tickSwatch:SetAlpha(0.3)
+                    tickBlock:Show()
+                else
+                    tickSwatch:SetAlpha(1)
+                    tickBlock:Hide()
+                end
+                if updateTickSwatch then
+                    updateTickSwatch()
+                end
             end
             CludesUI.RegisterWidgetRefresh(UpdateTicksInput)
             UpdateTicksInput()
@@ -4609,35 +6192,58 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
         -- Row 3: Enable Stack Threshold (toggle + inline swatch) | Stack Threshold (slider)
         local threshRow
-        threshRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Enable Stack Threshold",
-              tooltip = "This will change the color of your bar if you have more than your chosen number of stacks",
-              getValue = function() local bd = SelectedTBB(); return bd and bd.stackThresholdEnabled end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.stackThresholdEnabled = v; RefreshTBB(); CludesUI:RefreshPage()
-              end },
-            { type = "slider", text = "Stack Threshold",
-              min = 0, max = 100, step = 1,
-              disabled = function()
-                  local bd = SelectedTBB()
-                  if not bd or not bd.stackThresholdEnabled then return true end
-                  return bd.stackThresholdMulti and true or false
-              end,
-              disabledTooltip = function()
-                  local bd = SelectedTBB()
-                  if bd and bd.stackThresholdEnabled and bd.stackThresholdMulti then
-                      return StackThreshReplacesTip()
-                  end
-                  return CludesUI.DisabledTooltip("Stack Threshold")
-              end,
-              rawTooltip = true,
-              getValue = function() local bd = SelectedTBB(); return bd and bd.stackThreshold or 5 end,
-              setValue = function(v)
-                  local bd = SelectedTBB(); if not bd then return end
-                  bd.stackThreshold = v; RefreshTBB()
-              end }
-        );  y = y - h
+        threshRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Stack Threshold",
+            tooltip = "This will change the color of your bar if you have more than your chosen number of stacks",
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.stackThresholdEnabled
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.stackThresholdEnabled = v
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Stack Threshold",
+            min = 0,
+            max = 100,
+            step = 1,
+            disabled = function()
+                local bd = SelectedTBB()
+                if not bd or not bd.stackThresholdEnabled then
+                    return true
+                end
+                return bd.stackThresholdMulti and true or false
+            end,
+            disabledTooltip = function()
+                local bd = SelectedTBB()
+                if bd and bd.stackThresholdEnabled and bd.stackThresholdMulti then
+                    return StackThreshReplacesTip()
+                end
+                return CludesUI.DisabledTooltip("Stack Threshold")
+            end,
+            rawTooltip = true,
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.stackThreshold or 5
+            end,
+            setValue = function(v)
+                local bd = SelectedTBB()
+                if not bd then
+                    return
+                end
+                bd.stackThreshold = v
+                RefreshTBB()
+            end,
+        })
+        y = y - h
         -- Inline swatch on Enable Stack Threshold toggle
         do
             local rgn = threshRow._leftRegion
@@ -4647,32 +6253,49 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             CludesUI.BuildInlineCog(rgn, {
                 show = function(self)
                     ShowStackThreshEditor({
-                        getCfg    = SelectedTBB,
+                        getCfg = SelectedTBB,
                         refreshFn = RefreshTBB,
-                        anchor    = self,
+                        anchor = self,
                     })
                 end,
                 tip = StackThreshHelpTip(),
-                disabled = function() local bd = SelectedTBB(); return not (bd and bd.stackThresholdEnabled) end,
+                disabled = function()
+                    local bd = SelectedTBB()
+                    return not (bd and bd.stackThresholdEnabled)
+                end,
                 disabledTooltip = "Stack Threshold",
             })
 
             local threshSwatch, updateThreshSwatch = CludesUI.BuildColorSwatch(
-                rgn, threshRow:GetFrameLevel() + 3,
+                rgn,
+                threshRow:GetFrameLevel() + 3,
                 function()
                     local bd = SelectedTBB()
-                    if not bd then return 0.8, 0.1, 0.1, 1 end
-                    return bd.stackThresholdR or 0.8, bd.stackThresholdG or 0.1, bd.stackThresholdB or 0.1, bd.stackThresholdA or 1
+                    if not bd then
+                        return 0.8, 0.1, 0.1, 1
+                    end
+                    return bd.stackThresholdR or 0.8,
+                        bd.stackThresholdG or 0.1,
+                        bd.stackThresholdB or 0.1,
+                        bd.stackThresholdA or 1
                 end,
                 function(r, g, b, a)
-                    local bd = SelectedTBB(); if not bd then return end
-                    bd.stackThresholdR, bd.stackThresholdG, bd.stackThresholdB, bd.stackThresholdA = r, g, b, a; RefreshTBB()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd.stackThresholdR, bd.stackThresholdG, bd.stackThresholdB, bd.stackThresholdA =
+                        r, g, b, a
+                    RefreshTBB()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(threshSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
             rgn._lastInline = threshSwatch
             local threshBlock = CreateFrame("Frame", nil, threshSwatch)
-            threshBlock:SetAllPoints(); threshBlock:SetFrameLevel(threshSwatch:GetFrameLevel() + 10)
+            threshBlock:SetAllPoints()
+            threshBlock:SetFrameLevel(threshSwatch:GetFrameLevel() + 10)
             threshBlock:EnableMouse(true)
             threshBlock:SetScript("OnEnter", function()
                 local bd = SelectedTBB()
@@ -4682,7 +6305,9 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 end
                 CludesUI.ShowWidgetTooltip(threshSwatch, CludesUI.DisabledTooltip("Stack Threshold"))
             end)
-            threshBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            threshBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             local function UpdateThreshSwatchState()
                 local bd = SelectedTBB()
@@ -4690,21 +6315,29 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                 -- The swatch edits the single threshold color, so multi masks it
                 -- the same way it masks the slider.
                 local off = not enabled or (bd.stackThresholdMulti and true or false)
-                if off then threshSwatch:SetAlpha(0.3); threshBlock:Show()
-                else threshSwatch:SetAlpha(1); threshBlock:Hide() end
+                if off then
+                    threshSwatch:SetAlpha(0.3)
+                    threshBlock:Show()
+                else
+                    threshSwatch:SetAlpha(1)
+                    threshBlock:Hide()
+                end
             end
-            CludesUI.RegisterWidgetRefresh(function() updateThreshSwatch(); UpdateThreshSwatchState() end)
+            CludesUI.RegisterWidgetRefresh(function()
+                updateThreshSwatch()
+                UpdateThreshSwatchState()
+            end)
             UpdateThreshSwatchState()
         end
 
         -- Preview click-navigation map: preview element -> section + row.
         -- Resolved at click time by NavigateToSetting.
         parent._tbbClickTargets = {
-            barFill    = { section = displayHeader, target = fillRow,   slotSide = "left" },
-            icon       = { section = displayHeader, target = iconRow,   slotSide = "left" },
-            nameText   = { section = layoutHeader,  target = nameRow,   slotSide = "left" },
-            timerText  = { section = layoutHeader,  target = nameRow,   slotSide = "right" },
-            stacksText = { section = layoutHeader,  target = stacksRow, slotSide = "left" },
+            barFill = { section = displayHeader, target = fillRow, slotSide = "left" },
+            icon = { section = displayHeader, target = iconRow, slotSide = "left" },
+            nameText = { section = layoutHeader, target = nameRow, slotSide = "left" },
+            timerText = { section = layoutHeader, target = nameRow, slotSide = "right" },
+            stacksText = { section = layoutHeader, target = stacksRow, slotSide = "left" },
         }
 
         -- Ensure bar frames exist before showing placeholders

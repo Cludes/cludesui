@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverExtras.lua
 --
@@ -14,7 +16,9 @@ local issecretvalue = issecretvalue
 local I = ns._internals
 local frames = I.frames
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -- Pet happiness (WoW Forever): the stock pet frame's mood icon, carried
 -- beside our pet frame under Blizzard's own rule -- shown only for a hunter
@@ -24,9 +28,9 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 function ns.UF_RefreshPetHappiness(h)
     local happiness = C_PetInfo.GetPetHappiness()
     local _, isHunterPet = HasPetUI()
-    local atlas = isHunterPet and ((happiness == 1 and "UI-PetMad")
-        or (happiness == 2 and "UI-PetNeutral")
-        or (happiness == 3 and "UI-PetHappiness")) or nil
+    local atlas = isHunterPet
+            and ((happiness == 1 and "UI-PetMad") or (happiness == 2 and "UI-PetNeutral") or (happiness == 3 and "UI-PetHappiness"))
+        or nil
     if atlas then
         -- Paint only a real mood change (the texture is set nowhere else).
         if h._atlas ~= atlas then
@@ -46,12 +50,19 @@ function ns.UF_PetHappinessOnEnter(self)
     -- client withholds (secret, or no value at all when it refuses alpha
     -- access) shows it, as on a visible icon.
     local a = self:GetEffectiveAlpha()
-    if type(a) == "number" and not issecretvalue(a) and a < 0.05 then return end
+    if type(a) == "number" and not issecretvalue(a) and a < 0.05 then
+        return
+    end
     local happiness, dmg, loyalty = C_PetInfo.GetPetHappiness()
-    local text = (happiness == 1 and PET_HAPPINESS1) or (happiness == 2 and PET_HAPPINESS2)
+    local text = (happiness == 1 and PET_HAPPINESS1)
+        or (happiness == 2 and PET_HAPPINESS2)
         or (happiness == 3 and PET_HAPPINESS3)
-    if not text then return end
-    if dmg then text = text .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg) end
+    if not text then
+        return
+    end
+    if dmg then
+        text = text .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg)
+    end
     if loyalty and loyalty < 0 then
         text = text .. "\n" .. LOSING_LOYALTY
     elseif loyalty and loyalty > 0 then
@@ -73,12 +84,16 @@ end
 -- options setters reach it through ReloadAndUpdate) and it is safe to call
 -- directly; it returns at once off WoW Forever.
 function ns.UF_ApplyPetHappiness()
-    if CludesUI.IS_FOREVER ~= true then return end
+    if CludesUI.IS_FOREVER ~= true then
+        return
+    end
     local pf = frames.pet
     local s = db.profile.pet
     local h = pf and pf._petHappy
     -- Only hunter pets carry happiness: every other class never builds it.
-    local on = pf and s and s.happinessEnabled ~= false
+    local on = pf
+        and s
+        and s.happinessEnabled ~= false
         and not ns.VisUnitDisabled(db.profile, "pet")
         and select(2, UnitClass("player")) == "HUNTER"
     if not on then
@@ -113,7 +128,9 @@ function ns.UF_ApplyPetHappiness()
         h:SetPoint("LEFT", pf, "RIGHT", x, y)
     end
     -- Above the border and the name/health text (the strata pass re-stacks).
-    if pf._textOverlay then h:SetFrameLevel(pf._textOverlay:GetFrameLevel() + 5) end
+    if pf._textOverlay then
+        h:SetFrameLevel(pf._textOverlay:GetFrameLevel() + 5)
+    end
     h:RegisterUnitEvent("UNIT_HAPPINESS", "pet")
     h:RegisterUnitEvent("UNIT_PET", "player")
     -- The pet's state may not read yet at login: the zone-in edge repaints.
@@ -139,8 +156,15 @@ ns.UF_COMBO_FILE = "Interface\\ComboFrame\\ComboPoint"
 -- Each slot's TOPRIGHT from the target box's TOPRIGHT (the stock container
 -- offset folded in); slots 7-9 are the extra points, at 0.6 alpha.
 ns.UF_COMBO_SLOTS = {
-    { -63, -6 }, { -50.5, -5 }, { -38, -6 }, { -26.5, -11.5 }, { -17.5, -20 },
-    { -12, -31.5 }, { -10, -43 }, { -12, -54 }, { 0, -46 },
+    { -63, -6 },
+    { -50.5, -5 },
+    { -38, -6 },
+    { -26.5, -11.5 },
+    { -17.5, -20 },
+    { -12, -31.5 },
+    { -10, -43 },
+    { -12, -54 },
+    { 0, -46 },
 }
 -- A w x h gate and its mask: the mask is the gate's size and rides the fill's
 -- right edge, so an empty fill parks it a full width clear of the payload.
@@ -169,7 +193,9 @@ function ns.UF_BuildComboArc(host)
     for k = 1, 9 do
         local pip = CreateFrame("Frame", nil, arc)
         pip:SetSize(12, 12)
-        if k >= 7 then pip:SetAlpha(0.6) end
+        if k >= 7 then
+            pip:SetAlpha(0.6)
+        end
         local base = pip:CreateTexture(nil, "BACKGROUND")
         base:SetTexture(file)
         base:SetTexCoord(0, 0.375, 0, 1)
@@ -197,11 +223,23 @@ function ns.UF_BuildComboArc(host)
         local ag = pip:CreateAnimationGroup()
         ag:SetToFinalAlpha(true)
         local a = ag:CreateAnimation("Alpha")
-        a:SetTarget(hl); a:SetFromAlpha(0); a:SetToAlpha(1); a:SetDuration(0.4); a:SetOrder(1)
+        a:SetTarget(hl)
+        a:SetFromAlpha(0)
+        a:SetToAlpha(1)
+        a:SetDuration(0.4)
+        a:SetOrder(1)
         a = ag:CreateAnimation("Alpha")
-        a:SetTarget(shine); a:SetFromAlpha(0); a:SetToAlpha(1); a:SetDuration(0.3); a:SetOrder(2)
+        a:SetTarget(shine)
+        a:SetFromAlpha(0)
+        a:SetToAlpha(1)
+        a:SetDuration(0.3)
+        a:SetOrder(2)
         a = ag:CreateAnimation("Alpha")
-        a:SetTarget(shine); a:SetFromAlpha(1); a:SetToAlpha(0); a:SetDuration(0.4); a:SetOrder(3)
+        a:SetTarget(shine)
+        a:SetFromAlpha(1)
+        a:SetToAlpha(0)
+        a:SetDuration(0.4)
+        a:SetOrder(3)
         pip._base, pip._hl, pip._shine, pip._mask, pip._anim = base, hl, shine, m, ag
         pips[k], gates[k] = pip, g
     end
@@ -210,7 +248,9 @@ function ns.UF_BuildComboArc(host)
     local fade = arc:CreateAnimationGroup()
     fade:SetToFinalAlpha(true)
     local fa = fade:CreateAnimation("Alpha")
-    fa:SetFromAlpha(0); fa:SetToAlpha(1); fa:SetDuration(0.3)
+    fa:SetFromAlpha(0)
+    fa:SetToAlpha(1)
+    fa:SetDuration(0.3)
     arc._fade = fade
     ns._ufComboArc = arc
     return arc
@@ -221,7 +261,9 @@ if CludesUI.IS_FOREVER == true then
     ns._ufComboEv = CreateFrame("Frame")
     ns._ufComboEv:SetScript("OnEvent", function(_, ...)
         local arc = ns._ufComboArc
-        if arc then ns.UF_ComboArcRefresh(arc, ...) end
+        if arc then
+            ns.UF_ComboArcRefresh(arc, ...)
+        end
     end)
 end
 -- The classes the arc draws for (combo points on WoW Forever).
@@ -234,7 +276,9 @@ end
 function ns.UF_ComboLocation()
     local s = db and db.profile and db.profile.player
     local v = s and s.foreverComboLocation
-    if v == "player" or v == "never" then return v end
+    if v == "player" or v == "never" then
+        return v
+    end
     return "target"
 end
 -- The slots ring the stock target portrait (58 wide at TOPRIGHT -26,-19, its
@@ -243,7 +287,9 @@ end
 -- centres, in the slots' own frame before the mirror; 0,0 on the target kit.
 function ns.UF_ComboRingShift(G)
     local P = G and G.portrait
-    if not (P and P.size) then return 0, 0 end
+    if not (P and P.size) then
+        return 0, 0
+    end
     local r = P.size / 2
     local cx = (P.point == "TOPLEFT") and -(P.x + r) or (P.x - r)
     return cx + 55, P.y - r + 48
@@ -254,16 +300,24 @@ end
 function ns.UF_ComboArcLayout(arc)
     local mx = UnitPowerMax("player", Enum.PowerType.ComboPoints)
     if issecretvalue(mx) then
-        if arc._max then return end
+        if arc._max then
+            return
+        end
         mx = 5
     end
-    if not mx or mx <= 0 then mx = 5 end
+    if not mx or mx <= 0 then
+        mx = 5
+    end
     local cb = C_CVar.GetCVarBool("colorblindMode") and true or false
-    if arc._max == mx and arc._cb == cb then return end
+    if arc._max == mx and arc._cb == cb then
+        return
+    end
     -- A cap of 6 or 9 starts on the first slot with six in the arc; any other
     -- starts one slot in with five. Points past those show only while filled.
     local start, extra = 2, 6
-    if mx == 6 or mx == 9 then start, extra = 1, 7 end
+    if mx == 6 or mx == 9 then
+        start, extra = 1, 7
+    end
     arc._max, arc._start, arc._cb = mx, start, cb
     local pips, gates = arc._pips, arc._gates
     for k = 1, 9 do
@@ -275,7 +329,9 @@ function ns.UF_ComboArcLayout(arc)
             -- extra points; every point in colourblind mode).
             local want = (cb or i >= extra) and pip._mask or arc._mask
             if pip._baseMask ~= want then
-                if pip._baseMask then pip._base:RemoveMaskTexture(pip._baseMask) end
+                if pip._baseMask then
+                    pip._base:RemoveMaskTexture(pip._baseMask)
+                end
                 pip._base:AddMaskTexture(want)
                 pip._baseMask = want
             end
@@ -286,7 +342,9 @@ function ns.UF_ComboArcLayout(arc)
     end
 end
 function ns.UF_ComboArcRefresh(arc, event, _, powerType)
-    if event == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then return end
+    if event == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then
+        return
+    end
     if arc._cb == nil or event == "UNIT_MAXPOWER" or event == "PLAYER_ENTERING_WORLD" then
         ns.UF_ComboArcLayout(arc)
     end
@@ -295,7 +353,9 @@ function ns.UF_ComboArcRefresh(arc, event, _, powerType)
     local n = GetComboPoints("player", "target")
     arc._gate:SetValue(n)
     local gates, pips = arc._gates, arc._pips
-    for k = 1, 9 do gates[k]:SetValue(n) end
+    for k = 1, 9 do
+        gates[k]:SetValue(n)
+    end
     if issecretvalue(n) then
         -- No compare: the gates alone show the filled points, at full
         -- highlight, with no flash.
@@ -323,7 +383,9 @@ function ns.UF_ComboArcRefresh(arc, event, _, powerType)
     local start = arc._start
     for i = 1, arc._max do
         local pip = pips[start + i - 1]
-        if not pip then break end
+        if not pip then
+            break
+        end
         if i > n then
             pip._anim:Stop()
             pip._hl:SetAlpha(0)
@@ -345,7 +407,9 @@ end
 -- pass, the class resource toggle and the Combo Points setter run it; it
 -- returns at once off WoW Forever.
 function ns.UF_ApplyForeverComboArc()
-    if CludesUI.IS_FOREVER ~= true then return end
+    if CludesUI.IS_FOREVER ~= true then
+        return
+    end
     local arc, ev = ns._ufComboArc, ns._ufComboEv
     local host
     if ns.UF_Forever() and db.profile.player.classPowerStyle == "blizzard" and ns.UF_ComboClass() then
@@ -356,7 +420,9 @@ function ns.UF_ApplyForeverComboArc()
         if loc == "target" then
             host = frames.target
         else
-            if loc == "player" then host = frames.player end
+            if loc == "player" then
+                host = frames.player
+            end
             -- Blizzard's own goes to the hidden parent out of combat and
             -- outside Edit Mode (a skipped pass retries on the next one). The
             -- hidden parent is pinned for the session: only a reload brings
@@ -373,7 +439,9 @@ function ns.UF_ApplyForeverComboArc()
     end
     if not host then
         ev:UnregisterAllEvents()
-        if arc then arc:Hide() end
+        if arc then
+            arc:Hide()
+        end
         return
     end
     arc = arc or ns.UF_BuildComboArc(host)
@@ -383,14 +451,24 @@ function ns.UF_ApplyForeverComboArc()
     local mirror = (G and G.side == "left") or nil
     if arc._host ~= host or arc._kit ~= G or arc._mirror ~= mirror then
         arc._host, arc._kit, arc._mirror = host, G, mirror
-        if arc:GetParent() ~= host then arc:SetParent(host) end
+        if arc:GetParent() ~= host then
+            arc:SetParent(host)
+        end
         local dx, dy = ns.UF_ComboRingShift(G)
         arc:ClearAllPoints()
         ns.UF_BlizzPoint(arc, "TOPRIGHT", host, "TOPRIGHT", 4 + dx, dy, mirror)
         local slots, pips = ns.UF_COMBO_SLOTS, arc._pips
         for k = 1, 9 do
             pips[k]:ClearAllPoints()
-            ns.UF_BlizzPoint(pips[k], "TOPRIGHT", host, "TOPRIGHT", slots[k][1] + dx, slots[k][2] + dy, mirror)
+            ns.UF_BlizzPoint(
+                pips[k],
+                "TOPRIGHT",
+                host,
+                "TOPRIGHT",
+                slots[k][1] + dx,
+                slots[k][2] + dy,
+                mirror
+            )
         end
     end
     -- Over the art, portrait and bars, one level above the level host (its

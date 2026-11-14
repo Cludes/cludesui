@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Advance.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor, min, max, abs = math.floor, math.min, math.max, math.abs
@@ -26,7 +30,9 @@ local FAN_CANCEL_REACH, GRID_REACH = I.FAN_CANCEL_REACH, I.GRID_REACH
 local NEST_DIM_ALPHA, NEST_DIM_SCALE = I.NEST_DIM_ALPHA, I.NEST_DIM_SCALE
 
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v) scrollCatcher = v end
+I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
+    scrollCatcher = v
+end
 
 -- Lay the grid out and select the entry nearest the pointer. noPointer draws it
 -- evenly with nothing selected, which is what Layout and the editor want.
@@ -39,10 +45,10 @@ function PaletteView:AdvanceGrid(noPointer)
     end
 
     local _, iconSize = self:Geom()
-    local pitch  = iconSize + (p.fanGap or 10)
+    local pitch = iconSize + (p.fanGap or 10)
     local decay, aDecay = FalloffRatios(p)
-    local minS   = p.fanMinScale or 0.30
-    local minA   = p.fanMinAlpha or 0.12
+    local minS = p.fanMinScale or 0.30
+    local minA = p.fanMinAlpha or 0.12
     if self.opts.interactive then
         minS = max(minS, FAN_EDIT_MIN_SCALE)
         minA = max(minA, FAN_EDIT_MIN_ALPHA)
@@ -60,11 +66,12 @@ function PaletteView:AdvanceGrid(noPointer)
         local es = frame:GetEffectiveScale()
         local mx, my = GetCursorPosition()
         mx, my = mx / es, my / es
-        if not self._steered
-           and (abs(mx - self._gateX) >= 1 or abs(my - self._gateY) >= 1) then
+        if not self._steered and (abs(mx - self._gateX) >= 1 or abs(my - self._gateY) >= 1) then
             self._steered = true
         end
-        if self._steered then dx, dy = mx - fx, my - fy end
+        if self._steered then
+            dx, dy = mx - fx, my - fy
+        end
     end
 
     -- Nested cells first, and by CONTAINMENT rather than by nearness: a nest is
@@ -81,7 +88,9 @@ function PaletteView:AdvanceGrid(noPointer)
     -- without one springing open behind the other's back.
     local best, bestK
     local armed = self:ArmedClaim()
-    if dx then best = self:NestHit(dx, dy, armed) end
+    if dx then
+        best = self:NestHit(dx, dy, armed)
+    end
 
     -- Nearest of the palette's own, once the nests have declined. Past
     -- GRID_REACH cells from every one of them nothing is selected -- this
@@ -96,9 +105,13 @@ function PaletteView:AdvanceGrid(noPointer)
             -- keeps a cursor exactly on the reach boundary from selecting one
             -- entry on screen and firing another.
             local k = (ox * ox + oy * oy) ^ 0.5
-            if not bestK or k < bestK then best, bestK = i, k end
+            if not bestK or k < bestK then
+                best, bestK = i, k
+            end
         end
-        if bestK and bestK > GRID_REACH then best = nil end
+        if bestK and bestK > GRID_REACH then
+            best = nil
+        end
     end
 
     -- Which nest is open, settled before anything is drawn: a style that fades
@@ -181,7 +194,9 @@ end
 -- Centre the strip on a slot with no animation. The options preview uses this
 -- to follow the entry the user has clicked.
 function PaletteView:SetFanCenter(index)
-    if not index or self.shownCount < 1 then return end
+    if not index or self.shownCount < 1 then
+        return
+    end
     self.fanTarget = index
     self.fanVisual = index
     self:ApplyFanGeometry()
@@ -197,21 +212,22 @@ function PaletteView:FanHalfLength()
     -- One window for editor and play alike: the editor draws the same
     -- fanVisible-each-side strip a hold does and scrolls the rest into view.
     local window = (p and p.fanVisible) or 2
-    local minS = self.opts.interactive and FAN_EDIT_MIN_SCALE
-                                        or ((p and p.fanMinScale) or 0.30)
+    local minS = self.opts.interactive and FAN_EDIT_MIN_SCALE or ((p and p.fanMinScale) or 0.30)
     -- Plus the room ApplyFanGeometry leaves for the selected entry to grow into,
     -- which every offset past the centre carries. Left out, the frame would be
     -- narrower than the strip drawn in it and the cancel box would sit inside
     -- the last entry rather than beyond it.
-    return FanOffset(window, iconSize, (p and p.fanGap) or 10,
-                     (FalloffRatios(p)), minS)
-           + iconSize + iconSize * (SelectedZoom() - 1) * 0.5
+    return FanOffset(window, iconSize, (p and p.fanGap) or 10, (FalloffRatios(p)), minS)
+        + iconSize
+        + iconSize * (SelectedZoom() - 1) * 0.5
 end
 
 -- Pointer offset from the point the palette was opened at, which is what the
 -- strip's cancel and its nests are both measured from.
 function PaletteView:StripOffset()
-    if not self._gateX then return nil end
+    if not self._gateX then
+        return nil
+    end
     local es = self.frame:GetEffectiveScale()
     local mx, my = GetCursorPosition()
     return mx / es - self._gateX, my / es - self._gateY
@@ -221,14 +237,18 @@ end
 function PaletteView:ClaimFor(index)
     local claims = self.claims
     for k = 1, (index and claims and #claims or 0) do
-        if claims[k].parent == index then return claims[k] end
+        if claims[k].parent == index then
+            return claims[k]
+        end
     end
 end
 
 -- Which entry the wheel has landed on, folded into range.
 function PaletteView:StripTarget()
     local shown = self.shownCount
-    if not self.fanTarget or shown < 1 then return nil end
+    if not self.fanTarget or shown < 1 then
+        return nil
+    end
     return ((self.fanTarget - 1) % shown) + 1
 end
 
@@ -240,11 +260,17 @@ end
 function PaletteView:FanSlotOffset(slot)
     local shown = self.shownCount
     local target = self:StripTarget()
-    if not slot or not target or shown < 1 then return nil end
+    if not slot or not target or shown < 1 then
+        return nil
+    end
     local d = (slot - target) % shown
-    if d * 2 > shown then d = d - shown end
+    if d * 2 > shown then
+        d = d - shown
+    end
     local p = self:P()
-    if abs(d) > ((p and p.fanVisible) or 2) + 0.5 then return nil end
+    if abs(d) > ((p and p.fanVisible) or 2) + 0.5 then
+        return nil
+    end
     return d
 end
 
@@ -253,11 +279,15 @@ end
 -- view with no gate origin -- the options preview, which has no pointer gesture
 -- at all -- so only the live palette can be cancelled this way.
 function PaletteView:FanCancelProgress()
-    if not self._gateX then return 0 end
+    if not self._gateX then
+        return 0
+    end
     local p = self:P()
     local _, iconSize = self:Geom()
     local along, across = self:StripOffset()
-    if not self:FanHoriz() then along, across = across, along end
+    if not self:FanHoriz() then
+        along, across = across, along
+    end
 
     local margin = FAN_CANCEL_REACH * (iconSize + ((p and p.fanGap) or 10))
     -- Travel toward the nest the selected entry opens does not count as leaving:
@@ -270,8 +300,7 @@ function PaletteView:FanCancelProgress()
         acrossMargin = max(margin, claim.across)
     end
 
-    return max(abs(across) / acrossMargin,
-               abs(along) / (self:FanHalfLength() + margin))
+    return max(abs(across) / acrossMargin, abs(along) / (self:FanHalfLength() + margin))
 end
 
 -- Has the pointer been thrown clear of the strip?
@@ -304,7 +333,7 @@ function PaletteView:AdvanceFan(elapsed)
     -- has left it while the pointer is clear of it, so bringing the pointer back
     -- shows the entry that would fire, already settled.
     local target = self:StripTarget()
-    local claim  = self:ClaimFor(target)
+    local claim = self:ClaimFor(target)
     local p2 = self:P()
     local mouseSel = (p2 and p2.fanMouseSelect) ~= false
     local sel
@@ -330,11 +359,14 @@ function PaletteView:AdvanceFan(elapsed)
                 local ndx, ndy = mxc / esc - fxc, myc / esc - fyc
                 local pitch = self:Pitch()
                 local sx, sy = 0, 0
-                if self:FanHoriz() then sx = dp * pitch else sy = -(dp * pitch) end
+                if self:FanHoriz() then
+                    sx = dp * pitch
+                else
+                    sy = -(dp * pitch)
+                end
                 for j = 1, c.n do
                     local b = c.cells[j]
-                    if abs(ndx - (b.x + sx)) <= b.hw
-                       and abs(ndy - (b.y + sy)) <= b.hh then
+                    if abs(ndx - (b.x + sx)) <= b.hw and abs(ndy - (b.y + sy)) <= b.hh then
                         sel = c.base + j
                         break
                     end
@@ -370,7 +402,9 @@ function PaletteView:AdvanceFan(elapsed)
             -- ApplyFanGeometry draws positive offsets at -off -- so below
             -- the centre is positive d. Raw dy read the strip mirrored.
             -- The snippet's hover test negates identically (drawn == fired).
-            if not self:FanHoriz() then along, across = -across, along end
+            if not self:FanHoriz() then
+                along, across = -across, along
+            end
             local _, iconSize = self:Geom()
             local pitch = iconSize + ((p2 and p2.fanGap) or 10)
             local d = floor(along / pitch + 0.5)
@@ -387,10 +421,13 @@ function PaletteView:AdvanceFan(elapsed)
             -- bound is the drawing's own asymmetric one: entries land in
             -- (-shown/2, shown/2], so on an even fold the +half slot is a
             -- real icon and the -half slot is empty ground.
-            if abs(across) <= iconSize * 0.5
-               and abs(along - d * pitch) <= iconSize * 0.5
-               and abs(d) <= window + 0.5
-               and d * 2 <= shown and -d * 2 < shown then
+            if
+                abs(across) <= iconSize * 0.5
+                and abs(along - d * pitch) <= iconSize * 0.5
+                and abs(d) <= window + 0.5
+                and d * 2 <= shown
+                and -d * 2 < shown
+            then
                 sel = ((self.fanTarget - 1 + d) % shown) + 1
             end
         end
@@ -407,7 +444,9 @@ function PaletteView:AdvanceFan(elapsed)
     if not sel and mouseSel then
         local ak = self:ArmedClaim()
         local c = ak and self.claims and self.claims[ak]
-        if c and self:FanSlotOffset(c.parent) then sel = c.parent end
+        if c and self:FanSlotOffset(c.parent) then
+            sel = c.parent
+        end
     end
     -- The wheel's entry stands on its own only while the hover channel is
     -- OFF: exclusive hover means an empty pointer selects nothing at all.
@@ -436,28 +475,33 @@ function PaletteView:AdvanceFan(elapsed)
             if mouseSel then
                 local dp = self:FanSlotOffset(c.parent)
                 if dp then
-                    if horiz then sx = dp * pitch else sy = -(dp * pitch) end
+                    if horiz then
+                        sx = dp * pitch
+                    else
+                        sy = -(dp * pitch)
+                    end
                 end
             end
             for j = 1, c.n do
                 local w = c.base and self.widgets[c.base + j]
                 if w then
                     w:ClearAllPoints()
-                    w:SetPoint("CENTER", self.frame, "CENTER",
-                               ox + sx + c.cells[j].x, oy + sy + c.cells[j].y)
+                    w:SetPoint("CENTER", self.frame, "CENTER", ox + sx + c.cells[j].x, oy + sy + c.cells[j].y)
                 end
             end
         end
     end
 
     local target = self.fanTarget or 1
-    local cur    = self.fanVisual or target
+    local cur = self.fanVisual or target
     if cur ~= target then
         -- The settle is FIXED at 0.1s (the Settle Time setting was removed;
         -- a fanAnimTime key left in stored profiles is never read).
         cur = cur + (target - cur) * min(1, (elapsed or 0) / 0.1)
         -- Snap the tail: an asymptote would keep this view dirty forever.
-        if abs(target - cur) < 0.001 then cur = target end
+        if abs(target - cur) < 0.001 then
+            cur = target
+        end
         self.fanVisual = cur
         self:ApplyFanGeometry()
     end
@@ -469,9 +513,13 @@ end
 function PaletteView:ScreenOffset()
     local frame = self.frame
     local cx, cy = frame:GetCenter()
-    if not cx then return 0, 0 end
+    if not cx then
+        return 0, 0
+    end
     local ux, uy = UIParent:GetCenter()
-    if not ux then return 0, 0 end
+    if not ux then
+        return 0, 0
+    end
 
     local k = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     return cx * k - ux, cy * k - uy
@@ -486,7 +534,7 @@ end
 -- the strip lands somewhere new on every open, so the quadrant is only known
 -- once PositionPalette has run.
 function PaletteView:PlaceHubText()
-    local hub  = self.hub
+    local hub = self.hub
     local mode = self:LayoutMode()
     local _, iconSize = self:Geom()
     -- A vertical nudge the view was created with (the options preview drops
@@ -516,7 +564,9 @@ function PaletteView:PlaceHubText()
     -- the options page happens to be scrolled to, and a caption that jumped
     -- sides as the user scrolled would read as a glitch.
     local dx, dy = 0, 0
-    if not self.opts.interactive then dx, dy = self:ScreenOffset() end
+    if not self.opts.interactive then
+        dx, dy = self:ScreenOffset()
+    end
 
     -- A nest has already claimed one side of the block, so the caption takes the
     -- other -- overriding the quadrant test below, which is about screen room
@@ -561,14 +611,14 @@ end
 
 function ns.CreatePaletteView(parent, opts)
     local view = setmetatable({
-        opts      = opts or {},
-        widgets   = {},
+        opts = opts or {},
+        widgets = {},
         paletteIndex = 1,
         slotCount = 0,
         shownCount = 0,
         -- Only the live palette arms the movement gate (see HitTest); anything
         -- else is steered from the moment it exists.
-        _steered  = true,
+        _steered = true,
     }, PaletteViewMeta)
 
     -- A caller can hand in the frame instead of naming one. The live view does,
@@ -602,8 +652,9 @@ function ns.CreatePaletteView(parent, opts)
     -- wash out its dark areas into whatever is behind the palette. ARTWORK
     -- so the hub's OVERLAY strings still read on top of it.
     hub.logo = hub:CreateTexture(nil, "ARTWORK")
-    hub.logo:SetTexture((CludesUI.MEDIA_PATH or "Interface\\AddOns\\CludesUI\\media\\")
-                        .. "logo-full-thin.png")
+    hub.logo:SetTexture(
+        (CludesUI.MEDIA_PATH or "Interface\\AddOns\\CludesUI\\media\\") .. "logo-full-thin.png"
+    )
     hub.logo:SetPoint("CENTER")
     hub.logo:Hide()
 
@@ -635,7 +686,9 @@ function ns.CreatePaletteView(parent, opts)
     -- The palette's own entries exist from the outset; nested ones are made on
     -- demand, because most palettes hold none and a full set would be another
     -- MAX_SLOTS x MAX_CHILDREN frames per view.
-    for i = 1, MAX_SLOTS do view.widgets[i] = CreateSlotWidget(view, i) end
+    for i = 1, MAX_SLOTS do
+        view.widgets[i] = CreateSlotWidget(view, i)
+    end
 
     views[#views + 1] = view
     return view

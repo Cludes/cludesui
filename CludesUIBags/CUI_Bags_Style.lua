@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end
 local ns = select(2, ...)
 local CUI = CludesUI
 local forever
@@ -10,16 +12,22 @@ local BAG_FRAME_SCALE = 0.8
 --- profile's), so a profile on the WoW Forever look gets it with no write.
 function ns.BagsForeverWanted(p, addons)
     local pick = p and p.useForeverStyle
-    if pick == nil then return CUI.ForeverLookMajority(addons) end
+    if pick == nil then
+        return CUI.ForeverLookMajority(addons)
+    end
     return pick == true
 end
 
 -- Latched at the first read (0.5 s after login: every module has loaded), so a
 -- change takes effect after the reload the Style page asks for.
 function ns.BagsForever()
-    if not CUI.IS_FOREVER then return false end
+    if not CUI.IS_FOREVER then
+        return false
+    end
     if forever == nil then
-        if not CUI.Lite.IsDBReady() then return false end
+        if not CUI.Lite.IsDBReady() then
+            return false
+        end
         forever = ns.BagsForeverWanted(CUI._bagsDB.profile)
     end
     return forever
@@ -33,9 +41,14 @@ local function InsetBagBackground(tex, owner)
 end
 
 function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
-    if not ns.BagsForever() then return end
+    if not ns.BagsForever() then
+        return
+    end
     local nineSlice = hasPortrait and NineSliceUtil
-    local layout = nineSlice and nineSlice.GetLayout and nineSlice.ApplyLayout and nineSlice.GetLayout("HeldBagLayout")
+    local layout = nineSlice
+        and nineSlice.GetLayout
+        and nineSlice.ApplyLayout
+        and nineSlice.GetLayout("HeldBagLayout")
     local corner = layout and layout.TopLeftCorner
     local cornerInfo = corner and corner.atlas and C_Texture.GetAtlasInfo(corner.atlas)
     local heavyOK = CUI.ForeverHeavyOK()
@@ -52,8 +65,12 @@ function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
         if piece and file and cornerInfo.width > width then
             local left, right = cornerInfo.leftTexCoord, cornerInfo.rightTexCoord
             piece:SetTexture(file)
-            piece:SetTexCoord(left, left + (right - left) * width / cornerInfo.width,
-                cornerInfo.topTexCoord, cornerInfo.bottomTexCoord)
+            piece:SetTexCoord(
+                left,
+                left + (right - left) * width / cornerInfo.width,
+                cornerInfo.topTexCoord,
+                cornerInfo.bottomTexCoord
+            )
             piece:SetSize(width, cornerInfo.height)
         end
         if nineSlice.UpdateCornerCropping then
@@ -80,7 +97,9 @@ function ns.SkinForeverBagWindow(owner, bg, overlay, hasTitle, hasPortrait)
     if heavyOK then
         owner._foreverBagFrameScale = BAG_FRAME_SCALE
         InsetBagBackground(bg, owner)
-        if overlay then InsetBagBackground(overlay, owner) end
+        if overlay then
+            InsetBagBackground(overlay, owner)
+        end
     end
     bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
     bg:SetVertexColor(0.55, 0.55, 0.55)
@@ -106,7 +125,9 @@ function ns.SkinForeverBagTitle(title, count)
     title:SetJustifyH("CENTER")
     title:SetWordWrap(false)
     title:SetTextColor(1, 0.82, 0)
-    if not count then return end
+    if not count then
+        return
+    end
     count:ClearAllPoints()
     count:SetPoint("RIGHT", header, "TOPRIGHT", -31, y)
     count:SetWidth(85)
@@ -156,7 +177,11 @@ function ns.AddForeverBagPortrait(header, texturePath)
         icon:SetPoint("CENTER", header, "TOPLEFT", 16, -18)
         mask:SetAllPoints(icon)
     end
-    mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetTexture(
+        "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+        "CLAMPTOBLACKADDITIVE",
+        "CLAMPTOBLACKADDITIVE"
+    )
     icon:AddMaskTexture(mask)
 
     if not border and C_Texture.GetAtlasInfo("UI-Frame-Portrait") then
@@ -174,7 +199,9 @@ function ns.PositionForeverBagClose(close)
     close:SetPoint("CENTER", header, "TOPRIGHT", -12, 1 - 13 * scale)
     local size = 25 * scale
     close:SetSize(size, size)
-    if not C_Texture.GetAtlasInfo("RedButton-Exit") then return end
+    if not C_Texture.GetAtlasInfo("RedButton-Exit") then
+        return
+    end
     close.icon:Hide()
     close:SetScript("OnEnter", nil)
     close:SetScript("OnLeave", nil)
@@ -190,8 +217,11 @@ end
 function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
     local getAtlas = C_Texture.GetAtlasInfo
     search:SetHeight(20)
-    if getAtlas("common-search-border-left") and getAtlas("common-search-border-middle")
-        and getAtlas("common-search-border-right") then
+    if
+        getAtlas("common-search-border-left")
+        and getAtlas("common-search-border-middle")
+        and getAtlas("common-search-border-right")
+    then
         local left = search:CreateTexture(nil, "BACKGROUND")
         left:SetAtlas("common-search-border-left")
         left:SetSize(8, 20)
@@ -224,7 +254,9 @@ function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
     placeholder:ClearAllPoints()
     placeholder:SetPoint("LEFT", search, "LEFT", 16, 0)
     placeholder:SetTextColor(0.35, 0.35, 0.35)
-    if SEARCH then placeholder:SetText(SEARCH) end
+    if SEARCH then
+        placeholder:SetText(SEARCH)
+    end
 
     if getAtlas("common-search-clearbutton") then
         clear.tex:Hide()
@@ -237,7 +269,9 @@ function ns.SkinForeverBagSearch(search, bg, placeholder, clear)
 end
 
 function ns.SkinForeverBagFooter(footer, bg, separator)
-    if separator then separator:Hide() end
+    if separator then
+        separator:Hide()
+    end
     -- Keep the coin box on the bottom row when tracked currencies wrap.
     local rowCenter = footer:GetHeight() / 2
     bg:ClearAllPoints()
@@ -247,9 +281,15 @@ function ns.SkinForeverBagFooter(footer, bg, separator)
     bg:SetColorTexture(0.025, 0.02, 0.015, 0.8)
     footer._coinBox = bg
 
-    if not (C_Texture.GetAtlasInfo("common-coinbox-left")
-        and C_Texture.GetAtlasInfo("common-coinbox-right")
-        and C_Texture.GetAtlasInfo("_common-coinbox-center")) then return end
+    if
+        not (
+            C_Texture.GetAtlasInfo("common-coinbox-left")
+            and C_Texture.GetAtlasInfo("common-coinbox-right")
+            and C_Texture.GetAtlasInfo("_common-coinbox-center")
+        )
+    then
+        return
+    end
 
     local left = footer:CreateTexture(nil, "BACKGROUND", nil, 2)
     left:SetAtlas("common-coinbox-left")

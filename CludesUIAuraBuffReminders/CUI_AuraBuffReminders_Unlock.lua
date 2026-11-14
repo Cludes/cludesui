@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Unlock.lua
 --
@@ -9,7 +11,9 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor, abs = math.floor, math.abs
@@ -19,11 +23,17 @@ local LayoutIcons, ResizeAnchorCentered = I.LayoutIcons, I.ResizeAnchorCentered
 local CursorAttachActive = I.CursorAttachActive
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local iconAnchor
-I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v) iconAnchor = v end
+I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v)
+    iconAnchor = v
+end
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v) cursorAnchor = v end
+I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
+    cursorAnchor = v
+end
 
 -------------------------------------------------------------------------------
 --  Unlock Mode
@@ -34,10 +44,14 @@ function EABR.NominalRowW(d)
 end
 
 local function ApplyUnlockPos()
-    if not iconAnchor or not db then return end
+    if not iconAnchor or not db then
+        return
+    end
     -- Skip for unlock-anchored elements (anchor system is authority)
     local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EABR_Reminders")
-    if anchored and iconAnchor:GetLeft() then return end
+    if anchored and iconAnchor:GetLeft() then
+        return
+    end
     local pos = db.profile.unlockPos
     if pos and pos.point then
         local px, py = pos.x or 0, pos.y or 0
@@ -65,9 +79,21 @@ local function ApplyUnlockPos()
         local growDir = d.growDirection
         iconAnchor:ClearAllPoints()
         if growDir == "RIGHT" then
-            iconAnchor:SetPoint("LEFT", UIParent, "CENTER", (d.xOffset or 0) - EABR.NominalRowW(d) / 2, d.yOffset or 0)
+            iconAnchor:SetPoint(
+                "LEFT",
+                UIParent,
+                "CENTER",
+                (d.xOffset or 0) - EABR.NominalRowW(d) / 2,
+                d.yOffset or 0
+            )
         elseif growDir == "LEFT" then
-            iconAnchor:SetPoint("RIGHT", UIParent, "CENTER", (d.xOffset or 0) + EABR.NominalRowW(d) / 2, d.yOffset or 0)
+            iconAnchor:SetPoint(
+                "RIGHT",
+                UIParent,
+                "CENTER",
+                (d.xOffset or 0) + EABR.NominalRowW(d) / 2,
+                d.yOffset or 0
+            )
         else
             iconAnchor:SetPoint("CENTER", UIParent, "CENTER", d.xOffset or 0, d.yOffset or 0)
         end
@@ -80,13 +106,21 @@ end
 -- (CENTER, LEFT or RIGHT of UIParent's CENTER) convert.
 function EABR.UpdateUnlockPosForGrowDir(newGrowDir)
     local pos = db.profile.unlockPos
-    if not pos or not pos.point or (pos.relPoint or pos.point) ~= "CENTER" then return end
+    if not pos or not pos.point or (pos.relPoint or pos.point) ~= "CENTER" then
+        return
+    end
     local curPoint = pos.point
-    if curPoint ~= "CENTER" and curPoint ~= "LEFT" and curPoint ~= "RIGHT" then return end
+    if curPoint ~= "CENTER" and curPoint ~= "LEFT" and curPoint ~= "RIGHT" then
+        return
+    end
     local targetPoint = (newGrowDir == "RIGHT" and "LEFT") or (newGrowDir == "LEFT" and "RIGHT") or "CENTER"
-    if curPoint == targetPoint then return end
+    if curPoint == targetPoint then
+        return
+    end
     local w = iconAnchor and iconAnchor:GetWidth() or 0
-    if w <= 1 then w = EABR.NominalRowW(db.profile.display) end
+    if w <= 1 then
+        w = EABR.NominalRowW(db.profile.display)
+    end
     local cx = pos.x or 0
     if curPoint == "LEFT" then
         cx = cx + (w / 2)
@@ -110,7 +144,9 @@ function CludesUI.GetAuraBuffGrowDir()
 end
 
 function CludesUI.SetAuraBuffGrowDir(v)
-    if not db or not db.profile or not db.profile.display then return end
+    if not db or not db.profile or not db.profile.display then
+        return
+    end
     db.profile.display.growDirection = v
     EABR.UpdateUnlockPosForGrowDir(v)
     ApplyUnlockPos()
@@ -118,7 +154,9 @@ function CludesUI.SetAuraBuffGrowDir(v)
 end
 
 local function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
+    if not CludesUI or not CludesUI.RegisterUnlockElements then
+        return
+    end
     local MK = CludesUI.MakeUnlockElement
     CludesUI:RegisterUnlockElements({
         MK({
@@ -126,26 +164,34 @@ local function RegisterUnlockElements()
             label = "Buff Reminders",
             group = "Buff Reminders",
             order = 600,
-            noAnchorTarget = true,  -- icon count changes dynamically with auras
+            noAnchorTarget = true, -- icon count changes dynamically with auras
             -- Icon size is driven solely by the Scale slider. No drag-resize: row width is count-dependent, so restoring a stored width under a different count would corrupt the persisted scale (matches External Defensives).
             noResize = true,
-            getFrame = function() return iconAnchor end,
+            getFrame = function()
+                return iconAnchor
+            end,
             getSize = function()
                 local p = db.profile.display
                 local baseScale = p.scale or 1.0
                 local sz = floor(ICON_SIZE * baseScale + 0.5)
                 local iconH = sz
-                if p.iconShape and p.iconShape ~= "none" then sz, iconH = ns.IconDimensions(sz, p) end
+                if p.iconShape and p.iconShape ~= "none" then
+                    sz, iconH = ns.IconDimensions(sz, p)
+                end
                 local spacing = p.iconSpacing or 8
                 -- Fits all active icons (same set LayoutIcons places: reminders + merged beacon icons unless cursor-routed); falls back to a 2-wide grabbable box when empty so the mover overlay stays draggable.
                 local count = #activeIcons
                 local beaconsOnCursor = CursorAttachActive(p) and cursorAnchor
                 if _B.icons and not beaconsOnCursor then
                     for _, id in ipairs(_B.ALL or {}) do
-                        if _B.iconState and _B.iconState[id] and _B.icons[id] then count = count + 1 end
+                        if _B.iconState and _B.iconState[id] and _B.icons[id] then
+                            count = count + 1
+                        end
                     end
                 end
-                if count < 1 then count = 2 end
+                if count < 1 then
+                    count = 2
+                end
                 local w = count * sz + (count - 1) * spacing
                 local textH = 0
                 if p.showText then
@@ -153,13 +199,19 @@ local function RegisterUnlockElements()
                 end
                 local h = iconH + textH
                 -- Resizes the anchor for the overlay
-                if iconAnchor then ResizeAnchorCentered(w, h) end
+                if iconAnchor then
+                    ResizeAnchorCentered(w, h)
+                end
                 return w, h
             end,
             savePos = function(key, point, relPoint, x, y)
                 -- Unlock mode hands over the row's CENTER; Grow Right/Left store their fixed edge instead.
                 local growDir = db.profile.display.growDirection
-                if (growDir == "RIGHT" or growDir == "LEFT") and point == "CENTER" and relPoint == "CENTER" then
+                if
+                    (growDir == "RIGHT" or growDir == "LEFT")
+                    and point == "CENTER"
+                    and relPoint == "CENTER"
+                then
                     local halfW = (iconAnchor and iconAnchor:GetWidth() or 0) / 2
                     if growDir == "RIGHT" then
                         point, x = "LEFT", x - halfW
@@ -167,7 +219,7 @@ local function RegisterUnlockElements()
                         point, x = "RIGHT", x + halfW
                     end
                 end
-                db.profile.unlockPos = {point=point, relPoint=relPoint, x=x, y=y}
+                db.profile.unlockPos = { point = point, relPoint = relPoint, x = x, y = y }
                 if not CludesUI._unlockActive then
                     ApplyUnlockPos()
                 end
@@ -193,8 +245,10 @@ local function RegisterUnlockElements()
                 return db.profile.unlockPos
             end,
             saveRawPos = function(_, p)
-                if not (p and p.point) then return end
-                db.profile.unlockPos = {point=p.point, relPoint=p.relPoint or p.point, x=p.x, y=p.y}
+                if not (p and p.point) then
+                    return
+                end
+                db.profile.unlockPos = { point = p.point, relPoint = p.relPoint or p.point, x = p.x, y = p.y }
                 EABR.UpdateUnlockPosForGrowDir(db.profile.display.growDirection)
             end,
             clearPos = function()

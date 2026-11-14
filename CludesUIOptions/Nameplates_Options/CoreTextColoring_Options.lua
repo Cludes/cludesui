@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Nameplates_Options\CoreTextColoring_Options.lua
 --  Nameplates options: the Core Text Coloring section of the Display page,
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  text slots from ns.NPO_TEXT_SLOTS and ns.NPO_TextSlotShown.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUINameplates"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 
 local function BuildCoreTextColoring(parent, y, W)
     local env = ns._NPO_OptEnv
@@ -20,11 +24,16 @@ local function BuildCoreTextColoring(parent, y, W)
     local shown = {}
     local slots = ns.NPO_TEXT_SLOTS
     for i = 1, #slots do
-        if ns.NPO_TextSlotShown(slots[i].key) then shown[#shown + 1] = slots[i] end
+        if ns.NPO_TextSlotShown(slots[i].key) then
+            shown[#shown + 1] = slots[i]
+        end
     end
-    if #shown == 0 then return y end
+    if #shown == 0 then
+        return y
+    end
 
-    local _, h = W:SectionHeader(parent, "CORE TEXT COLORING", y);  y = y - h
+    local _, h = W:SectionHeader(parent, "CORE TEXT COLORING", y)
+    y = y - h
 
     parent._showRowDivider = true
 
@@ -41,7 +50,9 @@ local function BuildCoreTextColoring(parent, y, W)
     local COLOR_MODE_ORDER_LEVEL = { "custom", "class", "level" }
     local function TextColoringCfg(slotKey, label)
         local el = DBVal(slotKey)
-        if el == "none" then return CludesUI.BlankRowCfg() end
+        if el == "none" then
+            return CludesUI.BlankRowCfg()
+        end
         local values, order
         if el == "targetOfTarget" then
             values, order = { custom = "Custom", class = "Class" }, COLOR_MODE_ORDER
@@ -49,20 +60,28 @@ local function BuildCoreTextColoring(parent, y, W)
             values = { custom = "Custom", class = "Hostility / Class", level = "Level Difficulty" }
             order = COLOR_MODE_ORDER_LEVEL
         end
-        return { type="dropdown", text=label, values=values, order=order,
-          getValue=function() return ns.NP_SlotColorMode(slotKey, DB()) end,
-          -- The mode is saved only when the pick differs from what the slot derives
-          -- with none saved, so picking the derived value pins nothing. Rebuild: the
-          -- shared NPC swatches exist only on a Hostility / Class half.
-          setValue=function(v)
-            local db = DB()
-            db[slotKey .. "ColorMode"] = nil
-            if ns.NP_SlotColorMode(slotKey, db) ~= v then
-                db[slotKey .. "ColorMode"] = v
-            end
-            ns.RefreshAllSettings()
-            UpdatePreview(); CludesUI:RefreshPage(true)
-          end }
+        return {
+            type = "dropdown",
+            text = label,
+            values = values,
+            order = order,
+            getValue = function()
+                return ns.NP_SlotColorMode(slotKey, DB())
+            end,
+            -- The mode is saved only when the pick differs from what the slot derives
+            -- with none saved, so picking the derived value pins nothing. Rebuild: the
+            -- shared NPC swatches exist only on a Hostility / Class half.
+            setValue = function(v)
+                local db = DB()
+                db[slotKey .. "ColorMode"] = nil
+                if ns.NP_SlotColorMode(slotKey, db) ~= v then
+                    db[slotKey .. "ColorMode"] = v
+                end
+                ns.RefreshAllSettings()
+                UpdatePreview()
+                CludesUI:RefreshPage(true)
+            end,
+        }
     end
 
     -- A Text Coloring half's inline controls. The swatches sit beside the
@@ -75,14 +94,18 @@ local function BuildCoreTextColoring(parent, y, W)
     -- built only on a Hostility / Class half, so no other half traces the shared
     -- keys for Spec Overrides. Every write goes through the dropdown, a cog row or
     -- a swatch, which the Spec Overrides capture follows on its own.
-    local npcSwatchUpdates = {}  -- the shared NPC swatches of every row, repainted together
+    local npcSwatchUpdates = {} -- the shared NPC swatches of every row, repainted together
     local function MakeTextColoringInline(row, regionKey, slotKey, title)
         local el = DBVal(slotKey)
-        if el == "none" then return end
+        if el == "none" then
+            return
+        end
         local rgn = row[regionKey]
         local colorKey = slotKey .. "Color"
         local isToT = el == "targetOfTarget"
-        local function Mode() return ns.NP_SlotColorMode(slotKey, DB()) end
+        local function Mode()
+            return ns.NP_SlotColorMode(slotKey, DB())
+        end
         local function Apply()
             ns.RefreshAllSettings()
             UpdatePreview()
@@ -105,34 +128,78 @@ local function BuildCoreTextColoring(parent, y, W)
                 title = title,
                 captureRegion = rgn,
                 rows = {
-                    { type="toggle", label="Custom Name Color",
-                      get=function() return DBVal(nameOnKey) == true end,
-                      set=function(v) DB()[nameOnKey] = v; Apply() end },
-                    { type="colorpicker", label="Name Color",
-                      hidden=function() return DBVal(nameOnKey) ~= true end,
-                      get=function() return PartColor(nameColorKey) end,
-                      set=function(r, g, b) DB()[nameColorKey] = { r = r, g = g, b = b }; Apply() end },
-                    { type="toggle", label="Custom Level Color",
-                      get=function() return DBVal(lvlOnKey) == true end,
-                      set=function(v)
-                        DB()[lvlOnKey] = v
-                        if v then DB()[diffKey] = false end
-                        Apply()
-                      end },
-                    { type="colorpicker", label="Level Color",
-                      hidden=function() return DBVal(lvlOnKey) ~= true end,
-                      get=function() return PartColor(lvlColorKey) end,
-                      set=function(r, g, b) DB()[lvlColorKey] = { r = r, g = g, b = b }; Apply() end },
+                    {
+                        type = "toggle",
+                        label = "Custom Name Color",
+                        get = function()
+                            return DBVal(nameOnKey) == true
+                        end,
+                        set = function(v)
+                            DB()[nameOnKey] = v
+                            Apply()
+                        end,
+                    },
+                    {
+                        type = "colorpicker",
+                        label = "Name Color",
+                        hidden = function()
+                            return DBVal(nameOnKey) ~= true
+                        end,
+                        get = function()
+                            return PartColor(nameColorKey)
+                        end,
+                        set = function(r, g, b)
+                            DB()[nameColorKey] = { r = r, g = g, b = b }
+                            Apply()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Custom Level Color",
+                        get = function()
+                            return DBVal(lvlOnKey) == true
+                        end,
+                        set = function(v)
+                            DB()[lvlOnKey] = v
+                            if v then
+                                DB()[diffKey] = false
+                            end
+                            Apply()
+                        end,
+                    },
+                    {
+                        type = "colorpicker",
+                        label = "Level Color",
+                        hidden = function()
+                            return DBVal(lvlOnKey) ~= true
+                        end,
+                        get = function()
+                            return PartColor(lvlColorKey)
+                        end,
+                        set = function(r, g, b)
+                            DB()[lvlColorKey] = { r = r, g = g, b = b }
+                            Apply()
+                        end,
+                    },
                     -- The whole text already takes the difficulty colour in Level
                     -- Difficulty mode.
-                    { type="toggle", label="Level Difficulty Color",
-                      hidden=function() return Mode() == "level" end,
-                      get=function() return ns.NP_SlotLevelDiff(slotKey, DB()) end,
-                      set=function(v)
-                        DB()[diffKey] = v
-                        if v then DB()[lvlOnKey] = false end
-                        Apply()
-                      end },
+                    {
+                        type = "toggle",
+                        label = "Level Difficulty Color",
+                        hidden = function()
+                            return Mode() == "level"
+                        end,
+                        get = function()
+                            return ns.NP_SlotLevelDiff(slotKey, DB())
+                        end,
+                        set = function(v)
+                            DB()[diffKey] = v
+                            if v then
+                                DB()[lvlOnKey] = false
+                            end
+                            Apply()
+                        end,
+                    },
                 },
             })
         end
@@ -141,15 +208,13 @@ local function BuildCoreTextColoring(parent, y, W)
         -- sit beside the cog, or beside the dropdown on a half without one.
         local anchor = rgn._lastInline or rgn._control
         local gap = rgn._lastInline and -8 or -12
-        local custom, updateCustom = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-            function()
-                local c = (DB() and DB()[colorKey]) or defaults[colorKey]
-                return c.r, c.g, c.b
-            end,
-            function(r, g, b)
-                DB()[colorKey] = { r = r, g = g, b = b }
-                Apply()
-            end, nil, 20)
+        local custom, updateCustom = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+            local c = (DB() and DB()[colorKey]) or defaults[colorKey]
+            return c.r, c.g, c.b
+        end, function(r, g, b)
+            DB()[colorKey] = { r = r, g = g, b = b }
+            Apply()
+        end, nil, 20)
         PP.Point(custom, "RIGHT", anchor, "LEFT", gap, 0)
         custom:SetScript("OnEnter", function()
             if isToT and Mode() == "class" then
@@ -158,7 +223,9 @@ local function BuildCoreTextColoring(parent, y, W)
                 CludesUI.ShowWidgetTooltip(custom, CludesUI.L("Custom Color"))
             end
         end)
-        custom:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        custom:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
 
         -- Hostility / Class: Tapped / Neutral / Hostile left to right, Hostile in
         -- the custom swatch's place.
@@ -167,7 +234,9 @@ local function BuildCoreTextColoring(parent, y, W)
             npc, npcUpd = {}, {}
             local prev, prevGap = anchor, gap
             local function NPCSwatch(key, fallbackKey, tip)
-                local sw, upd = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
+                local sw, upd = CludesUI.BuildColorSwatch(
+                    rgn,
+                    rgn:GetFrameLevel() + 5,
                     function()
                         local c = (DB() and DB()[key]) or defaults[fallbackKey]
                         return c.r, c.g, c.b
@@ -177,12 +246,21 @@ local function BuildCoreTextColoring(parent, y, W)
                         DB()[key] = { r = r, g = g, b = b }
                         RefreshAllPlates()
                         UpdatePreview()
-                        for i = 1, #npcSwatchUpdates do npcSwatchUpdates[i]() end
-                    end, nil, 20)
+                        for i = 1, #npcSwatchUpdates do
+                            npcSwatchUpdates[i]()
+                        end
+                    end,
+                    nil,
+                    20
+                )
                 PP.Point(sw, "RIGHT", prev, "LEFT", prevGap, 0)
                 prev, prevGap = sw, -8
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tip) end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, tip)
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 npc[#npc + 1] = sw
                 npcUpd[#npcUpd + 1] = upd
                 npcSwatchUpdates[#npcSwatchUpdates + 1] = upd
@@ -218,16 +296,23 @@ local function BuildCoreTextColoring(parent, y, W)
     -- blank one.
     for k = 1, #shown, 2 do
         local l, r = shown[k], shown[k + 1]
-        local row, rowH = W:DualRow(parent, y, TextColoringCfg(l.key, l.coloring),
-            r and TextColoringCfg(r.key, r.coloring) or CludesUI.BlankRowCfg())
+        local row, rowH = W:DualRow(
+            parent,
+            y,
+            TextColoringCfg(l.key, l.coloring),
+            r and TextColoringCfg(r.key, r.coloring) or CludesUI.BlankRowCfg()
+        )
         if not CludesUI._prebuilding then
             MakeTextColoringInline(row, "_leftRegion", l.key, l.coloring)
-            if r then MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring) end
+            if r then
+                MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring)
+            end
         end
         y = y - rowH
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     return y
 end

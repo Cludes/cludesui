@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_RetailAtlas.lua
 --
@@ -39,7 +41,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  (CludesUI.ForeverBorderKind).
 -------------------------------------------------------------------------------
 local CludesUI = _G.CludesUI
-if not CludesUI then return end
+if not CludesUI then
+    return
+end
 
 -------------------------------------------------------------------------------
 --  Forever border: the bronze line of the micro menu's box on the Forever
@@ -106,13 +110,13 @@ local RING_MASK = "Interface\\AddOns\\CludesUI\\media\\borders\\forever-slim-mas
 -- its far side (the live art's sample LIVE_RUN below instead).
 local RS, RM, RC, RD = 55, 3, 12, 6
 CludesUI.FOREVER_BORDER = {
-    line   = 2,         -- the line's thickness
-    outer  = 1.5,       -- its outer shadow's reach past the line
-    shade  = RD - RM,   -- the edges' reach inside the line's outer edge
-    corner = RC - RM,   -- the corners' reach inside it (the chamfers)
+    line = 2, -- the line's thickness
+    outer = 1.5, -- its outer shadow's reach past the line
+    shade = RD - RM, -- the edges' reach inside the line's outer edge
+    corner = RC - RM, -- the corners' reach inside it (the chamfers)
     -- A body's inset from the line's outer edge: the chamfer's bronze cuts
     -- 5 units deep, so a square body corner any further out shows past it.
-    fill   = 2.75,
+    fill = 2.75,
 }
 -- Per edge (top, bottom, left, right), the stretch of the live art's side
 -- it draws, in the art's units along that side: clear of the dark scratches
@@ -129,15 +133,20 @@ local RING_AT, RING_CUT, LIVE_CUT
 do
     local c, d = RC / RS, RD / RS
     RING_AT = {
-        { "TOPLEFT", 0, 0 }, { "TOPRIGHT", 0, 0 }, { "BOTTOMLEFT", 0, 0 }, { "BOTTOMRIGHT", 0, 0 },
+        { "TOPLEFT", 0, 0 },
+        { "TOPRIGHT", 0, 0 },
+        { "BOTTOMLEFT", 0, 0 },
+        { "BOTTOMRIGHT", 0, 0 },
         { "TOPLEFT", RC, 0, "TOPRIGHT", -RC, 0 },
         { "BOTTOMLEFT", RC, 0, "BOTTOMRIGHT", -RC, 0 },
         { "TOPLEFT", 0, -RC, "BOTTOMLEFT", 0, RC },
         { "TOPRIGHT", 0, -RC, "BOTTOMRIGHT", 0, RC },
     }
     RING_CUT = {
-        [5] = { c, 1 - c, 0, d }, [6] = { c, 1 - c, 1 - d, 1 },
-        [7] = { 0, d, c, 1 - c }, [8] = { 1 - d, 1, c, 1 - c },
+        [5] = { c, 1 - c, 0, d },
+        [6] = { c, 1 - c, 1 - d, 1 },
+        [7] = { 0, d, c, 1 - c },
+        [8] = { 1 - d, 1, c, 1 - c },
     }
     LIVE_CUT = {}
     for i = 5, 8 do
@@ -145,7 +154,7 @@ do
         LIVE_CUT[i] = i <= 6 and { a, b, cut[3], cut[4] } or { cut[1], cut[2], a, b }
     end
 end
-local EPS, min = 0.01, math.min   -- an edge needs more than EPS of room
+local EPS, min = 0.01, math.min -- an edge needs more than EPS of room
 
 -- Blizzard's live atlas info, probed once (false: not the Forever client, or
 -- the atlas is missing).
@@ -182,10 +191,14 @@ end
 -- corners always, an edge only with room between its corners.
 local function RingShow(ring)
     local on = ring.on and ring.sized
-    for i = 1, 4 do ring[i]:SetShown(on) end
+    for i = 1, 4 do
+        ring[i]:SetShown(on)
+    end
     local x, y = on and ring.roomX, on and ring.roomY
-    ring[5]:SetShown(x); ring[6]:SetShown(x)
-    ring[7]:SetShown(y); ring[8]:SetShown(y)
+    ring[5]:SetShown(x)
+    ring[6]:SetShown(x)
+    ring[7]:SetShown(y)
+    ring[8]:SetShown(y)
 end
 
 -- The box's OnSizeChanged (w x h: the art's rect, RM past the line's outer
@@ -195,9 +208,13 @@ end
 local function RingLayout(box, w, h)
     local ring = box._fvRing
     local cw, ch = min(RC, w / 2), min(RC, h / 2)
-    if cw ~= ring.cw or ch ~= ring.ch then CutCorners(ring, cw, ch) end
+    if cw ~= ring.cw or ch ~= ring.ch then
+        CutCorners(ring, cw, ch)
+    end
     local roomX, roomY = w - 2 * RC > EPS, h - 2 * RC > EPS
-    if ring.sized and roomX == ring.roomX and roomY == ring.roomY then return end
+    if ring.sized and roomX == ring.roomX and roomY == ring.roomY then
+        return
+    end
     ring.roomX, ring.roomY, ring.sized = roomX, roomY, true
     RingShow(ring)
 end
@@ -209,7 +226,9 @@ end
 -- unless additive, and the edges. Every piece stays hidden until the box
 -- first takes a size. Nil off the Forever client.
 function CludesUI.ForeverBorder(frame, layer, sub, add, src)
-    if CludesUI.IS_FOREVER ~= true then return nil end
+    if CludesUI.IS_FOREVER ~= true then
+        return nil
+    end
     local file, L, T, R, B = RING_FILE, RING_LO, RING_LO, RING_HI, RING_HI
     local cuts = RING_CUT
     local info = src == "textured" and LiveInfo()
@@ -225,14 +244,20 @@ function CludesUI.ForeverBorder(frame, layer, sub, add, src)
     for i = 1, 8 do
         local t = frame:CreateTexture(nil, layer, nil, sub)
         t:SetTexture(file)
-        if add then t:SetBlendMode("ADD") end
+        if add then
+            t:SetBlendMode("ADD")
+        end
         local at = RING_AT[i]
         t:SetPoint(at[1], box, at[1], at[2], at[3])
         if at[4] then
             local cut = cuts[i]
             t:SetTexCoord(L + W * cut[1], L + W * cut[2], T + H * cut[3], T + H * cut[4])
             t:SetPoint(at[4], box, at[4], at[5], at[6])
-            if i <= 6 then t:SetHeight(RD) else t:SetWidth(RD) end
+            if i <= 6 then
+                t:SetHeight(RD)
+            else
+                t:SetWidth(RD)
+            end
         end
         t:Hide()
         ring[i] = t
@@ -283,7 +308,9 @@ end
 -- piece's bottom. The caller anchors both ends and the bottom. Nil off the
 -- Forever client.
 function CludesUI.ForeverBorderDivider(frame, layer, sub)
-    if CludesUI.IS_FOREVER ~= true then return nil end
+    if CludesUI.IS_FOREVER ~= true then
+        return nil
+    end
     local t = frame:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
     t:SetTexture(RING_FILE)
     local cut, W = RING_CUT[5], RING_HI - RING_LO
@@ -330,10 +357,14 @@ end
 --  Callers build a frame once per surface; a repaint is colour or shown only.
 -------------------------------------------------------------------------------
 local HEAVY_ART = {
-    tl = "UI-Frame-Metal-CornerTopLeft", tr = "UI-Frame-Metal-CornerTopRight",
-    bl = "UI-Frame-Metal-CornerBottomLeft", br = "UI-Frame-Metal-CornerBottomRight",
-    te = "_UI-Frame-Metal-EdgeTop", be = "_UI-Frame-Metal-EdgeBottom",
-    le = "!UI-Frame-Metal-EdgeLeft", re = "!UI-Frame-Metal-EdgeRight",
+    tl = "UI-Frame-Metal-CornerTopLeft",
+    tr = "UI-Frame-Metal-CornerTopRight",
+    bl = "UI-Frame-Metal-CornerBottomLeft",
+    br = "UI-Frame-Metal-CornerBottomRight",
+    te = "_UI-Frame-Metal-EdgeTop",
+    be = "_UI-Frame-Metal-EdgeBottom",
+    le = "!UI-Frame-Metal-EdgeLeft",
+    re = "!UI-Frame-Metal-EdgeRight",
 }
 -- Measured on WoW Forever's art (art units): the rim's outer edge in from
 -- the pieces' left, right, top and bottom sides (the outer shadow beyond it,
@@ -343,18 +374,18 @@ local HEAVY_ART = {
 -- shadow; the side rims below it match the edge strips).
 local HML, HMR, HMT, HMB, HTOP, HTITLE = 12.5, 2.5, 13, 7.5, 19, 43
 CludesUI.FOREVER_HEAVY = {
-    k      = 1,         -- a window's art scale (the art's own size)
-    margin = 2,         -- the outer shadow's reach past the rim (a drop shadow below it)
-    band   = 6,         -- the rim and its dark line
+    k = 1, -- a window's art scale (the art's own size)
+    margin = 2, -- the outer shadow's reach past the rim (a drop shadow below it)
+    band = 6, -- the rim and its dark line
     -- A body's inset from the rim's outer edge: under the rim, its square
     -- corners inside the rim's 5.5-unit corner cuts.
-    fill   = 3,
-    shade  = 8,         -- the rim, its dark line and its inner shadow
-    lift   = { 1, 0.75, 0.45, 0.6 },   -- the copper copy's tint and alpha
+    fill = 3,
+    shade = 8, -- the rim, its dark line and its inner shadow
+    lift = { 1, 0.75, 0.45, 0.6 }, -- the copper copy's tint and alpha
     -- The title bar (ForeverHeavyTitle), down from the rim's outer edge: its
     -- dark band from `band` to `bandEnd`, the divider's solid bottom at
     -- `bottom`, its drop shadow fading out by HTITLE - HMT.
-    title  = { band = 6, bandEnd = 23, bottom = 27.5 },
+    title = { band = 6, bandEnd = 23, bottom = 27.5 },
 }
 
 -- Each piece's atlas info, probed once (false: not the Forever client, or a
@@ -367,7 +398,9 @@ local function HeavyInfo()
             local info = {}
             for key, name in pairs(HEAVY_ART) do
                 info[key] = C_Texture.GetAtlasInfo(name)
-                if not info[key] then return false end
+                if not info[key] then
+                    return false
+                end
             end
             heavyInfo = info
         end
@@ -391,9 +424,14 @@ end
 local function HeavyShow(ring)
     local p = ring.p
     local on = ring.on and ring.fit and ring.sized
-    p.tl:SetShown(on); p.tr:SetShown(on); p.bl:SetShown(on); p.br:SetShown(on)
-    p.te:SetShown(on and ring.roomX); p.be:SetShown(on and ring.roomX)
-    p.le:SetShown(on and ring.roomY); p.re:SetShown(on and ring.roomY)
+    p.tl:SetShown(on)
+    p.tr:SetShown(on)
+    p.bl:SetShown(on)
+    p.br:SetShown(on)
+    p.te:SetShown(on and ring.roomX)
+    p.be:SetShown(on and ring.roomX)
+    p.le:SetShown(on and ring.roomY)
+    p.re:SetShown(on and ring.roomY)
 end
 
 -- The box's OnSizeChanged (w x h: the rim's outer edge): each corner cut at
@@ -411,23 +449,43 @@ local function HeavyLayout(box, w, h)
     local bh = min(bh0, h + HMT + HMB - top)
     local gx = w + HML + HMR - cl - cr
     local gy = h + HMT + HMB - top - bh
-    p.tl:SetSize(cl, top); HeavyCut(p.tl, I.tl, 0, cl / cw, 0, top / th)
-    p.tr:SetSize(cr, top); HeavyCut(p.tr, I.tr, 1 - cr / cw, 1, 0, top / th)
-    p.bl:SetSize(cl, bh);   HeavyCut(p.bl, I.bl, 0, cl / cw, 1 - bh / bh0, 1)
-    p.br:SetSize(cr, bh);   HeavyCut(p.br, I.br, 1 - cr / cw, 1, 1 - bh / bh0, 1)
+    p.tl:SetSize(cl, top)
+    HeavyCut(p.tl, I.tl, 0, cl / cw, 0, top / th)
+    p.tr:SetSize(cr, top)
+    HeavyCut(p.tr, I.tr, 1 - cr / cw, 1, 0, top / th)
+    p.bl:SetSize(cl, bh)
+    HeavyCut(p.bl, I.bl, 0, cl / cw, 1 - bh / bh0, 1)
+    p.br:SetSize(cr, bh)
+    HeavyCut(p.br, I.br, 1 - cr / cw, 1, 1 - bh / bh0, 1)
     local te, be, le, re = I.te, I.be, I.le, I.re
     p.te:SetHeight(top)
-    p.te:SetTexCoord(0, gx / te.width, te.topTexCoord,
-        te.topTexCoord + (te.bottomTexCoord - te.topTexCoord) * top / te.height)
+    p.te:SetTexCoord(
+        0,
+        gx / te.width,
+        te.topTexCoord,
+        te.topTexCoord + (te.bottomTexCoord - te.topTexCoord) * top / te.height
+    )
     p.be:SetHeight(bh)
-    p.be:SetTexCoord(0, gx / be.width,
-        be.bottomTexCoord - (be.bottomTexCoord - be.topTexCoord) * bh / be.height, be.bottomTexCoord)
+    p.be:SetTexCoord(
+        0,
+        gx / be.width,
+        be.bottomTexCoord - (be.bottomTexCoord - be.topTexCoord) * bh / be.height,
+        be.bottomTexCoord
+    )
     p.le:SetWidth(cl)
-    p.le:SetTexCoord(le.leftTexCoord,
-        le.leftTexCoord + (le.rightTexCoord - le.leftTexCoord) * cl / le.width, 0, gy / le.height)
+    p.le:SetTexCoord(
+        le.leftTexCoord,
+        le.leftTexCoord + (le.rightTexCoord - le.leftTexCoord) * cl / le.width,
+        0,
+        gy / le.height
+    )
     p.re:SetWidth(cr)
-    p.re:SetTexCoord(re.rightTexCoord - (re.rightTexCoord - re.leftTexCoord) * cr / re.width,
-        re.rightTexCoord, 0, gy / re.height)
+    p.re:SetTexCoord(
+        re.rightTexCoord - (re.rightTexCoord - re.leftTexCoord) * cr / re.width,
+        re.rightTexCoord,
+        0,
+        gy / re.height
+    )
     ring.roomX, ring.roomY, ring.sized = gx > EPS, gy > EPS, true
     HeavyShow(ring)
 end
@@ -437,15 +495,20 @@ end
 -- Nil without the art.
 function CludesUI.ForeverHeavy(frame, layer, sub, add)
     local I = HeavyInfo()
-    if not I then return nil end
+    if not I then
+        return nil
+    end
     local box = CreateFrame("Frame", nil, frame)
     local ring = { box = box, k = frame:GetScale(), p = {}, on = true, fit = true, top = HTOP }
     local p = ring.p
     for key, info in pairs(I) do
         local t = frame:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
         local along = (key == "te" or key == "be") and "h" or (key == "le" or key == "re") and "v" or nil
-        t:SetTexture(info.file or info.filename, along == "h" and "REPEAT" or "CLAMP",
-            along == "v" and "REPEAT" or "CLAMP")
+        t:SetTexture(
+            info.file or info.filename,
+            along == "h" and "REPEAT" or "CLAMP",
+            along == "v" and "REPEAT" or "CLAMP"
+        )
         -- Unsharpened, as Blizzard draws this layout (scaled art, no shimmer).
         t:SetTexelSnappingBias(0)
         t:SetSnapToPixelGrid(false)
@@ -461,10 +524,14 @@ function CludesUI.ForeverHeavy(frame, layer, sub, add)
     p.tr:SetPoint("TOPRIGHT", box, "TOPRIGHT", HMR, HMT)
     p.bl:SetPoint("BOTTOMLEFT", box, "BOTTOMLEFT", -HML, -HMB)
     p.br:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", HMR, -HMB)
-    p.te:SetPoint("TOPLEFT", p.tl, "TOPRIGHT"); p.te:SetPoint("TOPRIGHT", p.tr, "TOPLEFT")
-    p.be:SetPoint("BOTTOMLEFT", p.bl, "BOTTOMRIGHT"); p.be:SetPoint("BOTTOMRIGHT", p.br, "BOTTOMLEFT")
-    p.le:SetPoint("TOPLEFT", p.tl, "BOTTOMLEFT"); p.le:SetPoint("BOTTOMLEFT", p.bl, "TOPLEFT")
-    p.re:SetPoint("TOPRIGHT", p.tr, "BOTTOMRIGHT"); p.re:SetPoint("BOTTOMRIGHT", p.br, "TOPRIGHT")
+    p.te:SetPoint("TOPLEFT", p.tl, "TOPRIGHT")
+    p.te:SetPoint("TOPRIGHT", p.tr, "TOPLEFT")
+    p.be:SetPoint("BOTTOMLEFT", p.bl, "BOTTOMRIGHT")
+    p.be:SetPoint("BOTTOMRIGHT", p.br, "BOTTOMLEFT")
+    p.le:SetPoint("TOPLEFT", p.tl, "BOTTOMLEFT")
+    p.le:SetPoint("BOTTOMLEFT", p.bl, "TOPLEFT")
+    p.re:SetPoint("TOPRIGHT", p.tr, "BOTTOMRIGHT")
+    p.re:SetPoint("BOTTOMRIGHT", p.br, "TOPRIGHT")
     box._fvHeavy = ring
     box:SetScript("OnSizeChanged", HeavyLayout)
     return ring
@@ -513,7 +580,9 @@ end
 -- rim (off); a box already sized is laid out again at once.
 function CludesUI.ForeverHeavyTitle(ring, on)
     local top = on and HTITLE or HTOP
-    if ring.top == top then return end
+    if ring.top == top then
+        return
+    end
     ring.top = top
     if ring.sized then
         local box = ring.box
@@ -531,34 +600,44 @@ end
 --  Forever client.
 -------------------------------------------------------------------------------
 function CludesUI.ForeverBorderKind(v)
-    if CludesUI.IS_FOREVER ~= true then return nil end
-    if v == "heavy" and HeavyInfo() then return "heavy" end
-    if (v == nil or v == "textured") and LiveInfo() then return "textured" end
+    if CludesUI.IS_FOREVER ~= true then
+        return nil
+    end
+    if v == "heavy" and HeavyInfo() then
+        return "heavy"
+    end
+    if (v == nil or v == "textured") and LiveInfo() then
+        return "textured"
+    end
     return "slim"
 end
 
 if not CludesUI.IS_FOREVER then
-    function CludesUI.StockAtlas(tex, name, ...) return tex:SetAtlas(name, ...) end
+    function CludesUI.StockAtlas(tex, name, ...)
+        return tex:SetAtlas(name, ...)
+    end
     CludesUI.StockAtlasInfo = C_Texture.GetAtlasInfo
-    function CludesUI.StockMask(mask, name, useSize) return mask:SetAtlas(name, useSize) end
+    function CludesUI.StockMask(mask, name, useSize)
+        return mask:SetAtlas(name, useSize)
+    end
     return
 end
 
 -- Retail sheets as the Forever client ships them: file id, path (presence
 -- probe), pixel width, height.
-local AB    = { 4613342, "Interface\\HUD\\UIActionBar",             256, 1024 }
-local AB2   = { 4615764, "Interface\\HUD\\UIActionBar2x",           512, 2048 }
-local MM    = { 4618651, "Interface\\HUD\\UIMinimap",               512,  512 }
-local MM2   = { 4618666, "Interface\\HUD\\UIMinimap2x",             512, 1024 }
-local UF    = { 4631591, "Interface\\HUD\\UIUnitFrame",            1024,  512 }
-local UF2   = { 4642466, "Interface\\HUD\\UIUnitFrame2x",          2048, 1024 }
-local BOSS  = { 4703659, "Interface\\HUD\\UIUnitFrameBoss",         256,  256 }
-local BOSS2 = { 4703662, "Interface\\HUD\\UIUnitFrameBoss2x",       512,  512 }
-local CB    = { 4505182, "Interface\\CastingBar\\UICastingBar",     512,  256 }
-local CB2   = { 4505194, "Interface\\CastingBar\\UICastingBar2x",  1024,  512 }
-local CDM   = { 6704514, "Interface\\HUD\\UICooldownManager",       256,  128 }
-local CDM2  = { 6739577, "Interface\\HUD\\UICooldownManager2x",     512,  256 }
-local PARTY = { 4681512, "Interface\\HUD\\UIPartyFrame",            256,  256 }
+local AB = { 4613342, "Interface\\HUD\\UIActionBar", 256, 1024 }
+local AB2 = { 4615764, "Interface\\HUD\\UIActionBar2x", 512, 2048 }
+local MM = { 4618651, "Interface\\HUD\\UIMinimap", 512, 512 }
+local MM2 = { 4618666, "Interface\\HUD\\UIMinimap2x", 512, 1024 }
+local UF = { 4631591, "Interface\\HUD\\UIUnitFrame", 1024, 512 }
+local UF2 = { 4642466, "Interface\\HUD\\UIUnitFrame2x", 2048, 1024 }
+local BOSS = { 4703659, "Interface\\HUD\\UIUnitFrameBoss", 256, 256 }
+local BOSS2 = { 4703662, "Interface\\HUD\\UIUnitFrameBoss2x", 512, 512 }
+local CB = { 4505182, "Interface\\CastingBar\\UICastingBar", 512, 256 }
+local CB2 = { 4505194, "Interface\\CastingBar\\UICastingBar2x", 1024, 512 }
+local CDM = { 6704514, "Interface\\HUD\\UICooldownManager", 256, 128 }
+local CDM2 = { 6739577, "Interface\\HUD\\UICooldownManager2x", 512, 256 }
+local PARTY = { 4681512, "Interface\\HUD\\UIPartyFrame", 256, 256 }
 
 -- Each name's retail member (key lower case: names are case-insensitive), in
 -- sheet pixels: 1x sheet, left, right, top, bottom; the 2x sheet and its box
@@ -567,32 +646,43 @@ local PARTY = { 4681512, "Interface\\HUD\\UIPartyFrame",            256,  256 }
 -- frame sheet is packed differently from retail's (ToT, skull). Never list a
 -- sliced (nine- or three-slice) or tiled atlas: a sheet cut loses its slicing.
 local ROWS = {
-    ["ui-hud-actionbar-iconframe"]                          = { AB, 181, 227, 254, 299, AB2, 359, 451, 649, 739 },
-    ["ui-hud-actionbar-iconframe-addrow"]                   = { AB, 181, 232, 305, 356, AB2, 359, 461, 441, 543 },
-    ["ui-hud-actionbar-iconframe-slot"]                     = { AB, 181, 245, 136, 198, AB2, 359, 487, 209, 333, 45, 45 },
-    ["ui-hud-actionbar-iconframe-down"]                     = { AB, 181, 227, 521, 566, AB2, 359, 451, 881, 971 },
-    ["ui-hud-actionbar-gryphon-left"]                       = { AB, 1, 179, 136, 303, AB2, 1, 357, 209, 543, 100, 94 },
-    ["ui-hud-actionbar-gryphon-right"]                      = { AB, 1, 179, 305, 472, AB2, 1, 357, 545, 879, 100, 94 },
-    ["ui-hud-actionbar-wyvern-left"]                        = { AB, 1, 179, 474, 641, AB2, 1, 357, 881, 1215, 100, 94 },
-    ["ui-hud-actionbar-wyvern-right"]                       = { AB, 1, 179, 643, 810, AB2, 1, 357, 1217, 1551, 100, 94 },
-    ["ui-hud-minimap-button"]                               = { MM, 491, 511, 100, 118, MM2, 441, 480, 402, 440 },
-    ["ui-hud-unitframe-player-portraiton"]                  = { UF, 1, 199, 87, 158, UF2, 1, 397, 171, 313 },
-    ["ui-hud-unitframe-target-portraiton"]                  = { UF, 1, 193, 229, 296, UF2, 1, 385, 451, 585 },
-    ["ui-hud-unitframe-targetoftarget-portraiton"]          = { UF, 330, 450, 160, 209, UF2, 1113, 1353, 315, 413 },
-    ["ui-hud-unitframe-target-rare-portraiton"]             = { UF, 1, 193, 298, 365, UF2, 1, 385, 587, 721 },
-    ["ui-hud-unitframe-target-portraiton-type"]             = { UF, 311, 446, 260, 278, UF2, 887, 1157, 461, 497 },
-    ["ui-hud-unitframe-target-highleveltarget_icon"]        = { UF, 1008, 1019, 35, 49, UF2, 2001, 2023, 261, 289 },
-    ["ui-hud-unitframe-target-portraiton-boss-gold"]        = { BOSS, 1, 81, 84, 163, BOSS2, 1, 161, 165, 323 },
-    ["ui-hud-unitframe-target-portraiton-boss-rare-silver"] = { BOSS, 1, 81, 165, 244, BOSS2, 1, 161, 325, 483 },
+    ["ui-hud-actionbar-iconframe"] = { AB, 181, 227, 254, 299, AB2, 359, 451, 649, 739 },
+    ["ui-hud-actionbar-iconframe-addrow"] = { AB, 181, 232, 305, 356, AB2, 359, 461, 441, 543 },
+    ["ui-hud-actionbar-iconframe-slot"] = { AB, 181, 245, 136, 198, AB2, 359, 487, 209, 333, 45, 45 },
+    ["ui-hud-actionbar-iconframe-down"] = { AB, 181, 227, 521, 566, AB2, 359, 451, 881, 971 },
+    ["ui-hud-actionbar-gryphon-left"] = { AB, 1, 179, 136, 303, AB2, 1, 357, 209, 543, 100, 94 },
+    ["ui-hud-actionbar-gryphon-right"] = { AB, 1, 179, 305, 472, AB2, 1, 357, 545, 879, 100, 94 },
+    ["ui-hud-actionbar-wyvern-left"] = { AB, 1, 179, 474, 641, AB2, 1, 357, 881, 1215, 100, 94 },
+    ["ui-hud-actionbar-wyvern-right"] = { AB, 1, 179, 643, 810, AB2, 1, 357, 1217, 1551, 100, 94 },
+    ["ui-hud-minimap-button"] = { MM, 491, 511, 100, 118, MM2, 441, 480, 402, 440 },
+    ["ui-hud-unitframe-player-portraiton"] = { UF, 1, 199, 87, 158, UF2, 1, 397, 171, 313 },
+    ["ui-hud-unitframe-target-portraiton"] = { UF, 1, 193, 229, 296, UF2, 1, 385, 451, 585 },
+    ["ui-hud-unitframe-targetoftarget-portraiton"] = { UF, 330, 450, 160, 209, UF2, 1113, 1353, 315, 413 },
+    ["ui-hud-unitframe-target-rare-portraiton"] = { UF, 1, 193, 298, 365, UF2, 1, 385, 587, 721 },
+    ["ui-hud-unitframe-target-portraiton-type"] = { UF, 311, 446, 260, 278, UF2, 887, 1157, 461, 497 },
+    ["ui-hud-unitframe-target-highleveltarget_icon"] = { UF, 1008, 1019, 35, 49, UF2, 2001, 2023, 261, 289 },
+    ["ui-hud-unitframe-target-portraiton-boss-gold"] = { BOSS, 1, 81, 84, 163, BOSS2, 1, 161, 165, 323 },
+    ["ui-hud-unitframe-target-portraiton-boss-rare-silver"] = {
+        BOSS,
+        1,
+        81,
+        165,
+        244,
+        BOSS2,
+        1,
+        161,
+        325,
+        483,
+    },
     ["ui-hud-unitframe-target-portraiton-boss-gold-winged"] = { BOSS, 1, 100, 1, 82, BOSS2, 1, 199, 1, 163 },
-    ["ui-castingbar-background"]                            = { CB, 57, 266, 85, 96, CB2, 1, 423, 188, 214 },
-    ["ui-castingbar-frame"]                                 = { CB, 1, 215, 31, 47, CB2, 422, 848, 1, 31 },
-    ["ui-castingbar-textbox"]                               = { CB, 1, 211, 1, 29, CB2, 1, 420, 1, 58 },
-    ["ui-castingbar-uninterruptable"]                       = { CB, 268, 477, 215, 226, CB2, 421, 839, 384, 406 },
-    ["ui-hud-cooldownmanager-iconoverlay"]                  = { CDM, 1, 87, 1, 87, CDM2, 1, 173, 1, 173 },
-    ["ui-hud-unitframe-party-portraiton"]                   = { PARTY, 123, 243, 57, 106 },
-    ["ui-hud-unitframe-party-portraiton-incombat"]          = { PARTY, 123, 237, 116, 163 },
-    ["ui-hud-unitframe-party-portraiton-status"]            = { PARTY, 1, 121, 116, 165 },
+    ["ui-castingbar-background"] = { CB, 57, 266, 85, 96, CB2, 1, 423, 188, 214 },
+    ["ui-castingbar-frame"] = { CB, 1, 215, 31, 47, CB2, 422, 848, 1, 31 },
+    ["ui-castingbar-textbox"] = { CB, 1, 211, 1, 29, CB2, 1, 420, 1, 58 },
+    ["ui-castingbar-uninterruptable"] = { CB, 268, 477, 215, 226, CB2, 421, 839, 384, 406 },
+    ["ui-hud-cooldownmanager-iconoverlay"] = { CDM, 1, 87, 1, 87, CDM2, 1, 173, 1, 173 },
+    ["ui-hud-unitframe-party-portraiton"] = { PARTY, 123, 243, 57, 106 },
+    ["ui-hud-unitframe-party-portraiton-incombat"] = { PARTY, 123, 237, 116, 163 },
+    ["ui-hud-unitframe-party-portraiton-status"] = { PARTY, 1, 121, 116, 165 },
 }
 
 -- Whether a sheet ships with this client (memo in the sheet's slot 5).
@@ -607,9 +697,17 @@ end
 
 local function Info(s, l, r, t, b, w, h)
     local W, H = s[3], s[4]
-    return { file = s[1], width = w, height = h,
-        leftTexCoord = l / W, rightTexCoord = r / W, topTexCoord = t / H, bottomTexCoord = b / H,
-        tilesHorizontally = false, tilesVertically = false }
+    return {
+        file = s[1],
+        width = w,
+        height = h,
+        leftTexCoord = l / W,
+        rightTexCoord = r / W,
+        topTexCoord = t / H,
+        bottomTexCoord = b / H,
+        tilesHorizontally = false,
+        tilesVertically = false,
+    }
 end
 
 -- The sheet tier the client draws at: its own pick for the pressed button
@@ -617,17 +715,23 @@ end
 -- logged in (the screen scale is settled by then).
 local hiRes
 local function HiRes()
-    if hiRes ~= nil then return hiRes end
+    if hiRes ~= nil then
+        return hiRes
+    end
     local i = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Down")
     local v = (i and i.file == AB2[1]) and true or false
-    if IsLoggedIn() then hiRes = v end
+    if IsLoggedIn() then
+        hiRes = v
+    end
     return v
 end
 
 -- name -> { 1x info or false, 2x info or false } | false (native atlas).
 local resolved = {}
 local function Resolve(name)
-    if type(name) ~= "string" then return false end
+    if type(name) ~= "string" then
+        return false
+    end
     local e = false
     local row = ROWS[strlower(name)]
     if row then
@@ -639,7 +743,9 @@ local function Resolve(name)
             local h = row[12] or (row[5] - row[4])
             local x1 = Present(s1) and Info(s1, row[2], row[3], row[4], row[5], w, h) or false
             local x2 = s2 and Present(s2) and Info(s2, row[7], row[8], row[9], row[10], w, h) or false
-            if x1 or x2 then e = { x1, x2 } end
+            if x1 or x2 then
+                e = { x1, x2 }
+            end
         end
     end
     resolved[name] = e
@@ -647,7 +753,9 @@ local function Resolve(name)
 end
 
 local function Pick(e)
-    if HiRes() then return e[2] or e[1] end
+    if HiRes() then
+        return e[2] or e[1]
+    end
     return e[1] or e[2]
 end
 
@@ -656,13 +764,17 @@ local drawn = setmetatable({}, { __mode = "k" })
 
 function CludesUI.StockAtlas(tex, name, ...)
     local e = resolved[name]
-    if e == nil then e = Resolve(name) end
+    if e == nil then
+        e = Resolve(name)
+    end
     if e then
         local i = Pick(e)
         local useSize, filterMode, _, wrapH, wrapV = ...
         tex:SetTexture(i.file, wrapH, wrapV, filterMode)
         tex:SetTexCoord(i.leftTexCoord, i.rightTexCoord, i.topTexCoord, i.bottomTexCoord)
-        if useSize then tex:SetSize(i.width, i.height) end
+        if useSize then
+            tex:SetSize(i.width, i.height)
+        end
         drawn[tex] = true
         return
     end
@@ -677,8 +789,12 @@ end
 
 function CludesUI.StockAtlasInfo(name)
     local e = resolved[name]
-    if e == nil then e = Resolve(name) end
-    if e then return Pick(e) end
+    if e == nil then
+        e = Resolve(name)
+    end
+    if e then
+        return Pick(e)
+    end
     return C_Texture.GetAtlasInfo(name)
 end
 
@@ -689,27 +805,71 @@ end
 -- presence probe) and file id, the 2x pair where retail has one, then the
 -- atlas size. A name the client still draws from the retail file stays an atlas.
 local MASK_FILES = {
-    ["ui-hud-unitframe-player-portraiton-bar-health-mask"] = { "Interface\\HUD\\UIUnitFramePlayerHealthMask", 4697851,
-        "Interface\\HUD\\UIUnitFramePlayerHealthMask2x", 5321215, 128, 32 },
-    ["ui-hud-unitframe-player-portraiton-bar-mana-mask"]   = { "Interface\\HUD\\UIUnitFramePlayerManaMask", 4697854,
-        "Interface\\HUD\\UIUnitFramePlayerManaMask2x", 5321218, 128, 16 },
-    ["ui-hud-unitframe-target-portraiton-bar-health-mask"] = { "Interface\\HUD\\UIUnitFrameTargetHealthMask", 4680792,
-        "Interface\\HUD\\UIUnitFrameTargetHealthMask2x", 5321212, 128, 32 },
-    ["ui-hud-unitframe-target-portraiton-bar-mana-mask"]   = { "Interface\\HUD\\UIUnitFrameTargetManaMask", 4680795,
-        "Interface\\HUD\\UIUnitFrameTargetManaMask2x", 5321221, 256, 16 },
-    ["ui-hud-unitframe-player-portrait-mask"]              = { "Interface\\HUD\\UIUnitFramePlayerPortraitMask", 4682541,
-        "Interface\\HUD\\UIUnitFramePlayerPortraitMask2x", 5321198, 64, 64 },
-    ["ui-hud-unitframe-party-portraiton-bar-health-mask"]  = { "Interface\\HUD\\UIPartyFramePortraitOnHealthMask", 4737301,
-        false, false, 128, 16 },
-    ["ui-hud-unitframe-party-portraiton-bar-mana-mask"]    = { "Interface\\HUD\\UIPartyFramePortraitOnManaMask", 4737298,
-        false, false, 128, 16 },
+    ["ui-hud-unitframe-player-portraiton-bar-health-mask"] = {
+        "Interface\\HUD\\UIUnitFramePlayerHealthMask",
+        4697851,
+        "Interface\\HUD\\UIUnitFramePlayerHealthMask2x",
+        5321215,
+        128,
+        32,
+    },
+    ["ui-hud-unitframe-player-portraiton-bar-mana-mask"] = {
+        "Interface\\HUD\\UIUnitFramePlayerManaMask",
+        4697854,
+        "Interface\\HUD\\UIUnitFramePlayerManaMask2x",
+        5321218,
+        128,
+        16,
+    },
+    ["ui-hud-unitframe-target-portraiton-bar-health-mask"] = {
+        "Interface\\HUD\\UIUnitFrameTargetHealthMask",
+        4680792,
+        "Interface\\HUD\\UIUnitFrameTargetHealthMask2x",
+        5321212,
+        128,
+        32,
+    },
+    ["ui-hud-unitframe-target-portraiton-bar-mana-mask"] = {
+        "Interface\\HUD\\UIUnitFrameTargetManaMask",
+        4680795,
+        "Interface\\HUD\\UIUnitFrameTargetManaMask2x",
+        5321221,
+        256,
+        16,
+    },
+    ["ui-hud-unitframe-player-portrait-mask"] = {
+        "Interface\\HUD\\UIUnitFramePlayerPortraitMask",
+        4682541,
+        "Interface\\HUD\\UIUnitFramePlayerPortraitMask2x",
+        5321198,
+        64,
+        64,
+    },
+    ["ui-hud-unitframe-party-portraiton-bar-health-mask"] = {
+        "Interface\\HUD\\UIPartyFramePortraitOnHealthMask",
+        4737301,
+        false,
+        false,
+        128,
+        16,
+    },
+    ["ui-hud-unitframe-party-portraiton-bar-mana-mask"] = {
+        "Interface\\HUD\\UIPartyFramePortraitOnManaMask",
+        4737298,
+        false,
+        false,
+        128,
+        16,
+    },
 }
 
 -- name -> { 1x file id or false, 2x file id or false, width, height } | false.
 local maskResolved = {}
 local function MaskFile(name)
     local e = maskResolved[name]
-    if e ~= nil then return e end
+    if e ~= nil then
+        return e
+    end
     e = false
     local row = type(name) == "string" and MASK_FILES[strlower(name)]
     if row then
@@ -718,7 +878,9 @@ local function MaskFile(name)
         if nf ~= row[2] and not (row[4] and nf == row[4]) then
             local f1 = GetFileIDFromPath(row[1]) == row[2] and row[2] or false
             local f2 = row[3] and GetFileIDFromPath(row[3]) == row[4] and row[4] or false
-            if f1 or f2 then e = { f1, f2, row[5], row[6] } end
+            if f1 or f2 then
+                e = { f1, f2, row[5], row[6] }
+            end
         end
     end
     maskResolved[name] = e
@@ -729,9 +891,15 @@ function CludesUI.StockMask(mask, name, useSize)
     local e = MaskFile(name)
     if e then
         local file
-        if HiRes() then file = e[2] or e[1] else file = e[1] or e[2] end
+        if HiRes() then
+            file = e[2] or e[1]
+        else
+            file = e[1] or e[2]
+        end
         mask:SetTexture(file, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        if useSize then mask:SetSize(e[3], e[4]) end
+        if useSize then
+            mask:SetSize(e[3], e[4])
+        end
         return
     end
     return mask:SetAtlas(name, useSize)

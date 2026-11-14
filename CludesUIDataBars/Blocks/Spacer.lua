@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Spacer.lua
 -- Spacer block factory.
 
@@ -16,7 +18,11 @@ ns.BlockFactories.spacer = function(blockCfg, slot, content, barCtx)
     function inst:Refresh() end
     function inst:Enable() end
     function inst:Disable() end
-    function inst:Destroy() self._dead = true end
-    function inst:GetAutoLength() return 0 end
+    function inst:Destroy()
+        self._dead = true
+    end
+    function inst:GetAutoLength()
+        return 0
+    end
     return inst
 end

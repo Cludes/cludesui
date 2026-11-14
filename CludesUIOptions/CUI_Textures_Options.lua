@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Textures_Options.lua
 --
@@ -13,7 +15,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Statusbar dropdown data: AppendSharedMediaTextures registers consumers BY
 --  TABLE IDENTITY in a permanent registry, so this file NEVER hands it fresh
 --  throwaway tables per build. Where a module publishes its own registered
---  tables (UF/RF/NP ns.healthBarTextures*, RB _G._ERB_Bar*, DM _G._EDM_Bar*,
+--  tables (UF/RF/NP ns.healthBarTextures*, RB _G._CURB_Bar*, DM _G._CUDM_Bar*,
 --  AB ns.dataBarTextures*, Chat ns.chatBgTextures*, MovementAlert
 --  _MovementBarTextures) the mirror re-calls the appender with THOSE tables
 --  (identity dedup makes it a sync) and derives fresh display copies, exactly
@@ -61,7 +63,9 @@ local function CopyBarDD(names, order, lookup, dropSep, bgFn)
     local values, ord = {}, {}
     for _, key in ipairs(order or {}) do
         if key == "---" then
-            if not dropSep then ord[#ord + 1] = "---" end
+            if not dropSep then
+                ord[#ord + 1] = "---"
+            end
         else
             values[key] = (names and names[key]) or key
             ord[#ord + 1] = key
@@ -69,7 +73,9 @@ local function CopyBarDD(names, order, lookup, dropSep, bgFn)
     end
     values._menuOpts = {
         itemHeight = 28,
-        background = bgFn or function(key) return lookup and lookup[key] end,
+        background = bgFn or function(key)
+            return lookup and lookup[key]
+        end,
     }
     return values, ord
 end
@@ -87,7 +93,9 @@ local function AppendSmTail(values, orders, moduleNames, moduleOrder)
     if #smKeys > 0 then
         for _, ord in ipairs(orders) do
             ord[#ord + 1] = "---"
-            for _, k in ipairs(smKeys) do ord[#ord + 1] = k end
+            for _, k in ipairs(smKeys) do
+                ord[#ord + 1] = k
+            end
         end
     end
 end
@@ -99,19 +107,29 @@ end
 local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, CludesUI.BuildNoteRow
 
 local function DisabledTile(parent, y, W, tile)
-    return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its texture settings.", CludesUI.L(tile.display)))
+    return NoteRow(
+        parent,
+        y,
+        CludesUI.Lf("Enable %1$s to edit its texture settings.", CludesUI.L(tile.display))
+    )
 end
 
 -- A texture row's Textured Background cog: the module page's own toggle row
 -- (rowFn builds it; nil while the module's options are not loaded), greyed while
 -- the Blizzard Style of styleKey draws its stock art there instead.
 local function TexBgCog(rgn, rowFn, styleKey)
-    if CludesUI._prebuilding then return end
+    if CludesUI._prebuilding then
+        return
+    end
     local row = rowFn()
-    if not row then return end
+    if not row then
+        return
+    end
     local blizzOn = styleKey and CludesUI.BlizzStyle.Active(styleKey) == "blizzard"
     CludesUI.BuildInlineCog(rgn, {
-        disabled = blizzOn and function() return true end or nil,
+        disabled = blizzOn and function()
+            return true
+        end or nil,
         disabledTooltip = blizzOn and CludesUI.BlizzStyle.Label(styleKey) or nil,
         requireState = blizzOn and "disabled" or nil,
         title = "Texture Settings",
@@ -125,18 +143,36 @@ end
 
 local function TileActionBars(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
     local EAB = ns.EAB
-    CludesUI.AppendSharedMediaTextures(ns.dataBarTextureNames or {}, ns.dataBarTextureOrder or {}, nil, ns.dataBarTextures)
+    CludesUI.AppendSharedMediaTextures(
+        ns.dataBarTextureNames or {},
+        ns.dataBarTextureOrder or {},
+        nil,
+        ns.dataBarTextures
+    )
     local lookup = ns.dataBarTextures or {}
     -- AB's own preview resolves sm: keys through ResolveTexturePath.
-    local values, order = CopyBarDD(ns.dataBarTextureNames, ns.dataBarTextureOrder, lookup, false,
+    local values, order = CopyBarDD(
+        ns.dataBarTextureNames,
+        ns.dataBarTextureOrder,
+        lookup,
+        false,
         function(key)
-            if not key or key == "---" or key == "none" then return nil end
+            if not key or key == "---" or key == "none" then
+                return nil
+            end
             return CludesUI.ResolveTexturePath(lookup, key, nil)
-        end)
+        end
+    )
     local function barTexCfg(label, barKey)
-        return { type = "dropdown", text = label, values = values, order = order,
+        return {
+            type = "dropdown",
+            text = label,
+            values = values,
+            order = order,
             getValue = function()
                 local bars = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars
                 local s = bars and bars[barKey]
@@ -145,53 +181,85 @@ local function TileActionBars(parent, y, W, tile)
             setValue = function(v)
                 local bars = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars
                 local s = bars and bars[barKey]
-                if not s then return end
+                if not s then
+                    return
+                end
                 s.barTexture = v
-                if ns.ApplyDataBarLayout then ns.ApplyDataBarLayout(barKey) end
-            end }
+                if ns.ApplyDataBarLayout then
+                    ns.ApplyDataBarLayout(barKey)
+                end
+            end,
+        }
     end
-    local _, h = W:DualRow(parent, y,
+    local _, h = W:DualRow(
+        parent,
+        y,
         barTexCfg("XP Bar Texture", "XPBar"),
-        barTexCfg("Reputation Bar Texture", "RepBar"));  y = y - h
+        barTexCfg("Reputation Bar Texture", "RepBar")
+    )
+    y = y - h
     -- WoW Forever has no House Favor bar: its row is not built there.
     if not CludesUI.IS_FOREVER then
-    _, h = W:DualRow(parent, y,
-        barTexCfg("House Favor Bar Texture", "FavorBar"), BLANK());  y = y - h
+        _, h = W:DualRow(parent, y, barTexCfg("House Favor Bar Texture", "FavorBar"), BLANK())
+        y = y - h
     end -- not IS_FOREVER
-    y = LinkRow(parent, y, "Bar & Button Border Styles",
-        tile.folder, "Bar Display", nil, "Border Style")
+    y = LinkRow(parent, y, "Bar & Button Border Styles", tile.folder, "Bar Display", nil, "Border Style")
     return y
 end
 
 local function TileNameplates(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db() return ns.db and ns.db.profile end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    local function db()
+        return ns.db and ns.db.profile
+    end
     local DEF = ns.defaults or {}
-    CludesUI.AppendSharedMediaTextures(ns.healthBarTextureNames or {}, ns.healthBarTextureOrder or {}, nil, ns.healthBarTextures)
-    local hbtValues, hbtOrder = CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, false)
+    CludesUI.AppendSharedMediaTextures(
+        ns.healthBarTextureNames or {},
+        ns.healthBarTextureOrder or {},
+        nil,
+        ns.healthBarTextures
+    )
+    local hbtValues, hbtOrder =
+        CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, false)
     -- Health + cast bar textures repaint live plates the way the module's own
     -- RefreshAllTextures does: full reapply plus the friendly-plate loop.
     local function NPTexApply()
-        if ns.RefreshAllSettings then ns.RefreshAllSettings() end
+        if ns.RefreshAllSettings then
+            ns.RefreshAllSettings()
+        end
         if ns.friendlyPlates then
             for _, pl in pairs(ns.friendlyPlates) do
-                if ns.ApplyHealthBarTexture then ns.ApplyHealthBarTexture(pl) end
-                if ns.ApplyCastBarTexture then ns.ApplyCastBarTexture(pl) end
+                if ns.ApplyHealthBarTexture then
+                    ns.ApplyHealthBarTexture(pl)
+                end
+                if ns.ApplyCastBarTexture then
+                    ns.ApplyCastBarTexture(pl)
+                end
             end
         end
     end
     local function texCfg(label, key)
-        return { type = "dropdown", text = label, values = hbtValues, order = hbtOrder,
+        return {
+            type = "dropdown",
+            text = label,
+            values = hbtValues,
+            order = hbtOrder,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or DEF[key] or "none"
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 NPTexApply()
-            end }
+            end,
+        }
     end
 
     -- Absorb style: hand list + SM tail, alpha side-write, exactly like the
@@ -211,16 +279,26 @@ local function TileNameplates(parent, y, W, tile)
         ["pixelsShieldFill"] = "Pixels Shield Fill",
     }
     local absorbStyleOrder = {
-        "blizzard", "striped",
-        "striped-v2", "striped-wide-v2", "stripes-medium",
-        "stripes-small-close", "stripes-small-spread", "striped-tiny",
-        "clean", "pixelsShield", "pixelsShieldEdge", "pixelsShieldFill",
+        "blizzard",
+        "striped",
+        "striped-v2",
+        "striped-wide-v2",
+        "stripes-medium",
+        "stripes-small-close",
+        "stripes-small-spread",
+        "striped-tiny",
+        "clean",
+        "pixelsShield",
+        "pixelsShieldEdge",
+        "pixelsShieldFill",
     }
     AppendSmTail(absorbStyleValues, { absorbStyleOrder }, ns.healthBarTextureNames, ns.healthBarTextureOrder)
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" then return nil end
+            if not key or key == "---" then
+                return nil
+            end
             return (ns.NP_ABSORB_STYLE_TEX and ns.NP_ABSORB_STYLE_TEX[key])
                 or (ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(key))
         end,
@@ -229,14 +307,26 @@ local function TileNameplates(parent, y, W, tile)
     -- Target/Focus overlay list: stripes first, then the full bar catalogue
     -- (including its "none"); Hover variant leads with "none" and skips the
     -- catalogue's duplicate.
-    local STRIPE_ORDER = { "striped-v2", "striped-wide-v2", "stripes-medium", "stripes-small-close", "stripes-small-spread", "striped-tiny" }
+    local STRIPE_ORDER = {
+        "striped-v2",
+        "striped-wide-v2",
+        "stripes-medium",
+        "stripes-small-close",
+        "stripes-small-spread",
+        "striped-tiny",
+    }
     local STRIPE_NAMES = {
-        ["striped-v2"] = "Stripes", ["striped-wide-v2"] = "Wide Stripes",
-        ["stripes-medium"] = "Medium Stripes", ["stripes-small-close"] = "Small Dense Stripes",
-        ["stripes-small-spread"] = "Small Spread Stripes", ["striped-tiny"] = "Tiny Stripes",
+        ["striped-v2"] = "Stripes",
+        ["striped-wide-v2"] = "Wide Stripes",
+        ["stripes-medium"] = "Medium Stripes",
+        ["stripes-small-close"] = "Small Dense Stripes",
+        ["stripes-small-spread"] = "Small Spread Stripes",
+        ["striped-tiny"] = "Tiny Stripes",
     }
     local function OverlayBg(key)
-        if not key or key == "---" or key == "none" then return nil end
+        if not key or key == "---" or key == "none" then
+            return nil
+        end
         if ns.OVERLAY_STRIPE_KEYS and ns.OVERLAY_STRIPE_KEYS[key] and ns.ResolveOverlayTexPath then
             return ns.ResolveOverlayTexPath(key)
         end
@@ -250,7 +340,9 @@ local function TileNameplates(parent, y, W, tile)
     ovtOrder[#ovtOrder + 1] = "---"
     for _, k in ipairs(hbtOrder) do
         ovtOrder[#ovtOrder + 1] = k
-        if k ~= "---" then ovtValues[k] = hbtValues[k] end
+        if k ~= "---" then
+            ovtValues[k] = hbtValues[k]
+        end
     end
     ovtValues._menuOpts = { itemHeight = 28, background = OverlayBg }
     local hovValues, hovOrder = {}, {}
@@ -265,13 +357,17 @@ local function TileNameplates(parent, y, W, tile)
     for _, k in ipairs(hbtOrder) do
         if k ~= "none" then
             hovOrder[#hovOrder + 1] = k
-            if k ~= "---" then hovValues[k] = hbtValues[k] end
+            if k ~= "---" then
+                hovValues[k] = hbtValues[k]
+            end
         end
     end
     hovValues._menuOpts = { itemHeight = 28, background = OverlayBg }
 
     local function overlayCfg(label, key, applyName)
-        return { type = "dropdown", text = label,
+        return {
+            type = "dropdown",
+            text = label,
             values = (key == "hoverOverlayTexture") and hovValues or ovtValues,
             order = (key == "hoverOverlayTexture") and hovOrder or ovtOrder,
             getValue = function()
@@ -279,17 +375,29 @@ local function TileNameplates(parent, y, W, tile)
                 return (p and p[key]) or DEF[key]
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 local fn = ns[applyName]
-                if fn then fn() elseif ns.RefreshAllSettings then ns.RefreshAllSettings() end
-            end }
+                if fn then
+                    fn()
+                elseif ns.RefreshAllSettings then
+                    ns.RefreshAllSettings()
+                end
+            end,
+        }
     end
 
     local _, texRow, h
-    texRow, h = W:DualRow(parent, y,
+    texRow, h = W:DualRow(
+        parent,
+        y,
         texCfg("Bar Texture", "healthBarTexture"),
-        texCfg("Cast Bar Texture", "castBarTexture"));  y = y - h
+        texCfg("Cast Bar Texture", "castBarTexture")
+    )
+    y = y - h
     -- Textured Background cogs.
     local function Row(kind)
         return function()
@@ -299,45 +407,75 @@ local function TileNameplates(parent, y, W, tile)
     end
     TexBgCog(texRow._leftRegion, Row("health"), "nameplates")
     TexBgCog(texRow._rightRegion, Row("cast"), "nameplates")
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Absorb Style", values = absorbStyleValues, order = absorbStyleOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.absorbStyle) or "blizzard"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.absorbStyle = v
-              p.absorbAlpha = math.floor((((ns.NP_ABSORB_STYLE_ALPHA and ns.NP_ABSORB_STYLE_ALPHA[v]) or 0.8) * 100) + 0.5)
-              if ns.ApplyAbsorbStyleAll then ns.ApplyAbsorbStyleAll() end
-          end },
-        overlayCfg("Hover Texture", "hoverOverlayTexture", "RefreshHoverEffect"));  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Absorb Style",
+        values = absorbStyleValues,
+        order = absorbStyleOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.absorbStyle) or "blizzard"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.absorbStyle = v
+            p.absorbAlpha =
+                math.floor((((ns.NP_ABSORB_STYLE_ALPHA and ns.NP_ABSORB_STYLE_ALPHA[v]) or 0.8) * 100) + 0.5)
+            if ns.ApplyAbsorbStyleAll then
+                ns.ApplyAbsorbStyleAll()
+            end
+        end,
+    }, overlayCfg("Hover Texture", "hoverOverlayTexture", "RefreshHoverEffect"))
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         overlayCfg("Target Texture", "targetOverlayTexture", "RefreshAllSettings"),
-        overlayCfg("Focus Texture", "focusOverlayTexture", "RefreshAllSettings"));  y = y - h
-    y = LinkRow(parent, y, "Custom Border Style",
-        tile.folder, "Display", "STYLE", "Custom Border Style")
+        overlayCfg("Focus Texture", "focusOverlayTexture", "RefreshAllSettings")
+    )
+    y = y - h
+    y = LinkRow(parent, y, "Custom Border Style", tile.folder, "Display", "STYLE", "Custom Border Style")
     return y
 end
 
 local function TileUnitFrames(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db() return ns.db and ns.db.profile end
-    CludesUI.AppendSharedMediaTextures(ns.healthBarTextureNames or {}, ns.healthBarTextureOrder or {}, nil, ns.healthBarTextures)
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    local function db()
+        return ns.db and ns.db.profile
+    end
+    CludesUI.AppendSharedMediaTextures(
+        ns.healthBarTextureNames or {},
+        ns.healthBarTextureOrder or {},
+        nil,
+        ns.healthBarTextures
+    )
     -- UF's own dropdown copy drops the separator.
-    local hbtValues, hbtOrder = CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, true)
+    local hbtValues, hbtOrder =
+        CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, true)
 
     -- The module's own lists (ns, CUI_UnitFrames_Absorb.lua), copied: the
     -- SharedMedia tail is appended into them.
     local absorbStyleValues = CopyTable(ns.ABSORB_STYLE_NAMES)
     local absorbStyleOrder = CopyTable(ns.ABSORB_STYLE_ORDER)
     local healAbsorbStyleOrder = CopyTable(ns.HEAL_ABSORB_STYLE_ORDER)
-    AppendSmTail(absorbStyleValues, { absorbStyleOrder, healAbsorbStyleOrder }, ns.healthBarTextureNames, ns.healthBarTextureOrder)
+    AppendSmTail(
+        absorbStyleValues,
+        { absorbStyleOrder, healAbsorbStyleOrder },
+        ns.healthBarTextureNames,
+        ns.healthBarTextureOrder
+    )
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" or key == "none" then return nil end
+            if not key or key == "---" or key == "none" then
+                return nil
+            end
             return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex(key) or nil
         end,
     }
@@ -349,136 +487,264 @@ local function TileUnitFrames(parent, y, W, tile)
         return p and p[u]
     end
     local function UFReload()
-        if ns.ReloadFrames then ns.ReloadFrames() end
+        if ns.ReloadFrames then
+            ns.ReloadFrames()
+        end
     end
     local function barTexCfg(u)
-        return { type = "dropdown", text = UNIT_LABEL[u] .. " Bar Texture",
-            values = hbtValues, order = hbtOrder,
+        return {
+            type = "dropdown",
+            text = UNIT_LABEL[u] .. " Bar Texture",
+            values = hbtValues,
+            order = hbtOrder,
             getValue = function()
                 local ut, p = unitTable(u), db()
                 return (ut and ut.healthBarTexture) or (p and p.healthBarTexture) or "none"
             end,
             setValue = function(v)
-                local ut = unitTable(u); if not ut then return end
+                local ut = unitTable(u)
+                if not ut then
+                    return
+                end
                 ut.healthBarTexture = v
                 UFReload()
-            end }
+            end,
+        }
     end
     local function absorbCfg(u)
-        return { type = "dropdown", text = UNIT_LABEL[u] .. " Absorb Style",
-            values = absorbStyleValues, order = absorbStyleOrder,
+        return {
+            type = "dropdown",
+            text = UNIT_LABEL[u] .. " Absorb Style",
+            values = absorbStyleValues,
+            order = absorbStyleOrder,
             getValue = function()
                 local ut = unitTable(u)
                 return (ut and ut.showPlayerAbsorb) or "none"
             end,
             setValue = function(v)
-                local ut = unitTable(u); if not ut then return end
+                local ut = unitTable(u)
+                if not ut then
+                    return
+                end
                 ut.absorbOpacity = (v == "clean") and 30 or 90
                 ut.showPlayerAbsorb = v
                 UFReload()
-            end }
+            end,
+        }
     end
     local function healAbsorbCfg(u)
-        return { type = "dropdown", text = UNIT_LABEL[u] .. " Heal Absorb Style",
-            values = absorbStyleValues, order = healAbsorbStyleOrder,
+        return {
+            type = "dropdown",
+            text = UNIT_LABEL[u] .. " Heal Absorb Style",
+            values = absorbStyleValues,
+            order = healAbsorbStyleOrder,
             getValue = function()
                 local ut = unitTable(u)
                 return (ut and ut.healAbsorbStyle) or "clean"
             end,
             setValue = function(v)
-                local ut = unitTable(u); if not ut then return end
+                local ut = unitTable(u)
+                if not ut then
+                    return
+                end
                 ut.healAbsorbOpacity = (v == "clean") and 50 or 75
                 ut.healAbsorbStyle = v
                 UFReload()
-            end }
+            end,
+        }
     end
     -- Cast bars follow the unit's bar texture ("Inherit") unless this names
     -- one of their own; "Blizzard" is the vanilla cast bar's fill (the same
     -- entry the Resource Bars cast bar offers), and the stock styles seed it.
     -- Under Blizzard Style the stock fill art draws instead, so the row is
     -- gated there; Classic WoW UI keeps the user's fill, so it stays live.
-    local cbtValues, cbtOrder = CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, true)
+    local cbtValues, cbtOrder =
+        CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, true)
     cbtValues.inherit, cbtValues.blizzard = "Inherit", "Blizzard"
     table.insert(cbtOrder, 1, "inherit")
     table.insert(cbtOrder, 2, "blizzard")
-    local castTexCfg = { type = "dropdown", text = "Cast Bar Texture", values = cbtValues, order = cbtOrder,
+    local castTexCfg = {
+        type = "dropdown",
+        text = "Cast Bar Texture",
+        values = cbtValues,
+        order = cbtOrder,
         tooltip = "Texture for every unit frame cast bar. Inherit follows each unit's bar texture.",
         getValue = function()
             local p = db()
             return (p and p.castBarTexture) or "inherit"
         end,
         setValue = function(v)
-            local p = db(); if not p then return end
+            local p = db()
+            if not p then
+                return
+            end
             p.castBarTexture = v
             UFReload()
-        end }
-    if CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then CludesUI.BlizzStyle.Gate("unitframes", castTexCfg) end
+        end,
+    }
+    if CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
+        CludesUI.BlizzStyle.Gate("unitframes", castTexCfg)
+    end
     local _, focusRow, castRow
-    local ptRow, h = W:DualRow(parent, y, barTexCfg("player"), barTexCfg("target"));  y = y - h
-    focusRow, h = W:DualRow(parent, y, barTexCfg("focus"), absorbCfg("player"));  y = y - h
-    _, h = W:DualRow(parent, y, absorbCfg("target"), absorbCfg("focus"));  y = y - h
-    _, h = W:DualRow(parent, y, healAbsorbCfg("player"), healAbsorbCfg("target"));  y = y - h
-    castRow, h = W:DualRow(parent, y, healAbsorbCfg("focus"), castTexCfg);  y = y - h
+    local ptRow, h = W:DualRow(parent, y, barTexCfg("player"), barTexCfg("target"))
+    y = y - h
+    focusRow, h = W:DualRow(parent, y, barTexCfg("focus"), absorbCfg("player"))
+    y = y - h
+    _, h = W:DualRow(parent, y, absorbCfg("target"), absorbCfg("focus"))
+    y = y - h
+    _, h = W:DualRow(parent, y, healAbsorbCfg("player"), healAbsorbCfg("target"))
+    y = y - h
+    castRow, h = W:DualRow(parent, y, healAbsorbCfg("focus"), castTexCfg)
+    y = y - h
     -- Textured Background cogs (u nil: the cast bars' row).
     local env = ns._UFO_OptEnv
     local function Row(u)
-        return function() return env and env.TexBgRowCfg(u and function() return unitTable(u) end, UFReload) end
+        return function()
+            return env and env.TexBgRowCfg(u and function()
+                return unitTable(u)
+            end, UFReload)
+        end
     end
     TexBgCog(ptRow._leftRegion, Row("player"))
     TexBgCog(ptRow._rightRegion, Row("target"))
     TexBgCog(focusRow._leftRegion, Row("focus"))
     TexBgCog(castRow._rightRegion, Row(), "unitframes")
-    y = LinkRow(parent, y, "Pet, Target-of-Target & Boss Bar Textures",
-        tile.folder, "Mini Frames", "DISPLAY", "Bar Texture")
-    y = LinkRow(parent, y, "Frame, Power & Aura Border Styles",
-        tile.folder, "Main Frames", "DISPLAY", "Border Style")
+    y = LinkRow(
+        parent,
+        y,
+        "Pet, Target-of-Target & Boss Bar Textures",
+        tile.folder,
+        "Mini Frames",
+        "DISPLAY",
+        "Bar Texture"
+    )
+    y = LinkRow(
+        parent,
+        y,
+        "Frame, Power & Aura Border Styles",
+        tile.folder,
+        "Main Frames",
+        "DISPLAY",
+        "Border Style"
+    )
     return y
 end
 
 local function TileRaidFrames(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db() return ns.db and ns.db.profile end
-    CludesUI.AppendSharedMediaTextures(ns.healthBarTextureNames or {}, ns.healthBarTextureOrder or {}, nil, ns.healthBarTextures)
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    local function db()
+        return ns.db and ns.db.profile
+    end
+    CludesUI.AppendSharedMediaTextures(
+        ns.healthBarTextureNames or {},
+        ns.healthBarTextureOrder or {},
+        nil,
+        ns.healthBarTextures
+    )
     -- RF's own copy keeps the separator in the order array.
-    local hbtValues, hbtOrder = CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, false)
+    local hbtValues, hbtOrder =
+        CopyBarDD(ns.healthBarTextureNames, ns.healthBarTextureOrder, ns.healthBarTextures, false)
     local function RFReload()
-        if ns.ReloadFrames then ns.ReloadFrames() end
-        if ns.ReloadPartyFrames then ns.ReloadPartyFrames() end
+        if ns.ReloadFrames then
+            ns.ReloadFrames()
+        end
+        if ns.ReloadPartyFrames then
+            ns.ReloadPartyFrames()
+        end
     end
 
     local absorbStyleValues = {
-        ["none"]            = "None",
-        ["striped"]         = "Striped",
+        ["none"] = "None",
+        ["striped"] = "Striped",
         ["stripedReversed"] = "Striped Reversed",
-        ["stripedThick"]    = "Striped Thick",
-        ["stripedThickR"]   = "Striped Thick Reversed",
-        ["clean"]           = "Clean (Flat)",
-        ["blizzard"]        = "Classic WoW",
-        ["blizzardModern"]  = "Default Blizz Frames",
+        ["stripedThick"] = "Striped Thick",
+        ["stripedThickR"] = "Striped Thick Reversed",
+        ["clean"] = "Clean (Flat)",
+        ["blizzard"] = "Classic WoW",
+        ["blizzardModern"] = "Default Blizz Frames",
         ["healBlizzModern"] = "Default Blizz Frames",
-        ["largeOutlinedStripes"]  = "Large Outlined Stripes",
+        ["largeOutlinedStripes"] = "Large Outlined Stripes",
         ["largeOutlinedStripesR"] = "Large Outlined Stripes R",
-        ["largeStripes"]          = "Large Stripes",
-        ["largeStripesR"]         = "Large Stripes R",
-        ["maxHealthStripes"]      = "Max Health Stripes",
-        ["blizzardRaid"]          = "Blizzard Raid Bar",
-        ["pixelsShield"]          = "Pixels Shield",
-        ["pixelsShieldEdge"]      = "Pixels Shield Edge",
-        ["pixelsShieldFill"]      = "Pixels Shield Fill",
+        ["largeStripes"] = "Large Stripes",
+        ["largeStripesR"] = "Large Stripes R",
+        ["maxHealthStripes"] = "Max Health Stripes",
+        ["blizzardRaid"] = "Blizzard Raid Bar",
+        ["pixelsShield"] = "Pixels Shield",
+        ["pixelsShieldEdge"] = "Pixels Shield Edge",
+        ["pixelsShieldFill"] = "Pixels Shield Fill",
     }
-    local absorbStyleOrder = { "none", "blizzardModern", "striped", "stripedReversed", "stripedThick", "stripedThickR", "clean", "blizzard", "largeStripes", "largeStripesR", "blizzardRaid", "pixelsShield", "pixelsShieldEdge", "pixelsShieldFill" }
-    local healAbsorbStyleOrder = { "none", "healBlizzModern", "striped", "stripedReversed", "stripedThick", "stripedThickR", "clean", "blizzard", "largeOutlinedStripes", "largeOutlinedStripesR", "largeStripes", "largeStripesR", "blizzardRaid", "pixelsShield" }
-    local maxHealthStyleOrder = { "none", "maxHealthStripes", "striped", "stripedReversed", "stripedThick", "stripedThickR", "clean", "blizzard", "healBlizzModern", "largeOutlinedStripes", "largeOutlinedStripesR", "largeStripes", "largeStripesR", "blizzardRaid", "pixelsShield" }
-    AppendSmTail(absorbStyleValues, { absorbStyleOrder, healAbsorbStyleOrder, maxHealthStyleOrder }, ns.healthBarTextureNames, ns.healthBarTextureOrder)
+    local absorbStyleOrder = {
+        "none",
+        "blizzardModern",
+        "striped",
+        "stripedReversed",
+        "stripedThick",
+        "stripedThickR",
+        "clean",
+        "blizzard",
+        "largeStripes",
+        "largeStripesR",
+        "blizzardRaid",
+        "pixelsShield",
+        "pixelsShieldEdge",
+        "pixelsShieldFill",
+    }
+    local healAbsorbStyleOrder = {
+        "none",
+        "healBlizzModern",
+        "striped",
+        "stripedReversed",
+        "stripedThick",
+        "stripedThickR",
+        "clean",
+        "blizzard",
+        "largeOutlinedStripes",
+        "largeOutlinedStripesR",
+        "largeStripes",
+        "largeStripesR",
+        "blizzardRaid",
+        "pixelsShield",
+    }
+    local maxHealthStyleOrder = {
+        "none",
+        "maxHealthStripes",
+        "striped",
+        "stripedReversed",
+        "stripedThick",
+        "stripedThickR",
+        "clean",
+        "blizzard",
+        "healBlizzModern",
+        "largeOutlinedStripes",
+        "largeOutlinedStripesR",
+        "largeStripes",
+        "largeStripesR",
+        "blizzardRaid",
+        "pixelsShield",
+    }
+    AppendSmTail(
+        absorbStyleValues,
+        { absorbStyleOrder, healAbsorbStyleOrder, maxHealthStyleOrder },
+        ns.healthBarTextureNames,
+        ns.healthBarTextureOrder
+    )
     -- Default Blizz Frames' swatch draws its in-game compound (see the Raid & Party Frames page).
     local modernSwatch = { base = { 0.776, 0.784, 1.0 }, tint = { 0.569, 0.588, 1.0 }, tile = true }
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" or key == "none" then return nil end
-            if key == "blizzardModern" then return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex("striped"), modernSwatch end
-            if key == "maxHealthStripes" then return CludesUI.MAX_HEALTH_STRIPES_TEX end
+            if not key or key == "---" or key == "none" then
+                return nil
+            end
+            if key == "blizzardModern" then
+                return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex("striped"), modernSwatch
+            end
+            if key == "maxHealthStripes" then
+                return CludesUI.MAX_HEALTH_STRIPES_TEX
+            end
             return ns.ResolveAbsorbStyleTex and ns.ResolveAbsorbStyleTex(key) or nil
         end,
     }
@@ -486,243 +752,412 @@ local function TileRaidFrames(parent, y, W, tile)
     -- Mirrors write the RAID keys (same as the Raid tab); the Party tab's
     -- unsynced party_ variants stay in the module and are linked below.
     local _, texRow, h
-    texRow, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Health Bar Texture", values = hbtValues, order = hbtOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.healthBarTexture) or "atrocity"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.healthBarTexture = v
-              if ns._BumpAbsorbGen then ns._BumpAbsorbGen() end
-              RFReload()
-          end },
-        { type = "dropdown", text = "Absorb Style", values = absorbStyleValues, order = absorbStyleOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.absorbStyle) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              -- Blizzard Glow Line follows the pick (see the Raid & Party Frames page).
-              if v == "blizzardModern" then
-                  p.absorbGlowLine = true
-              elseif p.absorbStyle == "blizzardModern" then
-                  p.absorbGlowLine = false
-              end
-              p.absorbStyle = v
-              if v == "clean" then
-                  p.absorbOpacity = 30
-              elseif v ~= "blizzardModern" then
-                  p.absorbOpacity = 90
-              end
-              RFReload()
-          end });  y = y - h
+    texRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Health Bar Texture",
+        values = hbtValues,
+        order = hbtOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.healthBarTexture) or "atrocity"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.healthBarTexture = v
+            if ns._BumpAbsorbGen then
+                ns._BumpAbsorbGen()
+            end
+            RFReload()
+        end,
+    }, {
+        type = "dropdown",
+        text = "Absorb Style",
+        values = absorbStyleValues,
+        order = absorbStyleOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.absorbStyle) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            -- Blizzard Glow Line follows the pick (see the Raid & Party Frames page).
+            if v == "blizzardModern" then
+                p.absorbGlowLine = true
+            elseif p.absorbStyle == "blizzardModern" then
+                p.absorbGlowLine = false
+            end
+            p.absorbStyle = v
+            if v == "clean" then
+                p.absorbOpacity = 30
+            elseif v ~= "blizzardModern" then
+                p.absorbOpacity = 90
+            end
+            RFReload()
+        end,
+    })
+    y = y - h
     -- Textured Background cog: the Raid tab's row on the raid keys, as this card writes.
     local function RaidRead(key, default)
         local p = db()
         local v = p and p[key]
-        if v == nil then return default end
+        if v == nil then
+            return default
+        end
         return v
     end
     local function RaidWrite(key, v)
-        local p = db(); if not p then return end
+        local p = db()
+        if not p then
+            return
+        end
         p[key] = v
-        if ns._BumpAbsorbGen then ns._BumpAbsorbGen() end
+        if ns._BumpAbsorbGen then
+            ns._BumpAbsorbGen()
+        end
         RFReload()
     end
     TexBgCog(texRow._leftRegion, function()
         local env = ns._RFO_OptEnv
         return env and env.TexBgRowCfg(RaidRead, RaidWrite)
     end)
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Heal Absorb Style", values = absorbStyleValues, order = healAbsorbStyleOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.healAbsorbStyle) or "clean"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.healAbsorbStyle = v
-              p.healAbsorbOpacity = (v == "clean") and 50 or 75
-              RFReload()
-          end },
-        { type = "dropdown", text = "Max Health Style", values = absorbStyleValues, order = maxHealthStyleOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.maxHealthStyle) or "maxHealthStripes"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.maxHealthStyle = v
-              RFReload()
-          end });  y = y - h
-    y = LinkRow(parent, y, "Party-Specific Textures",
-        tile.folder, "Party", "HEALTH BAR", "Health Bar Texture")
-    y = LinkRow(parent, y, "Frame Border Style",
-        tile.folder, "Frames", "FRAME DISPLAY", "Border Style")
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Heal Absorb Style",
+        values = absorbStyleValues,
+        order = healAbsorbStyleOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.healAbsorbStyle) or "clean"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.healAbsorbStyle = v
+            p.healAbsorbOpacity = (v == "clean") and 50 or 75
+            RFReload()
+        end,
+    }, {
+        type = "dropdown",
+        text = "Max Health Style",
+        values = absorbStyleValues,
+        order = maxHealthStyleOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.maxHealthStyle) or "maxHealthStripes"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.maxHealthStyle = v
+            RFReload()
+        end,
+    })
+    y = y - h
+    y = LinkRow(
+        parent,
+        y,
+        "Party-Specific Textures",
+        tile.folder,
+        "Party",
+        "HEALTH BAR",
+        "Health Bar Texture"
+    )
+    y = LinkRow(parent, y, "Frame Border Style", tile.folder, "Frames", "FRAME DISPLAY", "Border Style")
     return y
 end
 
 local function TileCooldownManager(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    y = LinkRow(parent, y, "Tracking Bar Texture & Border (per bar)",
-        tile.folder, "Tracking Bars", "BAR LAYOUT", "Bar Texture")
-    y = LinkRow(parent, y, "Icon Border Styles (per bar)",
-        tile.folder, "CDM Bars", "ICON DISPLAY", "Border Style")
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    y = LinkRow(
+        parent,
+        y,
+        "Tracking Bar Texture & Border (per bar)",
+        tile.folder,
+        "Tracking Bars",
+        "BAR LAYOUT",
+        "Bar Texture"
+    )
+    y = LinkRow(
+        parent,
+        y,
+        "Icon Border Styles (per bar)",
+        tile.folder,
+        "CDM Bars",
+        "ICON DISPLAY",
+        "Border Style"
+    )
     return y
 end
 
 local function TileResourceBars(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db() return _G._ERB_AceDB and _G._ERB_AceDB.profile end
-    local function RBApply() if _G._ERB_Apply then _G._ERB_Apply() end end
-    if CludesUI.AppendSharedMediaTextures then
-        CludesUI.AppendSharedMediaTextures(_G._ERB_BarTextureNames or {}, _G._ERB_BarTextureOrder or {}, nil, _G._ERB_BarTextures)
-        CludesUI.AppendSharedMediaTextures(_G._ERB_CastBarTextureNames or {}, _G._ERB_CastBarTextureOrder or {}, nil, _G._ERB_CastBarTextures)
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
     end
-    local barValues, barOrder = CopyBarDD(_G._ERB_BarTextureNames, _G._ERB_BarTextureOrder, _G._ERB_BarTextures, false)
-    local gcdValues, gcdOrder = CopyBarDD(_G._ERB_BarTextureNames, _G._ERB_BarTextureOrder, _G._ERB_BarTextures, false)
+    local function db()
+        return _G._CURB_AceDB and _G._CURB_AceDB.profile
+    end
+    local function RBApply()
+        if _G._CURB_Apply then
+            _G._CURB_Apply()
+        end
+    end
+    if CludesUI.AppendSharedMediaTextures then
+        CludesUI.AppendSharedMediaTextures(
+            _G._CURB_BarTextureNames or {},
+            _G._CURB_BarTextureOrder or {},
+            nil,
+            _G._CURB_BarTextures
+        )
+        CludesUI.AppendSharedMediaTextures(
+            _G._CURB_CastBarTextureNames or {},
+            _G._CURB_CastBarTextureOrder or {},
+            nil,
+            _G._CURB_CastBarTextures
+        )
+    end
+    local barValues, barOrder =
+        CopyBarDD(_G._CURB_BarTextureNames, _G._CURB_BarTextureOrder, _G._CURB_BarTextures, false)
+    local gcdValues, gcdOrder =
+        CopyBarDD(_G._CURB_BarTextureNames, _G._CURB_BarTextureOrder, _G._CURB_BarTextures, false)
     -- Cast bar tables carry the module-side "blizzard" ATLAS entry.
-    local castValues, castOrder = CopyBarDD(_G._ERB_CastBarTextureNames, _G._ERB_CastBarTextureOrder, _G._ERB_CastBarTextures, false)
+    local castValues, castOrder =
+        CopyBarDD(_G._CURB_CastBarTextureNames, _G._CURB_CastBarTextureOrder, _G._CURB_CastBarTextures, false)
     -- Health and power can each take their own texture (the module's Texture cog). While
     -- one does, they get a row here too, Match Main Texture first; the cog drops this
     -- page's cached build when that starts or ends, so reading the flag at build time holds.
     local p0 = db()
     local split = p0 and p0.splitTex == true
-    local barTexRow, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Bar Texture",
-          values = barValues, order = barOrder,
-          tooltip = split and "Texture for the class resource bar and any bar set to Match Main Texture."
-              or "Texture for the health, power and class resource bars.",
-          getValue = function()
-              local p = db()
-              return (p and p.general and p.general.barTexture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.general) then return end
-              p.general.barTexture = v
-              RBApply()
-          end },
-        { type = "dropdown", text = "Cast Bar Texture", values = castValues, order = castOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.castBar and p.castBar.texture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.castBar) then return end
-              p.castBar.texture = v
-              RBApply()
-              if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_CastBar") end
-          end });  y = y - h
+    local barTexRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Bar Texture",
+        values = barValues,
+        order = barOrder,
+        tooltip = split and "Texture for the class resource bar and any bar set to Match Main Texture."
+            or "Texture for the health, power and class resource bars.",
+        getValue = function()
+            local p = db()
+            return (p and p.general and p.general.barTexture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.general) then
+                return
+            end
+            p.general.barTexture = v
+            RBApply()
+        end,
+    }, {
+        type = "dropdown",
+        text = "Cast Bar Texture",
+        values = castValues,
+        order = castOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.castBar and p.castBar.texture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.castBar) then
+                return
+            end
+            p.castBar.texture = v
+            RBApply()
+            if CludesUI.NotifyElementResized then
+                CludesUI.NotifyElementResized("ERB_CastBar")
+            end
+        end,
+    })
+    y = y - h
     -- Textured Background cogs.
-    local env = ns._ERB_OptEnv
-    local function Row(kind) return function() return env and env.TexBgRowCfg(kind, RBApply) end end
+    local env = ns._CURB_OptEnv
+    local function Row(kind)
+        return function()
+            return env and env.TexBgRowCfg(kind, RBApply)
+        end
+    end
     TexBgCog(barTexRow._leftRegion, Row("bars"))
     TexBgCog(barTexRow._rightRegion, Row("cast"), "castbar")
     if split then
         local function BarRow(text, barKey)
-            local v, o = CopyBarDD(_G._ERB_BarTextureNames, _G._ERB_BarTextureOrder, _G._ERB_BarTextures, false)
+            local v, o =
+                CopyBarDD(_G._CURB_BarTextureNames, _G._CURB_BarTextureOrder, _G._CURB_BarTextures, false)
             v.__match = "Match Main Texture"
             table.insert(o, 1, "---")
             table.insert(o, 1, "__match")
-            return { type = "dropdown", text = text, values = v, order = o,
-              getValue = function()
-                  local p = db()
-                  return p and ns.ERB_BarTexture(p, barKey) or "__match"
-              end,
-              setValue = function(val)
-                  local p = db(); if not p then return end
-                  ns.ERB_SetBarTexture(p, barKey, val ~= "__match" and val)
-                  RBApply()
-                  -- Neither bar has its own texture any more: the row goes.
-                  if p.splitTex ~= true then CludesUI:RefreshPage(true) end
-              end }
+            return {
+                type = "dropdown",
+                text = text,
+                values = v,
+                order = o,
+                getValue = function()
+                    local p = db()
+                    return p and ns.ERB_BarTexture(p, barKey) or "__match"
+                end,
+                setValue = function(val)
+                    local p = db()
+                    if not p then
+                        return
+                    end
+                    ns.ERB_SetBarTexture(p, barKey, val ~= "__match" and val)
+                    RBApply()
+                    -- Neither bar has its own texture any more: the row goes.
+                    if p.splitTex ~= true then
+                        CludesUI:RefreshPage(true)
+                    end
+                end,
+            }
         end
         local _
-        _, h = W:DualRow(parent, y,
+        _, h = W:DualRow(
+            parent,
+            y,
             BarRow("Health Bar Texture", "health"),
-            BarRow("Power Bar Texture", "primary"));  y = y - h
+            BarRow("Power Bar Texture", "primary")
+        )
+        y = y - h
     end
     local gcdTexRow
-    gcdTexRow, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "GCD Bar Texture", values = gcdValues, order = gcdOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.gcdBar and p.gcdBar.texture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.gcdBar) then return end
-              p.gcdBar.texture = v
-              RBApply()
-              if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_GCDBar") end
-          end },
-        BLANK());  y = y - h
+    gcdTexRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "GCD Bar Texture",
+        values = gcdValues,
+        order = gcdOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.gcdBar and p.gcdBar.texture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.gcdBar) then
+                return
+            end
+            p.gcdBar.texture = v
+            RBApply()
+            if CludesUI.NotifyElementResized then
+                CludesUI.NotifyElementResized("ERB_GCDBar")
+            end
+        end,
+    }, BLANK())
+    y = y - h
     TexBgCog(gcdTexRow._leftRegion, Row("gcd"))
-    y = LinkRow(parent, y, "Border Styles (per bar)",
-        tile.folder, "Class, Power and Health Bars", nil, "Border Style")
+    y = LinkRow(
+        parent,
+        y,
+        "Border Styles (per bar)",
+        tile.folder,
+        "Class, Power and Health Bars",
+        nil,
+        "Border Style"
+    )
     return y
 end
 
 local function TileChat(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
     local ECHAT = ns.ECHAT
     local function db()
-        return _G._ECHAT_DB and _G._ECHAT_DB.profile and _G._ECHAT_DB.profile.chat
+        return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat
     end
     -- Stock styles (Style page): Blizzard's own chat background, and either
     -- Blizzard's tabs or the painted vanilla tab sheet -- none take a texture,
     -- and the linked border row is hidden there too.
     local BS = CludesUI.BlizzStyle
     if BS and BS.Get("chat") then
-        return NoteRow(parent, y, CludesUI.Lf("%1$s is active: chat keeps Blizzard's own background and tab art.", CludesUI.L(BS.Label("chat"))))
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf(
+                "%1$s is active: chat keeps Blizzard's own background and tab art.",
+                CludesUI.L(BS.Label("chat"))
+            )
+        )
     end
-    if ECHAT and ECHAT.RefreshBgTextureCatalogue then ECHAT.RefreshBgTextureCatalogue() end
+    if ECHAT and ECHAT.RefreshBgTextureCatalogue then
+        ECHAT.RefreshBgTextureCatalogue()
+    end
     -- Chat's own copies drop the separator.
     local btValues, btOrder = CopyBarDD(ns.chatBgTextureNames, ns.chatBgTextureOrder, ns.chatBgTextures, true)
-    local tabValues, tabOrder = CopyBarDD(ns.chatBgTextureNames, ns.chatBgTextureOrder, ns.chatBgTextures, true)
-    local _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Background Texture", values = btValues, order = btOrder,
-          tooltip = "Texture drawn over the chat background color.",
-          getValue = function()
-              local p = db()
-              return (p and p.bgTexture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.bgTexture = v
-              if ECHAT and ECHAT.ApplyBackground then ECHAT.ApplyBackground() end
-          end },
-        { type = "dropdown", text = "Tab Texture", values = tabValues, order = tabOrder,
-          tooltip = "Texture drawn over the tab background colors.",
-          getValue = function()
-              local p = db()
-              return (p and p.tabBackgroundTexture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.tabBackgroundTexture = v
-              if ECHAT and ECHAT.ApplyTabAppearance then ECHAT.ApplyTabAppearance() end
-          end });  y = y - h
-    y = LinkRow(parent, y, "Panel & Tab Border Styles",
-        tile.folder, "Chat", "DISPLAY", "Border Style")
+    local tabValues, tabOrder =
+        CopyBarDD(ns.chatBgTextureNames, ns.chatBgTextureOrder, ns.chatBgTextures, true)
+    local _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Background Texture",
+        values = btValues,
+        order = btOrder,
+        tooltip = "Texture drawn over the chat background color.",
+        getValue = function()
+            local p = db()
+            return (p and p.bgTexture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.bgTexture = v
+            if ECHAT and ECHAT.ApplyBackground then
+                ECHAT.ApplyBackground()
+            end
+        end,
+    }, {
+        type = "dropdown",
+        text = "Tab Texture",
+        values = tabValues,
+        order = tabOrder,
+        tooltip = "Texture drawn over the tab background colors.",
+        getValue = function()
+            local p = db()
+            return (p and p.tabBackgroundTexture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.tabBackgroundTexture = v
+            if ECHAT and ECHAT.ApplyTabAppearance then
+                ECHAT.ApplyTabAppearance()
+            end
+        end,
+    })
+    y = y - h
+    y = LinkRow(parent, y, "Panel & Tab Border Styles", tile.folder, "Chat", "DISPLAY", "Border Style")
     return y
 end
 
 local function TileQoL(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
     -- Movement alert bar texture: module-owned registered tables.
     local mt = CludesUI._MovementBarTextures
     local maCfg
     if mt then
         CludesUI.AppendSharedMediaTextures(mt.names, mt.order, nil, mt.lookup)
         local values, order = CopyBarDD(mt.names, mt.order, mt.lookup, false)
-        maCfg = { type = "dropdown", text = "Movement Alert Bar Texture", values = values, order = order,
+        maCfg = {
+            type = "dropdown",
+            text = "Movement Alert Bar Texture",
+            values = values,
+            order = order,
             tooltip = "Used by the movement alert's Bar display mode.",
             getValue = function()
                 local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
@@ -732,34 +1167,69 @@ local function TileQoL(parent, y, W, tile)
             setValue = function(v)
                 local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
                 local ma = d and d.profile and d.profile.movementAlert
-                if not ma then return end
+                if not ma then
+                    return
+                end
                 ma.barTexture = v
-                if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
-                if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
-                if CludesUI._applyGateway then CludesUI._applyGateway() end
-            end }
+                if CludesUI._applyMovementAlert then
+                    CludesUI._applyMovementAlert()
+                end
+                if CludesUI._applyTimeSpiral then
+                    CludesUI._applyTimeSpiral()
+                end
+                if CludesUI._applyGateway then
+                    CludesUI._applyGateway()
+                end
+            end,
+        }
     end
 
     -- Cursor art pickers: bespoke ring art, hand-built lists mirroring the
     -- Cursor page exactly (note the ring_ prefix difference between the
     -- cursor texture and the two ring pickers).
-    local function cursorDB() return _G._ECL_AceDB and _G._ECL_AceDB.profile end
-    local cursorCfg = { type = "dropdown", text = "Cursor Texture",
-        values = { ring_normal = "Ring Normal", ring_light = "Ring Light", custom = "Cludes Logo",
-                   ring_thin = "Ring Thin", ring_heavy = "Ring Heavy", ring_thick = "Ring Thick" },
+    local function cursorDB()
+        return _G._CUCL_AceDB and _G._CUCL_AceDB.profile
+    end
+    local cursorCfg = {
+        type = "dropdown",
+        text = "Cursor Texture",
+        values = {
+            ring_normal = "Ring Normal",
+            ring_light = "Ring Light",
+            custom = "Cludes Logo",
+            ring_thin = "Ring Thin",
+            ring_heavy = "Ring Heavy",
+            ring_thick = "Ring Thick",
+        },
         order = { "ring_normal", "ring_light", "custom", "---", "ring_thin", "ring_heavy", "ring_thick" },
         getValue = function()
             local p = cursorDB()
             return (p and p.texture) or "ring_normal"
         end,
         setValue = function(v)
-            local p = cursorDB(); if not p then return end
+            local p = cursorDB()
+            if not p then
+                return
+            end
             p.texture = v
-            if _G._ECL_Apply then _G._ECL_Apply() end
-        end }
-    local ringValues = { normal = "Ring Normal", light = "Ring Light", thin = "Ring Thin", heavy = "Ring Heavy", thick = "Ring Thick" }
+            if _G._CUCL_Apply then
+                _G._CUCL_Apply()
+            end
+        end,
+    }
+    local ringValues = {
+        normal = "Ring Normal",
+        light = "Ring Light",
+        thin = "Ring Thin",
+        heavy = "Ring Heavy",
+        thick = "Ring Thick",
+    }
     local ringOrder = { "normal", "light", "---", "thin", "heavy", "thick" }
-    local gcdRingCfg = { type = "dropdown", text = "GCD Ring Texture", values = ringValues, order = ringOrder,
+    local gcdRingCfg = {
+        type = "dropdown",
+        text = "GCD Ring Texture",
+        values = ringValues,
+        order = ringOrder,
         getValue = function()
             local p = cursorDB()
             local g = p and p.gcd
@@ -768,12 +1238,23 @@ local function TileQoL(parent, y, W, tile)
         setValue = function(v)
             local p = cursorDB()
             local g = p and p.gcd
-            if not g then return end
+            if not g then
+                return
+            end
             g.ringTex = v
-            if _G._ECL_ApplyGCDCircle then _G._ECL_ApplyGCDCircle() end
-            if _G._ECL_RegisterUnlock then _G._ECL_RegisterUnlock() end
-        end }
-    local castRingCfg = { type = "dropdown", text = "Cast Ring Texture", values = ringValues, order = ringOrder,
+            if _G._CUCL_ApplyGCDCircle then
+                _G._CUCL_ApplyGCDCircle()
+            end
+            if _G._CUCL_RegisterUnlock then
+                _G._CUCL_RegisterUnlock()
+            end
+        end,
+    }
+    local castRingCfg = {
+        type = "dropdown",
+        text = "Cast Ring Texture",
+        values = ringValues,
+        order = ringOrder,
         getValue = function()
             local p = cursorDB()
             local c = p and p.castCircle
@@ -782,161 +1263,293 @@ local function TileQoL(parent, y, W, tile)
         setValue = function(v)
             local p = cursorDB()
             local c = p and p.castCircle
-            if not c then return end
+            if not c then
+                return
+            end
             c.ringTex = v
-            if _G._ECL_ApplyCastCircle then _G._ECL_ApplyCastCircle() end
-            if _G._ECL_RegisterUnlock then _G._ECL_RegisterUnlock() end
-        end }
+            if _G._CUCL_ApplyCastCircle then
+                _G._CUCL_ApplyCastCircle()
+            end
+            if _G._CUCL_RegisterUnlock then
+                _G._CUCL_RegisterUnlock()
+            end
+        end,
+    }
 
-    local _, h = W:DualRow(parent, y, maCfg or BLANK(), cursorCfg);  y = y - h
-    _, h = W:DualRow(parent, y, gcdRingCfg, castRingCfg);  y = y - h
+    local _, h = W:DualRow(parent, y, maCfg or BLANK(), cursorCfg)
+    y = y - h
+    _, h = W:DualRow(parent, y, gcdRingCfg, castRingCfg)
+    y = y - h
     return y
 end
 
 local function TileMythicTimer(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db() return _G._EMT_AceDB and _G._EMT_AceDB.profile end
-    local function MTApply() if _G._EMT_ApplyTimer then _G._EMT_ApplyTimer() end end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    local function db()
+        return _G._CUMT_AceDB and _G._CUMT_AceDB.profile
+    end
+    local function MTApply()
+        if _G._CUMT_ApplyTimer then
+            _G._CUMT_ApplyTimer()
+        end
+    end
     -- MT's registered tables live in module/options locals; own memoized
     -- core-set catalogue (registered once), separator dropped like MT's own.
     local cat = OwnBarCatalogue("mt", nil)
     local values, order = CopyBarDD(cat.names, cat.order, cat.lookup, true)
     local function texCfg(label, key)
-        return { type = "dropdown", text = label, values = values, order = order,
+        return {
+            type = "dropdown",
+            text = label,
+            values = values,
+            order = order,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or "none"
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 MTApply()
-            end }
+            end,
+        }
     end
     local function subTexCfg(label, getT, applyName)
-        return { type = "dropdown", text = label, values = values, order = order,
+        return {
+            type = "dropdown",
+            text = label,
+            values = values,
+            order = order,
             getValue = function()
                 local t = getT()
                 return (t and t.texture) or "none"
             end,
             setValue = function(v)
-                local t = getT(); if not t then return end
+                local t = getT()
+                if not t then
+                    return
+                end
                 t.texture = v
                 local fn = ns[applyName]
-                if fn then fn() else MTApply() end
-            end }
+                if fn then
+                    fn()
+                else
+                    MTApply()
+                end
+            end,
+        }
     end
-    local function tsb() local p = db(); return p and p.tsb end
-    local function tfbT() local p = db(); return p and p.tfb and p.tfb.target end
-    local function tfbF() local p = db(); return p and p.tfb and p.tfb.focus end
-    local function kt() local p = db(); return p and p.kickTracker end
-    local _, h = W:DualRow(parent, y,
+    local function tsb()
+        local p = db()
+        return p and p.tsb
+    end
+    local function tfbT()
+        local p = db()
+        return p and p.tfb and p.tfb.target
+    end
+    local function tfbF()
+        local p = db()
+        return p and p.tfb and p.tfb.focus
+    end
+    local function kt()
+        local p = db()
+        return p and p.kickTracker
+    end
+    local _, h = W:DualRow(
+        parent,
+        y,
         texCfg("Timer Bar Texture", "barTexture"),
-        texCfg("Timer Background Texture", "barBgTexture"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        texCfg("Timer Background Texture", "barBgTexture")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         texCfg("Forces Bar Texture", "enemyBarTexture"),
-        texCfg("Forces Background Texture", "enemyBarBgTexture"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        texCfg("Forces Background Texture", "enemyBarBgTexture")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subTexCfg("Cast Bars Texture", tsb, "TSB_Refresh"),
-        subTexCfg("Target Cast Bar Texture", tfbT, "TFB_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subTexCfg("Target Cast Bar Texture", tfbT, "TFB_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subTexCfg("Focus Cast Bar Texture", tfbF, "TFB_Refresh"),
-        subTexCfg("Kick Tracker Bar Texture", kt, "KT_Refresh"));  y = y - h
+        subTexCfg("Kick Tracker Bar Texture", kt, "KT_Refresh")
+    )
+    y = y - h
     return y
 end
 
 local function TileDamageMeters(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    local function db()
-        return _G._EDM_DB and _G._EDM_DB.profile and _G._EDM_DB.profile.dm
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
     end
-    CludesUI.AppendSharedMediaTextures(_G._EDM_BarTextureNames or {}, _G._EDM_BarTextureOrder or {}, nil, _G._EDM_BarTextures)
+    local function db()
+        return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
+    end
+    CludesUI.AppendSharedMediaTextures(
+        _G._CUDM_BarTextureNames or {},
+        _G._CUDM_BarTextureOrder or {},
+        nil,
+        _G._CUDM_BarTextures
+    )
     -- DM keeps the separator in its order arrays.
-    local dmValues, dmOrder = CopyBarDD(_G._EDM_BarTextureNames, _G._EDM_BarTextureOrder, _G._EDM_BarTextures, false)
+    local dmValues, dmOrder =
+        CopyBarDD(_G._CUDM_BarTextureNames, _G._CUDM_BarTextureOrder, _G._CUDM_BarTextures, false)
     -- "Match" variant used by the breakdown + spell history rows.
-    local matchValues, matchOrder = CopyBarDD(_G._EDM_BarTextureNames, _G._EDM_BarTextureOrder, _G._EDM_BarTextures, false)
+    local matchValues, matchOrder =
+        CopyBarDD(_G._CUDM_BarTextureNames, _G._CUDM_BarTextureOrder, _G._CUDM_BarTextures, false)
     matchValues.match = "Match Damage Meters"
     table.insert(matchOrder, 1, "---")
     table.insert(matchOrder, 1, "match")
-    local _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Bar Texture", values = dmValues, order = dmOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.barTexture) or "none"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.barTexture = v
-              if ns.RefreshMeter then ns.RefreshMeter() end
-              if ns.ApplySpellHistory then ns.ApplySpellHistory() end
-          end },
-        { type = "dropdown", text = "Breakdown Bar Texture", values = matchValues, order = matchOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.breakdownBarTexture) or "match"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.breakdownBarTexture = v
-              if ns.RefreshMeter then ns.RefreshMeter() end
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Spell History Bar Texture", values = matchValues, order = matchOrder,
-          getValue = function()
-              local p = db()
-              local sh = p and p.spellHistory
-              return (sh and sh.spellHistoryBarTexture) or "match"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              if not p.spellHistory then p.spellHistory = {} end
-              p.spellHistory.spellHistoryBarTexture = v
-              if ns.ApplySpellHistory then ns.ApplySpellHistory() end
-          end },
-        BLANK());  y = y - h
-    y = LinkRow(parent, y, "Window & Bar Border Styles",
-        tile.folder, "Damage Meters", nil, "Border Style")
+    local _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Bar Texture",
+        values = dmValues,
+        order = dmOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.barTexture) or "none"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.barTexture = v
+            if ns.RefreshMeter then
+                ns.RefreshMeter()
+            end
+            if ns.ApplySpellHistory then
+                ns.ApplySpellHistory()
+            end
+        end,
+    }, {
+        type = "dropdown",
+        text = "Breakdown Bar Texture",
+        values = matchValues,
+        order = matchOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.breakdownBarTexture) or "match"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.breakdownBarTexture = v
+            if ns.RefreshMeter then
+                ns.RefreshMeter()
+            end
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Spell History Bar Texture",
+        values = matchValues,
+        order = matchOrder,
+        getValue = function()
+            local p = db()
+            local sh = p and p.spellHistory
+            return (sh and sh.spellHistoryBarTexture) or "match"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            if not p.spellHistory then
+                p.spellHistory = {}
+            end
+            p.spellHistory.spellHistoryBarTexture = v
+            if ns.ApplySpellHistory then
+                ns.ApplySpellHistory()
+            end
+        end,
+    }, BLANK())
+    y = y - h
+    y = LinkRow(parent, y, "Window & Bar Border Styles", tile.folder, "Damage Meters", nil, "Border Style")
     return y
 end
 
 local function TileDataBars(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    y = LinkRow(parent, y, "Bar Texture (per data bar)",
-        tile.folder, "Info Bar", "BAR SETTINGS", "Bar Texture")
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    y = LinkRow(
+        parent,
+        y,
+        "Bar Texture (per data bar)",
+        tile.folder,
+        "Info Bar",
+        "BAR SETTINGS",
+        "Bar Texture"
+    )
     return y
 end
 
 local function TileBlizzardSkin(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
     local cat = OwnBarCatalogue("edr", nil)
     local values, order = CopyBarDD(cat.names, cat.order, cat.lookup, true)
-    local _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Dragonriding Bar Texture", values = values, order = order,
-          getValue = function()
-              local p = ns.edrDB and ns.edrDB.profile
-              return (p and p.barTexture) or "none"
-          end,
-          setValue = function(v)
-              local p = ns.edrDB and ns.edrDB.profile
-              if not p then return end
-              p.barTexture = v
-              if ns.edrRedraw then ns.edrRedraw() end
-          end },
-        BLANK());  y = y - h
-    y = LinkRow(parent, y, "Popup & Tooltip Border Styles",
-        tile.folder, "Tooltips, Menus & Popups", nil, "Border Style")
+    local _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Dragonriding Bar Texture",
+        values = values,
+        order = order,
+        getValue = function()
+            local p = ns.edrDB and ns.edrDB.profile
+            return (p and p.barTexture) or "none"
+        end,
+        setValue = function(v)
+            local p = ns.edrDB and ns.edrDB.profile
+            if not p then
+                return
+            end
+            p.barTexture = v
+            if ns.edrRedraw then
+                ns.edrRedraw()
+            end
+        end,
+    }, BLANK())
+    y = y - h
+    y = LinkRow(
+        parent,
+        y,
+        "Popup & Tooltip Border Styles",
+        tile.folder,
+        "Tooltips, Menus & Popups",
+        nil,
+        "Border Style"
+    )
     return y
 end
 
 local function TileMinimap(parent, y, W, tile)
     local ns = NS(tile.folder)
-    if not ns then return DisabledTile(parent, y, W, tile) end
-    y = LinkRow(parent, y, "Minimap Border Style",
-        tile.folder, "Minimap", "DISPLAY", "Border Style")
+    if not ns then
+        return DisabledTile(parent, y, W, tile)
+    end
+    y = LinkRow(parent, y, "Minimap Border Style", tile.folder, "Minimap", "DISPLAY", "Border Style")
     return y
 end
 
@@ -945,19 +1558,19 @@ end
 -------------------------------------------------------------------------------
 
 local TILE_BUILDERS = {
-    CludesUIActionBars      = { TileActionBars,      "XP, reputation and favor bar textures" },
-    CludesUINameplates      = { TileNameplates,      "Health, cast, absorb and highlight textures" },
-    CludesUIUnitFrames      = { TileUnitFrames,      "Bar and absorb textures for the main frames" },
-    CludesUIRaidFrames      = { TileRaidFrames,      "Health bar and absorb textures" },
+    CludesUIActionBars = { TileActionBars, "XP, reputation and favor bar textures" },
+    CludesUINameplates = { TileNameplates, "Health, cast, absorb and highlight textures" },
+    CludesUIUnitFrames = { TileUnitFrames, "Bar and absorb textures for the main frames" },
+    CludesUIRaidFrames = { TileRaidFrames, "Health bar and absorb textures" },
     CludesUICooldownManager = { TileCooldownManager, "Tracking bar textures and icon borders" },
-    CludesUIResourceBars    = { TileResourceBars,    "Resource, cast and GCD bar textures" },
-    CludesUIQoL             = { TileQoL,             "Movement alert bar and cursor ring art" },
-    CludesUIBlizzardSkin    = { TileBlizzardSkin,    "Dragonriding speed bar texture" },
-    CludesUIMythicTimer     = { TileMythicTimer,     "Timer, forces and spell bar textures" },
-    CludesUIMinimap         = { TileMinimap,         "Minimap border style" },
-    CludesUIChat            = { TileChat,            "Chat background and tab textures" },
-    CludesUIDamageMeters    = { TileDamageMeters,    "Meter, breakdown and history bar textures" },
-    CludesUIDataBars        = { TileDataBars,        "Per-bar background textures" },
+    CludesUIResourceBars = { TileResourceBars, "Resource, cast and GCD bar textures" },
+    CludesUIQoL = { TileQoL, "Movement alert bar and cursor ring art" },
+    CludesUIBlizzardSkin = { TileBlizzardSkin, "Dragonriding speed bar texture" },
+    CludesUIMythicTimer = { TileMythicTimer, "Timer, forces and spell bar textures" },
+    CludesUIMinimap = { TileMinimap, "Minimap border style" },
+    CludesUIChat = { TileChat, "Chat background and tab textures" },
+    CludesUIDamageMeters = { TileDamageMeters, "Meter, breakdown and history bar textures" },
+    CludesUIDataBars = { TileDataBars, "Per-bar background textures" },
 }
 
 local function BuildTileList()
@@ -967,8 +1580,11 @@ local function BuildTileList()
         local def = not entry.comingSoon and TILE_BUILDERS[entry.folder]
         if def then
             tiles[#tiles + 1] = {
-                key = entry.folder, folder = entry.folder, display = entry.display,
-                desc = def[2], buildContent = def[1],
+                key = entry.folder,
+                folder = entry.folder,
+                display = entry.display,
+                desc = def[2],
+                buildContent = def[1],
             }
         end
     end
@@ -981,12 +1597,13 @@ end
 --  system, so the header hosts no dropdown)
 -------------------------------------------------------------------------------
 
-local TX_GLYPH_TEX  = "Interface\\AddOns\\CludesUI\\media\\textures\\melli.tga"
+local TX_GLYPH_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\melli.tga"
 
 local function BuildTexCard(parent, y, W, tile)
     return CludesUI.BuildModuleCard(parent, y, W, tile, {
         enabled = NS(tile.folder) ~= nil,
-        expanded = _txExpanded, descW = 560,
+        expanded = _txExpanded,
+        descW = 560,
         -- Mini statusbar glyph: a texture strip in a thin frame.
         glyph = function(hdr, enabled)
             local PP = CludesUI.PanelPP
@@ -1061,11 +1678,15 @@ function _G._CUI_BuildTexturesPage(pageName, parent, yOffset)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
-    intro:SetText(CludesUI.L("A quick view of every texture setting in one place.") .. "\n"
-        .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones."))
+    intro:SetText(
+        CludesUI.L("A quick view of every texture setting in one place.")
+            .. "\n"
+            .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
+    )
     y = y - 48
 
-    _, h = W:SectionHeader(parent, "MODULE TEXTURES", y);  y = y - h
+    _, h = W:SectionHeader(parent, "MODULE TEXTURES", y)
+    y = y - h
 
     for _, tile in ipairs(BuildTileList()) do
         y = BuildTexCard(parent, y, W, tile)

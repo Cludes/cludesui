@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_StockStyles.lua
 --
@@ -14,9 +16,12 @@ local PP = CludesUI.PP
 
 local I = ns._internals
 local frames, GetSettingsForUnit, UnsnapTex = I.frames, I.GetSettingsForUnit, I.UnsnapTex
-local CastbarUnlockKey, CreatePowerBar, ApplyFramePosition = I.CastbarUnlockKey, I.CreatePowerBar, I.ApplyFramePosition
+local CastbarUnlockKey, CreatePowerBar, ApplyFramePosition =
+    I.CastbarUnlockKey, I.CreatePowerBar, I.ApplyFramePosition
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -------------------------------------------------------------------------------
 --  Stock styles (Global Settings > Style). A stock unit frame look on our own
@@ -38,7 +43,10 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 -------------------------------------------------------------------------------
 ns.UF_BLIZZ = {
     player = {
-        w = 232, h = 100, hit = { 6, 0, 4, 9 }, side = "left",
+        w = 232,
+        h = 100,
+        hit = { 6, 0, 4, 9 },
+        side = "left",
         -- Insets from the stock box to the visible art (the 198x71 atlas is
         -- centred in the box; measured from its alpha): what auras, anchors and
         -- the unlock mover line up with.
@@ -50,37 +58,83 @@ ns.UF_BLIZZ = {
         art = "UI-HUD-UnitFrame-Player-PortraitOn",
         -- The player mask squares off the lower-right corner (under the bars);
         -- rawArt = the client's own round crop is switched off so it shows.
-        portrait = { point = "TOPLEFT", x = 24, y = -19, size = 60, mask = "UI-HUD-UnitFrame-Player-Portrait-Mask", rawArt = true },
-        health = { x = 85, y = 40, w = 124, h = 20,
-                   atlas = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health",
-                   mask = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health-Mask", mx = -2, my = 6 },
-        power = { x = 85, y = 61, w = 124, h = 10,
-                  prefix = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-",
-                  mask = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Mana-Mask", mx = -2, my = 2 },
+        portrait = {
+            point = "TOPLEFT",
+            x = 24,
+            y = -19,
+            size = 60,
+            mask = "UI-HUD-UnitFrame-Player-Portrait-Mask",
+            rawArt = true,
+        },
+        health = {
+            x = 85,
+            y = 40,
+            w = 124,
+            h = 20,
+            atlas = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health",
+            mask = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health-Mask",
+            mx = -2,
+            my = 6,
+        },
+        power = {
+            x = 85,
+            y = 61,
+            w = 124,
+            h = 10,
+            prefix = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-",
+            mask = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Mana-Mask",
+            mx = -2,
+            my = 2,
+        },
         name = { point = "TOPLEFT", x = 88, y = -27, w = 96 },
         -- Level number in the art's level circle (right end of the name bar).
         level = { point = "TOPRIGHT", x = -24.5, y = -28, justify = "RIGHT" },
     },
     target = {
-        w = 232, h = 100, hit = { 0, 5, 4, 9 }, side = "right",
+        w = 232,
+        h = 100,
+        hit = { 0, 5, 4, 9 },
+        side = "right",
         vis = { l = 20, r = 21, t = 17.5, b = 17.5 },
         pad = { top = 17.5, bottom = 17.5 },
         art = "UI-HUD-UnitFrame-Target-PortraitOn",
         artRare = "UI-HUD-UnitFrame-Target-Rare-PortraitOn",
         portrait = { point = "TOPRIGHT", x = -26, y = -19, size = 58, mask = "CircleMask" },
-        health = { x = 23, y = 40, w = 126, h = 20,
-                   atlas = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health",
-                   mask = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health-Mask", mx = -1, my = 6 },
-        power = { x = 23, y = 61, w = 134, h = 10,
-                  prefix = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-",
-                  mask = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Mana-Mask", mx = -61, my = 3 },
+        health = {
+            x = 23,
+            y = 40,
+            w = 126,
+            h = 20,
+            atlas = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health",
+            mask = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health-Mask",
+            mx = -1,
+            my = 6,
+        },
+        power = {
+            x = 23,
+            y = 61,
+            w = 134,
+            h = 10,
+            prefix = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-",
+            mask = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Mana-Mask",
+            mx = -61,
+            my = 3,
+        },
         -- Hide Power Bar's health bar (UF_MergedHealth): the power track runs
         -- further right under the ring than the health track, so the taller
         -- bar takes the power track's width and a mask of both stock openings
         -- joined (.tools/stock-merged-mask), 1 texel per unit.
-        mergedHealth = { x = 23, y = 40, w = 134, h = 31,
-                         maskFile = "Interface\\AddOns\\CludesUIUnitFrames\\Media\\blizz-target-merged-mask.tga",
-                         mx = 0, my = 0, mw = 256, mh = 32 },
+        mergedHealth = {
+            x = 23,
+            y = 40,
+            w = 134,
+            h = 31,
+            maskFile = "Interface\\AddOns\\CludesUIUnitFrames\\Media\\blizz-target-merged-mask.tga",
+            mx = 0,
+            my = 0,
+            mw = 256,
+            mh = 32,
+        },
         rep = { atlas = "UI-HUD-UnitFrame-Target-PortraitOn-Type", x = -75, y = -25 },
         -- Level number on the type strip: the stock frame puts it in the
         -- circle at the strip's LEFT end (-133,-2 off the strip's top-right),
@@ -89,30 +143,50 @@ ns.UF_BLIZZ = {
         -- ring, and the name gives up that much width (nameTrim).
         level = { point = "TOPRIGHT", x = -91, y = -27, justify = "RIGHT", nameTrim = 26 },
         name = { point = "TOPLEFT", x = 30, y = -26, w = 120 },
-        boss = { gold = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Gold",
-                 silver = "ui-hud-unitframe-target-portraiton-boss-rare-silver",
-                 winged = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Gold-Winged" },
+        boss = {
+            gold = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Gold",
+            silver = "ui-hud-unitframe-target-portraiton-boss-rare-silver",
+            winged = "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Gold-Winged",
+        },
     },
     mini = {
-        w = 120, h = 49, hit = { 0, 0, 0, 0 }, side = "left", small = true,
+        w = 120,
+        h = 49,
+        hit = { 0, 0, 0, 0 },
+        side = "left",
+        small = true,
         vis = { l = 2, r = 1, t = 3, b = 1 },
         art = "UI-HUD-UnitFrame-TargetofTarget-PortraitOn",
         portrait = { point = "TOPLEFT", x = 5, y = -5, size = 37, mask = "CircleMask" },
-        health = { x = 44, y = 17, w = 70, h = 10,
-                   atlas = "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-Health",
-                   mask = "UI-HUD-UnitFrame-Party-PortraitOn-Bar-Health-Mask", mx = -29, my = 3 },
-        power = { x = 40, y = 28, w = 74, h = 7,
-                  prefix = "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-",
-                  mask = "UI-HUD-UnitFrame-Party-PortraitOn-Bar-Mana-Mask", mx = -27, my = 4 },
+        health = {
+            x = 44,
+            y = 17,
+            w = 70,
+            h = 10,
+            atlas = "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-Health",
+            mask = "UI-HUD-UnitFrame-Party-PortraitOn-Bar-Health-Mask",
+            mx = -29,
+            my = 3,
+        },
+        power = {
+            x = 40,
+            y = 28,
+            w = 74,
+            h = 7,
+            prefix = "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-",
+            mask = "UI-HUD-UnitFrame-Party-PortraitOn-Bar-Mana-Mask",
+            mx = -27,
+            my = 4,
+        },
         name = { point = "TOPLEFT", x = 44, y = -5, w = 68 },
     },
 }
 ns.UF_CAST_BLIZZ = {
-    bg      = { "ui-castingbar-background",       "UI-CastingBar-Background" },
-    frame   = { "ui-castingbar-frame",            "UI-CastingBar-Frame" },
-    textbox = { "ui-castingbar-textbox",          "UI-CastingBar-TextBox" },
-    cast    = { "ui-castingbar-filling-standard", "UI-CastingBar-Fill" },
-    channel = { "ui-castingbar-filling-channel",  "UI-CastingBar-Fill" },
+    bg = { "ui-castingbar-background", "UI-CastingBar-Background" },
+    frame = { "ui-castingbar-frame", "UI-CastingBar-Frame" },
+    textbox = { "ui-castingbar-textbox", "UI-CastingBar-TextBox" },
+    cast = { "ui-castingbar-filling-standard", "UI-CastingBar-Fill" },
+    channel = { "ui-castingbar-filling-channel", "UI-CastingBar-Fill" },
 }
 -- Classic WoW UI: the vanilla frames. The 256x128 frame sheet is drawn as
 -- the 230x99 region the stock frame samples (x 26..256, y 1..100), which
@@ -136,15 +210,30 @@ ns.UF_KITS.classic = {
         frame = { key = "c-castframe", file = "Interface\\CastingBar\\UI-CastingBar-Border" },
     },
     player = {
-        w = 232, h = 100, hit = { 21, 19, 12, 15 }, side = "left", artAbove = true,
+        w = 232,
+        h = 100,
+        hit = { 21, 19, 12, 15 },
+        side = "left",
+        artAbove = true,
         vis = { l = 19.5, r = 19.5, t = 11.5, b = 11.5 },
         pad = { top = 11.5, bottom = 11.5 },
-        art = { key = "c-player", file = ns.UF_CLASSIC_SHEET, l = 1, r = 0.1015625, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = -18.5, y = -4 },
+        art = {
+            key = "c-player",
+            file = ns.UF_CLASSIC_SHEET,
+            l = 1,
+            r = 0.1015625,
+            t = 0.0078125,
+            b = 0.78125,
+            w = 230,
+            h = 99,
+            x = -18.5,
+            y = -4,
+        },
         -- The dark plaque behind the name and both bars.
         back = { x = 89.5, y = 26, w = 119, h = 41 },
         portrait = { point = "TOPLEFT", x = 24, y = -16, size = 64, mask = "CircleMask" },
         health = { x = 90, y = 45, w = 119, h = 12 },
-        power  = { x = 90, y = 56, w = 119, h = 12 },
+        power = { x = 90, y = 56, w = 119, h = 12 },
         -- Hide Power Bar (UF_PaintArtCut): the divider between the health and
         -- power windows is the sheet's rows 50..55, between the clear rows
         -- 45..49 and 56..61. The band runs from row 48 (a clear row) to the
@@ -156,7 +245,7 @@ ns.UF_KITS.classic = {
         -- portrait ring's edge slant with the rows, so they keep their own.
         -- The target's elite, rare, rare-elite and boss sheets share this layout.
         merge = { t = 48 / 128, b = 62 / 128, src = 46 / 128, srcB = 48 / 128, x = 147 / 256 },
-        name  = { point = "CENTER", x = 34, y = 15, w = 100, justify = "CENTER" },
+        name = { point = "CENTER", x = 34, y = 15, w = 100, justify = "CENTER" },
         -- Level number in the ring under the portrait. The ring is an oval
         -- in the sheet (28 wide, 24 tall) centred 35.6 from the frame's left
         -- and 31.4 up from its bottom, measured on the client's own render;
@@ -166,48 +255,144 @@ ns.UF_KITS.classic = {
         level = { point = "CENTER", relPoint = "BOTTOMLEFT", x = 36, y = 30.5, justify = "CENTER" },
     },
     target = {
-        w = 232, h = 100, hit = { 19, 21, 12, 15 }, side = "right", artAbove = true,
+        w = 232,
+        h = 100,
+        hit = { 19, 21, 12, 15 },
+        side = "right",
+        artAbove = true,
         vis = { l = 19.5, r = 19.5, t = 11.5, b = 11.5 },
         pad = { top = 11.5, bottom = 11.5 },
-        art = { key = "c-target", file = ns.UF_CLASSIC_SHEET, l = 0.1015625, r = 1, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = 18.5, y = -4 },
+        art = {
+            key = "c-target",
+            file = ns.UF_CLASSIC_SHEET,
+            l = 0.1015625,
+            r = 1,
+            t = 0.0078125,
+            b = 0.78125,
+            w = 230,
+            h = 99,
+            x = 18.5,
+            y = -4,
+        },
         -- Whole-frame variants by classification (the dragon is part of the art).
         artByClass = {
-            elite     = { key = "c-elite",     file = ns.UF_CLASSIC_SHEET .. "-Elite",      l = 0.1015625, r = 1, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = 18.5, y = -4 },
-            rareelite = { key = "c-rareelite", file = ns.UF_CLASSIC_SHEET .. "-Rare-Elite", l = 0.1015625, r = 1, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = 18.5, y = -4 },
-            rare      = { key = "c-rare",      file = ns.UF_CLASSIC_SHEET .. "-Rare",       l = 0.1015625, r = 1, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = 18.5, y = -4 },
-            boss      = { key = "c-boss",      file = "Interface\\TargetingFrame\\UI-UnitFrame-Boss", l = 0.1015625, r = 1, t = 0.0078125, b = 0.78125, w = 230, h = 99, x = 18.5, y = -4 },
+            elite = {
+                key = "c-elite",
+                file = ns.UF_CLASSIC_SHEET .. "-Elite",
+                l = 0.1015625,
+                r = 1,
+                t = 0.0078125,
+                b = 0.78125,
+                w = 230,
+                h = 99,
+                x = 18.5,
+                y = -4,
+            },
+            rareelite = {
+                key = "c-rareelite",
+                file = ns.UF_CLASSIC_SHEET .. "-Rare-Elite",
+                l = 0.1015625,
+                r = 1,
+                t = 0.0078125,
+                b = 0.78125,
+                w = 230,
+                h = 99,
+                x = 18.5,
+                y = -4,
+            },
+            rare = {
+                key = "c-rare",
+                file = ns.UF_CLASSIC_SHEET .. "-Rare",
+                l = 0.1015625,
+                r = 1,
+                t = 0.0078125,
+                b = 0.78125,
+                w = 230,
+                h = 99,
+                x = 18.5,
+                y = -4,
+            },
+            boss = {
+                key = "c-boss",
+                file = "Interface\\TargetingFrame\\UI-UnitFrame-Boss",
+                l = 0.1015625,
+                r = 1,
+                t = 0.0078125,
+                b = 0.78125,
+                w = 230,
+                h = 99,
+                x = 18.5,
+                y = -4,
+            },
         },
         back = { x = 23.5, y = 26, w = 119, h = 41 },
         portrait = { point = "TOPRIGHT", x = -24, y = -16, size = 64, mask = "CircleMask" },
         health = { x = 23, y = 45, w = 119, h = 12 },
-        power  = { x = 23, y = 56, w = 119, h = 12 },
+        power = { x = 23, y = 56, w = 119, h = 12 },
         merge = { t = 48 / 128, b = 62 / 128, src = 46 / 128, srcB = 48 / 128, x = 147 / 256 },
         -- The name plaque behind the name, tinted by the unit's selection
         -- colour, under the art (the art's name window shows it).
-        rep = { art = { key = "c-namebg", file = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground", w = 119, h = 19 },
-                point = "TOPRIGHT", x = -90, y = -26, below = true },
-        name  = { point = "CENTER", x = -34, y = 15, w = 100, justify = "CENTER" },
+        rep = {
+            art = {
+                key = "c-namebg",
+                file = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground",
+                w = 119,
+                h = 19,
+            },
+            point = "TOPRIGHT",
+            x = -90,
+            y = -26,
+            below = true,
+        },
+        name = { point = "CENTER", x = -34, y = 15, w = 100, justify = "CENTER" },
         -- The player ring's measured centre, mirrored.
         level = { point = "CENTER", relPoint = "BOTTOMRIGHT", x = -36, y = 30.5, justify = "CENTER" },
     },
     -- Target-of-target / focus-target.
     mini = {
-        w = 93, h = 45, hit = { 0, 0, 0, 0 }, side = "left", small = true, artAbove = true,
+        w = 93,
+        h = 45,
+        hit = { 0, 0, 0, 0 },
+        side = "left",
+        small = true,
+        artAbove = true,
         vis = { l = 2, r = 1, t = 3, b = 1 },
-        art = { key = "c-tot", file = "Interface\\TargetingFrame\\UI-TargetofTargetFrame", l = 0.015625, r = 0.7265625, t = 0, b = 0.703125, w = 93, h = 45 },
+        art = {
+            key = "c-tot",
+            file = "Interface\\TargetingFrame\\UI-TargetofTargetFrame",
+            l = 0.015625,
+            r = 0.7265625,
+            t = 0,
+            b = 0.703125,
+            w = 93,
+            h = 45,
+        },
         back = { x = 42, y = 17, w = 46, h = 15 },
         portrait = { point = "TOPLEFT", x = 6, y = -6, size = 35, mask = "CircleMask" },
         health = { x = 45, y = 15, w = 46, h = 7 },
-        power  = { x = 45, y = 23, w = 46, h = 7 },
+        power = { x = 45, y = 23, w = 46, h = 7 },
         name = { point = "TOPLEFT", x = 42, y = -33, w = 49, justify = "LEFT" },
     },
     pet = {
-        w = 128, h = 53, hit = { 7, 10, 6, 7 }, side = "left", small = true, artAbove = true,
+        w = 128,
+        h = 53,
+        hit = { 7, 10, 6, 7 },
+        side = "left",
+        small = true,
+        artAbove = true,
         vis = { l = 2, r = 1, t = 3, b = 1 },
-        art = { key = "c-pet", file = "Interface\\TargetingFrame\\UI-SmallTargetingFrame", w = 128, h = 64, point = "TOPLEFT", x = 0, y = -2 },
+        art = {
+            key = "c-pet",
+            file = "Interface\\TargetingFrame\\UI-SmallTargetingFrame",
+            w = 128,
+            h = 64,
+            point = "TOPLEFT",
+            x = 0,
+            y = -2,
+        },
         portrait = { point = "TOPLEFT", x = 7, y = -6, size = 37, mask = "CircleMask" },
         health = { x = 47, y = 22, w = 69, h = 8 },
-        power  = { x = 47, y = 29, w = 69, h = 8 },
+        power = { x = 47, y = 29, w = 69, h = 8 },
         name = { point = "TOPLEFT", x = 50, y = -9, w = 70, justify = "LEFT" },
     },
 }
@@ -226,12 +411,28 @@ ns.UF_KITS.classic = {
 -- picks up the groove.
 do
     local retail = {
-        ["UI-HUD-UnitFrame-Player-PortraitOn"]      = { w = 198, h = 71, t = 44, b = 51, src = 36, x = 68, ringLeft = true },
-        ["UI-HUD-UnitFrame-Target-PortraitOn"]      = { w = 192, h = 67, t = 41, b = 49, src = 33, x = 126 },
+        ["UI-HUD-UnitFrame-Player-PortraitOn"] = {
+            w = 198,
+            h = 71,
+            t = 44,
+            b = 51,
+            src = 36,
+            x = 68,
+            ringLeft = true,
+        },
+        ["UI-HUD-UnitFrame-Target-PortraitOn"] = { w = 192, h = 67, t = 41, b = 49, src = 33, x = 126 },
         ["UI-HUD-UnitFrame-Target-Rare-PortraitOn"] = { w = 192, h = 67, t = 41, b = 49, src = 33, x = 126 },
     }
     local forever = {
-        ["UI-HUD-UnitFrame-Player-PortraitOn"] = { w = 198, h = 71, t = 44, b = 50, src = 38, x = 69, ringLeft = true },
+        ["UI-HUD-UnitFrame-Player-PortraitOn"] = {
+            w = 198,
+            h = 71,
+            t = 44,
+            b = 50,
+            src = 38,
+            x = 69,
+            ringLeft = true,
+        },
         ["UI-HUD-UnitFrame-Target-PortraitOn"] = { w = 194, h = 68, t = 41, b = 47, src = 34, x = 127 },
     }
     ns.UF_ATLAS_MERGE = { [4631591] = retail, [4642466] = retail, [8036204] = forever, [8036209] = forever }
@@ -247,7 +448,9 @@ end
 -- badge's. Built once, when the variant latches.
 function ns.UF_ForeverKit()
     local k = ns.UF_KITS.forever
-    if k then return k end
+    if k then
+        return k
+    end
     k = CopyTable(ns.UF_KITS.blizzard)
     local circle = "UI-HUD-UnitFrame-SmallCircle"
     local P, T, M = k.player, k.target, k.mini
@@ -316,25 +519,34 @@ function ns.UF_Style()
     local v = ns._ufStyle
     if v == nil then
         local p = db and db.profile
-        if not p then return "cui" end
+        if not p then
+            return "cui"
+        end
         v = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
         ns._ufStyle = v
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        ns._ufForever = v == "blizzard" and CludesUI.IS_FOREVER == true
-            and p.useForeverStyle == true
-        if v == "classic" then ns.UF_BLIZZ = ns.UF_KITS.classic end
-        if ns._ufForever then ns.UF_BLIZZ = ns.UF_ForeverKit() end
+        ns._ufForever = v == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
+        if v == "classic" then
+            ns.UF_BLIZZ = ns.UF_KITS.classic
+        end
+        if ns._ufForever then
+            ns.UF_BLIZZ = ns.UF_ForeverKit()
+        end
     end
     return v
 end
 -- Stock-art mode: a kit dictates the geometry (true for both stock styles).
-function ns.UF_Blizz() return ns.UF_Style() ~= "cui" end
+function ns.UF_Blizz()
+    return ns.UF_Style() ~= "cui"
+end
 -- WoW Forever variant: UF_Style() still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces. False off Forever.
 function ns.UF_Forever()
-    if ns._ufStyle == nil then ns.UF_Style() end
+    if ns._ufStyle == nil then
+        ns.UF_Style()
+    end
     return ns._ufForever == true
 end
 -- The class resource style that builds. WoW Forever outside its own style
@@ -348,9 +560,13 @@ if CludesUI.IS_FOREVER == true then
     -- other on a shared profile. The key to write, or nil when the shared one
     -- applies.
     function ns.UF_RogueCPKey()
-        if ns.UF_Blizz() then return nil end
+        if ns.UF_Blizz() then
+            return nil
+        end
         local _, classFile = UnitClass("player")
-        if classFile ~= "ROGUE" then return nil end
+        if classFile ~= "ROGUE" then
+            return nil
+        end
         return "foreverRogueClassPowerStyle"
     end
     -- The player's built style: for a rogue it replaces the argument with the
@@ -361,7 +577,9 @@ if CludesUI.IS_FOREVER == true then
             local p = db and db.profile and db.profile.player
             style = (p and p[rogueKey]) or "none"
         end
-        if style == "blizzard" and not ns.UF_Forever() then return "modern" end
+        if style == "blizzard" and not ns.UF_Forever() then
+            return "modern"
+        end
         return style
     end
 end
@@ -370,9 +588,13 @@ end
 -- CludesUI style. Read from the saved keys, like the options gate, so a
 -- saved true stands down under a stock style or a Solid border.
 function ns.UF_CustomBorderOn(s)
-    if ns.UF_Blizz() then return false end
+    if ns.UF_Blizz() then
+        return false
+    end
     local tex = s and s.borderTexture
-    if tex == nil or tex == "" or tex == "solid" then return false end
+    if tex == nil or tex == "" or tex == "solid" then
+        return false
+    end
     return (s.borderSize or 1) > 0
 end
 -- Blizzard Style's coloured type strip over the target-family name ("Blizz
@@ -386,9 +608,13 @@ end
 -- style): no power bar, the health bar taking the power track too. Unset, a
 -- saved Bar Position of None reads as hidden, as it drew no bar there before.
 function ns.UF_StockHidesPower(s)
-    if not s then return false end
+    if not s then
+        return false
+    end
     local v = s.blizzHidePower
-    if v == nil then return s.powerPosition == "none" end
+    if v == nil then
+        return s.powerPosition == "none"
+    end
     return v == true
 end
 -- The main frames (player, target, focus), known by their settings tables.
@@ -401,7 +627,9 @@ end
 -- its Bar Position says, or is not drawn while Hide Power Bar is on; every
 -- other frame, and every frame under the CludesUI look, reads its own.
 function ns.UF_PowerPos(s)
-    if not s then return "below" end
+    if not s then
+        return "below"
+    end
     if ns.UF_Blizz() and ns.UF_IsMainSettings(s) then
         return ns.UF_StockHidesPower(s) and "none" or "below"
     end
@@ -415,15 +643,23 @@ end
 -- end apart gives its own (G.mergedHealth: the retail target art).
 ns._ufMergedMemo = setmetatable({}, { __mode = "k" })
 function ns.UF_MergedHealth(G)
-    if G.mergedHealth then return G.mergedHealth end
+    if G.mergedHealth then
+        return G.mergedHealth
+    end
     local m = ns._ufMergedMemo[G]
-    if m then return m end
+    if m then
+        return m
+    end
     local H, P = G.health, G.power
     local k = (P.y + P.h - H.y) / H.h
     m = {}
-    for key, v in pairs(H) do m[key] = v end
+    for key, v in pairs(H) do
+        m[key] = v
+    end
     m.h = H.h * k
-    if H.my then m.my = H.my * k end
+    if H.my then
+        m.my = H.my * k
+    end
     if H.mh then
         m.mh = H.mh * k
     elseif H.mask then
@@ -448,10 +684,16 @@ ns.UF_STOCK_COMBAT = { classic = "combat2", blizzard = "combat1" }
 ns.UF_TEXTURE_UNITS = { "player", "target", "focus", "pet", "targettarget", "focustarget", "boss" }
 -- The keys the Style page keeps per style for this module (its SLOT_KEYS).
 function ns.UF_StyleSlotKeys()
-    local k = { "castBarTexture", "healthBarTexture",
-                "player.combatIndicatorStyle", "player.combatIndicatorPosition" }
+    local k = {
+        "castBarTexture",
+        "healthBarTexture",
+        "player.combatIndicatorStyle",
+        "player.combatIndicatorPosition",
+    }
     local units = ns.UF_TEXTURE_UNITS
-    for i = 1, #units do k[#k + 1] = units[i] .. ".healthBarTexture" end
+    for i = 1, #units do
+        k[#k + 1] = units[i] .. ".healthBarTexture"
+    end
     return k
 end
 -- The WoW Forever variant's own seed: its combo point arc (the "Blizzard"
@@ -459,7 +701,9 @@ end
 -- in a Forever-only slot (p._foreverStyleSlots): the other looks' values are
 -- banked on the way into the variant and come back on the way out.
 function ns.UF_SeedForever(p)
-    if not (p and p.player) or p.foreverClassPowerSeeded then return end
+    if not (p and p.player) or p.foreverClassPowerSeeded then
+        return
+    end
     p.foreverClassPowerSeeded = true
     p.player.classPowerStyle = "blizzard"
     p.player.showClassPowerBar = true
@@ -467,8 +711,12 @@ end
 -- `isForever`: the WoW Forever variant of Blizzard Style, which also runs
 -- its own seed (UF_SeedForever).
 function ns.UF_SeedStock(p, styleKey, isForever)
-    if not p then return end
-    if isForever then ns.UF_SeedForever(p) end
+    if not p then
+        return
+    end
+    if isForever then
+        ns.UF_SeedForever(p)
+    end
     if not p.stockCastTextureSeeded then
         p.stockCastTextureSeeded = true
         p.castBarTexture = "blizzard"
@@ -482,7 +730,9 @@ function ns.UF_SeedStock(p, styleKey, isForever)
         local units = ns.UF_TEXTURE_UNITS
         for i = 1, #units do
             local s = p[units[i]]
-            if type(s) == "table" then s.healthBarTexture = nil end
+            if type(s) == "table" then
+                s.healthBarTexture = nil
+            end
         end
     end
     local icon = ns.UF_STOCK_COMBAT[styleKey]
@@ -493,7 +743,9 @@ function ns.UF_SeedStock(p, styleKey, isForever)
     end
 end
 function ns.UF_AtlasOK(name)
-    if not name then return false end
+    if not name then
+        return false
+    end
     local memo = ns._ufAtlasMemo
     local v = memo[name]
     if v == nil then
@@ -508,11 +760,15 @@ end
 -- instead of painting blank.
 function ns.UF_ArtOK(a)
     if type(a) == "table" then
-        if not a.file then return false end
+        if not a.file then
+            return false
+        end
         local ok = a._ok
         if ok == nil then
             ok = true
-            if GetFileIDFromPath then ok = GetFileIDFromPath(a.file) and true or false end
+            if GetFileIDFromPath then
+                ok = GetFileIDFromPath(a.file) and true or false
+            end
             a._ok = ok
         end
         return ok
@@ -520,7 +776,9 @@ function ns.UF_ArtOK(a)
     return ns.UF_AtlasOK(a)
 end
 function ns.UF_ArtName(a)
-    if type(a) == "table" then return a.key or a.file or "" end
+    if type(a) == "table" then
+        return a.key or a.file or ""
+    end
     return a or ""
 end
 -- Kit atlas paints in place of tex:SetAtlas / C_Texture.GetAtlasInfo: the
@@ -530,18 +788,24 @@ end
 -- Forever look too).
 -- Plain textures only (never a mask or a StatusBar fill).
 function ns.UF_StockAtlas(tex, name, ...)
-    if ns.UF_Forever() then return tex:SetAtlas(name, ...) end
+    if ns.UF_Forever() then
+        return tex:SetAtlas(name, ...)
+    end
     return CludesUI.StockAtlas(tex, name, ...)
 end
 function ns.UF_StockAtlasInfo(name)
-    if ns.UF_Forever() then return C_Texture.GetAtlasInfo(name) end
+    if ns.UF_Forever() then
+        return C_Texture.GetAtlasInfo(name)
+    end
     return CludesUI.StockAtlasInfo(name)
 end
 -- Bar and portrait masks the same way: the stock looks take the retail
 -- masks on the Forever client (it redrew them under the retail names), the
 -- WoW Forever look the client's own.
 function ns.UF_StockMask(mask, name, useSize)
-    if ns.UF_Forever() then return mask:SetAtlas(name, useSize) end
+    if ns.UF_Forever() then
+        return mask:SetAtlas(name, useSize)
+    end
     return CludesUI.StockMask(mask, name, useSize)
 end
 -- A kit bar's mask on `bar`: the stock mask at its own size, or at the size
@@ -566,13 +830,19 @@ end
 -- Paints an art entry on a texture; useSize takes the entry's own size.
 function ns.UF_SetArt(tex, a, useSize)
     if type(a) == "table" then
-        if not ns.UF_ArtOK(a) then return false end
+        if not ns.UF_ArtOK(a) then
+            return false
+        end
         tex:SetTexture(a.file)
         tex:SetTexCoord(a.l or 0, a.r or 1, a.t or 0, a.b or 1)
-        if useSize and a.w and a.h then tex:SetSize(a.w, a.h) end
+        if useSize and a.w and a.h then
+            tex:SetSize(a.w, a.h)
+        end
         return true
     end
-    if not ns.UF_AtlasOK(a) then return false end
+    if not ns.UF_AtlasOK(a) then
+        return false
+    end
     ns.UF_StockAtlas(tex, a, useSize)
     return true
 end
@@ -584,8 +854,13 @@ end
 function ns.UF_SeatClassicCastFrame(tex, bar, h, pct)
     local CK = ns.UF_BLIZZ.cast
     local CF = CludesUI.ClassicFrame
-    if not (tex and bar and CK and CF) then return end
-    if not ns.UF_ArtOK(CK.frame) then tex:Hide(); return end
+    if not (tex and bar and CK and CF) then
+        return
+    end
+    if not ns.UF_ArtOK(CK.frame) then
+        tex:Hide()
+        return
+    end
     local p = tex._classicPieces
     if not p then
         local layer, sub = tex:GetDrawLayer()
@@ -598,17 +873,27 @@ end
 -- First existing atlas of a candidate list (nil when none is available).
 function ns.UF_BlizzAtlas(list)
     for i = 1, #list do
-        if ns.UF_AtlasOK(list[i]) then return list[i] end
+        if ns.UF_AtlasOK(list[i]) then
+            return list[i]
+        end
     end
     return nil
 end
 -- Frame kind: the player art, the target/focus/boss art, the pet art where
 -- the kit has one, or the small target-of-target / focus-target art.
 function ns.UF_BlizzKind(unit)
-    if not unit then return nil end
-    if unit == "player" then return "player" end
-    if unit == "target" or unit == "focus" or unit:match("^boss%d$") then return "target" end
-    if unit == "pet" and ns.UF_BLIZZ.pet then return "pet" end
+    if not unit then
+        return nil
+    end
+    if unit == "player" then
+        return "player"
+    end
+    if unit == "target" or unit == "focus" or unit:match("^boss%d$") then
+        return "target"
+    end
+    if unit == "pet" and ns.UF_BLIZZ.pet then
+        return "pet"
+    end
     return "mini"
 end
 -- Portrait Side keeps working. Each art is drawn for one side (G.side). A
@@ -622,7 +907,9 @@ end
 function ns.UF_BlizzResolve(frame, unit)
     unit = unit or frame._cuiBaseUnit or frame._cuiUnit
     local kind = ns.UF_BlizzKind(unit)
-    if not kind then return nil end
+    if not kind then
+        return nil
+    end
     local native = ns.UF_BLIZZ[kind]
     local side = ns.UF_BlizzSide(GetSettingsForUnit(unit), native)
     local G, mirror = native, false
@@ -641,7 +928,9 @@ function ns.UF_BlizzResolve(frame, unit)
     return G, mirror
 end
 function ns.UF_BlizzGeom(frame)
-    if not frame then return nil end
+    if not frame then
+        return nil
+    end
     return frame._blizzGeom or ns.UF_BlizzResolve(frame)
 end
 -- Visible art edges under the style: the frame is the stock box, whose art is
@@ -651,11 +940,17 @@ end
 -- frame's units -- or nil while the style is off. A mirrored small frame
 -- swaps left and right with its art.
 function ns.UF_BlizzVis(frame)
-    if not frame or not ns.UF_Blizz() then return nil end
+    if not frame or not ns.UF_Blizz() then
+        return nil
+    end
     local G = ns.UF_BlizzGeom(frame)
     local v = G and G.vis
-    if not v then return nil end
-    if frame._blizzMirror then return v.r, v.l, v.t, v.b end
+    if not v then
+        return nil
+    end
+    if frame._blizzMirror then
+        return v.r, v.l, v.t, v.b
+    end
     return v.l, v.r, v.t, v.b
 end
 -- The aura block: an invisible frame spanning the stock box's width from the
@@ -688,7 +983,9 @@ function ns.UF_LayoutAspectOK()
         if ok and probe then
             local want = Enum and Enum.ForbiddenAspect and Enum.ForbiddenAspect.UntrustedLayoutScriptExecution
             local mask = probe.GetForbiddenAspects and probe:GetForbiddenAspects()
-            if want and type(mask) == "number" and bit.band(mask, want) ~= 0 then v = true end
+            if want and type(mask) == "number" and bit.band(mask, want) ~= 0 then
+                v = true
+            end
             probe:Hide()
         end
         ns._ufLayoutAspectOK = v
@@ -706,8 +1003,12 @@ function ns.UF_CastbarAspectTemplate(unit)
 end
 function ns.UF_BlizzAuraBlock(frame)
     local blk = frame and frame._blizzAuraBlock
-    if blk then return blk end
-    if not ns.UF_BlizzVis(frame) then return nil end
+    if blk then
+        return blk
+    end
+    if not ns.UF_BlizzVis(frame) then
+        return nil
+    end
     if ns.UF_LayoutAspectOK() then
         blk = CreateFrame("Frame", nil, frame, ns.UF_LAYOUT_ASPECT_TEMPLATE)
     else
@@ -725,7 +1026,9 @@ end
 -- agrees with them keeps the rect from being over-constrained.
 function ns.UF_BlizzAuraBlockBottom(frame, rel, relPoint, x)
     local blk = frame and frame._blizzAuraBlock
-    if not blk then return end
+    if not blk then
+        return
+    end
     local _, _, _, b = ns.UF_BlizzVis(frame)
     b = b or 0
     blk:ClearAllPoints()
@@ -733,8 +1036,7 @@ function ns.UF_BlizzAuraBlockBottom(frame, rel, relPoint, x)
     blk:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, b)
     -- A refused container anchor (the probe passed but this container still
     -- denies it) must not abort the aura pass: fall back to the resting bottom.
-    if rel and ns.UF_LayoutAspectOK()
-       and pcall(blk.SetPoint, blk, relPoint, rel, relPoint, x or 0, 0) then
+    if rel and ns.UF_LayoutAspectOK() and pcall(blk.SetPoint, blk, relPoint, rel, relPoint, x or 0, 0) then
         return
     end
     blk:SetPoint("BOTTOM", frame, "BOTTOM", 0, b)
@@ -745,22 +1047,36 @@ end
 -- provider installed before this file loaded (ns fields, like the rest of
 -- this file).
 ns._ufPrevAnchorExtent = CludesUI._GetAnchorTargetExtent
-ns._ufAnchorKeys = { player = true, target = true, focus = true, pet = true, targettarget = true, focustarget = true, boss = true }
+ns._ufAnchorKeys = {
+    player = true,
+    target = true,
+    focus = true,
+    pet = true,
+    targettarget = true,
+    focustarget = true,
+    boss = true,
+}
 CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if ns._ufAnchorKeys[targetKey] and ns.UF_Blizz() then
         local f = (targetKey == "boss") and frames.boss1 or frames[targetKey]
         local l, r, t, b = ns.UF_BlizzVis(f)
         if l and f:GetLeft() then
             local ratio = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            if side == "LEFT" then return (f:GetLeft() + l) * ratio
-            elseif side == "RIGHT" then return (f:GetRight() - r) * ratio
-            elseif side == "TOP" then return (f:GetTop() - t) * ratio
-            elseif side == "BOTTOM" then return (f:GetBottom() + b) * ratio
+            if side == "LEFT" then
+                return (f:GetLeft() + l) * ratio
+            elseif side == "RIGHT" then
+                return (f:GetRight() - r) * ratio
+            elseif side == "TOP" then
+                return (f:GetTop() - t) * ratio
+            elseif side == "BOTTOM" then
+                return (f:GetBottom() + b) * ratio
             end
         end
     end
     local prev = ns._ufPrevAnchorExtent
-    if prev then return prev(targetKey, side) end
+    if prev then
+        return prev(targetKey, side)
+    end
     return nil
 end
 -- Follow provider for the unlock anchor system: a unit's own cast bar linked
@@ -773,15 +1089,23 @@ CludesUI._GetAnchorFollowFrame = function(childKey, targetKey, side)
     -- container's geometry is secret-wrapped), which the movers must read, so
     -- the bar sits at its resting spot there and re-attaches on the exit
     -- re-apply (the same posture as the tracking bar extent provider).
-    if side == "BOTTOM" and ns.UF_Blizz() and not CludesUI._unlockActive
-       and childKey == CastbarUnlockKey(targetKey) then
+    if
+        side == "BOTTOM"
+        and ns.UF_Blizz()
+        and not CludesUI._unlockActive
+        and childKey == CastbarUnlockKey(targetKey)
+    then
         -- Only a holder created with the layout aspect may hang off the block.
         local f = frames[targetKey]
         local holder = f and f.Castbar and f.Castbar:GetParent()
-        if holder and holder._blizzAspect then return ns.UF_BlizzAuraBlock(f) end
+        if holder and holder._blizzAspect then
+            return ns.UF_BlizzAuraBlock(f)
+        end
     end
     local prev = ns._ufPrevAnchorFollow
-    if prev then return prev(childKey, targetKey, side) end
+    if prev then
+        return prev(childKey, targetKey, side)
+    end
     return nil
 end
 
@@ -791,7 +1115,9 @@ end
 -- saved. Identity at scale 1, which is every frame outside the style.
 function ns.UF_ScaledOffsets(fr, x, y)
     local s = fr and fr:GetScale() or 1
-    if s ~= 1 and s > 0 and x and y then return x / s, y / s end
+    if s ~= 1 and s > 0 and x and y then
+        return x / s, y / s
+    end
     return x, y
 end
 
@@ -803,8 +1129,12 @@ function ns.UF_BossSpacing()
 end
 
 ns._ufMirrorPoint = {
-    TOPLEFT = "TOPRIGHT", TOPRIGHT = "TOPLEFT", LEFT = "RIGHT", RIGHT = "LEFT",
-    BOTTOMLEFT = "BOTTOMRIGHT", BOTTOMRIGHT = "BOTTOMLEFT",
+    TOPLEFT = "TOPRIGHT",
+    TOPRIGHT = "TOPLEFT",
+    LEFT = "RIGHT",
+    RIGHT = "LEFT",
+    BOTTOMLEFT = "BOTTOMRIGHT",
+    BOTTOMRIGHT = "BOTTOMLEFT",
 }
 function ns.UF_BlizzPoint(region, point, rel, relPoint, x, y, mirror)
     if mirror then
@@ -821,14 +1151,22 @@ end
 -- inside variants map to their side), else the art's own side.
 function ns.UF_BlizzSide(settings, G)
     local side = settings and settings.portraitSide
-    if side == "insideleft" then side = "left" elseif side == "insideright" then side = "right" end
-    if side ~= "left" and side ~= "right" then side = G.side end
+    if side == "insideleft" then
+        side = "left"
+    elseif side == "insideright" then
+        side = "right"
+    end
+    if side ~= "left" and side ~= "right" then
+        side = G.side
+    end
     return side
 end
 
 -- Re-seat a mask on a fill (AddMaskTexture is additive, so drop first).
 function ns.UF_SetMask(tex, mask)
-    if not tex or not mask then return end
+    if not tex or not mask then
+        return
+    end
     pcall(tex.RemoveMaskTexture, tex, mask)
     tex:AddMaskTexture(mask)
 end
@@ -841,7 +1179,9 @@ end
 -- a re-apply can never leave a bar unmasked.
 function ns.UF_ApplyBlizzBarArt(frame)
     local G = ns.UF_BlizzGeom(frame)
-    if not G then return end
+    if not G then
+        return
+    end
     local mirror = frame._blizzMirror
     local health = frame.Health
     if health then
@@ -860,37 +1200,61 @@ function ns.UF_ApplyBlizzBarArt(frame)
         local hp = frame.HealthPrediction and frame.HealthPrediction.damageAbsorb
         -- Reused scratch list (a layout pass allocates nothing).
         local bars = ns._ufBarScratch
-        if not bars then bars = {}; ns._ufBarScratch = bars end
-        bars[1], bars[2], bars[3], bars[4], bars[5] = hp, hp and hp._forward, hp and hp._healAbsorb, hp and hp._topBar, hp and hp._healTopBar
+        if not bars then
+            bars = {}
+            ns._ufBarScratch = bars
+        end
+        bars[1], bars[2], bars[3], bars[4], bars[5] =
+            hp, hp and hp._forward, hp and hp._healAbsorb, hp and hp._topBar, hp and hp._healTopBar
         if not mirror and ns.UF_AtlasOK(G.health.mask) then
             ns.UF_SeatBarMask(mask, health, HB)
             ns.UF_SetMask(fill, mask)
-            if health.bg then ns.UF_SetMask(health.bg, mask) end
-            if health._cuiBgTex then ns.UF_SetMask(health._cuiBgTex, mask) end  -- Textured Background layer
+            if health.bg then
+                ns.UF_SetMask(health.bg, mask)
+            end
+            if health._cuiBgTex then
+                ns.UF_SetMask(health._cuiBgTex, mask)
+            end -- Textured Background layer
             ns.UF_BlizzBarShadow(health, mask, HB.h)
             -- Absorb fills ride the same rounded ends.
             for i = 1, 5 do
                 local sb = bars[i]
-                if sb and sb.GetStatusBarTexture then ns.UF_SetMask(sb:GetStatusBarTexture(), mask) end
+                if sb and sb.GetStatusBarTexture then
+                    ns.UF_SetMask(sb:GetStatusBarTexture(), mask)
+                end
             end
-            if hp then hp._blizzMaskOn = true end
+            if hp then
+                hp._blizzMaskOn = true
+            end
         else
             -- Mirrored small frame (or no mask art): plain fills.
             if mask then
-                if fill then pcall(fill.RemoveMaskTexture, fill, mask) end
-                if health.bg then pcall(health.bg.RemoveMaskTexture, health.bg, mask) end
-                if health._cuiBgTex then pcall(health._cuiBgTex.RemoveMaskTexture, health._cuiBgTex, mask) end
+                if fill then
+                    pcall(fill.RemoveMaskTexture, fill, mask)
+                end
+                if health.bg then
+                    pcall(health.bg.RemoveMaskTexture, health.bg, mask)
+                end
+                if health._cuiBgTex then
+                    pcall(health._cuiBgTex.RemoveMaskTexture, health._cuiBgTex, mask)
+                end
                 for i = 1, #bars do
                     local sb = bars[i]
                     local t = sb and sb.GetStatusBarTexture and sb:GetStatusBarTexture()
-                    if t then pcall(t.RemoveMaskTexture, t, mask) end
+                    if t then
+                        pcall(t.RemoveMaskTexture, t, mask)
+                    end
                 end
             end
-            if hp then hp._blizzMaskOn = nil end
+            if hp then
+                hp._blizzMaskOn = nil
+            end
             ns.UF_BlizzBarShadow(health, nil, HB.h)
         end
         -- Heal prediction segments take the shape too (Overheal 0 only).
-        if hp and hp._predMy then ns.UF_HealPredMasks(hp) end
+        if hp and hp._predMy then
+            ns.UF_HealPredMasks(hp)
+        end
     end
     local power = frame.Power
     if power then
@@ -906,19 +1270,25 @@ function ns.UF_ApplyBlizzBarArt(frame)
                 end
                 ns.UF_SeatBarMask(pm, power, G.power)
                 ns.UF_SetMask(pfill, pm)
-                if power.bg then ns.UF_SetMask(power.bg, pm) end
+                if power.bg then
+                    ns.UF_SetMask(power.bg, pm)
+                end
                 ns.UF_BlizzBarShadow(power, pm, G.power.h)
             else
                 if pm then
                     pcall(pfill.RemoveMaskTexture, pfill, pm)
-                    if power.bg then pcall(power.bg.RemoveMaskTexture, power.bg, pm) end
+                    if power.bg then
+                        pcall(power.bg.RemoveMaskTexture, power.bg, pm)
+                    end
                 end
                 if power._blizzMasked then
                     -- Mirrored small frame: in the track, unmasked.
                     ns.UF_BlizzBarShadow(power, nil, G.power.h)
                 elseif power._blizzShadow then
                     -- Detached bar: it carries its own CUI border.
-                    for i = 1, 4 do power._blizzShadow[i]:Hide() end
+                    for i = 1, 4 do
+                        power._blizzShadow[i]:Hide()
+                    end
                 end
             end
         end
@@ -964,17 +1334,45 @@ function ns.UF_PaintArtCut(frame, art, pieces, file, cut, l, r, t, b, w, h, ax, 
     PlaceArtPiece(pieces[1], frame, file, left, top, 0, w, y1, h, l, r, cut.b, b)
     -- The sheet's columns past x lie right of xs, or left of it on an art
     -- sampled flipped (the classic player frame's).
-    if keepLeft == nil then keepLeft = r < l end
+    if keepLeft == nil then
+        keepLeft = r < l
+    end
     local kx0, kx1, cx0, cx1
     if keepLeft then
         kx0, kx1, cx0, cx1 = 0, xs, xs, w
     else
         kx0, kx1, cx0, cx1 = xs, w, 0, xs
     end
-    PlaceArtPiece(pieces[2], frame, file, left, top, kx0, kx1, y0, y1,
-        l + kx0 * du, l + kx1 * du, cut.t, cut.b)
-    PlaceArtPiece(pieces[3], frame, file, left, top, cx0, cx1, y0, y1,
-        l + cx0 * du, l + cx1 * du, cut.src, cut.srcB or (cut.src + (cut.b - cut.t)))
+    PlaceArtPiece(
+        pieces[2],
+        frame,
+        file,
+        left,
+        top,
+        kx0,
+        kx1,
+        y0,
+        y1,
+        l + kx0 * du,
+        l + kx1 * du,
+        cut.t,
+        cut.b
+    )
+    PlaceArtPiece(
+        pieces[3],
+        frame,
+        file,
+        left,
+        top,
+        cx0,
+        cx1,
+        y0,
+        y1,
+        l + cx0 * du,
+        l + cx1 * du,
+        cut.src,
+        cut.srcB or (cut.src + (cut.b - cut.t))
+    )
 end
 
 function ns.UF_PaintBlizzArt(frame, atlas)
@@ -988,25 +1386,36 @@ function ns.UF_PaintBlizzArt(frame, atlas)
     -- Hide Power Bar's art pieces show only while that paint runs (below).
     local pieces = af._artCut
     if pieces then
-        for i = 1, 3 do pieces[i]:Hide() end
+        for i = 1, 3 do
+            pieces[i]:Hide()
+        end
     end
     local file, l, r, t, b, w, h, point, x, y
     if type(atlas) == "table" then
         -- File descriptor: its own sheet coords and anchor (CENTER by default).
-        if not ns.UF_ArtOK(atlas) then art:Hide(); return end
+        if not ns.UF_ArtOK(atlas) then
+            art:Hide()
+            return
+        end
         file = atlas.file
         l, r, t, b = atlas.l or 0, atlas.r or 1, atlas.t or 0, atlas.b or 1
         w, h = atlas.w, atlas.h
         point, x, y = atlas.point or "CENTER", atlas.x or 0, atlas.y or 0
     else
         local info = ns.UF_StockAtlasInfo(atlas)
-        if not info then art:Hide(); return end
+        if not info then
+            art:Hide()
+            return
+        end
         file = info.file or info.filename
         l, r, t, b = info.leftTexCoord, info.rightTexCoord, info.topTexCoord, info.bottomTexCoord
         w, h = info.width, info.height
         point, x, y = "CENTER", 0, 0
     end
-    if not file then art:Hide(); return end
+    if not file then
+        art:Hide()
+        return
+    end
     art:SetTexture(file)
     -- Hide Power Bar: the kit's own cut (the classic sheets), else the stock
     -- atlas art's for the file the client draws (UF_ATLAS_MERGE).
@@ -1016,7 +1425,10 @@ function ns.UF_PaintBlizzArt(frame, atlas)
         local c = byName and byName[atlas]
         if c then
             cut = af._atlasCut
-            if not cut then cut = {}; af._atlasCut = cut end
+            if not cut then
+                cut = {}
+                af._atlasCut = cut
+            end
             local dv, du = (b - t) / c.h, (r - l) / c.w
             cut.t, cut.b, cut.src = t + c.t * dv, t + c.b * dv, t + c.src * dv
             cut.x = l + c.x * du
@@ -1054,16 +1466,18 @@ end
 -- and our fills are the user's own textures, so it is drawn here. Black
 -- fading in from the top (deepest), the bottom and both ends. Regions of
 -- the bar itself (no frame-level games); created once, resized per pass.
-ns._ufShadeClear  = CreateColor(0, 0, 0, 0)
-ns._ufShadeTop    = CreateColor(0, 0, 0, 0.55)
+ns._ufShadeClear = CreateColor(0, 0, 0, 0)
+ns._ufShadeTop = CreateColor(0, 0, 0, 0.55)
 ns._ufShadeBottom = CreateColor(0, 0, 0, 0.30)
-ns._ufShadeEnd    = CreateColor(0, 0, 0, 0.35)
+ns._ufShadeEnd = CreateColor(0, 0, 0, 0.35)
 function ns.UF_BlizzBarShadow(bar, mask, h)
     local sh = bar._blizzShadow
     -- A kit with flat bars (the classic frames) draws no bevel.
     if ns.UF_BLIZZ.noBevel then
         if sh then
-            for i = 1, 4 do sh[i]:Hide() end
+            for i = 1, 4 do
+                sh[i]:Hide()
+            end
         end
         return
     end
@@ -1085,17 +1499,36 @@ function ns.UF_BlizzBarShadow(bar, mask, h)
     -- nil = unmasked strips (mirrored small frames): an earlier mask comes off.
     if sh._mask ~= mask then
         for i = 1, 4 do
-            if sh._mask then pcall(sh[i].RemoveMaskTexture, sh[i], sh._mask) end
-            if mask then sh[i]:AddMaskTexture(mask) end
+            if sh._mask then
+                pcall(sh[i].RemoveMaskTexture, sh[i], sh._mask)
+            end
+            if mask then
+                sh[i]:AddMaskTexture(mask)
+            end
         end
         sh._mask = mask
     end
-    local top, bottom, ends = math.max(2, math.floor(h * 0.2)), math.max(1, math.floor(h * 0.1)), math.max(2, math.floor(h * 0.15))
-    sh[1]:ClearAllPoints(); sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0); sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0); sh[1]:SetHeight(top)
-    sh[2]:ClearAllPoints(); sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0); sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0); sh[2]:SetHeight(bottom)
-    sh[3]:ClearAllPoints(); sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0); sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0); sh[3]:SetWidth(ends)
-    sh[4]:ClearAllPoints(); sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0); sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0); sh[4]:SetWidth(ends)
-    for i = 1, 4 do sh[i]:Show() end
+    local top, bottom, ends =
+        math.max(2, math.floor(h * 0.2)), math.max(1, math.floor(h * 0.1)), math.max(2, math.floor(h * 0.15))
+    sh[1]:ClearAllPoints()
+    sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+    sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+    sh[1]:SetHeight(top)
+    sh[2]:ClearAllPoints()
+    sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+    sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[2]:SetHeight(bottom)
+    sh[3]:ClearAllPoints()
+    sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+    sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+    sh[3]:SetWidth(ends)
+    sh[4]:ClearAllPoints()
+    sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+    sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[4]:SetWidth(ends)
+    for i = 1, 4 do
+        sh[i]:Show()
+    end
 end
 
 -- Frame art (plus the reputation strip and boss/elite dragon on the target
@@ -1135,7 +1568,9 @@ function ns.UF_ApplyBlizzFrameArt(frame, G)
             ev:RegisterUnitEvent("UNIT_FACTION", "target", "focus")
             ev:SetScript("OnEvent", function()
                 local list = ns._ufBlizzArtFrames
-                for i = 1, #list do ns.UF_RefreshBlizzTargetArt(list[i]) end
+                for i = 1, #list do
+                    ns.UF_RefreshBlizzTargetArt(list[i])
+                end
             end)
             ns._ufBlizzArtEvents = ev
         end
@@ -1196,8 +1631,11 @@ function ns.UF_ApplyBlizzFrameArt(frame, G)
     if af._rep then
         local rep = G.rep
         local repArt = rep and (rep.art or rep.atlas)
-        if frame._blizzExtras and ns.UF_ArtOK(repArt)
-            and ns.UF_BlizzHeaderOn(GetSettingsForUnit(frame._cuiBaseUnit or frame._cuiUnit)) then
+        if
+            frame._blizzExtras
+            and ns.UF_ArtOK(repArt)
+            and ns.UF_BlizzHeaderOn(GetSettingsForUnit(frame._cuiBaseUnit or frame._cuiUnit))
+        then
             ns.UF_SetArt(af._rep, repArt, true)
             -- Over the art (the stock type strip) or under it (the classic
             -- name plaque, seen through the art's name window).
@@ -1217,9 +1655,13 @@ end
 -- boss dragon, reputation strip tint. Every unit read is secrecy-guarded.
 function ns.UF_RefreshBlizzTargetArt(frame)
     local af = frame and frame._blizzArtFrame
-    if not af or not af._rep then return end
+    if not af or not af._rep then
+        return
+    end
     local G = frame._blizzGeom
-    if not G then return end
+    if not G then
+        return
+    end
     local unit = frame._cuiUnit
     local extras = frame._blizzExtras and G.rep and unit and UnitExists(unit)
     local c
@@ -1231,10 +1673,14 @@ function ns.UF_RefreshBlizzTargetArt(frame)
             af._rep:SetVertexColor(0.5, 0.5, 0.5)
         end
         c = UnitClassification(unit)
-        if issecretvalue(c) then c = nil end
+        if issecretvalue(c) then
+            c = nil
+        end
     end
     local boss = extras and UnitIsBossMob and UnitIsBossMob(unit)
-    if issecretvalue(boss) then boss = false end
+    if issecretvalue(boss) then
+        boss = false
+    end
     -- The one art paint for this family (see UF_ApplyBlizzFrameArt): the
     -- classification variant -- the stock kit's rare frame, or the classic
     -- kit's whole-frame elite / rare / rare-elite / boss arts (boss frames
@@ -1277,7 +1723,9 @@ function ns.UF_RefreshBlizzTargetArt(frame)
         dragon, dx, pos = B.gold, -11, B.pos and B.pos.gold
     end
     local dy = -8
-    if pos then dx, dy = pos[1], pos[2] end
+    if pos then
+        dx, dy = pos[1], pos[2]
+    end
     if dragon and ns.UF_AtlasOK(dragon) then
         ns.UF_StockAtlas(af._dragon, dragon, true)
         af._dragon:ClearAllPoints()
@@ -1295,7 +1743,9 @@ end
 function ns.UF_ApplyBlizzPortrait(frame, G)
     local pt = frame.Portrait
     local bd = pt and pt.backdrop
-    if not bd then return end
+    if not bd then
+        return
+    end
     local mirror = frame._blizzMirror
     bd:ClearAllPoints()
     ns.UF_BlizzPoint(bd, G.portrait.point, frame, G.portrait.point, G.portrait.x, G.portrait.y, mirror)
@@ -1306,19 +1756,29 @@ function ns.UF_ApplyBlizzPortrait(frame, G)
     bd:SetFrameStrata((clip and clip:GetFrameStrata()) or frame:GetFrameStrata())
     bd:SetFrameLevel(math.max(0, ((clip and clip:GetFrameLevel()) or frame:GetFrameLevel()) - 2))
     bd:SetClipsChildren(false)
-    if bd._bg then bd._bg:SetAlpha(0) end
-    if bd._2d then bd._2d:SetTexCoord(0, 1, 0, 1) end
+    if bd._bg then
+        bd._bg:SetAlpha(0)
+    end
+    if bd._2d then
+        bd._2d:SetTexCoord(0, 1, 0, 1)
+    end
     local m = bd._blizzMask
     if not m and ns.UF_AtlasOK(G.portrait.mask) then
         m = bd:CreateMaskTexture()
         m:SetAllPoints(bd)
-        if bd._2d then bd._2d:AddMaskTexture(m) end
-        if bd._class then bd._class:AddMaskTexture(m) end
+        if bd._2d then
+            bd._2d:AddMaskTexture(m)
+        end
+        if bd._class then
+            bd._class:AddMaskTexture(m)
+        end
         bd._blizzMask = m
     end
     -- Re-set each pass: a side change swaps the player crop for the circle.
     -- (A mirrored small frame keeps its circle; masks cannot flip anyway.)
-    if m and ns.UF_AtlasOK(G.portrait.mask) then ns.UF_StockMask(m, G.portrait.mask) end
+    if m and ns.UF_AtlasOK(G.portrait.mask) then
+        ns.UF_StockMask(m, G.portrait.mask)
+    end
     -- SetPortraitTexture crops the art to a circle by itself (the stock
     -- target/pet frames keep that crop under their CircleMask); the player
     -- frame's mask is not a circle, so there the crop is switched off and the
@@ -1338,7 +1798,9 @@ function ns.UF_ApplyBlizzPortrait(frame, G)
         frame:EnableElement("Portrait")
         repaint = true
     end
-    if repaint and pt.ForceUpdate then pt:ForceUpdate() end
+    if repaint and pt.ForceUpdate then
+        pt:ForceUpdate()
+    end
 end
 
 -- Text zones: the left zone (the name by default) moves onto the stock name
@@ -1346,7 +1808,9 @@ end
 function ns.UF_BlizzTextPass(frame)
     local G = ns.UF_BlizzGeom(frame)
     local lt = frame and frame.LeftText
-    if not (G and lt and G.name) then return end
+    if not (G and lt and G.name) then
+        return
+    end
     -- The Left Text offsets still apply on top of the stock spot, in screen
     -- terms (+X right, +Y up) on the mirrored art too, so they are added
     -- after the mirror rather than through it.
@@ -1377,7 +1841,9 @@ ns.UF_BLIZZ_SKULL = "UI-HUD-UnitFrame-Target-HighLevelTarget_Icon"
 function ns.UF_BlizzLevelPass(frame)
     local G = ns.UF_BlizzGeom(frame)
     local L = G and G.level
-    if not L then return end
+    if not L then
+        return
+    end
     local clip = frame._barClip
     local host = frame._blizzLevelHost
     if not host then
@@ -1409,7 +1875,9 @@ function ns.UF_BlizzLevelPass(frame)
                 local byUnit = type(unit) == "string"
                 for i = 1, #list do
                     local f = list[i]
-                    if not byUnit or f._cuiUnit == unit then ns.UF_BlizzLevelRefresh(f, event) end
+                    if not byUnit or f._cuiUnit == unit then
+                        ns.UF_BlizzLevelRefresh(f, event)
+                    end
                 end
             end)
             ns._ufBlizzLevelEvents = ev
@@ -1433,7 +1901,9 @@ function ns.UF_BlizzLevelPass(frame)
         local src = (fo and CludesUI._fontFamilySet[fo] and fo:GetFontObjectForAlphabet("roman")) or lt
         local face, size, flags = src:GetFont()
         if face then
-            if fo then fs:SetFontObject(fo) end
+            if fo then
+                fs:SetFontObject(fo)
+            end
             fs:SetFont(face, (s and s.blizzLevelSize) or size, flags)
         end
     end
@@ -1462,7 +1932,15 @@ function ns.UF_BlizzLevelPass(frame)
     -- The skull takes the number's spot (its own anchor, so a hidden number
     -- never moves it).
     skull:ClearAllPoints()
-    ns.UF_BlizzPoint(skull, L.point, rel, L.relPoint or L.point, L.x + ox, L.y + (L.skullDy or 2) + oy, frame._blizzMirror)
+    ns.UF_BlizzPoint(
+        skull,
+        L.point,
+        rel,
+        L.relPoint or L.point,
+        L.x + ox,
+        L.y + (L.skullDy or 2) + oy,
+        frame._blizzMirror
+    )
     ns.UF_SetArt(skull, ns.UF_BLIZZ.skull or ns.UF_BLIZZ_SKULL, true)
     -- WoW Forever: the PvP crest on the player, target and focus frames
     -- (Blizzard's own display rule paints and shows it, below).
@@ -1493,7 +1971,9 @@ end
 -- `event`: the level event that asked (nil = the layout pass).
 function ns.UF_BlizzLevelRefresh(frame, event)
     local fs = frame and frame._blizzLevel
-    if not fs then return end
+    if not fs then
+        return
+    end
     local skull = frame._blizzLevelSkull
     -- WoW Forever's level badge (nil on every other kit).
     local badge = frame._blizzLevelBadge
@@ -1501,12 +1981,17 @@ function ns.UF_BlizzLevelRefresh(frame, event)
     -- WoW Forever's PvP badge, only where its unit can have changed.
     if frame._blizzPvP then
         local only = event and ns.UF_PVP_EVENT_UNIT[event]
-        if only == nil or only == unit then ns.UF_ForeverPvPRefresh(frame, unit) end
+        if only == nil or only == unit then
+            ns.UF_ForeverPvPRefresh(frame, unit)
+        end
     end
     local s = unit and GetSettingsForUnit(frame._cuiBaseUnit or unit)
     if not s or s.blizzShowLevel == false or not UnitExists(unit) then
-        fs:Hide(); skull:Hide()
-        if badge then badge:Hide() end
+        fs:Hide()
+        skull:Hide()
+        if badge then
+            badge:Hide()
+        end
         return
     end
     -- Every unit read is treated as possibly secret: a secret level still
@@ -1516,18 +2001,25 @@ function ns.UF_BlizzLevelRefresh(frame, event)
         level = UnitEffectiveLevel(unit)
         local base = UnitLevel(unit)
         if not issecretvalue(level) and not issecretvalue(base) and level ~= base then
-            fs:SetTextColor(0.1, 1, 0.1); gold = false
+            fs:SetTextColor(0.1, 1, 0.1)
+            gold = false
         end
     else
         local corpse = UnitIsCorpse(unit)
-        if issecretvalue(corpse) then corpse = false end
+        if issecretvalue(corpse) then
+            corpse = false
+        end
         local pet = UnitIsWildBattlePet(unit) or UnitIsBattlePetCompanion(unit)
-        if issecretvalue(pet) then pet = false end
+        if issecretvalue(pet) then
+            pet = false
+        end
         if corpse then
             level = 0
         elseif pet and badge then
             -- WoW Forever shows neither the level nor its badge for a battle pet.
-            fs:Hide(); skull:Hide(); badge:Hide()
+            fs:Hide()
+            skull:Hide()
+            badge:Hide()
             return
         elseif pet then
             level = UnitBattlePetLevel(unit)
@@ -1537,7 +2029,10 @@ function ns.UF_BlizzLevelRefresh(frame, event)
             if not issecretvalue(can) and can then
                 local diff = C_PlayerInfo.GetContentDifficultyCreatureForPlayer(unit)
                 local color = not issecretvalue(diff) and GetDifficultyColor and GetDifficultyColor(diff)
-                if color then fs:SetTextColor(color.r, color.g, color.b); gold = false end
+                if color then
+                    fs:SetTextColor(color.r, color.g, color.b)
+                    gold = false
+                end
             end
         end
     end
@@ -1549,13 +2044,17 @@ function ns.UF_BlizzLevelRefresh(frame, event)
             fs:SetTextColor(1, 0.82, 0)
         end
     end
-    if badge then badge:Show() end
+    if badge then
+        badge:Show()
+    end
     -- A level the client will not tell (corpse, or 0 and below): the stock skull.
     if issecretvalue(level) or (level and level > 0) then
         fs:SetText(level)
-        fs:Show(); skull:Hide()
+        fs:Show()
+        skull:Hide()
     else
-        fs:Hide(); skull:Show()
+        fs:Hide()
+        skull:Show()
     end
 end
 -- WoW Forever's PvP crest: the client's own secret-safe painter (the one its
@@ -1566,8 +2065,13 @@ end
 -- a target or focus swap repaints that frame alone, and a level change or
 -- an encounter unit none. Every other event (the unit's own UNIT_FACTION,
 -- the loading screen) and the layout pass repaint each badge they reach.
-ns.UF_PVP_EVENT_UNIT = { PLAYER_TARGET_CHANGED = "target", PLAYER_FOCUS_CHANGED = "focus",
-    INSTANCE_ENCOUNTER_ENGAGE_UNIT = false, PLAYER_LEVEL_UP = false, UNIT_LEVEL = false }
+ns.UF_PVP_EVENT_UNIT = {
+    PLAYER_TARGET_CHANGED = "target",
+    PLAYER_FOCUS_CHANGED = "focus",
+    INSTANCE_ENCOUNTER_ENGAGE_UNIT = false,
+    PLAYER_LEVEL_UP = false,
+    UNIT_LEVEL = false,
+}
 function ns.UF_ForeverPvPRefresh(frame, unit)
     local els = frame._blizzPvP
     local paint = UnitFrameUtil and UnitFrameUtil.UpdateUnitPvPIndicator
@@ -1581,25 +2085,37 @@ end
 -- Cast bar fill per cast kind ("cast" | "channel"); one field test when the
 -- style is off, memoized per bar.
 function ns.UF_SetBlizzCastFill(cb, kind)
-    if not cb or not cb._blizzCast then return end
+    if not cb or not cb._blizzCast then
+        return
+    end
     kind = kind or "cast"
-    if cb._blizzFillKind == kind then return end
+    if cb._blizzFillKind == kind then
+        return
+    end
     local atlas = ns.UF_BlizzAtlas(ns.UF_CAST_BLIZZ[kind] or ns.UF_CAST_BLIZZ.cast)
-    if not atlas then return end
+    if not atlas then
+        return
+    end
     cb._blizzFillKind = kind
     cb:GetStatusBarTexture():SetAtlas(atlas)
 end
 -- Spell name into the text box under the bar (honouring its side + offsets).
 function ns.UF_BlizzCastText(cb)
     local box = cb and cb._blizzTextBox
-    if not box or not box:IsShown() or not cb.Text then return end
-    if cb._nameSide == "none" then return end
+    if not box or not box:IsShown() or not cb.Text then
+        return
+    end
+    if cb._nameSide == "none" then
+        return
+    end
     -- The box spans the bar (not the holder: an in-width icon takes part of
     -- the holder), so the name's width follows the bar.
     local w = cb:GetWidth()
     -- Secret under aura restriction when the holder rides the aura block:
     -- keep the out-of-combat layout (the width is fixed in combat).
-    if issecretvalue(w) then return end
+    if issecretvalue(w) then
+        return
+    end
     w = w or 0
     cb.Text:ClearAllPoints()
     local side = cb._nameSide or "left"
@@ -1614,7 +2130,9 @@ function ns.UF_BlizzCastText(cb)
         cb.Text:SetJustifyH("LEFT")
         cb.Text:SetPoint("LEFT", box, "LEFT", 8 + ox, oy)
     end
-    if w > 20 then cb.Text:SetWidth(w - 16) end
+    if w > 20 then
+        cb.Text:SetWidth(w - 16)
+    end
     ns.ReflowFontString(cb.Text)
 end
 -- Cast icon under the style: a square spanning the bar and the stock text
@@ -1627,11 +2145,15 @@ end
 function ns.UF_BlizzCastIcon(cb)
     local ico = cb and cb._iconFrame
     local host = cb and cb:GetParent()
-    if not ico or not host then return end
+    if not ico or not host then
+        return
+    end
     -- The configured height LayoutCastbarIcon stamped (the holder's own rect
     -- reads back secret while it rides the aura block).
     local hostH = cb._icoSide or host:GetHeight()
-    if issecretvalue(hostH) or not hostH or hostH <= 0 then return end
+    if issecretvalue(hostH) or not hostH or hostH <= 0 then
+        return
+    end
     local box = cb._blizzTextBox
     local side = hostH + ((box and box:IsShown()) and 13 or 0)
     local inWidth, onRight = cb._icoInWidth, cb._icoOnRight
@@ -1663,9 +2185,13 @@ end
 -- Cast bar: stock background, fill art, frame and text box; the CUI tint
 -- layer stays off (the fill art is its own colour). Border and icon frame go.
 function ns.UF_ApplyBlizzCastbar(cb)
-    if not cb then return end
+    if not cb then
+        return
+    end
     -- The stock chrome owns the frame: a Custom Border Style host stays hidden.
-    if cb._cbBorder then cb._cbBorder:Hide() end
+    if cb._cbBorder then
+        cb._cbBorder:Hide()
+    end
     local host = cb:GetParent()
     local CK = ns.UF_BLIZZ.cast
     if CK then
@@ -1690,26 +2216,37 @@ function ns.UF_ApplyBlizzCastbar(cb)
             UnsnapTex(fr)
             cb._blizzFrame = fr
         end
-        if cb._blizzFrame then ns.UF_SeatClassicCastFrame(cb._blizzFrame, host, nil, cb._classicPct) end
+        if cb._blizzFrame then
+            ns.UF_SeatClassicCastFrame(cb._blizzFrame, host, nil, cb._classicPct)
+        end
         local ico = cb._iconFrame
         if ico then
             PP.HideBorder(ico)
-            if ico._bg then ico._bg:Hide() end
+            if ico._bg then
+                ico._bg:Hide()
+            end
             if cb.Icon then
                 cb.Icon:ClearAllPoints()
                 cb.Icon:SetAllPoints(ico)
             end
         end
-        if cb.Icon then cb.Icon:SetTexCoord(0, 1, 0, 1) end
+        if cb.Icon then
+            cb.Icon:SetTexCoord(0, 1, 0, 1)
+        end
         ns.UF_BlizzCastIcon(cb)
-        if cb._layoutTextZones then cb:_layoutTextZones() end
+        if cb._layoutTextZones then
+            cb:_layoutTextZones()
+        end
         return
     end
     cb._blizzCast = true
     cb._blizzFillKind = nil
     cb:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local fill = cb:GetStatusBarTexture()
-    if fill then fill:SetHorizTile(false); UnsnapTex(fill) end
+    if fill then
+        fill:SetHorizTile(false)
+        UnsnapTex(fill)
+    end
     ns.UF_SetBlizzCastFill(cb, cb.channeling and "channel" or "cast")
     cb:SetStatusBarColor(1, 1, 1, cb._fillOp or 1)
     if cb.castTintLayer then
@@ -1720,7 +2257,9 @@ function ns.UF_ApplyBlizzCastbar(cb)
         -- A bar texture, not frame chrome: the retail background under
         -- Blizzard Style, WoW Forever included.
         local bgAtlas = ns.UF_BlizzAtlas(ns.UF_CAST_BLIZZ.bg)
-        if bgAtlas then CludesUI.StockAtlas(host._bgTex, bgAtlas) end
+        if bgAtlas then
+            CludesUI.StockAtlas(host._bgTex, bgAtlas)
+        end
         host._bgTex:ClearAllPoints()
         host._bgTex:SetPoint("TOPLEFT", host, "TOPLEFT", -1, 1)
         host._bgTex:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 1, -1)
@@ -1751,7 +2290,9 @@ function ns.UF_ApplyBlizzCastbar(cb)
     end
     -- Re-asserted every pass (a strata change rebuilds child levels).
     local artLvl = cb:GetFrameLevel() + 3
-    if cb._blizzArtFr and cb._blizzArtFr:GetFrameLevel() ~= artLvl then cb._blizzArtFr:SetFrameLevel(artLvl) end
+    if cb._blizzArtFr and cb._blizzArtFr:GetFrameLevel() ~= artLvl then
+        cb._blizzArtFr:SetFrameLevel(artLvl)
+    end
     local frAtlas = ns.UF_BlizzAtlas(ns.UF_CAST_BLIZZ.frame)
     if frAtlas then
         ns.UF_StockAtlas(cb._blizzFrame, frAtlas)
@@ -1779,15 +2320,21 @@ function ns.UF_ApplyBlizzCastbar(cb)
     local ico = cb._iconFrame
     if ico then
         PP.HideBorder(ico)
-        if ico._bg then ico._bg:Hide() end
+        if ico._bg then
+            ico._bg:Hide()
+        end
         if cb.Icon then
             cb.Icon:ClearAllPoints()
             cb.Icon:SetAllPoints(ico)
         end
     end
-    if cb.Icon then cb.Icon:SetTexCoord(0, 1, 0, 1) end
+    if cb.Icon then
+        cb.Icon:SetTexCoord(0, 1, 0, 1)
+    end
     ns.UF_BlizzCastIcon(cb)
-    if cb._layoutTextZones then cb:_layoutTextZones() end
+    if cb._layoutTextZones then
+        cb:_layoutTextZones()
+    end
 end
 
 -- Small-frame power bar (pet focus/energy/mana, target-of-target and
@@ -1799,20 +2346,30 @@ end
 -- StyleSimpleFrame instead), so the engine registers no power channel and the
 -- painter returns on the first field test, exactly as today.
 function ns.UF_BlizzMiniPower(frame, unit, settings)
-    if not ns.UF_Blizz() or not frame.Health then return nil end
-    local view = setmetatable({ powerPosition = "below", powerHeight = 7, powerWidth = 0 },
-        { __index = settings })
+    if not ns.UF_Blizz() or not frame.Health then
+        return nil
+    end
+    local view = setmetatable(
+        { powerPosition = "below", powerHeight = 7, powerWidth = 0 },
+        { __index = settings }
+    )
     return CreatePowerBar(frame, unit, view)
 end
 
 -- The post-pass. Idempotent: geometry is re-asserted, regions exist once.
 function ns.UF_ApplyBlizzardLayout(frame, unit)
-    if not frame or not frame.Health then return end
-    if InCombatLockdown() then return end
+    if not frame or not frame.Health then
+        return
+    end
+    if InCombatLockdown() then
+        return
+    end
     unit = unit or frame._cuiBaseUnit or frame._cuiUnit
     -- Layout by unit + Portrait Side (stamped on the frame for the helpers).
     local G, mirror = ns.UF_BlizzResolve(frame, unit)
-    if not G then return end
+    if not G then
+        return
+    end
     local settings = GetSettingsForUnit(unit)
 
     -- Frame: stock size + hit rect.
@@ -1828,13 +2385,19 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
     -- chained boss frames and unlock-anchored frames sit relative to their
     -- anchor and need nothing.
     local sc = settings and settings.blizzScale or 1
-    if sc < 0.5 then sc = 0.5 elseif sc > 2 then sc = 2 end
+    if sc < 0.5 then
+        sc = 0.5
+    elseif sc > 2 then
+        sc = 2
+    end
     local prevScale = frame:GetScale()
     if prevScale ~= sc then
         frame:SetScale(sc)
         local posKey = unit:match("^boss%d$") and "boss" or unit
-        if (posKey ~= "boss" or unit == "boss1")
-           and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(posKey)) then
+        if
+            (posKey ~= "boss" or unit == "boss1")
+            and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(posKey))
+        then
             ApplyFramePosition(frame, posKey)
         end
         -- Elements size-matched to the frame from another scale (bars on
@@ -1842,8 +2405,11 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
         -- size never changes, so no resize notify would reach them. Only on a
         -- real change: GetScale reads back float32, so most scales never
         -- compare equal to the setting.
-        if math.abs(prevScale - sc) > 0.001 and (posKey ~= "boss" or unit == "boss1")
-           and CludesUI.ReapplyMatchPads then
+        if
+            math.abs(prevScale - sc) > 0.001
+            and (posKey ~= "boss" or unit == "boss1")
+            and CludesUI.ReapplyMatchPads
+        then
             CludesUI.ReapplyMatchPads(posKey)
         end
     end
@@ -1891,7 +2457,9 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
         power:ClearAllPoints()
         ns.UF_BlizzPoint(power, "TOPLEFT", clip, "TOPLEFT", px, -G.power.y, mirror)
         power:SetSize(pw, G.power.h)
-        if power._pbBorder then power._pbBorder:Hide() end
+        if power._pbBorder then
+            power._pbBorder:Hide()
+        end
         power._blizzMasked = true
         power:Show()
     elseif power and ppPos ~= "none" then
@@ -1905,12 +2473,16 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
         else
             power._blizzMasked = nil
         end
-        if power._pbBorder then power._pbBorder:Hide() end
+        if power._pbBorder then
+            power._pbBorder:Hide()
+        end
     end
     -- Hide Power Bar: the bar stays down (the reload pass hides it for its
     -- "none" position; its text and Power element stand down with it there,
     -- through the power text and ns.UF_PowerElementSync).
-    if merged and power then power:Hide() end
+    if merged and power then
+        power:Hide()
+    end
 
     ns.UF_ApplyBlizzFrameArt(frame, G)
 
@@ -1921,19 +2493,28 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
     if hp then
         local hw, hh = health:GetWidth(), health:GetHeight()
         local bars = ns._ufBarScratch
-        if not bars then bars = {}; ns._ufBarScratch = bars end
+        if not bars then
+            bars = {}
+            ns._ufBarScratch = bars
+        end
         bars[1], bars[2], bars[3], bars[4], bars[5] = hp, hp._forward, hp._healAbsorb, nil, nil
         for i = 1, 3 do
             local sb = bars[i]
-            if sb and sb.SetSize then sb:SetSize(hw, hh) end
+            if sb and sb.SetSize then
+                sb:SetSize(hw, hh)
+            end
         end
     end
 
     ns.UF_ApplyBlizzPortrait(frame, G)
 
     -- No CUI chrome: unified border and text bar step aside for the art.
-    if frame.unifiedBorder then frame.unifiedBorder:Hide() end
-    if frame.BottomTextBar then frame.BottomTextBar:Hide() end
+    if frame.unifiedBorder then
+        frame.unifiedBorder:Hide()
+    end
+    if frame.BottomTextBar then
+        frame.BottomTextBar:Hide()
+    end
 
     ns.UF_BlizzTextPass(frame)
     ns.UF_BlizzLevelPass(frame)
@@ -1948,5 +2529,7 @@ function ns.UF_ApplyBlizzardLayout(frame, unit)
             ns.UF_BlizzLevelPass(frame)
         end
     end
-    if frame.Castbar then ns.UF_ApplyBlizzCastbar(frame.Castbar) end
+    if frame.Castbar then
+        ns.UF_ApplyBlizzCastbar(frame.Castbar)
+    end
 end

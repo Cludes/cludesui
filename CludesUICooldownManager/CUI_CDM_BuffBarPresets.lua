@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarPresets.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetTime = GetTime
@@ -22,7 +26,9 @@ local _tbbAssignment, CfgWantsSID = I._tbbAssignment, I.CfgWantsSID
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local _tbbAssignDirty = true
-I.assignDirtySetters[#I.assignDirtySetters + 1] = function(v) _tbbAssignDirty = v end
+I.assignDirtySetters[#I.assignDirtySetters + 1] = function(v)
+    _tbbAssignDirty = v
+end
 
 -------------------------------------------------------------------------------
 --  Stacks Helper (reads Blizzard child Applications frame)
@@ -38,12 +44,16 @@ I.assignDirtySetters[#I.assignDirtySetters + 1] = function(v) _tbbAssignDirty = 
 -- the secret-iid guard.
 local function ReadStackApplications(blzChild)
     local ad = blzChild.auraDataCached
-    if not issecretvalue(ad) and ad and ad.applications then return ad.applications end
+    if not issecretvalue(ad) and ad and ad.applications then
+        return ad.applications
+    end
     local auraInstID = blzChild.auraInstanceID
     local auraUnit = blzChild.auraDataUnit
     if auraInstID and auraUnit and not issecretvalue(auraInstID) then
         local ok, d = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, auraUnit, auraInstID)
-        if ok and d and d.applications then return d.applications end
+        if ok and d and d.applications then
+            return d.applications
+        end
     end
     return nil
 end
@@ -51,7 +61,9 @@ end
 local function UpdateStacks(bar, blzChild, cfg)
     -- Stack-based fill needs a live count even when Blizzard renders no Applications text
     -- (hidden at 1 stack), plus a restricted marker so the fill site fails open instead of an empty bar.
-    local stackFill = cfg and cfg.stackBasedBar and cfg.trackType ~= "cooldown"
+    local stackFill = cfg
+        and cfg.stackBasedBar
+        and cfg.trackType ~= "cooldown"
         and cfg.stackThresholdMaxEnabled
     bar._stackUnreadable = nil
     if stackFill and blzChild then
@@ -60,7 +72,9 @@ local function UpdateStacks(bar, blzChild, cfg)
         -- up and a readable count floors at 1; a secret count passes through to SetValue/SetText untouched.
         local apps = ReadStackApplications(blzChild)
         if apps then
-            if not issecretvalue(apps) and apps < 1 then apps = 1 end
+            if not issecretvalue(apps) and apps < 1 then
+                apps = 1
+            end
             bar._stackCount = apps
             if bar._stacksText then
                 if bar._stacksHidden then
@@ -74,7 +88,9 @@ local function UpdateStacks(bar, blzChild, cfg)
             -- No cached aura table and no readable instance id: count is unknowable, so the fill site fails open.
             bar._stackCount = 0
             bar._stackUnreadable = true
-            if bar._stacksText then bar._stacksText:Hide() end
+            if bar._stacksText then
+                bar._stacksText:Hide()
+            end
         end
         return
     end
@@ -115,7 +131,9 @@ local function UpdateStacks(bar, blzChild, cfg)
         end
     end
     -- No stacks text
-    if bar._stacksText then bar._stacksText:Hide() end
+    if bar._stacksText then
+        bar._stacksText:Hide()
+    end
     bar._stackCount = 0
 end
 
@@ -123,10 +141,12 @@ end
 --  Pandemic Glow Helpers
 -------------------------------------------------------------------------------
 local function ClearPandemic(bar)
-    if bar._pandemicGlowTarget then StopGlow(bar._pandemicGlowTarget) end
-    bar._pandemicGlowActive   = false
+    if bar._pandemicGlowTarget then
+        StopGlow(bar._pandemicGlowTarget)
+    end
+    bar._pandemicGlowActive = false
     bar._pandemicGlowStyleIdx = nil
-    bar._pandemicGlowTarget   = nil
+    bar._pandemicGlowTarget = nil
 end
 
 --- Start or update the pandemic glow on a bar. Caller checks the threshold and drives alpha from the tick (smooth fade on remaining%).
@@ -139,10 +159,12 @@ local function UpdatePandemic(bar, cfg)
     local style = ns.PG_TbbEffectiveStyle(cfg)
 
     -- Start/restart glow on style or target change
-    if not bar._pandemicGlowActive or bar._pandemicGlowStyleIdx ~= style
-       or bar._pandemicGlowTarget ~= glowTarget then
-        if bar._pandemicGlowActive and bar._pandemicGlowTarget
-           and bar._pandemicGlowTarget ~= glowTarget then
+    if
+        not bar._pandemicGlowActive
+        or bar._pandemicGlowStyleIdx ~= style
+        or bar._pandemicGlowTarget ~= glowTarget
+    then
+        if bar._pandemicGlowActive and bar._pandemicGlowTarget and bar._pandemicGlowTarget ~= glowTarget then
             StopGlow(bar._pandemicGlowTarget)
         end
         local c
@@ -151,22 +173,28 @@ local function UpdatePandemic(bar, cfg)
         elseif cfg.pandemicGlowMode == "custom" then
             c = cfg.pandemicGlowColor
         end
-        local glowOpts = (style == 1) and {
-            N      = cfg.pandemicGlowLines or 8,
-            th     = cfg.pandemicGlowThickness or 2,
-            period = cfg.pandemicGlowSpeed or 4,
-            bg     = cfg.pandemicGlowBackground and {
-                r = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.r) or 0,
-                g = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.g) or 0,
-                b = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.b) or 0,
-            } or nil,
-        } or nil
+        local glowOpts = (style == 1)
+                and {
+                    N = cfg.pandemicGlowLines or 8,
+                    th = cfg.pandemicGlowThickness or 2,
+                    period = cfg.pandemicGlowSpeed or 4,
+                    bg = cfg.pandemicGlowBackground
+                            and {
+                                r = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.r)
+                                    or 0,
+                                g = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.g)
+                                    or 0,
+                                b = (cfg.pandemicGlowBackgroundColor and cfg.pandemicGlowBackgroundColor.b)
+                                    or 0,
+                            }
+                        or nil,
+                }
+            or nil
         StartGlow(glowTarget, style, c and c.r, c and c.g, c and c.b, glowOpts)
-        bar._pandemicGlowActive   = true
+        bar._pandemicGlowActive = true
         bar._pandemicGlowStyleIdx = style
-        bar._pandemicGlowTarget   = glowTarget
+        bar._pandemicGlowTarget = glowTarget
     end
-
 end
 
 -------------------------------------------------------------------------------
@@ -174,7 +202,9 @@ end
 --  Bar StatusBar and caches the refs externally (zero alloc after the first call).
 -------------------------------------------------------------------------------
 local function GetBlizzBarFontStrings(blizzBar)
-    if not blizzBar then return nil, nil end
+    if not blizzBar then
+        return nil, nil
+    end
     local cached = _blizzBarFS[blizzBar]
     if cached and cached.nameFS then
         return cached.nameFS, cached.timerFS
@@ -185,13 +215,17 @@ local function GetBlizzBarFontStrings(blizzBar)
     for _, rgn in pairs({ blizzBar:GetRegions() }) do
         if rgn:GetObjectType() == "FontString" then
             fsIdx = fsIdx + 1
-            if fsIdx == 1 then nameFS = rgn end
-            if fsIdx == 2 then timerFS = rgn end
+            if fsIdx == 1 then
+                nameFS = rgn
+            end
+            if fsIdx == 2 then
+                timerFS = rgn
+            end
         end
     end
     -- External cache (false = "searched, not found"), never on the Blizzard frame
     local d = BBFS(blizzBar)
-    d.nameFS  = nameFS or false
+    d.nameFS = nameFS or false
     d.timerFS = timerFS or false
     return nameFS, timerFS
 end
@@ -206,15 +240,24 @@ end
 -------------------------------------------------------------------------------
 local function EffectiveIconSpellID(cfg)
     local sid = cfg.spellID
-    if not sid or sid <= 0 then return nil end
+    if not sid or sid <= 0 then
+        return nil
+    end
     -- Saved form currently overridden by a talent: show the override's icon.
     if C_Spell and C_Spell.GetOverrideSpell then
         local ov = C_Spell.GetOverrideSpell(sid)
-        if type(ov) == "number" and ov > 0 and ov ~= sid then return ov end
+        if type(ov) == "number" and ov > 0 and ov ~= sid then
+            return ov
+        end
     end
     -- Saved the override form, now untalented: the saved form is no longer known but its captured base is, so show the base form's icon.
-    if cfg.baseSpellID and cfg.baseSpellID > 0 and IsPlayerSpell
-       and not IsPlayerSpell(sid) and IsPlayerSpell(cfg.baseSpellID) then
+    if
+        cfg.baseSpellID
+        and cfg.baseSpellID > 0
+        and IsPlayerSpell
+        and not IsPlayerSpell(sid)
+        and IsPlayerSpell(cfg.baseSpellID)
+    then
         return cfg.baseSpellID
     end
     return sid
@@ -241,7 +284,9 @@ end
 -- path never inherits a stuck alpha-0 FS.
 local function MirrorEngineTimer(bar, cfg)
     local engBtn = bar._tbbEngineText
-    if not engBtn then return false end
+    if not engBtn then
+        return false
+    end
     local out = bar._timerText
     local engFS = bar._tbbEngineFS
     local wrote = false
@@ -257,7 +302,9 @@ local function MirrorEngineTimer(bar, cfg)
         pcall(out.SetAlphaFromBoolean, out, engBtn:IsShown(), 1, 0)
         bar._tbbAlphaGated = true
     elseif bar._tbbAlphaGated then
-        if out then out:SetAlpha(1) end
+        if out then
+            out:SetAlpha(1)
+        end
         bar._tbbAlphaGated = nil
     end
     return wrote
@@ -272,19 +319,23 @@ end
 --  was not just acquired). Matching preset: popularKey == "bloodlust".
 -------------------------------------------------------------------------------
 local SATED_DEBUFFS = { 57723, 57724, 80354, 95809, 160455, 264689, 390435 }
-local _lustExpiry   = 0
+local _lustExpiry = 0
 local _satedPresent = false
-local _satedSince                 -- GetTime() of the rise this listener armed on (nil = unknown age)
-local _lustZoneGuard = 0          -- suppress rising edges until this time (set on zone-in)
+local _satedSince -- GetTime() of the rise this listener armed on (nil = unknown age)
+local _lustZoneGuard = 0 -- suppress rising edges until this time (set on zone-in)
 local _lustListenerActive = false -- baseline _satedPresent only on (re)enable, not every rebuild
 local _lustListener
 
 local function _playerHasSated()
-    if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then return false end
+    if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
+        return false
+    end
     for i = 1, #SATED_DEBUFFS do
         -- Querying a KNOWN spellID returns the aura even when its fields are secret in
         -- combat, so the edge is detected mid-fight; the (possibly secret) spellID is never read back.
-        if C_UnitAuras.GetPlayerAuraBySpellID(SATED_DEBUFFS[i]) then return true end
+        if C_UnitAuras.GetPlayerAuraBySpellID(SATED_DEBUFFS[i]) then
+            return true
+        end
     end
     return false
 end
@@ -315,7 +366,9 @@ local function _ensureLustListener(enable)
                 -- Nothing but death lifts the lockout early (handled above), so a rise
                 -- this listener armed on pins the debuff for the next 590s: skip the
                 -- (allocating) aura probe until it can possibly have dropped.
-                if _satedPresent and _satedSince and GetTime() < _satedSince + 590 then return end
+                if _satedPresent and _satedSince and GetTime() < _satedSince + 590 then
+                    return
+                end
                 local present = _playerHasSated()
                 -- Arm ONLY on a genuine incremental application: not a full
                 -- aura refresh (zone/login resends every aura), and not inside
@@ -326,19 +379,24 @@ local function _ensureLustListener(enable)
                 local isFull = false
                 if updateInfo and not issecretvalue(updateInfo) then
                     local v = updateInfo.isFullUpdate
-                    if not issecretvalue(v) and v then isFull = true end
+                    if not issecretvalue(v) and v then
+                        isFull = true
+                    end
                 end
-                if present and not _satedPresent and not isFull
-                    and GetTime() >= _lustZoneGuard then
-                    _lustExpiry = GetTime() + 40  -- rising edge: lust just went out
+                if present and not _satedPresent and not isFull and GetTime() >= _lustZoneGuard then
+                    _lustExpiry = GetTime() + 40 -- rising edge: lust just went out
                     ns.TBBPresetSoundEdge("bloodlust", true, _lustExpiry)
                     _satedSince = GetTime()
-                    _tbbWake.Wake()  -- lust can come from other players: no local cast/aura edge is guaranteed
+                    _tbbWake.Wake() -- lust can come from other players: no local cast/aura edge is guaranteed
                     -- Drive Custom Auras (icon) lust displays sharing this edge.
-                    if ns.SignalLustCast then ns.SignalLustCast() end
+                    if ns.SignalLustCast then
+                        ns.SignalLustCast()
+                    end
                 end
                 _satedPresent = present
-                if not present then _satedSince = nil end
+                if not present then
+                    _satedSince = nil
+                end
             end)
         end
         -- Baseline ONLY on the OFF->ON transition. Re-baselining on every BuildTrackedBuffBars
@@ -366,18 +424,31 @@ function ns.UpdateLustListener()
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
     if tbb and tbb.bars then
         for _, cfg in ipairs(tbb.bars) do
-            if cfg.enabled ~= false and cfg.popularKey == "bloodlust" then any = true; break end
+            if cfg.enabled ~= false and cfg.popularKey == "bloodlust" then
+                any = true
+                break
+            end
         end
     end
-    if not any and ns.AnyCustomAuraLust then any = ns.AnyCustomAuraLust() end
+    if not any and ns.AnyCustomAuraLust then
+        any = ns.AnyCustomAuraLust()
+    end
     -- WoW Forever has no raid lust and no Sated debuff: a lust bar or icon saved
     -- on another client stays dormant there and never arms the listener.
-    if CludesUI.IS_FOREVER then any = false end
+    if CludesUI.IS_FOREVER then
+        any = false
+    end
     _ensureLustListener(any)
     -- Sibling preset listeners refresh from the same change sites: every add/remove/rebuild path already calls UpdateLustListener.
-    if ns.UpdateTimeSpiralListener then ns.UpdateTimeSpiralListener() end
-    if ns.UpdatePotionCastListener then ns.UpdatePotionCastListener() end
-    if ns.UpdateCooldownCastListener then ns.UpdateCooldownCastListener() end
+    if ns.UpdateTimeSpiralListener then
+        ns.UpdateTimeSpiralListener()
+    end
+    if ns.UpdatePotionCastListener then
+        ns.UpdatePotionCastListener()
+    end
+    if ns.UpdateCooldownCastListener then
+        ns.UpdateCooldownCastListener()
+    end
 end
 
 -- Profile-wide smooth-fill switches (Bar Layout > Smooth Bars), resolved ONCE per tick by
@@ -394,25 +465,34 @@ local function _UpdateSelfTimedBar(bar, cfg, expiry, duration)
     local remaining = expiry - GetTime()
     if remaining <= 0 then
         -- The loss cue comes from the preset's latch in the tick, shown or not.
-        if bar:IsShown() then bar:Hide() end
+        if bar:IsShown() then
+            bar:Hide()
+        end
         return
     end
     local wasShown = bar:IsShown()
-    if not wasShown then bar:Show() end
+    if not wasShown then
+        bar:Show()
+    end
     local sb = bar._bar
     if sb then
         sb:SetMinMaxValues(0, duration)
         -- Smooth fill is baseline for tracking bars: they move one direction at a known rate
         -- (unlike a health bar, no sudden jump needs instant read), so interpolation only
         -- removes judder. The wasShown gate snaps a fresh appearance instead of animating from a stale value.
-        local smooth = _tbbWake._smoothBuffs and wasShown and Enum and Enum.StatusBarInterpolation
+        local smooth = _tbbWake._smoothBuffs
+            and wasShown
+            and Enum
+            and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
         if smooth then
             sb:SetValue(remaining, smooth)
         else
             sb:SetValue(remaining)
         end
-        if cfg.showSpark and bar._spark then bar._spark:Show() end
+        if cfg.showSpark and bar._spark then
+            bar._spark:Show()
+        end
     end
     if cfg.showTimer and bar._timerText then
         -- The string changes only when its displayed bucket does (rounded tenths
@@ -438,7 +518,7 @@ local function _UpdateSelfTimedBar(bar, cfg, expiry, duration)
     elseif bar._timerText then
         bar._timerText:Hide()
     end
-    return true  -- window active: keep the tick awake
+    return true -- window active: keep the tick awake
 end
 local function UpdateLustBar(bar, cfg)
     return _UpdateSelfTimedBar(bar, cfg, _lustExpiry, 40)
@@ -455,32 +535,32 @@ end
 local TIME_SPIRAL_DURATION = 10
 -- Per-class movement abilities that glow when Time Spiral grants a free cast.
 local TIME_SPIRAL_TRIGGERS = {
-    [48265] = true,   -- Death's Advance
-    [195072] = true,  -- Fel Rush
-    [189110] = true,  -- Infernal Strike
-    [1850] = true,    -- Dash
-    [252216] = true,  -- Tiger Dash
-    [358267] = true,  -- Hover
-    [186257] = true,  -- Aspect of the Cheetah
-    [1953] = true,    -- Blink
-    [212653] = true,  -- Shimmer
-    [361138] = true,  -- Roll
-    [119085] = true,  -- Chi Torpedo
-    [190784] = true,  -- Divine Steed
-    [73325] = true,   -- Leap of Faith
-    [2983] = true,    -- Sprint
-    [192063] = true,  -- Gust of Wind
-    [58875] = true,   -- Spirit Walk
-    [79206] = true,   -- Spiritwalker's Grace
-    [48020] = true,   -- Demonic Circle: Teleport
-    [6544] = true,    -- Heroic Leap
+    [48265] = true, -- Death's Advance
+    [195072] = true, -- Fel Rush
+    [189110] = true, -- Infernal Strike
+    [1850] = true, -- Dash
+    [252216] = true, -- Tiger Dash
+    [358267] = true, -- Hover
+    [186257] = true, -- Aspect of the Cheetah
+    [1953] = true, -- Blink
+    [212653] = true, -- Shimmer
+    [361138] = true, -- Roll
+    [119085] = true, -- Chi Torpedo
+    [190784] = true, -- Divine Steed
+    [73325] = true, -- Leap of Faith
+    [2983] = true, -- Sprint
+    [192063] = true, -- Gust of Wind
+    [58875] = true, -- Spirit Walk
+    [79206] = true, -- Spiritwalker's Grace
+    [48020] = true, -- Demonic Circle: Teleport
+    [6544] = true, -- Heroic Leap
 }
 -- Talent-gated abilities that ALSO glow a movement ability for reasons unrelated to the proc.
 -- While the talent is known, casting one suppresses the glow that follows for a short window.
 local TIME_SPIRAL_GLOW_FILTERS = {
-    { talent = 427640, spells = { 198793, 370965, 195072 } },  -- DH Inertia
-    { talent = 427794, spells = { 195072 } },                  -- DH Dash of Chaos
-    { talent = 385899, spells = { 385899 } },                  -- Warlock Soulburn
+    { talent = 427640, spells = { 198793, 370965, 195072 } }, -- DH Inertia
+    { talent = 427794, spells = { 195072 } }, -- DH Dash of Chaos
+    { talent = 385899, spells = { 385899 } }, -- Warlock Soulburn
 }
 -- State grouped in one table.
 local _ts = { expiry = 0, suppressUntil = 0, suppress = {}, active = false, frame = nil }
@@ -488,10 +568,14 @@ local _ts = { expiry = 0, suppressUntil = 0, suppress = {}, active = false, fram
 local function _rebuildTimeSpiralSuppress()
     wipe(_ts.suppress)
     local known = C_SpellBook and C_SpellBook.IsSpellKnown
-    if not known then return end
+    if not known then
+        return
+    end
     for _, e in ipairs(TIME_SPIRAL_GLOW_FILTERS) do
         if known(e.talent) then
-            for _, sid in ipairs(e.spells) do _ts.suppress[sid] = true end
+            for _, sid in ipairs(e.spells) do
+                _ts.suppress[sid] = true
+            end
         end
     end
 end
@@ -504,23 +588,33 @@ local function _ensureTimeSpiralListener(enable)
             _ts.frame:SetScript("OnEvent", function(_, event, ...)
                 if event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" then
                     local sid = ...
-                    if not TIME_SPIRAL_TRIGGERS[sid] then return end
-                    if GetTime() < _ts.suppressUntil then return end
-                    _ts.expiry = GetTime() + TIME_SPIRAL_DURATION  -- free move just granted
+                    if not TIME_SPIRAL_TRIGGERS[sid] then
+                        return
+                    end
+                    if GetTime() < _ts.suppressUntil then
+                        return
+                    end
+                    _ts.expiry = GetTime() + TIME_SPIRAL_DURATION -- free move just granted
                     ns.TBBPresetSoundEdge("timespiral", true, _ts.expiry)
-                    _tbbWake.Wake()  -- glow edge is outside the sleeper's wake events
+                    _tbbWake.Wake() -- glow edge is outside the sleeper's wake events
                     -- Drive Custom Auras (icon) displays sharing this edge.
-                    if ns.SignalTimeSpiralCast then ns.SignalTimeSpiralCast() end
+                    if ns.SignalTimeSpiralCast then
+                        ns.SignalTimeSpiralCast()
+                    end
                 elseif event == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
                     local sid = ...
-                    if not TIME_SPIRAL_TRIGGERS[sid] then return end
+                    if not TIME_SPIRAL_TRIGGERS[sid] then
+                        return
+                    end
                     -- Proc consumed or expired: end the window now so bar/icon disappear with
                     -- the glow rather than riding out the full 10s. Guarded on an active window
                     -- so an unrelated trigger's hide cannot fire spuriously.
                     if _ts.expiry > GetTime() then
                         _ts.expiry = 0
                         ns.TBBPresetSoundEdge("timespiral", false)
-                        if ns.SignalTimeSpiralEnd then ns.SignalTimeSpiralEnd() end
+                        if ns.SignalTimeSpiralEnd then
+                            ns.SignalTimeSpiralEnd()
+                        end
                     end
                 elseif event == "UNIT_SPELLCAST_SENT" then
                     -- (unit, target, castGUID, spellID); arg4 is the spellID.
@@ -554,13 +648,20 @@ function ns.UpdateTimeSpiralListener()
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
     if tbb and tbb.bars then
         for _, cfg in ipairs(tbb.bars) do
-            if cfg.enabled ~= false and cfg.popularKey == "timespiral" then any = true; break end
+            if cfg.enabled ~= false and cfg.popularKey == "timespiral" then
+                any = true
+                break
+            end
         end
     end
-    if not any and ns.AnyCustomAuraTimeSpiral then any = ns.AnyCustomAuraTimeSpiral() end
+    if not any and ns.AnyCustomAuraTimeSpiral then
+        any = ns.AnyCustomAuraTimeSpiral()
+    end
     -- WoW Forever has no Time Spiral: a bar or icon saved on another client stays
     -- dormant there and never arms the glow listener.
-    if CludesUI.IS_FOREVER then any = false end
+    if CludesUI.IS_FOREVER then
+        any = false
+    end
     _ensureTimeSpiralListener(any)
 end
 
@@ -572,8 +673,8 @@ end
 --  nothing until next use. Built from BUFF_BAR_PRESETS: every non-tbbOnly preset
 --  (bloodlust/timespiral are tbbOnly, event-driven above) is cast-timed.
 -------------------------------------------------------------------------------
-local _potionDur = {}       -- [popularKey] = hardcoded window seconds
-local _potionTrigger = {}   -- [castSpellID] = popularKey
+local _potionDur = {} -- [popularKey] = hardcoded window seconds
+local _potionTrigger = {} -- [castSpellID] = popularKey
 do
     local presets = ns.BUFF_BAR_PRESETS
     if presets then
@@ -581,13 +682,15 @@ do
             if not p.tbbOnly and p.spellIDs and p.duration then
                 _potionDur[p.key] = p.duration
                 for _, sid in ipairs(p.spellIDs) do
-                    if type(sid) == "number" and sid > 0 then _potionTrigger[sid] = p.key end
+                    if type(sid) == "number" and sid > 0 then
+                        _potionTrigger[sid] = p.key
+                    end
                 end
             end
         end
     end
 end
-local _potionExpiry = {}    -- [popularKey] = GetTime() the window ends at
+local _potionExpiry = {} -- [popularKey] = GetTime() the window ends at
 local _potionFrame
 local _potionActive = false
 
@@ -598,7 +701,9 @@ local function _ensurePotionCastListener(enable)
             -- UNIT_SPELLCAST_SUCCEEDED (player): same edge the CDM buff-bar potions fire on. arg4 = cast spellID (never secret).
             _potionFrame:SetScript("OnEvent", function(_, _, _, _, spellID)
                 local key = spellID and _potionTrigger[spellID]
-                if not key then return end
+                if not key then
+                    return
+                end
                 _potionExpiry[key] = GetTime() + (_potionDur[key] or 30)
                 ns.TBBPresetSoundEdge(key, true, _potionExpiry[key])
             end)
@@ -621,7 +726,8 @@ function ns.UpdatePotionCastListener()
     if tbb and tbb.bars then
         for _, cfg in ipairs(tbb.bars) do
             if cfg.enabled ~= false and cfg.popularKey and _potionDur[cfg.popularKey] then
-                any = true; break
+                any = true
+                break
             end
         end
     end
@@ -636,26 +742,40 @@ end
 -- current pairing, or a live frame of either viewer whose spell the bar
 -- wants (the id match the alert path uses).
 function ns.TBB_BarCanCue(cfg)
-    if type(cfg) ~= "table" or cfg.trackType == "cooldown" then return false end
+    if type(cfg) ~= "table" or cfg.trackType == "cooldown" then
+        return false
+    end
     local pk = cfg.popularKey
     if pk then
         -- The lust and Time Spiral windows never open on WoW Forever (their
         -- listeners stay off there), so only a cast-timed preset can cue.
-        if CludesUI.IS_FOREVER then return _potionDur[pk] ~= nil end
+        if CludesUI.IS_FOREVER then
+            return _potionDur[pk] ~= nil
+        end
         return pk == "bloodlust" or pk == "timespiral" or _potionDur[pk] ~= nil
     end
     -- A dirty map still holds the previous pass's pairings: trust it only once rebuilt,
     -- and only while Tracking Bars are on (the tick is the only thing that keeps it current).
-    if _tbbWake._enabled and not _tbbAssignDirty and _tbbAssignment[cfg] then return true end
+    if _tbbWake._enabled and not _tbbAssignDirty and _tbbAssignment[cfg] then
+        return true
+    end
     local GetCanonical = ns.GetCanonicalSpellIDForFrame
-    if not GetCanonical then return false end
+    if not GetCanonical then
+        return false
+    end
     for vi = 1, 2 do
         local viewer
-        if vi == 1 then viewer = _G.BuffBarCooldownViewer else viewer = _G.BuffIconCooldownViewer end
+        if vi == 1 then
+            viewer = _G.BuffBarCooldownViewer
+        else
+            viewer = _G.BuffIconCooldownViewer
+        end
         local pool = viewer and viewer.itemFramePool
         if pool then
             for frame in pool:EnumerateActive() do
-                if CfgWantsSID(cfg, GetCanonical(frame)) then return true end
+                if CfgWantsSID(cfg, GetCanonical(frame)) then
+                    return true
+                end
             end
         end
     end
@@ -664,7 +784,9 @@ end
 
 -- True when v is a plain, readable number. A secret value fails BEFORE any type/comparison touches it; nil and non-numbers fail too.
 local function _tbbCleanNum(v)
-    if issecretvalue and issecretvalue(v) then return false end
+    if issecretvalue and issecretvalue(v) then
+        return false
+    end
     return type(v) == "number"
 end
 

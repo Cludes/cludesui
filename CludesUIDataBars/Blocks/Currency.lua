@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Currency.lua
 -- Currency block factory.
 
@@ -8,22 +10,22 @@ local K = ns.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
-local floor       = math.floor
-local max         = math.max
-local min         = math.min
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
-local IconColorOf          = K.IconColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  CURRENCY (searchable-picker driven; icon + amount + owned tooltip)
@@ -36,8 +38,12 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
     local mouseOver = false
     local _curFitBuf = { "" }
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local button = CreateFrame("Button", nil, content)
     button:SetAllPoints()
@@ -50,15 +56,23 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
 
     local function GetInfo()
         local s = D()
-        if not s.currencyId then return nil end
-        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then return nil end
+        if not s.currencyId then
+            return nil
+        end
+        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
+            return nil
+        end
         local info = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
-        if info and info.discovered ~= false then return info end
+        if info and info.discovered ~= false then
+            return info
+        end
         return nil
     end
 
     local function Num(v)
-        if BreakUpLargeNumbers then return BreakUpLargeNumbers(v or 0) end
+        if BreakUpLargeNumbers then
+            return BreakUpLargeNumbers(v or 0)
+        end
         return tostring(v or 0)
     end
 
@@ -135,7 +149,9 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
             end
             amountText:ClearAllPoints()
             local xOff = 0
-            if iconSz > 0 then xOff = iconSz + gap end
+            if iconSz > 0 then
+                xOff = iconSz + gap
+            end
             amountText:SetPoint("LEFT", button, "LEFT", xOff, 0)
             local tw = ns.SnapToPixelGrid(amountText:GetStringWidth())
             local totalW = min(slotW, iconSz + (iconSz > 0 and gap or 0) + tw + 4)
@@ -176,7 +192,9 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
             info = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
         end
-        if not info then return end
+        if not info then
+            return
+        end
         ns.Tip_Begin(button)
         local qr, qg, qb = 1, 1, 1
         if info.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[info.quality] then
@@ -196,8 +214,16 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
             -- useTotalEarnedForMaxQty currencies (crests) cap what you EARNED this
             -- season, not what you hold, so the wallet total is the wrong numerator.
             if info.useTotalEarnedForMaxQty then
-                ns.Tip_AddDouble(L["TOTAL"], qty .. " |cffaaaaaa(" .. Num(info.totalEarned) .. "/" .. Num(cap) .. ")|r",
-                    0.6, 0.6, 0.6, 1, 1, 1)
+                ns.Tip_AddDouble(
+                    L["TOTAL"],
+                    qty .. " |cffaaaaaa(" .. Num(info.totalEarned) .. "/" .. Num(cap) .. ")|r",
+                    0.6,
+                    0.6,
+                    0.6,
+                    1,
+                    1,
+                    1
+                )
             else
                 ns.Tip_AddDouble(L["TOTAL"], qty .. " / " .. Num(cap), 0.6, 0.6, 0.6, 1, 1, 1)
             end
@@ -229,7 +255,9 @@ ns.BlockFactories.currency = function(blockCfg, slot, content, barCtx)
                     return
                 end
                 -- Options surface is LoadOnDemand; load it so OpenBlockSettings exists.
-                if not ns.OpenBlockSettings then CludesUI:EnsureLoaded() end
+                if not ns.OpenBlockSettings then
+                    CludesUI:EnsureLoaded()
+                end
                 if ns.OpenBlockSettings then
                     ns.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
                 end

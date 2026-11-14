@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_GlowOptions.lua -- shared glow option controls. Each glow setting
 --  is a SITE descriptor: host ("icon"/"bar"/"engine"), view or toShared/
@@ -13,7 +15,6 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  and styleDisabled + styleDisabledTooltip (a whole sentence, shown as is):
 --  a lock on the style alone -- the color swatches and the Pixel Glow cog stay
 --  live, and the template leaves the site alone while it holds.
-
 
 local GO = {}
 CludesUI.GlowOptions = GO
@@ -30,23 +31,37 @@ local CreateFrame, PoolGen = CludesUI._Pool.CreateFrame, CludesUI._Pool.Gen
 --  Style value mapping
 -------------------------------------------------------------------------------
 local function NoneValue(desc)
-    if desc.noneValue ~= nil then return desc.noneValue end
+    if desc.noneValue ~= nil then
+        return desc.noneValue
+    end
     return 0
 end
 
 -- Saved value -> shared index, or nil for None and the extras.
 function GO.ToShared(desc, v)
-    if v == nil or v == NoneValue(desc) then return nil end
-    if desc.toShared then return desc.toShared(v) end
-    if desc.view then return desc.view.toShared[v] end
-    if type(v) == "number" and v >= 1 and v <= #G.STYLES then return v end
+    if v == nil or v == NoneValue(desc) then
+        return nil
+    end
+    if desc.toShared then
+        return desc.toShared(v)
+    end
+    if desc.view then
+        return desc.view.toShared[v]
+    end
+    if type(v) == "number" and v >= 1 and v <= #G.STYLES then
+        return v
+    end
     return nil
 end
 
 -- Shared index -> saved value.
 function GO.FromShared(desc, idx)
-    if desc.fromShared then return desc.fromShared(idx) end
-    if desc.view then return desc.view.fromShared[idx] end
+    if desc.fromShared then
+        return desc.fromShared(idx)
+    end
+    if desc.view then
+        return desc.view.fromShared[idx]
+    end
     return idx
 end
 
@@ -57,7 +72,9 @@ function GO.Resolve(desc, idx)
     if not ex then
         ex = {}
         for i = 1, #G.STYLES do
-            if (desc.excludes and desc.excludes[i]) or GO.FromShared(desc, i) == nil then ex[i] = true end
+            if (desc.excludes and desc.excludes[i]) or GO.FromShared(desc, i) == nil then
+                ex[i] = true
+            end
         end
         desc._resolveEx = ex
     end
@@ -75,15 +92,21 @@ local function OrderedStyleValues(desc)
     if desc.order then
         for _, v in ipairs(desc.order) do
             local idx = GO.ToShared(desc, v)
-            if idx and StyleOffered(desc, idx) then out[#out + 1] = v end
+            if idx and StyleOffered(desc, idx) then
+                out[#out + 1] = v
+            end
         end
     elseif desc.view then
         for _, i in ipairs(desc.view.ordered) do
-            if StyleOffered(desc, desc.view.toShared[i]) then out[#out + 1] = i end
+            if StyleOffered(desc, desc.view.toShared[i]) then
+                out[#out + 1] = i
+            end
         end
     else
         for i = 1, #G.STYLES do
-            if StyleOffered(desc, i) then out[#out + 1] = i end
+            if StyleOffered(desc, i) then
+                out[#out + 1] = i
+            end
         end
     end
     return out
@@ -115,12 +138,18 @@ end
 -- host cannot render, the style that actually renders.
 local function DisplayValue(desc, values)
     local v = desc.get("style")
-    if v == nil then return NoneValue(desc) end
-    if values[v] ~= nil then return v end
+    if v == nil then
+        return NoneValue(desc)
+    end
+    if values[v] ~= nil then
+        return v
+    end
     local idx = GO.ToShared(desc, v)
     if idx then
         local rv = GO.FromShared(desc, (GO.Resolve(desc, idx)))
-        if rv ~= nil and values[rv] ~= nil then return rv end
+        if rv ~= nil and values[rv] ~= nil then
+            return rv
+        end
     end
     return NoneValue(desc)
 end
@@ -129,7 +158,9 @@ end
 --  State
 -------------------------------------------------------------------------------
 function GO.IsOff(desc)
-    if desc.isOff and desc.isOff() then return true end
+    if desc.isOff and desc.isOff() then
+        return true
+    end
     local v = desc.get("style")
     return v == nil or v == NoneValue(desc)
 end
@@ -137,7 +168,9 @@ end
 -- The site's own lock (desc.disabled: every control), or a style-only lock
 -- (desc.styleDisabled: the style dropdown alone). Either keeps the template out.
 function GO.StyleLocked(desc)
-    if desc.disabled and desc.disabled() then return true end
+    if desc.disabled and desc.disabled() then
+        return true
+    end
     return (desc.styleDisabled and desc.styleDisabled()) and true or false
 end
 
@@ -145,17 +178,25 @@ end
 -- paramsOnly sites (Pixel Glow parameters without a style of their own, e.g. a
 -- CDM bar's pixelGlow* keys) always count as one.
 function GO.IsCustomGlow(desc)
-    if desc.paramsOnly then return true end
-    if GO.IsOff(desc) then return false end
+    if desc.paramsOnly then
+        return true
+    end
+    if GO.IsOff(desc) then
+        return false
+    end
     return GO.ToShared(desc, desc.get("style")) ~= nil
 end
 
 -- The extra entry for the site's current value, if that value is one.
 local function CurrentExtra(desc)
-    if not desc.extras then return nil end
+    if not desc.extras then
+        return nil
+    end
     local v = desc.get("style")
     for _, x in ipairs(desc.extras) do
-        if x.value == v then return x end
+        if x.value == v then
+            return x
+        end
     end
     return nil
 end
@@ -163,8 +204,12 @@ end
 -- Something is drawn that takes a color: a custom glow, or a rendered extra
 -- (x.style, e.g. Blizzard Border). Rendered extras are never template targets.
 function GO.Renders(desc)
-    if GO.IsCustomGlow(desc) then return true end
-    if GO.IsOff(desc) then return false end
+    if GO.IsCustomGlow(desc) then
+        return true
+    end
+    if GO.IsOff(desc) then
+        return false
+    end
     local x = CurrentExtra(desc)
     return x ~= nil and x.style ~= nil
 end
@@ -177,7 +222,9 @@ local function NoColor(desc)
 end
 
 function GO.IsPixel(desc)
-    if desc.paramsOnly then return true end
+    if desc.paramsOnly then
+        return true
+    end
     return GO.IsCustomGlow(desc) and GO.ToShared(desc, desc.get("style")) == 1
 end
 
@@ -185,7 +232,10 @@ end
 -- table per descriptor).
 function GO.Spec(desc)
     local s = desc._spec
-    if not s then s = {}; desc._spec = s end
+    if not s then
+        s = {}
+        desc._spec = s
+    end
     local x = CurrentExtra(desc)
     s.style = GO.ToShared(desc, desc.get("style")) or (x and x.style) or 1
     s.excludes = desc.excludes
@@ -211,9 +261,13 @@ end
 -- Refresh the module, then this site's current preview (skipped once that
 -- preview's page is gone: descriptors outlive page rebuilds).
 function GO.Changed(desc)
-    if desc.onChange then desc.onChange() end
+    if desc.onChange then
+        desc.onChange()
+    end
     local pf = desc._previewFrame
-    if desc._preview and pf and pf:IsVisible() then desc._preview() end
+    if desc._preview and pf and pf:IsVisible() then
+        desc._preview()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -228,7 +282,9 @@ local NO_COLOR_TIP = "This option requires a Glow Style that can be colored"
 -- The style control's getter: None while off, else the displayed value.
 local function StyleGetter(desc, values)
     return function()
-        if desc.isOff and desc.isOff() then return NoneValue(desc) end
+        if desc.isOff and desc.isOff() then
+            return NoneValue(desc)
+        end
         return DisplayValue(desc, values)
     end
 end
@@ -237,21 +293,33 @@ end
 -- widened by styleDisabled when the site has one (its sentence shows as is
 -- while only the style is locked).
 local function StyleLock(desc)
-    if not desc.styleDisabled then return desc.disabled, desc.disabledTooltip, desc.rawTooltip end
-    local function siteOff() return desc.disabled and desc.disabled() end
-    return function() return GO.StyleLocked(desc) end,
-        function()
-            if not siteOff() then return desc.styleDisabledTooltip end
-            local tt = desc.disabledTooltip
-            if type(tt) == "function" then tt = tt() end
-            return tt
-        end,
-        function()
-            if not siteOff() then return true end
-            local raw = desc.rawTooltip
-            if type(raw) == "function" then raw = raw() end
-            return raw
+    if not desc.styleDisabled then
+        return desc.disabled, desc.disabledTooltip, desc.rawTooltip
+    end
+    local function siteOff()
+        return desc.disabled and desc.disabled()
+    end
+    return function()
+        return GO.StyleLocked(desc)
+    end, function()
+        if not siteOff() then
+            return desc.styleDisabledTooltip
         end
+        local tt = desc.disabledTooltip
+        if type(tt) == "function" then
+            tt = tt()
+        end
+        return tt
+    end, function()
+        if not siteOff() then
+            return true
+        end
+        local raw = desc.rawTooltip
+        if type(raw) == "function" then
+            raw = raw()
+        end
+        return raw
+    end
 end
 
 -- DualRow half spec for the style dropdown.
@@ -259,8 +327,10 @@ function GO.DropdownSpec(desc, text, tooltip)
     local values, order = GO.StyleValues(desc)
     local lockFn, lockTip, lockRaw = StyleLock(desc)
     return {
-        type = "dropdown", text = text or "Glow",
-        values = values, order = order,
+        type = "dropdown",
+        text = text or "Glow",
+        values = values,
+        order = order,
         tooltip = tooltip,
         disabled = lockFn,
         disabledTooltip = lockTip,
@@ -270,21 +340,33 @@ function GO.DropdownSpec(desc, text, tooltip)
             local function commit()
                 desc.set("style", v)
                 GO.Changed(desc)
-                C_Timer.After(0, function() CludesUI:RefreshPage() end)
+                C_Timer.After(0, function()
+                    CludesUI:RefreshPage()
+                end)
             end
-            if desc.confirm then desc.confirm(v, commit) else commit() end
+            if desc.confirm then
+                desc.confirm(v, commit)
+            else
+                commit()
+            end
         end,
     }
 end
 
-local function NotPixel(desc) return function() return not GO.IsPixel(desc) end end
+local function NotPixel(desc)
+    return function()
+        return not GO.IsPixel(desc)
+    end
+end
 
 -- Cog edits refresh the page's widgets (status rows follow them) once per
 -- frame, so a slider drag does not queue a refresh per tick.
 local _cogRefreshQueued = false
 local function CogChanged(desc)
     GO.Changed(desc)
-    if _cogRefreshQueued then return end
+    if _cogRefreshQueued then
+        return
+    end
     _cogRefreshQueued = true
     C_Timer.After(0, function()
         _cogRefreshQueued = false
@@ -299,35 +381,95 @@ local function CogRows(desc)
     local caps = desc.caps or {}
     local notPixel = NotPixel(desc)
     if caps.params then
-        rows[#rows + 1] = { type = "slider", label = "Lines", min = 2, max = 16, step = 1,
-            get = function() return desc.get("lines") or 8 end,
-            set = function(v) desc.set("lines", v); CogChanged(desc) end,
-            disabled = notPixel, disabledTooltip = "Pixel Glow", pixelRow = true }
-        rows[#rows + 1] = { type = "slider", label = "Thickness", min = 1, max = desc.thicknessMax or 4, step = 1,
-            get = function() return desc.get("thickness") or 2 end,
-            set = function(v) desc.set("thickness", v); CogChanged(desc) end,
-            disabled = notPixel, disabledTooltip = "Pixel Glow", pixelRow = true }
-        rows[#rows + 1] = { type = "slider", label = "Speed", min = 1, max = 8, step = 1,
-            get = function() return G.SpeedToUI(desc.get("speed")) end,
-            set = function(v) desc.set("speed", G.SpeedFromUI(v)); CogChanged(desc) end,
-            disabled = notPixel, disabledTooltip = "Pixel Glow", pixelRow = true }
+        rows[#rows + 1] = {
+            type = "slider",
+            label = "Lines",
+            min = 2,
+            max = 16,
+            step = 1,
+            get = function()
+                return desc.get("lines") or 8
+            end,
+            set = function(v)
+                desc.set("lines", v)
+                CogChanged(desc)
+            end,
+            disabled = notPixel,
+            disabledTooltip = "Pixel Glow",
+            pixelRow = true,
+        }
+        rows[#rows + 1] = {
+            type = "slider",
+            label = "Thickness",
+            min = 1,
+            max = desc.thicknessMax or 4,
+            step = 1,
+            get = function()
+                return desc.get("thickness") or 2
+            end,
+            set = function(v)
+                desc.set("thickness", v)
+                CogChanged(desc)
+            end,
+            disabled = notPixel,
+            disabledTooltip = "Pixel Glow",
+            pixelRow = true,
+        }
+        rows[#rows + 1] = {
+            type = "slider",
+            label = "Speed",
+            min = 1,
+            max = 8,
+            step = 1,
+            get = function()
+                return G.SpeedToUI(desc.get("speed"))
+            end,
+            set = function(v)
+                desc.set("speed", G.SpeedFromUI(v))
+                CogChanged(desc)
+            end,
+            disabled = notPixel,
+            disabledTooltip = "Pixel Glow",
+            pixelRow = true,
+        }
     end
     if caps.bg then
-        rows[#rows + 1] = { type = "toggle", label = "Background",
-            get = function() return desc.get("bg") == true end,
-            set = function(v) desc.set("bg", v and true or nil); CogChanged(desc) end,
-            disabled = notPixel, disabledTooltip = "Pixel Glow", pixelRow = true }
-        rows[#rows + 1] = { type = "colorpicker", label = "Background Color",
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = "Background",
+            get = function()
+                return desc.get("bg") == true
+            end,
+            set = function(v)
+                desc.set("bg", v and true or nil)
+                CogChanged(desc)
+            end,
+            disabled = notPixel,
+            disabledTooltip = "Pixel Glow",
+            pixelRow = true,
+        }
+        rows[#rows + 1] = {
+            type = "colorpicker",
+            label = "Background Color",
             get = function()
                 local r, g, b = desc.get("bgColor")
                 return r or 0, g or 0, b or 0
             end,
-            set = function(r, g, b) desc.set("bgColor", r, g, b); CogChanged(desc) end,
-            disabled = function() return notPixel() or desc.get("bg") ~= true end,
-            disabledTooltip = "Pixel Glow Background", pixelRow = true }
+            set = function(r, g, b)
+                desc.set("bgColor", r, g, b)
+                CogChanged(desc)
+            end,
+            disabled = function()
+                return notPixel() or desc.get("bg") ~= true
+            end,
+            disabledTooltip = "Pixel Glow Background",
+            pixelRow = true,
+        }
     end
     if desc.cogRows then
-        for _, r in ipairs(desc.cogRows) do rows[#rows + 1] = r end
+        for _, r in ipairs(desc.cogRows) do
+            rows[#rows + 1] = r
+        end
     end
     return rows
 end
@@ -337,38 +479,69 @@ GO.CogRows = CogRows
 -- Default/Custom/Class swatches as one BuildCogPopup row (off: when the
 -- row is locked).
 local function ColorRow(desc, off)
-    local function modeAlpha(m) return function() return (desc.get("mode") == m) and 1 or 0.3 end end
-    local function pick(m) return function() desc.set("mode", m); GO.Changed(desc); CludesUI:RefreshPage() end end
+    local function modeAlpha(m)
+        return function()
+            return (desc.get("mode") == m) and 1 or 0.3
+        end
+    end
+    local function pick(m)
+        return function()
+            desc.set("mode", m)
+            GO.Changed(desc)
+            CludesUI:RefreshPage()
+        end
+    end
     local dc = desc.defaultColor
-    return { type = "multiswatch", label = "Glow Color",
+    return {
+        type = "multiswatch",
+        label = "Glow Color",
         disabled = off,
-        disabledTooltip = function() return NoColor(desc) and NO_COLOR_TIP or "a Glow Style" end,
+        disabledTooltip = function()
+            return NoColor(desc) and NO_COLOR_TIP or "a Glow Style"
+        end,
         swatches = {
-            { tooltip = "Default", refreshAlpha = modeAlpha("default"), onClick = pick("default"),
-              getValue = function()
-                  local c = G.DEFAULT_COLOR
-                  return c.r, c.g, c.b, 1
-              end },
-            { tooltip = "Custom Color", refreshAlpha = modeAlpha("custom"),
-              getValue = function()
-                  local r, g, b = desc.get("color")
-                  return r or (dc and dc.r) or 1, g or (dc and dc.g) or 1, b or (dc and dc.b) or 1, 1
-              end,
-              setValue = function(r, g, b) desc.set("color", r, g, b); CogChanged(desc) end,
-              -- Suite convention: an inactive custom swatch only selects custom mode.
-              onClick = function(self)
-                  if desc.get("mode") ~= "custom" then
-                      desc.set("mode", "custom"); GO.Changed(desc); CludesUI:RefreshPage()
-                  elseif self._eabOrigClick then
-                      self._eabOrigClick(self)
-                  end
-              end },
-            { tooltip = "Class Colored", refreshAlpha = modeAlpha("class"), onClick = pick("class"),
-              getValue = function()
-                  local c = CludesUI.GetClassColor(CludesUI._playerClass)
-                  return c.r, c.g, c.b, 1
-              end },
-        } }
+            {
+                tooltip = "Default",
+                refreshAlpha = modeAlpha("default"),
+                onClick = pick("default"),
+                getValue = function()
+                    local c = G.DEFAULT_COLOR
+                    return c.r, c.g, c.b, 1
+                end,
+            },
+            {
+                tooltip = "Custom Color",
+                refreshAlpha = modeAlpha("custom"),
+                getValue = function()
+                    local r, g, b = desc.get("color")
+                    return r or (dc and dc.r) or 1, g or (dc and dc.g) or 1, b or (dc and dc.b) or 1, 1
+                end,
+                setValue = function(r, g, b)
+                    desc.set("color", r, g, b)
+                    CogChanged(desc)
+                end,
+                -- Suite convention: an inactive custom swatch only selects custom mode.
+                onClick = function(self)
+                    if desc.get("mode") ~= "custom" then
+                        desc.set("mode", "custom")
+                        GO.Changed(desc)
+                        CludesUI:RefreshPage()
+                    elseif self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
+                end,
+            },
+            {
+                tooltip = "Class Colored",
+                refreshAlpha = modeAlpha("class"),
+                onClick = pick("class"),
+                getValue = function()
+                    local c = CludesUI.GetClassColor(CludesUI._playerClass)
+                    return c.r, c.g, c.b, 1
+                end,
+            },
+        },
+    }
 end
 
 -- Every glow control as BuildCogPopup rows, for sites whose whole glow setting
@@ -378,23 +551,44 @@ end
 function GO.PopupRows(desc, styleLabel, hidePixel)
     local values, order = GO.StyleValues(desc)
     local rows = {}
-    local off = function() return not GO.Renders(desc) end
+    local off = function()
+        return not GO.Renders(desc)
+    end
     local lockFn, lockTip, lockRaw = StyleLock(desc)
-    rows[#rows + 1] = { type = "dropdown", label = styleLabel or "Glow Style",
-        values = values, order = order, ddWidth = 170,
-        disabled = lockFn, disabledTooltip = lockTip, rawTooltip = lockRaw,
+    rows[#rows + 1] = {
+        type = "dropdown",
+        label = styleLabel or "Glow Style",
+        values = values,
+        order = order,
+        ddWidth = 170,
+        disabled = lockFn,
+        disabledTooltip = lockTip,
+        rawTooltip = lockRaw,
         get = StyleGetter(desc, values),
         set = function(v)
-            local function commit() desc.set("style", v); GO.Changed(desc); CludesUI:RefreshPage() end
-            if desc.confirm then desc.confirm(v, commit) else commit() end
-        end }
+            local function commit()
+                desc.set("style", v)
+                GO.Changed(desc)
+                CludesUI:RefreshPage()
+            end
+            if desc.confirm then
+                desc.confirm(v, commit)
+            else
+                commit()
+            end
+        end,
+    }
     local caps = desc.caps or {}
     if caps.mode then
-        rows[#rows + 1] = ColorRow(desc, function() return off() or NoColor(desc) end)
+        rows[#rows + 1] = ColorRow(desc, function()
+            return off() or NoColor(desc)
+        end)
     end
     local notPixel = hidePixel and NotPixel(desc) or nil
     for _, r in ipairs(CogRows(desc)) do
-        if notPixel and r.pixelRow then r.hidden = notPixel end
+        if notPixel and r.pixelRow then
+            r.hidden = notPixel
+        end
         rows[#rows + 1] = r
     end
     return rows
@@ -405,33 +599,51 @@ end
 -- optional free half-region (a "Glow Color" label) that takes the swatches.
 -- A style-only lock (desc.styleDisabled) leaves both live.
 function GO.AttachInline(rgn, desc, colorRgn)
-    if CludesUI._prebuilding or not rgn then return end
+    if CludesUI._prebuilding or not rgn then
+        return
+    end
     local PP = CludesUI.PanelPP
     local caps = desc.caps or {}
-    local function siteOff() return desc.disabled and desc.disabled() end
+    local function siteOff()
+        return desc.disabled and desc.disabled()
+    end
     local function off()
-        if siteOff() then return true end
+        if siteOff() then
+            return true
+        end
         return not GO.Renders(desc)
     end
     -- colorDisabled: the site's color comes from elsewhere (NP Color by Type).
     -- A colored extra (Solid Border) draws nothing to style but takes the color;
     -- a noColor extra (Blizzard Pandemic Border) draws but never takes one.
     local function colorOff()
-        if siteOff() then return true end
+        if siteOff() then
+            return true
+        end
         if not GO.Renders(desc) then
             local x = CurrentExtra(desc)
-            if not (x and x.colored) then return true end
+            if not (x and x.colored) then
+                return true
+            end
         end
-        if NoColor(desc) then return true end
+        if NoColor(desc) then
+            return true
+        end
         return (desc.colorDisabled and desc.colorDisabled()) or false
     end
     -- Why the swatches are locked, as the sentence shown: the site's own
     -- requirement (resolved like its dropdown's), no glow to color, a style
     -- that takes no color, or a color that comes from elsewhere.
     local function colorLockTip()
-        if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
-        if not GO.Renders(desc) then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
-        if NoColor(desc) then return CludesUI.DisabledTooltip(NO_COLOR_TIP) end
+        if siteOff() then
+            return CludesUI.ResolveDisabledTip(desc)
+        end
+        if not GO.Renders(desc) then
+            return CludesUI.DisabledTooltip(NO_STYLE_TIP)
+        end
+        if NoColor(desc) then
+            return CludesUI.DisabledTooltip(NO_COLOR_TIP)
+        end
         if desc.colorDisabledTooltip then
             return CludesUI.DisabledTooltip(desc.colorDisabledTooltip, "disabled")
         end
@@ -447,9 +659,13 @@ function GO.AttachInline(rgn, desc, colorRgn)
         block:EnableMouse(true)
         block:SetScript("OnEnter", function(self)
             local tip = colorLockTip()
-            if tip then CludesUI.ShowWidgetTooltip(self, tip) end
+            if tip then
+                CludesUI.ShowWidgetTooltip(self, tip)
+            end
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         return block
     end
 
@@ -458,7 +674,9 @@ function GO.AttachInline(rgn, desc, colorRgn)
 
     local cog
     local rows = CogRows(desc)
-    if colorInCog then table.insert(rows, 1, ColorRow(desc, colorOff)) end
+    if colorInCog then
+        table.insert(rows, 1, ColorRow(desc, colorOff))
+    end
     if #rows > 0 then
         local hasExtra = (desc.cogRows and #desc.cogRows > 0) or colorInCog
         cog = CludesUI.BuildInlineCog(rgn, {
@@ -466,14 +684,20 @@ function GO.AttachInline(rgn, desc, colorRgn)
             rows = rows,
             captureRegion = rgn,
             disabled = function()
-                if off() then return true end
+                if off() then
+                    return true
+                end
                 return not hasExtra and not GO.IsPixel(desc)
             end,
             -- Whichever lock holds, as the sentence shown: the site's own
             -- requirement, else a glow to set (rows beyond Pixel's), else Pixel Glow.
             disabledTooltip = function()
-                if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
-                if hasExtra then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
+                if siteOff() then
+                    return CludesUI.ResolveDisabledTip(desc)
+                end
+                if hasExtra then
+                    return CludesUI.DisabledTooltip(NO_STYLE_TIP)
+                end
                 return CludesUI.DisabledTooltip("Pixel Glow")
             end,
             rawTooltip = true,
@@ -485,16 +709,25 @@ function GO.AttachInline(rgn, desc, colorRgn)
     elseif caps.mode then
         local srgn = colorRgn or rgn
         local customSw, defaultSw, classSw = CludesUI.BuildTrioColorSwatch(srgn, level, {
-            getMode = function() return desc.get("mode") or "custom" end,
-            setMode = function(m) desc.set("mode", m) end,
+            getMode = function()
+                return desc.get("mode") or "custom"
+            end,
+            setMode = function(m)
+                desc.set("mode", m)
+            end,
             getCustomRGB = function()
                 local r, g, b = desc.get("color")
                 local dc = desc.defaultColor
                 return r or (dc and dc.r) or 1, g or (dc and dc.g) or 1, b or (dc and dc.b) or 1
             end,
-            setCustomRGB = function(r, g, b) desc.set("color", r, g, b) end,
+            setCustomRGB = function(r, g, b)
+                desc.set("color", r, g, b)
+            end,
             -- Mode clicks: the trio's highlight and page status refresh via widget refresh.
-            onChange = function() GO.Changed(desc); CludesUI:RefreshPage() end,
+            onChange = function()
+                GO.Changed(desc)
+                CludesUI:RefreshPage()
+            end,
             hasClassColor = true,
             disabled = colorOff,
             overrideSize = 20,
@@ -514,7 +747,9 @@ function GO.AttachInline(rgn, desc, colorRgn)
         local block = Blocker(defaultSw, classSw)
         local function SyncColorLock()
             local o = colorOff()
-            customSw:EnableMouse(not o); defaultSw:EnableMouse(not o); classSw:EnableMouse(not o)
+            customSw:EnableMouse(not o)
+            defaultSw:EnableMouse(not o)
+            classSw:EnableMouse(not o)
             block:SetShown(o)
         end
         SyncColorLock()
@@ -530,11 +765,15 @@ end
 local PREVIEW_ICON = 136197
 
 function GO.BuildPreview(parent, desc, opts)
-    if CludesUI._prebuilding or not parent then return end
+    if CludesUI._prebuilding or not parent then
+        return
+    end
     opts = opts or {}
     local PP = CludesUI.PanelPP
     local isBar = opts.bar
-    if isBar == nil then isBar = desc.host == "bar" end
+    if isBar == nil then
+        isBar = desc.host == "bar"
+    end
     local w = opts.width or (isBar and 110 or 36)
     local h = opts.height or (isBar and 16 or 36)
 
@@ -563,14 +802,18 @@ function GO.BuildPreview(parent, desc, opts)
     ov:SetAllPoints(f)
     ov:SetFrameLevel(f:GetFrameLevel() + 2)
     ov:EnableMouse(false)
-    ov._cuiGlowPreview = true  -- exempt from CDM's Show Glows Only in Combat gate
+    ov._cuiGlowPreview = true -- exempt from CDM's Show Glows Only in Combat gate
 
     local function Refresh()
         -- Hidden: stays stopped until OnShow (a page refresh with the panel
         -- closed must not put it back into the glow driver). Dressed again
         -- by a later build: those frames are no longer this preview.
-        if PoolGen(f) ~= dressGen or not f:IsVisible() then return end
-        if iconFn and not isBar then tex:SetTexture(iconFn() or PREVIEW_ICON) end
+        if PoolGen(f) ~= dressGen or not f:IsVisible() then
+            return
+        end
+        if iconFn and not isBar then
+            tex:SetTexture(iconFn() or PREVIEW_ICON)
+        end
         if not GO.Renders(desc) then
             G.StopGlow(ov)
             f:SetAlpha(0.3)
@@ -582,7 +825,9 @@ function GO.BuildPreview(parent, desc, opts)
     -- A hidden preview (options closed, page left or rebuilt) stops its glow,
     -- so it leaves the glow driver and a closed panel costs nothing; shown
     -- again (a cached page coming back), it restarts from the current values.
-    f:SetScript("OnHide", function() G.StopGlow(ov) end)
+    f:SetScript("OnHide", function()
+        G.StopGlow(ov)
+    end)
     f:SetScript("OnShow", Refresh)
     -- Latest build only: descriptors outlive page rebuilds, a list would grow.
     desc._preview, desc._previewFrame = Refresh, f
@@ -598,20 +843,27 @@ end
 --  defs: optional fallbacks under the same keys (a module's defaults table).
 --  The key names come from the glow engine's CludesUI.Glows.FlatKeys.
 -------------------------------------------------------------------------------
-local FLAT_FIELDS = { color = true, lines = true, thickness = true,
-    speed = true, bg = true, bgColor = true }
+local FLAT_FIELDS = { color = true, lines = true, thickness = true, speed = true, bg = true, bgColor = true }
 local function FlatKey(p, f)
     return FLAT_FIELDS[f] and G.FlatKeys(p)[f] or nil
 end
 
 function GO.FlatGet(t, p, f, defs)
     local k = FlatKey(p, f)
-    if not (k and t) then return nil end
+    if not (k and t) then
+        return nil
+    end
     local v = t[k]
-    if v == nil and defs then v = defs[k] end
-    if f == "bg" then return v == true end
+    if v == nil and defs then
+        v = defs[k]
+    end
+    if f == "bg" then
+        return v == true
+    end
     if f == "color" or f == "bgColor" then
-        if type(v) == "table" then return v.r, v.g, v.b end
+        if type(v) == "table" then
+            return v.r, v.g, v.b
+        end
         return nil
     end
     return v
@@ -619,8 +871,14 @@ end
 
 function GO.FlatSet(t, p, f, a, b, c)
     local k = FlatKey(p, f)
-    if not (k and t) then return end
-    if f == "color" or f == "bgColor" then t[k] = { r = a, g = b, b = c } else t[k] = a end
+    if not (k and t) then
+        return
+    end
+    if f == "color" or f == "bgColor" then
+        t[k] = { r = a, g = b, b = c }
+    else
+        t[k] = a
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -638,31 +896,50 @@ function GO.PrefixSite(getT, p, host, onChange, defColor)
     }
     function desc.get(f)
         local t = getT()
-        if not t then return nil end
-        if f == "style" then return t[k.type] or 0
-        elseif f == "mode" then return G.DeriveColorMode(t[k.mode], t[k.class])
-        elseif f == "color" then return t[k.r], t[k.g], t[k.b]
-        elseif f == "lines" then return t[k.lines]
-        elseif f == "thickness" then return t[k.th]
-        elseif f == "speed" then return t[k.speed]
-        elseif f == "bg" then return t[k.bg] == true
-        elseif f == "bgColor" then return t[k.bgR], t[k.bgG], t[k.bgB]
+        if not t then
+            return nil
+        end
+        if f == "style" then
+            return t[k.type] or 0
+        elseif f == "mode" then
+            return G.DeriveColorMode(t[k.mode], t[k.class])
+        elseif f == "color" then
+            return t[k.r], t[k.g], t[k.b]
+        elseif f == "lines" then
+            return t[k.lines]
+        elseif f == "thickness" then
+            return t[k.th]
+        elseif f == "speed" then
+            return t[k.speed]
+        elseif f == "bg" then
+            return t[k.bg] == true
+        elseif f == "bgColor" then
+            return t[k.bgR], t[k.bgG], t[k.bgB]
         end
     end
     function desc.set(f, a, b, c)
         local t = getT()
-        if not t then return end
-        if f == "style" then t[k.type] = a
+        if not t then
+            return
+        end
+        if f == "style" then
+            t[k.type] = a
         elseif f == "mode" then
             -- The legacy class flag stays in step for older readers of this table.
             t[k.mode] = a
             t[k.class] = (a == "class") or nil
-        elseif f == "color" then t[k.r], t[k.g], t[k.b] = a, b, c
-        elseif f == "lines" then t[k.lines] = a
-        elseif f == "thickness" then t[k.th] = a
-        elseif f == "speed" then t[k.speed] = a
-        elseif f == "bg" then t[k.bg] = a and true or nil
-        elseif f == "bgColor" then t[k.bgR], t[k.bgG], t[k.bgB] = a, b, c
+        elseif f == "color" then
+            t[k.r], t[k.g], t[k.b] = a, b, c
+        elseif f == "lines" then
+            t[k.lines] = a
+        elseif f == "thickness" then
+            t[k.th] = a
+        elseif f == "speed" then
+            t[k.speed] = a
+        elseif f == "bg" then
+            t[k.bg] = a and true or nil
+        elseif f == "bgColor" then
+            t[k.bgR], t[k.bgG], t[k.bgB] = a, b, c
         end
     end
     return desc
@@ -683,7 +960,10 @@ GO.sites = {}
 -- info = { text = fn, tooltip, glyph = "icon"/"bar" } instead of desc/list: a hint row with Go to Settings.
 function GO.RegisterSite(entry)
     for i = 1, #GO.sites do
-        if GO.sites[i].id == entry.id then GO.sites[i] = entry; return end
+        if GO.sites[i].id == entry.id then
+            GO.sites[i] = entry
+            return
+        end
     end
     GO.sites[#GO.sites + 1] = entry
 end
@@ -694,7 +974,9 @@ end
 -- per-icon glows read, which the template never changes) or a style the site
 -- cannot map.
 function GO.TemplateValue(desc, t)
-    if desc.paramsOnly then return nil, false end
+    if desc.paramsOnly then
+        return nil, false
+    end
     local idx, converted = GO.Resolve(desc, t.style or 1)
     return GO.FromShared(desc, idx), converted, idx
 end
@@ -706,15 +988,25 @@ end
 -- Writes directly: a caller acting for the user routes the style through the
 -- site's own confirm first (see desc.confirm). Returns applied, converted.
 function GO.ApplyTemplate(desc, t, anyState)
-    if not anyState and not GO.IsCustomGlow(desc) then return false, false end
-    if GO.StyleLocked(desc) then return false, false end
+    if not anyState and not GO.IsCustomGlow(desc) then
+        return false, false
+    end
+    if GO.StyleLocked(desc) then
+        return false, false
+    end
     local v, converted, idx = GO.TemplateValue(desc, t)
-    if v == nil then return false, false end
+    if v == nil then
+        return false, false
+    end
     local caps = desc.caps or {}
     desc.set("style", v)
     local tm = t.mode or "custom"
-    if caps.mode then desc.set("mode", tm) end
-    if tm == "custom" and t.r then desc.set("color", t.r, t.g, t.b) end
+    if caps.mode then
+        desc.set("mode", tm)
+    end
+    if tm == "custom" and t.r then
+        desc.set("color", t.r, t.g, t.b)
+    end
     -- Pixel parameters only go where the result is a Pixel Glow: for any other
     -- template style they are hidden in the template and would reset the site's.
     if caps.params and idx == 1 then
@@ -724,7 +1016,9 @@ function GO.ApplyTemplate(desc, t, anyState)
     end
     if caps.bg and idx == 1 then
         desc.set("bg", t.bg and true or nil)
-        if t.bg then desc.set("bgColor", t.bgR or 0, t.bgG or 0, t.bgB or 0) end
+        if t.bg then
+            desc.set("bgColor", t.bgR or 0, t.bgG or 0, t.bgB or 0)
+        end
     end
     return true, converted
 end
@@ -732,23 +1026,39 @@ end
 -- Does the site already show what ApplyTemplate would write? An off glow or
 -- an extra never does, nor a paramsOnly site (never a template target).
 function GO.MatchesTemplate(desc, t)
-    if desc.paramsOnly or not GO.IsCustomGlow(desc) then return false end
+    if desc.paramsOnly or not GO.IsCustomGlow(desc) then
+        return false
+    end
     local caps = desc.caps or {}
     local idx = GO.Resolve(desc, t.style or 1)
-    if GO.ToShared(desc, desc.get("style")) ~= idx then return false end
+    if GO.ToShared(desc, desc.get("style")) ~= idx then
+        return false
+    end
     local mode = caps.mode and desc.get("mode") or "custom"
-    if mode ~= (t.mode or "custom") then return false end
+    if mode ~= (t.mode or "custom") then
+        return false
+    end
     if mode == "custom" and t.r then
         local r, g, b = desc.get("color")
-        if r ~= t.r or g ~= t.g or b ~= t.b then return false end
+        if r ~= t.r or g ~= t.g or b ~= t.b then
+            return false
+        end
     end
     if caps.params and idx == 1 then
-        if (desc.get("lines") or 8) ~= (t.lines or 8) then return false end
-        if (desc.get("thickness") or 2) ~= (t.thickness or 2) then return false end
-        if (desc.get("speed") or 4) ~= (t.speed or 4) then return false end
+        if (desc.get("lines") or 8) ~= (t.lines or 8) then
+            return false
+        end
+        if (desc.get("thickness") or 2) ~= (t.thickness or 2) then
+            return false
+        end
+        if (desc.get("speed") or 4) ~= (t.speed or 4) then
+            return false
+        end
     end
     if caps.bg and idx == 1 then
-        if (desc.get("bg") == true) ~= (t.bg == true) then return false end
+        if (desc.get("bg") == true) ~= (t.bg == true) then
+            return false
+        end
         -- ApplyTemplate writes the background color too.
         if t.bg then
             local br, bgg, bb = desc.get("bgColor")

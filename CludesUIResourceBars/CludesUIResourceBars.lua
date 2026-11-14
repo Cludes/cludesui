@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIResourceBars.lua
 --  Health bar, primary resource bar (mana/rage/energy/etc), secondary
@@ -6,8 +8,27 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  animations, combat fade, low-resource alerts, class-colored bars
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.SetFrameScale and CludesUI._Pool and CludesUI.AbsorbGlow and CludesUI.SetCraftBatch and CludesUI.FitCastName and CludesUI.CleanCastName and CludesUI.AbbreviateValue and CludesUI.PadModeOn and CludesUI.TalentConditionsHold) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Call Totem Bar scales its Edit Mode system through the parent's SetFrameScale, the health bar's absorb glow line is the parent's AbsorbGlow, every player cast start runs the parent's SetCraftBatch, Show Full Spell Name is the parent's FitCastName, the cast name drops the quest-object " - No Text" through its CleanCastName, and the health text formats through the parent's AbbreviateValue, and the gamepad cast bar hide follows its PadModeOn, and the WoW Forever swing timer's talent conditions read its TalentConditionsHold)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.SetFrameScale
+        and CludesUI._Pool
+        and CludesUI.AbsorbGlow
+        and CludesUI.SetCraftBatch
+        and CludesUI.FitCastName
+        and CludesUI.CleanCastName
+        and CludesUI.AbbreviateValue
+        and CludesUI.PadModeOn
+        and CludesUI.TalentConditionsHold
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Call Totem Bar scales its Edit Mode system through the parent's SetFrameScale, the health bar's absorb glow line is the parent's AbsorbGlow, every player cast start runs the parent's SetCraftBatch, Show Full Spell Name is the parent's FitCastName, the cast name drops the quest-object " - No Text" through its CleanCastName, and the health text formats through the parent's AbbreviateValue, and the gamepad cast bar hide follows its PadModeOn, and the WoW Forever swing timer's talent conditions read its TalentConditionsHold)
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 local ERB = CludesUI.Lite.NewAddon(ADDON_NAME)
 ns.ERB = ERB
 
@@ -20,13 +41,16 @@ CludesUI.RegisterBorderDefaults("resourcebars", CludesUI.BORDER_DEFAULTS_BARS)
 -- need to land edges on whole physical pixels.
 local function SnapXY(x, y, frame, pos)
     local PPa = CludesUI and CludesUI.PP
-    if not (PPa and x and y and frame) then return x or 0, y or 0 end
+    if not (PPa and x and y and frame) then
+        return x or 0, y or 0
+    end
     local es = frame:GetEffectiveScale()
-    local isCenterAnchor = pos and (pos.point == "CENTER")
+    local isCenterAnchor = pos
+        and (pos.point == "CENTER")
         and (pos.relPoint == "CENTER" or pos.relPoint == nil)
     if isCenterAnchor and PPa.SnapCenterForDim then
         return PPa.SnapCenterForDim(x, frame:GetWidth() or 0, es),
-               PPa.SnapCenterForDim(y, frame:GetHeight() or 0, es)
+            PPa.SnapCenterForDim(y, frame:GetHeight() or 0, es)
     elseif PPa.SnapForES then
         return PPa.SnapForES(x, es), PPa.SnapForES(y, es)
     end
@@ -38,14 +62,20 @@ local UnitPowerMax = UnitPowerMax
 local UnitClass = UnitClass
 -- Vanilla-based clients (WoW Forever) have no specialization API: every
 -- reader then sees "no spec", the state a fresh character is in anyway.
-local GetSpecialization = GetSpecialization or function() return nil end
+local GetSpecialization = GetSpecialization or function()
+    return nil
+end
 local GetShapeshiftFormID = GetShapeshiftFormID
 
 -------------------------------------------------------------------------------
 --  Constants
 -------------------------------------------------------------------------------
-local function GetRBFont() return CludesUI.GetFontPath("resourceBars") end
-local function SetRBFont(fs, font, size) CludesUI.ApplyModuleFont(fs, font, size, "resourceBars") end
+local function GetRBFont()
+    return CludesUI.GetFontPath("resourceBars")
+end
+local function SetRBFont(fs, font, size)
+    CludesUI.ApplyModuleFont(fs, font, size, "resourceBars")
+end
 -- Shared with CUI_ResourceBars_SwingTimer.lua (same font lane as the cast bar text).
 ns.GetRBFont = GetRBFont
 ns.SetRBFont = SetRBFont
@@ -54,9 +84,15 @@ ns.SetRBFont = SetRBFont
 -- "0%", "0.0" and "0/5" are zero and "0.5" or "10/5" are not. Blank and secret
 -- text pass through.
 function ns.ERB_TextIsZero(text)
-    if text == nil or (issecretvalue and issecretvalue(text)) then return false end
-    if type(text) == "number" then return text == 0 end
-    if type(text) ~= "string" or text == "" then return false end
+    if text == nil or (issecretvalue and issecretvalue(text)) then
+        return false
+    end
+    if type(text) == "number" then
+        return text == 0
+    end
+    if type(text) ~= "string" or text == "" then
+        return false
+    end
     return tonumber(text:match("^%s*%-?%d+%.?%d*")) == 0
 end
 
@@ -64,7 +100,9 @@ end
 -- TruncateWhenZero, which blanks it at zero engine-side. Returns ok, display;
 -- not ok when the call fails, and the caller shows the raw value.
 function ns.ERB_TruncateSecretZero(v)
-    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) then return false end
+    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) then
+        return false
+    end
     return pcall(C_StringUtil.TruncateWhenZero, v)
 end
 
@@ -79,11 +117,15 @@ function ns.GetCastTextAnchor(side, pushed, reserve)
         return "CENTER", 0, "CENTER"
     elseif side == "left" then
         local base = 4
-        if pushed then base = base + reserve end
+        if pushed then
+            base = base + reserve
+        end
         return "LEFT", base, "LEFT"
     else -- "right"
         local base = -4
-        if pushed then base = base - reserve end
+        if pushed then
+            base = base - reserve
+        end
         return "RIGHT", base, "RIGHT"
     end
 end
@@ -93,7 +135,9 @@ end
 -- GetText may return a secret cast name; SetText accepts secrets untouched, so the
 -- round-trip is safe.
 function ns.ReflowFontString(fs)
-    if not fs then return end
+    if not fs then
+        return
+    end
     local t = fs:GetText()
     fs:SetText("")
     fs:SetText(t or "")
@@ -101,23 +145,23 @@ end
 
 -- PowerType enum values (Enum.PowerType)
 local PT = {
-    MANA        = 0,
-    RAGE        = 1,
-    FOCUS       = 2,
-    ENERGY      = 3,
-    COMBO       = 4,
-    RUNES       = 5,
+    MANA = 0,
+    RAGE = 1,
+    FOCUS = 2,
+    ENERGY = 3,
+    COMBO = 4,
+    RUNES = 5,
     RUNIC_POWER = 6,
     SOUL_SHARDS = 7,
-    LUNAR_POWER = 8,  -- Astral Power (Balance Druid)
-    HOLY_POWER  = 9,
-    MAELSTROM   = 11,
-    CHI         = 12,
-    INSANITY    = 13,
-    ARCANE      = 16, -- Arcane Charges
-    FURY        = 17,
-    PAIN        = 18, -- Demon Hunter (Vengeance)
-    ESSENCE     = 19, -- Evoker
+    LUNAR_POWER = 8, -- Astral Power (Balance Druid)
+    HOLY_POWER = 9,
+    MAELSTROM = 11,
+    CHI = 12,
+    INSANITY = 13,
+    ARCANE = 16, -- Arcane Charges
+    FURY = 17,
+    PAIN = 18, -- Demon Hunter (Vengeance)
+    ESSENCE = 19, -- Evoker
 }
 
 -------------------------------------------------------------------------------
@@ -140,46 +184,46 @@ local CHANNEL_TICK_DATA = {
     -- its interior marks sit at i/N of the ACTUAL duration and a chained
     -- recast keeps the outgoing cast's damage cadence -- see the
     -- intervalCount model in ShowChannelTicks.
-    [356995]  = { intervalCount = 3, modSpell = 1219723, modIntervalCount = 4 },
+    [356995] = { intervalCount = 3, modSpell = 1219723, modIntervalCount = 4 },
     -- Priest
-    [15407]   = { ticks = 6 },                                     -- Mind Flay
-    [48045]   = { ticks = 6 },                                     -- Mind Sear
-    [64843]   = { ticks = 4 },                                     -- Divine Hymn
+    [15407] = { ticks = 6 }, -- Mind Flay
+    [48045] = { ticks = 6 }, -- Mind Sear
+    [64843] = { ticks = 4 }, -- Divine Hymn
     -- Penance hits 3 times over 2s with the first at the cast (ticks = 2);
     -- Castigation (193134) adds a hit (ticks = 3).
-    [47757]   = { ticks = 2, modSpell = 193134, modTicks = 3 },    -- Penance (Heal)
-    [47758]   = { ticks = 2, modSpell = 193134, modTicks = 3 },    -- Penance (DPS)
-    [373129]  = { ticks = 2, modSpell = 193134, modTicks = 3 },    -- Penance / Dark Reprimand (DPS)
-    [400171]  = { ticks = 2, modSpell = 193134, modTicks = 3 },    -- Penance / Dark Reprimand (Heal)
+    [47757] = { ticks = 2, modSpell = 193134, modTicks = 3 }, -- Penance (Heal)
+    [47758] = { ticks = 2, modSpell = 193134, modTicks = 3 }, -- Penance (DPS)
+    [373129] = { ticks = 2, modSpell = 193134, modTicks = 3 }, -- Penance / Dark Reprimand (DPS)
+    [400171] = { ticks = 2, modSpell = 193134, modTicks = 3 }, -- Penance / Dark Reprimand (Heal)
     -- Mage
     -- Arcane Missiles: 5 missiles, fenceposted (see the missiles model
     -- above), so only 3 interior marks base. Amplification (236628) adds 2
     -- missiles and the tier set 2pc (1296581) adds 1.
-    [5143]    = { missiles = 5, addMissiles = { [236628] = 2, [1296581] = 1 } },
-    [12051]   = { ticks = 6 },                                     -- Evocation
-    [205021]  = { ticks = 5 },                                     -- Ray of Frost
+    [5143] = { missiles = 5, addMissiles = { [236628] = 2, [1296581] = 1 } },
+    [12051] = { ticks = 6 }, -- Evocation
+    [205021] = { ticks = 5 }, -- Ray of Frost
     -- Druid
-    [740]     = { ticks = 4 },                                     -- Tranquility
+    [740] = { ticks = 4 }, -- Tranquility
     -- Hunter
     -- Rapid Fire shoots once at channel start and once at channel end. Quick
     -- Draw (459794) adds three shots without changing the channel duration.
-    [257044]  = { missiles = 7, addMissiles = { [459794] = 3 } },  -- Rapid Fire
+    [257044] = { missiles = 7, addMissiles = { [459794] = 3 } }, -- Rapid Fire
     -- Demon Hunter
-    [198013]  = { tickInterval = 0.2 },                            -- Eye Beam
-    [473728]  = { tickInterval = 0.2 },                            -- Void Ray (Devourer)
-    [212084]  = { ticks = 10 },                                    -- Fel Devastation
+    [198013] = { tickInterval = 0.2 }, -- Eye Beam
+    [473728] = { tickInterval = 0.2 }, -- Void Ray (Devourer)
+    [212084] = { ticks = 10 }, -- Fel Devastation
     -- Warlock
-    [198590]  = { ticks = 5 },                                     -- Drain Soul
-    [755]     = { ticks = 5 },                                     -- Health Funnel
-    [234153]  = { ticks = 5 },                                     -- Drain Life
+    [198590] = { ticks = 5 }, -- Drain Soul
+    [755] = { ticks = 5 }, -- Health Funnel
+    [234153] = { ticks = 5 }, -- Drain Life
     -- Death Knight
-    [206931]  = { ticks = 3 },                                     -- Blooddrinker
+    [206931] = { ticks = 3 }, -- Blooddrinker
     -- Monk
-    [113656]  = { ticks = 4 },                                     -- Fists of Fury
-    [115175]  = { ticks = 12 },                                     -- Soothing Mist
-    [443028]  = { ticks = 4 },                                     -- Celestial Conduit
+    [113656] = { ticks = 4 }, -- Fists of Fury
+    [115175] = { ticks = 12 }, -- Soothing Mist
+    [443028] = { ticks = 4 }, -- Celestial Conduit
     -- Racial
-    [291944]  = { ticks = 6 },                                     -- Regeneratin (Zandalari)
+    [291944] = { ticks = 6 }, -- Regeneratin (Zandalari)
 }
 
 -- WoW Forever: every rank is its own spell ID. Mind Flay channels for 3s and
@@ -189,57 +233,72 @@ local CHANNEL_TICK_DATA = {
 -- lists both, plus its channeled cast spell.
 if CludesUI.IS_FOREVER then
     for _, id in ipairs({ 15407, 17311, 17312, 17313, 17314, 18807 }) do
-        CHANNEL_TICK_DATA[id] = { ticks = 3 }                      -- Mind Flay
+        CHANNEL_TICK_DATA[id] = { ticks = 3 } -- Mind Flay
     end
     for _, id in ipairs({
-        402261, 402277, 402174,                                    -- Penance rank 1: damage, heal, cast
-        1240734, 1240732, 1240720,                                 -- rank 2
-        1240736, 1240733, 1240721,                                 -- rank 3
-        1316994, 1316992, 1316995,                                 -- rank 4
+        402261,
+        402277,
+        402174, -- Penance rank 1: damage, heal, cast
+        1240734,
+        1240732,
+        1240720, -- rank 2
+        1240736,
+        1240733,
+        1240721, -- rank 3
+        1316994,
+        1316992,
+        1316995, -- rank 4
     }) do
-        CHANNEL_TICK_DATA[id] = { ticks = 2 }                      -- Penance
+        CHANNEL_TICK_DATA[id] = { ticks = 2 } -- Penance
     end
 end
-
 
 -------------------------------------------------------------------------------
 --  Class/Spec resource mapping
 -------------------------------------------------------------------------------
 -- Class/power colors route through CludesUI.GetClassColor/GetPowerColor so
 -- General Options overrides apply. Metatable converts {r=,g=,b=} to {r,g,b} arrays.
-local CLASS_COLORS = setmetatable({}, { __index = function(_, classFile)
-    if not CludesUI or not CludesUI.GetClassColor then return nil end
-    local c = CludesUI.GetClassColor(classFile)
-    if c then return { c.r, c.g, c.b } end
-    return nil
-end })
+local CLASS_COLORS = setmetatable({}, {
+    __index = function(_, classFile)
+        if not CludesUI or not CludesUI.GetClassColor then
+            return nil
+        end
+        local c = CludesUI.GetClassColor(classFile)
+        if c then
+            return { c.r, c.g, c.b }
+        end
+        return nil
+    end,
+})
 
 -- Power type enum -> CUI power key string mapping for GetPowerColor lookup
 local POWER_ENUM_TO_KEY = {
-    [PT.MANA]        = "MANA",
-    [PT.RAGE]        = "RAGE",
-    [PT.FOCUS]       = "FOCUS",
-    [PT.ENERGY]      = "ENERGY",
+    [PT.MANA] = "MANA",
+    [PT.RAGE] = "RAGE",
+    [PT.FOCUS] = "FOCUS",
+    [PT.ENERGY] = "ENERGY",
     [PT.RUNIC_POWER] = "RUNIC_POWER",
     [PT.LUNAR_POWER] = "LUNAR_POWER",
-    [PT.MAELSTROM]   = "MAELSTROM",
-    [PT.INSANITY]    = "INSANITY",
-    [PT.FURY]        = "FURY",
-    [PT.PAIN]        = "PAIN",
+    [PT.MAELSTROM] = "MAELSTROM",
+    [PT.INSANITY] = "INSANITY",
+    [PT.FURY] = "FURY",
+    [PT.PAIN] = "PAIN",
 }
 
 -- Resolve any power key (enum number, string, or _BAR variant) to the
 -- canonical string key used by CludesUI.GetPowerColor.
 local POWER_KEY_ALIAS = {
-    ["FOCUS_BAR"]       = "FOCUS",
-    ["INSANITY_BAR"]    = "INSANITY",
+    ["FOCUS_BAR"] = "FOCUS",
+    ["INSANITY_BAR"] = "INSANITY",
     ["LUNAR_POWER_BAR"] = "LUNAR_POWER",
-    ["MAELSTROM_BAR"]   = "MAELSTROM",
+    ["MAELSTROM_BAR"] = "MAELSTROM",
     ["MAELSTROM_WEAPON"] = "MAELSTROM",
 }
 
 local function ResolvePowerKey(powerKey)
-    if type(powerKey) == "number" then return POWER_ENUM_TO_KEY[powerKey] end
+    if type(powerKey) == "number" then
+        return POWER_ENUM_TO_KEY[powerKey]
+    end
     return POWER_KEY_ALIAS[powerKey] or powerKey
 end
 
@@ -248,33 +307,39 @@ end
 -- churn for palette-stable values). Resolved entries are rawset so hits skip this
 -- function; nil results (parent not ready) are NOT cached, so early-login lookups
 -- retry. One memo input: parent palette (invalidation hook below).
-local POWER_COLORS = setmetatable({}, { __index = function(t, powerKey)
-    -- nil lookups are LEGAL here and must answer nil, never cache: BM/MM
-    -- hunters have no primary power (GetPrimaryPowerType returns nil by
-    -- design -- Focus is the class resource bar), and the options swatches
-    -- index this memo with that result. rawset with a nil key throws.
-    if powerKey == nil then return nil end
-    if not CludesUI then return nil end
-    local key = ResolvePowerKey(powerKey)
-    if key and CludesUI.GetPowerColor then
-        local c = CludesUI.GetPowerColor(key)
-        if c then
-            local v = { c.r, c.g, c.b }
-            rawset(t, powerKey, v)
-            return v
+local POWER_COLORS = setmetatable({}, {
+    __index = function(t, powerKey)
+        -- nil lookups are LEGAL here and must answer nil, never cache: BM/MM
+        -- hunters have no primary power (GetPrimaryPowerType returns nil by
+        -- design -- Focus is the class resource bar), and the options swatches
+        -- index this memo with that result. rawset with a nil key throws.
+        if powerKey == nil then
+            return nil
         end
-    end
-    if CludesUI.GetClassColor then
-        local _, classFile = UnitClass("player")
-        local cc = classFile and CludesUI.GetClassColor(classFile)
-        if cc then
-            local v = { cc.r, cc.g, cc.b }
-            rawset(t, powerKey, v)
-            return v
+        if not CludesUI then
+            return nil
         end
-    end
-    return nil
-end })
+        local key = ResolvePowerKey(powerKey)
+        if key and CludesUI.GetPowerColor then
+            local c = CludesUI.GetPowerColor(key)
+            if c then
+                local v = { c.r, c.g, c.b }
+                rawset(t, powerKey, v)
+                return v
+            end
+        end
+        if CludesUI.GetClassColor then
+            local _, classFile = UnitClass("player")
+            local cc = classFile and CludesUI.GetClassColor(classFile)
+            if cc then
+                local v = { cc.r, cc.g, cc.b }
+                rawset(t, powerKey, v)
+                return v
+            end
+        end
+        return nil
+    end,
+})
 -- ApplyColorsToOUF is the parent's universal "colours changed" entry point (swatch
 -- edits, resets, global-mode toggle, Pull Colors From, profile switches), so wiping
 -- the memo there covers every palette edge; bars simply recolor next tick.
@@ -288,9 +353,15 @@ end
 -- GetAtlasInfo: unknown tokens (Stagger/Ironfur) or missing atlases fall back to
 -- the regular bar texture, so an atlas rename never renders broken art. On ns.
 ns._crAtlasSuffix = {
-    MANA = "Mana", RAGE = "Rage", FOCUS = "Focus", ENERGY = "Energy",
-    RUNIC_POWER = "RunicPower", LUNAR_POWER = "AstralPower",
-    MAELSTROM = "Maelstrom", INSANITY = "Insanity", FURY = "Fury",
+    MANA = "Mana",
+    RAGE = "Rage",
+    FOCUS = "Focus",
+    ENERGY = "Energy",
+    RUNIC_POWER = "RunicPower",
+    LUNAR_POWER = "AstralPower",
+    MAELSTROM = "Maelstrom",
+    INSANITY = "Insanity",
+    FURY = "Fury",
     PAIN = "Pain",
 }
 -- Tint sink for atlas-mode fills: stands in for the fill texture at live recolor
@@ -298,15 +369,26 @@ ns._crAtlasSuffix = {
 -- (text recoloring, curve evaluation) keeps running.
 ns._atlasNoTint = { SetVertexColor = function() end }
 ns._crAtlasClass = {
-    DEATHKNIGHT = "DeathKnight", DEMONHUNTER = "DemonHunter",
-    DRUID = "Druid", EVOKER = "Evoker", HUNTER = "Hunter", MAGE = "Mage",
-    MONK = "Monk", PALADIN = "Paladin", PRIEST = "Priest", ROGUE = "Rogue",
-    SHAMAN = "Shaman", WARLOCK = "Warlock", WARRIOR = "Warrior",
+    DEATHKNIGHT = "DeathKnight",
+    DEMONHUNTER = "DemonHunter",
+    DRUID = "Druid",
+    EVOKER = "Evoker",
+    HUNTER = "Hunter",
+    MAGE = "Mage",
+    MONK = "Monk",
+    PALADIN = "Paladin",
+    PRIEST = "Priest",
+    ROGUE = "Rogue",
+    SHAMAN = "Shaman",
+    WARLOCK = "Warlock",
+    WARRIOR = "Warrior",
 }
 function ns.GetBlizzardPowerAtlas(powerKey)
     local resolved = ResolvePowerKey(powerKey) or powerKey
     local suffix = ns._crAtlasSuffix[resolved]
-    if not suffix or not (C_Texture and C_Texture.GetAtlasInfo) then return nil end
+    if not suffix or not (C_Texture and C_Texture.GetAtlasInfo) then
+        return nil
+    end
     -- Try Midnight family first (e.g. "Unit_Druid_AstralPower_Fill"), then classless
     -- and legacy HUD spellings; each candidate is validated, so a miss falls back.
     local _, classFile = UnitClass("player")
@@ -333,20 +415,19 @@ end
 local DARK_FILL_A = 0.90
 local DARK_BG_A = 1
 
-
 local PRIMARY_CLASS_MAP = {
-    WARRIOR     = PT.RAGE,
-    PALADIN     = PT.MANA,
-    HUNTER      = PT.FOCUS,
-    ROGUE       = PT.ENERGY,
-    PRIEST      = PT.MANA,
+    WARRIOR = PT.RAGE,
+    PALADIN = PT.MANA,
+    HUNTER = PT.FOCUS,
+    ROGUE = PT.ENERGY,
+    PRIEST = PT.MANA,
     DEATHKNIGHT = PT.RUNIC_POWER,
-    SHAMAN      = PT.MANA,
-    MAGE        = PT.MANA,
-    WARLOCK     = PT.MANA,
-    MONK        = PT.ENERGY,
+    SHAMAN = PT.MANA,
+    MAGE = PT.MANA,
+    WARLOCK = PT.MANA,
+    MONK = PT.ENERGY,
     DEMONHUNTER = PT.FURY,
-    EVOKER      = PT.MANA,
+    EVOKER = PT.MANA,
 }
 
 local function GetPrimaryPowerType()
@@ -360,10 +441,14 @@ local function GetPrimaryPowerType()
         local ov = pp and pp.powerTypeOverride
         if ov and ov.foreverDruid then
             local _, cf = UnitClass("player")
-            if cf == "DRUID" then return PT.MANA end
+            if cf == "DRUID" then
+                return PT.MANA
+            end
         end
         local live = UnitPowerType("player")
-        if type(live) == "number" then return live end
+        if type(live) == "number" then
+            return live
+        end
     end
     local _, classFile = UnitClass("player")
     local spec = GetSpecialization()
@@ -373,46 +458,66 @@ local function GetPrimaryPowerType()
     -- and the same flag means opposite things per class (slot 3 is Guardian,
     -- Shadow and Augmentation, wanting Mana, Insanity and Ebon Might). Cached, so
     -- this is one table read after the first call per spec.
-    local ovSpec = _G._ERB_ResolveSpecIDCached and _G._ERB_ResolveSpecIDCached() or nil
+    local ovSpec = _G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached() or nil
 
     -- Druid form handling
     if classFile == "DRUID" then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local ov = pp and pp.powerTypeOverride
         local o = ovSpec and ov and ov[ovSpec]
-        if o == "mana" then return PT.MANA end            -- Balance "Mana": every form
+        if o == "mana" then
+            return PT.MANA
+        end -- Balance "Mana": every form
         if o then
-            if spec == 1 then return PT.LUNAR_POWER end  -- Balance alt: Astral Power
-            return PT.MANA                                -- Feral/Guardian/Restoration alt: Mana
+            if spec == 1 then
+                return PT.LUNAR_POWER
+            end -- Balance alt: Astral Power
+            return PT.MANA -- Feral/Guardian/Restoration alt: Mana
         end
-        if form == 1 then return PT.ENERGY end
-        if form == 5 then return PT.RAGE end
+        if form == 1 then
+            return PT.ENERGY
+        end
+        if form == 5 then
+            return PT.RAGE
+        end
         return PT.MANA
     end
 
     if classFile == "SHAMAN" and spec == 1 then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local ov = pp and pp.powerTypeOverride
-        if ovSpec and ov and ov[ovSpec] then return PT.MAELSTROM end  -- Elemental alt: Maelstrom
+        if ovSpec and ov and ov[ovSpec] then
+            return PT.MAELSTROM
+        end -- Elemental alt: Maelstrom
     end
     if classFile == "PRIEST" and spec == 3 then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local ov = pp and pp.powerTypeOverride
-        if ovSpec and ov and ov[ovSpec] then return PT.INSANITY end   -- Shadow alt: Insanity
+        if ovSpec and ov and ov[ovSpec] then
+            return PT.INSANITY
+        end -- Shadow alt: Insanity
     end
     if classFile == "HUNTER" then
         -- BM/MM show Focus as the class resource bar, not power; Survival keeps
         -- it as power. Override: hunterFocusAsPower.
         if spec == 1 or spec == 2 then
             local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-            if pp and pp.hunterFocusAsPower then return PT.FOCUS end
+            if pp and pp.hunterFocusAsPower then
+                return PT.FOCUS
+            end
             return nil
         end
     end
     if classFile == "MONK" then
-        if spec == 1 then return PT.ENERGY end  -- Brewmaster
-        if spec == 2 then return PT.MANA end    -- Mistweaver
-        if spec == 3 then return PT.ENERGY end  -- Windwalker
+        if spec == 1 then
+            return PT.ENERGY
+        end -- Brewmaster
+        if spec == 2 then
+            return PT.MANA
+        end -- Mistweaver
+        if spec == 3 then
+            return PT.ENERGY
+        end -- Windwalker
     end
     if classFile == "DEMONHUNTER" then
         return PT.FURY
@@ -422,7 +527,9 @@ local function GetPrimaryPowerType()
         local ov = pp and pp.powerTypeOverride
         -- Inverted against the others: Augmentation's DEFAULT is Ebon Might and
         -- the override opts into plain Mana. Same spec-ID key either way.
-        if not (ovSpec and ov and ov[ovSpec]) then return "EBON_MIGHT" end
+        if not (ovSpec and ov and ov[ovSpec]) then
+            return "EBON_MIGHT"
+        end
         return PT.MANA
     end
 
@@ -465,7 +572,10 @@ IP.layerN = 0
 function IP.push(step, r, g, b, a)
     IP.layerN = IP.layerN + 1
     local t = IP.layers[IP.layerN]
-    if not t then t = {}; IP.layers[IP.layerN] = t end
+    if not t then
+        t = {}
+        IP.layers[IP.layerN] = t
+    end
     t.step, t.r, t.g, t.b, t.a = step, r, g, b, a
 end
 
@@ -480,7 +590,9 @@ local function GetIcicleCount()
         local aura = C_UnitAuras.GetPlayerAuraBySpellID(ICICLES_SPELL_ID)
         if aura then
             local count = aura.applications or aura.charges or aura.points or 0
-            if count > 5 then count = 5 end
+            if count > 5 then
+                count = 5
+            end
             return count
         end
         return 0
@@ -489,10 +601,14 @@ local function GetIcicleCount()
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         for i = 1, 255 do
             local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-            if not aura then break end
+            if not aura then
+                break
+            end
             if aura.spellId == ICICLES_SPELL_ID then
                 local count = aura.applications or aura.charges or aura.points or 0
-                if count > 5 then count = 5 end
+                if count > 5 then
+                    count = 5
+                end
                 return count
             end
         end
@@ -508,14 +624,14 @@ end
 --  Mangle). Driven by UNIT_SPELLCAST_SUCCEEDED so secret-value aura restrictions
 --  can't cause drift.
 -------------------------------------------------------------------------------
-local IRONFUR_SPELL       = 192081
-local URSOCS_ENDURANCE    = 393611  -- base 9s vs 7s
-local GUARDIAN_OF_ELUNE   = 155578  -- talent: Mangle -> next Ironfur +3s
-local MANGLE_SPELL        = 33917
-local FRENZIED_REGEN      = 22842
-local IRONFUR_GOE_BONUS   = 3
-local IRONFUR_GOE_WINDOW  = 15
-local ironfurTicks        = {}   -- array of { endTime=, duration= }
+local IRONFUR_SPELL = 192081
+local URSOCS_ENDURANCE = 393611 -- base 9s vs 7s
+local GUARDIAN_OF_ELUNE = 155578 -- talent: Mangle -> next Ironfur +3s
+local MANGLE_SPELL = 33917
+local FRENZIED_REGEN = 22842
+local IRONFUR_GOE_BONUS = 3
+local IRONFUR_GOE_WINDOW = 15
+local ironfurTicks = {} -- array of { endTime=, duration= }
 
 local function IronfurBaseDuration()
     if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(URSOCS_ENDURANCE) then
@@ -530,20 +646,36 @@ local function GetSecondaryResource()
     local form = GetShapeshiftFormID()
     -- WoW Forever: combo points are the only class resource there (Rogue, and
     -- Druid in Cat Form); every other class has none.
-    if CludesUI.IS_FOREVER == true and classFile ~= "ROGUE" and not (classFile == "DRUID" and form == 1) then return nil end
+    if CludesUI.IS_FOREVER == true and classFile ~= "ROGUE" and not (classFile == "DRUID" and form == 1) then
+        return nil
+    end
 
     if classFile == "PALADIN" then
         local mx = UnitPowerMax("player", PT.HOLY_POWER)
-        return { power = PT.HOLY_POWER, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5, type = "points" }
+        return {
+            power = PT.HOLY_POWER,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+        }
     elseif classFile == "ROGUE" then
         local mx = UnitPowerMax("player", PT.COMBO)
         -- onTarget: WoW Forever keeps combo points on the target, so the count is
         -- read with GetComboPoints and repainted on a target swap.
-        return { power = PT.COMBO, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5, type = "points",
-                 onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil }
-    elseif classFile == "DRUID" and spec == 3 and form == 5
-           and ERB.db and ERB.db.profile and ERB.db.profile.secondary
-           and ERB.db.profile.secondary.guardianIronfurBar then
+        return {
+            power = PT.COMBO,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+            onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
+        }
+    elseif
+        classFile == "DRUID"
+        and spec == 3
+        and form == 5
+        and ERB.db
+        and ERB.db.profile
+        and ERB.db.profile.secondary
+        and ERB.db.profile.secondary.guardianIronfurBar
+    then
         -- Guardian Ironfur duration bar, Bear Form only; other forms fall through
         -- to their default (combo points in Cat, nothing in caster/moonkin/travel).
         -- max is a normalized fraction (0..1).
@@ -551,13 +683,21 @@ local function GetSecondaryResource()
         return { power = "IRONFUR_BAR", max = 1, type = "bar" }
     elseif classFile == "DRUID" and form == 1 then
         local mx = UnitPowerMax("player", PT.COMBO)
-        return { power = PT.COMBO, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5, type = "points",
-                 onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil }
+        return {
+            power = PT.COMBO,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+            onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
+        }
     elseif classFile == "DRUID" and spec == 1 then
         -- Balance: Astral Power as a class resource bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", PT.LUNAR_POWER)
-        if issecretvalue and issecretvalue(mx) then mx = 100 end
-        if not mx or mx <= 0 then mx = 100 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 100
+        end
+        if not mx or mx <= 0 then
+            mx = 100
+        end
         return { power = "LUNAR_POWER_BAR", max = mx, type = "bar" }
     elseif classFile == "DRUID" and spec == 3 then
         -- Guardian, Ironfur bar disabled: no class resource (form==1 branch
@@ -565,12 +705,20 @@ local function GetSecondaryResource()
         return nil
     elseif classFile == "MONK" and (spec == 3) then
         local mx = UnitPowerMax("player", PT.CHI)
-        return { power = PT.CHI, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5, type = "points" }
+        return {
+            power = PT.CHI,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+        }
     elseif classFile == "MONK" and (spec == 1) then
         -- Brewmaster: stagger as a bar (max = player max health)
         local mx = UnitHealthMax("player") or 1
-        if issecretvalue and issecretvalue(mx) then mx = 1 end
-        if mx <= 0 then mx = 1 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 1
+        end
+        if mx <= 0 then
+            mx = 1
+        end
         return { power = "BREWMASTER_STAGGER", max = mx, type = "bar" }
     elseif classFile == "WARLOCK" then
         local mx = UnitPowerMax("player", PT.SOUL_SHARDS)
@@ -579,16 +727,28 @@ local function GetSecondaryResource()
         -- render checks) spends/gains shard FRAGMENTS in tenths; the flag makes
         -- UpdateSecondaryResource's value guard compare the fragment read and keeps
         -- ArmTick/PollTick polling, since out-of-combat fragment decay has no event.
-        return { power = PT.SOUL_SHARDS, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
-                 type = "points", frac = (spec == 3) or nil }
+        return {
+            power = PT.SOUL_SHARDS,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+            frac = (spec == 3) or nil,
+        }
     elseif classFile == "DEATHKNIGHT" then
         return { power = PT.RUNES, max = 6, type = "runes" }
     elseif classFile == "EVOKER" then
         local mx = UnitPowerMax("player", PT.ESSENCE)
-        return { power = PT.ESSENCE, max = (not issecretvalue or not issecretvalue(mx)) and mx or 5, type = "points" }
+        return {
+            power = PT.ESSENCE,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
+            type = "points",
+        }
     elseif classFile == "MAGE" and spec == 1 then
         local mx = UnitPowerMax("player", PT.ARCANE)
-        return { power = PT.ARCANE, max = (not issecretvalue or not issecretvalue(mx)) and mx or 4, type = "points" }
+        return {
+            power = PT.ARCANE,
+            max = (not issecretvalue or not issecretvalue(mx)) and mx or 4,
+            type = "points",
+        }
     elseif classFile == "MAGE" and spec == 3 then
         return { power = "ICICLES", max = 5, type = "custom" }
     elseif classFile == "DEMONHUNTER" then
@@ -600,7 +760,9 @@ local function GetSecondaryResource()
             local maxC = 50
             if CludesUI and CludesUI.GetSoulFragments then
                 local _, m = CludesUI.GetSoulFragments()
-                if m and m > 0 then maxC = m end
+                if m and m > 0 then
+                    maxC = m
+                end
             end
             return { power = "SOUL_FRAGMENTS_DEVOURER", max = maxC, type = "bar" }
         end
@@ -609,14 +771,22 @@ local function GetSecondaryResource()
     elseif classFile == "SHAMAN" and spec == 1 then
         -- Elemental: Maelstrom as a bar (like Devourer soul fragments)
         local mx = UnitPowerMax("player", PT.MAELSTROM)
-        if issecretvalue and issecretvalue(mx) then mx = 100 end
-        if not mx or mx <= 0 then mx = 100 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 100
+        end
+        if not mx or mx <= 0 then
+            mx = 100
+        end
         return { power = "MAELSTROM_BAR", max = mx, type = "bar" }
     elseif classFile == "PRIEST" and spec == 3 then
         -- Shadow: Insanity as a bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", PT.INSANITY)
-        if issecretvalue and issecretvalue(mx) then mx = 100 end
-        if not mx or mx <= 0 then mx = 100 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 100
+        end
+        if not mx or mx <= 0 then
+            mx = 100
+        end
         return { power = "INSANITY_BAR", max = mx, type = "bar" }
     elseif classFile == "SHAMAN" and spec == 2 then
         -- Base max 5, or 10 with Raging Maelstrom talent; BuildBars
@@ -627,26 +797,46 @@ local function GetSecondaryResource()
     elseif classFile == "HUNTER" and (spec == 1 or spec == 2) then
         -- BM and MM: Focus as a class resource bar (unless overridden)
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        if pp and pp.hunterFocusAsPower then return nil end
+        if pp and pp.hunterFocusAsPower then
+            return nil
+        end
         local mx = UnitPowerMax("player", PT.FOCUS)
-        if issecretvalue and issecretvalue(mx) then mx = 100 end
-        if not mx or mx <= 0 then mx = 100 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 100
+        end
+        if not mx or mx <= 0 then
+            mx = 100
+        end
         return { power = "FOCUS_BAR", max = mx, type = "bar" }
-    elseif classFile == "WARRIOR" and spec == 3
-           and ERB.db and ERB.db.profile and ERB.db.profile.secondary
-           and ERB.db.profile.secondary.protIgnorePainBar then
+    elseif
+        classFile == "WARRIOR"
+        and spec == 3
+        and ERB.db
+        and ERB.db.profile
+        and ERB.db.profile.secondary
+        and ERB.db.profile.secondary.protIgnorePainBar
+    then
         -- Protection Ignore Pain bar: total absorbs vs the IP cap (30% max health,
         -- see IP.CAP); stacks are unreadable (aura data fully secret). Toggle-gated,
         -- existing users pinned OFF via migration "resourcebars_protwar_ignorepain_existing_off_v1".
         local mx = UnitHealthMax("player") or 1
-        if issecretvalue and issecretvalue(mx) then mx = 1 end
-        if mx <= 0 then mx = 1 end
+        if issecretvalue and issecretvalue(mx) then
+            mx = 1
+        end
+        if mx <= 0 then
+            mx = 1
+        end
         return { power = "IGNOREPAIN_BAR", max = mx * IP.CAP, type = "bar" }
     elseif classFile == "WARRIOR" and spec == 2 then
         return { power = "WHIRLWIND_STACKS", max = 4, type = "custom" }
-    elseif classFile == "WARRIOR" and spec == 1
-           and ERB.db and ERB.db.profile and ERB.db.profile.secondary
-           and ERB.db.profile.secondary.armsSweepingStrikesBar then
+    elseif
+        classFile == "WARRIOR"
+        and spec == 1
+        and ERB.db
+        and ERB.db.profile
+        and ERB.db.profile.secondary
+        and ERB.db.profile.secondary.armsSweepingStrikesBar
+    then
         -- Arms Sweeping Strikes charges: flat 18 cap since 12.1 (12 from the ability +
         -- 6 from Broad Strokes). Base max here; BuildBars refreshes from the tracker.
         -- Opt-in, default off; Unit Frames/personal Nameplate readouts ignore the toggle.
@@ -664,33 +854,72 @@ end
 -- broken: true while an CUI_ResourceBars_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_internals", {
-    CHANNEL_TICK_DATA = CHANNEL_TICK_DATA, CLASS_COLORS = CLASS_COLORS, DARK_BG_A = DARK_BG_A,
-    DARK_FILL_A = DARK_FILL_A, EBON_MIGHT_DURATION = EBON_MIGHT_DURATION,
-    EBON_MIGHT_SPELL_ID = EBON_MIGHT_SPELL_ID, ERB = ERB, FRENZIED_REGEN = FRENZIED_REGEN,
-    GetIcicleCount = GetIcicleCount, GetPrimaryPowerType = GetPrimaryPowerType,
-    GetRBFont = GetRBFont, GetSecondaryResource = GetSecondaryResource,
-    GetSpecialization = GetSpecialization, GUARDIAN_OF_ELUNE = GUARDIAN_OF_ELUNE, IP = IP,
-    IRONFUR_GOE_BONUS = IRONFUR_GOE_BONUS, IRONFUR_GOE_WINDOW = IRONFUR_GOE_WINDOW,
-    IRONFUR_SPELL = IRONFUR_SPELL, IronfurBaseDuration = IronfurBaseDuration,
-    ironfurTicks = ironfurTicks, MANGLE_SPELL = MANGLE_SPELL, POWER_COLORS = POWER_COLORS,
-    POWER_ENUM_TO_KEY = POWER_ENUM_TO_KEY, PT = PT, SetRBFont = SetRBFont, SnapXY = SnapXY,
-    ironfurBaseDurSetters = {}, ironfurGoEUntilSetters = {}, mainFrameSetters = {},
-    healthBarSetters = {}, primaryBarSetters = {}, secondaryFrameSetters = {},
-    secondaryBarSetters = {}, castBarFrameSetters = {}, gcdBarFrameSetters = {},
-    totemBarFrameSetters = {}, isInCombatSetters = {}, cachedClassSetters = {},
-    cachedPrimarySetters = {}, cachedSecondarySetters = {}, ebonMightExpirySetters = {},
-    UpdateCastBarSetters = {}, UpdateGCDBarSetters = {}, stageThresholdsSetters = {},
-    essenceNextTickSetters = {}, essenceLastCountSetters = {}, essenceTickDurSetters = {},
+    CHANNEL_TICK_DATA = CHANNEL_TICK_DATA,
+    CLASS_COLORS = CLASS_COLORS,
+    DARK_BG_A = DARK_BG_A,
+    DARK_FILL_A = DARK_FILL_A,
+    EBON_MIGHT_DURATION = EBON_MIGHT_DURATION,
+    EBON_MIGHT_SPELL_ID = EBON_MIGHT_SPELL_ID,
+    ERB = ERB,
+    FRENZIED_REGEN = FRENZIED_REGEN,
+    GetIcicleCount = GetIcicleCount,
+    GetPrimaryPowerType = GetPrimaryPowerType,
+    GetRBFont = GetRBFont,
+    GetSecondaryResource = GetSecondaryResource,
+    GetSpecialization = GetSpecialization,
+    GUARDIAN_OF_ELUNE = GUARDIAN_OF_ELUNE,
+    IP = IP,
+    IRONFUR_GOE_BONUS = IRONFUR_GOE_BONUS,
+    IRONFUR_GOE_WINDOW = IRONFUR_GOE_WINDOW,
+    IRONFUR_SPELL = IRONFUR_SPELL,
+    IronfurBaseDuration = IronfurBaseDuration,
+    ironfurTicks = ironfurTicks,
+    MANGLE_SPELL = MANGLE_SPELL,
+    POWER_COLORS = POWER_COLORS,
+    POWER_ENUM_TO_KEY = POWER_ENUM_TO_KEY,
+    PT = PT,
+    SetRBFont = SetRBFont,
+    SnapXY = SnapXY,
+    ironfurBaseDurSetters = {},
+    ironfurGoEUntilSetters = {},
+    mainFrameSetters = {},
+    healthBarSetters = {},
+    primaryBarSetters = {},
+    secondaryFrameSetters = {},
+    secondaryBarSetters = {},
+    castBarFrameSetters = {},
+    gcdBarFrameSetters = {},
+    totemBarFrameSetters = {},
+    isInCombatSetters = {},
+    cachedClassSetters = {},
+    cachedPrimarySetters = {},
+    cachedSecondarySetters = {},
+    ebonMightExpirySetters = {},
+    UpdateCastBarSetters = {},
+    UpdateGCDBarSetters = {},
+    stageThresholdsSetters = {},
+    essenceNextTickSetters = {},
+    essenceLastCountSetters = {},
+    essenceTickDurSetters = {},
 }, {
-    SetIronfurBaseDur = "ironfurBaseDurSetters", SetIronfurGoEUntil = "ironfurGoEUntilSetters",
-    SetMainFrame = "mainFrameSetters", SetHealthBar = "healthBarSetters",
-    SetPrimaryBar = "primaryBarSetters", SetSecondaryFrame = "secondaryFrameSetters",
-    SetSecondaryBar = "secondaryBarSetters", SetCastBarFrame = "castBarFrameSetters",
-    SetGCDBarFrame = "gcdBarFrameSetters", SetTotemBarFrame = "totemBarFrameSetters",
-    SetInCombat = "isInCombatSetters", SetCachedClass = "cachedClassSetters",
-    SetCachedPrimary = "cachedPrimarySetters", SetCachedSecondary = "cachedSecondarySetters",
-    SetEbonMightExpiry = "ebonMightExpirySetters", SetUpdateCastBar = "UpdateCastBarSetters",
-    SetUpdateGCDBar = "UpdateGCDBarSetters", SetStageThresholds = "stageThresholdsSetters",
+    SetIronfurBaseDur = "ironfurBaseDurSetters",
+    SetIronfurGoEUntil = "ironfurGoEUntilSetters",
+    SetMainFrame = "mainFrameSetters",
+    SetHealthBar = "healthBarSetters",
+    SetPrimaryBar = "primaryBarSetters",
+    SetSecondaryFrame = "secondaryFrameSetters",
+    SetSecondaryBar = "secondaryBarSetters",
+    SetCastBarFrame = "castBarFrameSetters",
+    SetGCDBarFrame = "gcdBarFrameSetters",
+    SetTotemBarFrame = "totemBarFrameSetters",
+    SetInCombat = "isInCombatSetters",
+    SetCachedClass = "cachedClassSetters",
+    SetCachedPrimary = "cachedPrimarySetters",
+    SetCachedSecondary = "cachedSecondarySetters",
+    SetEbonMightExpiry = "ebonMightExpirySetters",
+    SetUpdateCastBar = "UpdateCastBarSetters",
+    SetUpdateGCDBar = "UpdateGCDBarSetters",
+    SetStageThresholds = "stageThresholdsSetters",
     SetEssenceNextTick = "essenceNextTickSetters",
     SetEssenceLastCount = "essenceLastCountSetters",
     SetEssenceTickDur = "essenceTickDurSetters",

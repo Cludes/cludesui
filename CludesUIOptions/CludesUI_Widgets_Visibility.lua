@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_Visibility.lua
 --  Unified visibility row and its checklist. Builds on the checkbox
@@ -52,67 +54,149 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -------------------------------------------------------------------------------
 
 CludesUI.VIS_ROW_ITEMS = {
-    { key = "never",     label = "Never" },
-    { key = "always",    label = "Always" },
-    { key = "mouseover", label = "Mouseover",
-      tooltip = "Reveal on hover only. Combines with the conditions below: hover-reveals while they all pass, stays hidden while any fails.",
-      tooltipAny = "Combines with the conditions below: shows outright once at least one passes, otherwise still reveals on hover. A checked Hide state still hides it, hover included." },
+    { key = "never", label = "Never" },
+    { key = "always", label = "Always" },
+    {
+        key = "mouseover",
+        label = "Mouseover",
+        tooltip = "Reveal on hover only. Combines with the conditions below: hover-reveals while they all pass, stays hidden while any fails.",
+        tooltipAny = "Combines with the conditions below: shows outright once at least one passes, otherwise still reveals on hover. A checked Hide state still hides it, hover included.",
+    },
     -- Modifiers, not conditions: they decide how the rows below combine, so they stay
     -- out of the summary and the Show/Hide lane pairs. Radio pair (matchValue) over one
     -- scalar: picking one unpicks the other, there is no "neither" state.
     { isHeader = true, label = "Match Mode" },
-    { key = "matchAll", label = "Match All Conditions", modifier = true, matchValue = "all",
-      tooltip = "Every condition you set has to match. The default." },
-    { key = "matchAny", label = "Match Any Condition", modifier = true, matchValue = "any",
-      tooltip = "This element shows as soon as ONE Show condition matches. Hide keeps its meaning in both match modes: a checked Hide always hides, on every row." },
+    {
+        key = "matchAll",
+        label = "Match All Conditions",
+        modifier = true,
+        matchValue = "all",
+        tooltip = "Every condition you set has to match. The default.",
+    },
+    {
+        key = "matchAny",
+        label = "Match Any Condition",
+        modifier = true,
+        matchValue = "any",
+        tooltip = "This element shows as soon as ONE Show condition matches. Hide keeps its meaning in both match modes: a checked Hide always hides, on every row.",
+    },
     { isHeader = true, label = "Show", rightLabel = "Hide" },
     -- Every condition gets its own row, the inverse ones included, because a Hide lane is
     -- a veto rather than "show while this is false": without an "Out of Combat" row there
     -- would be no way left to say "show while out of combat" as one Any disjunct.
-    { key = "combat", label = "In Combat", axis = "mode",
-      show = "in_combat", hide = "hide_in_combat" },
-    { key = "outOfCombat", label = "Out of Combat", axis = "mode",
-      show = "out_of_combat", hide = "hide_out_of_combat" },
-    { key = "in_raid",  label = "In Raid Group", axis = "group", hide = "hide_in_raid" },
-    { key = "in_party", label = "In Party",      axis = "group", hide = "hide_in_party" },
-    { key = "solo",     label = "Solo",          axis = "group", hide = "hide_solo" },
+    {
+        key = "combat",
+        label = "In Combat",
+        axis = "mode",
+        show = "in_combat",
+        hide = "hide_in_combat",
+    },
+    {
+        key = "outOfCombat",
+        label = "Out of Combat",
+        axis = "mode",
+        show = "out_of_combat",
+        hide = "hide_out_of_combat",
+    },
+    { key = "in_raid", label = "In Raid Group", axis = "group", hide = "hide_in_raid" },
+    { key = "in_party", label = "In Party", axis = "group", hide = "hide_in_party" },
+    { key = "solo", label = "Solo", axis = "group", hide = "hide_solo" },
     -- `forever`: the value WoW Forever pins this condition to (that client has no
     -- skyriding and no housing), "never" or "always" true. AttachVisibilityChecklist
     -- leaves such a row out there unless a lane that still acts on that client is set
     -- (see ForeverRowHidden).
-    { key = "skyAirborne", label = "Skyriding (Airborne)", axis = "mode", forever = "never",
-      show = "show_dragonriding", hide = "hide_dragonriding",
-      tooltip = "Only while AIRBORNE on a glide-capable mount or flight form. For the mount itself, ground included, use Skyriding Mount." },
-    { key = "notSkyAirborne", label = "Not Skyriding (Airborne)", axis = "mode", forever = "always",
-      show = "show_not_dragonriding", hide = "hide_not_dragonriding",
-      tooltip = "The exact inverse of Skyriding (Airborne): anything that is not airborne on a glide-capable mount or flight form, standing on the ground included." },
-    { key = "skyMount", label = "Skyriding Mount", axis = "opt", forever = "never",
-      show = "visOnlySkyriding", hide = "visHideDragonriding",
-      tooltip = "While on a glide-capable mount, ground included, where Blizzard shows its vigor HUD. Skyriding (Airborne) additionally requires you to be flying." },
-    { key = "instances", label = "Instances", axis = "opt",
-      show = "visOnlyInstances", hide = "visHideInstances",
-      tooltip = "Dungeons, raids, scenarios, arenas and battlegrounds. Garrisons do not count." },
-    { key = "dungeons", label = "Dungeons", axis = "opt",
-      show = "visOnlyDungeons", hide = "visHideDungeons",
-      tooltip = "Five-player dungeons, Mythic+ included. Delves, raids and scenarios do not count." },
-    { key = "housing", label = "Housing", axis = "opt", forever = "never",
-      show = "visOnlyHousing", hide = "visHideHousing",
-      tooltip = "While you are inside a house or plot." },
-    { key = "mounted", label = "Mounted", axis = "opt",
-      show = "visOnlyMounted", hide = "visHideMounted",
-      tooltip = "Druid travel, aquatic and flight forms count as mounted." },
-    { key = "target", label = "Target", axis = "opt",
-      show = "visHideNoTarget", hide = "visHideWithTarget",
-      tooltip = "*Blizzard's auto targeting (soft target) setting can cause brief flickering when your actual target dies but a soft-target is still active." },
-    { key = "enemyTarget", label = "Enemy Target", axis = "opt",
-      show = "visHideNoEnemy", hide = "visHideWithEnemy",
-      tooltip = "A target you can attack." },
-    { key = "resting", label = "Resting", axis = "opt",
-      show = "visOnlyResting", hide = "visHideResting",
-      tooltip = "While resting, in a city or at an inn." },
-    { key = "vehicle", label = "In Vehicle", axis = "opt",
-      show = "visOnlyVehicle", hide = "visHideVehicle",
-      tooltip = "While seated in a vehicle." },
+    {
+        key = "skyAirborne",
+        label = "Skyriding (Airborne)",
+        axis = "mode",
+        forever = "never",
+        show = "show_dragonriding",
+        hide = "hide_dragonriding",
+        tooltip = "Only while AIRBORNE on a glide-capable mount or flight form. For the mount itself, ground included, use Skyriding Mount.",
+    },
+    {
+        key = "notSkyAirborne",
+        label = "Not Skyriding (Airborne)",
+        axis = "mode",
+        forever = "always",
+        show = "show_not_dragonriding",
+        hide = "hide_not_dragonriding",
+        tooltip = "The exact inverse of Skyriding (Airborne): anything that is not airborne on a glide-capable mount or flight form, standing on the ground included.",
+    },
+    {
+        key = "skyMount",
+        label = "Skyriding Mount",
+        axis = "opt",
+        forever = "never",
+        show = "visOnlySkyriding",
+        hide = "visHideDragonriding",
+        tooltip = "While on a glide-capable mount, ground included, where Blizzard shows its vigor HUD. Skyriding (Airborne) additionally requires you to be flying.",
+    },
+    {
+        key = "instances",
+        label = "Instances",
+        axis = "opt",
+        show = "visOnlyInstances",
+        hide = "visHideInstances",
+        tooltip = "Dungeons, raids, scenarios, arenas and battlegrounds. Garrisons do not count.",
+    },
+    {
+        key = "dungeons",
+        label = "Dungeons",
+        axis = "opt",
+        show = "visOnlyDungeons",
+        hide = "visHideDungeons",
+        tooltip = "Five-player dungeons, Mythic+ included. Delves, raids and scenarios do not count.",
+    },
+    {
+        key = "housing",
+        label = "Housing",
+        axis = "opt",
+        forever = "never",
+        show = "visOnlyHousing",
+        hide = "visHideHousing",
+        tooltip = "While you are inside a house or plot.",
+    },
+    {
+        key = "mounted",
+        label = "Mounted",
+        axis = "opt",
+        show = "visOnlyMounted",
+        hide = "visHideMounted",
+        tooltip = "Druid travel, aquatic and flight forms count as mounted.",
+    },
+    {
+        key = "target",
+        label = "Target",
+        axis = "opt",
+        show = "visHideNoTarget",
+        hide = "visHideWithTarget",
+        tooltip = "*Blizzard's auto targeting (soft target) setting can cause brief flickering when your actual target dies but a soft-target is still active.",
+    },
+    {
+        key = "enemyTarget",
+        label = "Enemy Target",
+        axis = "opt",
+        show = "visHideNoEnemy",
+        hide = "visHideWithEnemy",
+        tooltip = "A target you can attack.",
+    },
+    {
+        key = "resting",
+        label = "Resting",
+        axis = "opt",
+        show = "visOnlyResting",
+        hide = "visHideResting",
+        tooltip = "While resting, in a city or at an inn.",
+    },
+    {
+        key = "vehicle",
+        label = "In Vehicle",
+        axis = "opt",
+        show = "visOnlyVehicle",
+        hide = "visHideVehicle",
+        tooltip = "While seated in a vehicle.",
+    },
 }
 
 -------------------------------------------------------------------------------
@@ -126,8 +210,7 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local PP = CludesUI.PanelPP
     local caps = opts.caps or {}
     local legacyKey = opts.legacyKey or "visibility"
-    local GROUP_KEYS = (CludesUI.VIS_AXES and CludesUI.VIS_AXES.group)
-        or { "in_raid", "in_party", "solo" }
+    local GROUP_KEYS = (CludesUI.VIS_AXES and CludesUI.VIS_AXES.group) or { "in_raid", "in_party", "solo" }
 
     -- Only the two exclusive states survive an override: the checklist writes them to
     -- the legacy scalar, which the value system can hold. Everything else lives in the
@@ -142,11 +225,14 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local function OvSessionActive()
         return (CludesUI.SpecOverrides_SlotOverridable()) and true or false
     end
-    local OV_LOCK_TIP = "Not overridable. These conditions are shared and can only be changed while no override is being edited. An override replaces the Visibility setting outright -- Never, Always or Mouseover -- and ignores everything set here while it applies."
-    local OV_PICK_TIP = "Makes this the override. It replaces the whole Visibility setting, so the conditions below no longer apply while it does. Click it again to remove the override."
+    local OV_LOCK_TIP =
+        "Not overridable. These conditions are shared and can only be changed while no override is being edited. An override replaces the Visibility setting outright -- Never, Always or Mouseover -- and ignores everything set here while it applies."
+    local OV_PICK_TIP =
+        "Makes this the override. It replaces the whole Visibility setting, so the conditions below no longer apply while it does. Click it again to remove the override."
     -- The block carries ONE tooltip, so the module that also has to seal Mouseover
     -- says why right there instead of losing the reason to the shared text.
-    local OV_LOCK_TIP_MO = OV_LOCK_TIP .. " Mouseover is sealed here too for this element: its hover mechanism follows the shared setting, so an override could only leave it shown."
+    local OV_LOCK_TIP_MO = OV_LOCK_TIP
+        .. " Mouseover is sealed here too for this element: its hover mechanism follows the shared setting, so an override could only leave it shown."
 
     -- Per-module row list. `listed` collects the legacy SCALAR values this row can
     -- actually reach, so the orphan rule below only fires for genuinely foreign ones.
@@ -160,16 +246,24 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- which knows nothing about the option lanes. Never/Always stay clickable as the exit.
     local function OrphanScalar()
         local store = opts.getStore()
-        if not store then return nil end
+        if not store then
+            return nil
+        end
         -- Shared value (ignoreOverride): an orphan is a stored SCALAR this row cannot
         -- express, and an applied override neither creates nor cures one.
         local sel, isMulti = CludesUI.GetVisibilitySelection(store, legacyKey, true)
-        if isMulti then return nil end
+        if isMulti then
+            return nil
+        end
         local cur = next(sel)
-        if cur and not listed[cur] then return cur end
+        if cur and not listed[cur] then
+            return cur
+        end
         return nil
     end
-    local function OrphanActive() return OrphanScalar() ~= nil end
+    local function OrphanActive()
+        return OrphanScalar() ~= nil
+    end
 
     -- WoW Forever: a row flagged `forever` is left out unless this store has a lane on
     -- that still does something there -- the Show lane of a never-true condition (it
@@ -179,7 +273,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local foreverSel
     local function ForeverLaneOn(def, k)
         if def.axis == "opt" then
-            if opts.getOption then return opts.getOption(k) == true end
+            if opts.getOption then
+                return opts.getOption(k) == true
+            end
             local store = opts.getStore()
             return (store and store[k]) == true
         end
@@ -190,18 +286,26 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         return foreverSel ~= false and foreverSel[k] == true
     end
     local function ForeverRowHidden(def)
-        if ForeverLaneOn(def, def.show) then return false end
+        if ForeverLaneOn(def, def.show) then
+            return false
+        end
         return not (def.forever == "always" and ForeverLaneOn(def, def.hide))
     end
 
     for _, def in ipairs(CludesUI.VIS_ROW_ITEMS) do
         if def.isHeader then
             items[#items + 1] = def
-        elseif not (def.key == "mouseover" and caps.noMouseover)
-            and not (def.forever and CludesUI.IS_FOREVER and ForeverRowHidden(def)) then
-            local item = { key = def.key, label = def.label, tooltip = def.tooltip,
-                           dual = def.axis and true or nil,
-                           isModifier = def.modifier }
+        elseif
+            not (def.key == "mouseover" and caps.noMouseover)
+            and not (def.forever and CludesUI.IS_FOREVER and ForeverRowHidden(def))
+        then
+            local item = {
+                key = def.key,
+                label = def.label,
+                tooltip = def.tooltip,
+                dual = def.axis and true or nil,
+                isModifier = def.modifier,
+            }
             -- Never / Always / Mouseover are the exclusive states: each one writes the
             -- legacy scalar on its own, which an override CAN hold. Everything else is
             -- the compound half.
@@ -223,12 +327,15 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
             -- Only the two airborne rows need the takeoff/landing edge; the mount row
             -- rides PLAYER_CAN_GLIDE_CHANGED, which is always registered.
             if caps.luaDragonriding and (def.key == "skyAirborne" or def.key == "notSkyAirborne") then
-                item.lockedFn = function() return not CludesUI._hasGlidingEvent end
+                item.lockedFn = function()
+                    return not CludesUI._hasGlidingEvent
+                end
                 item.lockedTooltip = "Requires a client with gliding events."
             end
             if def.modifier then
                 item.lockedFn = OrphanActive
-                item.lockedTooltip = "Not available while a legacy visibility value is selected. Pick Never or Always first."
+                item.lockedTooltip =
+                    "Not available while a legacy visibility value is selected. Pick Never or Always first."
             end
             -- Rows whose tooltip states a combining rule have to restate it under Any.
             if def.tooltipAny then
@@ -241,15 +348,20 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
             if def.key == "never" or def.key == "always" or def.key == "mouseover" then
                 local baseTip = item.tooltip
                 item.tooltip = function()
-                    if OvSessionActive() then return OV_PICK_TIP end
-                    if type(baseTip) == "function" then return baseTip() end
+                    if OvSessionActive() then
+                        return OV_PICK_TIP
+                    end
+                    if type(baseTip) == "function" then
+                        return baseTip()
+                    end
                     return baseTip
                 end
             end
             items[#items + 1] = item
             defs[def.key] = def
             if def.axis == "mode" then
-                listed[def.show] = true; listed[def.hide] = true
+                listed[def.show] = true
+                listed[def.hide] = true
             elseif def.axis == "group" then
                 listed[def.key] = true
             elseif def.modifier then
@@ -270,16 +382,24 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
                 get = function()
                     local store = opts.getStore()
                     local v = store and store[k]
-                    if v == nil then return dflt end
+                    if v == nil then
+                        return dflt
+                    end
                     return v == true
                 end
             end
             if not set then
                 set = function(v)
                     local store = opts.getStore()
-                    if not store then return end
+                    if not store then
+                        return
+                    end
                     v = v == true
-                    if v == dflt then store[k] = nil else store[k] = v end
+                    if v == dflt then
+                        store[k] = nil
+                    else
+                        store[k] = v
+                    end
                 end
             end
             items[#items + 1] = { key = ex.key, label = ex.label, tooltip = ex.tooltip }
@@ -304,15 +424,25 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- (two Show lanes are two disjuncts, a Hide lane is a veto), so those stores are left
     -- exactly as they are. Hide keys are "hide_" .. the show key, per VIS_MODE_AXES.
     local function NormalizeGroupHide(sel)
-        if GetMatchAny() then return sel end
+        if GetMatchAny() then
+            return sel
+        end
         local missing, shown = nil, 0
         for i = 1, #GROUP_KEYS do
             local k = GROUP_KEYS[i]
-            if sel["hide_" .. k] then return sel end
-            if sel[k] then shown = shown + 1 else missing = k end
+            if sel["hide_" .. k] then
+                return sel
+            end
+            if sel[k] then
+                shown = shown + 1
+            else
+                missing = k
+            end
         end
         if missing and shown == #GROUP_KEYS - 1 then
-            for i = 1, #GROUP_KEYS do sel[GROUP_KEYS[i]] = nil end
+            for i = 1, #GROUP_KEYS do
+                sel[GROUP_KEYS[i]] = nil
+            end
             sel["hide_" .. missing] = true
         end
         return sel
@@ -324,9 +454,13 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- returns first. The marker replaces the shared value, so it has to travel exactly as
     -- far as that value does, or the mirrored elements keep obeying what it took over.
     local function OvStores()
-        if opts.getStores then return opts.getStores() or {} end
+        if opts.getStores then
+            return opts.getStores() or {}
+        end
         local store = opts.getStore()
-        if not store then return {} end
+        if not store then
+            return {}
+        end
         return { store }
     end
 
@@ -337,7 +471,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- the summary (ovHeldFn) and by GetChecked's exclusive-row branch, never from here.
     local function Sel()
         local store = opts.getStore()
-        if not store then return nil end
+        if not store then
+            return nil
+        end
         return NormalizeGroupHide(CludesUI.GetVisibilitySelection(store, legacyKey, true)), store
     end
 
@@ -350,25 +486,31 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local _selCache, _selStore, _selModes, _selScalar, _selMatch, _selOv
     local function SelRead()
         local store = opts.getStore()
-        if not store then return nil, nil end
-        if _selCache and store == _selStore
+        if not store then
+            return nil, nil
+        end
+        if
+            _selCache
+            and store == _selStore
             and store.visibilityModes == _selModes
             and store[legacyKey] == _selScalar
             and store.visibilityMatch == _selMatch
-            and store.visibilityOverride == _selOv then
+            and store.visibilityOverride == _selOv
+        then
             return _selCache, store
         end
         _selStore, _selModes = store, store.visibilityModes
         _selScalar, _selMatch = store[legacyKey], store.visibilityMatch
         _selOv = store.visibilityOverride
-        _selCache = NormalizeGroupHide(
-            CludesUI.GetVisibilitySelection(store, legacyKey, true))
+        _selCache = NormalizeGroupHide(CludesUI.GetVisibilitySelection(store, legacyKey, true))
         return _selCache, store
     end
 
     local function WriteSel(sel, store)
         -- Never-empty invariant: clearing the last condition means Always.
-        if not next(sel) then sel.always = true end
+        if not next(sel) then
+            sel.always = true
+        end
         -- A shared edit outside a session also clears a STRANDED override marker. Two
         -- ways one can be left behind: the management list's Remove drops the entry but
         -- deliberately leaves live values alone, and a profile exported while an override
@@ -377,7 +519,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         -- simply writes it back on its next apply.
         if not OvSessionActive() and store.visibilityOverride ~= nil then
             local stores = OvStores()
-            for i = 1, #stores do stores[i].visibilityOverride = nil end
+            for i = 1, #stores do
+                stores[i].visibilityOverride = nil
+            end
         end
         CludesUI.SetVisibilitySelection(store, legacyKey, sel, opts.applyScalarFn)
     end
@@ -389,13 +533,15 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- take the overrides. Never inside a session -- the marker being edited is exactly the
     -- one no map holds yet -- and never for a marker a real override still owns, which
     -- simply gets written back on its next apply. WriteSel's clear stays as the belt.
-    if not CludesUI._prebuilding
-        and not (CludesUI.SpecOverrides_EditSessionActive()) then
+    if not CludesUI._prebuilding and not (CludesUI.SpecOverrides_EditSessionActive()) then
         local stores, healed = OvStores(), false
         for i = 1, #stores do
             local st = stores[i]
-            if st.visibilityOverride ~= nil and CludesUI.SpecOverrides_KeyIsOwned
-                and not CludesUI.SpecOverrides_KeyIsOwned(st, "visibilityOverride") then
+            if
+                st.visibilityOverride ~= nil
+                and CludesUI.SpecOverrides_KeyIsOwned
+                and not CludesUI.SpecOverrides_KeyIsOwned(st, "visibilityOverride")
+            then
                 st.visibilityOverride = nil
                 healed = true
             end
@@ -410,7 +556,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     end
 
     local function GetOpt(k)
-        if opts.getOption then return opts.getOption(k) == true end
+        if opts.getOption then
+            return opts.getOption(k) == true
+        end
         local store = opts.getStore()
         return (store and store[k]) == true
     end
@@ -427,23 +575,35 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         else
             storedValue = nil
         end
-        if opts.setOption then opts.setOption(k, storedValue); return end
+        if opts.setOption then
+            opts.setOption(k, storedValue)
+            return
+        end
         local store = opts.getStore()
-        if store then store[k] = storedValue end
+        if store then
+            store[k] = storedValue
+        end
     end
 
     -- The match is a store-level scalar, but it fans out like the option lanes do
     -- (Resource Bars writes health/primary/secondary through these hooks), so it rides them.
     GetMatchAny = function()
-        if opts.getOption then return opts.getOption("visibilityMatch") == "any" end
+        if opts.getOption then
+            return opts.getOption("visibilityMatch") == "any"
+        end
         local store = opts.getStore()
         return (store and store.visibilityMatch) == "any"
     end
 
     local function SetMatchAny(on)
-        if opts.setOption then opts.setOption("visibilityMatch", on and "any" or nil); return end
+        if opts.setOption then
+            opts.setOption("visibilityMatch", on and "any" or nil)
+            return
+        end
         local store = opts.getStore()
-        if store then store.visibilityMatch = on and "any" or nil end
+        if store then
+            store.visibilityMatch = on and "any" or nil
+        end
     end
 
     -- Option axes live outside the selection, so Always vs. an active Show lane (which
@@ -455,7 +615,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local function OnlyHideLanes(sel)
         local hasHide = false
         for k in pairs(sel) do
-            if not CludesUI.VIS_MODE_HIDE_KEYS[k] then return false end
+            if not CludesUI.VIS_MODE_HIDE_KEYS[k] then
+                return false
+            end
             hasHide = true
         end
         return hasHide
@@ -463,7 +625,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
 
     local function AnyShowOptActive()
         for _, d in pairs(defs) do
-            if d.axis == "opt" and GetOpt(d.show) then return true end
+            if d.axis == "opt" and GetOpt(d.show) then
+                return true
+            end
         end
         return false
     end
@@ -481,24 +645,40 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     local function AfterChange(closeMenu, isOption, alsoOther)
         local optionFn = (isOption or alsoOther) and opts.onOptionChanged
         local modeFn = ((not isOption) or alsoOther) and opts.onChanged
-        if optionFn then optionFn() end
-        if modeFn then modeFn() end
+        if optionFn then
+            optionFn()
+        end
+        if modeFn then
+            modeFn()
+        end
         -- A caller that supplies only onChanged still gets that chain for option writes.
-        if not optionFn and not modeFn and opts.onChanged then opts.onChanged() end
+        if not optionFn and not modeFn and opts.onChanged then
+            opts.onChanged()
+        end
         pendingRefresh = true
-        if closeMenu and cbDD and cbDD._ddMenu then cbDD._ddMenu:Hide() end
+        if closeMenu and cbDD and cbDD._ddMenu then
+            cbDD._ddMenu:Hide()
+        end
     end
 
     local function GetChecked(k, neg)
         local def = defs[k]
-        if not def then return false end
+        if not def then
+            return false
+        end
         if def.modifier then
             return (def.matchValue == "any") == GetMatchAny()
         end
-        if def.axis == "extra" then return def.get() == true end
-        if def.axis == "opt" then return GetOpt(neg and def.hide or def.show) end
+        if def.axis == "extra" then
+            return def.get() == true
+        end
+        if def.axis == "opt" then
+            return GetOpt(neg and def.hide or def.show)
+        end
         local sel, store = SelRead()
-        if not sel then return k == "always" end
+        if not sel then
+            return k == "always"
+        end
         -- While an override is being EDITED the three exclusive rows show what it holds.
         -- Outside a session they show the shared value again, because that is what these
         -- rows edit -- an applied override is announced by the summary and the panel's
@@ -508,10 +688,16 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         -- read), and inside a session such a write becomes a capture of its own.
         if OvSessionActive() and (k == "never" or k == "always" or k == "mouseover") then
             local ov = store and CludesUI.VisOverrideValue(store)
-            if ov then return (not neg) and (k == ov) end
+            if ov then
+                return (not neg) and (k == ov)
+            end
         end
-        if def.axis == "mode" then return sel[neg and def.hide or def.show] == true end
-        if def.axis == "group" then return sel[neg and def.hide or def.key] == true end
+        if def.axis == "mode" then
+            return sel[neg and def.hide or def.show] == true
+        end
+        if def.axis == "group" then
+            return sel[neg and def.hide or def.key] == true
+        end
         if k == "always" then
             return (sel.always == true or OnlyHideLanes(sel)) and not AnyShowOptActive()
         end
@@ -520,7 +706,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
 
     local function SetChecked(k, checked, neg)
         local def = defs[k]
-        if not def then return end
+        if not def then
+            return
+        end
 
         -- Inside an override session the three exclusive states are the only thing an
         -- override can carry, and they REPLACE the configuration instead of editing it.
@@ -531,16 +719,22 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         if (k == "never" or k == "always" or k == "mouseover") and OvSessionActive() then
             local stores = OvStores()
             local store = stores[1]
-            if not store then return end
+            if not store then
+                return
+            end
             local held = CludesUI.VisOverrideValue(store)
             if held == k then
                 -- Cleared on every store first, so the re-snapshot ClearStoreKey takes
                 -- at the end already sees the finished state and nothing diffs back into
                 -- a capture of its own.
-                for i = 1, #stores do stores[i].visibilityOverride = nil end
+                for i = 1, #stores do
+                    stores[i].visibilityOverride = nil
+                end
                 CludesUI.SpecOverrides_ClearStoreKey(stores, "visibilityOverride")
             else
-                for i = 1, #stores do stores[i].visibilityOverride = k end
+                for i = 1, #stores do
+                    stores[i].visibilityOverride = k
+                end
             end
             AfterChange(true)
             return
@@ -562,9 +756,13 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
 
         if def.axis == "opt" then
             local lane, other = def.show, def.hide
-            if neg then lane, other = def.hide, def.show end
+            if neg then
+                lane, other = def.hide, def.show
+            end
             SetOpt(lane, checked)
-            if checked then SetOpt(other, false) end
+            if checked then
+                SetOpt(other, false)
+            end
             -- Checking a lane under Never leaves Never (WriteSel's never-empty invariant
             -- lands on Always, which the lane then narrows); unchecking one leaves Never alone.
             local clearedNever = false
@@ -581,20 +779,28 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         end
 
         local sel, store = Sel()
-        if not store then return end
+        if not store then
+            return
+        end
         -- Any condition write clears the exclusive scalars (Never/Always/orphan) but
         -- combines with every other axis.
         if def.axis or k == "mouseover" then
             for key in pairs(sel) do
-                if not CludesUI.VIS_COMBINABLE_KEYS[key] then sel[key] = nil end
+                if not CludesUI.VIS_COMBINABLE_KEYS[key] then
+                    sel[key] = nil
+                end
             end
         end
 
         if def.axis == "mode" then
             local lane, other = def.show, def.hide
-            if neg then lane, other = def.hide, def.show end
+            if neg then
+                lane, other = def.hide, def.show
+            end
             sel[lane] = checked or nil
-            if checked then sel[other] = nil end
+            if checked then
+                sel[other] = nil
+            end
             WriteSel(sel, store)
             AfterChange(false)
             return
@@ -602,9 +808,13 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
 
         if def.axis == "group" then
             local lane, other = def.key, def.hide
-            if neg then lane, other = def.hide, def.key end
+            if neg then
+                lane, other = def.hide, def.key
+            end
             sel[lane] = checked or nil
-            if checked then sel[other] = nil end
+            if checked then
+                sel[other] = nil
+            end
             WriteSel(sel, store)
             AfterChange(false)
             return
@@ -626,7 +836,9 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
                     sel[key] = nil
                 end
             end
-            if checked then sel[k] = true end
+            if checked then
+                sel[k] = true
+            end
             WriteSel(sel, store)
             -- Always clears the Show lanes (else GetChecked keeps its box unchecked and the
             -- click is a no-op); Hide lanes survive, and Never leaves every lane untouched.
@@ -645,7 +857,11 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
 
         -- Legacy orphan re-checked while its row is still visible.
         if checked then
-            if opts.applyScalarFn then opts.applyScalarFn(store, k) else store[legacyKey] = k end
+            if opts.applyScalarFn then
+                opts.applyScalarFn(store, k)
+            else
+                store[legacyKey] = k
+            end
             store.visibilityModes = nil
             SetMatchAny(false)
             AfterChange(true)
@@ -660,29 +876,45 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     end
 
     local leftRgn = region
-    if leftRgn._control then leftRgn._control:Hide() end
+    if leftRgn._control then
+        leftRgn._control:Hide()
+    end
     cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-        leftRgn, opts.width or 210, leftRgn:GetFrameLevel() + 2,
-        items, GetChecked, SetChecked, nil, 12, nil, nil, OnMenuClosed,
-        { emptyLabel = "Always",
-          -- Override sessions have to see each click as it happens: parts of this
-          -- control are excluded from them and the session says so per write.
-          notifyWrites = true,
-          -- Seals the excluded rows off as one block while a session is live, announced
-          -- once instead of by every row.
-          ovLockedFn = OvSessionActive,
-          ovLockedTooltip = caps.noOverrideMouseover and OV_LOCK_TIP_MO or OV_LOCK_TIP,
-          -- The value a live override holds, applied or edited: the summary shows it
-          -- instead of the shared selection it replaces.
-          ovHeldFn = function()
-              local _, store = SelRead()
-              return store and CludesUI.VisOverrideValue(store) or nil
-          end,
-          -- The separator reads the match live: under Any the conditions are OR'd.
-          separatorFn = function() return GetMatchAny() and " or " or ", " end,
-          -- Every row follows the same rule now: a checked Hide lane hides while its
-          -- condition holds, in both match modes.
-          hideLaneTooltip = "Hide while this condition is true" })
+        leftRgn,
+        opts.width or 210,
+        leftRgn:GetFrameLevel() + 2,
+        items,
+        GetChecked,
+        SetChecked,
+        nil,
+        12,
+        nil,
+        nil,
+        OnMenuClosed,
+        {
+            emptyLabel = "Always",
+            -- Override sessions have to see each click as it happens: parts of this
+            -- control are excluded from them and the session says so per write.
+            notifyWrites = true,
+            -- Seals the excluded rows off as one block while a session is live, announced
+            -- once instead of by every row.
+            ovLockedFn = OvSessionActive,
+            ovLockedTooltip = caps.noOverrideMouseover and OV_LOCK_TIP_MO or OV_LOCK_TIP,
+            -- The value a live override holds, applied or edited: the summary shows it
+            -- instead of the shared selection it replaces.
+            ovHeldFn = function()
+                local _, store = SelRead()
+                return store and CludesUI.VisOverrideValue(store) or nil
+            end,
+            -- The separator reads the match live: under Any the conditions are OR'd.
+            separatorFn = function()
+                return GetMatchAny() and " or " or ", "
+            end,
+            -- Every row follows the same rule now: a checked Hide lane hides while its
+            -- condition holds, in both match modes.
+            hideLaneTooltip = "Hide while this condition is true",
+        }
+    )
     PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
     leftRgn._control = cbDD
     leftRgn._lastInline = nil
@@ -692,10 +924,13 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
     -- as its representative single mode). Option axes are not spec-capturable, same as
     -- before the merge.
     leftRgn._captureCfg = {
-        type = "dropdown", text = opts.label or "Visibility",
+        type = "dropdown",
+        text = opts.label or "Visibility",
         getValue = function()
             local s = opts.getStore()
-            if not s then return "always" end
+            if not s then
+                return "always"
+            end
             -- Both are read on purpose, and unconditionally: the gold walk traces what a
             -- getter READS, so a row whose override lives in either key has to touch both
             -- or it never marks itself as overridden. The override wins as the value,
@@ -705,18 +940,23 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         end,
         setValue = function(v)
             local s = opts.getStore()
-            if not s then return end
+            if not s then
+                return
+            end
             -- Round-trip with getValue above: while a marker is live the value this slot
             -- REPORTS is the override, so a value handed back belongs there too. Writing
             -- it into the shared scalar instead would replace a setting the override was
             -- only standing in front of. A value no override can hold falls through and
             -- edits the shared side, exactly as every other slot does under an override.
-            local ovIn = CludesUI.VisOverrideValue(s)
-                and CludesUI.VisOverrideNormalize(v)
+            local ovIn = CludesUI.VisOverrideValue(s) and CludesUI.VisOverrideNormalize(v)
             if ovIn then
                 local stores = OvStores()
-                for i = 1, #stores do stores[i].visibilityOverride = ovIn end
-                if opts.onChanged then opts.onChanged() end
+                for i = 1, #stores do
+                    stores[i].visibilityOverride = ovIn
+                end
+                if opts.onChanged then
+                    opts.onChanged()
+                end
                 return
             end
             if CludesUI.VIS_CONDITION_KEYS[v] or v == "never" or v == "always" or v == "mouseover" then
@@ -724,12 +964,18 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
                 one[v] = true
                 CludesUI.SetVisibilitySelection(s, legacyKey, one, opts.applyScalarFn)
             else
-                if opts.applyScalarFn then opts.applyScalarFn(s, v) else s[legacyKey] = v end
+                if opts.applyScalarFn then
+                    opts.applyScalarFn(s, v)
+                else
+                    s[legacyKey] = v
+                end
                 s.visibilityModes = nil
                 -- Same reset as the row's orphan branch: Any cannot express an orphan.
                 SetMatchAny(false)
             end
-            if opts.onChanged then opts.onChanged() end
+            if opts.onChanged then
+                opts.onChanged()
+            end
         end,
     }
 
@@ -742,20 +988,25 @@ function CludesUI.AttachVisibilityChecklist(region, opts)
         CludesUI.RegisterWidgetRefresh(ApplyChecklistDisabled)
         ApplyChecklistDisabled()
     end
-
 end
 
 function CludesUI.BuildVisibilityRow(W, parent, y, opts, rightCfg)
     -- The placeholder slot the checklist replaces; W:DualRow only knows plain widgets.
     local function Slot(o)
-        return { type = "dropdown", text = o.label or "Visibility",
-                 values = { __placeholder = "..." }, order = { "__placeholder" },
-                 tooltip = o.tooltip,
-                 disabled = o.disabledFn,
-                 disabledTooltip = o.disabledTooltip,
-                 rawTooltip = o.rawTooltip,
-                 getValue = function() return "__placeholder" end,
-                 setValue = function() end }
+        return {
+            type = "dropdown",
+            text = o.label or "Visibility",
+            values = { __placeholder = "..." },
+            order = { "__placeholder" },
+            tooltip = o.tooltip,
+            disabled = o.disabledFn,
+            disabledTooltip = o.disabledTooltip,
+            rawTooltip = o.rawTooltip,
+            getValue = function()
+                return "__placeholder"
+            end,
+            setValue = function() end,
+        }
     end
 
     -- opts.rightVis: a second, fully independent visibility checklist in the right
@@ -769,13 +1020,19 @@ function CludesUI.BuildVisibilityRow(W, parent, y, opts, rightCfg)
     if leftCfg then
         row, h = W:DualRow(parent, y, leftCfg, Slot(opts))
     else
-        row, h = W:DualRow(parent, y, Slot(opts),
-            rightVis and Slot(rightVis) or rightCfg or { type = "label", text = "" })
+        row, h = W:DualRow(
+            parent,
+            y,
+            Slot(opts),
+            rightVis and Slot(rightVis) or rightCfg or { type = "label", text = "" }
+        )
     end
 
     -- Search pre-build: the row is an absorber, so the chrome below would throw. The
     -- row's labels were already indexed by the factory stubs; nothing here registers.
-    if CludesUI._prebuilding then return row, h end
+    if CludesUI._prebuilding then
+        return row, h
+    end
 
     CludesUI.AttachVisibilityChecklist(leftCfg and row._rightRegion or row._leftRegion, opts)
     if rightVis and not leftCfg then

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then
+    return
+end
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker_Forever.lua
 --
@@ -11,14 +15,16 @@ if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 local _, ns = ...
 local EQT = ns.EQT
-local function Cfg(k) return EQT.Cfg(k) end
+local function Cfg(k)
+    return EQT.Cfg(k)
+end
 
 -- Progress color stops: the defaults below, the paint fallbacks and the
 -- options swatches all read this one table.
 local OBJ_STOPS = {
     Start = { 1.0, 0.4, 0.4 },
-    Mid   = { 1.0, 1.0, 0.4 },
-    End   = { 0.4, 1.0, 0.4 },
+    Mid = { 1.0, 1.0, 0.4 },
+    End = { 0.4, 1.0, 0.4 },
 }
 EQT.OBJ_STOPS = OBJ_STOPS
 
@@ -29,27 +35,27 @@ do
     qt.questWatchExperimental = false
     -- Sorting: Quest Log Order unless another mode is picked; "mixed" keeps
     -- completed quests where the mode puts them.
-    qt.questSortMode      = "log"
+    qt.questSortMode = "log"
     qt.questSortCompleted = "mixed"
-    qt.questSortThenBy    = "none"
+    qt.questSortThenBy = "none"
     -- Filters: untrack matching quests, re-track when they pass. The
     -- Filter Quests switch gates the per-filter choices.
-    qt.filterEnabled      = false
-    qt.filterZone         = true
-    qt.filterCompleted    = false
-    qt.filterTrivial      = false
-    qt.filterRepeatable   = false
+    qt.filterEnabled = false
+    qt.filterZone = true
+    qt.filterCompleted = false
+    qt.filterTrivial = false
+    qt.filterRepeatable = false
     qt.filterHeaderToggle = false
     -- Tracks quests listed under the current zone or dungeon.
-    qt.autoTrackZone      = false
+    qt.autoTrackZone = false
     -- Progress feedback: alert sound keys ("none" = off), party chat.
-    qt.soundObjective     = "none"
-    qt.soundQuest         = "none"
-    qt.announceProgress   = false
+    qt.soundObjective = "none"
+    qt.soundQuest = "none"
+    qt.announceProgress = false
     -- Objective line colors (CludesUI style only).
-    qt.objProgressColor   = false
-    qt.objDimCompleted    = false
-    qt.objDimAlpha        = 45
+    qt.objProgressColor = false
+    qt.objDimCompleted = false
+    qt.objDimAlpha = 45
     for name, c in pairs(OBJ_STOPS) do
         qt["obj" .. name .. "R"], qt["obj" .. name .. "G"], qt["obj" .. name .. "B"] = c[1], c[2], c[3]
     end
@@ -65,51 +71,69 @@ end
 -------------------------------------------------------------------------------
 local watchFrame
 local watchPending = false
-local sortStuck = false     -- last rebuild did not take; see ApplySort
-local restoreOrder = false  -- the tools turned off: the next pass sorts by quest log
+local sortStuck = false -- last rebuild did not take; see ApplySort
+local restoreOrder = false -- the tools turned off: the next pass sorts by quest log
 local sortWasOn = false
 local logUpdatePending = false
-local instancePass = false  -- one pass on entering a dungeon; see CanEditWatches
-local selfEdit = false      -- inside our own watch edit: its events are ours
+local instancePass = false -- one pass on entering a dungeon; see CanEditWatches
+local selfEdit = false -- inside our own watch edit: its events are ours
 local sortIDs, sortGroup, sortKey, sortKey2, sortRank = {}, {}, {}, {}, {}
 local watched = {}
-local updated, completeSeen = {}, {}  -- QUEST_WATCH_UPDATE probe
+local updated, completeSeen = {}, {} -- QUEST_WATCH_UPDATE probe
 
 -- The pass's quest log snapshot: one GetInfo per entry per pass.
-local logList = {}                                           -- every entry, log order
-local logInfo, logHeader, logZone, logIndex = {}, {}, {}, {}  -- by questID
+local logList = {} -- every entry, log order
+local logInfo, logHeader, logZone, logIndex = {}, {}, {}, {} -- by questID
 local passZone, passInInstance, passInstance
 
 -- The custom tracker (Custom.lua) sorts, filters and auto-tracks its own list
 -- with no watch edits, so the tools need no experimental switch there.
 local function Exp()
-    if ns.UseCustomTracker() then return true end
+    if ns.UseCustomTracker() then
+        return true
+    end
     return Cfg("questWatchExperimental") == true
 end
 -- Quest Log Order is the base mode (a saved "default", the retired Blizzard
 -- order mode, reads as it).
 local function SortMode()
     local m = Cfg("questSortMode")
-    if m == nil or m == "default" then return "log" end
+    if m == nil or m == "default" then
+        return "log"
+    end
     return m
 end
-local function SortCompleted() return Cfg("questSortCompleted") or "mixed" end
+local function SortCompleted()
+    return Cfg("questSortCompleted") or "mixed"
+end
 -- Secondary key; ignored when the primary is already unique per quest.
 local function SortThenBy()
-    if SortMode() == "log" then return "none" end
+    if SortMode() == "log" then
+        return "none"
+    end
     return Cfg("questSortThenBy") or "none"
 end
 -- The tools keep the watch list sorted while they are on.
-local function SortOn() return Exp() end
-local function SortUses(key) return SortMode() == key or SortThenBy() == key end
+local function SortOn()
+    return Exp()
+end
+local function SortUses(key)
+    return SortMode() == key or SortThenBy() == key
+end
 
 -- A filter counts only while Filter Quests is on.
-local function FilterCfg(k) return Exp() and Cfg("filterEnabled") and Cfg(k) end
+local function FilterCfg(k)
+    return Exp() and Cfg("filterEnabled") and Cfg(k)
+end
 local function FilterOn()
-    return FilterCfg("filterZone") or FilterCfg("filterCompleted") or FilterCfg("filterTrivial")
+    return FilterCfg("filterZone")
+        or FilterCfg("filterCompleted")
+        or FilterCfg("filterTrivial")
         or FilterCfg("filterRepeatable")
 end
-local function AutoOn() return Exp() and Cfg("autoTrackZone") end
+local function AutoOn()
+    return Exp() and Cfg("autoTrackZone")
+end
 
 -- Per character (watch lists are per character, profiles may be shared), in
 -- the account DB: hidden = untracked by a filter, exempt = re-tracked by the
@@ -118,15 +142,27 @@ local function AutoOn() return Exp() and Cfg("autoTrackZone") end
 local CHAR_SETS = { "hidden", "exempt", "auto", "declined" }
 local charDB
 local function CharDB()
-    if charDB then return charDB end
-    if not CludesUIDB then CludesUIDB = {} end
+    if charDB then
+        return charDB
+    end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     local all = CludesUIDB.questWatchChars
-    if type(all) ~= "table" then all = {}; CludesUIDB.questWatchChars = all end
+    if type(all) ~= "table" then
+        all = {}
+        CludesUIDB.questWatchChars = all
+    end
     local guid = UnitGUID("player")
     local sv = all[guid]
-    if type(sv) ~= "table" then sv = {}; all[guid] = sv end
+    if type(sv) ~= "table" then
+        sv = {}
+        all[guid] = sv
+    end
     for _, k in ipairs(CHAR_SETS) do
-        if type(sv[k]) ~= "table" then sv[k] = {} end
+        if type(sv[k]) ~= "table" then
+            sv[k] = {}
+        end
     end
     charDB = sv
     return sv
@@ -136,9 +172,13 @@ end
 local function HasLeftovers()
     local all = CludesUIDB and CludesUIDB.questWatchChars
     local sv = type(all) == "table" and all[UnitGUID("player")]
-    if type(sv) ~= "table" then return false end
+    if type(sv) ~= "table" then
+        return false
+    end
     for _, k in ipairs(CHAR_SETS) do
-        if type(sv[k]) == "table" and next(sv[k]) ~= nil then return true end
+        if type(sv[k]) == "table" and next(sv[k]) ~= nil then
+            return true
+        end
     end
     return false
 end
@@ -151,12 +191,18 @@ local function FillWatched()
     wipe(watched)
     for i = 1, C_QuestLog.GetNumQuestWatches() do
         local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
-        if questID then watched[questID] = true end
+        if questID then
+            watched[questID] = true
+        end
     end
 end
 
 local function Snapshot()
-    wipe(logList); wipe(logInfo); wipe(logHeader); wipe(logZone); wipe(logIndex)
+    wipe(logList)
+    wipe(logInfo)
+    wipe(logHeader)
+    wipe(logZone)
+    wipe(logIndex)
     passZone = GetRealZoneText()
     passInInstance = IsInInstance()
     passInstance = passInInstance and GetInstanceInfo() or nil
@@ -190,13 +236,25 @@ local function InArea(info, header)
 end
 
 local function IsFiltered(questID, superID)
-    if questID == superID then return false end
+    if questID == superID then
+        return false
+    end
     local info = logInfo[questID]
-    if not info then return false end
-    if FilterCfg("filterCompleted") and C_QuestLog.IsComplete(questID) then return true end
-    if FilterCfg("filterTrivial") and C_QuestLog.IsQuestTrivial(questID) then return true end
-    if FilterCfg("filterRepeatable") and info.frequency and info.frequency ~= Enum.QuestFrequency.Default then return true end
-    if FilterCfg("filterZone") and not InArea(info, logHeader[questID]) then return true end
+    if not info then
+        return false
+    end
+    if FilterCfg("filterCompleted") and C_QuestLog.IsComplete(questID) then
+        return true
+    end
+    if FilterCfg("filterTrivial") and C_QuestLog.IsQuestTrivial(questID) then
+        return true
+    end
+    if FilterCfg("filterRepeatable") and info.frequency and info.frequency ~= Enum.QuestFrequency.Default then
+        return true
+    end
+    if FilterCfg("filterZone") and not InArea(info, logHeader[questID]) then
+        return true
+    end
     return false
 end
 
@@ -220,7 +278,9 @@ local function ApplyFilter()
     FillWatched()
     -- Exemptions end when the player untracks the quest.
     for questID in pairs(exempt) do
-        if not on or not watched[questID] then exempt[questID] = nil end
+        if not on or not watched[questID] then
+            exempt[questID] = nil
+        end
     end
     for questID in pairs(hidden) do
         -- IsOnQuest, not a log index: collapsed headers and loading screens
@@ -230,13 +290,17 @@ local function ApplyFilter()
         elseif watched[questID] then
             -- The player tracked it again: leave it tracked.
             hidden[questID] = nil
-            if on and IsFiltered(questID, superID) then exempt[questID] = true end
+            if on and IsFiltered(questID, superID) then
+                exempt[questID] = true
+            end
         elseif not on or not IsFiltered(questID, superID) then
             hidden[questID] = nil
             AddWatch(questID)
         end
     end
-    if not on then return end
+    if not on then
+        return
+    end
     for questID in pairs(watched) do
         if not exempt[questID] and IsFiltered(questID, superID) then
             hidden[questID] = true
@@ -252,7 +316,9 @@ local function ApplyAutoTrack()
     local db = CharDB()
     local hidden, auto, declined = db.hidden, db.auto, db.declined
     local on = AutoOn()
-    if not on and next(auto) == nil and next(declined) == nil then return end
+    if not on and next(auto) == nil and next(declined) == nil then
+        return
+    end
     local superID = C_SuperTrack.GetSuperTrackedQuestID()
     FillWatched()
     for questID in pairs(auto) do
@@ -270,8 +336,13 @@ local function ApplyAutoTrack()
         elseif not info.isHidden and not info.isTask and not info.isBounty then
             local questID = info.questID
             if on and InArea(info, header) then
-                if free > 0 and not watched[questID] and not declined[questID]
-                   and not hidden[questID] and not IsFiltered(questID, superID) then
+                if
+                    free > 0
+                    and not watched[questID]
+                    and not declined[questID]
+                    and not hidden[questID]
+                    and not IsFiltered(questID, superID)
+                then
                     auto[questID] = true
                     free = free - 1
                     AddWatch(questID)
@@ -287,25 +358,40 @@ local function ApplyAutoTrack()
     end
     -- Quests that left the log.
     for questID in pairs(auto) do
-        if not C_QuestLog.IsOnQuest(questID) then auto[questID] = nil end
+        if not C_QuestLog.IsOnQuest(questID) then
+            auto[questID] = nil
+        end
     end
     for questID in pairs(declined) do
-        if not on or not C_QuestLog.IsOnQuest(questID) then declined[questID] = nil end
+        if not on or not C_QuestLog.IsOnQuest(questID) then
+            declined[questID] = nil
+        end
     end
 end
 
 local function CompareQuests(a, b)
-    if sortGroup[a] ~= sortGroup[b] then return sortGroup[a] < sortGroup[b] end
-    if sortKey[a] ~= sortKey[b] then return sortKey[a] < sortKey[b] end
-    if sortKey2[a] ~= sortKey2[b] then return sortKey2[a] < sortKey2[b] end
+    if sortGroup[a] ~= sortGroup[b] then
+        return sortGroup[a] < sortGroup[b]
+    end
+    if sortKey[a] ~= sortKey[b] then
+        return sortKey[a] < sortKey[b]
+    end
+    if sortKey2[a] ~= sortKey2[b] then
+        return sortKey2[a] < sortKey2[b]
+    end
     return sortRank[a] < sortRank[b]
 end
 
 -- Lower sorts first. Recurring = dailies / weeklies.
 local QC = Enum.QuestClassification
 local TYPE_RANK = {
-    [QC.Campaign] = 1, [QC.Legendary] = 2, [QC.Important] = 3, [QC.Meta] = 4,
-    [QC.Questline] = 5, [QC.Normal] = 6, [QC.Recurring] = 7,
+    [QC.Campaign] = 1,
+    [QC.Legendary] = 2,
+    [QC.Important] = 3,
+    [QC.Meta] = 4,
+    [QC.Questline] = 5,
+    [QC.Normal] = 6,
+    [QC.Recurring] = 7,
 }
 
 local function SortKeyFor(mode, questID, rank)
@@ -313,7 +399,9 @@ local function SortKeyFor(mode, questID, rank)
         return logZone[questID] or 0
     elseif mode == "progress" then
         -- Most complete first: negated share of all objective counts.
-        if C_QuestLog.IsComplete(questID) then return -1 end
+        if C_QuestLog.IsComplete(questID) then
+            return -1
+        end
         local objectives = C_QuestLog.GetQuestObjectives(questID)
         local have, need = 0, 0
         if objectives then
@@ -327,9 +415,13 @@ local function SortKeyFor(mode, questID, rank)
         return need > 0 and -(have / need) or 0
     elseif mode == "type" then
         local info = logInfo[questID]
-        if not info then return 6 end
+        if not info then
+            return 6
+        end
         local r = TYPE_RANK[info.questClassification] or 6
-        if r == 6 and info.frequency and info.frequency ~= Enum.QuestFrequency.Default then r = 7 end
+        if r == 6 and info.frequency and info.frequency ~= Enum.QuestFrequency.Default then
+            r = 7
+        end
         return r
     elseif mode == "log" then
         return logIndex[questID] or 0
@@ -348,7 +440,10 @@ end
 -- Sorts a quest ID list in place; list order is the rank. Reads the pass's
 -- log snapshot.
 local function SortList(ids, mode, completed, thenBy)
-    wipe(sortGroup); wipe(sortKey); wipe(sortKey2); wipe(sortRank)
+    wipe(sortGroup)
+    wipe(sortKey)
+    wipe(sortKey2)
+    wipe(sortRank)
     for i, questID in ipairs(ids) do
         sortRank[questID] = i
         local group = 1
@@ -374,19 +469,30 @@ local function ApplySort(mode, completed, thenBy)
             sortIDs[count] = questID
         end
     end
-    for i = #sortIDs, count + 1, -1 do sortIDs[i] = nil end
+    for i = #sortIDs, count + 1, -1 do
+        sortIDs[i] = nil
+    end
     SortList(sortIDs, mode, completed, thenBy)
 
     -- AddQuestWatch inserts at the top, so re-add the out-of-place head in
     -- reverse; the already-correct tail is left alone.
     local last
     for i = count, 1, -1 do
-        if sortRank[sortIDs[i]] ~= i then last = i; break end
+        if sortRank[sortIDs[i]] ~= i then
+            last = i
+            break
+        end
     end
-    if not last then sortStuck = false; return end
+    if not last then
+        sortStuck = false
+        return
+    end
     -- The previous rebuild did not produce its order: skip one pass so an
     -- order the game will not take cannot loop.
-    if sortStuck then sortStuck = false; return end
+    if sortStuck then
+        sortStuck = false
+        return
+    end
 
     -- No super-track restore here: setting it from addon code taints the
     -- world map.
@@ -400,7 +506,10 @@ local function ApplySort(mode, completed, thenBy)
         local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
         if questID then
             n = n + 1
-            if questID ~= sortIDs[n] then sortStuck = true; return end
+            if questID ~= sortIDs[n] then
+                sortStuck = true
+                return
+            end
         end
     end
 end
@@ -415,7 +524,9 @@ EQT.QuestInArea = InArea
 function EQT.IsQuestFiltered(questID)
     return FilterOn() and IsFiltered(questID, C_SuperTrack.GetSuperTrackedQuestID())
 end
-function EQT.AutoTrackOn() return AutoOn() end
+function EQT.AutoTrackOn()
+    return AutoOn()
+end
 function EQT.SortQuestList(ids)
     SortList(ids, SortMode(), SortCompleted(), SortThenBy())
 end
@@ -429,17 +540,27 @@ end
 -- enters a 5-player dungeon (out of combat, from its loading screen), which
 -- brings its quests back under Current Zone Only and auto-track; leaving an
 -- instance (loading screen + zone events) re-runs the pass.
-local function MapOpen() return WorldMapFrame ~= nil and WorldMapFrame:IsShown() end
+local function MapOpen()
+    return WorldMapFrame ~= nil and WorldMapFrame:IsShown()
+end
 
 local function CanEditWatches()
-    if IsInInstance() and not instancePass then return false end
-    if MapOpen() then return false end
-    if InCombatLockdown() then return false end
-    if C_InstanceEncounter and C_InstanceEncounter.IsEncounterInProgress() then return false end
+    if IsInInstance() and not instancePass then
+        return false
+    end
+    if MapOpen() then
+        return false
+    end
+    if InCombatLockdown() then
+        return false
+    end
+    if C_InstanceEncounter and C_InstanceEncounter.IsEncounterInProgress() then
+        return false
+    end
     return true
 end
 
-local QueueWatches  -- defined below; the map callback needs it
+local QueueWatches -- defined below; the map callback needs it
 local mapDeferred = false
 
 -- Retry when the map closes. EventRegistry dispatches through
@@ -447,7 +568,9 @@ local mapDeferred = false
 -- dropped again once it ran.
 local function OnMapHide()
     EventRegistry:UnregisterCallback("WorldMapOnHide", EQT)
-    if not mapDeferred then return end
+    if not mapDeferred then
+        return
+    end
     mapDeferred = false
     QueueWatches()
 end
@@ -464,7 +587,9 @@ local function ApplyWatches()
         -- Combat / open-world encounter: retry when it ends. Instances wait
         -- for the zone events on the way out.
         if not IsInInstance() then
-            if InCombatLockdown() then ns.CombatQueue.Defer("QuestWatches", QueueWatches) end
+            if InCombatLockdown() then
+                ns.CombatQueue.Defer("QuestWatches", QueueWatches)
+            end
             watchFrame:RegisterEvent("ENCOUNTER_END")
         end
         return
@@ -472,7 +597,9 @@ local function ApplyWatches()
     instancePass = false
     watchFrame:UnregisterEvent("ENCOUNTER_END")
     -- Log not loaded yet (loading screens): nothing reliable to act on.
-    if C_QuestLog.GetNumQuestLogEntries() == 0 then return end
+    if C_QuestLog.GetNumQuestLogEntries() == 0 then
+        return
+    end
     Snapshot()
     ApplyFilter()
     ApplyAutoTrack()
@@ -482,13 +609,19 @@ local function ApplyWatches()
         restoreOrder = false
         ApplySort("log", "mixed", "none")
     end
-    if SortOn() then ApplySort(SortMode(), SortCompleted(), SortThenBy()) end
+    if SortOn() then
+        ApplySort(SortMode(), SortCompleted(), SortThenBy())
+    end
     -- Last pass after everything was turned off: put the frame to sleep.
-    if not WatchesActive() then watchFrame:UnregisterAllEvents() end
+    if not WatchesActive() then
+        watchFrame:UnregisterAllEvents()
+    end
 end
 
 function QueueWatches()
-    if watchPending then return end
+    if watchPending then
+        return
+    end
     watchPending = true
     C_Timer.After(0, ApplyWatches)
 end
@@ -498,12 +631,18 @@ end
 -- a quest turned complete or back (or Progress sorts the list).
 local function OnWatchEvent(_, event, arg1)
     if event == "QUEST_WATCH_LIST_CHANGED" then
-        if not selfEdit then QueueWatches() end
+        if not selfEdit then
+            QueueWatches()
+        end
     elseif event == "QUEST_WATCH_UPDATE" then
-        if arg1 then updated[arg1] = true end
+        if arg1 then
+            updated[arg1] = true
+        end
         logUpdatePending = true
     elseif event == "QUEST_LOG_UPDATE" then
-        if not logUpdatePending then return end
+        if not logUpdatePending then
+            return
+        end
         logUpdatePending = false
         local need = SortUses("progress")
         for questID in pairs(updated) do
@@ -511,9 +650,13 @@ local function OnWatchEvent(_, event, arg1)
             local done = C_QuestLog.IsComplete(questID) == true
             local was = completeSeen[questID]
             completeSeen[questID] = done
-            if was ~= done and (was ~= nil or done) then need = true end
+            if was ~= done and (was ~= nil or done) then
+                need = true
+            end
         end
-        if need then QueueWatches() end
+        if need then
+            QueueWatches()
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         local inInstance, kind = IsInInstance()
         instancePass = inInstance and kind == "party"
@@ -531,12 +674,20 @@ local blizzSortOff = false
 local BLIZZ_SORT_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_NEW_AREA" }
 local function ApplyBlizzardSort()
     local otf = _G.ObjectiveTrackerFrame
-    if not otf then return end
+    if not otf then
+        return
+    end
     local off = SortOn()
-    if off == blizzSortOff then return end
+    if off == blizzSortOff then
+        return
+    end
     blizzSortOff = off
     for _, event in ipairs(BLIZZ_SORT_EVENTS) do
-        if off then otf:UnregisterEvent(event) else otf:RegisterEvent(event) end
+        if off then
+            otf:UnregisterEvent(event)
+        else
+            otf:RegisterEvent(event)
+        end
     end
 end
 
@@ -551,11 +702,15 @@ local function ApplyFilterToggle()
     local want = Exp() and Cfg("filterHeaderToggle") == true
     local btn = EQT.FilterToggle
     if not btn then
-        if not want then return end
+        if not want then
+            return
+        end
         local qt = _G.QuestObjectiveTracker
         local header = qt and qt.Header
         local minBtn = header and header.MinimizeButton
-        if not minBtn then return end
+        if not minBtn then
+            return
+        end
         btn = CreateFrame("Button", nil, header)
         btn:SetSize(minBtn:GetSize())
         btn:SetPoint("RIGHT", minBtn, "LEFT", -2, 0)
@@ -564,8 +719,12 @@ local function ApplyFilterToggle()
         btn:SetNormalAtlas("ui-questtrackerbutton-filter")
         btn:SetPushedAtlas("ui-questtrackerbutton-filter-pressed")
         btn:SetHighlightAtlas("ui-questtrackerbutton-red-highlight", "ADD")
-        btn:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, FilterToggleTip()) end)
-        btn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        btn:SetScript("OnEnter", function(self)
+            CludesUI.ShowWidgetTooltip(self, FilterToggleTip())
+        end)
+        btn:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         btn:SetScript("OnClick", function(self)
             EQT.Set("filterEnabled", not Cfg("filterEnabled"))
             EQT.ApplyQuestWatches()
@@ -574,7 +733,9 @@ local function ApplyFilterToggle()
         end)
         EQT.FilterToggle = btn
         EQT.SkinHeader(header)
-        if EQT._trackerMouseOff then EQT.MouseOff(btn) end
+        if EQT._trackerMouseOff then
+            EQT.MouseOff(btn)
+        end
     end
     btn:SetShown(want)
     btn:SetAlpha(Cfg("filterEnabled") and 1 or 0.4)
@@ -584,7 +745,9 @@ end
 function EQT.ApplyQuestWatches()
     -- The custom tracker keeps its own list; the watch list is left alone.
     if ns.UseCustomTracker() then
-        if EQT.RefreshCustom then EQT.RefreshCustom() end
+        if EQT.RefreshCustom then
+            EQT.RefreshCustom()
+        end
         return
     end
     ApplyBlizzardSort()
@@ -592,12 +755,18 @@ function EQT.ApplyQuestWatches()
     -- The tools turned off (or a profile without them): the next pass puts
     -- the watch list back in quest log order.
     local sortOn = SortOn()
-    if sortWasOn and not sortOn then restoreOrder = true end
+    if sortWasOn and not sortOn then
+        restoreOrder = true
+    end
     sortWasOn = sortOn
-    if sortOn then restoreOrder = false end
+    if sortOn then
+        restoreOrder = false
+    end
     local on = WatchesActive()
     if not watchFrame then
-        if not (on or restoreOrder) then return end
+        if not (on or restoreOrder) then
+            return
+        end
         watchFrame = CreateFrame("Frame")
         watchFrame:SetScript("OnEvent", OnWatchEvent)
     end
@@ -606,7 +775,9 @@ function EQT.ApplyQuestWatches()
     wipe(updated)
     if not on then
         -- The restore pass puts the frame back to sleep once it ran.
-        if restoreOrder then QueueWatches() end
+        if restoreOrder then
+            QueueWatches()
+        end
         return
     end
     local zoneModes = FilterCfg("filterZone") or AutoOn()
@@ -617,16 +788,22 @@ function EQT.ApplyQuestWatches()
         watchFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     end
     -- Entering or leaving an instance ends on a loading screen.
-    if zoneModes then watchFrame:RegisterEvent("PLAYER_ENTERING_WORLD") end
+    if zoneModes then
+        watchFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    end
     -- Objective progress can flip a quest to complete.
     if (sortOn and (SortCompleted() ~= "mixed" or SortUses("progress"))) or FilterCfg("filterCompleted") then
         watchFrame:RegisterEvent("QUEST_WATCH_UPDATE")
         watchFrame:RegisterEvent("QUEST_LOG_UPDATE")
     end
     -- Quests turn trivial as the player levels.
-    if FilterCfg("filterTrivial") then watchFrame:RegisterEvent("PLAYER_LEVEL_UP") end
+    if FilterCfg("filterTrivial") then
+        watchFrame:RegisterEvent("PLAYER_LEVEL_UP")
+    end
     -- New quests are not always auto-watched by Blizzard.
-    if AutoOn() then watchFrame:RegisterEvent("QUEST_ACCEPTED") end
+    if AutoOn() then
+        watchFrame:RegisterEvent("QUEST_ACCEPTED")
+    end
     QueueWatches()
 end
 
@@ -637,7 +814,7 @@ end
 -- Frame is built on first enable and unregistered while both are off.
 -------------------------------------------------------------------------------
 local progFrame
-local progCache = {}   -- questID -> { [objectiveIndex] = numFulfilled, done = bool }
+local progCache = {} -- questID -> { [objectiveIndex] = numFulfilled, done = bool }
 local progDirty = {}
 local needSeed = false
 
@@ -645,19 +822,19 @@ local needSeed = false
 -- FileDataIDs, not SoundKit ids, so PlaySoundKey routes them separately.
 local PEON_SOUNDS = {
     { "peoncomplete", "Peon: Work Complete", 558132 },
-    { "peonready",    "Peon: Ready to Work", 558137 },
-    { "peonyes1",     "Peon: Yes 1",         558136 },
-    { "peonyes2",     "Peon: Yes 2",         558139 },
-    { "peonyes3",     "Peon: Yes 3",         558147 },
-    { "peonyes4",     "Peon: Yes 4",         558140 },
-    { "peonwhat1",    "Peon: What 1",        558141 },
-    { "peonwhat2",    "Peon: What 2",        558134 },
-    { "peonwhat3",    "Peon: What 3",        558143 },
-    { "peonwhat4",    "Peon: What 4",        558135 },
-    { "peonpissed1",  "Peon: Annoyed 1",     558133 },
-    { "peonpissed2",  "Peon: Annoyed 2",     558144 },
-    { "peonpissed3",  "Peon: Annoyed 3",     558142 },
-    { "peonpissed4",  "Peon: Annoyed 4",     558146 },
+    { "peonready", "Peon: Ready to Work", 558137 },
+    { "peonyes1", "Peon: Yes 1", 558136 },
+    { "peonyes2", "Peon: Yes 2", 558139 },
+    { "peonyes3", "Peon: Yes 3", 558147 },
+    { "peonyes4", "Peon: Yes 4", 558140 },
+    { "peonwhat1", "Peon: What 1", 558141 },
+    { "peonwhat2", "Peon: What 2", 558134 },
+    { "peonwhat3", "Peon: What 3", 558143 },
+    { "peonwhat4", "Peon: What 4", 558135 },
+    { "peonpissed1", "Peon: Annoyed 1", 558133 },
+    { "peonpissed2", "Peon: Annoyed 2", 558144 },
+    { "peonpissed3", "Peon: Annoyed 3", 558142 },
+    { "peonpissed4", "Peon: Annoyed 4", 558146 },
 }
 local peonFile = {}
 
@@ -679,7 +856,9 @@ end
 
 -- Also the options dropdown's preview: the peon lines are FileDataIDs.
 local function PlaySoundKey(key)
-    if not key or key == "none" then return end
+    if not key or key == "none" then
+        return
+    end
     CludesUI.PlaySoundPath(EQT.Sounds()[key], peonFile[key] ~= nil)
 end
 EQT.PlaySoundKey = PlaySoundKey
@@ -693,13 +872,23 @@ end
 -- A finished objective, with a quest link. Party or instance group only; never
 -- raids, never in chat lockdown.
 local function Announce(questID, text)
-    if not Cfg("announceProgress") or not text or text == "" then return end
-    if IsInRaid() then return end
+    if not Cfg("announceProgress") or not text or text == "" then
+        return
+    end
+    if IsInRaid() then
+        return
+    end
     local chatType
-    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then chatType = "INSTANCE_CHAT"
-    elseif IsInGroup(LE_PARTY_CATEGORY_HOME) then chatType = "PARTY"
-    else return end
-    if C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown() then return end
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        chatType = "INSTANCE_CHAT"
+    elseif IsInGroup(LE_PARTY_CATEGORY_HOME) then
+        chatType = "PARTY"
+    else
+        return
+    end
+    if C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown() then
+        return
+    end
     local quest = GetQuestLink(questID) or C_QuestLog.GetTitleForQuestID(questID) or ""
     C_ChatInfo.SendChatMessage("[CUI] " .. quest .. ": " .. text, chatType)
 end
@@ -707,9 +896,13 @@ end
 -- Records the quest's current counts. Returns false when it has no data yet.
 local function SeedQuest(questID)
     local objectives = C_QuestLog.GetQuestObjectives(questID)
-    if not objectives then return false end
+    if not objectives then
+        return false
+    end
     local entry = progCache[questID] or {}
-    for i, obj in ipairs(objectives) do entry[i] = obj.numFulfilled or 0 end
+    for i, obj in ipairs(objectives) do
+        entry[i] = obj.numFulfilled or 0
+    end
     entry.done = C_QuestLog.IsComplete(questID) == true
     progCache[questID] = entry
     return true
@@ -717,9 +910,14 @@ end
 
 local function CheckQuest(questID)
     local prev = progCache[questID]
-    if not prev then SeedQuest(questID); return end
+    if not prev then
+        SeedQuest(questID)
+        return
+    end
     local objectives = C_QuestLog.GetQuestObjectives(questID)
-    if not objectives then return end
+    if not objectives then
+        return
+    end
     local objDone = false
     for i, obj in ipairs(objectives) do
         local n = obj.numFulfilled or 0
@@ -742,17 +940,23 @@ local function SeedAll()
     wipe(progCache)
     for i = 1, C_QuestLog.GetNumQuestLogEntries() do
         local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader and info.questID then SeedQuest(info.questID) end
+        if info and not info.isHeader and info.questID then
+            SeedQuest(info.questID)
+        end
     end
 end
 
 local function OnProgressEvent(_, event, questID)
     if event == "QUEST_WATCH_UPDATE" then
-        if questID then progDirty[questID] = true end
+        if questID then
+            progDirty[questID] = true
+        end
     elseif event == "QUEST_LOG_UPDATE" then
         -- The cache fills here, once the log has entries, not at login.
         if needSeed then
-            if C_QuestLog.GetNumQuestLogEntries() == 0 then return end
+            if C_QuestLog.GetNumQuestLogEntries() == 0 then
+                return
+            end
             needSeed = false
             SeedAll()
         end
@@ -761,9 +965,13 @@ local function OnProgressEvent(_, event, questID)
             CheckQuest(id)
         end
     elseif event == "QUEST_ACCEPTED" then
-        if questID then SeedQuest(questID) end
+        if questID then
+            SeedQuest(questID)
+        end
     elseif event == "QUEST_REMOVED" then
-        if questID then progCache[questID] = nil end
+        if questID then
+            progCache[questID] = nil
+        end
     end
 end
 
@@ -771,7 +979,9 @@ end
 function EQT.ApplyQuestProgress()
     local on = ProgressOn()
     if not progFrame then
-        if not on then return end
+        if not on then
+            return
+        end
         progFrame = CreateFrame("Frame")
         progFrame:SetScript("OnEvent", OnProgressEvent)
     end
@@ -779,7 +989,9 @@ function EQT.ApplyQuestProgress()
     wipe(progDirty)
     wipe(progCache)
     needSeed = on
-    if not on then return end
+    if not on then
+        return
+    end
     progFrame:RegisterEvent("QUEST_WATCH_UPDATE")
     progFrame:RegisterEvent("QUEST_LOG_UPDATE")
     progFrame:RegisterEvent("QUEST_ACCEPTED")
@@ -794,21 +1006,23 @@ end
 -- Blizzard's color style and the settings), and only a line whose stamp moved
 -- is painted again: an unchanged block costs no objective lookup.
 -------------------------------------------------------------------------------
-local colored    = setmetatable({}, { __mode = "k" })
-local stampText  = setmetatable({}, { __mode = "k" })
+local colored = setmetatable({}, { __mode = "k" })
+local stampText = setmetatable({}, { __mode = "k" })
 local stampStyle = setmetatable({}, { __mode = "k" })
-local stampGen   = setmetatable({}, { __mode = "k" })
+local stampGen = setmetatable({}, { __mode = "k" })
 
 local STOPS = {
     { "objStartR", "objStartG", "objStartB", def = OBJ_STOPS.Start },
-    { "objMidR",   "objMidG",   "objMidB",   def = OBJ_STOPS.Mid },
-    { "objEndR",   "objEndG",   "objEndB",   def = OBJ_STOPS.End },
+    { "objMidR", "objMidG", "objMidB", def = OBJ_STOPS.Mid },
+    { "objEndR", "objEndG", "objEndB", def = OBJ_STOPS.End },
 }
 -- Every setting the paint reads; a change moves the generation, which every
 -- line's stamp carries.
 local COLOR_KEYS = { "objProgressColor", "objDimCompleted", "objDimAlpha" }
 for _, s in ipairs(STOPS) do
-    for i = 1, 3 do COLOR_KEYS[#COLOR_KEYS + 1] = s[i] end
+    for i = 1, 3 do
+        COLOR_KEYS[#COLOR_KEYS + 1] = s[i]
+    end
 end
 local colorSnap, colorGen = {}, 0
 local function ColorGen()
@@ -817,9 +1031,14 @@ local function ColorGen()
     for i = 1, #COLOR_KEYS do
         local k = COLOR_KEYS[i]
         local v = db[k]
-        if colorSnap[k] ~= v then colorSnap[k] = v; moved = true end
+        if colorSnap[k] ~= v then
+            colorSnap[k] = v
+            moved = true
+        end
     end
-    if moved then colorGen = colorGen + 1 end
+    if moved then
+        colorGen = colorGen + 1
+    end
     return colorGen
 end
 
@@ -845,7 +1064,9 @@ EQT.ProgressRGB = ProgressRGB
 -- Back to Blizzard's color.
 local function Restore(fs)
     local style = fs.colorStyle
-    if style then fs:SetTextColor(style.r, style.g, style.b, 1) end
+    if style then
+        fs:SetTextColor(style.r, style.g, style.b, 1)
+    end
     colored[fs], stampText[fs], stampStyle[fs], stampGen[fs] = nil, nil, nil, nil
 end
 
@@ -857,14 +1078,20 @@ end
 
 function EQT.ColorObjectiveLines(block)
     local lines = block and block.usedLines
-    if not lines then return end
+    if not lines then
+        return
+    end
     local progress, dim = Cfg("objProgressColor"), Cfg("objDimCompleted")
     local questID = type(block.id) == "number" and block.id
     if not ((progress or dim) and questID) then
-        if next(colored) == nil then return end
+        if next(colored) == nil then
+            return
+        end
         for _, line in pairs(lines) do
             local fs = line.Text
-            if fs and colored[fs] then Restore(fs) end
+            if fs and colored[fs] then
+                Restore(fs)
+            end
         end
         return
     end
@@ -874,15 +1101,23 @@ function EQT.ColorObjectiveLines(block)
         local fs = line.Text
         if fs then
             if type(key) == "number" then
-                if stampGen[fs] ~= gen or stampText[fs] ~= fs:GetText() or stampStyle[fs] ~= fs.colorStyle then
-                    stale = true; break
+                if
+                    stampGen[fs] ~= gen
+                    or stampText[fs] ~= fs:GetText()
+                    or stampStyle[fs] ~= fs.colorStyle
+                then
+                    stale = true
+                    break
                 end
             elseif colored[fs] then
-                stale = true; break
+                stale = true
+                break
             end
         end
     end
-    if not stale then return end
+    if not stale then
+        return
+    end
     local objectives = C_QuestLog.GetQuestObjectives(questID)
     local alpha = (Cfg("objDimAlpha") or 45) / 100
     for key, line in pairs(lines) do
@@ -892,7 +1127,9 @@ function EQT.ColorObjectiveLines(block)
             local text, style = fs:GetText(), fs.colorStyle
             if stampGen[fs] ~= gen or stampText[fs] ~= text or stampStyle[fs] ~= style then
                 local r, g, b = 1, 1, 1
-                if style then r, g, b = style.r, style.g, style.b end
+                if style then
+                    r, g, b = style.r, style.g, style.b
+                end
                 local req = obj.numRequired
                 if progress then
                     -- Finished lines take the End color, not Blizzard's grey.
@@ -908,7 +1145,9 @@ function EQT.ColorObjectiveLines(block)
             end
         elseif fs then
             -- A non-objective line on a recycled frame.
-            if colored[fs] then Restore(fs) end
+            if colored[fs] then
+                Restore(fs)
+            end
             -- An index with no objective is stamped too, so it cannot keep
             -- the block stale.
             if objectives and type(key) == "number" then

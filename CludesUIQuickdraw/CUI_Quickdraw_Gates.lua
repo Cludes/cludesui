@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Gates.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local LIVE_STRATA, MAX_LATTICE, REGION_MAX = I.LIVE_STRATA, I.MAX_LATTICE, I.REGION_MAX
@@ -124,13 +128,12 @@ local ARM_CLAIM = I.ARM_CLAIM
 -- local: as one file the module sat within a couple of Lua's ceiling of 200.
 local EnterSnippet, LeaveSnippet
 do
-
--- Where the cursor is in the palette's own space, as cdx/cdy -- nil when there
--- was no reading to take. The maths mirrors the release branch of SNIPPET_PRE:
--- same origin, same scale, same units, because every one of these answers the
--- identical question from a different place and they must not drift apart. One
--- fragment is how they are kept from drifting.
-local CURSOR_OFFSET = [==[
+    -- Where the cursor is in the palette's own space, as cdx/cdy -- nil when there
+    -- was no reading to take. The maths mirrors the release branch of SNIPPET_PRE:
+    -- same origin, same scale, same units, because every one of these answers the
+    -- identical question from a different place and they must not drift apart. One
+    -- fragment is how they are kept from drifting.
+    local CURSOR_OFFSET = [==[
         local cdx, cdy
         do
             local ui = self:GetFrameRef("ui")
@@ -155,31 +158,31 @@ local CURSOR_OFFSET = [==[
         end
 ]==]
 
--- An ARC claim's true ground, measured polar: does the offset dx/dy stand on
--- claim gk's own ground? Sets `inside`, which both callers declare.
---
--- The rects the gate frames use are event surfaces only and generous on purpose
--- (see CorridorBox); this is what actually decides the ground. Two pieces, both
--- sized by ChildGeom -- a BEAM out of the parent entry, and a WEDGE past the
--- entry ring's outer edge -- and nothing at all inward of the icon's inner face,
--- where a retreat toward the centre has to disarm so the other claims get their
--- parent gates back.
---
--- Neither piece is the release's own ring resolution, and both are supersets of
--- it. The beam is what the reach for a child actually travels through: a
--- straight line from the parent passes BESIDE its icon before it clears the
--- entry ring, and while that ground belonged to nothing the pgate's own OnLeave
--- -- fired a few units into every reach -- disarmed the claim and left its
--- children dead for the rest of the hold.
---
--- Asked at BOTH edges. The disarm has always asked it. The arm asks it too now:
--- a claim whose only way in was its parent's own icon could not be reached by
--- the one move a user actually makes, which is to head straight at the child
--- they can see. The icon is 40 units across at a radius of 100 -- about eleven
--- degrees -- while a claim's children spread up to forty-five degrees either
--- side of it, so most of a nest's children sit at angles whose straight reach
--- never crosses the icon at all.
-local ARC_GROUND = [==[
+    -- An ARC claim's true ground, measured polar: does the offset dx/dy stand on
+    -- claim gk's own ground? Sets `inside`, which both callers declare.
+    --
+    -- The rects the gate frames use are event surfaces only and generous on purpose
+    -- (see CorridorBox); this is what actually decides the ground. Two pieces, both
+    -- sized by ChildGeom -- a BEAM out of the parent entry, and a WEDGE past the
+    -- entry ring's outer edge -- and nothing at all inward of the icon's inner face,
+    -- where a retreat toward the centre has to disarm so the other claims get their
+    -- parent gates back.
+    --
+    -- Neither piece is the release's own ring resolution, and both are supersets of
+    -- it. The beam is what the reach for a child actually travels through: a
+    -- straight line from the parent passes BESIDE its icon before it clears the
+    -- entry ring, and while that ground belonged to nothing the pgate's own OnLeave
+    -- -- fired a few units into every reach -- disarmed the claim and left its
+    -- children dead for the rest of the hold.
+    --
+    -- Asked at BOTH edges. The disarm has always asked it. The arm asks it too now:
+    -- a claim whose only way in was its parent's own icon could not be reached by
+    -- the one move a user actually makes, which is to head straight at the child
+    -- they can see. The icon is 40 units across at a radius of 100 -- about eleven
+    -- degrees -- while a claim's children spread up to forty-five degrees either
+    -- side of it, so most of a nest's children sit at angles whose straight reach
+    -- never crosses the icon at all.
+    local ARC_GROUND = [==[
                         local lo = tonumber(btn:GetAttribute("eqdCLo" .. gk))
                         -- Along the parent's own axis, and across it. The axis
                         -- is pushed as a vector because the sandbox has no
@@ -203,31 +206,32 @@ local ARC_GROUND = [==[
                         end
 ]==]
 
--- self:GetFrameRef("btn") is the palette's own secure button; every gate
--- carries that one reference back, however many palettes and claims exist,
--- because the header they are all wrapped through is shared. k is baked into
--- the snippet text rather than read off an attribute: each gate only ever
--- needs to know its OWN claim index, never anyone else's, so there is nothing
--- for a shared body to look up. It goes into a LOCAL of that name, which is
--- what ARM_CLAIM reads -- the sites that arm geometrically only know their
--- claim at run time, and one fragment serving all of them is one definition of
--- what arming does.
---
--- `region` asks for the REGION gates' variant. A parent gate arms outright:
--- its rect IS the claim's own cell, so standing on it is standing on the claim.
--- A region gate's rects are not that -- they are generous event surfaces, and
--- on the arc they reach over ground belonging to other entries -- so that
--- variant arms only where the claim's true ground says so, which on the arc is
--- the polar test above and off it is nothing at all. The block layouts keep
--- their region gates dark until the claim is armed and reach their nests across
--- a corridor, so an arming edge there would only ever fire where the claim is
--- armed already.
---
--- Wrapped in parentheses for the same reason LeaveSnippet's return is; see
--- the note there.
-function EnterSnippet(k, region)
-    if region then
-        return (([==[
+    -- self:GetFrameRef("btn") is the palette's own secure button; every gate
+    -- carries that one reference back, however many palettes and claims exist,
+    -- because the header they are all wrapped through is shared. k is baked into
+    -- the snippet text rather than read off an attribute: each gate only ever
+    -- needs to know its OWN claim index, never anyone else's, so there is nothing
+    -- for a shared body to look up. It goes into a LOCAL of that name, which is
+    -- what ARM_CLAIM reads -- the sites that arm geometrically only know their
+    -- claim at run time, and one fragment serving all of them is one definition of
+    -- what arming does.
+    --
+    -- `region` asks for the REGION gates' variant. A parent gate arms outright:
+    -- its rect IS the claim's own cell, so standing on it is standing on the claim.
+    -- A region gate's rects are not that -- they are generous event surfaces, and
+    -- on the arc they reach over ground belonging to other entries -- so that
+    -- variant arms only where the claim's true ground says so, which on the arc is
+    -- the polar test above and off it is nothing at all. The block layouts keep
+    -- their region gates dark until the claim is armed and reach their nests across
+    -- a corridor, so an arming edge there would only ever fire where the claim is
+    -- armed already.
+    --
+    -- Wrapped in parentheses for the same reason LeaveSnippet's return is; see
+    -- the note there.
+    function EnterSnippet(k, region)
+        if region then
+            return (
+                ([==[
         local btn = self:GetFrameRef("btn")
         if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then
             local inside = false
@@ -279,50 +283,62 @@ __ARC_GROUND__
                 end
             end
         end
-    ]==]):gsub("__CURSOR_OFFSET__", function() return CURSOR_OFFSET end)
-          :gsub("__ARC_GROUND__", function() return ARC_GROUND end)
-          :gsub("__ARM_CLAIM__", function() return ARM_CLAIM end))
-    end
-    return (([==[
+    ]==])
+                    :gsub("__CURSOR_OFFSET__", function()
+                        return CURSOR_OFFSET
+                    end)
+                    :gsub("__ARC_GROUND__", function()
+                        return ARC_GROUND
+                    end)
+                    :gsub("__ARM_CLAIM__", function()
+                        return ARM_CLAIM
+                    end)
+            )
+        end
+        return (
+            ([==[
         local btn = self:GetFrameRef("btn")
         if btn then
             local k = __CLAIM_K__
             __ARM_CLAIM__
         end
-    ]==]):gsub("__CLAIM_K__", tostring(k))
-          :gsub("__ARM_CLAIM__", function() return ARM_CLAIM end))
-end
+    ]==]):gsub("__CLAIM_K__", tostring(k)):gsub("__ARM_CLAIM__", function()
+                return ARM_CLAIM
+            end)
+        )
+    end
 
--- Runs on the OnLeave of any one of claim k's region rects. Does not trust
--- "I lost focus" to mean "the claim is left" -- a claim can own several of
--- these rects, and moving between two of its own fires this too -- so it
--- re-measures the cursor against the claim's WHOLE region before deciding.
--- Built with plain substitution rather than string.format: the body below
--- has a real modulo operator in it (`% 360`), which format would choke on
--- as an invalid conversion.
---
--- The whole chain is wrapped in its own parentheses, not merely the string
--- literal at its head: gsub returns the substitution count as a SECOND
--- value, and an unparenthesised tail call in a return statement hands both
--- of them back. EnsureGates calls this as the LAST argument to
--- SecureHandlerWrapScript, so that stray count would have landed in
--- postBody -- which SecureHandlerWrapScript rejects outright unless it is a
--- string or nil, aborting the wrap (and, uncaught, the rest of EnsureGates'
--- loop past it) with "Invalid post-handler body" the moment any claim's
--- first region gate was ever built.
---
--- k is nil for the FLOOR gate, which belongs to no one claim and runs the same
--- test for whichever claim is armed at the moment it is entered. Only the "is
--- this gate still the armed claim's" prologue differs, and the rest of the
--- body already reads `armed` at run time rather than through the baked-in
--- literal, so both variants measure the identical ground the identical way.
---
--- `region` again marks the REGION gates' variant, and changes one thing: a
--- stale gate is put away, EXCEPT on the arc, where the region gates are up from
--- the open precisely so that entering one can arm the claim. Hiding those the
--- first time the cursor crossed one unarmed would take that way in away again.
-function LeaveSnippet(k, region)
-    return (([==[
+    -- Runs on the OnLeave of any one of claim k's region rects. Does not trust
+    -- "I lost focus" to mean "the claim is left" -- a claim can own several of
+    -- these rects, and moving between two of its own fires this too -- so it
+    -- re-measures the cursor against the claim's WHOLE region before deciding.
+    -- Built with plain substitution rather than string.format: the body below
+    -- has a real modulo operator in it (`% 360`), which format would choke on
+    -- as an invalid conversion.
+    --
+    -- The whole chain is wrapped in its own parentheses, not merely the string
+    -- literal at its head: gsub returns the substitution count as a SECOND
+    -- value, and an unparenthesised tail call in a return statement hands both
+    -- of them back. EnsureGates calls this as the LAST argument to
+    -- SecureHandlerWrapScript, so that stray count would have landed in
+    -- postBody -- which SecureHandlerWrapScript rejects outright unless it is a
+    -- string or nil, aborting the wrap (and, uncaught, the rest of EnsureGates'
+    -- loop past it) with "Invalid post-handler body" the moment any claim's
+    -- first region gate was ever built.
+    --
+    -- k is nil for the FLOOR gate, which belongs to no one claim and runs the same
+    -- test for whichever claim is armed at the moment it is entered. Only the "is
+    -- this gate still the armed claim's" prologue differs, and the rest of the
+    -- body already reads `armed` at run time rather than through the baked-in
+    -- literal, so both variants measure the identical ground the identical way.
+    --
+    -- `region` again marks the REGION gates' variant, and changes one thing: a
+    -- stale gate is put away, EXCEPT on the arc, where the region gates are up from
+    -- the open precisely so that entering one can arm the claim. Hiding those the
+    -- first time the cursor crossed one unarmed would take that way in away again.
+    function LeaveSnippet(k, region)
+        return (
+            ([==[
         local btn = self:GetFrameRef("btn")
         local armed = btn and tonumber(btn:GetAttribute("eqdArmed"))
         if __STALE_TEST__ then
@@ -441,19 +457,27 @@ __ARC_GROUND__
                 end
             end
         end
-    ]==]):gsub("__STALE_TEST__", k and ("armed ~= " .. k) or "not armed")
-         -- Nothing at all for the gates that have no reason to ask: the
-         -- substitution leaves the line out rather than baking in a test that
-         -- is always false.
-         :gsub("__STALE_KEEP__", region
-               and 'if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then return end'
-               or "")
-         :gsub("__CURSOR_OFFSET__", function() return CURSOR_OFFSET end)
-         :gsub("__ARC_GROUND__", function() return ARC_GROUND end)
-         :gsub("__REGION_MAX__", tostring(REGION_MAX))
-         :gsub("__ARM_CLAIM__", function() return ARM_CLAIM end))
-end
-
+    ]==])
+                :gsub("__STALE_TEST__", k and ("armed ~= " .. k) or "not armed")
+                -- Nothing at all for the gates that have no reason to ask: the
+                -- substitution leaves the line out rather than baking in a test that
+                -- is always false.
+                :gsub(
+                    "__STALE_KEEP__",
+                    region and 'if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then return end' or ""
+                )
+                :gsub("__CURSOR_OFFSET__", function()
+                    return CURSOR_OFFSET
+                end)
+                :gsub("__ARC_GROUND__", function()
+                    return ARC_GROUND
+                end)
+                :gsub("__REGION_MAX__", tostring(REGION_MAX))
+                :gsub("__ARM_CLAIM__", function()
+                    return ARM_CLAIM
+                end)
+        )
+    end
 end
 
 -- One parent gate and up to REGION_MAX region gates per possible claim,
@@ -473,189 +497,206 @@ local gatePools = {}
 -- as one file the module sat within a couple of Lua's ceiling of 200.
 local EnsureGates, EnsureLatticeGates
 do
--- Every gate wants MOTION and nothing else: it is a hover detector, and it must
--- never be the frame that ANSWERS a mouse button. Gates are under the cursor for
--- the whole of an open -- the floor gate covers the screen -- and a Select key
--- bound to a mouse button reaches the palette through an override binding, which
--- the client runs only when nothing under the cursor has claimed that button.
---
--- SetMouseClickEnabled(false) alone was not enough. With it, a latched menu's
--- mouse Select key did nothing for as long as any claim was armed: nested
--- entries could not be picked at all, and the next top-level entry stayed dead
--- until a retreat through the centre disarmed and took the floor gate down with
--- it. A keyboard Select key was unaffected throughout, which is what identified
--- the gates as the thing in the way. (Confirmed in game, 2026-08-11.)
---
--- So the buttons are declared not ours OUTRIGHT rather than merely left
--- unhandled: clicks are enabled, and every button is passed through. This is the
--- shape Blizzard's own map pins use to let a button reach the canvas beneath
--- them (MapCanvas_DataProviderBase.lua:288-301). SetPassThroughButtons carries
--- IsProtectedFunction, exactly like the SetMouseClickEnabled and EnableMouse
--- calls this file already makes on these same frames, and every gate is built
--- out of combat.
---
--- Without the method -- an older client -- clicks stay off, which is where this
--- began: hover-driven nesting works and a mouse Select key does not.
--- EVERY button the client knows, not the five a common mouse carries: an MMO
--- mouse reports its side buttons as BUTTON6 and up, and Blizzard names them
--- through BUTTON31 (SecureTemplates.lua:90-93). A Select key bound to one left
--- off this list is a key the gates swallow, which is the very failure the note
--- above describes.
--- Built on the first gate rather than at load: a session that never opens a
--- palette builds no gates, and this module costs nothing while switched off.
-local PASS_BUTTONS
+    -- Every gate wants MOTION and nothing else: it is a hover detector, and it must
+    -- never be the frame that ANSWERS a mouse button. Gates are under the cursor for
+    -- the whole of an open -- the floor gate covers the screen -- and a Select key
+    -- bound to a mouse button reaches the palette through an override binding, which
+    -- the client runs only when nothing under the cursor has claimed that button.
+    --
+    -- SetMouseClickEnabled(false) alone was not enough. With it, a latched menu's
+    -- mouse Select key did nothing for as long as any claim was armed: nested
+    -- entries could not be picked at all, and the next top-level entry stayed dead
+    -- until a retreat through the centre disarmed and took the floor gate down with
+    -- it. A keyboard Select key was unaffected throughout, which is what identified
+    -- the gates as the thing in the way. (Confirmed in game, 2026-08-11.)
+    --
+    -- So the buttons are declared not ours OUTRIGHT rather than merely left
+    -- unhandled: clicks are enabled, and every button is passed through. This is the
+    -- shape Blizzard's own map pins use to let a button reach the canvas beneath
+    -- them (MapCanvas_DataProviderBase.lua:288-301). SetPassThroughButtons carries
+    -- IsProtectedFunction, exactly like the SetMouseClickEnabled and EnableMouse
+    -- calls this file already makes on these same frames, and every gate is built
+    -- out of combat.
+    --
+    -- Without the method -- an older client -- clicks stay off, which is where this
+    -- began: hover-driven nesting works and a mouse Select key does not.
+    -- EVERY button the client knows, not the five a common mouse carries: an MMO
+    -- mouse reports its side buttons as BUTTON6 and up, and Blizzard names them
+    -- through BUTTON31 (SecureTemplates.lua:90-93). A Select key bound to one left
+    -- off this list is a key the gates swallow, which is the very failure the note
+    -- above describes.
+    -- Built on the first gate rather than at load: a session that never opens a
+    -- palette builds no gates, and this module costs nothing while switched off.
+    local PASS_BUTTONS
 
-local function GateMouse(gate)
-    gate:SetMouseMotionEnabled(true)
-    if gate.SetPassThroughButtons then
-        if not PASS_BUTTONS then
-            PASS_BUTTONS = { "LeftButton", "RightButton", "MiddleButton" }
-            for n = 4, 31 do PASS_BUTTONS[#PASS_BUTTONS + 1] = "Button" .. n end
+    local function GateMouse(gate)
+        gate:SetMouseMotionEnabled(true)
+        if gate.SetPassThroughButtons then
+            if not PASS_BUTTONS then
+                PASS_BUTTONS = { "LeftButton", "RightButton", "MiddleButton" }
+                for n = 4, 31 do
+                    PASS_BUTTONS[#PASS_BUTTONS + 1] = "Button" .. n
+                end
+            end
+            gate:SetMouseClickEnabled(true)
+            gate:SetPassThroughButtons(unpack(PASS_BUTTONS))
+        else
+            gate:SetMouseClickEnabled(false)
         end
-        gate:SetMouseClickEnabled(true)
-        gate:SetPassThroughButtons(unpack(PASS_BUTTONS))
-    else
-        gate:SetMouseClickEnabled(false)
     end
-end
 
-function EnsureGates(index, btn, need)
-    local pool = gatePools[index]
-    if not pool then
-        pool = { pgate = {}, rgate = {}, built = 0 }
-        gatePools[index] = pool
+    function EnsureGates(index, btn, need)
+        local pool = gatePools[index]
+        if not pool then
+            pool = { pgate = {}, rgate = {}, built = 0 }
+            gatePools[index] = pool
 
-        -- The FLOOR. One per palette, under every other gate and over
-        -- everything else, shown only while some claim is armed -- see
-        -- ARM_CLAIM, which shows it, and SNIPPET_POST, which puts it away with
-        -- the rest of them.
-        --
-        -- It exists because arming and disarming do not run off the same kind
-        -- of edge. A claim can be armed with the cursor standing still -- the
-        -- press branch's pre-arm, and LeaveSnippet's re-arm, both of which
-        -- measure the cursor against the pushed boxes rather than waiting for
-        -- an OnEnter that a gate shown under a still cursor never gets -- and
-        -- Blizzard's own wrapper raises "_wrapentered" only from inside a
-        -- MOTION OnEnter (SecureHandlers.lua, Wrapped_OnEnter), while its
-        -- OnLeave refuses to run a pre-body without that flag. So a
-        -- geometrically armed claim's parent gate has a dead OnLeave: the
-        -- cursor steps off the cell through ground no region rect covers, and
-        -- nothing disarms for the rest of the hold -- nest stuck open, block
-        -- stuck dim, every other claim's parent gate stuck hidden. The sandbox
-        -- cannot raise the flag itself either: RestrictedFrames' SetAttribute
-        -- rejects every name beginning with an underscore.
-        --
-        -- An OnENTER pre-body has no such precondition -- motion is all it
-        -- asks -- so the disarm is hung off entering the floor rather than
-        -- leaving the cell. Screen-wide, because the one thing it must never
-        -- do is leave a way off the ground that misses it; below the region
-        -- gates (level 10) and the parent gates (20), so every rect of a
-        -- claim's real ground still wins the cursor and the floor is only ever
-        -- reached where the ground is not. Motion only: clicks -- the secure
-        -- activation path itself, including a latched menu's Select key -- pass
-        -- straight through it, exactly as they do through the gates it sits
-        -- under. See GateMouse, which is what makes that true.
-        local fgate = CreateFrame("Frame", "CUIQuickdrawButton" .. index .. "FGate",
-            UIParent, "SecureHandlerEnterLeaveTemplate")
-        fgate:SetAllPoints(UIParent)
-        fgate:SetFrameStrata(LIVE_STRATA)
-        fgate:SetFrameLevel(5)
-        GateMouse(fgate)
-        fgate:Hide()
+            -- The FLOOR. One per palette, under every other gate and over
+            -- everything else, shown only while some claim is armed -- see
+            -- ARM_CLAIM, which shows it, and SNIPPET_POST, which puts it away with
+            -- the rest of them.
+            --
+            -- It exists because arming and disarming do not run off the same kind
+            -- of edge. A claim can be armed with the cursor standing still -- the
+            -- press branch's pre-arm, and LeaveSnippet's re-arm, both of which
+            -- measure the cursor against the pushed boxes rather than waiting for
+            -- an OnEnter that a gate shown under a still cursor never gets -- and
+            -- Blizzard's own wrapper raises "_wrapentered" only from inside a
+            -- MOTION OnEnter (SecureHandlers.lua, Wrapped_OnEnter), while its
+            -- OnLeave refuses to run a pre-body without that flag. So a
+            -- geometrically armed claim's parent gate has a dead OnLeave: the
+            -- cursor steps off the cell through ground no region rect covers, and
+            -- nothing disarms for the rest of the hold -- nest stuck open, block
+            -- stuck dim, every other claim's parent gate stuck hidden. The sandbox
+            -- cannot raise the flag itself either: RestrictedFrames' SetAttribute
+            -- rejects every name beginning with an underscore.
+            --
+            -- An OnENTER pre-body has no such precondition -- motion is all it
+            -- asks -- so the disarm is hung off entering the floor rather than
+            -- leaving the cell. Screen-wide, because the one thing it must never
+            -- do is leave a way off the ground that misses it; below the region
+            -- gates (level 10) and the parent gates (20), so every rect of a
+            -- claim's real ground still wins the cursor and the floor is only ever
+            -- reached where the ground is not. Motion only: clicks -- the secure
+            -- activation path itself, including a latched menu's Select key -- pass
+            -- straight through it, exactly as they do through the gates it sits
+            -- under. See GateMouse, which is what makes that true.
+            local fgate = CreateFrame(
+                "Frame",
+                "CUIQuickdrawButton" .. index .. "FGate",
+                UIParent,
+                "SecureHandlerEnterLeaveTemplate"
+            )
+            fgate:SetAllPoints(UIParent)
+            fgate:SetFrameStrata(LIVE_STRATA)
+            fgate:SetFrameLevel(5)
+            GateMouse(fgate)
+            fgate:Hide()
 
-        SecureHandlerSetFrameRef(fgate, "btn", btn)
-        SecureHandlerSetFrameRef(fgate, "ui", UIParent)
-        -- Both edges, for the same reason a region gate wraps both: the OnEnter
-        -- is the test that matters, and the OnLeave is what raising the flag on
-        -- that entry buys -- a screen-wide gate is only ever left for another
-        -- gate, and re-testing there costs one geometric measurement.
-        SecureHandlerWrapScript(fgate, "OnEnter", EnsureSecureHeader(), LeaveSnippet(nil))
-        SecureHandlerWrapScript(fgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(nil))
-        SecureHandlerSetFrameRef(btn, "fgate", fgate)
-        pool.fgate = fgate
-    end
-    if pool.built >= need then return pool end
-
-    for k = pool.built + 1, need do
-        local pgate = CreateFrame("Frame", "CUIQuickdrawButton" .. index .. "PGate" .. k,
-            UIParent, "SecureHandlerEnterLeaveTemplate")
-        pgate:SetFrameStrata(LIVE_STRATA)
-        pgate:SetFrameLevel(20)
-        GateMouse(pgate)
-        pgate:Hide()
-
-        SecureHandlerSetFrameRef(pgate, "btn", btn)
-        SecureHandlerSetFrameRef(pgate, "ui", UIParent)
-        SecureHandlerWrapScript(pgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k))
-        -- The parent gate's own rect is exactly the claim's own cell, and it
-        -- outranks every region gate of the same claim (level 20 against 10),
-        -- so wherever a region reaches over that cell -- all of it, as an
-        -- uncarved one does, or whatever part of it a carve left -- this gate
-        -- is the one with focus there, and a region gate is only ever the
-        -- topmost alongside or beyond the cell. Wherever a region does not
-        -- extend past the parent cell at all -- HALO skipping a ring
-        -- position a plain neighbour already occupies is the everyday case
-        -- of this -- leaving the parent cell in exactly that direction
-        -- leaves NO gate underneath at all, and the topmost-wins focus
-        -- model this depends on hands focus straight to nothing without
-        -- ever touching a region gate's own OnLeave. Wrapping this gate's
-        -- OnLeave with the identical true-ground re-test closes that gap:
-        -- every way OUT of the claim now runs the same check, whether the
-        -- last gate under the cursor was the parent's or one of its
-        -- regions'.
-        SecureHandlerWrapScript(pgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k))
-
-        -- The button carries its own reference to every gate too, so the press
-        -- branch of SNIPPET_PRE -- which only knows claim indices and boxes,
-        -- never the frames themselves until it asks -- can place and size them.
-        SecureHandlerSetFrameRef(btn, "pgate" .. k, pgate)
-
-        pool.pgate[k] = pgate
-        pool.rgate[k] = {}
-        for r = 1, REGION_MAX do
-            local rgate = CreateFrame("Frame", "CUIQuickdrawButton" .. index .. "RGate" .. k .. "_" .. r,
-                UIParent, "SecureHandlerEnterLeaveTemplate")
-            rgate:SetFrameStrata(LIVE_STRATA)
-            rgate:SetFrameLevel(10)
-            GateMouse(rgate)
-            rgate:Hide()
-
-            SecureHandlerSetFrameRef(rgate, "btn", btn)
-            SecureHandlerSetFrameRef(rgate, "ui", UIParent)
-            -- OnEnter carries the ARC's way in, and nothing at all off it --
-            -- see EnterSnippet's `region` variant. It would still have to be
-            -- wrapped here even when it carried nothing: SecureHandlers.lua's
-            -- own OnEnter/OnLeave wrapper only ever raises "_wrapentered" from
-            -- INSIDE the OnEnter wrap (Wrapped_OnEnter), and Wrapped_OnLeave
-            -- refuses to run LeaveSnippet at all unless that flag is already
-            -- up. Left unwrapped, the flag stays permanently down and the
-            -- disarm test never runs -- a claim that ever armed stays armed for
-            -- the rest of the hold, nest stuck open and block stuck dim.
-            SecureHandlerWrapScript(rgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k, true))
-            SecureHandlerWrapScript(rgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k, true))
-
-            SecureHandlerSetFrameRef(btn, "rgate" .. k .. "_" .. r, rgate)
-            pool.rgate[k][r] = rgate
+            SecureHandlerSetFrameRef(fgate, "btn", btn)
+            SecureHandlerSetFrameRef(fgate, "ui", UIParent)
+            -- Both edges, for the same reason a region gate wraps both: the OnEnter
+            -- is the test that matters, and the OnLeave is what raising the flag on
+            -- that entry buys -- a screen-wide gate is only ever left for another
+            -- gate, and re-testing there costs one geometric measurement.
+            SecureHandlerWrapScript(fgate, "OnEnter", EnsureSecureHeader(), LeaveSnippet(nil))
+            SecureHandlerWrapScript(fgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(nil))
+            SecureHandlerSetFrameRef(btn, "fgate", fgate)
+            pool.fgate = fgate
         end
-        pool.built = k
-    end
-    return pool
-end
+        if pool.built >= need then
+            return pool
+        end
 
--- The scroll strip's hover channel arms through a LATTICE instead of the
--- per-claim gates above: one motion gate per drawn strip POSITION. The wheel
--- decides which slot stands at a position and can change it mid-hold, so the
--- gates hold still for the whole hold and resolve position -> slot at enter
--- time from the accumulator; only the MAPPING ever moves, which is what
--- spares the sandbox any gate repositioning per tick. Entering a position
--- whose slot nests arms that slot's claim; entering one that nests nothing
--- DISARMS -- that is the strip's whole disarm, "the user specifically
--- hovered another option" -- and the empty ground beside the strip touches
--- no gate at all, which is the sticky reach. No region gates and no floor:
--- the release only fires a child while the pointer is inside its cell, so a
--- claim left armed costs a release nothing anywhere else.
-local function LatticeSnippet(d)
-    return (([==[
+        for k = pool.built + 1, need do
+            local pgate = CreateFrame(
+                "Frame",
+                "CUIQuickdrawButton" .. index .. "PGate" .. k,
+                UIParent,
+                "SecureHandlerEnterLeaveTemplate"
+            )
+            pgate:SetFrameStrata(LIVE_STRATA)
+            pgate:SetFrameLevel(20)
+            GateMouse(pgate)
+            pgate:Hide()
+
+            SecureHandlerSetFrameRef(pgate, "btn", btn)
+            SecureHandlerSetFrameRef(pgate, "ui", UIParent)
+            SecureHandlerWrapScript(pgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k))
+            -- The parent gate's own rect is exactly the claim's own cell, and it
+            -- outranks every region gate of the same claim (level 20 against 10),
+            -- so wherever a region reaches over that cell -- all of it, as an
+            -- uncarved one does, or whatever part of it a carve left -- this gate
+            -- is the one with focus there, and a region gate is only ever the
+            -- topmost alongside or beyond the cell. Wherever a region does not
+            -- extend past the parent cell at all -- HALO skipping a ring
+            -- position a plain neighbour already occupies is the everyday case
+            -- of this -- leaving the parent cell in exactly that direction
+            -- leaves NO gate underneath at all, and the topmost-wins focus
+            -- model this depends on hands focus straight to nothing without
+            -- ever touching a region gate's own OnLeave. Wrapping this gate's
+            -- OnLeave with the identical true-ground re-test closes that gap:
+            -- every way OUT of the claim now runs the same check, whether the
+            -- last gate under the cursor was the parent's or one of its
+            -- regions'.
+            SecureHandlerWrapScript(pgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k))
+
+            -- The button carries its own reference to every gate too, so the press
+            -- branch of SNIPPET_PRE -- which only knows claim indices and boxes,
+            -- never the frames themselves until it asks -- can place and size them.
+            SecureHandlerSetFrameRef(btn, "pgate" .. k, pgate)
+
+            pool.pgate[k] = pgate
+            pool.rgate[k] = {}
+            for r = 1, REGION_MAX do
+                local rgate = CreateFrame(
+                    "Frame",
+                    "CUIQuickdrawButton" .. index .. "RGate" .. k .. "_" .. r,
+                    UIParent,
+                    "SecureHandlerEnterLeaveTemplate"
+                )
+                rgate:SetFrameStrata(LIVE_STRATA)
+                rgate:SetFrameLevel(10)
+                GateMouse(rgate)
+                rgate:Hide()
+
+                SecureHandlerSetFrameRef(rgate, "btn", btn)
+                SecureHandlerSetFrameRef(rgate, "ui", UIParent)
+                -- OnEnter carries the ARC's way in, and nothing at all off it --
+                -- see EnterSnippet's `region` variant. It would still have to be
+                -- wrapped here even when it carried nothing: SecureHandlers.lua's
+                -- own OnEnter/OnLeave wrapper only ever raises "_wrapentered" from
+                -- INSIDE the OnEnter wrap (Wrapped_OnEnter), and Wrapped_OnLeave
+                -- refuses to run LeaveSnippet at all unless that flag is already
+                -- up. Left unwrapped, the flag stays permanently down and the
+                -- disarm test never runs -- a claim that ever armed stays armed for
+                -- the rest of the hold, nest stuck open and block stuck dim.
+                SecureHandlerWrapScript(rgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(k, true))
+                SecureHandlerWrapScript(rgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(k, true))
+
+                SecureHandlerSetFrameRef(btn, "rgate" .. k .. "_" .. r, rgate)
+                pool.rgate[k][r] = rgate
+            end
+            pool.built = k
+        end
+        return pool
+    end
+
+    -- The scroll strip's hover channel arms through a LATTICE instead of the
+    -- per-claim gates above: one motion gate per drawn strip POSITION. The wheel
+    -- decides which slot stands at a position and can change it mid-hold, so the
+    -- gates hold still for the whole hold and resolve position -> slot at enter
+    -- time from the accumulator; only the MAPPING ever moves, which is what
+    -- spares the sandbox any gate repositioning per tick. Entering a position
+    -- whose slot nests arms that slot's claim; entering one that nests nothing
+    -- DISARMS -- that is the strip's whole disarm, "the user specifically
+    -- hovered another option" -- and the empty ground beside the strip touches
+    -- no gate at all, which is the sticky reach. No region gates and no floor:
+    -- the release only fires a child while the pointer is inside its cell, so a
+    -- claim left armed costs a release nothing anywhere else.
+    local function LatticeSnippet(d)
+        return (
+            ([==[
         local btn = self:GetFrameRef("btn")
         local catcher = self:GetFrameRef("catcher")
         if not btn or not catcher then return end
@@ -667,39 +708,45 @@ local function LatticeSnippet(d)
         local slot = ((t - 1 + (__D__)) % n) + 1
         btn:SetAttribute("eqdArmed",
             tonumber(btn:GetAttribute("eqdClaimAt" .. slot)))
-    ]==]):gsub("__D__", tostring(d)))
-end
-
--- Grown once to the full span rather than claim by claim: the lattice is
--- sized by the window, not by how many entries nest, and nine lean frames is
--- what the whole thing costs. Only a strip that actually nests something
--- ever builds it -- see the call in PushPalette.
-function EnsureLatticeGates(index, btn)
-    local pool = gatePools[index]
-    if not pool or pool.lattice then return end
-    pool.lattice = {}
-    for d = -MAX_LATTICE, MAX_LATTICE do
-        -- Named by 0-based position rather than by the signed offset, so the
-        -- global name carries no minus sign; the frame REFS keep the signed
-        -- offset, which is what the snippets loop.
-        local g = CreateFrame("Frame",
-            "CUIQuickdrawButton" .. index .. "LGate" .. (d + MAX_LATTICE),
-            UIParent, "SecureHandlerEnterLeaveTemplate")
-        g:SetFrameStrata(LIVE_STRATA)
-        g:SetFrameLevel(20)
-        GateMouse(g)
-        g:Hide()
-        SecureHandlerSetFrameRef(g, "btn", btn)
-        SecureHandlerSetFrameRef(g, "catcher", EnsureScrollCatcher())
-        -- OnEnter only: the lattice never disarms on leaving -- empty ground
-        -- retains, per the sticky -- so there is no OnLeave body and the
-        -- "_wrapentered" precondition the region gates work around never
-        -- comes up.
-        SecureHandlerWrapScript(g, "OnEnter", EnsureSecureHeader(), LatticeSnippet(d))
-        SecureHandlerSetFrameRef(btn, "lgate" .. d, g)
-        pool.lattice[d] = g
+    ]==]):gsub("__D__", tostring(d))
+        )
     end
-end
+
+    -- Grown once to the full span rather than claim by claim: the lattice is
+    -- sized by the window, not by how many entries nest, and nine lean frames is
+    -- what the whole thing costs. Only a strip that actually nests something
+    -- ever builds it -- see the call in PushPalette.
+    function EnsureLatticeGates(index, btn)
+        local pool = gatePools[index]
+        if not pool or pool.lattice then
+            return
+        end
+        pool.lattice = {}
+        for d = -MAX_LATTICE, MAX_LATTICE do
+            -- Named by 0-based position rather than by the signed offset, so the
+            -- global name carries no minus sign; the frame REFS keep the signed
+            -- offset, which is what the snippets loop.
+            local g = CreateFrame(
+                "Frame",
+                "CUIQuickdrawButton" .. index .. "LGate" .. (d + MAX_LATTICE),
+                UIParent,
+                "SecureHandlerEnterLeaveTemplate"
+            )
+            g:SetFrameStrata(LIVE_STRATA)
+            g:SetFrameLevel(20)
+            GateMouse(g)
+            g:Hide()
+            SecureHandlerSetFrameRef(g, "btn", btn)
+            SecureHandlerSetFrameRef(g, "catcher", EnsureScrollCatcher())
+            -- OnEnter only: the lattice never disarms on leaving -- empty ground
+            -- retains, per the sticky -- so there is no OnLeave body and the
+            -- "_wrapentered" precondition the region gates work around never
+            -- comes up.
+            SecureHandlerWrapScript(g, "OnEnter", EnsureSecureHeader(), LatticeSnippet(d))
+            SecureHandlerSetFrameRef(btn, "lgate" .. d, g)
+            pool.lattice[d] = g
+        end
+    end
 end
 
 I.EnsureGates, I.EnsureLatticeGates, I.gatePools = EnsureGates, EnsureLatticeGates, gatePools

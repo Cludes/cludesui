@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverImbues.lua  (WoW Forever only)
 --
@@ -31,9 +33,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 local ET, WS = Enum.ItemEnchantType, Enum.WeaponSlot
-if not (ET and ET.Imbue and WS and C_Item and C_Item.GetWeaponEnchantInfo) then return end
+if not (ET and ET.Imbue and WS and C_Item and C_Item.GetWeaponEnchantInfo) then
+    return
+end
 
 local IMBUE, TEMPORARY = ET.Imbue, ET.Temporary
 local STYLE = "playerAuraBars_buffs" -- the default Buffs bar's style key
@@ -50,13 +56,13 @@ local INV = {
 local DECLARED = { [WS.MainHand] = 1, [WS.OffHand] = 2, [WS.Ranged] = 3 }
 
 local on = false
-local shown = {}       -- enchants in cell order: { inv, icon, charges, endTime, total }
-local numShown = 0     -- enchants the last scan found
-local numLaidFrom = 0  -- numShown the last layout was built from
-local numLaid = 0      -- cells the last layout placed (they come off the aura budget)
-local numDeclared = 0  -- weapon-enchant slots the bar declared at its last layout
-local track = {}       -- weapon slot -> { id, endTime, total }
-local cells = {}       -- cell index -> { f, d, dur, binding, inv }
+local shown = {} -- enchants in cell order: { inv, icon, charges, endTime, total }
+local numShown = 0 -- enchants the last scan found
+local numLaidFrom = 0 -- numShown the last layout was built from
+local numLaid = 0 -- cells the last layout placed (they come off the aura budget)
+local numDeclared = 0 -- weapon-enchant slots the bar declared at its last layout
+local track = {} -- weapon slot -> { id, endTime, total }
+local cells = {} -- cell index -> { f, d, dur, binding, inv }
 local events
 
 local function Readable(v)
@@ -64,17 +70,24 @@ local function Readable(v)
 end
 
 local function Active(e)
-    return Readable(e.hasEnchant) and e.hasEnchant and Readable(e.enchantType)
-        and Readable(e.timeLeft) and e.timeLeft > 0
+    return Readable(e.hasEnchant)
+        and e.hasEnchant
+        and Readable(e.enchantType)
+        and Readable(e.timeLeft)
+        and e.timeLeft > 0
 end
 
 -- The enchant ID the bar's own weapon-enchant cell shows for this weapon, or nil:
 -- what GetTemporaryEnchantmentInfo reports, on a slot the bar declared, with a
 -- duration (the engine cells hide permanent enchants).
 local function EngineEnchantID(ws)
-    if DECLARED[ws] > numDeclared then return nil end
+    if DECLARED[ws] > numDeclared then
+        return nil
+    end
     local info = C_PaperDollInfo.GetTemporaryEnchantmentInfo(INV[ws])
-    if not (info and Readable(info.hasExpirationTime) and info.hasExpirationTime) then return nil end
+    if not (info and Readable(info.hasExpirationTime) and info.hasExpirationTime) then
+        return nil
+    end
     return Readable(info.enchantID) and info.enchantID or nil
 end
 
@@ -89,8 +102,11 @@ local function Scan()
         if type(list) == "table" then
             for _, e in ipairs(list) do
                 if Active(e) then
-                    if e.enchantType == IMBUE then imbue = e
-                    elseif e.enchantType == TEMPORARY then temp = e end
+                    if e.enchantType == IMBUE then
+                        imbue = e
+                    elseif e.enchantType == TEMPORARY then
+                        temp = e
+                    end
                 end
             end
         end
@@ -112,7 +128,10 @@ local function Scan()
             local left = found.timeLeft / 1000
             local endTime = now + left
             local t = track[ws]
-            if not t then t = {}; track[ws] = t end
+            if not t then
+                t = {}
+                track[ws] = t
+            end
             -- A new imbue, or the same one cast again (its end moved out): the
             -- swipe restarts from what is left now.
             if t.id ~= found.enchantID or endTime > (t.endTime or 0) + 1 then
@@ -121,7 +140,10 @@ local function Scan()
             t.id, t.endTime = found.enchantID, endTime
             n = n + 1
             local s = shown[n]
-            if not s then s = {}; shown[n] = s end
+            if not s then
+                s = {}
+                shown[n] = s
+            end
             s.inv = INV[ws]
             local icon = found.enchantIconID
             if not (enchantIcon and Readable(icon) and icon ~= 0) then
@@ -141,9 +163,16 @@ end
 local function CellEnter(self)
     local c = self.fvImbue
     local style = CludesUI.AuraKit.styles[STYLE]
-    if not (c and c.inv) or (style and style.noTooltips) then return end
-    if style and style.tooltipCombatHide and InCombatLockdown() then return end
-    GameTooltip:SetOwner(self, (style and style.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT")
+    if not (c and c.inv) or (style and style.noTooltips) then
+        return
+    end
+    if style and style.tooltipCombatHide and InCombatLockdown() then
+        return
+    end
+    GameTooltip:SetOwner(
+        self,
+        (style and style.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
+    )
     GameTooltip:SetInventoryItem("player", c.inv)
     GameTooltip:Show()
 end
@@ -155,7 +184,9 @@ end
 local function Cell(i, parent)
     local c = cells[i]
     if c then
-        if c.f:GetParent() ~= parent then c.f:SetParent(parent) end
+        if c.f:GetParent() ~= parent then
+            c.f:SetParent(parent)
+        end
         return c
     end
     local AK = CludesUI.AuraKit
@@ -193,10 +224,18 @@ local function Paint(c, s)
     if b then
         c.dur:SetTimeFromEnd(s.endTime, s.total)
         local fmt = AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold)
-        if fmt then b:SetFormatter(fmt) end
-        if style.durationUpdateInterval then b:SetUpdateInterval(style.durationUpdateInterval) end
+        if fmt then
+            b:SetFormatter(fmt)
+        end
+        if style.durationUpdateInterval then
+            b:SetUpdateInterval(style.durationUpdateInterval)
+        end
         local tc = style.durationColorCurve and AK.DurationTextColor(style.durationColorCurve)
-        if tc then b:SetTextColorCurve(tc.curve, tc.property) else b:ClearTextColorCurve() end
+        if tc then
+            b:SetTextColorCurve(tc.curve, tc.property)
+        else
+            b:ClearTextColorCurve()
+        end
         b:SetEnabled(true)
     end
 end
@@ -205,7 +244,9 @@ local function HideFrom(first)
     for i = first, #cells do
         local c = cells[i]
         c.f:Hide()
-        if c.binding then c.binding:SetEnabled(false) end
+        if c.binding then
+            c.binding:SetEnabled(false)
+        end
     end
 end
 
@@ -213,7 +254,9 @@ end
 -- this pass: places the cells and makes room for them. `layout` is the bar's
 -- group layout (element size and spacing), `anchor` the container's point.
 function ns.PAB_FvImbueLayout(container, parent, cfg, grid, layout, anchor)
-    if not (on and container and parent and cfg and grid and layout and anchor) then return end
+    if not (on and container and parent and cfg and grid and layout and anchor) then
+        return
+    end
     numDeclared = grid.enchSlots or 0
     Scan()
     numLaidFrom = numShown
@@ -224,10 +267,14 @@ function ns.PAB_FvImbueLayout(container, parent, cfg, grid, layout, anchor)
     local step = (vertical and layout.elementHeight or layout.elementWidth) + layout.elementSpacing
     local lineGap = layout.lineSpacing or layout.elementSpacing
     local dx, dy = 0, 0
-    if dir == "LEFT" then dx = -step
-    elseif dir == "RIGHT" then dx = step
-    elseif dir == "DOWN" then dy = -step
-    elseif dir == "UP" then dy = step
+    if dir == "LEFT" then
+        dx = -step
+    elseif dir == "RIGHT" then
+        dx = step
+    elseif dir == "DOWN" then
+        dy = -step
+    elseif dir == "UP" then
+        dy = step
     end
     local centered = dx == 0 and dy == 0
     for i = 1, n do
@@ -259,22 +306,30 @@ function ns.PAB_FvImbueCount()
 end
 
 local function OnEvent()
-    if not on then return end
+    if not on then
+        return
+    end
     Scan()
     if numShown ~= numLaidFrom then
         -- A cell came or went: the bar re-lays (and this file with it).
-        if ns.PAB_ApplyLiveConfig then ns.PAB_ApplyLiveConfig(true) end
+        if ns.PAB_ApplyLiveConfig then
+            ns.PAB_ApplyLiveConfig(true)
+        end
         return
     end
     -- Same cells, new content (a re-cast, a weapon swap between imbued
     -- weapons, charges): repaint in place.
-    for i = 1, numLaid do Paint(cells[i], shown[i]) end
+    for i = 1, numLaid do
+        Paint(cells[i], shown[i])
+    end
 end
 
 -- SyncEnchantEvents: the Buffs bar's weapon-enchant row on or off.
 function ns.PAB_FvImbueSync(want)
     want = want and true or false
-    if want == on then return end
+    if want == on then
+        return
+    end
     on = want
     if on then
         if not events then
@@ -285,7 +340,9 @@ function ns.PAB_FvImbueSync(want)
         events:RegisterEvent("WEAPON_SLOT_CHANGED")
         events:RegisterEvent("PLAYER_ENTERING_WORLD")
     else
-        if events then events:UnregisterAllEvents() end
+        if events then
+            events:UnregisterAllEvents()
+        end
         HideFrom(1)
         numLaid, numLaidFrom = 0, 0
     end

@@ -1,12 +1,27 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials.lua  (WoW Forever only)
 --  Essential tools for WoW Forever. Each feature lives in its own file, listed
 --  after this one in the TOC; this file publishes the module.
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI._Pool and CludesUI.RegisterNumberFormatCallback and CludesUI.ApplyModuleFontFamily and CludesUI.ForeverTalentTrees and CludesUI.TalentTreeGrid) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the threat meter redraws through the parent's RegisterNumberFormatCallback and takes its font families through ApplyModuleFontFamily; Classic Talents reads its trees through ForeverTalentTrees and TalentTreeGrid)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI._Pool
+        and CludesUI.RegisterNumberFormatCallback
+        and CludesUI.ApplyModuleFontFamily
+        and CludesUI.ForeverTalentTrees
+        and CludesUI.TalentTreeGrid
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the threat meter redraws through the parent's RegisterNumberFormatCallback and takes its font families through ApplyModuleFontFamily; Classic Talents reads its trees through ForeverTalentTrees and TalentTreeGrid)
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 
 -- Lifecycle object (OnInitialize / OnEnable) for features that need one. No
 -- per-profile DB: every feature so far keeps account-wide settings.
@@ -27,7 +42,9 @@ function ns.Feature(dbKey, defaults, defaultPos)
         return CludesUIDB and CludesUIDB[dbKey] or none
     end
     local function Cfg()
-        if not CludesUIDB then return {} end
+        if not CludesUIDB then
+            return {}
+        end
         local c = CludesUIDB[dbKey]
         if not c then
             c = {}
@@ -37,7 +54,9 @@ function ns.Feature(dbKey, defaults, defaultPos)
     end
     local function Get(key)
         local v = Read()[key]
-        if v == nil then return defaults[key] end
+        if v == nil then
+            return defaults[key]
+        end
         return v
     end
     local function Enabled()
@@ -50,7 +69,9 @@ function ns.Feature(dbKey, defaults, defaultPos)
     -- A frame not built yet (nil) has nothing to place. snap: a CENTER point
     -- lands on the pixel grid for the frame's size, as unlock mode places it.
     local function Place(frame, snap)
-        if not frame then return end
+        if not frame then
+            return
+        end
         local pos = SavedPos()
         local x, y = pos.x or 0, pos.y or 0
         if snap and pos.point == "CENTER" then
@@ -86,23 +107,31 @@ function ns.Feature(dbKey, defaults, defaultPos)
         boot:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
             apply()
-            if not u then return end
+            if not u then
+                return
+            end
             local Shown = u.shown or Enabled
             local e = {
-                key      = u.key,
-                label    = u.label,
-                group    = "Forever Tools",
-                order    = u.order,
-                noAnchorTarget    = u.noAnchorTarget,
+                key = u.key,
+                label = u.label,
+                group = "Forever Tools",
+                order = u.order,
+                noAnchorTarget = u.noAnchorTarget,
                 noSizeMatchTarget = u.noSizeMatchTarget,
-                isHidden = function() return not Shown() end,
+                isHidden = function()
+                    return not Shown()
+                end,
                 getFrame = function()
                     return Shown() and u.frame(true) or nil
                 end,
                 savePos = function(_, point, relPoint, x, y)
-                    if not point then return end
+                    if not point then
+                        return
+                    end
                     Cfg().pos = { point = point, relPoint = relPoint, x = x, y = y }
-                    if not CludesUI._unlockActive then Place(u.frame(), u.snap) end
+                    if not CludesUI._unlockActive then
+                        Place(u.frame(), u.snap)
+                    end
                 end,
                 loadPos = SavedPos,
                 clearPos = function()
@@ -110,14 +139,18 @@ function ns.Feature(dbKey, defaults, defaultPos)
                     Place(u.frame(), u.snap)
                 end,
                 applyPos = function()
-                    if Shown() then Place(u.frame(true), u.snap) end
+                    if Shown() then
+                        Place(u.frame(true), u.snap)
+                    end
                 end,
             }
             if u.size then
                 e.noResize = true
                 e.getSize = u.size
             else
-                e.getSize = function() return Get("width"), u.height() end
+                e.getSize = function()
+                    return Get("width"), u.height()
+                end
                 e.setWidth = function(_, w)
                     Cfg().width = math.max(u.minWidth, CludesUI.PP.Snap(w))
                     u.applyStyle()
@@ -146,7 +179,9 @@ end
 -- routing is blocked in combat on every frame; nil without the button.
 function ns.MicroClickLayer(microName, onClick)
     local micro = _G[microName]
-    if not micro or InCombatLockdown() then return nil end
+    if not micro or InCombatLockdown() then
+        return nil
+    end
     local layer = CreateFrame("Button", nil, micro)
     layer:SetAllPoints(micro)
     layer:SetFrameLevel(micro:GetFrameLevel() + 5)
@@ -154,7 +189,9 @@ function ns.MicroClickLayer(microName, onClick)
     layer:SetPropagateMouseMotion(true)
     layer:SetPassThroughButtons("MiddleButton", "Button4", "Button5")
     layer:SetScript("OnClick", function()
-        if micro:IsEnabled() then onClick() end
+        if micro:IsEnabled() then
+            onClick()
+        end
     end)
     return layer
 end
@@ -171,7 +208,11 @@ end
 -- What Auctionator last saw one of the item listed for, when it has a price.
 function ns.AuctionPrice(link)
     local api = ns.AuctionAPI()
-    if not api then return end
+    if not api then
+        return
+    end
     local ok, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", link)
-    if ok and type(price) == "number" and price > 0 then return price end
+    if ok and type(price) == "number" and price > 0 then
+        return price
+    end
 end

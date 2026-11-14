@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- retail only: WoW Forever's mail window is its own build (gamepad navigation, surnames); the Mail card's ALT LIST section is not built there
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then
+    return
+end -- retail only: WoW Forever's mail window is its own build (gamepad navigation, surnames); the Mail card's ALT LIST section is not built there
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_MailAlts.lua
 --  The Mail card's Alt List (opt-in, CludesUIDB.mailAltList): beside the
@@ -45,7 +49,9 @@ if CludesUI and CludesUI.IS_FOREVER then return end -- retail only: WoW Forever'
 -------------------------------------------------------------------------------
 local _, ns = ...
 local WSkin = ns.WSkin
-if not WSkin then return end
+if not WSkin then
+    return
+end
 
 local CUI = CludesUI
 local Theme = WSkin.Theme
@@ -53,37 +59,37 @@ local IsSecret, PlainString = CUI.IsSecret, CUI.PlainString
 local wipe, sort = wipe, table.sort
 
 local DEFAULT_MAX, DEFAULT_MIN_LEVEL, DEFAULT_SORT = 10, 1, "recent"
-local MAX_ROWS   = 20       -- the Max Characters Shown slider's top
-local PANEL_W    = 170
-local ROW_H      = 22
-local ICON_SIZE  = 16
-local LIST_PAD   = 4        -- above the first row and below the last
-local EMPTY_PAD  = 10       -- around the empty-list note
-local LIMITED_ALPHA = 0.55  -- a row that takes Warbound items only
+local MAX_ROWS = 20 -- the Max Characters Shown slider's top
+local PANEL_W = 170
+local ROW_H = 22
+local ICON_SIZE = 16
+local LIST_PAD = 4 -- above the first row and below the last
+local EMPTY_PAD = 10 -- around the empty-list note
+local LIMITED_ALPHA = 0.55 -- a row that takes Warbound items only
 -- The two looks' geometry: the title band's height, the list's side inset and
 -- the gap to the window beside it (Blizzard's metal corners reach past their frame).
-local CUI_TOP, CUI_INSET, CUI_GAP       = 25, 1, 4
+local CUI_TOP, CUI_INSET, CUI_GAP = 25, 1, 4
 local BLIZZ_TOP, BLIZZ_INSET, BLIZZ_GAP = 21, 8, 10
-local CUI_CLASS_ICONS   = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\modern.tga"
+local CUI_CLASS_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\modern.tga"
 local BLIZZ_CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
-local SHELL_ART         = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
+local SHELL_ART = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
 
 local ev = CreateFrame("Frame")
 local panel, title, emptyNote
-local bgArt, bgShade, bgFlat      -- the CludesUI look's backdrop layers
+local bgArt, bgShade, bgFlat -- the CludesUI look's backdrop layers
 local rows = {}
-local dirty = true                -- the shown list needs a repaint
+local dirty = true -- the shown list needs a repaint
 local hooked = false
-local blizzLook                   -- latched at login: the mail window wears Blizzard's look
+local blizzLook -- latched at login: the mail window wears Blizzard's look
 local topH, inset, gap
-local placedTo, placedSide        -- the panel's current anchor
-local connected                   -- this realm's connected realms, read once a session
-local shown = {}                  -- player GUIDs in display order (reused)
-local mailable = 0                -- characters this page could mail before the card's filters
-local sortRoster                  -- the roster the comparators read during one sort
-local menuGuid                    -- the row the right-click menu was opened on
-local myGuid                      -- this character, read at login (never in its own list)
-local paintedGen, paintedFaction  -- the class colour palette and faction the list was painted with
+local placedTo, placedSide -- the panel's current anchor
+local connected -- this realm's connected realms, read once a session
+local shown = {} -- player GUIDs in display order (reused)
+local mailable = 0 -- characters this page could mail before the card's filters
+local sortRoster -- the roster the comparators read during one sort
+local menuGuid -- the row the right-click menu was opened on
+local myGuid -- this character, read at login (never in its own list)
+local paintedGen, paintedFaction -- the class colour palette and faction the list was painted with
 local MENU
 
 -------------------------------------------------------------------------------
@@ -95,7 +101,9 @@ end
 
 local function Setting(key, default)
     local v = CludesUIDB and CludesUIDB[key]
-    if v == nil then return default end
+    if v == nil then
+        return default
+    end
     return v
 end
 
@@ -106,7 +114,9 @@ end
 
 local function Roster()
     local db = CludesUIDB
-    if type(db) ~= "table" then return nil end
+    if type(db) ~= "table" then
+        return nil
+    end
     local r = db.mailAltRoster
     if type(r) ~= "table" then
         r = {}
@@ -124,16 +134,22 @@ end
 -- the stored value (a level read before the character is in the world).
 local function RecordPlayer()
     local guid = PlainString(UnitGUID("player"))
-    if guid then myGuid = guid end
+    if guid then
+        myGuid = guid
+    end
     local name = PlainString((UnitName("player")))
     local realm = PlainString(GetRealmName())
     local _, class = UnitClass("player")
     class = PlainString(class)
-    if not (guid and name and realm and class) then return end
+    if not (guid and name and realm and class) then
+        return
+    end
     -- The realm as mail addresses it ("Area52"): the normalized name.
     local realmKey = PlainString(GetNormalizedRealmName()) or (realm:gsub("[%s%-]", ""))
     local roster = Roster()
-    if not roster then return end
+    if not roster then
+        return
+    end
     local e = roster[guid]
     if type(e) ~= "table" then
         e = {}
@@ -141,9 +157,13 @@ local function RecordPlayer()
     end
     e.name, e.realm, e.realmKey, e.class = name, realm, realmKey, class
     local level = UnitLevel("player")
-    if type(level) == "number" and not IsSecret(level) and level > 0 then e.level = level end
+    if type(level) == "number" and not IsSecret(level) and level > 0 then
+        e.level = level
+    end
     local faction = PlainString((UnitFactionGroup("player")))
-    if faction then e.faction = faction end
+    if faction then
+        e.faction = faction
+    end
     e.seen = time()
     dirty = true
 end
@@ -154,7 +174,9 @@ local function Describe(e)
     local class = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[e.class]) or e.class or ""
     local text = e.level and UNIT_TYPE_LEVEL_TEMPLATE:format(e.level, class) or class
     local faction = e.faction and _G["FACTION_" .. e.faction:upper()]
-    if faction then text = text .. ", " .. faction end
+    if faction then
+        text = text .. ", " .. faction
+    end
     return text
 end
 
@@ -164,36 +186,52 @@ end
 --  faction; Warbound items reach every character on the account.
 -------------------------------------------------------------------------------
 local function ConnectedRealms()
-    if connected then return connected end
+    if connected then
+        return connected
+    end
     local own = PlainString(GetNormalizedRealmName())
     local set = {}
-    if own then set[own] = true end
+    if own then
+        set[own] = true
+    end
     local list = C_AutoComplete.GetAutoCompleteRealms()
     if type(list) == "table" then
         for i = 1, #list do
             local r = PlainString(list[i])
-            if r then set[r] = true end
+            if r then
+                set[r] = true
+            end
         end
     end
     -- Kept once this realm is known: the set never changes in a session.
-    if own then connected = set end
+    if own then
+        connected = set
+    end
     return set
 end
 
 local function ByName(a, b)
     local ea, eb = sortRoster[a], sortRoster[b]
-    if ea.name ~= eb.name then return strcmputf8i(ea.name, eb.name) < 0 end
-    if ea.realmKey ~= eb.realmKey then return ea.realmKey < eb.realmKey end
+    if ea.name ~= eb.name then
+        return strcmputf8i(ea.name, eb.name) < 0
+    end
+    if ea.realmKey ~= eb.realmKey then
+        return ea.realmKey < eb.realmKey
+    end
     return a < b
 end
 local function ByLevel(a, b)
     local la, lb = sortRoster[a].level or 0, sortRoster[b].level or 0
-    if la ~= lb then return la > lb end
+    if la ~= lb then
+        return la > lb
+    end
     return ByName(a, b)
 end
 local function ByRecent(a, b)
     local sa, sb = sortRoster[a].seen or 0, sortRoster[b].seen or 0
-    if sa ~= sb then return sa > sb end
+    if sa ~= sb then
+        return sa > sb
+    end
     return ByName(a, b)
 end
 local SORTS = { recent = ByRecent, level = ByLevel, name = ByName }
@@ -205,7 +243,9 @@ local function Collect()
     local faction = PlainString((UnitFactionGroup("player")))
     paintedFaction = faction
     -- A character without a faction yet has no mail.
-    if not roster or not faction or faction == "Neutral" then return end
+    if not roster or not faction or faction == "Neutral" then
+        return
+    end
     local me = myGuid or PlainString(UnitGUID("player"))
     local hidden = Hidden()
     local minLevel = NumberSetting("mailAltListMinLevel", DEFAULT_MIN_LEVEL)
@@ -220,7 +260,9 @@ local function Collect()
     sortRoster = roster
     sort(shown, SORTS[Setting("mailAltListSort", DEFAULT_SORT)] or ByRecent)
     sortRoster = nil
-    for i = #shown, Clamp(NumberSetting("mailAltListMax", DEFAULT_MAX), 1, MAX_ROWS) + 1, -1 do shown[i] = nil end
+    for i = #shown, Clamp(NumberSetting("mailAltListMax", DEFAULT_MAX), 1, MAX_ROWS) + 1, -1 do
+        shown[i] = nil
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -231,17 +273,23 @@ local Paint, Place
 local function RowEnter(self)
     local roster = Roster()
     local e = self._guid and roster and roster[self._guid]
-    if type(e) ~= "table" then return end
+    if type(e) ~= "table" then
+        return
+    end
     local c = CUI.GetClassColor(e.class)
     local head = e.name
-    if self._foreign then head = head .. " - " .. (e.realm or e.realmKey) end
+    if self._foreign then
+        head = head .. " - " .. (e.realm or e.realmKey)
+    end
     local text = CUI.HexColor(c.r, c.g, c.b) .. head .. "|r\n" .. Describe(e)
     if self._limited then
         text = text .. "\n" .. CludesUI.L("Only Warbound items can be mailed to this character.")
     end
-    CUI.ShowWidgetTooltip(self, text .. "\n" .. CUI.COLOR_CODES.DIM
-        .. CludesUI.L("Click to mail, right-click for options.") .. "|r",
-        { anchor = "right", justify = "LEFT" })
+    CUI.ShowWidgetTooltip(
+        self,
+        text .. "\n" .. CUI.COLOR_CODES.DIM .. CludesUI.L("Click to mail, right-click for options.") .. "|r",
+        { anchor = "right", justify = "LEFT" }
+    )
 end
 
 local function RowLeave()
@@ -249,14 +297,18 @@ local function RowLeave()
 end
 
 local function RowClick(self, button)
-    if not self._guid then return end
+    if not self._guid then
+        return
+    end
     if button == "RightButton" then
         menuGuid = self._guid
         CUI.ShowContextMenu(self, MENU)
         return
     end
     local box = SendMailNameEditBox
-    if box and self._target then box:SetText(self._target) end
+    if box and self._target then
+        box:SetText(self._target)
+    end
 end
 
 local function NewRow(i)
@@ -303,10 +355,14 @@ local function DressIcon(tex, class)
     local coords
     if blizzLook then
         coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
-        if coords then tex:SetTexture(BLIZZ_CLASS_ICONS) end
+        if coords then
+            tex:SetTexture(BLIZZ_CLASS_ICONS)
+        end
     else
         coords = CUI.CLASS_ICON_SPRITE_COORDS[class]
-        if coords then tex:SetTexture(CUI_CLASS_ICONS) end
+        if coords then
+            tex:SetTexture(CUI_CLASS_ICONS)
+        end
     end
     if coords then
         tex:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
@@ -332,7 +388,9 @@ end
 --  The panel
 -------------------------------------------------------------------------------
 local function PaintBackdrop()
-    if blizzLook or not panel then return end
+    if blizzLook or not panel then
+        return
+    end
     local modern = WSkin.GetStyle("mail") == "modern"
     bgArt:SetAlpha(modern and 0 or 1)
     bgShade:SetAlpha(modern and 0 or 1)
@@ -344,7 +402,9 @@ local function PaintBackdrop()
 end
 
 local function Build()
-    if not Theme.fontPath then WSkin.ResolveTheme() end
+    if not Theme.fontPath then
+        WSkin.ResolveTheme()
+    end
     -- Named: a frame of ours the window skin's art sweeps leave alone.
     if blizzLook then
         topH, inset, gap = BLIZZ_TOP, BLIZZ_INSET, BLIZZ_GAP
@@ -384,7 +444,9 @@ local function Build()
     -- It hangs outside the window: a click on its empty parts stays off the world.
     panel:EnableMouse(true)
     emptyNote = panel:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontDisableSmall" or nil)
-    if not blizzLook then WSkin.Font(emptyNote, 0.6, 0.6, 0.6, 11) end
+    if not blizzLook then
+        WSkin.Font(emptyNote, 0.6, 0.6, 0.6, 11)
+    end
     -- Its own width, never one from anchors: the note is measured before the
     -- panel is first placed, and a width taken from unplaced anchors measures
     -- the text as one unwrapped line (a panel too short, the note cut off).
@@ -424,7 +486,9 @@ Paint = function()
     local owner = CUI._WidgetTooltipOwner()
     for i = n + 1, #rows do
         local r = rows[i]
-        if owner == r then CUI.HideWidgetTooltip(true) end
+        if owner == r then
+            CUI.HideWidgetTooltip(true)
+        end
         r:Hide()
         r._guid, r._target, r._limited = nil, nil, nil
     end
@@ -433,27 +497,38 @@ Paint = function()
         emptyNote:Hide()
         h = topH + LIST_PAD * 2 + n * ROW_H
     else
-        emptyNote:SetText(mailable == 0
-            and CludesUI.L("Log into your other characters to list them here.")
-            or CludesUI.L("Your other characters are hidden by Shown Characters or Minimum Level."))
+        emptyNote:SetText(
+            mailable == 0 and CludesUI.L("Log into your other characters to list them here.")
+                or CludesUI.L("Your other characters are hidden by Shown Characters or Minimum Level.")
+        )
         emptyNote:Show()
         h = topH + EMPTY_PAD * 2 + math.ceil(emptyNote:GetStringHeight())
     end
-    if blizzLook then h = h + 2 end   -- the frame's bottom edge
+    if blizzLook then
+        h = h + 2
+    end -- the frame's bottom edge
     panel:SetHeight(h)
-    if bgArt then WSkin.CoverFit(bgArt, PANEL_W, h) end
-    if owner then ReplayHover() end
+    if bgArt then
+        WSkin.CoverFit(bgArt, PANEL_W, h)
+    end
+    if owner then
+        ReplayHover()
+    end
 end
 
 local function ScreenRect(f)
     local s = f:GetEffectiveScale()
     local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
-    if not (l and r and t and b) or IsSecret(l) or IsSecret(r) or IsSecret(t) or IsSecret(b) then return nil end
+    if not (l and r and t and b) or IsSecret(l) or IsSecret(r) or IsSecret(t) or IsSecret(b) then
+        return nil
+    end
     return l * s, r * s, t * s, b * s
 end
 
 local function Anchor(to, side)
-    if placedTo == to and placedSide == side then return end
+    if placedTo == to and placedSide == side then
+        return
+    end
     placedTo, placedSide = to, side
     panel:ClearAllPoints()
     if side == "left" then
@@ -491,7 +566,9 @@ end
 -- Repainted when the list changed, a class colour was edited since (the colour
 -- palette's generation) or this character has picked its faction since.
 local function ShowPanel()
-    if not panel then Build() end
+    if not panel then
+        Build()
+    end
     panel:Show()
     if dirty or paintedGen ~= CUI._dmGen or paintedFaction ~= PlainString((UnitFactionGroup("player"))) then
         Paint()
@@ -507,16 +584,22 @@ local function Changed()
         Paint()
         Place()
     end
-    if CUI:IsShown() then CUI:RefreshPage() end
+    if CUI:IsShown() then
+        CUI:RefreshPage()
+    end
 end
 
 local function SetShown(guid, on)
-    if not CludesUIDB then return end
+    if not CludesUIDB then
+        return
+    end
     local h = CludesUIDB.mailAltHidden
     if on then
         if type(h) == "table" then
             h[guid] = nil
-            if not next(h) then CludesUIDB.mailAltHidden = nil end
+            if not next(h) then
+                CludesUIDB.mailAltHidden = nil
+            end
         end
     else
         if type(h) ~= "table" then
@@ -529,55 +612,77 @@ local function SetShown(guid, on)
 end
 
 MENU = {
-    { text = "Ignore This Character",
-      tooltip = "Hides it until ticked again in Shown Characters.",
-      onClick = function()
-          if menuGuid then SetShown(menuGuid, false); Changed() end
-      end },
-    { text = "Remove Character",
-      tooltip = "Forgets a deleted or moved character.",
-      onClick = function()
-          local roster = Roster()
-          local guid = menuGuid
-          local e = guid and roster and roster[guid]
-          if type(e) ~= "table" then return end
-          -- Asked first: a misclick would drop a rarely played alt until it next logs in.
-          CUI:ShowConfirmPopup({
-              title       = "Remove Character",
-              message     = CludesUI.Lf("Remove %s from the Alt List? It comes back when you next log into it.", e.name),
-              confirmText = "Remove",
-              cancelText  = "Cancel",
-              onConfirm   = function()
-                  roster[guid] = nil
-                  local h = Hidden()
-                  if h and h[guid] then SetShown(guid, true) end
-                  Changed()
-              end,
-          })
-      end },
+    {
+        text = "Ignore This Character",
+        tooltip = "Hides it until ticked again in Shown Characters.",
+        onClick = function()
+            if menuGuid then
+                SetShown(menuGuid, false)
+                Changed()
+            end
+        end,
+    },
+    {
+        text = "Remove Character",
+        tooltip = "Forgets a deleted or moved character.",
+        onClick = function()
+            local roster = Roster()
+            local guid = menuGuid
+            local e = guid and roster and roster[guid]
+            if type(e) ~= "table" then
+                return
+            end
+            -- Asked first: a misclick would drop a rarely played alt until it next logs in.
+            CUI:ShowConfirmPopup({
+                title = "Remove Character",
+                message = CludesUI.Lf(
+                    "Remove %s from the Alt List? It comes back when you next log into it.",
+                    e.name
+                ),
+                confirmText = "Remove",
+                cancelText = "Cancel",
+                onConfirm = function()
+                    roster[guid] = nil
+                    local h = Hidden()
+                    if h and h[guid] then
+                        SetShown(guid, true)
+                    end
+                    Changed()
+                end,
+            })
+        end,
+    },
 }
 
 -------------------------------------------------------------------------------
 --  Hooks: tab switches and the letter window
 -------------------------------------------------------------------------------
 local function OnTab()
-    if not Enabled() or not SendMailFrame:IsVisible() then return end
+    if not Enabled() or not SendMailFrame:IsVisible() then
+        return
+    end
     ShowPanel()
 end
 
 local function OnInboxUpdate()
-    if panel and panel:IsVisible() and Enabled() then Place() end
+    if panel and panel:IsVisible() and Enabled() then
+        Place()
+    end
 end
 
 local function HookMail()
-    if hooked or type(_G.MailFrameTab_OnClick) ~= "function" or type(_G.InboxFrame_Update) ~= "function" then return end
+    if hooked or type(_G.MailFrameTab_OnClick) ~= "function" or type(_G.InboxFrame_Update) ~= "function" then
+        return
+    end
     hooked = true
     hooksecurefunc("MailFrameTab_OnClick", OnTab)
     hooksecurefunc("InboxFrame_Update", OnInboxUpdate)
 end
 
 local function Install()
-    if hooked then return end
+    if hooked then
+        return
+    end
     if C_AddOns.IsAddOnLoaded("Blizzard_MailFrame") then
         HookMail()
     else
@@ -589,8 +694,10 @@ end
 --  The Mail card's options (CUI_BlizzardSkin_Options.lua)
 -------------------------------------------------------------------------------
 ns.MailAlts = {
-    DEFAULT_MAX = DEFAULT_MAX, DEFAULT_MIN_LEVEL = DEFAULT_MIN_LEVEL,
-    DEFAULT_SORT = DEFAULT_SORT, MAX_ROWS = MAX_ROWS,
+    DEFAULT_MAX = DEFAULT_MAX,
+    DEFAULT_MIN_LEVEL = DEFAULT_MIN_LEVEL,
+    DEFAULT_SORT = DEFAULT_SORT,
+    MAX_ROWS = MAX_ROWS,
     Describe = Describe,
 }
 
@@ -602,11 +709,15 @@ function ns.MailAlts.Refresh()
         Install()
         -- Visible, not shown: SendMailFrame keeps its shown flag while the
         -- mailbox is closed, and the panel paints only where it can measure.
-        if hooked and SendMailFrame:IsVisible() then ShowPanel() end
+        if hooked and SendMailFrame:IsVisible() then
+            ShowPanel()
+        end
     elseif panel then
         panel:Hide()
         local owner = CUI.ContextMenuOwner()
-        if owner and owner._mailAltRow then CUI.CloseContextMenu() end
+        if owner and owner._mailAltRow then
+            CUI.CloseContextMenu()
+        end
     end
 end
 
@@ -615,21 +726,35 @@ end
 function ns.MailAlts.Entries()
     local out = {}
     local roster = Roster()
-    if not roster then return out end
+    if not roster then
+        return out
+    end
     for guid, e in pairs(roster) do
         if type(e) == "table" and type(e.name) == "string" then
-            out[#out + 1] = { guid = guid, name = e.name, realm = e.realm or e.realmKey or "",
-                class = e.class, level = e.level, faction = e.faction }
+            out[#out + 1] = {
+                guid = guid,
+                name = e.name,
+                realm = e.realm or e.realmKey or "",
+                class = e.class,
+                level = e.level,
+                faction = e.faction,
+            }
         end
     end
     local own = GetRealmName()
     sort(out, function(a, b)
         if a.realm ~= b.realm then
-            if a.realm == own then return true end
-            if b.realm == own then return false end
+            if a.realm == own then
+                return true
+            end
+            if b.realm == own then
+                return false
+            end
             return strcmputf8i(a.realm, b.realm) < 0
         end
-        if a.name ~= b.name then return strcmputf8i(a.name, b.name) < 0 end
+        if a.name ~= b.name then
+            return strcmputf8i(a.name, b.name) < 0
+        end
         return a.guid < b.guid
     end)
     return out
@@ -656,7 +781,9 @@ ev:SetScript("OnEvent", function(self, event, arg1)
         self:UnregisterEvent("PLAYER_LOGIN")
         blizzLook = WSkin.GetStyle("mail") == "off"
         RecordPlayer()
-        if Enabled() then Install() end
+        if Enabled() then
+            Install()
+        end
     elseif event == "PLAYER_LOGOUT" then
         RecordPlayer()
     elseif arg1 == "Blizzard_MailFrame" then

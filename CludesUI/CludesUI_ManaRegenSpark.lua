@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUI_ManaRegenSpark.lua
 -- WoW FOREVER ONLY: mana regen spark on mana power bars.
@@ -34,37 +36,45 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 local _, PLAYER_CLASS = UnitClass("player")
-if PLAYER_CLASS == "WARRIOR" or PLAYER_CLASS == "ROGUE" then return end
+if PLAYER_CLASS == "WARRIOR" or PLAYER_CLASS == "ROGUE" then
+    return
+end
 
 local MANA = Enum.PowerType.Mana
-local WINDOW = 5   -- five second rule
-local TICK = 2     -- regen tick interval (Regen Ticks mode)
-local SPARK_W = 8  -- spark thickness along the fill direction
+local WINDOW = 5 -- five second rule
+local TICK = 2 -- regen tick interval (Regen Ticks mode)
+local SPARK_W = 8 -- spark thickness along the fill direction
 local SPARK_TEX = "Interface\\AddOns\\CludesUI\\media\\cast_spark.tga"
 local IMMEDIATE = Enum.StatusBarInterpolation.Immediate
 local ELAPSED = Enum.StatusBarTimerDirection.ElapsedTime
 
-local hosts = {}   -- key -> host record while attached
-local built = {}   -- bar -> host record (kept across detach)
-local mana = {}    -- key -> true while that host's bar shows mana
-local listening = false   -- the cast event is registered
-local ticking = false     -- UNIT_POWER_UPDATE is registered (a Regen Ticks host)
-local sweepEnd            -- end time of the running sweep; nil while idle
-local inWindow = false    -- true while the 5s sweep runs
-local regenSeen = false   -- mana update seen during the current tick sweep
+local hosts = {} -- key -> host record while attached
+local built = {} -- bar -> host record (kept across detach)
+local mana = {} -- key -> true while that host's bar shows mana
+local listening = false -- the cast event is registered
+local ticking = false -- UNIT_POWER_UPDATE is registered (a Regen Ticks host)
+local sweepEnd -- end time of the running sweep; nil while idle
+local inWindow = false -- true while the 5s sweep runs
+local regenSeen = false -- mana update seen during the current tick sweep
 local dur = C_DurationUtil.CreateDuration()
 local ev = CreateFrame("Frame")
-local timer = ev:CreateAnimationGroup()   -- one-shot, one sweep long
+local timer = ev:CreateAnimationGroup() -- one-shot, one sweep long
 local timerSpan = timer:CreateAnimation("Animation")
 
 -- True when the spell's cost includes mana. A secret amount counts as a cost;
 -- only a plain 0 is free.
 local function CostsMana(spellID)
-    if issecretvalue(spellID) or not spellID then return false end
+    if issecretvalue(spellID) or not spellID then
+        return false
+    end
     local costs = C_Spell.GetSpellPowerCost(spellID)
-    if not costs then return false end
+    if not costs then
+        return false
+    end
     for i = 1, #costs do
         local c = costs[i]
         if not issecretvalue(c.type) and c.type == MANA then
@@ -83,7 +93,9 @@ local function Layout(h)
     local bar = h.bar
     local vert = bar:GetOrientation() == "VERTICAL"
     local rev = bar:GetReverseFill() and true or false
-    if h.vert == vert and h.rev == rev then return end
+    if h.vert == vert and h.rev == rev then
+        return
+    end
     h.vert, h.rev = vert, rev
     local o, s = h.overlay, h.spark
     o:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
@@ -123,7 +135,9 @@ local function Idle()
     sweepEnd = nil
     inWindow = false
     regenSeen = false
-    for _, h in pairs(hosts) do h.overlay:Hide() end
+    for _, h in pairs(hosts) do
+        h.overlay:Hide()
+    end
 end
 
 -- Starts a sweep of len seconds on every host. A tick sweep chains from the
@@ -131,10 +145,14 @@ end
 -- per hop; a start already a full sweep behind restarts from now.
 local function Sweep(len, start)
     local now = GetTime()
-    if not start or start + len <= now then start = now end
+    if not start or start + len <= now then
+        start = now
+    end
     sweepEnd = start + len
     dur:SetTimeFromStart(start, len)
-    for _, h in pairs(hosts) do Arm(h) end
+    for _, h in pairs(hosts) do
+        Arm(h)
+    end
     timer:Stop()
     timerSpan:SetDuration(sweepEnd - now)
     timer:Play()
@@ -162,7 +180,11 @@ ev:SetScript("OnEvent", function(_, event, _, arg2, arg3)
         end
     elseif arg2 == "MANA" and not inWindow then
         -- UNIT_POWER_UPDATE, registered only for a Regen Ticks host.
-        if sweepEnd then regenSeen = true else Sweep(TICK) end
+        if sweepEnd then
+            regenSeen = true
+        else
+            Sweep(TICK)
+        end
     end
 end)
 
@@ -174,7 +196,9 @@ local function Listen()
     for _, h in pairs(hosts) do
         if h.bar:IsVisible() then
             on = true
-            if h.ticks then tk = true end
+            if h.ticks then
+                tk = true
+            end
         end
     end
     if tk ~= ticking then
@@ -185,7 +209,9 @@ local function Listen()
             ev:UnregisterEvent("UNIT_POWER_UPDATE")
         end
     end
-    if on == listening then return end
+    if on == listening then
+        return
+    end
     listening = on
     if on then
         ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
@@ -208,7 +234,9 @@ end
 
 local function OnHostHide(bar)
     local h = built[bar]
-    if hosts[h.key] == h then Listen() end
+    if hosts[h.key] == h then
+        Listen()
+    end
 end
 
 local MRS = {}
@@ -247,7 +275,9 @@ function MRS.Attach(key, bar, ticks)
         end
         return
     end
-    if old then old.overlay:Hide() end
+    if old then
+        old.overlay:Hide()
+    end
     h.key, h.ticks = key, ticks
     hosts[key] = h
     Listen()
@@ -256,7 +286,9 @@ end
 
 function MRS.Detach(key)
     local h = hosts[key]
-    if not h then return end
+    if not h then
+        return
+    end
     hosts[key] = nil
     h.overlay:Hide()
     Listen()
@@ -266,11 +298,15 @@ end
 -- attach starts from the last report; on the edge to mana a running sweep
 -- shows at once, at its current position.
 function MRS.SetMana(key, isMana)
-    if mana[key] == isMana then return end
+    if mana[key] == isMana then
+        return
+    end
     mana[key] = isMana
     local h = hosts[key]
     if h then
-        if isMana then Layout(h) end
+        if isMana then
+            Layout(h)
+        end
         Arm(h)
     end
 end

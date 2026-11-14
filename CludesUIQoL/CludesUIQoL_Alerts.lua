@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Alerts.lua
 --  Center-screen text alerts that share ONE movable anchor (Unlock Mode: Alerts).
@@ -18,7 +20,9 @@ local DEFAULT_SIZE = 22
 local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = 169 }
 local GAP = 4
 
-local function DB(key) return CludesUIDB and CludesUIDB[key] end
+local function DB(key)
+    return CludesUIDB and CludesUIDB[key]
+end
 
 -------------------------------------------------------------------------------
 --  Core: anchor + stacked lines
@@ -37,15 +41,19 @@ local anchor
 
 -- Defaults for the two new alerts; the options cogs read these too.
 Alerts.DEFAULTS = {
-    potionAlert = { text = "Potion Ready",          color = { r = 0.1, g = 1,    b = 0.1 } },
-    talentAlert = { text = "Unspent talent points", color = { r = 1,   g = 0.82, b = 0   } },
+    potionAlert = { text = "Potion Ready", color = { r = 0.1, g = 1, b = 0.1 } },
+    talentAlert = { text = "Unspent talent points", color = { r = 1, g = 0.82, b = 0 } },
 }
 
-local function SizeOf(def) return DB(def.sizeKey) or DEFAULT_SIZE end
+local function SizeOf(def)
+    return DB(def.sizeKey) or DEFAULT_SIZE
+end
 
 local function AnyEnabled()
     for _, def in ipairs(DEFS) do
-        if DB(def.enabledKey) then return true end
+        if DB(def.enabledKey) then
+            return true
+        end
     end
     return false
 end
@@ -53,7 +61,9 @@ end
 local function MaxSize()
     local m = DEFAULT_SIZE
     for _, def in ipairs(DEFS) do
-        if DB(def.enabledKey) then m = math.max(m, SizeOf(def)) end
+        if DB(def.enabledKey) then
+            m = math.max(m, SizeOf(def))
+        end
     end
     return m
 end
@@ -61,14 +71,20 @@ end
 -- The old Combat Alert position carries over until the anchor is moved.
 local function AnchorPos()
     local p = DB("alertsPos")
-    if p and p.point then return p end
+    if p and p.point then
+        return p
+    end
     p = DB("combatAlertPos")
-    if p and p.point then return p end
+    if p and p.point then
+        return p
+    end
     return DEFAULT_POS
 end
 
 local function PlaceAnchor()
-    if not anchor then return end
+    if not anchor then
+        return
+    end
     local size = MaxSize()
     anchor:SetSize(size * 7, size + 14)
     local pos = AnchorPos()
@@ -77,7 +93,9 @@ local function PlaceAnchor()
 end
 
 local function EnsureAnchor()
-    if anchor then return end
+    if anchor then
+        return
+    end
     anchor = CreateFrame("Frame", nil, UIParent)
     anchor:EnableMouse(false)
     anchor:SetMouseClickEnabled(false)
@@ -85,7 +103,9 @@ local function EnsureAnchor()
 end
 
 local function Layout()
-    if not anchor then return end
+    if not anchor then
+        return
+    end
     local offset = 0
     for _, def in ipairs(DEFS) do
         local line = lines[def.id]
@@ -121,21 +141,36 @@ local function NewLine(def)
     -- Short: fade in, hold, fade out, then hide. Also used for previews.
     local short = f:CreateAnimationGroup()
     local a1 = short:CreateAnimation("Alpha")
-    a1:SetFromAlpha(0); a1:SetToAlpha(1); a1:SetDuration(0.15); a1:SetOrder(1)
+    a1:SetFromAlpha(0)
+    a1:SetToAlpha(1)
+    a1:SetDuration(0.15)
+    a1:SetOrder(1)
     local a2 = short:CreateAnimation("Alpha")
-    a2:SetFromAlpha(1); a2:SetToAlpha(1); a2:SetDuration(def.hold or 1.2); a2:SetOrder(2)
+    a2:SetFromAlpha(1)
+    a2:SetToAlpha(1)
+    a2:SetDuration(def.hold or 1.2)
+    a2:SetOrder(2)
     local a3 = short:CreateAnimation("Alpha")
-    a3:SetFromAlpha(1); a3:SetToAlpha(0); a3:SetDuration(0.5); a3:SetOrder(3)
-    short:SetScript("OnFinished", function() f:Hide() end)
+    a3:SetFromAlpha(1)
+    a3:SetToAlpha(0)
+    a3:SetDuration(0.5)
+    a3:SetOrder(3)
+    short:SetScript("OnFinished", function()
+        f:Hide()
+    end)
 
     -- Persistent: fade in and stay.
     local stay = f:CreateAnimationGroup()
     local s1 = stay:CreateAnimation("Alpha")
-    s1:SetFromAlpha(0); s1:SetToAlpha(1); s1:SetDuration(0.15); s1:SetOrder(1)
+    s1:SetFromAlpha(0)
+    s1:SetToAlpha(1)
+    s1:SetDuration(0.15)
+    s1:SetOrder(1)
 
     f:SetScript("OnShow", Layout)
     f:SetScript("OnHide", function()
-        short:Stop(); stay:Stop()
+        short:Stop()
+        stay:Stop()
         line.persistentShown = false
         Layout()
     end)
@@ -143,14 +178,23 @@ local function NewLine(def)
     -- preview: play the short animation even on a persistent line, and never
     -- disturb a real persistent alert that is already up.
     function line.Show(text, r, g, b, preview)
-        if CUI._unlockActive then return end
+        if CUI._unlockActive then
+            return
+        end
         local real = def.persistent and not preview
-        if preview and line.persistentShown then return end
-        EnsureAnchor(); PlaceAnchor(); Style(line)
+        if preview and line.persistentShown then
+            return
+        end
+        EnsureAnchor()
+        PlaceAnchor()
+        Style(line)
         fs:SetText(text)
         fs:SetTextColor(r or 1, g or 1, b or 1)
-        if real and line.persistentShown then return end   -- already up: only the text changed
-        short:Stop(); stay:Stop()
+        if real and line.persistentShown then
+            return
+        end -- already up: only the text changed
+        short:Stop()
+        stay:Stop()
         f:SetAlpha(1)
         f:Show()
         if real then
@@ -161,11 +205,15 @@ local function NewLine(def)
         end
     end
 
-    function line.Hide() f:Hide() end
+    function line.Hide()
+        f:Hide()
+    end
 
     function line.Dismiss()
         f:Hide()
-        if line.onDismiss then line.onDismiss() end
+        if line.onDismiss then
+            line.onDismiss()
+        end
     end
 
     return line
@@ -175,20 +223,29 @@ end
 function Alerts.Line(id)
     if not lines[id] then
         for _, def in ipairs(DEFS) do
-            if def.id == id then lines[id] = NewLine(def) end
+            if def.id == id then
+                lines[id] = NewLine(def)
+            end
         end
     end
     return lines[id]
 end
 
 function Alerts.Hide(id)
-    if lines[id] then lines[id].Hide() end
+    if lines[id] then
+        lines[id].Hide()
+    end
 end
 
 -- Re-apply size, position and stacking (Text Size sliders, Unlock Mode).
 function Alerts.Refresh()
-    if anchor or AnyEnabled() then EnsureAnchor(); PlaceAnchor() end
-    for _, line in pairs(lines) do Style(line) end
+    if anchor or AnyEnabled() then
+        EnsureAnchor()
+        PlaceAnchor()
+    end
+    for _, line in pairs(lines) do
+        Style(line)
+    end
     Layout()
 end
 
@@ -202,21 +259,27 @@ function Alerts.Color(prefix, dr, dg, db)
         end
     end
     local c = DB(prefix .. "Color")
-    if c then return c.r, c.g, c.b end
+    if c then
+        return c.r, c.g, c.b
+    end
     return dr, dg, db
 end
 
 local function RegisterUnlock()
     CUI:RegisterUnlockElements({
         CUI.MakeUnlockElement({
-            key      = "CUI_CombatAlert",
-            label    = "Alerts",
-            group    = "Utilities",
-            order    = 721,
+            key = "CUI_CombatAlert",
+            label = "Alerts",
+            group = "Utilities",
+            order = 721,
             noResize = true,
-            isHidden = function() return not AnyEnabled() end,
+            isHidden = function()
+                return not AnyEnabled()
+            end,
             getFrame = function()
-                if not AnyEnabled() then return nil end   -- nothing is built while all are off
+                if not AnyEnabled() then
+                    return nil
+                end -- nothing is built while all are off
                 EnsureAnchor()
                 return anchor
             end,
@@ -225,10 +288,17 @@ local function RegisterUnlock()
                 return size * 7, size + 14
             end,
             savePos = function(_, point, relPoint, x, y)
-                if not point then return end
-                if not CludesUIDB then CludesUIDB = {} end
+                if not point then
+                    return
+                end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.alertsPos = { point = point, relPoint = relPoint, x = x, y = y }
-                if anchor and not CUI._unlockActive then PlaceAnchor(); Layout() end
+                if anchor and not CUI._unlockActive then
+                    PlaceAnchor()
+                    Layout()
+                end
             end,
             loadPos = function()
                 local p = AnchorPos()
@@ -239,10 +309,17 @@ local function RegisterUnlock()
                     CludesUIDB.alertsPos = nil
                     CludesUIDB.combatAlertPos = nil
                 end
-                if anchor then PlaceAnchor(); Layout() end
+                if anchor then
+                    PlaceAnchor()
+                    Layout()
+                end
             end,
             applyPos = function()
-                if anchor or AnyEnabled() then EnsureAnchor(); PlaceAnchor(); Layout() end
+                if anchor or AnyEnabled() then
+                    EnsureAnchor()
+                    PlaceAnchor()
+                    Layout()
+                end
             end,
         }),
     })
@@ -265,15 +342,15 @@ end)
 -------------------------------------------------------------------------------
 do
     local POTION_CLASS = Enum.ItemClass.Consumable
-    local POTION_SUBCLASS = 1   -- Enum.ItemConsumableSubclass.Potion
-    local MIN_CD = 1.5   -- anything longer is the potion's own cooldown, not the GCD
+    local POTION_SUBCLASS = 1 -- Enum.ItemConsumableSubclass.Potion
+    local MIN_CD = 1.5 -- anything longer is the potion's own cooldown, not the GCD
     local GetInstant = C_Item and C_Item.GetItemInfoInstant
     local GetUseSpell = C_Item and C_Item.GetItemSpell
 
     local watcher
     local installed = false
-    local spellToItem = {}  -- on-use spellID -> itemID, for potions seen in bags
-    local seen = {}         -- itemID -> true (mapped potion) / false (not a potion)
+    local spellToItem = {} -- on-use spellID -> itemID, for potions seen in bags
+    local seen = {} -- itemID -> true (mapped potion) / false (not a potion)
     local timer, pendingItem, usedItem
 
     local function ShowAlert(preview)
@@ -285,12 +362,16 @@ do
     -- start, duration; nil if the item has no cooldown data.
     local function ReadCD(itemID)
         local start, dur = C_Container.GetItemCooldown(itemID)
-        if not start or issecretvalue(start) or issecretvalue(dur) then return nil end
+        if not start or issecretvalue(start) or issecretvalue(dur) then
+            return nil
+        end
         return start, dur
     end
 
     local function UpdateCooldownEvent()
-        if not watcher then return end
+        if not watcher then
+            return
+        end
         if installed and (pendingItem or usedItem) then
             watcher:RegisterEvent("BAG_UPDATE_COOLDOWN")
         else
@@ -299,7 +380,10 @@ do
     end
 
     local function CancelTimer()
-        if timer then timer:Cancel(); timer = nil end
+        if timer then
+            timer:Cancel()
+            timer = nil
+        end
         pendingItem = nil
     end
 
@@ -309,15 +393,24 @@ do
         timer = nil
         local itemID = pendingItem
         pendingItem = nil
-        if not itemID then UpdateCooldownEvent(); return end
+        if not itemID then
+            UpdateCooldownEvent()
+            return
+        end
         -- Last one used up: nothing to be ready for.
-        if (C_Item.GetItemCount(itemID) or 0) <= 0 then UpdateCooldownEvent(); return end
+        if (C_Item.GetItemCount(itemID) or 0) <= 0 then
+            UpdateCooldownEvent()
+            return
+        end
         -- A cooldown extended since we armed is re-read here, so the alert is
         -- only for a potion that is really ready.
         local start, dur = ReadCD(itemID)
         if start and dur and dur > MIN_CD then
             local left = start + dur - GetTime()
-            if left > 0.5 then ArmTimer(itemID, left); return end
+            if left > 0.5 then
+                ArmTimer(itemID, left)
+                return
+            end
         end
         UpdateCooldownEvent()
         ShowAlert()
@@ -333,7 +426,9 @@ do
     -- Try to start tracking the potion just used. Returns true once armed or given up.
     local function TrackUsed()
         local itemID = usedItem
-        if not itemID then return true end
+        if not itemID then
+            return true
+        end
         local start, dur = ReadCD(itemID)
         if not start then
             usedItem = nil
@@ -345,7 +440,7 @@ do
             ArmTimer(itemID, start + dur - GetTime())
             return true
         end
-        return false   -- cooldown not started yet; wait for BAG_UPDATE_COOLDOWN
+        return false -- cooldown not started yet; wait for BAG_UPDATE_COOLDOWN
     end
 
     -- Item IDs only (no per-slot tables); each item is classified once.
@@ -356,7 +451,10 @@ do
                 local _, _, _, _, _, classID, subID = GetInstant(id)
                 if classID == POTION_CLASS and subID == POTION_SUBCLASS then
                     local _, spellID = GetUseSpell(id)
-                    if spellID then spellToItem[spellID] = id; seen[id] = true end
+                    if spellID then
+                        spellToItem[spellID] = id
+                        seen[id] = true
+                    end
                 else
                     seen[id] = false
                 end
@@ -367,7 +465,9 @@ do
     -- Every bag when turned on; afterwards only the bags BAG_UPDATE flagged.
     local dirtyBags = {}
     local function ScanBags(onlyDirty)
-        if not (GetInstant and GetUseSpell) then return end
+        if not (GetInstant and GetUseSpell) then
+            return
+        end
         for bag = 0, NUM_BAG_SLOTS do
             if not onlyDirty or dirtyBags[bag] then
                 dirtyBags[bag] = nil
@@ -379,30 +479,44 @@ do
     local function OnEvent(_, event, ...)
         if event == "UNIT_SPELLCAST_SUCCEEDED" then
             local _, _, spellID = ...
-            if issecretvalue(spellID) then return end
+            if issecretvalue(spellID) then
+                return
+            end
             local itemID = spellToItem[spellID]
-            if not itemID then return end
+            if not itemID then
+                return
+            end
             usedItem = itemID
             if not TrackUsed() then
                 UpdateCooldownEvent()
                 -- No cooldown ever appeared (nothing to wait for): stop listening.
                 C_Timer.After(2, function()
-                    if usedItem == itemID then usedItem = nil; UpdateCooldownEvent() end
+                    if usedItem == itemID then
+                        usedItem = nil
+                        UpdateCooldownEvent()
+                    end
                 end)
             end
         elseif event == "BAG_UPDATE_COOLDOWN" then
-            if usedItem and TrackUsed() then return end
+            if usedItem and TrackUsed() then
+                return
+            end
             if pendingItem then
                 -- A reset (encounter end, death) makes the potion ready early.
                 local start, dur = ReadCD(pendingItem)
                 if start and dur and dur <= MIN_CD then
-                    if timer then timer:Cancel(); timer = nil end
+                    if timer then
+                        timer:Cancel()
+                        timer = nil
+                    end
                     OnReady()
                 end
             end
         elseif event == "BAG_UPDATE" then
             local bag = ...
-            if bag then dirtyBags[bag] = true end
+            if bag then
+                dirtyBags[bag] = true
+            end
         elseif event == "BAG_UPDATE_DELAYED" then
             ScanBags(true)
         end
@@ -423,7 +537,9 @@ do
             usedItem = nil
             Alerts.Hide("potion")
         end
-        if installed then UpdateCooldownEvent() end
+        if installed then
+            UpdateCooldownEvent()
+        end
         Alerts.Refresh()
     end
 
@@ -432,7 +548,9 @@ do
 
     CUI._applyPotionAlert = Apply
     CUI._potionAlertFrame = Alerts.Refresh
-    CUI._potionAlertPreview = function() ShowAlert(true) end
+    CUI._potionAlertPreview = function()
+        ShowAlert(true)
+    end
 
     local boot = CreateFrame("Frame")
     boot:RegisterEvent("PLAYER_LOGIN")
@@ -454,7 +572,12 @@ end
 -------------------------------------------------------------------------------
 do
     -- Blizzard's own trigger events for its talent alert.
-    local EVENTS = { "PLAYER_ENTERING_WORLD", "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED", "PLAYER_LEVEL_CHANGED" }
+    local EVENTS = {
+        "PLAYER_ENTERING_WORLD",
+        "PLAYER_TALENT_UPDATE",
+        "PLAYER_SPECIALIZATION_CHANGED",
+        "PLAYER_LEVEL_CHANGED",
+    }
 
     local watcher
     local installed = false
@@ -463,13 +586,19 @@ do
     local dirty = false
 
     local function HasUnspent()
-        if not C_SpecializationInfo.CanPlayerUseTalentUI() then return false end
-        return (C_ClassTalents.HasUnspentTalentPoints() or C_ClassTalents.HasUnspentHeroTalentPoints()) and true or false
+        if not C_SpecializationInfo.CanPlayerUseTalentUI() then
+            return false
+        end
+        return (C_ClassTalents.HasUnspentTalentPoints() or C_ClassTalents.HasUnspentHeroTalentPoints())
+                and true
+            or false
     end
 
     local function Line()
         local line = Alerts.Line("talent")
-        line.onDismiss = function() dismissed = true end
+        line.onDismiss = function()
+            dismissed = true
+        end
         return line
     end
 
@@ -481,12 +610,21 @@ do
 
     local function Evaluate()
         dirty = false
-        if not installed then return end
-        if InCombatLockdown() then ns.CombatQueue.Defer("TalentAlert", Evaluate); return end
+        if not installed then
+            return
+        end
+        if InCombatLockdown() then
+            ns.CombatQueue.Defer("TalentAlert", Evaluate)
+            return
+        end
         local has = HasUnspent()
         if has then
-            if not lastHad then dismissed = false end        -- new points: show again
-            if not dismissed then ShowAlert() end
+            if not lastHad then
+                dismissed = false
+            end -- new points: show again
+            if not dismissed then
+                ShowAlert()
+            end
         else
             dismissed = false
             Alerts.Hide("talent")
@@ -495,26 +633,34 @@ do
     end
 
     local function MarkDirty()
-        if dirty then return end
+        if dirty then
+            return
+        end
         dirty = true
-        C_Timer.After(0, Evaluate)   -- next frame: one pass per burst of events
+        C_Timer.After(0, Evaluate) -- next frame: one pass per burst of events
     end
 
     local listening = false
     local function Apply()
         local on = DB("talentAlertEnabled")
         if on and not installed then
-            for _, e in ipairs(EVENTS) do watcher:RegisterEvent(e) end
+            for _, e in ipairs(EVENTS) do
+                watcher:RegisterEvent(e)
+            end
             installed = true
             lastHad, dismissed = false, false
             if not listening then
                 listening = true
                 CUI:RegisterUnlockModeListener("CUI_TalentAlert", function(active)
-                    if not active and installed then MarkDirty() end
+                    if not active and installed then
+                        MarkDirty()
+                    end
                 end)
                 -- Opening the talents counts as seeing the alert.
                 EventRegistry:RegisterCallback("PlayerSpellsFrame.TalentTab.Show", function()
-                    if installed then Line().Dismiss() end
+                    if installed then
+                        Line().Dismiss()
+                    end
                 end, "CUI_TalentAlert")
             end
             MarkDirty()
@@ -529,7 +675,9 @@ do
     watcher = CreateFrame("Frame")
     watcher:SetScript("OnEvent", function(_, event)
         -- A level-up brings new points: a dismissed alert shows again.
-        if event == "PLAYER_LEVEL_CHANGED" then dismissed = false end
+        if event == "PLAYER_LEVEL_CHANGED" then
+            dismissed = false
+        end
         MarkDirty()
     end)
 

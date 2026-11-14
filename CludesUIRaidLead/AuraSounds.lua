@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  AuraSounds.lua -- Raid Lead: Aura Sounds.
 --
@@ -17,24 +19,35 @@ local _, ns = ...
 
 local SOUND_DIR = "Interface\\AddOns\\CludesUI\\media\\sounds\\"
 ns.SOUND_FILES = {
-    "AirHorn.ogg", "BikeHorn.ogg", "Bite.ogg", "Glass.mp3", "Kaching.ogg", "Phone.ogg",
-    "RobotBlip.ogg", "Sonar.ogg", "WarningSiren.ogg", "WaterDrop.ogg", "Wilhelm.ogg",
+    "AirHorn.ogg",
+    "BikeHorn.ogg",
+    "Bite.ogg",
+    "Glass.mp3",
+    "Kaching.ogg",
+    "Phone.ogg",
+    "RobotBlip.ogg",
+    "Sonar.ogg",
+    "WarningSiren.ogg",
+    "WaterDrop.ogg",
+    "Wilhelm.ogg",
 }
 ns.SOUND_WHEN = {
-    { id = "added",   label = "Applied" },
-    { id = "stacks",  label = "Gains a Stack" },
+    { id = "added", label = "Applied" },
+    { id = "stacks", label = "Gains a Stack" },
     { id = "removed", label = "Removed" },
 }
 
 local db
 function ns.RaidLeadDB()
-    if not db then db = CludesUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } }) end
+    if not db then
+        db = CludesUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } })
+    end
     db.profile.sounds = db.profile.sounds or {}
     return db.profile
 end
 
-local handles = {}       -- ids the game gave back, to remove them again
-local pending = false    -- a rebuild is owed for after combat
+local handles = {} -- ids the game gave back, to remove them again
+local pending = false -- a rebuild is owed for after combat
 
 local function Secret()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
@@ -42,9 +55,15 @@ end
 
 local function Trigger(when)
     local T = Enum and Enum.UnitAuraSoundTrigger
-    if not T then return nil end
-    if when == "stacks" then return T.ApplicationsIncreased end
-    if when == "removed" then return T.Removed end
+    if not T then
+        return nil
+    end
+    if when == "stacks" then
+        return T.ApplicationsIncreased
+    end
+    if when == "removed" then
+        return T.Removed
+    end
     return T.Added
 end
 
@@ -57,7 +76,9 @@ end
 
 --- Registers every enabled aura sound with the game. Returns how many took.
 function ns.RebuildAuraSounds()
-    if not (C_UnitAuras and C_UnitAuras.AddAuraSound) then return 0 end
+    if not (C_UnitAuras and C_UnitAuras.AddAuraSound) then
+        return 0
+    end
     if Secret() or InCombatLockdown() then
         pending = true
         return 0

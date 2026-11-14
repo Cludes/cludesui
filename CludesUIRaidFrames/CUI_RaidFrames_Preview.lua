@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Preview.lua
 --
@@ -12,7 +14,9 @@ local _, ns = ...
 
 local I = ns._internals
 -- CludesUIRaidFrames.lua or one of the CUI_RaidFrames_*.lua files failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 
 -------------------------------------------------------------------------------
 --  Options preview (fake raid members when options panel is open)
@@ -20,25 +24,54 @@ if not I or I.broken then return end
 --  can see their settings applied without needing a real group.
 -------------------------------------------------------------------------------
 ns._PV_CLASS_TOKENS = CludesUI.CLASS_TOKEN_ORDER
-ns._PV_TANK_CLASSES   = { "WARRIOR", "PALADIN", "DEATHKNIGHT", "MONK", "DRUID", "DEMONHUNTER" }
+ns._PV_TANK_CLASSES = { "WARRIOR", "PALADIN", "DEATHKNIGHT", "MONK", "DRUID", "DEMONHUNTER" }
 ns._PV_HEALER_CLASSES = { "PRIEST", "PALADIN", "SHAMAN", "MONK", "DRUID", "EVOKER" }
-ns._PV_DPS_CLASSES    = ns._PV_CLASS_TOKENS
+ns._PV_DPS_CLASSES = ns._PV_CLASS_TOKENS
 ns._PV_EXT_ICONS = {
-    572025, 135936, 237542, 627485, 135964, 135966, 4622478,
+    572025,
+    135936,
+    237542,
+    627485,
+    135964,
+    135966,
+    4622478,
 }
 ns._PV_DEF_ICONS = {
-    DEATHKNIGHT = { 237525, 136120 }, DEMONHUNTER = { 1305150, 463284 },
-    DRUID = { 136097, 236169 }, EVOKER = { 1394891 },
-    HUNTER = { 132199, 136094 }, MAGE = { 135841, 609811 },
-    MONK = { 615341, 620827 }, PALADIN = { 524353, 524354 },
-    PRIEST = { 237550, 237563 }, ROGUE = { 136177, 132294 },
-    SHAMAN = { 538565 }, WARLOCK = { 136146, 136150 }, WARRIOR = { 132336, 132361 },
+    DEATHKNIGHT = { 237525, 136120 },
+    DEMONHUNTER = { 1305150, 463284 },
+    DRUID = { 136097, 236169 },
+    EVOKER = { 1394891 },
+    HUNTER = { 132199, 136094 },
+    MAGE = { 135841, 609811 },
+    MONK = { 615341, 620827 },
+    PALADIN = { 524353, 524354 },
+    PRIEST = { 237550, 237563 },
+    ROGUE = { 136177, 132294 },
+    SHAMAN = { 538565 },
+    WARLOCK = { 136146, 136150 },
+    WARRIOR = { 132336, 132361 },
 }
 ns._PV_NAMES = {
-    "Thaldrin", "Kaelara", "Morgath", "Sylvaris", "Drakmoor",
-    "Elyndra", "Bronthar", "Velisara", "Grimjaw", "Luneth",
-    "Ashvane", "Tormund", "Ravynne", "Zulkhar", "Brightwing",
-    "Fenwick", "Dawnforge", "Nighthollow", "Stormhelm", "Embertide",
+    "Thaldrin",
+    "Kaelara",
+    "Morgath",
+    "Sylvaris",
+    "Drakmoor",
+    "Elyndra",
+    "Bronthar",
+    "Velisara",
+    "Grimjaw",
+    "Luneth",
+    "Ashvane",
+    "Tormund",
+    "Ravynne",
+    "Zulkhar",
+    "Brightwing",
+    "Fenwick",
+    "Dawnforge",
+    "Nighthollow",
+    "Stormhelm",
+    "Embertide",
 }
 -- CUI LEGENDS event roster (the parent's CludesUI.PREVIEW_ROSTER, shared with
 -- Group Finder's settings preview). Preview slot 1 is always the player; entries
@@ -46,7 +79,11 @@ ns._PV_NAMES = {
 -- sort (ns._pvNames).
 ns._PV_ROSTER = CludesUI.PREVIEW_ROSTER
 ns._PV_DISPEL_DB_ICONS = {
-    Magic = 135735, Curse = 132291, Disease = 237535, Poison = 132106, [""] = 4547635,
+    Magic = 135735,
+    Curse = 132291,
+    Disease = 237535,
+    Poison = 132106,
+    [""] = 4547635,
 }
 ns._PV_DEBUFF_ICONS = { 135813, 136139, 132090, 136197, 135849, 136188 }
 ns._pvActiveAuras = {}
@@ -63,14 +100,18 @@ CludesUI.NewInternals(ns, "_previewInternals", {
     -- BuildPreviewRoles read them too.
     previewFrames = {},
     previewClassTokens = {}, -- [1..20] class token per slot
-    previewActiveSetters = {}, previewContainerSetters = {},
+    previewActiveSetters = {},
+    previewContainerSetters = {},
 }, {
-    SetPreviewActive = "previewActiveSetters", SetPreviewContainer = "previewContainerSetters",
+    SetPreviewActive = "previewActiveSetters",
+    SetPreviewContainer = "previewContainerSetters",
 })
 -- The main chain's visibility passes read the raid preview's state as this plain
 -- field (as the party preview's ns._partyPvActive), never a preview function: a
 -- preview file that fails to load must not leave them a nil call.
 do
     local list = ns._previewInternals.previewActiveSetters
-    list[#list + 1] = function(v) ns._raidPvActive = v end
+    list[#list + 1] = function(v)
+        ns._raidPvActive = v
+    end
 end

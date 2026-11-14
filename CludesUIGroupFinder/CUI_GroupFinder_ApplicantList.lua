@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ApplicantList.lua - our own applicant list
 --  blizzard's list stays alive underneath, faded out. we only read the
@@ -7,15 +9,20 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  list under our own "group forming" cover, no buttons.
 -------------------------------------------------------------------------------
 local FOLDER, ns = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[FOLDER] then
+    return
+end -- held back (CludesUIGroupFinder.lua)
 local CUI = CludesUI
 
 local GAP, ROLE_GAP = 2, 4
-local BOX_RIGHT = 29  -- blizzard's list stops this far from the panel's right edge
+local BOX_RIGHT = 29 -- blizzard's list stops this far from the panel's right edge
 local HOME = LE_PARTY_CATEGORY_HOME
 local ROLES = { "TANK", "HEALER", "DAMAGER" }
-local ROLE_ATLAS = { TANK = "groupfinder-icon-role-micro-tank", HEALER = "groupfinder-icon-role-micro-heal",
-    DAMAGER = "groupfinder-icon-role-micro-dps" }
+local ROLE_ATLAS = {
+    TANK = "groupfinder-icon-role-micro-tank",
+    HEALER = "groupfinder-icon-role-micro-heal",
+    DAMAGER = "groupfinder-icon-role-micro-dps",
+}
 local BAD = CludesUI.COLOR_CODES.BAD
 
 -- right to left from the buttons, the name takes what's left
@@ -29,7 +36,9 @@ local COLS_KEYS = { SPEC_COL, ROLE_COL, ILVL_COL, RATING_COL, KEY_COL }
 local COLS_PVP = { SPEC_COL, ROLE_COL, ILVL_COL, RATING_COL }
 
 local Secret = CludesUI.IsSecret
-local function Readable(t) return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t)) end
+local function Readable(t)
+    return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t))
+end
 
 local AV, frame, head, body, thumb, empty, cover, raidRoles
 local VisibleCols
@@ -43,15 +52,25 @@ local layoutKey
 local scrollPx = 0
 
 -- the applicant list runs whenever the module does
-function ns.ApplicantListOn() return ns.Enabled() end
+function ns.ApplicantListOn()
+    return ns.Enabled()
+end
 
 -- where the rows read their applicants from: the game, or the settings
 -- preview's samples while it paints (then put straight back)
 local LIVE = {
-    info = function(id) return C_LFGList.GetApplicantInfo(id) end,
-    member = function(id, k) return C_LFGList.GetApplicantMemberInfo(id, k) end,
-    best = function(id, k) return C_LFGList.GetApplicantBestDungeonScore(id, k) end,
-    counts = function() return GetGroupMemberCountsForDisplay() end,
+    info = function(id)
+        return C_LFGList.GetApplicantInfo(id)
+    end,
+    member = function(id, k)
+        return C_LFGList.GetApplicantMemberInfo(id, k)
+    end,
+    best = function(id, k)
+        return C_LFGList.GetApplicantBestDungeonScore(id, k)
+    end,
+    counts = function()
+        return GetGroupMemberCountsForDisplay()
+    end,
 }
 local src = LIVE
 
@@ -60,9 +79,13 @@ local src = LIVE
 -------------------------------------------------------------------------------
 -- +12, red when it wasn't timed
 local function KeyText(s)
-    if not Readable(s) then return "-" end
+    if not Readable(s) then
+        return "-"
+    end
     local lvl, done = s.bestRunLevel, s.finishedSuccess
-    if Secret(lvl) or Secret(done) or type(lvl) ~= "number" or lvl == 0 then return "-" end
+    if Secret(lvl) or Secret(done) or type(lvl) ~= "number" or lvl == 0 then
+        return "-"
+    end
     return (done and "" or BAD) .. "+" .. lvl .. (done and "" or "|r")
 end
 
@@ -70,7 +93,9 @@ local function ActiveActivity()
     local entry = C_LFGList.GetActiveEntryInfo()
     local acts = Readable(entry) and entry.activityIDs
     local act = Readable(acts) and acts[1]
-    if not act or Secret(act) then return nil end
+    if not act or Secret(act) then
+        return nil
+    end
     return act, C_LFGList.GetActivityInfoTable(act)
 end
 
@@ -78,17 +103,38 @@ end
 -- status and member count never go secret, the rest can
 local function AnySecret()
     local apps = C_LFGList.GetApplicants()
-    if not apps then return false end
-    if not Readable(apps) then return true end
+    if not apps then
+        return false
+    end
+    if not Readable(apps) then
+        return true
+    end
     for _, id in ipairs(apps) do
-        if Secret(id) then return true end
+        if Secret(id) then
+            return true
+        end
         local info = C_LFGList.GetApplicantInfo(id)
         if info then
-            if not Readable(info) then return true end
+            if not Readable(info) then
+                return true
+            end
             for k = 1, info.numMembers or 0 do
-                local name, class, _, _, ilvl, _, tank, healer, damage, role, _, score, pvpIlvl, _, _, specID = C_LFGList.GetApplicantMemberInfo(id, k)
-                if Secret(name) or Secret(class) or Secret(ilvl) or Secret(tank) or Secret(healer)
-                    or Secret(damage) or Secret(role) or Secret(score) or Secret(pvpIlvl) or Secret(specID) then return true end
+                local name, class, _, _, ilvl, _, tank, healer, damage, role, _, score, pvpIlvl, _, _, specID =
+                    C_LFGList.GetApplicantMemberInfo(id, k)
+                if
+                    Secret(name)
+                    or Secret(class)
+                    or Secret(ilvl)
+                    or Secret(tank)
+                    or Secret(healer)
+                    or Secret(damage)
+                    or Secret(role)
+                    or Secret(score)
+                    or Secret(pvpIlvl)
+                    or Secret(specID)
+                then
+                    return true
+                end
             end
         end
     end
@@ -99,10 +145,14 @@ end
 local DECLINED = { declined = true, declined_full = true, declined_delisted = true, invitedeclined = true }
 
 -- blizzard's order: new ones at the bottom. a secret field keeps the order we got
-local isNew, order = {}, {}  -- by applicant, refilled by every collect
+local isNew, order = {}, {} -- by applicant, refilled by every collect
 local function ByOrder(a, b)
-    if isNew[a] ~= isNew[b] then return isNew[b] end
-    if order[a] ~= order[b] then return order[a] < order[b] end
+    if isNew[a] ~= isNew[b] then
+        return isNew[b]
+    end
+    if order[a] ~= order[b] then
+        return order[a] < order[b]
+    end
     return a < b
 end
 local function Collect()
@@ -110,11 +160,15 @@ local function Collect()
     wipe(isNew)
     wipe(order)
     local apps = C_LFGList.GetApplicants()
-    if not Readable(apps) then return end
+    if not Readable(apps) then
+        return
+    end
     local sortable = true
     for _, id in ipairs(apps) do
         local info = C_LFGList.GetApplicantInfo(id)
-        if Readable(info) and not (DECLINED[info.applicationStatus] and not info.pendingApplicationStatus) then
+        if
+            Readable(info) and not (DECLINED[info.applicationStatus] and not info.pendingApplicationStatus)
+        then
             list[#list + 1] = id
             if Secret(info.isNew) or Secret(info.displayOrderID) then
                 sortable = false
@@ -124,7 +178,9 @@ local function Collect()
             end
         end
     end
-    if not sortable then return end
+    if not sortable then
+        return
+    end
     table.sort(list, ByOrder)
 end
 
@@ -139,12 +195,19 @@ end
 local function Invite(self)
     local b = self:GetParent()
     local id = b.applicantID
-    if not id or b.preview then return end
+    if not id or b.preview then
+        return
+    end
     -- going past 5 needs a raid: our own popup, blizzard's would carry our taint
-    if not IsInRaid(HOME) and GetNumGroupMembers(HOME) + (b.numMembers or 1) + C_LFGList.GetNumInvitedApplicantMembers() > (MAX_PARTY_MEMBERS or 4) + 1 then
+    if
+        not IsInRaid(HOME)
+        and GetNumGroupMembers(HOME) + (b.numMembers or 1) + C_LFGList.GetNumInvitedApplicantMembers()
+            > (MAX_PARTY_MEMBERS or 4) + 1
+    then
         CUI:ShowConfirmPopup({
             title = INVITE or "Invite",
-            message = LFG_LIST_CONVERT_TO_RAID_WARNING or "Inviting this player will convert your party to a raid.",
+            message = LFG_LIST_CONVERT_TO_RAID_WARNING
+                or "Inviting this player will convert your party to a raid.",
             confirmText = INVITE or "Invite",
             onConfirm = function()
                 C_PartyInfo.ConfirmConvertToRaid()
@@ -159,7 +222,9 @@ end
 local function Decline(self)
     local b = self:GetParent()
     local id = b.applicantID
-    if not id or b.preview then return end
+    if not id or b.preview then
+        return
+    end
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     if b.appStatus == "applied" or b.appStatus == "invited" then
         C_LFGList.DeclineApplicant(id)
@@ -194,11 +259,17 @@ local function SquareButton(parent, atlas, onClick)
     btn:SetScript("OnClick", onClick)
     -- the row stays lit while the mouse is on its buttons
     btn:SetScript("OnEnter", function(self)
-        for _, l in ipairs(parent.lines) do l:LockHighlight() end
-        if self.tip then CUI.ShowWidgetTooltip(self, self.tip) end
+        for _, l in ipairs(parent.lines) do
+            l:LockHighlight()
+        end
+        if self.tip then
+            CUI.ShowWidgetTooltip(self, self.tip)
+        end
     end)
     btn:SetScript("OnLeave", function()
-        for _, l in ipairs(parent.lines) do l:UnlockHighlight() end
+        for _, l in ipairs(parent.lines) do
+            l:UnlockHighlight()
+        end
         CUI.HideWidgetTooltip()
     end)
     return btn
@@ -216,16 +287,22 @@ end
 -- a player link in chat: clicking it is blizzard's own whisper
 local function WhisperLink(name)
     local full = CUI.BuildFullName(name) or name
-    if not (full and DEFAULT_CHAT_FRAME) then return end
+    if not (full and DEFAULT_CHAT_FRAME) then
+        return
+    end
     local link = "|Hplayer:" .. full .. "|h[" .. full .. "]|h"
     DEFAULT_CHAT_FRAME:AddMessage(CludesUI.Lf("Click to whisper the applicant: %1$s", link), 1, 0.82, 0)
 end
 
 local function LineMenu(line)
     local id = line:GetParent().applicantID
-    if not id or line:GetParent().preview then return end
+    if not id or line:GetParent().preview then
+        return
+    end
     local name = C_LFGList.GetApplicantMemberInfo(id, line.memberIdx)
-    if Secret(name) then name = nil end
+    if Secret(name) then
+        name = nil
+    end
     -- both of these print the name in chat
     local hidden = ns.OwnListGet("streamerNames")
     -- names shown: blizzard's tagged menu, so other add-ons' entries (raider.io's
@@ -234,8 +311,12 @@ local function LineMenu(line)
         MenuUtil.CreateContextMenu(line, function(_, root)
             root:SetTag("MENU_LFG_FRAME_MEMBER_APPLY")
             root:CreateTitle(name or "")
-            local w = root:CreateButton(WHISPER or "Whisper", function() WhisperLink(name) end)
-            root:CreateButton(LFG_LIST_REPORT_PLAYER or "Report Player", function() LFGList_ReportApplicant(id, name or "") end)
+            local w = root:CreateButton(WHISPER or "Whisper", function()
+                WhisperLink(name)
+            end)
+            root:CreateButton(LFG_LIST_REPORT_PLAYER or "Report Player", function()
+                LFGList_ReportApplicant(id, name or "")
+            end)
             local ig = root:CreateButton(IGNORE_PLAYER or "Ignore Player", function()
                 C_FriendList.AddIgnore(name)
                 C_LFGList.DeclineApplicant(id)
@@ -248,34 +329,56 @@ local function LineMenu(line)
         return
     end
     CUI.ShowContextMenu(line, {
-        { text = WHISPER or "Whisper", noLoc = true,
-          isDisabled = function() return hidden or not name end,
-          onClick = function() WhisperLink(name) end },
-        { text = LFG_LIST_REPORT_PLAYER or "Report Player", noLoc = true,
-          onClick = function() LFGList_ReportApplicant(id, name or "") end },
-        { text = IGNORE_PLAYER or "Ignore Player", noLoc = true,
-          isDisabled = function() return hidden or not name end,
-          onClick = function()
-              C_FriendList.AddIgnore(name)
-              C_LFGList.DeclineApplicant(id)
-          end },
+        {
+            text = WHISPER or "Whisper",
+            noLoc = true,
+            isDisabled = function()
+                return hidden or not name
+            end,
+            onClick = function()
+                WhisperLink(name)
+            end,
+        },
+        {
+            text = LFG_LIST_REPORT_PLAYER or "Report Player",
+            noLoc = true,
+            onClick = function()
+                LFGList_ReportApplicant(id, name or "")
+            end,
+        },
+        {
+            text = IGNORE_PLAYER or "Ignore Player",
+            noLoc = true,
+            isDisabled = function()
+                return hidden or not name
+            end,
+            onClick = function()
+                C_FriendList.AddIgnore(name)
+                C_LFGList.DeclineApplicant(id)
+            end,
+        },
     })
 end
 
 -- blizzard's would show what's hidden, this one only has what's still allowed
 local function PrivateTooltip(line, id)
     local k = line.memberIdx
-    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID = C_LFGList.GetApplicantMemberInfo(id, k)
+    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID =
+        C_LFGList.GetApplicantMemberInfo(id, k)
     local cc = class and RAID_CLASS_COLORS[class]
     local r, g, b = 1, 1, 1
-    if cc then r, g, b = cc.r, cc.g, cc.b end
+    if cc then
+        r, g, b = cc.r, cc.g, cc.b
+    end
     GameTooltip:SetOwner(line, "ANCHOR_NONE")
     GameTooltip:SetPoint("BOTTOMLEFT", line, "TOPLEFT", 105, 0)
     local shown = ns.OwnListGet("streamerNames") and localClass or name
     GameTooltip:SetText(shown or " ", r, g, b)
     if not ns.OwnListGet("streamerSpec") and type(specID) == "number" and specID > 0 then
         local specName = select(2, GetSpecializationInfoByID(specID))
-        if specName then GameTooltip:AddLine(specName, 1, 1, 1) end
+        if specName then
+            GameTooltip:AddLine(specName, 1, 1, 1)
+        end
     end
     local gear = entryActivity and entryActivity.isPvpActivity and pvpIlvl or ilvl
     if type(gear) == "number" then
@@ -286,10 +389,21 @@ local function PrivateTooltip(line, id)
     end
     local info = C_LFGList.GetApplicantInfo(id)
     local comment = Readable(info) and info.comment
-    if not ns.OwnListGet("streamerNote") and type(comment) == "string" and not Secret(comment) and comment ~= "" then
+    if
+        not ns.OwnListGet("streamerNote")
+        and type(comment) == "string"
+        and not Secret(comment)
+        and comment ~= ""
+    then
         GameTooltip:AddLine(" ")
         local fc = LFG_LIST_COMMENT_FONT_COLOR
-        GameTooltip:AddLine(string.format(LFG_LIST_COMMENT_FORMAT or "%s", comment), fc and fc.r or 0.6, fc and fc.g or 0.6, fc and fc.b or 0.6, true)
+        GameTooltip:AddLine(
+            string.format(LFG_LIST_COMMENT_FORMAT or "%s", comment),
+            fc and fc.r or 0.6,
+            fc and fc.g or 0.6,
+            fc and fc.b or 0.6,
+            true
+        )
     end
     GameTooltip:Show()
 end
@@ -301,17 +415,25 @@ end
 -------------------------------------------------------------------------------
 local rioApi, rioTip, rioWatch, rioLine
 local function Rio()
-    if rioApi == nil then rioApi = _G.RaiderIO or false end
+    if rioApi == nil then
+        rioApi = _G.RaiderIO or false
+    end
     return rioApi and type(rioApi.ShowProfile) == "function" and rioApi or nil
 end
 
 -- the hovered applicant's name and realm, nil when hidden or unreadable
 local function RioWho(line)
-    if ns.OwnListGet("streamerNames") or ns.OwnListGet("streamerRating") then return end
+    if ns.OwnListGet("streamerNames") or ns.OwnListGet("streamerRating") then
+        return
+    end
     local id = line:GetParent().applicantID
-    if not id or Secret(id) then return end
+    if not id or Secret(id) then
+        return
+    end
     local full, class = C_LFGList.GetApplicantMemberInfo(id, line.memberIdx)
-    if type(full) ~= "string" or Secret(full) or full == "" then return end
+    if type(full) ~= "string" or Secret(full) or full == "" then
+        return
+    end
     local name, realm = strsplit("-", full, 2)
     return name, realm or GetNormalizedRealmName(), not Secret(class) and class or nil
 end
@@ -319,19 +441,28 @@ end
 local function RioLines(line)
     local api = Rio()
     local name, realm = RioWho(line)
-    if not (api and name and GameTooltip:IsOwned(line)) then return end
+    if not (api and name and GameTooltip:IsOwned(line)) then
+        return
+    end
     local ok, altered = pcall(api.ShowProfile, GameTooltip, name, realm)
-    if ok and altered then GameTooltip:Show() end
+    if ok and altered then
+        GameTooltip:Show()
+    end
 end
 
 local function RioPanel()
     local api, name, realm, class = Rio(), nil, nil, nil
-    if rioLine and rioLine:IsVisible() and IsShiftKeyDown() then name, realm, class = RioWho(rioLine) end
+    if rioLine and rioLine:IsVisible() and IsShiftKeyDown() then
+        name, realm, class = RioWho(rioLine)
+    end
     if not (api and name) then
-        if rioTip then rioTip:Hide() end
+        if rioTip then
+            rioTip:Hide()
+        end
         return
     end
-    rioTip = rioTip or CreateFrame("GameTooltip", "CludesUIGroupFinderRioTip", UIParent, "SharedTooltipTemplate")
+    rioTip = rioTip
+        or CreateFrame("GameTooltip", "CludesUIGroupFinderRioTip", UIParent, "SharedTooltipTemplate")
     local anchor = PVEFrame or AV
     rioTip:SetOwner(anchor, "ANCHOR_NONE")
     rioTip:ClearAllPoints()
@@ -339,12 +470,18 @@ local function RioPanel()
     local cc = class and CUI.GetClassColor(class)
     rioTip:SetText(name, cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1)
     local ok, altered = pcall(api.ShowProfile, rioTip, name, realm)
-    if ok and altered then rioTip:Show() else rioTip:Hide() end
+    if ok and altered then
+        rioTip:Show()
+    else
+        rioTip:Hide()
+    end
 end
 
 -- shift is only watched while an applicant is hovered
 local function RioEnter(line)
-    if not Rio() then return end
+    if not Rio() then
+        return
+    end
     rioLine = line
     if not rioWatch then
         rioWatch = CreateFrame("Frame")
@@ -356,20 +493,32 @@ end
 
 local function RioLeave()
     rioLine = nil
-    if rioWatch then rioWatch:UnregisterEvent("MODIFIER_STATE_CHANGED") end
-    if rioTip then rioTip:Hide() end
+    if rioWatch then
+        rioWatch:UnregisterEvent("MODIFIER_STATE_CHANGED")
+    end
+    if rioTip then
+        rioTip:Hide()
+    end
 end
 
-local PvTip  -- the settings preview's tooltip (below)
+local PvTip -- the settings preview's tooltip (below)
 
 -- blizzard's own applicant tooltip unless something's hidden
 local function LineEnter(line)
-    if line:GetParent().preview then return PvTip(line) end
+    if line:GetParent().preview then
+        return PvTip(line)
+    end
     local id = line:GetParent().applicantID
     -- values can go secret between repaints, the next one hands over to blizzard's list
-    if not (id and LFGListApplicantMember_OnEnter) or AnySecret() then return end
-    if ns.OwnListGet("streamerNote") or ns.OwnListGet("streamerNames")
-        or ns.OwnListGet("streamerRating") or ns.OwnListGet("streamerSpec") then
+    if not (id and LFGListApplicantMember_OnEnter) or AnySecret() then
+        return
+    end
+    if
+        ns.OwnListGet("streamerNote")
+        or ns.OwnListGet("streamerNames")
+        or ns.OwnListGet("streamerRating")
+        or ns.OwnListGet("streamerSpec")
+    then
         PrivateTooltip(line, id)
     else
         pcall(LFGListApplicantMember_OnEnter, line)
@@ -421,11 +570,19 @@ local function MakeLine(b, k)
     l.specRing = l:CreateTexture(nil, "ARTWORK", nil, 1)
     l.specRing:Hide()
     local ringMask = l:CreateMaskTexture()
-    ringMask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    ringMask:SetTexture(
+        "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+        "CLAMPTOBLACKADDITIVE",
+        "CLAMPTOBLACKADDITIVE"
+    )
     ringMask:SetAllPoints(l.specRing)
     l.specRing:AddMaskTexture(ringMask)
     l.specMask = l:CreateMaskTexture()
-    l.specMask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    l.specMask:SetTexture(
+        "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+        "CLAMPTOBLACKADDITIVE",
+        "CLAMPTOBLACKADDITIVE"
+    )
     l.specMask:SetAllPoints(l.spec)
     l.specBorder = CreateFrame("Frame", nil, l)
     l.specBorder:SetAllPoints(l.spec)
@@ -443,7 +600,11 @@ local function MakeLine(b, k)
         rb.bg:Hide()
         rb.ring = rb:CreateTexture(nil, "BACKGROUND", nil, -1)
         local ringMask = rb:CreateMaskTexture()
-        ringMask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        ringMask:SetTexture(
+            "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+            "CLAMPTOBLACKADDITIVE",
+            "CLAMPTOBLACKADDITIVE"
+        )
         ringMask:SetAllPoints(rb.ring)
         rb.ring:AddMaskTexture(ringMask)
         rb.ring:Hide()
@@ -452,7 +613,11 @@ local function MakeLine(b, k)
         rb.border:EnableMouse(false)
         rb.border:Hide()
         rb.mask = rb:CreateMaskTexture()
-        rb.mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        rb.mask:SetTexture(
+            "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+            "CLAMPTOBLACKADDITIVE",
+            "CLAMPTOBLACKADDITIVE"
+        )
         rb.mask:SetAllPoints(rb.bg)
         rb:SetMotionScriptsWhileDisabled(true)
         rb:SetScript("OnClick", function(self)
@@ -500,13 +665,19 @@ local function MakeBlock(i, parent, store)
     b.noteHit = CreateFrame("Button", nil, b)
     b.noteHit:SetAllPoints(b.note)
     b.noteHit:RegisterForClicks("RightButtonUp")
-    b.noteHit:SetScript("OnClick", function() LineMenu(b.lines[1]) end)
+    b.noteHit:SetScript("OnClick", function()
+        LineMenu(b.lines[1])
+    end)
     b.noteHit:SetScript("OnEnter", function()
-        for _, l in ipairs(b.lines) do l:LockHighlight() end
+        for _, l in ipairs(b.lines) do
+            l:LockHighlight()
+        end
         LineEnter(b.lines[1])
     end)
     b.noteHit:SetScript("OnLeave", function()
-        for _, l in ipairs(b.lines) do l:UnlockHighlight() end
+        for _, l in ipairs(b.lines) do
+            l:UnlockHighlight()
+        end
         GameTooltip_Hide()
     end)
     b.decline = SquareButton(b, "groupfinder-icon-redx", Decline)
@@ -522,24 +693,34 @@ end
 
 -- text, color, the results list's underline setting
 local STATUS = {
-    invited        = { LFG_LIST_APP_INVITED or "Invited", 0.1, 0.9, 0.1, "lineAccepted" },
+    invited = { LFG_LIST_APP_INVITED or "Invited", 0.1, 0.9, 0.1, "lineAccepted" },
     inviteaccepted = { LFG_LIST_APP_INVITE_ACCEPTED or "Invite Accepted", 0.1, 0.9, 0.1, "lineAccepted" },
     invitedeclined = { LFG_LIST_APP_INVITE_DECLINED or "Invite Declined", 1, 0.2, 0.2, "lineDeclined" },
-    failed         = { LFG_LIST_APP_CANCELLED or "Cancelled", 1, 0.55, 0.1, "lineCancelled" },
-    cancelled      = { LFG_LIST_APP_CANCELLED or "Cancelled", 1, 0.55, 0.1, "lineCancelled" },
-    declined       = { LFG_LIST_APP_DECLINED or "Declined", 1, 0.2, 0.2, "lineDeclined" },
-    declined_full  = { LFG_LIST_APP_DECLINED or "Declined", 1, 0.2, 0.2, "lineDeclined" },
+    failed = { LFG_LIST_APP_CANCELLED or "Cancelled", 1, 0.55, 0.1, "lineCancelled" },
+    cancelled = { LFG_LIST_APP_CANCELLED or "Cancelled", 1, 0.55, 0.1, "lineCancelled" },
+    declined = { LFG_LIST_APP_DECLINED or "Declined", 1, 0.2, 0.2, "lineDeclined" },
+    declined_full = { LFG_LIST_APP_DECLINED or "Declined", 1, 0.2, 0.2, "lineDeclined" },
     declined_delisted = { LFG_LIST_APP_DECLINED or "Declined", 0.6, 0.6, 0.6, "lineDelisted" },
-    timedout       = { LFG_LIST_APP_TIMED_OUT or "Timed Out", 1, 0.2, 0.2, "lineDeclined" },
+    timedout = { LFG_LIST_APP_TIMED_OUT or "Timed Out", 1, 0.2, 0.2, "lineDeclined" },
 }
-local GONE = { failed = true, cancelled = true, declined = true, declined_full = true, declined_delisted = true,
-    invitedeclined = true, timedout = true, inviteaccepted = true }
+local GONE = {
+    failed = true,
+    cancelled = true,
+    declined = true,
+    declined_full = true,
+    declined_delisted = true,
+    invitedeclined = true,
+    timedout = true,
+    inviteaccepted = true,
+}
 
 -- same place the header puts each column
 local function PlaceCells(l)
     local x = 0
     -- only the columns in play show, streamer mode can drop some
-    for _, fs in pairs(l.cells) do fs:Hide() end
+    for _, fs in pairs(l.cells) do
+        fs:Hide()
+    end
     for c = #cols, 1, -1 do
         local col = cols[c]
         x = x - col.w
@@ -561,7 +742,9 @@ end
 
 local function FontSize(fs, size)
     local ok, path, _, flags = pcall(fs.GetFont, fs)
-    if ok and path then fs:SetFont(path, size, flags or "") end
+    if ok and path then
+        fs:SetFont(path, size, flags or "")
+    end
 end
 
 -- icon when we know the spec, else the class like the results list
@@ -588,7 +771,11 @@ local function PaintSpec(l, class, specID, grey)
         t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     elseif square then
         local cc = class and C_ClassColor and C_ClassColor.GetClassColor(class)
-        if cc then t:SetColorTexture(cc.r * 0.75, cc.g * 0.75, cc.b * 0.75, 1) else t:SetColorTexture(0.3, 0.3, 0.3, 1) end
+        if cc then
+            t:SetColorTexture(cc.r * 0.75, cc.g * 0.75, cc.b * 0.75, 1)
+        else
+            t:SetColorTexture(0.3, 0.3, 0.3, 1)
+        end
     elseif class then
         t:SetAtlas("groupfinder-icon-class-color-" .. class)
     else
@@ -640,14 +827,20 @@ local function PaintRole(rb, role, class)
         rb.masked = nil
     end
     local tex = ns.OwnListGet("missingIcons") == "cludes" and ns.RoleIconTex and ns.RoleIconTex(role)
-    if tex then rb.tex:SetTexture(tex) else rb.tex:SetAtlas(ROLE_ATLAS[role]) end
+    if tex then
+        rb.tex:SetTexture(tex)
+    else
+        rb.tex:SetAtlas(ROLE_ATLAS[role])
+    end
     local gsz = math.floor(iconPx * 0.7 + 0.5)
     rb.tex:SetSize(gsz, gsz)
     local bpx = tonumber(ns.OwnListGet("borderSize")) or 0
     local br, bg, bb = ns.OwnListBorderColor()
     rb.ring:Hide()
     rb.border:Hide()
-    if bpx <= 0 then return end
+    if bpx <= 0 then
+        return
+    end
     if round then
         rb.ring:ClearAllPoints()
         rb.ring:SetPoint("TOPLEFT", rb.bg, "TOPLEFT", -bpx, bpx)
@@ -668,7 +861,9 @@ end
 -- a mark before the name, after the one placed before it (l.markPrev)
 local function After(l, tex, shown, x)
     tex:SetShown(shown)
-    if not shown then return end
+    if not shown then
+        return
+    end
     local anchor = l.markPrev
     tex:ClearAllPoints()
     tex:SetPoint("LEFT", anchor, anchor == l and "LEFT" or "RIGHT", anchor == l and x or 1, 0)
@@ -676,12 +871,15 @@ local function After(l, tex, shown, x)
 end
 
 local function FillLine(l, id, k, grey, noTouch)
-    local name, class, localClass, _, ilvl, _, tank, healer, damage, assigned, relation, score, pvpIlvl, _, _, specID, leaver = src.member(id, k)
+    local name, class, localClass, _, ilvl, _, tank, healer, damage, assigned, relation, score, pvpIlvl, _, _, specID, leaver =
+        src.member(id, k)
     PlaceCells(l)
     PaintSpec(l, class, specID, grey)
     -- the applicant's name: a font family (ns.OwnListNameFont), never FontSize
     ns.OwnListNameFont(l.name, ns.OwnListSize("titleSize"))
-    for _, fs in pairs(l.cells) do FontSize(fs, ns.OwnListSize("scoreSize")) end
+    for _, fs in pairs(l.cells) do
+        FontSize(fs, ns.OwnListSize("scoreSize"))
+    end
     -- leaver, friend, name
     local x = k > 1 and 18 or 6
     l.markPrev = l
@@ -690,9 +888,13 @@ local function FillLine(l, id, k, grey, noTouch)
     local anchor = l.markPrev
     -- region under the name when the row has the height for it
     local tag, tr, tg, tb, flag
-    if not grey and ns.RegionTagOfName then tag, tr, tg, tb, flag = ns.RegionTagOfName(name) end
+    if not grey and ns.RegionTagOfName then
+        tag, tr, tg, tb, flag = ns.RegionTagOfName(name)
+    end
     local lineSize = ns.OwnListSize("lineSize")
-    if tag and rowH < ns.OwnListSize("titleSize") + lineSize + 6 then tag = nil end
+    if tag and rowH < ns.OwnListSize("titleSize") + lineSize + 6 then
+        tag = nil
+    end
     local nameY = tag and math.ceil((lineSize + 2) / 2) or 0
     l.name:SetPoint("LEFT", anchor, anchor == l and "LEFT" or "RIGHT", anchor == l and x or 2, nameY)
     l.name:SetPoint("RIGHT", l, "RIGHT", l.nameRight - 2, nameY)
@@ -718,7 +920,11 @@ local function FillLine(l, id, k, grey, noTouch)
         end
     end
     local cc = class and RAID_CLASS_COLORS[class]
-    if grey or not cc then l.name:SetTextColor(0.6, 0.6, 0.6) else l.name:SetTextColor(cc.r, cc.g, cc.b) end
+    if grey or not cc then
+        l.name:SetTextColor(0.6, 0.6, 0.6)
+    else
+        l.name:SetTextColor(cc.r, cc.g, cc.b)
+    end
 
     -- the roles they picked, the one they're down for lit up
     local picked = l.picked
@@ -727,9 +933,15 @@ local function FillLine(l, id, k, grey, noTouch)
         l.picked = picked
     end
     wipe(picked)
-    if tank then picked[#picked + 1] = "TANK" end
-    if healer then picked[#picked + 1] = "HEALER" end
-    if damage then picked[#picked + 1] = "DAMAGER" end
+    if tank then
+        picked[#picked + 1] = "TANK"
+    end
+    if healer then
+        picked[#picked + 1] = "HEALER"
+    end
+    if damage then
+        picked[#picked + 1] = "DAMAGER"
+    end
     for i = 1, 3 do
         local rb, role = l.roles[i], picked[i]
         rb:SetShown(role ~= nil and not grey)
@@ -742,13 +954,24 @@ local function FillLine(l, id, k, grey, noTouch)
             -- centered under the column title
             rb:SetSize(iconPx, iconPx)
             local step = iconPx + ROLE_GAP
-            rb:SetPoint("LEFT", l, "RIGHT", l.roleX + (ROLE_COL.w - #picked * step + ROLE_GAP) / 2 + (i - 1) * step, 0)
+            rb:SetPoint(
+                "LEFT",
+                l,
+                "RIGHT",
+                l.roleX + (ROLE_COL.w - #picked * step + ROLE_GAP) / 2 + (i - 1) * step,
+                0
+            )
         end
     end
 
     local info = entryActivity
-    for _, fs in pairs(l.cells) do fs:SetText(""); fs:SetTextColor(1, 1, 1) end
-    if grey then return end
+    for _, fs in pairs(l.cells) do
+        fs:SetText("")
+        fs:SetTextColor(1, 1, 1)
+    end
+    if grey then
+        return
+    end
     local c = l.cells
     if info and info.isPvpActivity and type(pvpIlvl) == "number" then
         c.ilvl:SetText(math.floor(pvpIlvl))
@@ -758,7 +981,9 @@ local function FillLine(l, id, k, grey, noTouch)
     if baseCols == COLS_KEYS then
         if type(score) == "number" then
             local r, g, b = 1, 1, 1
-            if ns.GFRatingColor then r, g, b = ns.GFRatingColor(score) end
+            if ns.GFRatingColor then
+                r, g, b = ns.GFRatingColor(score)
+            end
             c.rating:SetText(score)
             c.rating:SetTextColor(r, g, b)
         else
@@ -795,11 +1020,16 @@ local function FillBlock(b, id, numAllowed, current, numInvited)
         FillLine(l, id, k, grey, not empowered or status == "invited")
         l:Show()
     end
-    for k = n + 1, #b.lines do b.lines[k]:Hide() end
+    for k = n + 1, #b.lines do
+        b.lines[k]:Hide()
+    end
     -- the applicant's note, the block only grows when there is one
     local comment, noteH = info.comment, 0
-    local hasNote = not grey and not ns.OwnListGet("streamerNote")
-        and type(comment) == "string" and not Secret(comment) and comment ~= ""
+    local hasNote = not grey
+        and not ns.OwnListGet("streamerNote")
+        and type(comment) == "string"
+        and not Secret(comment)
+        and comment ~= ""
     b.note:SetShown(hasNote)
     b.noteHit:SetShown(hasNote)
     if hasNote then
@@ -809,11 +1039,17 @@ local function FillBlock(b, id, numAllowed, current, numInvited)
         b.note:SetWidth(math.max(40, (body:GetWidth() or 200) - btnRoom - 8))
         b.note:SetText(string.format(LFG_LIST_COMMENT_FORMAT or "%s", comment))
         local fc = LFG_LIST_COMMENT_FONT_COLOR
-        if fc then b.note:SetTextColor(fc.r, fc.g, fc.b) else b.note:SetTextColor(0.6, 0.6, 0.6) end
+        if fc then
+            b.note:SetTextColor(fc.r, fc.g, fc.b)
+        else
+            b.note:SetTextColor(0.6, 0.6, 0.6)
+        end
         noteH = math.ceil(b.note:GetStringHeight() or 12) + 6
     end
     local last = b.lines[n]
-    if last then last.hl:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT", btnRoom, -noteH) end
+    if last then
+        last.hl:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT", btnRoom, -noteH)
+    end
     SizeSquare(b.invite)
     SizeSquare(b.decline)
     -- buttons and status stay on the top row, whatever hangs below it
@@ -823,8 +1059,11 @@ local function FillBlock(b, id, numAllowed, current, numInvited)
     b.decline:SetShown(empowered and not pending and status ~= "invited")
     -- blizzard's fullness check
     local tip
-    if n + current > numAllowed then tip = LFG_LIST_GROUP_TOO_FULL
-    elseif n + current + numInvited > numAllowed then tip = LFG_LIST_INVITED_APP_FILLS_GROUP end
+    if n + current > numAllowed then
+        tip = LFG_LIST_GROUP_TOO_FULL
+    elseif n + current + numInvited > numAllowed then
+        tip = LFG_LIST_INVITED_APP_FILLS_GROUP
+    end
     b.invite:SetEnabled(not tip)
     b.invite.icon:SetDesaturated(tip ~= nil)
     b.invite.tip = tip or INVITE or "Invite"
@@ -856,10 +1095,14 @@ end
 --  the list
 -------------------------------------------------------------------------------
 local function Position()
-    if not active then return end
+    if not active then
+        return
+    end
     local height = body:GetHeight() or 0
     local total = 0
-    for i = 1, #list do total = total + blocks[i].h + GAP end
+    for i = 1, #list do
+        total = total + blocks[i].h + GAP
+    end
     total = math.max(0, total - GAP)
     local maxPx = math.max(0, total - height)
     scrollPx = math.max(0, math.min(scrollPx, maxPx))
@@ -892,9 +1135,13 @@ local function LayoutFrame()
     local barW = sp and sp.ScrollBar and sp.ScrollBar:GetWidth() or 8
     -- rows stop short of the bottom buttons
     local boxB, avB = AV.ScrollBox:GetBottom(), AV:GetBottom()
-    local bottomY = (boxB and avB) and math.max(0, (ns.BOTTOM_Y or 8) + (AV.EditButton:GetHeight() or 22) + 4 - (boxB - avB)) or 0
+    local bottomY = (boxB and avB)
+            and math.max(0, (ns.BOTTOM_Y or 8) + (AV.EditButton:GetHeight() or 22) + 4 - (boxB - avB))
+        or 0
     local key = pad .. ":" .. barW .. ":" .. btnRoom .. ":" .. bottomY
-    if key == layoutKey then return end
+    if key == layoutKey then
+        return
+    end
     layoutKey = key
     frame:ClearAllPoints()
     frame:SetPoint("TOPLEFT", AV.ScrollBox, "TOPLEFT", pad, 0)
@@ -909,11 +1156,15 @@ end
 
 -- the group's role counts at the top, drawn like a raid row in the results list
 local function PaintRaidRoles()
-    local want = entryActivity and Enum.LFGListDisplayType and entryActivity.displayType == Enum.LFGListDisplayType.RoleCount
+    local want = entryActivity
+        and Enum.LFGListDisplayType
+        and entryActivity.displayType == Enum.LFGListDisplayType.RoleCount
     local data = want and src.counts()
     want = want and Readable(data)
     raidRoles:SetShown(want and true or false)
-    if not want then return end
+    if not want then
+        return
+    end
     local isz = ns.OwnListIconSize(ns.OwnListRowHeight())
     local round = ns.OwnListGet("iconShape") ~= "square"
     local ell = ns.OwnListGet("missingIcons") == "cludes"
@@ -937,7 +1188,11 @@ local function PaintRaidRoles()
             p.bg:SetPoint("RIGHT", raidRoles, "RIGHT", x, 0)
             p.bg:Show()
             local tex = ell and ns.RoleIconTex and ns.RoleIconTex(role)
-            if tex then p.icon:SetTexture(tex) else p.icon:SetAtlas(ROLE_ATLAS[role]) end
+            if tex then
+                p.icon:SetTexture(tex)
+            else
+                p.icon:SetAtlas(ROLE_ATLAS[role])
+            end
             local gsz = math.floor(isz * 0.7 + 0.5)
             p.icon:SetSize(gsz, gsz)
             p.icon:Show()
@@ -980,7 +1235,9 @@ local function MostRoles(ids)
 end
 
 local function PaintHeader()
-    for _, fs in ipairs(head.titles) do fs:Hide() end
+    for _, fs in ipairs(head.titles) do
+        fs:Hide()
+    end
     local x, used = 0, 0
     for c = #cols, 1, -1 do
         local col = cols[c]
@@ -1005,7 +1262,9 @@ end
 local visibleCols = {}
 VisibleCols = function(base, out)
     local noSpec, noRating = ns.OwnListGet("streamerSpec"), ns.OwnListGet("streamerRating")
-    if not (noSpec or noRating) then return base end
+    if not (noSpec or noRating) then
+        return base
+    end
     out = out or visibleCols
     wipe(out)
     for _, col in ipairs(base) do
@@ -1017,7 +1276,9 @@ VisibleCols = function(base, out)
 end
 
 local function Paint()
-    if not active then return end
+    if not active then
+        return
+    end
     empowered = LFGListUtil_IsEntryEmpowered() and true or false
     cover:SetShown(not empowered)
     rowH = tonumber(ns.OwnListGet("applicantRowHeight")) or 36
@@ -1032,14 +1293,20 @@ local function Paint()
     LayoutFrame()
     local act, ai = ActiveActivity()
     entryActivity = act and ai or nil
-    if entryActivity and entryActivity.isMythicPlusActivity then baseCols = COLS_KEYS
-    elseif entryActivity and entryActivity.isRatedPvpActivity then baseCols = COLS_PVP
-    else baseCols = COLS_BASE end
+    if entryActivity and entryActivity.isMythicPlusActivity then
+        baseCols = COLS_KEYS
+    elseif entryActivity and entryActivity.isRatedPvpActivity then
+        baseCols = COLS_PVP
+    else
+        baseCols = COLS_BASE
+    end
     cols = VisibleCols(baseCols)
     PaintHeader()
     PaintRaidRoles()
     local numAllowed = entryActivity and entryActivity.maxNumPlayers or 0
-    if numAllowed == 0 then numAllowed = MAX_RAID_MEMBERS or 40 end
+    if numAllowed == 0 then
+        numAllowed = MAX_RAID_MEMBERS or 40
+    end
     local current = GetNumGroupMembers(HOME)
     local numInvited = C_LFGList.GetNumInvitedApplicantMembers()
     for i, id in ipairs(list) do
@@ -1055,15 +1322,25 @@ local function Paint()
 end
 
 local function HoldHidden(f, a)
-    if guard or not active or a == 0 then return end
+    if guard or not active or a == 0 then
+        return
+    end
     guard = true
     f:SetAlpha(0)
     guard = false
 end
 
 local function Faded()
-    return { AV.ScrollBox, AV.ScrollBar, AV.NameColumnHeader, AV.RoleColumnHeader, AV.ItemLevelColumnHeader, AV.RatingColumnHeader, AV.UnempoweredCover,
-        AV.DataDisplay and AV.DataDisplay.RoleCount }
+    return {
+        AV.ScrollBox,
+        AV.ScrollBar,
+        AV.NameColumnHeader,
+        AV.RoleColumnHeader,
+        AV.ItemLevelColumnHeader,
+        AV.RatingColumnHeader,
+        AV.UnempoweredCover,
+        AV.DataDisplay and AV.DataDisplay.RoleCount,
+    }
 end
 
 -- the raid role counts: a circle and a number per role
@@ -1074,7 +1351,11 @@ local function MakeRaidRoles(parent)
     for k = 1, 3 do
         local bg = rr:CreateTexture(nil, "ARTWORK", nil, 1)
         local mask = rr:CreateMaskTexture()
-        mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetTexture(
+            "Interface\\CharacterFrame\\TempPortraitAlphaMask",
+            "CLAMPTOBLACKADDITIVE",
+            "CLAMPTOBLACKADDITIVE"
+        )
         mask:SetAllPoints(bg)
         local icon = rr:CreateTexture(nil, "ARTWORK", nil, 3)
         icon:SetPoint("CENTER", bg)
@@ -1139,8 +1420,16 @@ local function Build()
     nameTitle:SetText(NAME or "Name")
     -- sits where blizzard's counts were, their tooltip still works underneath
     raidRoles = MakeRaidRoles(head)
-    raidRoles:SetPoint("RIGHT", AV.DataDisplay and AV.DataDisplay.RoleCount or AV.DataDisplay or AV, "RIGHT", 0, 0)
-    for _, f in ipairs(Faded()) do hooksecurefunc(f, "SetAlpha", HoldHidden) end
+    raidRoles:SetPoint(
+        "RIGHT",
+        AV.DataDisplay and AV.DataDisplay.RoleCount or AV.DataDisplay or AV,
+        "RIGHT",
+        0,
+        0
+    )
+    for _, f in ipairs(Faded()) do
+        hooksecurefunc(f, "SetAlpha", HoldHidden)
+    end
 end
 
 -- ours only with readable applicants
@@ -1149,13 +1438,21 @@ local function Wanted()
 end
 
 local function SetActive(now)
-    if now == active then return end
-    if now and not frame then Build() end
+    if now == active then
+        return
+    end
+    if now and not frame then
+        Build()
+    end
     active = now
-    if not frame then return end
+    if not frame then
+        return
+    end
     local a = active and 0 or 1
     guard = true
-    for _, f in ipairs(Faded()) do f:SetAlpha(a) end
+    for _, f in ipairs(Faded()) do
+        f:SetAlpha(a)
+    end
     guard = false
     frame:SetShown(active)
     head:SetShown(active)
@@ -1170,7 +1467,9 @@ local censor = {}
 local function CensorBar(key, fs, on, maxW, h)
     local bar = censor[key]
     if not bar then
-        if not on then return end
+        if not on then
+            return
+        end
         bar = CreateFrame("Frame", nil, AV)
         bar:SetFrameLevel(AV:GetFrameLevel() + 30)
         bar:EnableMouse(true)
@@ -1180,7 +1479,9 @@ local function CensorBar(key, fs, on, maxW, h)
         censor[key] = bar
     end
     bar:SetShown(on and true or false)
-    if not on then return end
+    if not on then
+        return
+    end
     local w = math.max(40, math.min(fs:GetStringWidth() or maxW, maxW))
     bar:ClearAllPoints()
     bar:SetPoint("LEFT", fs, "LEFT", -2, 0)
@@ -1200,28 +1501,43 @@ end
 
 -- events only while the list is on and the viewer's up
 local watch, watching
-local EVENTS = { "LFG_LIST_APPLICANT_LIST_UPDATED", "LFG_LIST_APPLICANT_UPDATED", "LFG_LIST_ACTIVE_ENTRY_UPDATE",
-    "GROUP_ROSTER_UPDATE", "PARTY_LEADER_CHANGED", "PLAYER_ROLES_ASSIGNED", "PLAYER_REGEN_DISABLED",
-    "ADDON_RESTRICTION_STATE_CHANGED" }
+local EVENTS = {
+    "LFG_LIST_APPLICANT_LIST_UPDATED",
+    "LFG_LIST_APPLICANT_UPDATED",
+    "LFG_LIST_ACTIVE_ENTRY_UPDATE",
+    "GROUP_ROSTER_UPDATE",
+    "PARTY_LEADER_CHANGED",
+    "PLAYER_ROLES_ASSIGNED",
+    "PLAYER_REGEN_DISABLED",
+    "ADDON_RESTRICTION_STATE_CHANGED",
+}
 
 local function SyncEvents()
     local want = (ns.ApplicantListOn() and watch:IsVisible()) and true or false
-    if want == watching then return end
+    if want == watching then
+        return
+    end
     watching = want
     if want then
-        for _, e in ipairs(EVENTS) do watch:RegisterEvent(e) end
+        for _, e in ipairs(EVENTS) do
+            watch:RegisterEvent(e)
+        end
     else
         watch:UnregisterAllEvents()
     end
 end
 
 function ns.ApplicantListRefresh()
-    if not AV then return end
+    if not AV then
+        return
+    end
     SyncEvents()
     PaintCensor()
     SetActive(Wanted() and true or false)
     Paint()
-    if ns.LayoutViewer then ns.LayoutViewer() end
+    if ns.LayoutViewer then
+        ns.LayoutViewer()
+    end
 end
 
 -- display settings repaint us too
@@ -1257,7 +1573,9 @@ if ns.WhenGroupFinder then
         watch = CreateFrame("Frame", nil, AV)
         watch:SetScript("OnShow", function()
             SyncEvents()
-            if watching then Queue() end
+            if watching then
+                Queue()
+            end
         end)
         watch:SetScript("OnHide", function()
             SyncEvents()
@@ -1265,10 +1583,14 @@ if ns.WhenGroupFinder then
         end)
         watch:SetScript("OnEvent", function(_, event)
             -- combat can lift with no event of ours, look again once it's over
-            if event == "PLAYER_REGEN_DISABLED" then ns.CombatQueue.Defer("applicantList", Queue) end
+            if event == "PLAYER_REGEN_DISABLED" then
+                ns.CombatQueue.Defer("applicantList", Queue)
+            end
             Queue()
         end)
-        if watch:IsVisible() then watch:GetScript("OnShow")(watch) end
+        if watch:IsVisible() then
+            watch:GetScript("OnShow")(watch)
+        end
     end)
 end
 
@@ -1285,16 +1607,32 @@ local PV_ACT = {
 -- item level over yours, rating, best key, timed, and a fixed name (the easter eggs)
 local PV_APPS = {
     dungeon = {
-        { note = CludesUI.L("Timed it last week, happy to lead"), members = { { "MONK", 268, "T", "TANK", 6, 3120, 12, true } } },
-        { members = { { "WARRIOR", 72, "D", "DAMAGER", 3, 2890, 11, true, ns.PreviewBlockjob },
-            { "PALADIN", 65, "H", "HEALER", 4, 2950, 11, true, ns.PreviewElle } } },
+        {
+            note = CludesUI.L("Timed it last week, happy to lead"),
+            members = { { "MONK", 268, "T", "TANK", 6, 3120, 12, true } },
+        },
+        {
+            members = {
+                { "WARRIOR", 72, "D", "DAMAGER", 3, 2890, 11, true, ns.PreviewBlockjob },
+                { "PALADIN", 65, "H", "HEALER", 4, 2950, 11, true, ns.PreviewElle },
+            },
+        },
         { members = { { "MAGE", 63, "D", "DAMAGER", -2, 2610, 10, false } } },
-        { status = "invited", members = { { "PRIEST", 257, "HD", "HEALER", 1, 2780, 11, true, ns.PreviewLuella } } },
-        { note = CludesUI.L("Can tank or dps"), members = { { "DEMONHUNTER", 581, "TD", "TANK", 2, 3010, 12, false } } },
+        {
+            status = "invited",
+            members = { { "PRIEST", 257, "HD", "HEALER", 1, 2780, 11, true, ns.PreviewLuella } },
+        },
+        {
+            note = CludesUI.L("Can tank or dps"),
+            members = { { "DEMONHUNTER", 581, "TD", "TANK", 2, 3010, 12, false } },
+        },
     },
     raid = {
         { members = { { "DRUID", 104, "T", "TANK", 3 } } },
-        { note = CludesUI.L("Have the tier set, need the trinket"), members = { { "SHAMAN", 264, "HD", "HEALER", 1 } } },
+        {
+            note = CludesUI.L("Have the tier set, need the trinket"),
+            members = { { "SHAMAN", 264, "HD", "HEALER", 1 } },
+        },
         { members = { { "HUNTER", 254, "D", "DAMAGER", 4 }, { "ROGUE", 260, "D", "DAMAGER", 2 } } },
         { members = { { "PALADIN", 65, "H", "HEALER", 2, nil, nil, nil, ns.PreviewElle } } },
         { status = "invited", members = { { "EVOKER", 1467, "HD", "DAMAGER", 0 } } },
@@ -1330,36 +1668,76 @@ local function PvNames(kind)
         local id = kind .. i
         local m = {}
         for k, d in ipairs(a.members) do
-            m[k] = { name = d[9] or Take(d[1]), class = d[1], spec = d[2], roles = d[3], assigned = d[4],
-                ilvl = math.max(1, base + d[5]), score = d[6], best = d[7] and { bestRunLevel = d[7], finishedSuccess = d[8] } }
+            m[k] = {
+                name = d[9] or Take(d[1]),
+                class = d[1],
+                spec = d[2],
+                roles = d[3],
+                assigned = d[4],
+                ilvl = math.max(1, base + d[5]),
+                score = d[6],
+                best = d[7] and { bestRunLevel = d[7], finishedSuccess = d[8] },
+            }
         end
         ids[#ids + 1] = id
-        data[id] = { info = { applicationStatus = a.status or "applied", numMembers = #m, isNew = false, displayOrderID = i,
-            comment = a.note or "" }, members = m }
+        data[id] = {
+            info = {
+                applicationStatus = a.status or "applied",
+                numMembers = #m,
+                isNew = false,
+                displayOrderID = i,
+                comment = a.note or "",
+            },
+            members = m,
+        }
     end
 end
 
 local PREVIEW = {
-    info = function(id) return apv.data[id] and apv.data[id].info end,
+    info = function(id)
+        return apv.data[id] and apv.data[id].info
+    end,
     member = function(id, k)
         local m = apv.data[id] and apv.data[id].members[k]
-        if not m then return nil end
+        if not m then
+            return nil
+        end
         local localClass = LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[m.class] or m.class
-        return m.name, m.class, localClass, 80, m.ilvl, 0, m.roles:find("T") ~= nil, m.roles:find("H") ~= nil,
-            m.roles:find("D") ~= nil, m.assigned, nil, m.score, m.ilvl, nil, nil, m.spec, false
+        return m.name,
+            m.class,
+            localClass,
+            80,
+            m.ilvl,
+            0,
+            m.roles:find("T") ~= nil,
+            m.roles:find("H") ~= nil,
+            m.roles:find("D") ~= nil,
+            m.assigned,
+            nil,
+            m.score,
+            m.ilvl,
+            nil,
+            nil,
+            m.spec,
+            false
     end,
     best = function(id, k)
         local m = apv.data[id] and apv.data[id].members[k]
         return m and m.best
     end,
-    counts = function() return PV_COUNTS end,
+    counts = function()
+        return PV_COUNTS
+    end,
 }
 
 -- what the settings allow: name or class, spec, item level, rating, the note
 PvTip = function(line)
     local id = line:GetParent().applicantID
-    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, _, _, _, specID = PREVIEW.member(id, line.memberIdx)
-    if not name then return end
+    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, _, _, _, specID =
+        PREVIEW.member(id, line.memberIdx)
+    if not name then
+        return
+    end
     local cc = CUI.GetClassColor(class)
     GameTooltip:SetOwner(line, "ANCHOR_NONE")
     GameTooltip:SetPoint("BOTTOMLEFT", line, "TOPLEFT", 105, 0)
@@ -1374,7 +1752,13 @@ PvTip = function(line)
     if comment ~= "" and line.memberIdx == 1 and not ns.OwnListGet("streamerNote") then
         GameTooltip:AddLine(" ")
         local fc = LFG_LIST_COMMENT_FONT_COLOR
-        GameTooltip:AddLine(string.format(LFG_LIST_COMMENT_FORMAT or "%s", comment), fc and fc.r or 0.6, fc and fc.g or 0.6, fc and fc.b or 0.6, true)
+        GameTooltip:AddLine(
+            string.format(LFG_LIST_COMMENT_FORMAT or "%s", comment),
+            fc and fc.r or 0.6,
+            fc and fc.g or 0.6,
+            fc and fc.b or 0.6,
+            true
+        )
     end
     GameTooltip:Show()
 end
@@ -1382,7 +1766,9 @@ end
 local function PvPosition()
     local h = apv.body:GetHeight() or 0
     local total = -GAP
-    for i = 1, #apv.ids do total = total + apv.blocks[i].h + GAP end
+    for i = 1, #apv.ids do
+        total = total + apv.blocks[i].h + GAP
+    end
     apv.maxScroll = math.max(0, total - h)
     apv.scroll = math.max(0, math.min(apv.scroll, apv.maxScroll))
     local y = -apv.scroll
@@ -1466,7 +1852,9 @@ local function PvPaint(kind, w, h)
     cols = VisibleCols(baseCols, pvCols)
     -- a raid's header is tall enough for the counts' numbers over their circles
     local headH = 24
-    if kind == "raid" then headH = math.max(24, ns.OwnListIconSize(ns.OwnListRowHeight()) + 2 * ns.OwnListSize("scoreSize") + 6) end
+    if kind == "raid" then
+        headH = math.max(24, ns.OwnListIconSize(ns.OwnListRowHeight()) + 2 * ns.OwnListSize("scoreSize") + 6)
+    end
     apv.head:ClearAllPoints()
     apv.head:SetPoint("TOPLEFT", apv.frame, "TOPLEFT", 0, 0)
     apv.head:SetSize(w - btnRoom, headH)
@@ -1476,7 +1864,9 @@ local function PvPaint(kind, w, h)
     PaintHeader()
     -- the counts sit left of the column titles
     local colsW = 0
-    for _, col in ipairs(cols) do colsW = colsW + col.w end
+    for _, col in ipairs(cols) do
+        colsW = colsW + col.w
+    end
     apv.raidRoles:ClearAllPoints()
     apv.raidRoles:SetPoint("RIGHT", apv.head, "RIGHT", -colsW - 8, 0)
     PaintRaidRoles()
@@ -1496,15 +1886,23 @@ end
 -- w by h; kind nil hides them
 function ns.ApplicantPreviewPaint(host, kind, w, h)
     if not kind then
-        if apv.frame then apv.frame:Hide() end
+        if apv.frame then
+            apv.frame:Hide()
+        end
         return
     end
-    if not apv.frame then PvBuild(host) end
-    if apv.kind ~= kind then apv.kind, apv.scroll = kind, 0 end
+    if not apv.frame then
+        PvBuild(host)
+    end
+    if apv.kind ~= kind then
+        apv.kind, apv.scroll = kind, 0
+    end
     apv.frame:Show()
     Keep()
     local ok, err = pcall(PvPaint, kind, w, h)
     PutBack()
-    if not ok then geterrorhandler()(err) end
+    if not ok then
+        geterrorhandler()(err)
+    end
     PvPosition()
 end

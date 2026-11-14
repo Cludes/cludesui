@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_SpecOverrides.lua
 --
@@ -43,16 +45,23 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- Editing-spec GROUP buckets of the Buff Manager, Debuff Manager and Player
 -- Aura Bars pages, in menu order. Names run through L() at build time.
 CludesUI.SPEC_GROUP_BUCKETS = {
-    { key = "allspecs",  name = "All Specs",
-        icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend" },
-    { key = "nonhealer", name = "All Non Healers/Aug",
-        icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend" },
-    { key = "tanks",     name = "All Tanks",
-        icon = "Interface\\Icons\\Ability_Warrior_DefensiveStance" },
-    { key = "dps",       name = "All DPS (Non-Aug)",
-        icon = "Interface\\Icons\\Ability_DualWield" },
-    { key = "healers",   name = "All Healers/Aug",
-        icon = "Interface\\Icons\\Spell_Holy_Renew" },
+    {
+        key = "allspecs",
+        name = "All Specs",
+        icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend",
+    },
+    {
+        key = "nonhealer",
+        name = "All Non Healers/Aug",
+        icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend",
+    },
+    {
+        key = "tanks",
+        name = "All Tanks",
+        icon = "Interface\\Icons\\Ability_Warrior_DefensiveStance",
+    },
+    { key = "dps", name = "All DPS (Non-Aug)", icon = "Interface\\Icons\\Ability_DualWield" },
+    { key = "healers", name = "All Healers/Aug", icon = "Interface\\Icons\\Spell_Holy_Renew" },
 }
 CludesUI.SPEC_GROUP_BUCKET_INFO = {}
 for _, g in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
@@ -78,7 +87,9 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
             local token = list[i]
             local key = foreverKeyFor and foreverKeyFor(token)
             if key and values[key] == nil then
-                if #order == 1 then order[2] = "---a" end
+                if #order == 1 then
+                    order[2] = "---a"
+                end
                 values[key] = CludesUI.ForeverClassName(token)
                 order[#order + 1] = key
                 icons[key] = CludesUI.ForeverClassIcon(token)
@@ -96,8 +107,7 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
     local skip = lead and lead(values, order, icons) or {}
     for classID = 1, (GetNumClasses and GetNumClasses() or 0) do
         local className, classFile = GetClassInfo(classID)
-        local numSpecs = GetNumSpecializationsForClassID
-            and GetNumSpecializationsForClassID(classID) or 0
+        local numSpecs = GetNumSpecializationsForClassID and GetNumSpecializationsForClassID(classID) or 0
         for si = 1, numSpecs do
             local specID, specName, _, sIcon = GetSpecializationInfoForClassID(classID, si)
             if specID and not skip[specID] then
@@ -121,7 +131,9 @@ function CludesUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
         local key = order[i]
         if not key:match("^%-%-%-") then
             items[#items + 1] = {
-                key = key, label = values[key], icon = icons[key],
+                key = key,
+                label = values[key],
+                icon = icons[key],
                 disabled = key == selKey,
             }
         end
@@ -129,8 +141,8 @@ function CludesUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
     return items
 end
 
-local PS  = "\30"   -- path segment separator
-local FS  = "\31"   -- folder/path separator inside an fkey
+local PS = "\30" -- path segment separator
+local FS = "\31" -- folder/path separator inside an fkey
 local NIL_SENT = "__SPECOV_NIL__"
 
 -- Exact border sizes ride a companion key beside a surface's border size key
@@ -147,18 +159,30 @@ local NIL_SENT = "__SPECOV_NIL__"
 -- harmless, their companion is never read.
 local PxCo = {
     keys = {
-        borderSize = true, borderThickness = true, bgBorderThickness = true,
-        auraBorderSize = true, powerBorderSize = true, customBorderSize = true,
-        panelBorderThickness = true, tabBorderThickness = true,
-        windowBorderSize = true, iconBorderSize = true,
-        hoverBorderSize = true, targetBorderSize = true, borderWidth = true,
-        party_borderSize = true, party_hoverBorderSize = true,
-        party_targetBorderSize = true, castBorderSize = true,
+        borderSize = true,
+        borderThickness = true,
+        bgBorderThickness = true,
+        auraBorderSize = true,
+        powerBorderSize = true,
+        customBorderSize = true,
+        panelBorderThickness = true,
+        tabBorderThickness = true,
+        windowBorderSize = true,
+        iconBorderSize = true,
+        hoverBorderSize = true,
+        targetBorderSize = true,
+        borderWidth = true,
+        party_borderSize = true,
+        party_hoverBorderSize = true,
+        party_targetBorderSize = true,
+        castBorderSize = true,
     },
     memo = {},
 }
 function PxCo.Partner(fkey)
-    if type(fkey) ~= "string" then return nil end
+    if type(fkey) ~= "string" then
+        return nil
+    end
     local p = PxCo.memo[fkey]
     if p == nil then
         local leaf = fkey:match("([^\30\31]+)$")
@@ -170,9 +194,9 @@ end
 
 -- Theme color #c7a65a (antique gold): slot borders and all accent work in the
 -- cards popup / creation popup.
-local ACCENT_R, ACCENT_G, ACCENT_B = 199/255, 166/255, 90/255
+local ACCENT_R, ACCENT_G, ACCENT_B = 199 / 255, 166 / 255, 90 / 255
 local EDIT_R, EDIT_G, EDIT_B = 1, 0.72, 0.2
-local GOLD_R, GOLD_G, GOLD_B = 199/255, 166/255, 90/255
+local GOLD_R, GOLD_G, GOLD_B = 199 / 255, 166 / 255, 90 / 255
 
 local PROFILES_MODULE = "_CUIProfiles"
 -- The management tab under Profiles & Presets. Both override list pages live behind
@@ -186,27 +210,27 @@ local LIST_PAGE = "Overrides"
 -- (AutoCapture validate + SweepUncaptured), apply (WriteSpec/ WriteDefaultValues) and
 -- prune (PruneOrphanEntries strips persisted paths and drops emptied entries).
 local FOLDER_BLACKLIST = {
-    CludesUIBlizzardSkin      = true,
+    CludesUIBlizzardSkin = true,
     -- Skyriding HUD's sub-DB (CludesUIDragonRidingDB) registers from inside
     -- BlizzardSkin, dodging that blacklist entry; unmapped folders force a full
     -- RefreshAllAddons per write (minutes of refresh after combat spec changes).
     -- Blacklisted here too; a migration strips existing captured entries.
-    CludesUIDragonRiding      = true,
-    CludesUIDamageMeters      = true,
-    CludesUIMythicTimer       = true,
-    CludesUIQuestTracker      = true,
-    CludesUIFriends           = true,
-    CludesUIBags              = true,
-    CludesUIQoL               = true,
+    CludesUIDragonRiding = true,
+    CludesUIDamageMeters = true,
+    CludesUIMythicTimer = true,
+    CludesUIQuestTracker = true,
+    CludesUIFriends = true,
+    CludesUIBags = true,
+    CludesUIQoL = true,
     CludesUIAuraBuffReminders = true,
     CludesUIForeverEssentials = true,
     -- Each action menu picks its own specs (Assign to Spec) instead.
-    CludesUIQuickdraw         = true,
+    CludesUIQuickdraw = true,
     -- A per-character store outside the profiles; each assignment picks its
     -- own spec (Assign For) instead.
-    CludesUILoadoutManager    = true,
+    CludesUILoadoutManager = true,
     -- Its settings are look and search filters, not spec choices.
-    CludesUIGroupFinder       = true,
+    CludesUIGroupFinder = true,
     -- Its settings live in a store of its own outside the profiles.
     CludesUISimpleLootCouncil = true,
     -- Minimap + Chat + CooldownManager ARE override-eligible; their
@@ -220,28 +244,33 @@ local FOLDER_BLACKLIST = {
 -- unmapped folder falls back to a full RefreshAllAddons, which once recursed from
 -- inside a conditional transition and froze the game ("script ran too long").
 local REFRESH_FNS = {
-    CludesUICooldownManager   = { "_ECME_Apply" },
-    CludesUIMinimap           = { "_EMM_FullRebuildMinimap" },
-    CludesUIResourceBars      = { "_ERB_Apply" },
-    CludesUIActionBars        = { "_EAB_Apply" },
-    CludesUIUnitFrames        = { "_EUF_ReloadFrames", "_EUF_RefreshUnitNames" },
-    CludesUIRaidFrames        = { "_ERF_RefreshAll" },
-    CludesUINameplates        = { "_ENP_RefreshAllSettings" },
-    CludesUIQuestTracker      = { "_EQT_RefreshAll" },
-    CludesUIChat              = { "_ECHAT_RefreshAll" },
-    CludesUIFriends           = { "_EFR_ApplyFriends", "_EFR_ProcessFriendButtons", "_EFR_RedecorateTiles" },
-    CludesUIMythicTimer       = { "_EMT_Apply" },
-    CludesUIDamageMeters      = { "_EDM_Apply" },
-    CludesUIDataBars          = { "_EDB_Apply" },
-    CludesUIQuickdraw         = { "_EQD_Apply" },
-    CludesUIAuraBuffReminders = { "_EABR_UpdateGroupAuraRegistration", "_EABR_ApplyAllIconBorders", "_EABR_RequestRefresh", "_EABR_ApplyUnlockPos" },
+    CludesUICooldownManager = { "_CUCME_Apply" },
+    CludesUIMinimap = { "_CUMM_FullRebuildMinimap" },
+    CludesUIResourceBars = { "_CURB_Apply" },
+    CludesUIActionBars = { "_CUAB_Apply" },
+    CludesUIUnitFrames = { "_CUUF_ReloadFrames", "_CUUF_RefreshUnitNames" },
+    CludesUIRaidFrames = { "_CURF_RefreshAll" },
+    CludesUINameplates = { "_CUNP_RefreshAllSettings" },
+    CludesUIQuestTracker = { "_CUQT_RefreshAll" },
+    CludesUIChat = { "_CUCHAT_RefreshAll" },
+    CludesUIFriends = { "_CUFR_ApplyFriends", "_CUFR_ProcessFriendButtons", "_CUFR_RedecorateTiles" },
+    CludesUIMythicTimer = { "_CUMT_Apply" },
+    CludesUIDamageMeters = { "_CUDM_Apply" },
+    CludesUIDataBars = { "_CUDB_Apply" },
+    CludesUIQuickdraw = { "_CUQD_Apply" },
+    CludesUIAuraBuffReminders = {
+        "_CUABR_UpdateGroupAuraRegistration",
+        "_CUABR_ApplyAllIconBorders",
+        "_CUABR_RequestRefresh",
+        "_CUABR_ApplyUnlockPos",
+    },
     -- Capture/apply-blacklisted (see FOLDER_BLACKLIST); insurance so a leaked
     -- key can never hit the unmapped-folder fallback's full RefreshAllAddons.
-    CludesUIDragonRiding      = { "_EDR_Rebuild" },
+    CludesUIDragonRiding = { "_CUDR_Rebuild" },
 }
 
 -- Class glyph sprite (toolbar button) + modern class sprite (group icons)
-local GLYPH_SPRITE  = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\glyph.tga"
+local GLYPH_SPRITE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\glyph.tga"
 local MODERN_SPRITE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\modern.tga"
 -- Generic multi-spec group icon (standalone image, not a sprite)
 local MULTISPEC_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\multispec.png"
@@ -250,17 +279,19 @@ local CLASS_ORDER = CludesUI.CLASS_TOKEN_ORDER
 -- Modern role icons (shipped with RaidFrames; loaded by path, no addon dep)
 local ROLE_MEDIA = "Interface\\AddOns\\CludesUIRaidFrames\\Media\\"
 local ROLE_ICONS = {
-    TANK    = ROLE_MEDIA .. "tank-modern.png",
-    HEALER  = ROLE_MEDIA .. "healer-modern.png",
+    TANK = ROLE_MEDIA .. "tank-modern.png",
+    HEALER = ROLE_MEDIA .. "healer-modern.png",
     DAMAGER = ROLE_MEDIA .. "dps-modern.png",
 }
 local ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
 
-local L = function(s) return CludesUI.L(s) or s end
+local L = function(s)
+    return CludesUI.L(s) or s
+end
 
 -- Forward declarations
 local RequestGoldWalk -- assigned by CUI_SpecOverrides_Borders.lua
-local _editGroup = nil       -- group table ref while "editing as" is active
+local _editGroup = nil -- group table ref while "editing as" is active
 
 -------------------------------------------------------------------------------
 --  Small utilities
@@ -293,7 +324,9 @@ local function SpecName(specID)
         end
     end
     -- The by-id lookup is not registered on WoW Forever.
-    if not GetSpecializationInfoByID then return "Spec " .. tostring(specID) end
+    if not GetSpecializationInfoByID then
+        return "Spec " .. tostring(specID)
+    end
     local _, name, _, _, _, _, className = GetSpecializationInfoByID(specID)
     if name and className then
         -- Title-case is byte-based; only safe on ASCII class names. Localized
@@ -316,21 +349,31 @@ end
 
 local function GetStore(create)
     local prof = GetProfileRoot()
-    if not prof then return nil end
-    if not prof.specOverrides and create then prof.specOverrides = {} end
+    if not prof then
+        return nil
+    end
+    if not prof.specOverrides and create then
+        prof.specOverrides = {}
+    end
     return prof.specOverrides
 end
 
 local function GetGroups(create)
     local prof = GetProfileRoot()
-    if not prof then return nil end
-    if not prof.specOverrideGroups and create then prof.specOverrideGroups = {} end
+    if not prof then
+        return nil
+    end
+    if not prof.specOverrideGroups and create then
+        prof.specOverrideGroups = {}
+    end
     return prof.specOverrideGroups
 end
 
 local function NextGroupId()
     local prof = GetProfileRoot()
-    if not prof then return 1 end
+    if not prof then
+        return 1
+    end
     local id = (prof.specOverrideNextId or 0) + 1
     prof.specOverrideNextId = id
     return id
@@ -338,17 +381,23 @@ end
 
 local function GroupById(id)
     for _, g in ipairs(GetGroups() or {}) do
-        if g.id == id then return g end
+        if g.id == id then
+            return g
+        end
     end
     return nil
 end
 
 -- True when the spec belongs to at least one spec override group.
 local function SpecInAnyGroup(specID)
-    if not specID then return false end
+    if not specID then
+        return false
+    end
     for _, g in ipairs(GetGroups() or {}) do
         for _, sid in ipairs(g.specs or {}) do
-            if sid == specID then return true end
+            if sid == specID then
+                return true
+            end
         end
     end
     return false
@@ -365,28 +414,37 @@ CludesUI.SpecOverrides_CurrentSpecID = CurrentSpecID
 function CludesUI._SO_ForeverGroupNames(specs, curSpec)
     specs = specs or {}
     local set, out, done = {}, {}, {}
-    for _, id in ipairs(specs) do set[id] = true end
+    for _, id in ipairs(specs) do
+        set[id] = true
+    end
     local player = select(2, UnitClass("player"))
     local inactive = false
     for _, id in ipairs(specs) do
         local token = CludesUI.SpecClassOf(id)
         local ids = CludesUI.ForeverClassSpecIDs(token)
         if not ids then
-            out[#out + 1] = SpecName(id)   -- a class WoW Forever lacks
+            out[#out + 1] = SpecName(id) -- a class WoW Forever lacks
         elseif not done[token] then
             done[token] = true
             local whole = true
             for i = 1, #ids do
-                if not set[ids[i]] then whole = false; break end
+                if not set[ids[i]] then
+                    whole = false
+                    break
+                end
             end
             if whole then
                 out[#out + 1] = CludesUI.ForeverClassName(token)
             else
                 for i = 1, #ids do
-                    if set[ids[i]] then out[#out + 1] = SpecName(ids[i]) end
+                    if set[ids[i]] then
+                        out[#out + 1] = SpecName(ids[i])
+                    end
                 end
             end
-            if token == player and curSpec and not set[curSpec] then inactive = true end
+            if token == player and curSpec and not set[curSpec] then
+                inactive = true
+            end
         end
     end
     if inactive then
@@ -415,12 +473,18 @@ end
 -- shared spec(s) (that group's values own the setting). Returns the first overlapping specID, or nil.
 local function ConflictSpec(entry, group)
     group = group or _editGroup
-    if not group or not entry.group or entry.group == group.id then return nil end
+    if not group or not entry.group or entry.group == group.id then
+        return nil
+    end
     local og = GroupById(entry.group)
-    if not og then return nil end
+    if not og then
+        return nil
+    end
     for _, sid in ipairs(group.specs or {}) do
         for _, osid in ipairs(og.specs or {}) do
-            if sid == osid then return sid end
+            if sid == osid then
+                return sid
+            end
         end
     end
     return nil
@@ -432,21 +496,32 @@ end
 -- default. Ungrouped specs aren't stranded (self-heal covers them); legacy entries
 -- (group == nil) keep per-spec values by design.
 local function SpecStrandedOnEntry(entry, specID)
-    if entry.group == nil then return false end
+    if entry.group == nil then
+        return false
+    end
     local owner = GroupById(entry.group)
-    if not owner then return false end
+    if not owner then
+        return false
+    end
     for _, sid in ipairs(owner.specs or {}) do
-        if sid == specID then return false end
+        if sid == specID then
+            return false
+        end
     end
     local inAnyGroup = false
     for _, g in ipairs(GetGroups() or {}) do
         local hasSpec = false
         for _, sid in ipairs(g.specs or {}) do
-            if sid == specID then hasSpec = true; break end
+            if sid == specID then
+                hasSpec = true
+                break
+            end
         end
         if hasSpec then
             inAnyGroup = true
-            if not ConflictSpec(entry, g) then return false end
+            if not ConflictSpec(entry, g) then
+                return false
+            end
         end
     end
     return inAnyGroup
@@ -463,7 +538,9 @@ local function RebuildFKeyIndex()
     end
 end
 local function EntryOwning(fkey)
-    if not _fkeyIndex then RebuildFKeyIndex() end
+    if not _fkeyIndex then
+        RebuildFKeyIndex()
+    end
     return _fkeyIndex[fkey]
 end
 
@@ -472,9 +549,13 @@ end
 -------------------------------------------------------------------------------
 local function DBFor(folder)
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-    if not reg then return nil end
+    if not reg then
+        return nil
+    end
     for _, db in ipairs(reg) do
-        if db.folder == folder then return db.profile end
+        if db.folder == folder then
+            return db.profile
+        end
     end
     return nil
 end
@@ -500,28 +581,33 @@ end
 -- and stores owned by the unlock LAYER system (positions, grow).
 local SETTING_BLACKLIST = {
     CludesUIChat = {
-        showFriends = true, showDurability = true, showCopy = true,
-        showPortals = true, showVoice = true, showSettings = true,
-        showScroll = true, sidebarIconOrder = true,
+        showFriends = true,
+        showDurability = true,
+        showCopy = true,
+        showPortals = true,
+        showVoice = true,
+        showSettings = true,
+        showScroll = true,
+        sidebarIconOrder = true,
         foreverBorder = true, -- reload-gated WoW Forever Border Style (latched with the look)
     },
     CludesUIMinimap = {
         foreverBorder = true, -- reload-gated WoW Forever Border Style (latched with the look)
-        blizzBorder   = true, -- reload-gated Blizzard Style Border Style on WoW Forever (likewise)
+        blizzBorder = true, -- reload-gated Blizzard Style Border Style on WoW Forever (likewise)
     },
     CludesUICooldownManager = {
-        barSpellSettings   = true,   -- "Apply to Bar (All Specs)" per-spell tier
-        customActiveStates = true,   -- per-spell active state rules
-        cdmBarPositions    = true,   -- unlock-layer territory
-        growDirection      = true,   -- unlock-layer territory
+        barSpellSettings = true, -- "Apply to Bar (All Specs)" per-spell tier
+        customActiveStates = true, -- per-spell active state rules
+        cdmBarPositions = true, -- unlock-layer territory
+        growDirection = true, -- unlock-layer territory
     },
     CludesUIRaidFrames = {
-        bmIndicators  = true,   -- buff-manager layer territory
-        bmSimple      = true,   -- buff-manager layer territory
-        bmDisplayMode = true,   -- buff-manager layer territory
-        bmIconZoom    = true,   -- buff-manager layer territory
-        bm2           = true,   -- buff-manager v2 layer territory
-        dmDebuff      = true,   -- debuff-manager layer territory
+        bmIndicators = true, -- buff-manager layer territory
+        bmSimple = true, -- buff-manager layer territory
+        bmDisplayMode = true, -- buff-manager layer territory
+        bmIconZoom = true, -- buff-manager layer territory
+        bm2 = true, -- buff-manager v2 layer territory
+        dmDebuff = true, -- debuff-manager layer territory
         partyFrameStyle = true, -- reload-gated Party page Frame Style (latched at load, like the Style flags)
     },
 }
@@ -534,8 +620,12 @@ local SETTING_BLACKLIST = {
 -- did before the unified row existed. Only override-ELIGIBLE folders hosting the
 -- row are listed; the rest already sit in FOLDER_BLACKLIST above.
 local VIS_OV_FOLDERS = {
-    "CludesUIActionBars", "CludesUIChat", "CludesUICooldownManager",
-    "CludesUIDataBars", "CludesUIMinimap", "CludesUIResourceBars",
+    "CludesUIActionBars",
+    "CludesUIChat",
+    "CludesUICooldownManager",
+    "CludesUIDataBars",
+    "CludesUIMinimap",
+    "CludesUIResourceBars",
     "CludesUIUnitFrames",
 }
 
@@ -544,26 +634,37 @@ local VIS_OV_FOLDERS = {
 for i = 1, #VIS_OV_FOLDERS do
     local folder = VIS_OV_FOLDERS[i]
     local set = SETTING_BLACKLIST[folder]
-    if not set then set = {}; SETTING_BLACKLIST[folder] = set end
+    if not set then
+        set = {}
+        SETTING_BLACKLIST[folder] = set
+    end
     set.visibilityModes = true
     set.visibilityMatch = true
 end
 
 -- WoW Forever: the buff clear mark (CludesUI_Migration.lua) is bookkeeping,
 -- never a setting. The loop above guaranteed the Unit Frames set exists.
-if CludesUI.FvBW then SETTING_BLACKLIST.CludesUIUnitFrames[CludesUI.FvBW.KEY] = true end
+if CludesUI.FvBW then
+    SETTING_BLACKLIST.CludesUIUnitFrames[CludesUI.FvBW.KEY] = true
+end
 
 -- The lanes come from the shared VIS_OPT_KEYS, never a copy, so one added later
 -- cannot silently become capturable again. Lazy because this file can load first;
 -- the loop above already guaranteed every folder has a set. Idempotent.
 local _visLanesDone = false
 local function EnsureVisLaneBlacklist()
-    if _visLanesDone then return end
+    if _visLanesDone then
+        return
+    end
     local keys = CludesUI.VIS_OPT_KEYS
-    if not keys then return end
+    if not keys then
+        return
+    end
     for i = 1, #VIS_OV_FOLDERS do
         local set = SETTING_BLACKLIST[VIS_OV_FOLDERS[i]]
-        for k = 1, #keys do set[keys[k]] = true end
+        for k = 1, #keys do
+            set[keys[k]] = true
+        end
     end
     _visLanesDone = true
 end
@@ -573,12 +674,20 @@ end
 local function BlacklistedFKey(fkey)
     EnsureVisLaneBlacklist()
     local folder, path = SplitFKey(fkey)
-    if not folder then return false end
-    if FOLDER_BLACKLIST[folder] then return true end
+    if not folder then
+        return false
+    end
+    if FOLDER_BLACKLIST[folder] then
+        return true
+    end
     local set = SETTING_BLACKLIST[folder]
-    if not set or not path then return false end
+    if not set or not path then
+        return false
+    end
     for seg in path:gmatch("[^\30]+") do
-        if set[seg] then return true end
+        if set[seg] then
+            return true
+        end
     end
     return false
 end
@@ -588,16 +697,24 @@ end
 -- pages has still landed in the edited group's fork, so the capture status must
 -- confirm that instead of refusing a write that already happened.
 local LAYER_OWNED_SEGS = {
-    bmIndicators = "bm", bmSimple = "bm", bmDisplayMode = "bm",
-    bmIconZoom = "bm", bm2 = "bm", dmDebuff = "dm",
+    bmIndicators = "bm",
+    bmSimple = "bm",
+    bmDisplayMode = "bm",
+    bmIconZoom = "bm",
+    bm2 = "bm",
+    dmDebuff = "dm",
 }
 local function LayerOwnedFKey(fkey)
     local folder, path = SplitFKey(fkey)
-    if folder ~= "CludesUIRaidFrames" or not path then return nil end
+    if folder ~= "CludesUIRaidFrames" or not path then
+        return nil
+    end
     local head, sub = path:match("^([^\30]+)\30?([^\30]*)")
-    -- bm2's filter library is shared profile-wide: _ERF_BM2HarvestFork banks
+    -- bm2's filter library is shared profile-wide: _CURF_BM2HarvestFork banks
     -- specs + seeded only, so a filter edit is NOT scoped to the fork.
-    if head == "bm2" and sub == "filters" then return nil end
+    if head == "bm2" and sub == "filters" then
+        return nil
+    end
     return LAYER_OWNED_SEGS[head or ""]
 end
 
@@ -612,32 +729,40 @@ end
 -- layer's set. Static map, Resource Bars only; the GCD bar's setters swap dims by
 -- orientation, so either link kind owns both of its keys.
 local MATCH_OWNED_FKEYS = {
-    ["CludesUIResourceBars\31health\30width"]        = { elem = "ERB_Health",        dim = "w" },
-    ["CludesUIResourceBars\31health\30height"]       = { elem = "ERB_Health",        dim = "h" },
-    ["CludesUIResourceBars\31primary\30width"]       = { elem = "ERB_Power",         dim = "w" },
-    ["CludesUIResourceBars\31primary\30height"]      = { elem = "ERB_Power",         dim = "h" },
-    ["CludesUIResourceBars\31secondary\30pipWidth"]  = { elem = "ERB_ClassResource", dim = "w" },
+    ["CludesUIResourceBars\31health\30width"] = { elem = "ERB_Health", dim = "w" },
+    ["CludesUIResourceBars\31health\30height"] = { elem = "ERB_Health", dim = "h" },
+    ["CludesUIResourceBars\31primary\30width"] = { elem = "ERB_Power", dim = "w" },
+    ["CludesUIResourceBars\31primary\30height"] = { elem = "ERB_Power", dim = "h" },
+    ["CludesUIResourceBars\31secondary\30pipWidth"] = { elem = "ERB_ClassResource", dim = "w" },
     ["CludesUIResourceBars\31secondary\30pipHeight"] = { elem = "ERB_ClassResource", dim = "h" },
-    ["CludesUIResourceBars\31castBar\30width"]       = { elem = "ERB_CastBar",       dim = "w" },
-    ["CludesUIResourceBars\31castBar\30height"]      = { elem = "ERB_CastBar",       dim = "h" },
-    ["CludesUIResourceBars\31gcdBar\30width"]        = { elem = "ERB_GCDBar",        dim = "both" },
-    ["CludesUIResourceBars\31gcdBar\30height"]       = { elem = "ERB_GCDBar",        dim = "both" },
-    ["CludesUIResourceBars\31swingTimer\30width"]    = { elem = "ERB_SwingTimer",    dim = "w" },
-    ["CludesUIResourceBars\31swingTimer\30height"]   = { elem = "ERB_SwingTimer",    dim = "h" },
+    ["CludesUIResourceBars\31castBar\30width"] = { elem = "ERB_CastBar", dim = "w" },
+    ["CludesUIResourceBars\31castBar\30height"] = { elem = "ERB_CastBar", dim = "h" },
+    ["CludesUIResourceBars\31gcdBar\30width"] = { elem = "ERB_GCDBar", dim = "both" },
+    ["CludesUIResourceBars\31gcdBar\30height"] = { elem = "ERB_GCDBar", dim = "both" },
+    ["CludesUIResourceBars\31swingTimer\30width"] = { elem = "ERB_SwingTimer", dim = "w" },
+    ["CludesUIResourceBars\31swingTimer\30height"] = { elem = "ERB_SwingTimer", dim = "h" },
 }
 
 local function MatchOwnedFKey(fkey)
     local info = MATCH_OWNED_FKEYS[fkey]
-    if not info then return false end
-    if not CludesUIDB then return false end
+    if not info then
+        return false
+    end
+    if not CludesUIDB then
+        return false
+    end
     local dim = info.dim
     if dim ~= "h" then
         local wm = CludesUIDB.unlockWidthMatch
-        if wm and wm[info.elem] ~= nil then return true end
+        if wm and wm[info.elem] ~= nil then
+            return true
+        end
     end
     if dim ~= "w" then
         local hm = CludesUIDB.unlockHeightMatch
-        if hm and hm[info.elem] ~= nil then return true end
+        if hm and hm[info.elem] ~= nil then
+            return true
+        end
     end
     -- While a group/cond layer is LIVE the account-global tables hold that layer's
     -- links -- but a key the BASELINE matches is match-owned everywhere: its recorded
@@ -649,8 +774,12 @@ local function MatchOwnedFKey(fkey)
     -- namespace, not a local, because the function is defined in CUI_SpecOverrides_Layers.lua.
     if CludesUI.SpecOverrides_UnlockBaselineLinks then
         local _, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
-        if bw and dim ~= "h" and bw[info.elem] ~= nil then return true end
-        if bh and dim ~= "w" and bh[info.elem] ~= nil then return true end
+        if bw and dim ~= "h" and bw[info.elem] ~= nil then
+            return true
+        end
+        if bh and dim ~= "w" and bh[info.elem] ~= nil then
+            return true
+        end
     end
     return false
 end
@@ -668,7 +797,9 @@ end
 
 function CludesUI.SpecOverrides_OnCDMBarsRestructured()
     local function sweep(store, rebuild)
-        if not store then return end
+        if not store then
+            return
+        end
         local removed = false
         for i = #store, 1, -1 do
             local e = store[i]
@@ -678,7 +809,10 @@ function CludesUI.SpecOverrides_OnCDMBarsRestructured()
                     -- CDM bars ONLY: NumAllowedFKey also matches the raid-size tier
                     -- subtree; sweeping on it here would destroy captured raid-size
                     -- overrides whenever a CDM bar is deleted.
-                    if fkey:sub(1, #CDM_BARS_PREFIX) == CDM_BARS_PREFIX then hit = true; break end
+                    if fkey:sub(1, #CDM_BARS_PREFIX) == CDM_BARS_PREFIX then
+                        hit = true
+                        break
+                    end
                 end
             end
             if hit then
@@ -686,7 +820,9 @@ function CludesUI.SpecOverrides_OnCDMBarsRestructured()
                 removed = true
             end
         end
-        if removed and rebuild then rebuild() end
+        if removed and rebuild then
+            rebuild()
+        end
     end
     sweep(GetStore(), RebuildFKeyIndex)
     if CludesUI._CondOv then
@@ -700,20 +836,28 @@ end
 -- numeric subtrees silently read nil / write string-key garbage. The stored
 -- string key wins when it exists (settings tables never mix "5" and 5).
 local function SegKey(t, seg)
-    if t[seg] ~= nil then return seg end
+    if t[seg] ~= nil then
+        return seg
+    end
     local n = tonumber(seg)
-    if n ~= nil and t[n] ~= nil then return n end
+    if n ~= nil and t[n] ~= nil then
+        return n
+    end
     return seg
 end
 
 local function ReadLive(fkey)
     local folder, path = SplitFKey(fkey)
     local t = folder and DBFor(folder)
-    if type(t) ~= "table" then return nil end
+    if type(t) ~= "table" then
+        return nil
+    end
     local segs = { strsplit(PS, path) }
     for i = 1, #segs - 1 do
         t = t[SegKey(t, segs[i])]
-        if type(t) ~= "table" then return nil end
+        if type(t) ~= "table" then
+            return nil
+        end
     end
     return t[SegKey(t, segs[#segs])]
 end
@@ -728,18 +872,29 @@ end
 --- marker, so poisoned stores self-heal.
 local function HasRegisteredDefault(fkey)
     local folder, path = SplitFKey(fkey)
-    if not folder or not path then return false end
+    if not folder or not path then
+        return false
+    end
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-    if not reg then return false end
+    if not reg then
+        return false
+    end
     local t
     for _, db in ipairs(reg) do
-        if db.folder == folder then t = db._profileDefaults; break end
+        if db.folder == folder then
+            t = db._profileDefaults
+            break
+        end
     end
-    if type(t) ~= "table" then return false end
+    if type(t) ~= "table" then
+        return false
+    end
     local segs = { strsplit(PS, path) }
     for i = 1, #segs - 1 do
         t = t[SegKey(t, segs[i])]
-        if type(t) ~= "table" then return false end
+        if type(t) ~= "table" then
+            return false
+        end
     end
     return t[SegKey(t, segs[#segs])] ~= nil
 end
@@ -747,7 +902,9 @@ end
 local function WriteLive(fkey, v)
     local folder, path = SplitFKey(fkey)
     local t = folder and DBFor(folder)
-    if type(t) ~= "table" then return false end
+    if type(t) ~= "table" then
+        return false
+    end
     -- Raid-size tier overrides are the ONE allowlisted subtree whose numeric
     -- segments are DICTIONARY keys (tier 10/15/25/30), not array indices: absent
     -- means "not customized yet", and RF's options UI fabricates sub-tables on
@@ -758,13 +915,17 @@ local function WriteLive(fkey, v)
         local k = SegKey(t, segs[i])
         local nxt = t[k]
         if type(nxt) ~= "table" then
-            if v == nil then return false end   -- nothing to remove
+            if v == nil then
+                return false
+            end -- nothing to remove
             -- NEVER fabricate a container for a purely-numeric segment: it points at
             -- an ARRAY ENTRY (e.g. a CDM bar by index), and if missing, that entry is
             -- gone (deleted bar, different profile after import). Creating it plants
             -- a skeleton "ghost" row that crashes every keyed consumer downstream, so
             -- skip the write. (Raid-size tier keys are exempt -- see isRaidSizeOv.)
-            if tonumber(segs[i]) ~= nil and not isRaidSizeOv then return false end
+            if tonumber(segs[i]) ~= nil and not isRaidSizeOv then
+                return false
+            end
             nxt = {}
             -- A fresh raidSizeOverrides ROOT must carry the offset-scheme markers RF
             -- stamps in _EnsureRaidSizeOverrides, or the next _NormalizeTierOffsetAnchors
@@ -777,7 +938,9 @@ local function WriteLive(fkey, v)
             -- tiers numerically, so a string-keyed fabrication never renders and
             -- SegKey would prefer the phantom over the real tier forever.
             local n = tonumber(k)
-            if type(k) == "string" and n ~= nil then k = n end
+            if type(k) == "string" and n ~= nil then
+                k = n
+            end
             t[k] = nxt
         end
         t = nxt
@@ -785,7 +948,9 @@ local function WriteLive(fkey, v)
     local k = SegKey(t, segs[#segs])
     if t[k] == nil and v ~= nil then
         local n = tonumber(k)
-        if type(k) == "string" and n ~= nil then k = n end
+        if type(k) == "string" and n ~= nil then
+            k = n
+        end
     end
     t[k] = v
     return true
@@ -795,11 +960,15 @@ end
 local function SnapValue(snap, fkey)
     local folder, path = SplitFKey(fkey)
     local t = folder and snap[folder]
-    if type(t) ~= "table" then return nil end
+    if type(t) ~= "table" then
+        return nil
+    end
     local segs = { strsplit(PS, path) }
     for i = 1, #segs - 1 do
         t = t[SegKey(t, segs[i])]
-        if type(t) ~= "table" then return nil end
+        if type(t) ~= "table" then
+            return nil
+        end
     end
     return t[SegKey(t, segs[#segs])]
 end
@@ -812,8 +981,12 @@ local SetCombatFolders -- built at the end of this file (combatFoldersSetters)
 
 local function RunRefreshers(folders)
     if InCombatLockdown() then
-        if not _combatFolders then SetCombatFolders({}) end
-        for f in pairs(folders) do _combatFolders[f] = true end
+        if not _combatFolders then
+            SetCombatFolders({})
+        end
+        for f in pairs(folders) do
+            _combatFolders[f] = true
+        end
         return
     end
     local fallback = false
@@ -822,7 +995,9 @@ local function RunRefreshers(folders)
         if fns then
             for _, name in ipairs(fns) do
                 local fn = _G[name]
-                if fn then pcall(fn) end
+                if fn then
+                    pcall(fn)
+                end
             end
         else
             fallback = true
@@ -841,39 +1016,101 @@ end
 -- broken: true while an CUI_SpecOverrides_*.lua file loads; a file that
 -- fails leaves it set, and the files behind it return at their first lines.
 local _, CUI_NS = ...
-CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own table (CludesUI.lua)
+CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 CUI_NS.NewInternals(CUI_NS, "_soInternals", {
-    ACCENT_B = ACCENT_B, ACCENT_G = ACCENT_G, ACCENT_R = ACCENT_R,
-    BlacklistedFKey = BlacklistedFKey, CLASS_COORDS = CLASS_COORDS, CLASS_ORDER = CLASS_ORDER,
-    ConflictSpec = ConflictSpec, CurrentSpecID = CurrentSpecID, DBFor = DBFor,
-    DeepCopy = DeepCopy, EDIT_B = EDIT_B, EDIT_G = EDIT_G, EDIT_R = EDIT_R,
-    EntryHolderGroup = EntryHolderGroup, EntryOwning = EntryOwning, FKeyLoaded = FKeyLoaded,
-    FOLDER_BLACKLIST = FOLDER_BLACKLIST, FS = FS, GetGroups = GetGroups,
-    GetProfileRoot = GetProfileRoot, GetStore = GetStore, GLYPH_SPRITE = GLYPH_SPRITE,
-    GOLD_B = GOLD_B, GOLD_G = GOLD_G, GOLD_R = GOLD_R, GroupById = GroupById,
-    HasRegisteredDefault = HasRegisteredDefault, L = L, LayerOwnedFKey = LayerOwnedFKey,
-    LIST_PAGE = LIST_PAGE, MatchOwnedFKey = MatchOwnedFKey, MODERN_SPRITE = MODERN_SPRITE,
-    MULTISPEC_ICON = MULTISPEC_ICON, NextGroupId = NextGroupId, NIL_SENT = NIL_SENT,
-    NumAllowedFKey = NumAllowedFKey, PROFILES_MODULE = PROFILES_MODULE, PS = PS, PxCo = PxCo,
-    ReadLive = ReadLive, RebuildFKeyIndex = RebuildFKeyIndex, ROLE_ICONS = ROLE_ICONS,
-    ROLE_ORDER = ROLE_ORDER, RunRefreshers = RunRefreshers, SegKey = SegKey,
-    SnapValue = SnapValue, SpecInAnyGroup = SpecInAnyGroup, SpecName = SpecName,
-    SpecStrandedOnEntry = SpecStrandedOnEntry, SplitFKey = SplitFKey, WriteLive = WriteLive,
-    editGroupSetters = { function(v) _editGroup = v end },
-    combatFoldersSetters = { function(v) _combatFolders = v end },
-    goldWalkSetters = { function(v) RequestGoldWalk = v end },
-    defaultViewSetters = {}, enterSnapSetters = {}, inTransitionSetters = {},
-    activeSpecSetters = {}, watchResyncSetters = {}, exitGroupEditSetters = {},
-    sweepSetters = {}, teardownSetters = {}, panelShownSetters = {},
-    enterDefaultViewSetters = {}, updateIndicatorSetters = {}, refreshCardsSetters = {},
+    ACCENT_B = ACCENT_B,
+    ACCENT_G = ACCENT_G,
+    ACCENT_R = ACCENT_R,
+    BlacklistedFKey = BlacklistedFKey,
+    CLASS_COORDS = CLASS_COORDS,
+    CLASS_ORDER = CLASS_ORDER,
+    ConflictSpec = ConflictSpec,
+    CurrentSpecID = CurrentSpecID,
+    DBFor = DBFor,
+    DeepCopy = DeepCopy,
+    EDIT_B = EDIT_B,
+    EDIT_G = EDIT_G,
+    EDIT_R = EDIT_R,
+    EntryHolderGroup = EntryHolderGroup,
+    EntryOwning = EntryOwning,
+    FKeyLoaded = FKeyLoaded,
+    FOLDER_BLACKLIST = FOLDER_BLACKLIST,
+    FS = FS,
+    GetGroups = GetGroups,
+    GetProfileRoot = GetProfileRoot,
+    GetStore = GetStore,
+    GLYPH_SPRITE = GLYPH_SPRITE,
+    GOLD_B = GOLD_B,
+    GOLD_G = GOLD_G,
+    GOLD_R = GOLD_R,
+    GroupById = GroupById,
+    HasRegisteredDefault = HasRegisteredDefault,
+    L = L,
+    LayerOwnedFKey = LayerOwnedFKey,
+    LIST_PAGE = LIST_PAGE,
+    MatchOwnedFKey = MatchOwnedFKey,
+    MODERN_SPRITE = MODERN_SPRITE,
+    MULTISPEC_ICON = MULTISPEC_ICON,
+    NextGroupId = NextGroupId,
+    NIL_SENT = NIL_SENT,
+    NumAllowedFKey = NumAllowedFKey,
+    PROFILES_MODULE = PROFILES_MODULE,
+    PS = PS,
+    PxCo = PxCo,
+    ReadLive = ReadLive,
+    RebuildFKeyIndex = RebuildFKeyIndex,
+    ROLE_ICONS = ROLE_ICONS,
+    ROLE_ORDER = ROLE_ORDER,
+    RunRefreshers = RunRefreshers,
+    SegKey = SegKey,
+    SnapValue = SnapValue,
+    SpecInAnyGroup = SpecInAnyGroup,
+    SpecName = SpecName,
+    SpecStrandedOnEntry = SpecStrandedOnEntry,
+    SplitFKey = SplitFKey,
+    WriteLive = WriteLive,
+    editGroupSetters = {
+        function(v)
+            _editGroup = v
+        end,
+    },
+    combatFoldersSetters = {
+        function(v)
+            _combatFolders = v
+        end,
+    },
+    goldWalkSetters = {
+        function(v)
+            RequestGoldWalk = v
+        end,
+    },
+    defaultViewSetters = {},
+    enterSnapSetters = {},
+    inTransitionSetters = {},
+    activeSpecSetters = {},
+    watchResyncSetters = {},
+    exitGroupEditSetters = {},
+    sweepSetters = {},
+    teardownSetters = {},
+    panelShownSetters = {},
+    enterDefaultViewSetters = {},
+    updateIndicatorSetters = {},
+    refreshCardsSetters = {},
 }, {
-    SetEditGroup = "editGroupSetters", SetDefaultView = "defaultViewSetters",
-    SetEnterSnap = "enterSnapSetters", SetCombatFolders = "combatFoldersSetters",
-    SetInTransition = "inTransitionSetters", SetActiveSpec = "activeSpecSetters",
-    SetWatchResync = "watchResyncSetters", SetRequestGoldWalk = "goldWalkSetters",
-    SetExitGroupEdit = "exitGroupEditSetters", SetSweepUncaptured = "sweepSetters",
-    SetTeardownEditSession = "teardownSetters", SetPanelShown = "panelShownSetters",
+    SetEditGroup = "editGroupSetters",
+    SetDefaultView = "defaultViewSetters",
+    SetEnterSnap = "enterSnapSetters",
+    SetCombatFolders = "combatFoldersSetters",
+    SetInTransition = "inTransitionSetters",
+    SetActiveSpec = "activeSpecSetters",
+    SetWatchResync = "watchResyncSetters",
+    SetRequestGoldWalk = "goldWalkSetters",
+    SetExitGroupEdit = "exitGroupEditSetters",
+    SetSweepUncaptured = "sweepSetters",
+    SetTeardownEditSession = "teardownSetters",
+    SetPanelShown = "panelShownSetters",
     SetEnterDefaultView = "enterDefaultViewSetters",
-    SetUpdateIndicator = "updateIndicatorSetters", SetRefreshCardsPopup = "refreshCardsSetters",
+    SetUpdateIndicator = "updateIndicatorSetters",
+    SetRefreshCardsPopup = "refreshCardsSetters",
 }, "CUI_NS")
 SetCombatFolders = CUI_NS._soInternals.SetCombatFolders

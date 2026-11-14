@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Lifecycle.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local defaults, EBS, GetFFD = I.defaults, I.EBS, I.GetFFD
@@ -20,7 +24,9 @@ local SetApplyAll = I.SetApplyAll
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local _mmKeyHidden
-I.mmKeyHiddenSetters[#I.mmKeyHiddenSetters + 1] = function(v) _mmKeyHidden = v end
+I.mmKeyHiddenSetters[#I.mmKeyHiddenSetters + 1] = function(v)
+    _mmKeyHidden = v
+end
 
 -- Assigned below; SetApplyAll hands it to CludesUIMinimap.lua. It runs
 -- once, at load.
@@ -41,9 +47,13 @@ local ApplyAll
 -- An open Farming HUD owns the reparented map, so it stays at full alpha until the
 -- HUD's hide edge hands the Opacity back.
 function EBS._MapAlpha(p)
-    if FarmHud and FarmHud:IsShown() then return 1 end
+    if FarmHud and FarmHud:IsShown() then
+        return 1
+    end
     local o = p and p.opacity
-    if type(o) ~= "number" then return 1 end
+    if type(o) ~= "number" then
+        return 1
+    end
     return Clamp(o, 10, 100) / 100
 end
 
@@ -60,7 +70,9 @@ end
 -- Opacity setting change or HUD edge: one alpha write, whatever the visibility state.
 function EBS._ApplyMapAlpha()
     local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    if Minimap and p and p.enabled then EBS._WriteMapAlpha(Minimap, p) end
+    if Minimap and p and p.enabled then
+        EBS._WriteMapAlpha(Minimap, p)
+    end
 end
 
 -- Icon Size (the Size row's cog): the scale of the icons on the map, the same
@@ -73,22 +85,30 @@ end
 function EBS._EditModeIconScale()
     local c = MinimapCluster
     local s = Enum and Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.IconScale
-    if not (c and s ~= nil and c.GetSettingValue) then return nil end
+    if not (c and s ~= nil and c.GetSettingValue) then
+        return nil
+    end
     local ok, v = pcall(c.GetSettingValue, c, s)
-    if ok and type(v) == "number" and v > 0 then return v end
+    if ok and type(v) == "number" and v > 0 then
+        return v
+    end
     return nil
 end
 function EBS._ApplyMinimapIconScale()
     local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
     local v = p and p.iconScale
-    if not (Minimap and Minimap.SetIconScale) then return end
+    if not (Minimap and Minimap.SetIconScale) then
+        return
+    end
     local d = GetFFD(Minimap)
     if not v then
         -- Unset after a value (a profile swap): hand the map back Edit Mode's.
         if d.iconScaleSet then
             d.iconScaleSet = nil
             local ev = EBS._EditModeIconScale()
-            if ev then Minimap:SetIconScale(ev / 100) end
+            if ev then
+                Minimap:SetIconScale(ev / 100)
+            end
         end
         return
     end
@@ -98,7 +118,9 @@ function EBS._ApplyMinimapIconScale()
         d.iconScaleHooked = true
         hooksecurefunc(MinimapCluster, "SetIconScale", function()
             local m = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-            if m and m.iconScale then Minimap:SetIconScale(m.iconScale / 100) end
+            if m and m.iconScale then
+                Minimap:SetIconScale(m.iconScale / 100)
+            end
         end)
     end
 end
@@ -109,9 +131,13 @@ end
 -- either, so one write holds; the minimap stays ours until a reload.
 function EBS._SuppressMinimapSelection()
     local sel = MinimapCluster and MinimapCluster.Selection
-    if not sel then return end
+    if not sel then
+        return
+    end
     local d = GetFFD(sel)
-    if d.suppressed then return end
+    if d.suppressed then
+        return
+    end
     d.suppressed = true
     sel:SetAlpha(0)
     sel:EnableMouse(false)
@@ -125,7 +151,9 @@ local function MinimapDriverString(p, vm)
     -- An applied Visibility override replaces the whole setting: a constant, and the
     -- shared selection underneath never reaches the driver.
     local visOv = CludesUI.VisOverrideValue(p)
-    if visOv then return (visOv == "never") and "hide" or "show" end
+    if visOv then
+        return (visOv == "never") and "hide" or "show"
+    end
     -- Any match: Lua-only lanes (instances, housing, skyriding mount) are resolved at
     -- build time (caller runs out of combat only); a later zone/mount edge re-runs the
     -- dispatcher and re-registers the string.
@@ -136,15 +164,21 @@ local function MinimapDriverString(p, vm)
         return CludesUI.BuildVisibilityDriverString("", vm)
     end
     local mode = p.visibility
-    if mode == "in_combat" then return "[combat] show; hide" end
-    if mode == "out_of_combat" then return "[nocombat] show; hide" end
+    if mode == "in_combat" then
+        return "[combat] show; hide"
+    end
+    if mode == "out_of_combat" then
+        return "[nocombat] show; hide"
+    end
     return nil
 end
 
 local function UpdateMinimapVisibility()
     local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
     local minimap = Minimap
-    if not minimap then return end
+    if not minimap then
+        return
+    end
     if not p or not p.enabled then
         -- Module off: hand visibility back to Blizzard instead of leaving a driver on.
         if _mmDriverStr and not InCombatLockdown() then
@@ -166,9 +200,9 @@ local function UpdateMinimapVisibility()
     local vm = CludesUI.GetActiveVisibilityModes(p, "visibility")
     -- Mouseover cannot be expressed as a macro conditional, and the poll's own Show()/Hide() would fight a driver, so those selections stay on Lua.
     local want = not _mmKeyHidden
-        and CludesUI.VisDependsOnCombat(p, "visibility")
-        and not (vm and vm.mouseover)
-        and MinimapDriverString(p, vm)
+            and CludesUI.VisDependsOnCombat(p, "visibility")
+            and not (vm and vm.mouseover)
+            and MinimapDriverString(p, vm)
         or nil
     if want ~= _mmDriverStr and not InCombatLockdown() then
         -- Registering evaluates immediately (Show()s/Hide()s the frame), so only swap out of combat; the dispatcher re-fires on PLAYER_REGEN_ENABLED to finish.
@@ -180,9 +214,13 @@ local function UpdateMinimapVisibility()
         _mmDriverStr = want
     end
     -- The driver owns Show()/Hide() from here; the alpha set above is all this pass adds.
-    if _mmDriverStr then return end
+    if _mmDriverStr then
+        return
+    end
 
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     local vis = CludesUI.EvalVisibility(p)
     if _mmKeyHidden then
         minimap:Hide()
@@ -192,7 +230,11 @@ local function UpdateMinimapVisibility()
         -- screen until the first hover. Hide() is also exactly what the shared
         -- mouseover poll applies, so both ends of the mode agree. Shown (not hidden)
         -- while the cursor already sits on the map, so a re-apply mid-hover cannot blink.
-        if minimap:IsMouseOver() then minimap:Show() else minimap:Hide() end
+        if minimap:IsMouseOver() then
+            minimap:Show()
+        else
+            minimap:Hide()
+        end
     elseif vis then
         minimap:Show()
     else
@@ -206,10 +248,14 @@ end
 -- so does this; only the minimap's own visibility is re-applied, and only while the
 -- module runs.
 hooksecurefunc("ToggleMinimap", function()
-    if C_GameRules.IsGameRuleActive(Enum.GameRule.MinimapDisabled) then return end
+    if C_GameRules.IsGameRuleActive(Enum.GameRule.MinimapDisabled) then
+        return
+    end
     SetMMKeyHidden(not Minimap:IsShown())
     local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    if p and p.enabled then UpdateMinimapVisibility() end
+    if p and p.enabled then
+        UpdateMinimapVisibility()
+    end
 end)
 
 -------------------------------------------------------------------------------
@@ -231,35 +277,49 @@ SetApplyAll(ApplyAll)
 -------------------------------------------------------------------------------
 do
     local menuFrame
-    local menuOpen    = false
-    local MENU_WIDTH  = 160
-    local BUTTON_H    = 20
-    local PADDING     = 6
-    local DIVIDER_H   = 9
+    local menuOpen = false
+    local MENU_WIDTH = 160
+    local BUTTON_H = 20
+    local PADDING = 6
+    local DIVIDER_H = 9
 
     local menuItems = {
-        { text = "Character",       microButton = "CharacterMicroButton" },
-        { text = "Talents",         microButton = "PlayerSpellsMicroButton" },
-        { text = "Professions",     microButton = "ProfessionMicroButton" },
+        { text = "Character", microButton = "CharacterMicroButton" },
+        { text = "Talents", microButton = "PlayerSpellsMicroButton" },
+        { text = "Professions", microButton = "ProfessionMicroButton" },
         { divider = true },
-        { text = "Group Finder",    microButton = "LFDMicroButton" },
+        { text = "Group Finder", microButton = "LFDMicroButton" },
         { text = "Adventure Guide", microButton = "EJMicroButton" },
-        { text = "Achievements",    microButton = "AchievementMicroButton" },
-        { text = "Collections",     microButton = "CollectionsMicroButton" },
-        { text = "Quest Log",       microButton = "QuestLogMicroButton" },
+        { text = "Achievements", microButton = "AchievementMicroButton" },
+        { text = "Collections", microButton = "CollectionsMicroButton" },
+        { text = "Quest Log", microButton = "QuestLogMicroButton" },
         { divider = true },
-        { text = "Friends",         microButton = "QuickJoinToastButton" },
-        { text = "Guild",           microButton = "GuildMicroButton" },
-        { text = "Housing",         microButton = "HousingMicroButton" },
-        { text = "Calendar",        fn = function() if ToggleCalendar then ToggleCalendar() end end },
+        { text = "Friends", microButton = "QuickJoinToastButton" },
+        { text = "Guild", microButton = "GuildMicroButton" },
+        { text = "Housing", microButton = "HousingMicroButton" },
+        {
+            text = "Calendar",
+            fn = function()
+                if ToggleCalendar then
+                    ToggleCalendar()
+                end
+            end,
+        },
         { divider = true },
-        { text = "Game Menu",       fn = function() ToggleFrame(GameMenuFrame) end },
-        { text = "Shop",            microButton = "StoreMicroButton" },
-        { text = "Support",         microButton = "HelpMicroButton" },
+        {
+            text = "Game Menu",
+            fn = function()
+                ToggleFrame(GameMenuFrame)
+            end,
+        },
+        { text = "Shop", microButton = "StoreMicroButton" },
+        { text = "Support", microButton = "HelpMicroButton" },
     }
 
     local function SetMenuVisible(visible)
-        if not menuFrame then return end
+        if not menuFrame then
+            return
+        end
         menuOpen = visible
         menuFrame:ClearAllPoints()
         if visible then
@@ -278,7 +338,7 @@ do
         menuFrame = CreateFrame("Frame", "CludesUIMicroMenu", UIParent, "BackdropTemplate")
         menuFrame:SetFrameStrata("TOOLTIP")
         menuFrame:SetBackdrop({
-            bgFile   = "Interface\\Buttons\\WHITE8X8",
+            bgFile = "Interface\\Buttons\\WHITE8X8",
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
         })
@@ -290,7 +350,9 @@ do
         menuFrame:RegisterEvent("GLOBAL_MOUSE_DOWN")
         menuFrame:SetScript("OnEvent", function(self, event)
             if event == "GLOBAL_MOUSE_DOWN" and menuOpen then
-                if not self:IsMouseOver() then SetMenuVisible(false) end
+                if not self:IsMouseOver() then
+                    SetMenuVisible(false)
+                end
             end
         end)
 
@@ -316,8 +378,7 @@ do
 
                 local label = btn:CreateFontString(nil, "OVERLAY")
                 CludesUI.PrimeFontShadow(label, true)
-                label:SetFont((CludesUI.GetFontPath("minimap"))
-                    or "Fonts\\FRIZQT__.TTF", 11, "")
+                label:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 label:SetPoint("LEFT", btn, "LEFT", 10, 0)
                 label:SetTextColor(0.9, 0.9, 0.9)
                 label:SetText(CludesUI.L(item.text))
@@ -333,7 +394,12 @@ do
                 -- Secure click passthrough to a Blizzard MicroButton
                 local microRef = item.microButton and _G[item.microButton]
                 local btnName = "CUI_MicroMenu_" .. item.text:gsub("%s", "")
-                local btn = CreateFrame("Button", btnName, menuFrame, "SecureActionButtonTemplate,SecureHandlerStateTemplate")
+                local btn = CreateFrame(
+                    "Button",
+                    btnName,
+                    menuFrame,
+                    "SecureActionButtonTemplate,SecureHandlerStateTemplate"
+                )
                 btn:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
                 btn:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
                 btn:SetHeight(BUTTON_H)
@@ -353,7 +419,9 @@ do
                 -- addon-set attributes are not trusted. The restore branch MUST match
                 -- the transport above -- a mismatched type silently reverts the 12.1 macro transport on the first combat exit.
                 RegisterStateDriver(btn, "combatlock", "[combat] combat; nocombat")
-                btn:SetAttribute("_onstate-combatlock", ([[
+                btn:SetAttribute(
+                    "_onstate-combatlock",
+                    ([[
                     if newstate == 'combat' then
                         self:SetAttribute('*type1', nil)
                         self:EnableMouse(false)
@@ -361,7 +429,8 @@ do
                         self:SetAttribute('*type1', '%s')
                         self:EnableMouse(true)
                     end
-                ]]):format(secureType))
+                ]]):format(secureType)
+                )
 
                 local hl = btn:CreateTexture(nil, "HIGHLIGHT")
                 hl:SetAllPoints()
@@ -369,13 +438,16 @@ do
 
                 local label = btn:CreateFontString(nil, "OVERLAY")
                 CludesUI.PrimeFontShadow(label, true)
-                label:SetFont((CludesUI.GetFontPath("minimap"))
-                    or "Fonts\\FRIZQT__.TTF", 11, "")
+                label:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 label:SetPoint("LEFT", btn, "LEFT", 10, 0)
                 label:SetTextColor(0.9, 0.9, 0.9)
                 label:SetText(CludesUI.L(item.text))
 
-                btn:HookScript("OnClick", function() C_Timer.After(0, function() SetMenuVisible(false) end) end)
+                btn:HookScript("OnClick", function()
+                    C_Timer.After(0, function()
+                        SetMenuVisible(false)
+                    end)
+                end)
 
                 y = y - BUTTON_H
             end
@@ -391,7 +463,9 @@ do
             UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.3, 0.3, 1.0)
             return
         end
-        if not menuFrame then CreateMenuFrame() end
+        if not menuFrame then
+            CreateMenuFrame()
+        end
         SetMenuVisible(not menuOpen)
     end
     EBS._ToggleMicroMenu = ToggleMicroMenu
@@ -408,7 +482,9 @@ end
 --  The map as it shows, for Unlock Mode: the mover's box, and the edges an
 --  element linked to the minimap measures from.
 -------------------------------------------------------------------------------
-local function MDB() return EBS.db and EBS.db.profile.minimap end
+local function MDB()
+    return EBS.db and EBS.db.profile.minimap
+end
 
 -- Inset from the square canvas (canvas units): a square frame's outer box,
 -- its title bar and rims included, or a cropped map's visible band.
@@ -431,13 +507,19 @@ CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
         local l, r, t, b = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        if side == "LEFT" then return (Minimap:GetLeft() + l) * ratio
-        elseif side == "RIGHT" then return (Minimap:GetRight() - r) * ratio
-        elseif side == "TOP" then return (Minimap:GetTop() - t) * ratio
-        elseif side == "BOTTOM" then return (Minimap:GetBottom() + b) * ratio
+        if side == "LEFT" then
+            return (Minimap:GetLeft() + l) * ratio
+        elseif side == "RIGHT" then
+            return (Minimap:GetRight() - r) * ratio
+        elseif side == "TOP" then
+            return (Minimap:GetTop() - t) * ratio
+        elseif side == "BOTTOM" then
+            return (Minimap:GetBottom() + b) * ratio
         end
     end
-    if prevExtent then return prevExtent(targetKey, side) end
+    if prevExtent then
+        return prevExtent(targetKey, side)
+    end
     return nil
 end
 
@@ -448,7 +530,9 @@ end
 local extL, extR, extT, extB
 function EBS._NotifyMinimapExtent()
     local l, r, t, b = MoverInsets()
-    if l == extL and r == extR and t == extT and b == extB then return end
+    if l == extL and r == extR and t == extT and b == extB then
+        return
+    end
     extL, extR, extT, extB = l, r, t, b
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("EBS_Minimap")
@@ -462,7 +546,9 @@ function EBS:OnInitialize()
     local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
     if mp then
         if mp.hideGreatVault ~= nil or mp.hidePortals ~= nil then
-            if not mp.hideExtraBtns then mp.hideExtraBtns = {} end
+            if not mp.hideExtraBtns then
+                mp.hideExtraBtns = {}
+            end
             if mp.hideGreatVault ~= nil then
                 mp.hideExtraBtns.greatVault = mp.hideGreatVault
                 mp.hideGreatVault = nil
@@ -483,12 +569,12 @@ function EBS:OnInitialize()
     end
 
     -- Global bridge for options <-> main communication
-    _G._EMM_DB           = EBS.db
-    _G._EMM_ApplyMinimap = ApplyMinimap
-    _G._EMM_FullRebuildMinimap = FullRebuildMinimap
-    _G._EMM_ApplyMapAlpha = EBS._ApplyMapAlpha
-    _G._EMM_ApplyIconScale = EBS._ApplyMinimapIconScale
-    _G._EMM_EditModeIconScale = EBS._EditModeIconScale
+    _G._CUMM_DB = EBS.db
+    _G._CUMM_ApplyMinimap = ApplyMinimap
+    _G._CUMM_FullRebuildMinimap = FullRebuildMinimap
+    _G._CUMM_ApplyMapAlpha = EBS._ApplyMapAlpha
+    _G._CUMM_ApplyIconScale = EBS._ApplyMinimapIconScale
+    _G._CUMM_EditModeIconScale = EBS._EditModeIconScale
 
     -- Register visibility updater + mouseover target
     CludesUI.RegisterVisibilityUpdater(UpdateMinimapVisibility)
@@ -498,9 +584,13 @@ function EBS:OnInitialize()
             -- (every other module registers an addon-owned proxy); the shared poll's
             -- Show()/Hide() is blocked in combat lockdown, so report inactive during
             -- combat -- the poll then only resets bookkeeping, and the dispatcher re-applies state on PLAYER_REGEN_ENABLED.
-            if InCombatLockdown() or _mmKeyHidden then return false end
+            if InCombatLockdown() or _mmKeyHidden then
+                return false
+            end
             local p = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-            if not (p and p.enabled) then return false end
+            if not (p and p.enabled) then
+                return false
+            end
             -- Hover-gated sets only reveal while their conditions pass.
             return CludesUI.VisWantsMouseover(p, "visibility")
         end, function()
@@ -558,14 +648,16 @@ function EBS:OnEnable()
         -- measure it.
         CludesUI:RegisterUnlockElements({
             MK({
-                key   = "EBS_Minimap",
+                key = "EBS_Minimap",
                 label = "Minimap",
                 group = "Minimap",
                 order = 500,
                 noResize = true,
                 noAnchorTo = true,
-                getFrame = function() return Minimap end,
-                getSize  = function()
+                getFrame = function()
+                    return Minimap
+                end,
+                getSize = function()
                     local l, r, t, b = MoverInsets()
                     return Minimap:GetWidth() - l - r, Minimap:GetHeight() - t - b
                 end,
@@ -575,7 +667,10 @@ function EBS:OnEnable()
                     return not m or not m.enabled
                 end,
                 savePos = function(_, point, relPoint, x, y)
-                    local m = MDB(); if not m then return end
+                    local m = MDB()
+                    if not m then
+                        return
+                    end
                     m.position = { point = point, relPoint = relPoint, x = x, y = y }
                     if not CludesUI._unlockActive then
                         ApplyMinimap()
@@ -583,16 +678,23 @@ function EBS:OnEnable()
                 end,
                 loadPos = function()
                     local m = MDB()
-                    if not m or not m.enabled then return nil end
+                    if not m or not m.enabled then
+                        return nil
+                    end
                     return m.position
                 end,
                 clearPos = function()
-                    local m = MDB(); if not m then return end
+                    local m = MDB()
+                    if not m then
+                        return
+                    end
                     m.position = nil
                 end,
                 applyPos = function()
                     local m = MDB()
-                    if not m or not m.enabled then return end
+                    if not m or not m.enabled then
+                        return
+                    end
                     ApplyMinimap()
                 end,
             }),
@@ -611,7 +713,9 @@ do
     local fhFix = CreateFrame("Frame")
     fhFix:RegisterEvent("PLAYER_ENTERING_WORLD")
     fhFix:SetScript("OnEvent", function(self)
-        if not FarmHud then return end
+        if not FarmHud then
+            return
+        end
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
         -- Keep the minimap centered in the HUD frame on any reposition / reparent.
@@ -636,23 +740,37 @@ do
         local function ToggleMinimapBorders(show)
             local alpha = show and 1 or 0
 
-            if GetFFD(Minimap).circBorder then GetFFD(Minimap).circBorder:SetAlpha(alpha) end
-            if GetFFD(Minimap).texCircBorder then GetFFD(Minimap).texCircBorder:SetAlpha(alpha) end
+            if GetFFD(Minimap).circBorder then
+                GetFFD(Minimap).circBorder:SetAlpha(alpha)
+            end
+            if GetFFD(Minimap).texCircBorder then
+                GetFFD(Minimap).texCircBorder:SetAlpha(alpha)
+            end
 
             -- Square border host (solid strips or textured backdrop)
             local host = GetFFD(Minimap).borderHost
-            if host then host:SetAlpha(alpha) end
+            if host then
+                host:SetAlpha(alpha)
+            end
 
             -- WoW Forever look's Forever Square frame (the apply pass never sets
             -- its alpha, so this one holds while the HUD is up)
             local heavy = GetFFD(Minimap).fvHeavy
-            if heavy then heavy:SetAlpha(alpha) end
+            if heavy then
+                heavy:SetAlpha(alpha)
+            end
         end
 
         -- The HUD owns the map while shown (full alpha, see EBS._MapAlpha); its hide
         -- edge hands our Opacity back.
-        FarmHud:HookScript("OnShow", function() ToggleMinimapBorders(false); EBS._ApplyMapAlpha() end)
-        FarmHud:HookScript("OnHide", function() ToggleMinimapBorders(true); EBS._ApplyMapAlpha() end)
+        FarmHud:HookScript("OnShow", function()
+            ToggleMinimapBorders(false)
+            EBS._ApplyMapAlpha()
+        end)
+        FarmHud:HookScript("OnHide", function()
+            ToggleMinimapBorders(true)
+            EBS._ApplyMapAlpha()
+        end)
     end)
 end
 

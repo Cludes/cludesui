@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Portrait.lua
 --
@@ -36,21 +38,31 @@ local ZOOM3D_STOCK, ZOOM3D_MAX = 300, 500
 ns.RF_PT_ZOOM3D_MAX = ZOOM3D_MAX
 local function Zoom3DOf(z)
     z = z or 100
-    if z <= ZOOM3D_STOCK then return 1, z / 100 end
-    if z > ZOOM3D_MAX then z = ZOOM3D_MAX end
+    if z <= ZOOM3D_STOCK then
+        return 1, z / 100
+    end
+    if z > ZOOM3D_MAX then
+        z = ZOOM3D_MAX
+    end
     local t = (z - ZOOM3D_STOCK) / (ZOOM3D_MAX - ZOOM3D_STOCK)
     local d = ZOOM3D_STOCK / 100
     return 1 - t, d - (d - 1) * t
 end
 
 local function Point(r, p, rel, rp, x, y)
-    if PP and PP.Point then PP.Point(r, p, rel, rp, x, y) else r:SetPoint(p, rel, rp, x, y) end
+    if PP and PP.Point then
+        PP.Point(r, p, rel, rp, x, y)
+    else
+        r:SetPoint(p, rel, rp, x, y)
+    end
 end
 
 -- Class art from the shared sprite sheets.
 function ns.RF_PtClassArt(tex, ct, style)
     local c = CludesUI.CLASS_ICON_SPRITE_COORDS and CludesUI.CLASS_ICON_SPRITE_COORDS[ct]
-    if not (tex and c) then return end
+    if not (tex and c) then
+        return
+    end
     tex:SetTexture(CLASS_ART .. (style or "modern") .. ".tga")
     tex:SetTexCoord(c[1], c[2], c[3], c[4])
 end
@@ -58,7 +70,9 @@ end
 -- The attached portrait's width in the party box (callers snap): a square
 -- the frame's full height. Detached and inside take no room.
 function ns.RF_PtReserve(s, h)
-    if (s.partyPortraitStyle or "none") ~= "attached" then return 0 end
+    if (s.partyPortraitStyle or "none") ~= "attached" then
+        return 0
+    end
     return h
 end
 
@@ -68,7 +82,9 @@ local function SideOf(s, style)
     local side = s.partyPortraitSide or "left"
     local inside = side == "insideleft" or side == "insideright" or side == "insidecenter"
     if style == "attached" then
-        if side ~= "right" then side = "left" end
+        if side ~= "right" then
+            side = "left"
+        end
         return side, false
     end
     return side, inside
@@ -78,7 +94,9 @@ end
 -- rect of a shaped portrait): the portrait paint resets its anchors.
 local function SeatArt2D(bd)
     local t = bd._2d
-    if PP and PP.DisablePixelSnap then PP.DisablePixelSnap(t) end
+    if PP and PP.DisablePixelSnap then
+        PP.DisablePixelSnap(t)
+    end
     t:ClearAllPoints()
     Point(t, "TOPLEFT", bd, "TOPLEFT", bd._oL, bd._oT)
     Point(t, "BOTTOMRIGHT", bd, "BOTTOMRIGHT", bd._oR, bd._oB)
@@ -95,14 +113,20 @@ end
 local function ModelOnShow(self)
     local bd = self._bd
     local st = bd and bd._st
-    if not (st and bd._on) then return end
+    if not (st and bd._on) then
+        return
+    end
     local owner = bd._owner
     local u = bd._pvUnit or (owner and not bd._preview and owner:GetAttribute("unit"))
-    if u and UnitExists(u) then ns.RF_PtPaint(st, u, "Show") end
+    if u and UnitExists(u) then
+        ns.RF_PtPaint(st, u, "Show")
+    end
 end
 local function Ensure3D(bd)
     local m = bd._3d
-    if m then return m end
+    if m then
+        return m
+    end
     m = CreateFrame("PlayerModel", nil, bd)
     m:SetAllPoints(bd)
     m:SetCamera(0)
@@ -122,7 +146,10 @@ local function ModelCanvas(bd, k, w, h)
     local m = bd._3d
     if k == 1 or not (w and h and w > 0 and h > 0) then
         -- Back from a canvas: drop its BOTTOM anchor first.
-        if bd._charCanvas then m:ClearAllPoints(); bd._charCanvas = nil end
+        if bd._charCanvas then
+            m:ClearAllPoints()
+            bd._charCanvas = nil
+        end
         m:SetAllPoints(bd)
         return
     end
@@ -140,7 +167,9 @@ end
 -- the box's size); a change of _charK, _3dOn or _state re-seats. Unscaled
 -- (the default) is the stock re-anchor alone: no script, no size reads.
 local function SeatModel(bd)
-    if not bd._3d then return end
+    if not bd._3d then
+        return
+    end
     local k = bd._charK or 1
     local scaled = k ~= 1 and bd._3dOn and bd._state ~= false or false
     if scaled ~= (bd._charHook or false) then
@@ -205,8 +234,12 @@ local function Ensure(owner, st, health)
     -- The absorb strips re-lay out on their next settings pass.
     local ab = st.absorbBar or st._absorbBar
     if ab then
-        if ab._topBar then ab._topBar._lpPos = nil end
-        if ab._healTopBar then ab._healTopBar._lpPos = nil end
+        if ab._topBar then
+            ab._topBar._lpPos = nil
+        end
+        if ab._healTopBar then
+            ab._healTopBar._lpPos = nil
+        end
     end
     st.pt = bd
     return bd
@@ -238,7 +271,9 @@ local function Seat(owner, bd, health, style, side, inside, size, px, py, bh)
         -- Over the health bar, the frame's height, clipped to itself.
         area:SetAllPoints(owner)
         w = bh + size
-        if w < 8 then w = 8 end
+        if w < 8 then
+            w = 8
+        end
         h = bh
         bd:SetWidth(w)
         if side == "insideleft" then
@@ -259,7 +294,9 @@ local function Seat(owner, bd, health, style, side, inside, size, px, py, bh)
         -- frame, over its neighbours' borders.
         area:SetAllPoints(owner)
         w = bh + size + 10
-        if w < 8 then w = 8 end
+        if w < 8 then
+            w = 8
+        end
         h = w
         bd:SetSize(w, h)
         local y = py + 5
@@ -278,11 +315,15 @@ end
 
 local function Unmask(bd)
     local mk = bd._mask
-    if not (mk and bd._masked) then return end
+    if not (mk and bd._masked) then
+        return
+    end
     bd._2d:RemoveMaskTexture(mk)
     bd._class:RemoveMaskTexture(mk)
     bd._bg:RemoveMaskTexture(mk)
-    if bd._border then bd._border:RemoveMaskTexture(mk) end
+    if bd._border then
+        bd._border:RemoveMaskTexture(mk)
+    end
     bd._masked = nil
     mk:Hide()
 end
@@ -293,16 +334,28 @@ end
 -- art filling the backdrop. `w`/`h` = the backdrop's size.
 local function Shape(bd, s, shaped, w, h)
     local shape = shaped and (s.partyPortraitShape or "portrait") or nil
-    if shape and not MASKS[shape] then shape = nil end
+    if shape and not MASKS[shape] then
+        shape = nil
+    end
     local bs = s.partyPortraitBorderSize or 7
     local op = s.partyPortraitBorderOpacity or 100
     local art = s.partyPortraitArtScale or 100
     local col = s.partyPortraitBorderColor
     local cr, cg, cb = col and col.r or 0, col and col.g or 0, col and col.b or 0
     local cc = s.partyPortraitBorderClassColor ~= false
-    if bd._sShape == shape and bd._sBs == bs and bd._sOp == op and bd._sArt == art
-        and bd._sW == w and bd._sH == h and bd._sR == cr and bd._sG == cg and bd._sB == cb
-        and bd._sCC == cc and bd._sSet then
+    if
+        bd._sShape == shape
+        and bd._sBs == bs
+        and bd._sOp == op
+        and bd._sArt == art
+        and bd._sW == w
+        and bd._sH == h
+        and bd._sR == cr
+        and bd._sG == cg
+        and bd._sB == cb
+        and bd._sCC == cc
+        and bd._sSet
+    then
         return false
     end
     bd._sShape, bd._sBs, bd._sOp, bd._sArt, bd._sW, bd._sH = shape, bs, op, art, w, h
@@ -310,7 +363,9 @@ local function Shape(bd, s, shaped, w, h)
     bd._tintClass = nil
     if not shape then
         Unmask(bd)
-        if bd._border then bd._border:Hide() end
+        if bd._border then
+            bd._border:Hide()
+        end
         bd._oL, bd._oT, bd._oR, bd._oB = 0, 0, 0, 0
     else
         local mk = bd._mask
@@ -364,17 +419,23 @@ end
 local function PlayerClassColor()
     local _, ct = UnitClass("player")
     local c = ct and CludesUI.GetClassColor(ct)
-    if c then return c.r, c.g, c.b end
+    if c then
+        return c.r, c.g, c.b
+    end
     return 1, 1, 1
 end
 local function TintBorder(bd, unit, ctOverride)
     local bt = bd._border
-    if not (bt and bd._tintClass) then return end
+    if not (bt and bd._tintClass) then
+        return
+    end
     local r, g, b
     local s = ns._scaledPartyProxy
     if ctOverride then
         local c = CludesUI.GetClassColor(ctOverride)
-        if c then r, g, b = c.r, c.g, c.b end
+        if c then
+            r, g, b = c.r, c.g, c.b
+        end
     elseif s and s.healthColorMode == "dark" then
         r, g, b = PlayerClassColor()
     elseif unit and UnitExists(unit) then
@@ -382,21 +443,29 @@ local function TintBorder(bd, unit, ctOverride)
         local isPl = UnitIsPlayer(unit)
         if not issecretvalue(ct) and not issecretvalue(isPl) and isPl and ct then
             local c = CludesUI.GetClassColor(ct)
-            if c then r, g, b = c.r, c.g, c.b end
+            if c then
+                r, g, b = c.r, c.g, c.b
+            end
         else
             local re = UnitReaction(unit, "player")
             local c = (not issecretvalue(re)) and re and FACTION_BAR_COLORS and FACTION_BAR_COLORS[re]
-            if c then r, g, b = c.r, c.g, c.b end
+            if c then
+                r, g, b = c.r, c.g, c.b
+            end
         end
     end
-    if not r then r, g, b = PlayerClassColor() end
+    if not r then
+        r, g, b = PlayerClassColor()
+    end
     bt:SetVertexColor(r, g, b, bd._bA or 1)
 end
 
 -- Which art region shows. Leaving 3D drops the model (frees it). True when
 -- the mode changed.
 local function SetMode(bd, mode)
-    if bd._mode == mode then return false end
+    if bd._mode == mode then
+        return false
+    end
     bd._mode = mode
     bd._guid, bd._state, bd._ct = nil, nil, nil
     bd._2d:SetShown(mode == "2d")
@@ -405,7 +474,9 @@ local function SetMode(bd, mode)
         Ensure3D(bd)
         bd._3dOn = true
         bd._3d:Show()
-        if not bd._preview then ns.RF_PtModelAlphaApply(bd) end
+        if not bd._preview then
+            ns.RF_PtModelAlphaApply(bd)
+        end
     elseif bd._3d then
         bd._3dOn = nil
         bd._3d:ClearModel()
@@ -419,9 +490,13 @@ end
 -- event; a secret guid never matches, so it always repaints. An
 -- unavailable 3D paint never stamps its guid, so the next trigger heals it.
 function ns.RF_PtPaint(st, unit, event)
-    if st.kitPortrait then return ns.RF_KitPortrait(st, unit) end
+    if st.kitPortrait then
+        return ns.RF_KitPortrait(st, unit)
+    end
     local bd = st.pt
-    if not (bd and bd._on and unit) then return end
+    if not (bd and bd._on and unit) then
+        return
+    end
     local mode = bd._mode
     local guid = UnitGUID(unit)
     local changed
@@ -433,7 +508,9 @@ function ns.RF_PtPaint(st, unit, event)
     local repainted = false
     if mode == "class" then
         local _, ct = UnitClass(unit)
-        if issecretvalue(ct) then ct = nil end
+        if issecretvalue(ct) then
+            ct = nil
+        end
         ct = ct or "WARRIOR"
         -- (A change of art set clears _ct at its write in RF_PtApply.)
         if bd._ct ~= ct or event == "Force" then
@@ -441,15 +518,29 @@ function ns.RF_PtPaint(st, unit, event)
             ns.RF_PtClassArt(bd._class, ct, bd._style)
             repainted = true
         end
-        if not issecretvalue(guid) then bd._guid = guid end
+        if not issecretvalue(guid) then
+            bd._guid = guid
+        end
     elseif mode == "3d" then
         local c, v = UnitIsConnected(unit), UnitIsVisible(unit)
         local avail = true
-        if not (issecretvalue(c) or issecretvalue(v)) then avail = (c and v) and true or false end
+        if not (issecretvalue(c) or issecretvalue(v)) then
+            avail = (c and v) and true or false
+        end
         local m = bd._3d
-        if m and (changed or bd._state ~= avail or event == "Force" or event == "UNIT_MODEL_CHANGED"
-            or event == "UNIT_PORTRAIT_UPDATE" or event == "Show" or event == "PLAYER_ENTERING_WORLD"
-            or (event == "PORTRAITS_UPDATED" and m:GetModelFileID() == nil)) then
+        if
+            m
+            and (
+                changed
+                or bd._state ~= avail
+                or event == "Force"
+                or event == "UNIT_MODEL_CHANGED"
+                or event == "UNIT_PORTRAIT_UPDATE"
+                or event == "Show"
+                or event == "PLAYER_ENTERING_WORLD"
+                or (event == "PORTRAITS_UPDATED" and m:GetModelFileID() == nil)
+            )
+        then
             if avail then
                 m:ClearModel()
                 m:SetUnit(unit)
@@ -471,38 +562,56 @@ function ns.RF_PtPaint(st, unit, event)
             -- when availability flips.
             local reseat = (bd._charK or 1) ~= 1 and (bd._state == false) ~= (avail == false)
             bd._state = avail
-            if reseat then SeatModel(bd) end
+            if reseat then
+                SeatModel(bd)
+            end
             repainted = true
         end
     else
         -- "Resync": the portrait events turning on (art may have streamed
         -- in while they were off).
-        if changed or event == "Force" or event == "UNIT_PORTRAIT_UPDATE"
-            or event == "PORTRAITS_UPDATED" or event == "UnitChanged" or event == "Resync" then
+        if
+            changed
+            or event == "Force"
+            or event == "UNIT_PORTRAIT_UPDATE"
+            or event == "PORTRAITS_UPDATED"
+            or event == "UnitChanged"
+            or event == "Resync"
+        then
             local t = bd._2d
             SetPortraitTexture(t, unit)
             SeatArt2D(bd)
             t:SetDesaturated(bd._desat or false)
-            if not issecretvalue(guid) then bd._guid = guid end
+            if not issecretvalue(guid) then
+                bd._guid = guid
+            end
             repainted = true
         end
     end
     -- The class-coloured border follows the occupant (a real assignment
     -- too: a same-guid return after a no-unit re-shape).
-    if repainted or changed or event == "UnitChanged" then TintBorder(bd, unit) end
+    if repainted or changed or event == "UnitChanged" then
+        TintBorder(bd, unit)
+    end
 end
 
 -- Offline grey (from the health-background pass, which every connection
 -- edge reaches): 2D and class desaturate, 3D swaps to the question mark.
 function ns.RF_PtOffline(st, unit, connected)
     local bd = st.pt
-    if not (bd and bd._on) then return end
+    if not (bd and bd._on) then
+        return
+    end
     local off = not connected
-    if bd._desat == off then return end
+    if bd._desat == off then
+        return
+    end
     bd._desat = off
     bd._2d:SetDesaturated(off)
     bd._class:SetDesaturated(off)
-    if bd._mode == "3d" and unit then ns.RF_PtPaint(st, unit, "Conn") end
+    if bd._mode == "3d" and unit then
+        ns.RF_PtPaint(st, unit, "Conn")
+    end
 end
 
 -- Clickable Portrait (party, default off): a detached portrait covered by a
@@ -515,10 +624,16 @@ local PORTRAIT_CLICK = {
         local d = ns.GetFFD(owner)
         local bd = d.pt
         local s = ns._scaledPartyProxy
-        return bd and bd._on and not d.kitPortrait and s.partyPortraitClickable
-            and (s.partyPortraitStyle or "none") == "detached" or false
+        return bd
+                and bd._on
+                and not d.kitPortrait
+                and s.partyPortraitClickable
+                and (s.partyPortraitStyle or "none") == "detached"
+            or false
     end,
-    backdrop = function(owner) return ns.GetFFD(owner).pt end,
+    backdrop = function(owner)
+        return ns.GetFFD(owner).pt
+    end,
     -- CUI_RaidFrames_Style.lua loads first.
     onEnter = ns.RF_ButtonOnEnter,
     onLeave = ns.RF_ButtonOnLeave,
@@ -527,7 +642,9 @@ local PORTRAIT_CLICK = {
         if ns.CC_RegisterFrame then
             ns.CC_RegisterFrame(btn)
         else
-            if type(ClickCastFrames) ~= "table" then ClickCastFrames = {} end
+            if type(ClickCastFrames) ~= "table" then
+                ClickCastFrames = {}
+            end
             ClickCastFrames[btn] = true
         end
     end,
@@ -544,21 +661,40 @@ local PORTRAIT_CLICK = {
 function ns.RF_PtApply(owner, st, s, bw, bh, unit)
     local style = s.partyPortraitStyle or "none"
     local bd = st.pt
-    if style == "none" and not bd then return end
+    if style == "none" and not bd then
+        return
+    end
     local health = st.health or st._health
-    if not health then return end
+    if not health then
+        return
+    end
     local side, inside = SideOf(s, style)
     local size = s.partyPortraitSize or 0
     local px, py = s.partyPortraitX or 0, s.partyPortraitY or 0
     local es = owner:GetEffectiveScale()
-    if not (bd and bd._gStyle == style and bd._gSide == side and bd._gIn == inside
-        and bd._gSize == size and bd._gX == px and bd._gY == py
-        and bd._gW == bw and bd._gH == bh and bd._gEs == es) then
+    if
+        not (
+            bd
+            and bd._gStyle == style
+            and bd._gSide == side
+            and bd._gIn == inside
+            and bd._gSize == size
+            and bd._gX == px
+            and bd._gY == py
+            and bd._gW == bw
+            and bd._gH == bh
+            and bd._gEs == es
+        )
+    then
         if InCombatLockdown() then
             local power = st.power or st._power
             local uref = st.uniformRef or st._uniformRef
-            if health:IsProtected() or (power and power:IsProtected())
-                or (uref and uref:IsProtected()) or (bd and bd._area:IsProtected()) then
+            if
+                health:IsProtected()
+                or (power and power:IsProtected())
+                or (uref and uref:IsProtected())
+                or (bd and bd._area:IsProtected())
+            then
                 ns._partyKitDirtyInCombat = true
                 return
             end
@@ -574,19 +710,29 @@ function ns.RF_PtApply(owner, st, s, bw, bh, unit)
             bd:Hide()
             SetMode(bd, nil)
             -- Off drops the Character Size script with the model.
-            if (bd._charK or 1) ~= 1 then bd._charK = 1; SeatModel(bd) end
+            if (bd._charK or 1) ~= 1 then
+                bd._charK = 1
+                SeatModel(bd)
+            end
         end
-        if not bd._preview then CludesUI.SyncPortraitClick(owner, PORTRAIT_CLICK) end
+        if not bd._preview then
+            CludesUI.SyncPortraitClick(owner, PORTRAIT_CLICK)
+        end
         return
     end
     -- Levels re-asserted every pass (a strata change rebuilds child levels).
     local lvl = owner:GetFrameLevel() + (bd._lvl or 1)
-    if bd:GetFrameLevel() ~= lvl then bd:SetFrameLevel(lvl) end
+    if bd:GetFrameLevel() ~= lvl then
+        bd:SetFrameLevel(lvl)
+    end
     local mode = s.partyPortraitMode or "2d"
     -- The class art set is a paint input: a change clears the class memo
     -- (a button with no unit repaints on its next occupant).
     local cs = s.partyPortraitClassStyle or "modern"
-    if bd._style ~= cs then bd._style = cs; bd._ct = nil end
+    if bd._style ~= cs then
+        bd._style = cs
+        bd._ct = nil
+    end
     bd._pz3d, bd._zoom3d = Zoom3DOf(s.partyPortrait3dZoom)
     -- Character Size: Inside positions only (the box that clips it).
     local charK = inside and ((s.partyPortraitCharScale or 100) / 100) or 1
@@ -608,8 +754,12 @@ function ns.RF_PtApply(owner, st, s, bw, bh, unit)
     local swapped = SetMode(bd, mode)
     -- A new scale re-seats the model (a re-shape already did); so does a
     -- swap into or out of 3D while scaled (Shape seated before the swap).
-    if (charKChanged and not reshaped) or (swapped and charK ~= 1) then SeatModel(bd) end
-    if not wasOn then bd:Show() end
+    if (charKChanged and not reshaped) or (swapped and charK ~= 1) then
+        SeatModel(bd)
+    end
+    if not wasOn then
+        bd:Show()
+    end
     -- A 3D Zoom change on a loaded model: the camera alone.
     local m = bd._3dOn and bd._3d
     if m and bd._state and bd._camZ and (bd._camZ ~= bd._zoom3d or bd._camP ~= bd._pz3d) then
@@ -633,7 +783,9 @@ function ns.RF_PtApply(owner, st, s, bw, bh, unit)
         local u = owner:GetAttribute("unit")
         TintBorder(bd, (u and UnitExists(u)) and u or nil)
     end
-    if not bd._preview then CludesUI.SyncPortraitClick(owner, PORTRAIT_CLICK) end
+    if not bd._preview then
+        CludesUI.SyncPortraitClick(owner, PORTRAIT_CLICK)
+    end
 end
 
 -- Portrait events the current settings need (RF_KitPortraitEvents): "2d",
@@ -642,8 +794,12 @@ end
 function ns.RF_PtEventMode(kit)
     local s = ns._scaledPartyProxy
     local m = s.partyPortraitMode or "2d"
-    if kit then return (m ~= "class") and "2d" or nil end
-    if (s.partyPortraitStyle or "none") == "none" or m == "class" then return nil end
+    if kit then
+        return (m ~= "class") and "2d" or nil
+    end
+    if (s.partyPortraitStyle or "none") == "none" or m == "class" then
+        return nil
+    end
     return (m == "3d") and "3d" or "2d"
 end
 
@@ -651,14 +807,18 @@ end
 -- guid; the shown edge re-syncs after a hidden stretch).
 function ns.RF_PtRepaintAll(event)
     local list = ns._partyAllButtons
-    if not list then return end
+    if not list then
+        return
+    end
     local GetFFD = ns.GetFFD
     for i = 1, #list do
         local b = list[i]
         local d = GetFFD(b)
         if d.kitPortrait or (d.pt and d.pt._on) then
             local u = b:GetAttribute("unit")
-            if u and UnitExists(u) then ns.RF_PtPaint(d, u, event) end
+            if u and UnitExists(u) then
+                ns.RF_PtPaint(d, u, event)
+            end
         end
     end
 end
@@ -668,7 +828,9 @@ end
 function ns.RF_PtRefreshAll()
     local list = ns._partyAllButtons
     local db = ns.db
-    if not (list and db and db.profile) then return end
+    if not (list and db and db.profile) then
+        return
+    end
     local GetFFD = ns.GetFFD
     local s = ns._scaledPartyProxy
     local pw, ph = ns.RF_PartyDims(db.profile)
@@ -678,17 +840,25 @@ function ns.RF_PtRefreshAll()
         local d = GetFFD(b)
         if d.styled then
             local u = b:GetAttribute("unit")
-            if u and not UnitExists(u) then u = nil end
+            if u and not UnitExists(u) then
+                u = nil
+            end
             if d.kitPortrait then
-                if u then ns.RF_KitPortrait(d, u) end
+                if u then
+                    ns.RF_KitPortrait(d, u)
+                end
                 -- A click button from before the kit stands down.
-                if d.pt then CludesUI.SyncPortraitClick(b, PORTRAIT_CLICK) end
+                if d.pt then
+                    CludesUI.SyncPortraitClick(b, PORTRAIT_CLICK)
+                end
             else
                 ns.RF_PtApply(b, d, s, bw, bh, u)
             end
         end
     end
-    if ns.RF_KitPortraitEvents then ns.RF_KitPortraitEvents(ns._partyFramesVisible) end
+    if ns.RF_KitPortraitEvents then
+        ns.RF_KitPortraitEvents(ns._partyFramesVisible)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -700,7 +870,9 @@ end
 -------------------------------------------------------------------------------
 function ns.RF_PtModelAlphaApply(bd)
     local m = bd._3dOn and bd._3d
-    if not m then return end
+    if not m then
+        return
+    end
     local pc = ns._partyContainerFrame
     -- A UIParent fade (models ignore it) scales the mirror too.
     local c = CludesUI.UIScaledAlpha(pc and pc:GetAlpha() or 1)
@@ -716,13 +888,17 @@ function ns.RF_PtModelAlphaApply(bd)
 end
 function ns.RF_PtModelAlpha(st, a)
     local bd = st.pt
-    if not (bd and bd._3dOn) then return end
+    if not (bd and bd._3dOn) then
+        return
+    end
     bd._rSecret, bd._rIn, bd._rA1, bd._rA2 = nil, nil, a, nil
     ns.RF_PtModelAlphaApply(bd)
 end
 function ns.RF_PtModelAlphaSecret(st, inRange, a1, a2)
     local bd = st.pt
-    if not (bd and bd._3dOn) then return end
+    if not (bd and bd._3dOn) then
+        return
+    end
     local m = bd._3d
     if not m.SetAlphaFromBoolean then
         return ns.RF_PtModelAlpha(st, a1)
@@ -733,11 +909,15 @@ end
 -- The container's alpha moved (callers gate on ns._ptModelOn): re-mirror.
 function ns.RF_PtContainerAlpha()
     local list = ns._partyAllButtons
-    if not list then return end
+    if not list then
+        return
+    end
     local GetFFD = ns.GetFFD
     for i = 1, #list do
         local bd = GetFFD(list[i]).pt
-        if bd and bd._3dOn then ns.RF_PtModelAlphaApply(bd) end
+        if bd and bd._3dOn then
+            ns.RF_PtModelAlphaApply(bd)
+        end
     end
 end
 
@@ -749,14 +929,18 @@ end
 --  wrong), class art per slot, the offline slot greyed.
 -------------------------------------------------------------------------------
 function ns.RF_PtPreview(f, s, classToken, isPlayer, offline)
-    if (s.partyPortraitStyle or "none") == "none" and not f.pt then return end
+    if (s.partyPortraitStyle or "none") == "none" and not f.pt then
+        return
+    end
     local db = ns.db
     local pw, ph = ns.RF_PartyDims(ns._pvOverlayProxy or (db and db.profile) or s)
     local bw, bh = ns.PixelSnap(pw), ns.PixelSnap(ph)
     f:SetSize(bw, bh)
     ns.RF_PtApply(f, f, s, bw, bh, nil)
     local bd = f.pt
-    if not (bd and bd._on) then return end
+    if not (bd and bd._on) then
+        return
+    end
     local _, playerCT = UnitClass("player")
     local mode = bd._mode
     local tc = (not isPlayer) and classToken and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classToken]
@@ -766,7 +950,9 @@ function ns.RF_PtPreview(f, s, classToken, isPlayer, offline)
     else
         local t2 = bd._2d
         if tc then
-            if bd._3d then bd._3d:Hide() end
+            if bd._3d then
+                bd._3d:Hide()
+            end
             t2:SetTexture(CLASS_SHEET)
             t2:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
             SeatArt2D(bd)

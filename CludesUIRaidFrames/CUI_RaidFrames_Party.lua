@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Party.lua
 --
@@ -9,26 +11,32 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local pairs        = pairs
-local ipairs       = ipairs
-local wipe         = wipe
-local type         = type
-local UnitClass             = UnitClass
-local IsInGroup             = IsInGroup
-local InCombatLockdown      = InCombatLockdown
-local GetNumGroupMembers    = GetNumGroupMembers
-local CreateFrame           = CreateFrame
+local pairs = pairs
+local ipairs = ipairs
+local wipe = wipe
+local type = type
+local UnitClass = UnitClass
+local IsInGroup = IsInGroup
+local InCombatLockdown = InCombatLockdown
+local GetNumGroupMembers = GetNumGroupMembers
+local CreateFrame = CreateFrame
 
 local GetFFD, PixelSnap, UpdateButton = I.GetFFD, I.PixelSnap, I.UpdateButton
 local UpdateReadyCheck = I.UpdateReadyCheck
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local containerFrame
-I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v) containerFrame = v end
+I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v)
+    containerFrame = v
+end
 
 -------------------------------------------------------------------------------
 --  Unlock mode registration
@@ -47,9 +55,9 @@ ns._partyContainerFrame:Hide()
 --  are the same functions used by raid buttons. Party buttons just get
 --  party-specific sizing via ReloadPartyFrames.
 -------------------------------------------------------------------------------
-ns._partyAllButtons    = {}
-ns._partyUnitToButton  = {}
-ns._partyHeader        = nil
+ns._partyAllButtons = {}
+ns._partyUnitToButton = {}
+ns._partyHeader = nil
 ns._partyFramesVisible = false
 
 -------------------------------------------------------------------------------
@@ -62,92 +70,243 @@ ns._partyFramesVisible = false
 ns._PARTY_KEY_SECTION = {}
 
 ns._PARTY_SECTION_ORDER = {
-    "healthBar", "absorbs", "powerBar", "textDisplay", "indicators", "dispels", "topNameBar",
+    "healthBar",
+    "absorbs",
+    "powerBar",
+    "textDisplay",
+    "indicators",
+    "dispels",
+    "topNameBar",
     "rangeTooltip",
 }
 ns._PARTY_SECTION_LABELS = {
-    healthBar     = "Health Bar",
-    absorbs       = "Absorbs",
-    powerBar      = "Power Bar",
-    textDisplay   = "Text Display",
-    indicators    = "Indicators",
-    dispels       = "Dispels",
-    topNameBar    = "Top Name Bar",
-    rangeTooltip  = "Range & Tooltip",
+    healthBar = "Health Bar",
+    absorbs = "Absorbs",
+    powerBar = "Power Bar",
+    textDisplay = "Text Display",
+    indicators = "Indicators",
+    dispels = "Dispels",
+    topNameBar = "Top Name Bar",
+    rangeTooltip = "Range & Tooltip",
 }
 
 do
     local map = {
         healthBar = {
-            "healthBarTexture", "healthBarOpacity", "healthColorMode",
-            "customFillColor", "dynamicColor100", "dynamicColor50", "dynamicColor0",
-            "customBgColor", "bgClassColored", "bgDarkness", "smoothBars",
-            "healPrediction", "healPredOpacity", "healPredColor",
-            "healthVerticalFill", "healthInvertFill",
+            "healthBarTexture",
+            "healthBarOpacity",
+            "healthColorMode",
+            "customFillColor",
+            "dynamicColor100",
+            "dynamicColor50",
+            "dynamicColor0",
+            "customBgColor",
+            "bgClassColored",
+            "bgDarkness",
+            "smoothBars",
+            "healPrediction",
+            "healPredOpacity",
+            "healPredColor",
+            "healthVerticalFill",
+            "healthInvertFill",
             "textureBg",
             -- Drawn as "Threat Borders" (and its cog) on the Health Bar row, so they file here.
-            "threatBorderSize", "threatCustomBorder",
+            "threatBorderSize",
+            "threatCustomBorder",
         },
         absorbs = {
-            "absorbStyle", "absorbOpacity", "absorbColor", "absorbEdgeMode", "showOvershield",
-            "overshieldMode", "absorbGlowLine",
-            "absorbBarEnabled", "absorbBarPosition", "absorbBarHeight", "absorbBarColor",
+            "absorbStyle",
+            "absorbOpacity",
+            "absorbColor",
+            "absorbEdgeMode",
+            "showOvershield",
+            "overshieldMode",
+            "absorbGlowLine",
+            "absorbBarEnabled",
+            "absorbBarPosition",
+            "absorbBarHeight",
+            "absorbBarColor",
             "absorbBarGrowDir",
-            "healAbsorbBarPosition", "healAbsorbBarHeight", "healAbsorbBarColor",
+            "healAbsorbBarPosition",
+            "healAbsorbBarHeight",
+            "healAbsorbBarColor",
             "healAbsorbBarGrowDir",
-            "healAbsorbStyle", "healAbsorbOpacity", "healAbsorbColor", "healAbsorbEdgeMode",
+            "healAbsorbStyle",
+            "healAbsorbOpacity",
+            "healAbsorbColor",
+            "healAbsorbEdgeMode",
             "healAbsorbBgOpacity",
-            "maxHealthStyle", "maxHealthOpacity", "maxHealthColor", "maxHealthBgOpacity",
+            "maxHealthStyle",
+            "maxHealthOpacity",
+            "maxHealthColor",
+            "maxHealthBgOpacity",
         },
         powerBar = {
-            "showPowerBar", "powerHeight", "powerBgDarkness", "powerBgColor", "powerBgPowerColored",
-            "powerBorderStyle", "powerBorderMatchFrame", "powerBorderMatchColor", "powerBorderSize", "powerBorderColor", "powerBorderAlpha",
-            "powerShowForHealer", "powerShowForTank", "powerShowForDPS", "smoothPowerBars",
-            "powerUniformAnchors", "extendHealthBehindPower",
+            "showPowerBar",
+            "powerHeight",
+            "powerBgDarkness",
+            "powerBgColor",
+            "powerBgPowerColored",
+            "powerBorderStyle",
+            "powerBorderMatchFrame",
+            "powerBorderMatchColor",
+            "powerBorderSize",
+            "powerBorderColor",
+            "powerBorderAlpha",
+            "powerShowForHealer",
+            "powerShowForTank",
+            "powerShowForDPS",
+            "smoothPowerBars",
+            "powerUniformAnchors",
+            "extendHealthBehindPower",
         },
         textDisplay = {
-            "nameSize", "nameMaxLength", "nameFormat", "nameColorMode", "nameCustomColor",
-            "namePosition", "nameOffsetX", "nameOffsetY",
-            "levelTextSize", "levelTextPosition", "levelTextOffsetX", "levelTextOffsetY",
-            "healthTextMode", "healthTextColorMode", "healthTextCustomColor",
-            "healthTextSize", "healthTextPosition", "healthTextOffsetX", "healthTextOffsetY",
-            "healAbsorbTextMode", "healAbsorbTextColorMode", "healAbsorbTextCustomColor",
-            "healAbsorbTextSize", "healAbsorbTextPosition", "healAbsorbTextOffsetX", "healAbsorbTextOffsetY",
-            "powerTextMode", "powerTextColorMode", "powerTextCustomColor",
-            "powerTextSize", "powerTextPosition", "powerTextOffsetX", "powerTextOffsetY",
+            "nameSize",
+            "nameMaxLength",
+            "nameFormat",
+            "nameColorMode",
+            "nameCustomColor",
+            "namePosition",
+            "nameOffsetX",
+            "nameOffsetY",
+            "levelTextSize",
+            "levelTextPosition",
+            "levelTextOffsetX",
+            "levelTextOffsetY",
+            "healthTextMode",
+            "healthTextColorMode",
+            "healthTextCustomColor",
+            "healthTextSize",
+            "healthTextPosition",
+            "healthTextOffsetX",
+            "healthTextOffsetY",
+            "healAbsorbTextMode",
+            "healAbsorbTextColorMode",
+            "healAbsorbTextCustomColor",
+            "healAbsorbTextSize",
+            "healAbsorbTextPosition",
+            "healAbsorbTextOffsetX",
+            "healAbsorbTextOffsetY",
+            "powerTextMode",
+            "powerTextColorMode",
+            "powerTextCustomColor",
+            "powerTextSize",
+            "powerTextPosition",
+            "powerTextOffsetX",
+            "powerTextOffsetY",
             "nameTextAboveIcons",
             -- Plus the second Health Text and the Custom texts (ns.RF_TEXT_NEW_KEYS).
         },
         indicators = {
-            "roleIconStyle", "roleIconSize", "roleIconPosition", "roleIconOffsetX", "roleIconOffsetY", "roleIconHideInCombat",
-            "roleIconOnNameBar", "roleNameBarPosition", "roleNameBarOffsetX", "roleNameBarOffsetY",
-            "roleIconBehindBorder", "roleText",
-            "roleTextTankColor", "roleTextHealerColor", "roleTextDPSColor",
-            "showRoleForTank", "showRoleForHealer", "showRoleForDPS",
-            "showRaidMarker", "raidMarkerSize", "raidMarkerPosition", "raidMarkerOffsetX", "raidMarkerOffsetY",
-            "showPingMarker", "pingMarkerSize", "pingMarkerPosition", "pingMarkerOffsetX", "pingMarkerOffsetY",
-            "showMissingBuffs", "missingBuffsSize", "missingBuffsPosition", "missingBuffsOffsetX", "missingBuffsOffsetY",
-            "missingBuffsFort", "missingBuffsMark", "missingBuffsIntellect", "missingBuffsSpirit", "missingBuffsThorns",
-            "missingBuffsSalvation", "missingBuffsBlessing",
-            "missingBuffsThornsTank", "missingBuffsBlessingTank", "missingBuffsBlessingHealer", "missingBuffsBlessingDPS",
-            "missingBuffsBlessingExTank", "missingBuffsBlessingExHealer", "missingBuffsBlessingExDPS",
-            "missingBuffsGlowType", "missingBuffsGlowColorMode", "missingBuffsGlowR", "missingBuffsGlowG", "missingBuffsGlowB",
-            "missingBuffsGlowLines", "missingBuffsGlowThickness", "missingBuffsGlowSpeed", "missingBuffsGlowBackground",
-            "missingBuffsGlowBackgroundR", "missingBuffsGlowBackgroundG", "missingBuffsGlowBackgroundB",
-            "showReadyCheck", "showSummonPending", "showIncomingRez",
-            "readyCheckSize", "readyCheckPosition", "readyCheckOffsetX", "readyCheckOffsetY",
-            "statusTextPosition", "statusTextOffsetX", "statusTextOffsetY", "statusTextSize", "statusTextColor",
+            "roleIconStyle",
+            "roleIconSize",
+            "roleIconPosition",
+            "roleIconOffsetX",
+            "roleIconOffsetY",
+            "roleIconHideInCombat",
+            "roleIconOnNameBar",
+            "roleNameBarPosition",
+            "roleNameBarOffsetX",
+            "roleNameBarOffsetY",
+            "roleIconBehindBorder",
+            "roleText",
+            "roleTextTankColor",
+            "roleTextHealerColor",
+            "roleTextDPSColor",
+            "showRoleForTank",
+            "showRoleForHealer",
+            "showRoleForDPS",
+            "showRaidMarker",
+            "raidMarkerSize",
+            "raidMarkerPosition",
+            "raidMarkerOffsetX",
+            "raidMarkerOffsetY",
+            "showPingMarker",
+            "pingMarkerSize",
+            "pingMarkerPosition",
+            "pingMarkerOffsetX",
+            "pingMarkerOffsetY",
+            "showMissingBuffs",
+            "missingBuffsSize",
+            "missingBuffsPosition",
+            "missingBuffsOffsetX",
+            "missingBuffsOffsetY",
+            "missingBuffsFort",
+            "missingBuffsMark",
+            "missingBuffsIntellect",
+            "missingBuffsSpirit",
+            "missingBuffsThorns",
+            "missingBuffsSalvation",
+            "missingBuffsBlessing",
+            "missingBuffsThornsTank",
+            "missingBuffsBlessingTank",
+            "missingBuffsBlessingHealer",
+            "missingBuffsBlessingDPS",
+            "missingBuffsBlessingExTank",
+            "missingBuffsBlessingExHealer",
+            "missingBuffsBlessingExDPS",
+            "missingBuffsGlowType",
+            "missingBuffsGlowColorMode",
+            "missingBuffsGlowR",
+            "missingBuffsGlowG",
+            "missingBuffsGlowB",
+            "missingBuffsGlowLines",
+            "missingBuffsGlowThickness",
+            "missingBuffsGlowSpeed",
+            "missingBuffsGlowBackground",
+            "missingBuffsGlowBackgroundR",
+            "missingBuffsGlowBackgroundG",
+            "missingBuffsGlowBackgroundB",
+            "showReadyCheck",
+            "showSummonPending",
+            "showIncomingRez",
+            "readyCheckSize",
+            "readyCheckPosition",
+            "readyCheckOffsetX",
+            "readyCheckOffsetY",
+            "statusTextPosition",
+            "statusTextOffsetX",
+            "statusTextOffsetY",
+            "statusTextSize",
+            "statusTextColor",
             "statusShowAFK",
-            "showLeaderIcon", "showLeaderIconInCombat", "leaderIconPosition", "leaderIconSize", "leaderIconOffsetX", "leaderIconOffsetY",
-            "showCombatIndicator", "combatIndicatorStyle", "combatIndicatorColor", "combatIndicatorCustomColor",
-            "combatIndicatorSize", "combatIndicatorPosition", "combatIndicatorOffsetX", "combatIndicatorOffsetY",
-            "borderSize", "borderColor", "borderAlpha", "borderTexture",
-            "borderBehind", "borderTextureOffset", "borderTextureOffsetY",
-            "borderTextureShiftX", "borderTextureShiftY", "cornerRadius", "cornerMask",
-            "hoverBorderEnabled", "hoverBorderSize", "hoverBorderColor", "hoverBorderAlpha",
-            "targetBorderEnabled", "targetBorderSize", "targetBorderColor", "targetBorderAlpha",
+            "showLeaderIcon",
+            "showLeaderIconInCombat",
+            "leaderIconPosition",
+            "leaderIconSize",
+            "leaderIconOffsetX",
+            "leaderIconOffsetY",
+            "showCombatIndicator",
+            "combatIndicatorStyle",
+            "combatIndicatorColor",
+            "combatIndicatorCustomColor",
+            "combatIndicatorSize",
+            "combatIndicatorPosition",
+            "combatIndicatorOffsetX",
+            "combatIndicatorOffsetY",
+            "borderSize",
+            "borderColor",
+            "borderAlpha",
+            "borderTexture",
+            "borderBehind",
+            "borderTextureOffset",
+            "borderTextureOffsetY",
+            "borderTextureShiftX",
+            "borderTextureShiftY",
+            "cornerRadius",
+            "cornerMask",
+            "hoverBorderEnabled",
+            "hoverBorderSize",
+            "hoverBorderColor",
+            "hoverBorderAlpha",
+            "targetBorderEnabled",
+            "targetBorderSize",
+            "targetBorderColor",
+            "targetBorderAlpha",
             -- Exact-size companions (see ns._PARTY_PX_SIBLING): same section as their siblings.
-            "borderSizePx", "hoverBorderSizePx", "targetBorderSizePx",
+            "borderSizePx",
+            "hoverBorderSizePx",
+            "targetBorderSizePx",
         },
         -- Must list every key the DISPELS section of the options page draws:
         -- the party tab's blocking overlay is sized from that section's y-range,
@@ -155,25 +314,51 @@ do
         -- filed under another section (or missing) is still editable but writes
         -- the shared raid value.
         dispels = {
-            "dispelBorderSize", "dispelOverlay", "dispelOverlayOpacity", "dispelShowAll",
-            "showDispelIcons", "dispelIconPosition", "dispelIconOffsetX", "dispelIconOffsetY", "dispelIconSize",
-            "dispelColorMagic", "dispelColorCurse", "dispelColorDisease",
-            "dispelColorPoison", "dispelColorBleed",
-            "dispelIconBorderSize", "dispelOverlayPosition", "dispelCustomBorder",
-            "dispelClockBorder", "dispelClockExtraBorder",
-            "dispellableDebuffLocation", "dispellableDebuffGrowDirection",
-            "dispellableDebuffOffsetX", "dispellableDebuffOffsetY", "dispellableDebuffSize",
+            "dispelBorderSize",
+            "dispelOverlay",
+            "dispelOverlayOpacity",
+            "dispelShowAll",
+            "showDispelIcons",
+            "dispelIconPosition",
+            "dispelIconOffsetX",
+            "dispelIconOffsetY",
+            "dispelIconSize",
+            "dispelColorMagic",
+            "dispelColorCurse",
+            "dispelColorDisease",
+            "dispelColorPoison",
+            "dispelColorBleed",
+            "dispelIconBorderSize",
+            "dispelOverlayPosition",
+            "dispelCustomBorder",
+            "dispelClockBorder",
+            "dispelClockExtraBorder",
+            "dispellableDebuffLocation",
+            "dispellableDebuffGrowDirection",
+            "dispellableDebuffOffsetX",
+            "dispellableDebuffOffsetY",
+            "dispellableDebuffSize",
         },
         topNameBar = {
-            "topNameBarEnabled", "topNameBarHeight",
-            "topNameBarDivider", "topNameBarDividerMatchColor",
-            "topNameBarBgColor", "topNameBarBgOpacity",
-            "topNameBarTextSize", "topNameBarTextColorMode", "topNameBarTextColor",
-            "topNameBarTextOffsetX", "topNameBarTextOffsetY", "topNameBarTextAlign",
+            "topNameBarEnabled",
+            "topNameBarHeight",
+            "topNameBarDivider",
+            "topNameBarDividerMatchColor",
+            "topNameBarBgColor",
+            "topNameBarBgOpacity",
+            "topNameBarTextSize",
+            "topNameBarTextColorMode",
+            "topNameBarTextColor",
+            "topNameBarTextOffsetX",
+            "topNameBarTextOffsetY",
+            "topNameBarTextAlign",
             "topNameBarBottom",
         },
         rangeTooltip = {
-            "oorAlpha", "showTooltip", "tooltipMode", "frameStrata",
+            "oorAlpha",
+            "showTooltip",
+            "tooltipMode",
+            "frameStrata",
         },
     }
     for section, keys in pairs(map) do
@@ -181,7 +366,9 @@ do
             ns._PARTY_KEY_SECTION[k] = section
         end
     end
-    for _, k in ipairs(ns.RF_TEXT_NEW_KEYS) do ns._PARTY_KEY_SECTION[k] = "textDisplay" end
+    for _, k in ipairs(ns.RF_TEXT_NEW_KEYS) do
+        ns._PARTY_KEY_SECTION[k] = "textDisplay"
+    end
 end
 
 -- A border's exact-size companion ("<key>Px", read through CludesUI.BorderPx)
@@ -192,16 +379,20 @@ end
 -- Glow Line pairs with Absorb Style the same way: unset, it follows the style
 -- it is read with, so a party that keeps its own style never takes the raid's.
 ns._PARTY_PX_SIBLING = {
-    borderSizePx       = "borderSize",
-    hoverBorderSizePx  = "hoverBorderSize",
+    borderSizePx = "borderSize",
+    hoverBorderSizePx = "hoverBorderSize",
     targetBorderSizePx = "targetBorderSize",
-    absorbGlowLine     = "absorbStyle",
+    absorbGlowLine = "absorbStyle",
 }
 
 ns._IsPartySectionCustom = function(section)
-    if not db or not db.profile then return false end
+    if not db or not db.profile then
+        return false
+    end
     local ss = db.profile.partySyncSections
-    if not ss then return false end
+    if not ss then
+        return false
+    end
     return ss[section] == false
 end
 
@@ -212,15 +403,22 @@ function ns._ResolveFrameStrata(isParty)
         strata = db.profile.party_frameStrata
     end
     strata = strata or db.profile.frameStrata or "LOW"
-    if strata ~= "BACKGROUND" and strata ~= "LOW" and strata ~= "MEDIUM"
-        and strata ~= "HIGH" and strata ~= "DIALOG" then
+    if
+        strata ~= "BACKGROUND"
+        and strata ~= "LOW"
+        and strata ~= "MEDIUM"
+        and strata ~= "HIGH"
+        and strata ~= "DIALOG"
+    then
         strata = "LOW"
     end
     return strata
 end
 
 function ns.ApplyFrameStrata()
-    if not db or not db.profile then return false end
+    if not db or not db.profile then
+        return false
+    end
     if InCombatLockdown() then
         ns._frameStrataDirty = true
         return false
@@ -251,14 +449,18 @@ end
 -- that governed those settings at the time. Idempotent (only fills a nil key)
 -- and runs on every enable/profile swap, so imported profiles are covered too.
 ns._NormalizePartySyncSections = function()
-    if not (db and db.profile) then return end
+    if not (db and db.profile) then
+        return
+    end
     local ss = db.profile.partySyncSections
     if ss and ss.absorbs == nil and ss.healthBar == false then
         ss.absorbs = false
     end
     -- Enable/profile-swap chokepoint: recompute the proxy fast modes against
     -- the (possibly new) profile table and section state.
-    if ns._RefreshProxyModes then ns._RefreshProxyModes() end
+    if ns._RefreshProxyModes then
+        ns._RefreshProxyModes()
+    end
 end
 
 ns._partyProxy = setmetatable({}, {
@@ -270,7 +472,9 @@ ns._partyProxy = setmetatable({}, {
                 return rawget(db.profile, "party_" .. key)
             end
             local pv = rawget(db.profile, "party_" .. key)
-            if pv ~= nil then return pv end
+            if pv ~= nil then
+                return pv
+            end
         end
         return db and db.profile and db.profile[key]
     end,
@@ -300,112 +504,174 @@ ns._xfBmScale = 1
 local INDICATOR_SCALE_KEYS = {}
 for _, k in ipairs({
     -- Font sizes
-    "nameSize", "healthTextSize", "healAbsorbTextSize", "statusTextSize", "powerTextSize", "levelTextSize",
-    "debuffStacksTextSize", "debuffDurTextSize", "defDurTextSize",
+    "nameSize",
+    "healthTextSize",
+    "healAbsorbTextSize",
+    "statusTextSize",
+    "powerTextSize",
+    "levelTextSize",
+    "debuffStacksTextSize",
+    "debuffDurTextSize",
+    "defDurTextSize",
     -- Icon sizes
-    "roleIconSize", "leaderIconSize", "raidMarkerSize", "combatIndicatorSize", "pingMarkerSize",
+    "roleIconSize",
+    "leaderIconSize",
+    "raidMarkerSize",
+    "combatIndicatorSize",
+    "pingMarkerSize",
     "missingBuffsSize",
-    "debuffSize", "defSize", "dispellableDebuffSize",
+    "debuffSize",
+    "defSize",
+    "dispellableDebuffSize",
     -- Offsets
-    "nameOffsetX", "nameOffsetY",
-    "healthTextOffsetX", "healthTextOffsetY",
-    "healAbsorbTextOffsetX", "healAbsorbTextOffsetY",
-    "powerTextOffsetX", "powerTextOffsetY",
-    "levelTextOffsetX", "levelTextOffsetY",
-    "statusTextOffsetX", "statusTextOffsetY",
-    "roleIconOffsetX", "roleIconOffsetY",
-    "leaderIconOffsetX", "leaderIconOffsetY",
-    "raidMarkerOffsetX", "raidMarkerOffsetY",
-    "missingBuffsOffsetX", "missingBuffsOffsetY",
-    "combatIndicatorOffsetX", "combatIndicatorOffsetY",
-    "debuffOffsetX", "debuffOffsetY",
-    "dispellableDebuffOffsetX", "dispellableDebuffOffsetY",
-    "debuffStacksOffsetX", "debuffStacksOffsetY",
-    "debuffDurTextOffsetX", "debuffDurTextOffsetY",
-    "defOffsetX", "defOffsetY",
-    "defDurTextOffsetX", "defDurTextOffsetY",
-    "dispelIconOffsetX", "dispelIconOffsetY",
-}) do INDICATOR_SCALE_KEYS[k] = true end
+    "nameOffsetX",
+    "nameOffsetY",
+    "healthTextOffsetX",
+    "healthTextOffsetY",
+    "healAbsorbTextOffsetX",
+    "healAbsorbTextOffsetY",
+    "powerTextOffsetX",
+    "powerTextOffsetY",
+    "levelTextOffsetX",
+    "levelTextOffsetY",
+    "statusTextOffsetX",
+    "statusTextOffsetY",
+    "roleIconOffsetX",
+    "roleIconOffsetY",
+    "leaderIconOffsetX",
+    "leaderIconOffsetY",
+    "raidMarkerOffsetX",
+    "raidMarkerOffsetY",
+    "missingBuffsOffsetX",
+    "missingBuffsOffsetY",
+    "combatIndicatorOffsetX",
+    "combatIndicatorOffsetY",
+    "debuffOffsetX",
+    "debuffOffsetY",
+    "dispellableDebuffOffsetX",
+    "dispellableDebuffOffsetY",
+    "debuffStacksOffsetX",
+    "debuffStacksOffsetY",
+    "debuffDurTextOffsetX",
+    "debuffDurTextOffsetY",
+    "defOffsetX",
+    "defOffsetY",
+    "defDurTextOffsetX",
+    "defDurTextOffsetY",
+    "dispelIconOffsetX",
+    "dispelIconOffsetY",
+}) do
+    INDICATOR_SCALE_KEYS[k] = true
+end
 -- The second Health Text and the Custom texts: font size and offsets.
-for _, k in ipairs(ns.RF_TEXT_NEW_SCALE_KEYS) do INDICATOR_SCALE_KEYS[k] = true end
+for _, k in ipairs(ns.RF_TEXT_NEW_SCALE_KEYS) do
+    INDICATOR_SCALE_KEYS[k] = true
+end
 
-ns._scaledProfile = setmetatable({}, { __index = function(_, key)
-    -- Return active tier dimensions so all rendering uses the correct size
-    if key == "frameWidth"  and ns._activeSizeW then return ns._activeSizeW end
-    if key == "frameHeight" and ns._activeSizeH then return ns._activeSizeH end
-    local val = db and db.profile and db.profile[key]
-    if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._indicatorScale ~= 1 then
-        return val * ns._indicatorScale
-    end
-    return val
-end })
+ns._scaledProfile = setmetatable({}, {
+    __index = function(_, key)
+        -- Return active tier dimensions so all rendering uses the correct size
+        if key == "frameWidth" and ns._activeSizeW then
+            return ns._activeSizeW
+        end
+        if key == "frameHeight" and ns._activeSizeH then
+            return ns._activeSizeH
+        end
+        local val = db and db.profile and db.profile[key]
+        if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._indicatorScale ~= 1 then
+            return val * ns._indicatorScale
+        end
+        return val
+    end,
+})
 
 -- Extra Frames proxy: chains through ns._scaledProfile (so the raid tier
 -- indicator scale still applies) and multiplies the scale keys by the Extra
 -- Width/Height offset ratio on top. Selected wherever rendering picks a
 -- settings source for a d._isExtra button.
-ns._scaledExtraProxy = setmetatable({}, { __index = function(_, key)
-    local val = ns._scaledProfile[key]
-    if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._xfExtraRatio ~= 1 then
-        return val * ns._xfExtraRatio
-    end
-    return val
-end })
-
-ns._scaledPartyProxy = setmetatable({}, { __index = function(_, key)
-    -- Return party dimensions for frameWidth/frameHeight reads. The real-
-    -- preview effective overlay (ns._pvOverlayProxy) shadows live while a
-    -- panel view swap is active; it falls through to db.profile itself.
-    if key == "frameWidth" or key == "frameHeight" then
-        local p = ns._pvOverlayProxy or (db and db.profile)
-        if not p then return nil end
-        -- The bars' width: an attached portrait's share of the box is not theirs.
-        local w, h, _, res = ns.RF_PartyDims(p)
-        if key == "frameWidth" then return w - (res or 0) end
-        return h
-    end
-    -- Party Frames kit: the settings its layout decides (neutral keys, the
-    -- debuff row under the frame) read the kit's values. Only the overlay
-    -- view reaches here for them: otherwise the materializer holds them.
-    local ovp = ns._pvOverlayProxy
-    if ovp and ns.RF_PartyKit() then
-        local kv = ns.RF_KitViewKeys(ovp)
-        if kv and kv[key] ~= nil then return kv[key] end
-    end
-    local val
-    local resolved = false
-    -- Effective overlay first (preview-scoped ONLY -- ns._partyProxy also serves the
-    -- REAL party frames and must never consult it): party_ variant wins over the base
-    -- key, mirroring _partyProxy's precedence. Sentinel deletions resolve to nil
-    -- WITHOUT falling through to the live view value.
-    local ov = ns._pvOverlayProxy and ns._pvOverlay
-    if ov then
-        local pv
-        local section = ns._PARTY_KEY_SECTION[key]
-        if section and ns._IsPartySectionCustom(section) then
-            pv = ov["party_" .. key]
+ns._scaledExtraProxy = setmetatable({}, {
+    __index = function(_, key)
+        local val = ns._scaledProfile[key]
+        if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._xfExtraRatio ~= 1 then
+            return val * ns._xfExtraRatio
         end
-        if pv == nil then
-            -- An exact-size companion whose party sibling is stored, and whose
-            -- raid sibling the overlay does not own, stays unresolved so the
-            -- party rule in _partyProxy decides (never the raid companion).
-            local sib = ns._PARTY_PX_SIBLING and ns._PARTY_PX_SIBLING[key]
-            if not (sib and section and ns._IsPartySectionCustom(section)
-                    and rawget(db.profile, "party_" .. sib) ~= nil and ov[sib] == nil) then
-                pv = ov[key]
+        return val
+    end,
+})
+
+ns._scaledPartyProxy = setmetatable({}, {
+    __index = function(_, key)
+        -- Return party dimensions for frameWidth/frameHeight reads. The real-
+        -- preview effective overlay (ns._pvOverlayProxy) shadows live while a
+        -- panel view swap is active; it falls through to db.profile itself.
+        if key == "frameWidth" or key == "frameHeight" then
+            local p = ns._pvOverlayProxy or (db and db.profile)
+            if not p then
+                return nil
+            end
+            -- The bars' width: an attached portrait's share of the box is not theirs.
+            local w, h, _, res = ns.RF_PartyDims(p)
+            if key == "frameWidth" then
+                return w - (res or 0)
+            end
+            return h
+        end
+        -- Party Frames kit: the settings its layout decides (neutral keys, the
+        -- debuff row under the frame) read the kit's values. Only the overlay
+        -- view reaches here for them: otherwise the materializer holds them.
+        local ovp = ns._pvOverlayProxy
+        if ovp and ns.RF_PartyKit() then
+            local kv = ns.RF_KitViewKeys(ovp)
+            if kv and kv[key] ~= nil then
+                return kv[key]
             end
         end
-        if pv ~= nil then
-            resolved = true
-            if pv ~= CludesUI.SPECOV_NIL then val = pv end
+        local val
+        local resolved = false
+        -- Effective overlay first (preview-scoped ONLY -- ns._partyProxy also serves the
+        -- REAL party frames and must never consult it): party_ variant wins over the base
+        -- key, mirroring _partyProxy's precedence. Sentinel deletions resolve to nil
+        -- WITHOUT falling through to the live view value.
+        local ov = ns._pvOverlayProxy and ns._pvOverlay
+        if ov then
+            local pv
+            local section = ns._PARTY_KEY_SECTION[key]
+            if section and ns._IsPartySectionCustom(section) then
+                pv = ov["party_" .. key]
+            end
+            if pv == nil then
+                -- An exact-size companion whose party sibling is stored, and whose
+                -- raid sibling the overlay does not own, stays unresolved so the
+                -- party rule in _partyProxy decides (never the raid companion).
+                local sib = ns._PARTY_PX_SIBLING and ns._PARTY_PX_SIBLING[key]
+                if
+                    not (
+                        sib
+                        and section
+                        and ns._IsPartySectionCustom(section)
+                        and rawget(db.profile, "party_" .. sib) ~= nil
+                        and ov[sib] == nil
+                    )
+                then
+                    pv = ov[key]
+                end
+            end
+            if pv ~= nil then
+                resolved = true
+                if pv ~= CludesUI.SPECOV_NIL then
+                    val = pv
+                end
+            end
         end
-    end
-    if not resolved then val = ns._partyProxy[key] end
-    if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._partyIndicatorScale ~= 1 then
-        return val * ns._partyIndicatorScale
-    end
-    return val
-end })
+        if not resolved then
+            val = ns._partyProxy[key]
+        end
+        if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and ns._partyIndicatorScale ~= 1 then
+            return val * ns._partyIndicatorScale
+        end
+        return val
+    end,
+})
 
 -- MATERIALIZED effective settings: every render-path read goes through the four proxies,
 -- whose __index closures (section checks, overlay checks, scale multiplies) were
@@ -422,13 +688,17 @@ end })
 -- _BumpAbsorbGen (the SSet/SWrite options funnel).
 function ns._RefreshProxyModes()
     local p = db and db.profile
-    if not p then return end
+    if not p then
+        return
+    end
     local scaleKeys = INDICATOR_SCALE_KEYS
 
     -- _partyProxy: base profile + party_ overrides for custom sections.
     local pp = ns._partyProxy
     wipe(pp)
-    for k, v in pairs(p) do rawset(pp, k, v) end
+    for k, v in pairs(p) do
+        rawset(pp, k, v)
+    end
     local keySection = ns._PARTY_KEY_SECTION
     local pxSib = ns._PARTY_PX_SIBLING
     if keySection and ns._IsPartySectionCustom then
@@ -458,8 +728,12 @@ function ns._RefreshProxyModes()
             rawset(sp, k, v)
         end
     end
-    if ns._activeSizeW then rawset(sp, "frameWidth", ns._activeSizeW) end
-    if ns._activeSizeH then rawset(sp, "frameHeight", ns._activeSizeH) end
+    if ns._activeSizeW then
+        rawset(sp, "frameWidth", ns._activeSizeW)
+    end
+    if ns._activeSizeH then
+        rawset(sp, "frameHeight", ns._activeSizeH)
+    end
 
     -- _scaledPartyProxy: party view + party dimensions + party scale.
     -- Overlay active = stay empty (full-chain fallthrough serves the panel).
@@ -480,7 +754,9 @@ function ns._RefreshProxyModes()
         if ns.RF_PartyKit() then
             local kv = ns.RF_KitViewKeys(pp)
             if kv then
-                for k, v in pairs(kv) do rawset(spp, k, v) end
+                for k, v in pairs(kv) do
+                    rawset(spp, k, v)
+                end
             end
         end
     end
@@ -502,11 +778,17 @@ function ns._RefreshProxyModes()
     -- settings pushes inside UpdateAbsorb).
     ns._absorbGen = (ns._absorbGen or 0) + 1
     -- The text plans are rebuilt on their next use (CUI_RaidFrames_TextPaint.lua).
-    if ns.RF_TextPlanDirty then ns.RF_TextPlanDirty() end
+    if ns.RF_TextPlanDirty then
+        ns.RF_TextPlanDirty()
+    end
     -- The level's event follows the views (defined once the unit trackers exist).
-    if ns._RFSyncLevelRegistration then ns._RFSyncLevelRegistration() end
+    if ns._RFSyncLevelRegistration then
+        ns._RFSyncLevelRegistration()
+    end
     -- Custom texts' UNIT_TARGET and power events follow the views too (Lifecycle).
-    if ns._RFSyncCustomRegistration then ns._RFSyncCustomRegistration() end
+    if ns._RFSyncCustomRegistration then
+        ns._RFSyncCustomRegistration()
+    end
 end
 ns._RefreshProxyModes()
 
@@ -520,7 +802,9 @@ ns._BumpAbsorbGen = function()
     ns._paintGen = (ns._paintGen or 0) + 1
     -- Heal-prediction toggles ride this same funnel: re-sync the conditional
     -- UNIT_HEAL_PREDICTION registrations (idempotent, 45 trackers).
-    if ns._RFSyncPredRegistration then ns._RFSyncPredRegistration() end
+    if ns._RFSyncPredRegistration then
+        ns._RFSyncPredRegistration()
+    end
 end
 
 -- Compute the party indicator/aura scale (mirrors the raid auto-resize in
@@ -528,7 +812,9 @@ end
 -- party frame size relative to the configured raid base, clamped to [0.7, 1.5].
 -- Independent of raid: gated on partyAutoResizeIndicators (default off).
 ns._UpdatePartyIndicatorScale = function()
-    if not (db and db.profile) then return end
+    if not (db and db.profile) then
+        return
+    end
     local s = db.profile
     local scale
     if ns.RF_PartyKit() then
@@ -550,13 +836,17 @@ ns._UpdatePartyIndicatorScale = function()
     -- hardcoded always-on behavior.
     ns._partyBmScale = (s.partyAutoResizeTrackedBuffs ~= false) and scale or 1
     ns._partyIndicatorScale = s.partyAutoResizeIndicators and scale or 1
-    if ns._RefreshProxyModes then ns._RefreshProxyModes() end
+    if ns._RefreshProxyModes then
+        ns._RefreshProxyModes()
+    end
 end
 
 -- Create a single SecureGroupHeader for party frames (5 buttons max).
 -- Called once from OnEnable.
 ns._CreatePartyHeader = function()
-    if ns._partyHeader then return end
+    if ns._partyHeader then
+        return
+    end
     local s = db.profile
     local pw, ph, pcs = ns.RF_PartyDims(s)
     local bw, bh, cs = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
@@ -567,7 +857,7 @@ ns._CreatePartyHeader = function()
     ]]):format(bw, bh)
 
     local hdr = CreateFrame("Frame", "ERFPartyHeader", ns._partyContainerFrame, "SecureGroupHeaderTemplate")
-        hdr:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
+    hdr:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
     hdr:SetAttribute("template", "SecureUnitButtonTemplate")
     hdr:SetAttribute("templateType", "Button")
     hdr:SetAttribute("initialConfigFunction", initConfig)
@@ -618,7 +908,8 @@ ns._CreatePartyHeader = function()
     -- ever move it -- it is always slot 0 and cannot flicker. When self-first
     -- is on, the party header runs showPlayer=false and this button owns the
     -- player frame; when off, it is hidden and the header shows the player.
-    local selfBtn = CreateFrame("Button", "ERFPartySelfButton", ns._partyContainerFrame, "SecureUnitButtonTemplate")
+    local selfBtn =
+        CreateFrame("Button", "ERFPartySelfButton", ns._partyContainerFrame, "SecureUnitButtonTemplate")
     selfBtn:SetAttribute("unit", "player")
     local sd = GetFFD(selfBtn)
     sd._isParty = true
@@ -649,7 +940,9 @@ end
 
 -- Full update for all visible party buttons (shared rendering functions).
 ns._UpdateAllPartyButtons = function()
-    if ns._partyPvActive then return end
+    if ns._partyPvActive then
+        return
+    end
     for _, btn in ipairs(ns._partyAllButtons) do
         local u = btn:GetAttribute("unit")
         if u and btn:IsVisible() then
@@ -666,12 +959,18 @@ end
 -- the header stack and the header's centered child anchors keep growing around the
 -- stale width. Returns useSelf for the caller's showPlayer attribute logic.
 ns._PositionPartySlots = function(bw, bh, cs, unitGrowth)
-    if not ns._partyHeader then return false end
+    if not ns._partyHeader then
+        return false
+    end
     local s = db.profile
     local pSelfFirst = s.partyShowSelfFirst
-    if pSelfFirst == nil then pSelfFirst = s.showSelfFirst end
+    if pSelfFirst == nil then
+        pSelfFirst = s.showSelfFirst
+    end
     local pSelfLast = s.partySelfLast
-    if pSelfLast == nil then pSelfLast = s.showSelfLast end
+    if pSelfLast == nil then
+        pSelfLast = s.showSelfLast
+    end
     local hideSelf = s.partyHideSelf
     -- Party-in-raid mode (arena, Small Raid) binds the header to raid units,
     -- which include the player, and showPlayer=false cannot exclude the player
@@ -685,7 +984,11 @@ ns._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     -- centering): the visibility driver can show it mid-fight, when neither can
     -- be placed, and the header alone then shows every member from the first slot.
     local _, live = ns._RFVisWanted()
-    local useSelf = live and (pSelfFirst or pSelfLast) and not hideSelf and IsInGroup() and not ns._PartyInRaid()
+    local useSelf = live
+        and (pSelfFirst or pSelfLast)
+        and not hideSelf
+        and IsInGroup()
+        and not ns._PartyInRaid()
         and not ns._FsPartyMode()
 
     -- The header's own size feeds the first child's centered anchor
@@ -704,9 +1007,11 @@ ns._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     if unitGrowth == "RIGHT" then
         slotStepX = bw + cs
     elseif unitGrowth == "LEFT" then
-        slotStepX = -(bw + cs); basePoint = "TOPRIGHT"
+        slotStepX = -(bw + cs)
+        basePoint = "TOPRIGHT"
     elseif unitGrowth == "UP" then
-        slotStepY = bh + cs; basePoint = "BOTTOMLEFT"
+        slotStepY = bh + cs
+        basePoint = "BOTTOMLEFT"
     else -- DOWN
         slotStepY = -(bh + cs)
     end
@@ -720,12 +1025,20 @@ ns._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     if not live then
         -- Hidden set: the stack starts at the first slot (see useSelf above).
     elseif not IsInGroup() then
-        if centered or s.partyCenterWhenSolo then centerShift = 2 end
+        if centered or s.partyCenterWhenSolo then
+            centerShift = 2
+        end
     elseif centered then
         local shown = GetNumGroupMembers() or 0
-        if shown > 5 then shown = 5 end
-        if hideSelf then shown = shown - 1 end
-        if shown < 1 then shown = 1 end
+        if shown > 5 then
+            shown = 5
+        end
+        if hideSelf then
+            shown = shown - 1
+        end
+        if shown < 1 then
+            shown = 1
+        end
         centerShift = (5 - shown) / 2
     end
     local cShiftX = PixelSnap(slotStepX * centerShift)
@@ -736,19 +1049,37 @@ ns._PositionPartySlots = function(bw, bh, cs, unitGrowth)
         local selfSlot, hdrSlot = 0, 1
         if pSelfLast then
             local numOthers = (GetNumGroupMembers() or 1) - 1
-            if numOthers < 0 then numOthers = 0 end
+            if numOthers < 0 then
+                numOthers = 0
+            end
             selfSlot, hdrSlot = numOthers, 0
         end
         if sb then
             sb:SetSize(bw, bh)
             sb:ClearAllPoints()
-            sb:SetPoint(basePoint, ns._partyContainerFrame, basePoint, PixelSnap(slotStepX * selfSlot) + cShiftX, PixelSnap(slotStepY * selfSlot) + cShiftY)
-            if not InCombatLockdown() then sb:Show() end
+            sb:SetPoint(
+                basePoint,
+                ns._partyContainerFrame,
+                basePoint,
+                PixelSnap(slotStepX * selfSlot) + cShiftX,
+                PixelSnap(slotStepY * selfSlot) + cShiftY
+            )
+            if not InCombatLockdown() then
+                sb:Show()
+            end
         end
         ns._partyHeader:ClearAllPoints()
-        ns._partyHeader:SetPoint(basePoint, ns._partyContainerFrame, basePoint, PixelSnap(slotStepX * hdrSlot) + cShiftX, PixelSnap(slotStepY * hdrSlot) + cShiftY)
+        ns._partyHeader:SetPoint(
+            basePoint,
+            ns._partyContainerFrame,
+            basePoint,
+            PixelSnap(slotStepX * hdrSlot) + cShiftX,
+            PixelSnap(slotStepY * hdrSlot) + cShiftY
+        )
     else
-        if sb and not InCombatLockdown() then sb:Hide() end
+        if sb and not InCombatLockdown() then
+            sb:Hide()
+        end
         ns._partyHeader:ClearAllPoints()
         ns._partyHeader:SetPoint(basePoint, ns._partyContainerFrame, basePoint, cShiftX, cShiftY)
     end
@@ -768,7 +1099,9 @@ end
 ns._PartyGrowth = function(s)
     -- (Party Frames kit: horizontal frames carry their buffs above each
     -- frame -- ns.RF_KitBmView -- so the next frame beside it stays clear.)
-    if s.partyHorizontal then return (s.partyFlipGrowth == true) and "LEFT" or "RIGHT" end
+    if s.partyHorizontal then
+        return (s.partyFlipGrowth == true) and "LEFT" or "RIGHT"
+    end
     return (s.partyFlipGrowth == true) and "UP" or "DOWN"
 end
 
@@ -783,7 +1116,9 @@ end
 -- Out of combat only (callers gate).
 ns._SizePartyContainer = function(bw, bh, cs, unitGrowth)
     local c = ns._partyContainerFrame
-    if not c then return end
+    if not c then
+        return
+    end
     local cw, ch
     if unitGrowth == "RIGHT" or unitGrowth == "LEFT" then
         cw, ch = 5 * bw + 4 * cs, bh
@@ -795,9 +1130,13 @@ ns._SizePartyContainer = function(bw, bh, cs, unitGrowth)
     if math.abs((curW or 0) - cw) > 0.01 or math.abs((curH or 0) - ch) > 0.01 then
         local hdr = ns._partyHeader
         local shown = hdr and hdr:IsShown()
-        if shown then hdr:Hide() end
+        if shown then
+            hdr:Hide()
+        end
         c:SetSize(cw, ch)
-        if shown then hdr:Show() end
+        if shown then
+            hdr:Show()
+        end
     end
 end
 

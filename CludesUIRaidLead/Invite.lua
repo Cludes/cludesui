@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Invite.lua -- Raid Lead: invite a saved list and promote assistants.
 --
@@ -12,7 +14,9 @@ local _, ns = ...
 
 local PARTY_MAX = 5
 
-local function Say(text) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text) end
+local function Say(text)
+    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text)
+end
 
 local function Settings()
     local p = ns.RaidLeadDB()
@@ -20,7 +24,9 @@ local function Settings()
     local s = p.invites
     s.list = s.list or ""
     s.promote = s.promote or ""
-    if s.autoPromote == nil then s.autoPromote = false end
+    if s.autoPromote == nil then
+        s.autoPromote = false
+    end
     return s
 end
 ns.InviteSettings = Settings
@@ -30,7 +36,10 @@ function ns.SplitNames(text)
     local out, seen = {}, {}
     for name in (text or ""):gmatch("[^,;%s]+") do
         local key = name:lower()
-        if not seen[key] then seen[key] = true; out[#out + 1] = name end
+        if not seen[key] then
+            seen[key] = true
+            out[#out + 1] = name
+        end
     end
     return out
 end
@@ -43,9 +52,15 @@ end
 local pending = {}
 
 local function InviteSome()
-    if #pending == 0 then return end
-    if IsInGroup() and not IsInRaid() and UnitIsGroupLeader("player")
-       and GetNumGroupMembers() + #pending > PARTY_MAX then
+    if #pending == 0 then
+        return
+    end
+    if
+        IsInGroup()
+        and not IsInRaid()
+        and UnitIsGroupLeader("player")
+        and GetNumGroupMembers() + #pending > PARTY_MAX
+    then
         pcall(C_PartyInfo.ConvertToRaid)
     end
     local room = IsInRaid() and 40 - GetNumGroupMembers() or PARTY_MAX - math.max(GetNumGroupMembers(), 1)
@@ -65,9 +80,13 @@ function ns.InviteList()
     end
     wipe(pending)
     for _, name in ipairs(ns.SplitNames(Settings().list)) do
-        if not InGroup(name) then pending[#pending + 1] = name end
+        if not InGroup(name) then
+            pending[#pending + 1] = name
+        end
     end
-    if #pending == 0 then return Say("everyone on the list is already in the group.") end
+    if #pending == 0 then
+        return Say("everyone on the list is already in the group.")
+    end
     Say("inviting " .. #pending .. " player" .. (#pending == 1 and "" or "s") .. ".")
     InviteSome()
 end
@@ -77,7 +96,9 @@ local promoted = {}
 --- Makes everyone on the assistant list who is in the raid an assistant.
 function ns.PromoteList(quiet)
     if not (IsInRaid() and UnitIsGroupLeader("player")) then
-        if not quiet then Say("only the raid leader can promote assistants.") end
+        if not quiet then
+            Say("only the raid leader can promote assistants.")
+        end
         return
     end
     local n = 0
@@ -91,12 +112,20 @@ function ns.PromoteList(quiet)
             end
         end
     end
-    if not quiet then Say(n > 0 and ("promoted " .. n .. ".") or "nobody on the list needed promoting.") end
+    if not quiet then
+        Say(n > 0 and ("promoted " .. n .. ".") or "nobody on the list needed promoting.")
+    end
 end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("GROUP_ROSTER_UPDATE")
 events:SetScript("OnEvent", function()
-    if #pending > 0 then C_Timer.After(0.5, InviteSome) end
-    if Settings().autoPromote then C_Timer.After(1, function() ns.PromoteList(true) end) end
+    if #pending > 0 then
+        C_Timer.After(0.5, InviteSome)
+    end
+    if Settings().autoPromote then
+        C_Timer.After(1, function()
+            ns.PromoteList(true)
+        end)
+    end
 end)

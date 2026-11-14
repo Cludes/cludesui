@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookIconWatch.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local barDataByKey = ns.barDataByKey
@@ -46,9 +50,9 @@ ns._cdReadySoundWatch = ns._cdReadySoundWatch or setmetatable({}, { __mode = "k"
 -- or still present. Cheap: one boolean + one timestamp compare, consulted only on a
 -- sound edge (never per tick). Edges landing while suppressed are dropped silently.
 do
-    local loadingActive = true   -- suppressed until the first PLAYER_ENTERING_WORLD
+    local loadingActive = true -- suppressed until the first PLAYER_ENTERING_WORLD
     local settleUntil = 0
-    local SETTLE_SECONDS = 2      -- brief window after a load for re-renders to settle
+    local SETTLE_SECONDS = 2 -- brief window after a load for re-renders to settle
 
     function ns._cdmSoundSuppressed()
         return loadingActive or GetTime() < settleUntil
@@ -59,7 +63,9 @@ do
     -- settle window and the re-prime cannot false-arm a batch. Longest wins.
     function ns._cdmBumpSoundSettle(sec)
         local u = GetTime() + (sec or SETTLE_SECONDS)
-        if u > settleUntil then settleUntil = u end
+        if u > settleUntil then
+            settleUntil = u
+        end
     end
 
     local gate = ns.TakeShell()
@@ -76,7 +82,6 @@ do
         end
     end)
 end
-
 
 -- Reject armed->ready spans shorter than this: a real cooldown arms the moment
 -- the spell is used, so a sub-GCD arm can only be a transient misread (GCD tail
@@ -100,13 +105,17 @@ local function CdReadyIsReady(liveSid, strict)
         return not ci.isActive
     end
     local cd = C_Spell.GetSpellCooldown(liveSid)
-    if not cd then return true end
+    if not cd then
+        return true
+    end
     if strict then
         -- Not ready while a REAL (non-GCD) cooldown runs. A filler GCD alone
         -- must NOT block the edge: the old "any active cooldown" strict test
         -- deferred the ready sound through continuous GCD spam until the
         -- player stopped casting entirely.
-        if cd.isActive and not cd.isOnGCD then return false end
+        if cd.isActive and not cd.isOnGCD then
+            return false
+        end
         -- The one GCD-only state that is NOT ready: this spell's own hard cast
         -- in flight (a cast-time spell raises its cooldown only on cast
         -- SUCCESS). Exact identity check; a secret cast id fails toward
@@ -135,10 +144,14 @@ local function PlayCdReadySound(fd, key, liveSid, sid, bk, src)
     fd._cdReadyArmed = false
     local now = GetTime()
     local last = fd._cdReadySoundAt
-    if last and (now - last) < CD_READY_SOUND_GAP then return end
+    if last and (now - last) < CD_READY_SOUND_GAP then
+        return
+    end
     fd._cdReadySoundAt = now
     local path = ns.FOCUSKICK_SOUND_PATHS and ns.FOCUSKICK_SOUND_PATHS[key]
-    if path then PlaySoundFile(path, "Master") end
+    if path then
+        PlaySoundFile(path, "Master")
+    end
 end
 
 -- Shared evaluator (SPELL_UPDATE_COOLDOWN + SPELL_UPDATE_CHARGES via the
@@ -146,9 +159,15 @@ end
 -- ready edge, deferred one frame and re-confirmed so a charge/GCD-tail race
 -- cannot false-fire. Zero-cost on the feature flag. primeOnly: arm state only.
 local function EvalCdReadySound(frame, fd, primeOnly)
-    if not ns._cdmAnyCdReadySound then return end
-    if not fd then return end
-    if fd._isProcessingOverride then return end
+    if not ns._cdmAnyCdReadySound then
+        return
+    end
+    if not fd then
+        return
+    end
+    if fd._isProcessingOverride then
+        return
+    end
     -- Buff-family frames never play (see WatchCdReadySoundIfEnabled); held here too so
     -- a frame watched before its decoration flagged it stays silent.
     if fd._isBuffViewerFrame or frame._isCustomBuffFrame or frame._isPlaceholderFrame then
@@ -157,15 +176,27 @@ local function EvalCdReadySound(frame, fd, primeOnly)
     end
     local fc2 = _ecmeFC[frame]
     -- Hidden by its Talent Conditions (TalentCondFilterPass): stays silent.
-    if fc2 and fc2.tcHidden then fd._cdReadyArmed = false; return end
+    if fc2 and fc2.tcHidden then
+        fd._cdReadyArmed = false
+        return
+    end
     local sid2 = fc2 and fc2.spellID
     local bk2 = fc2 and fc2.barKey
-    if not sid2 or not bk2 then return end
-    if bk2 == ns.FOCUSKICK_BAR_KEY then return end
-    if bk2:sub(1, 7) == "__ghost" then return end
+    if not sid2 or not bk2 then
+        return
+    end
+    if bk2 == ns.FOCUSKICK_BAR_KEY then
+        return
+    end
+    if bk2:sub(1, 7) == "__ghost" then
+        return
+    end
     local ss2 = ResolveSpellSettings(frame, sid2, ns.GetBarSpellData(bk2))
     local key = ss2 and ss2.cdReadySoundKey
-    if not key or key == "none" then fd._cdReadyArmed = false; return end
+    if not key or key == "none" then
+        fd._cdReadyArmed = false
+        return
+    end
     if ns._cdmSoundSuppressed() then
         -- Settle window: cooldown reads are transient, so gate the ARM (not just
         -- the fire) and clear stale arms. A spell genuinely on cooldown re-arms
@@ -179,7 +210,9 @@ local function EvalCdReadySound(frame, fd, primeOnly)
     end
     if not CdReadyIsReady(liveSid) then
         -- On cooldown (or a charge spell below max): arm.
-        if not fd._cdReadyArmed then fd._cdReadyArmedAt = GetTime() end
+        if not fd._cdReadyArmed then
+            fd._cdReadyArmedAt = GetTime()
+        end
         fd._cdReadyArmed = true
         fd._cdReadyArmedSid = sid2
     elseif fd._cdReadyArmed and not primeOnly and CdReadyIsReady(liveSid, true) then
@@ -194,21 +227,36 @@ local function EvalCdReadySound(frame, fd, primeOnly)
             fd._cdReadyPending:Hide()
             fd._cdReadyPending:SetScript("OnUpdate", function(self)
                 self:Hide()
-                if not fd._cdReadyArmed then return end
+                if not fd._cdReadyArmed then
+                    return
+                end
                 local fcp = _ecmeFC[frame]
                 local sidp = fcp and fcp.spellID
                 local bkp = fcp and fcp.barKey
-                if not sidp or not bkp then return end
-                if fd._cdReadyArmedSid ~= sidp then fd._cdReadyArmed = false; return end
+                if not sidp or not bkp then
+                    return
+                end
+                if fd._cdReadyArmedSid ~= sidp then
+                    fd._cdReadyArmed = false
+                    return
+                end
                 local ssp = ResolveSpellSettings(frame, sidp, ns.GetBarSpellData(bkp))
                 local kp = ssp and ssp.cdReadySoundKey
-                if not kp or kp == "none" then fd._cdReadyArmed = false; return end
+                if not kp or kp == "none" then
+                    fd._cdReadyArmed = false
+                    return
+                end
                 local livep = sidp
                 if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                     livep = C_SpellBook.FindSpellOverrideByID(sidp) or sidp
                 end
-                if not CdReadyIsReady(livep, true) then return end  -- not ready (race/GCD) -> stay armed
-                if ns._cdmSoundSuppressed() then fd._cdReadyArmed = false; return end  -- a load began mid-defer
+                if not CdReadyIsReady(livep, true) then
+                    return
+                end -- not ready (race/GCD) -> stay armed
+                if ns._cdmSoundSuppressed() then
+                    fd._cdReadyArmed = false
+                    return
+                end -- a load began mid-defer
                 -- Sub-GCD arm span = transient misread, not a real cooldown ending.
                 local armedAt = fd._cdReadyArmedAt
                 if not armedAt or (GetTime() - armedAt) < CD_READY_MIN_ARM then
@@ -232,33 +280,56 @@ end
 -- this alert fires on the FIRST charge, but CDM readiness means back at MAX.
 local _cdReadyAlertHooked = setmetatable({}, { __mode = "k" })
 local function HookCdReadyAvailableAlert(frame, fd)
-    if _cdReadyAlertHooked[frame] then return end
+    if _cdReadyAlertHooked[frame] then
+        return
+    end
     if type(frame.TriggerAvailableAlert) ~= "function" then
-        _cdReadyAlertHooked[frame] = true   -- own placeholder / injected frame: no alert
+        _cdReadyAlertHooked[frame] = true -- own placeholder / injected frame: no alert
         return
     end
     _cdReadyAlertHooked[frame] = true
     hooksecurefunc(frame, "TriggerAvailableAlert", function(f)
-        if not ns._cdmAnyCdReadySound then return end
-        if fd._isProcessingOverride then return end
+        if not ns._cdmAnyCdReadySound then
+            return
+        end
+        if fd._isProcessingOverride then
+            return
+        end
         -- A buff frame's alert fires on AURA gain, not readiness (see the watch below).
-        if fd._isBuffViewerFrame or f._isCustomBuffFrame or f._isPlaceholderFrame then return end
+        if fd._isBuffViewerFrame or f._isCustomBuffFrame or f._isPlaceholderFrame then
+            return
+        end
         local fca = _ecmeFC[f]
         local sida = fca and fca.spellID
         local bka = fca and fca.barKey
-        if not sida or not bka then return end
-        if fca.tcHidden then return end  -- hidden by its Talent Conditions
-        if bka == ns.FOCUSKICK_BAR_KEY then return end
-        if bka:sub(1, 7) == "__ghost" then return end
+        if not sida or not bka then
+            return
+        end
+        if fca.tcHidden then
+            return
+        end -- hidden by its Talent Conditions
+        if bka == ns.FOCUSKICK_BAR_KEY then
+            return
+        end
+        if bka:sub(1, 7) == "__ghost" then
+            return
+        end
         local ssa = ResolveSpellSettings(f, sida, ns.GetBarSpellData(bka))
         local keya = ssa and ssa.cdReadySoundKey
-        if not keya or keya == "none" then return end
-        if ns._cdmSoundSuppressed() then fd._cdReadyArmed = false; return end
+        if not keya or keya == "none" then
+            return
+        end
+        if ns._cdmSoundSuppressed() then
+            fd._cdReadyArmed = false
+            return
+        end
         local livea = sida
         if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
             livea = C_SpellBook.FindSpellOverrideByID(sida) or sida
         end
-        if CdReadyIsChargeSpell(livea) then return end
+        if CdReadyIsChargeSpell(livea) then
+            return
+        end
         PlayCdReadySound(fd, keya, livea, sida, bka, "alert")
     end)
 end
@@ -269,21 +340,29 @@ end
 -- and cooldown RESETS. The expiry edge belongs to the available-alert hook above
 -- (this pass backs it up between GCDs); there is NO SetDesaturated driver.
 function ns.WatchCdReadySoundIfEnabled(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local fd = hookFrameData[frame]
-    if not fd then return end
+    if not fd then
+        return
+    end
     -- Buff-family frames never watch: a hosted or custom buff frame resolves the
     -- ABILITY's per-spell entry through the linked-id union, and its
     -- TriggerAvailableAlert fires on aura gain (no readiness check in the hook), so
     -- the cd-ready cue played at buff gain. Same exclusion as the charge hooks.
     if fd._isBuffViewerFrame or frame._isCustomBuffFrame or frame._isPlaceholderFrame then
-        if ns._cdReadySoundWatch[frame] then ns._cdReadySoundWatch[frame] = nil end
+        if ns._cdReadySoundWatch[frame] then
+            ns._cdReadySoundWatch[frame] = nil
+        end
         return
     end
     local fcw = _ecmeFC[frame]
     local sidw = fcw and fcw.spellID
     local bkw = fcw and fcw.barKey
-    if not (sidw and bkw) then return end
+    if not (sidw and bkw) then
+        return
+    end
     local ssw = ResolveSpellSettings(frame, sidw, ns.GetBarSpellData(bkw))
     if ssw and ssw.cdReadySoundKey and ssw.cdReadySoundKey ~= "none" then
         ns._cdmAnyCdReadySound = true
@@ -300,7 +379,7 @@ function ns.WatchCdReadySoundIfEnabled(frame)
             ns._cdReadySoundEventFrame = ef
         end
         HookCdReadyAvailableAlert(frame, fd)
-        EvalCdReadySound(frame, fd, true)  -- prime the arm state only; never plays here
+        EvalCdReadySound(frame, fd, true) -- prime the arm state only; never plays here
     elseif ns._cdReadySoundWatch[frame] then
         ns._cdReadySoundWatch[frame] = nil
     end
@@ -329,13 +408,19 @@ end
 -- shadow another's, the same rule the appearance pass documents at its own resolve.
 -- ~= nil, not truthiness: a per-spell ON must beat a bar that is OFF.
 function ns.CdmDurationHideFor(frame, barKey, baseHide)
-    if not ns._cdmAnySpellDurationText then return baseHide end
+    if not ns._cdmAnySpellDurationText then
+        return baseHide
+    end
     local fcd = _ecmeFC[frame]
     local sidD = (ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(frame))
         or (fcd and fcd.spellID)
-    if not (sidD and barKey and ns.ResolveSpellSettings) then return baseHide end
+    if not (sidD and barKey and ns.ResolveSpellSettings) then
+        return baseHide
+    end
     local ssD = ns.ResolveSpellSettings(frame, sidD, ns.GetBarSpellData(barKey), barKey)
-    if ssD and ssD.showCooldownText ~= nil then return not ssD.showCooldownText end
+    if ssD and ssD.showCooldownText ~= nil then
+        return not ssD.showCooldownText
+    end
     return baseHide
 end
 
@@ -350,28 +435,44 @@ function ns.CdmShouldHideCountdown(frame, baseHide)
     -- countdown writes through here, so no per-site force is needed. (Only Show Numbers
     -- never sets the flag: there the number IS the display.)
     local fdc = hookFrameData[frame]
-    if fdc and fdc._osnHideText then return true end
-    if not ns._cdmAnyChargeHideCdText then return baseHide end
-    if baseHide then return true end  -- already hidden by the bar/per-icon setting
+    if fdc and fdc._osnHideText then
+        return true
+    end
+    if not ns._cdmAnyChargeHideCdText then
+        return baseHide
+    end
+    if baseHide then
+        return true
+    end -- already hidden by the bar/per-icon setting
     local ss = ns._ResolveCdmSS(frame)
-    if not (ss and ss.chargeHideCdText) then return baseHide end
+    if not (ss and ss.chargeHideCdText) then
+        return baseHide
+    end
     local fc = _ecmeFC[frame]
     local sid = fc and fc.spellID
-    if not sid then return baseHide end
+    if not sid then
+        return baseHide
+    end
     local liveSid = sid
     if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
         liveSid = C_SpellBook.FindSpellOverrideByID(sid) or sid
     end
     -- Charge-spell test via static charge data (stable through the GCD).
     local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
-    if not (ci and (ci.maxCharges or 0) > 1) then return baseHide end
+    if not (ci and (ci.maxCharges or 0) > 1) then
+        return baseHide
+    end
     -- "charges > 0" <=> NOT on a real (non-GCD) cooldown; the isOnGCD term is
     -- required (isActive alone is true through every post-cast GCD). Both flags
     -- clean; the secret currentCharges is never read.
     local cdInfo = C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(liveSid)
-    if not cdInfo then return baseHide end
+    if not cdInfo then
+        return baseHide
+    end
     local onRealCd = cdInfo.isActive and not cdInfo.isOnGCD
-    if not onRealCd then return true end  -- at least one charge -> hide duration
+    if not onRealCd then
+        return true
+    end -- at least one charge -> hide duration
     return baseHide
 end
 
@@ -426,15 +527,23 @@ end
 -- for the moment it dips below max. Early-outs on non-charge icons; once watched
 -- SPELL_UPDATE_CHARGES keeps it current. Self-cleans when the setting is off.
 function ns.WatchChargeCdTextIfEnabled(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local fd = hookFrameData[frame]
-    if not fd then return end
+    if not fd then
+        return
+    end
     local fcw = _ecmeFC[frame]
     local sidw = fcw and fcw.spellID
     local bkw = fcw and fcw.barKey
-    if not (sidw and bkw) then return end
+    if not (sidw and bkw) then
+        return
+    end
     local liveSid = sidw
-    if C_SpellBook and C_SpellBook.FindSpellOverrideByID then liveSid = C_SpellBook.FindSpellOverrideByID(sidw) or sidw end
+    if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
+        liveSid = C_SpellBook.FindSpellOverrideByID(sidw) or sidw
+    end
     local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
     local isCharge = ci ~= nil and (ci.maxCharges or 0) > 1
     local ssw = isCharge and ResolveSpellSettings(frame, sidw, ns.GetBarSpellData(bkw)) or nil
@@ -483,7 +592,9 @@ local function EvalZeroChargeTextFrame(frame, fd)
     local bkz = fcz and fcz.barKey
     if not fs or not sidz or not bkz then
         ns._zeroChargeTextWatch[frame] = nil
-        if fs then ZctSetAlpha(fd, fs, 1) end
+        if fs then
+            ZctSetAlpha(fd, fs, 1)
+        end
         return
     end
     -- Per-spell "Hide Charge Text" (cd-state menu): a STATIC hide riding this
@@ -537,9 +648,13 @@ local function EvalZeroChargeTextFrame(frame, fd)
 end
 
 function ns.WatchZeroChargeTextIfEnabled(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local fd = hookFrameData[frame]
-    if not fd then return end
+    if not fd then
+        return
+    end
     local fcz = _ecmeFC[frame]
     local sidz = fcz and fcz.spellID
     local bkz = fcz and fcz.barKey
@@ -550,7 +665,9 @@ function ns.WatchZeroChargeTextIfEnabled(frame)
         local sss = ns._ResolveCdmSS and ns._ResolveCdmSS(frame)
         if sss and sss.hideChargeText then
             local fsh = frame.ChargeCount and frame.ChargeCount.Current
-            if fsh then ZctSetAlpha(fd, fsh, 0) end
+            if fsh then
+                ZctSetAlpha(fd, fsh, 0)
+            end
             return
         end
     end
@@ -565,7 +682,9 @@ function ns.WatchZeroChargeTextIfEnabled(frame)
         end
         local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
         if not (ci and (ci.maxCharges or 0) > 1) then
-            if ns._zeroChargeTextWatch[frame] then EvalZeroChargeTextFrame(frame, fd) end
+            if ns._zeroChargeTextWatch[frame] then
+                EvalZeroChargeTextFrame(frame, fd)
+            end
             return
         end
         if not ns._zeroChargeTextEventFrame then
@@ -588,7 +707,9 @@ function ns.WatchZeroChargeTextIfEnabled(frame)
         -- it: put the counter back. Memoized, so a neither-feature icon pays
         -- one SetAlpha(1) ever.
         local fsr = frame.ChargeCount and frame.ChargeCount.Current
-        if fsr then ZctSetAlpha(fd, fsr, 1) end
+        if fsr then
+            ZctSetAlpha(fd, fsr, 1)
+        end
     end
 end
 
@@ -610,7 +731,9 @@ do
     local function WriteChargeCount(frame)
         local cc = frame.ChargeCount
         local fs = cc and cc.Current
-        if not fs then return end
+        if not fs then
+            return
+        end
         local ci = CdmChargeInfoFor(frame, nil)
         if ci and (ci.maxCharges or 0) > 1 then
             fs:SetText(ci.currentCharges)
@@ -625,7 +748,9 @@ do
     local ef = ns.TakeShell()
     ef:RegisterEvent("SPELL_UPDATE_CHARGES")
     ef:SetScript("OnEvent", function()
-        if IsCDMSettingsOpen() then return end
+        if IsCDMSettingsOpen() then
+            return
+        end
         for vi = 1, 2 do
             local viewer = GetViewerFrame(vi)
             local pool = viewer and viewer.itemFramePool
@@ -667,14 +792,20 @@ end
 -- suppressed cooldown categories) and leaves an old value behind. Our own
 -- frames carry neither field, so the live read alone decides there.
 function ns.CdmOnRealCD(frame, info)
-    if not (info and info.isActive) or info.isOnGCD then return false end
+    if not (info and info.isActive) or info.isOnGCD then
+        return false
+    end
     return not (frame and frame.wasSetFromCooldown == true and frame.isOnGCD == true)
 end
 
 function ns.CdmCdStateReady(liveSid, onCD, hideUntilSpent)
-    if hideUntilSpent then return not onCD end
+    if hideUntilSpent then
+        return not onCD
+    end
     local ci = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(liveSid)
-    if ci and (ci.maxCharges or 0) > 1 then return not ci.isActive end
+    if ci and (ci.maxCharges or 0) > 1 then
+        return not ci.isActive
+    end
     return not onCD
 end
 
@@ -704,26 +835,27 @@ end
 -- form change or combat end (ns.CdmRetryUnreadForms), never per evaluation;
 -- a talent change clears the table (ScheduleTalentRebuild).
 do
-    local outside = {}   -- [spellID][formID] -> true (red form line), false (met), NO_LINE or UNREAD
-    local casterOK = {}  -- [spellID] -> castable (power aside) when last seen in caster form
-    local procSeen = {}  -- [spellID] -> its rule's answer when last evaluated in a form the rule covers
+    local outside = {} -- [spellID][formID] -> true (red form line), false (met), NO_LINE or UNREAD
+    local casterOK = {} -- [spellID] -> castable (power aside) when last seen in caster form
+    local procSeen = {} -- [spellID] -> its rule's answer when last evaluated in a form the rule covers
     local UNREAD, NO_LINE = "unread", "noline"
     local unreadN = 0
     -- Read nil-safe: a client without these enums falls back to the text path
     local LINE_TYPES = Enum.TooltipDataLineType or {}
     local REQ_TYPES = Enum.TooltipDataUsageRequirementType or {}
-    local LINE_REQ, LINE_NONE, REQ_FORM = LINE_TYPES.UsageRequirement, LINE_TYPES.None, REQ_TYPES.ShapeshiftForm
+    local LINE_REQ, LINE_NONE, REQ_FORM =
+        LINE_TYPES.UsageRequirement, LINE_TYPES.None, REQ_TYPES.ShapeshiftForm
     local TEMPLATES = { SPELL_REQUIRED_FORM, SPELL_REQUIRED_FORM_NOSPACE }
-    local formNames, formCount  -- the player's form names, read when the count changes
-    local casterRules, procAuras  -- built on a druid's first ask (CasterRule)
-    local known, exists = {}, {}  -- [spellID] -> IsSpellKnown / DoesSpellExist answer, or UNREAD
-    local auraState = {}  -- [aura] -> on the player; read once per change (ProcActive)
+    local formNames, formCount -- the player's form names, read when the count changes
+    local casterRules, procAuras -- built on a druid's first ask (CasterRule)
+    local known, exists = {}, {} -- [spellID] -> IsSpellKnown / DoesSpellExist answer, or UNREAD
+    local auraState = {} -- [aura] -> on the player; read once per change (ProcActive)
     -- [auraInstanceID] -> exception aura, recorded when one is seen on the
     -- player. Kept past its removal (instance IDs are not reused) until the
     -- next form change or combat end, so every caller probing that UNIT_AURA
     -- sees the removal.
     local procIIDs = {}
-    local blindBy = {}  -- [caller] -> its icons already show the answer for unreadable auras
+    local blindBy = {} -- [caller] -> its icons already show the answer for unreadable auras
 
     -- Tooltip data can come back as secret tables, and indexing one throws
     local function Readable(t)
@@ -737,75 +869,112 @@ do
     -- (counted while the client has the aura); while one is up the spell is
     -- permitted. Each client lists its own spell IDs.
     local function CasterRule(sid)
-        if not _isDruid then return nil end
+        if not _isDruid then
+            return nil
+        end
         if not casterRules then
             local function Forms(...)
                 local set = {}
-                for i = 1, select("#", ...) do set[select(i, ...)] = true end
+                for i = 1, select("#", ...) do
+                    set[select(i, ...)] = true
+                end
                 return set
             end
             local function Add(rule, ids)
-                for i = 1, #ids do casterRules[ids[i]] = rule end
+                for i = 1, #ids do
+                    casterRules[ids[i]] = rule
+                end
             end
             -- Form IDs (GetShapeshiftFormID): Dire Bear is WoW Forever's, and
             -- Moonkin Form is 31 for Balance, 35 from the class talents.
             local CAT, TRAVEL, AQUATIC, BEAR, DIRE_BEAR = 1, 3, 4, 5, 8
             local SWIFT_FLIGHT, FLIGHT, MOONKIN, MOONKIN_CLASS = 27, 29, 31, 35
             local beasts = Forms(CAT, TRAVEL, AQUATIC, BEAR, DIRE_BEAR, SWIFT_FLIGHT, FLIGHT)
-            local heal = { forms = Forms(CAT, TRAVEL, AQUATIC, BEAR, DIRE_BEAR, SWIFT_FLIGHT, FLIGHT,
-                MOONKIN, MOONKIN_CLASS) }
-            local caster = { forms = beasts }  -- castable in Moonkin Form
+            local heal = {
+                forms = Forms(
+                    CAT,
+                    TRAVEL,
+                    AQUATIC,
+                    BEAR,
+                    DIRE_BEAR,
+                    SWIFT_FLIGHT,
+                    FLIGHT,
+                    MOONKIN,
+                    MOONKIN_CLASS
+                ),
+            }
+            local caster = { forms = beasts } -- castable in Moonkin Form
             casterRules = {}
             if CludesUI.IS_FOREVER == true then
                 -- No talent permits these in a form; set bonuses and an item do
-                Add(heal, { 740, 8918, 9862, 9863 })  -- Tranquility
-                Add(heal, { 774, 1058, 1430, 2090, 2091, 3627, 8910, 9839, 9840, 9841, 25299 })  -- Rejuvenation
-                Add(heal, { 8936, 8938, 8939, 8940, 8941, 9750, 9856, 9857, 9858 })  -- Regrowth
-                Add(heal, { 5185, 5186, 5187, 5188, 5189, 6778, 8903, 9758, 9888, 9889, 25297 })  -- Healing Touch
-                Add(heal, { 18562, 17116, 408124, 408247 })  -- Swiftmend, Nature's Swiftness, Lifebloom, Nourish
-                Add(caster, { 339, 1062, 5195, 5196, 9852, 9853 })  -- Entangling Roots
-                Add(caster, { 8921, 8924, 8925, 8926, 8927, 8928, 8929, 9833, 9834, 9835 })  -- Moonfire
-                Add(caster, { 5570, 24974, 24975, 24976, 24977 })  -- Insect Swarm
-                Add(caster, { 437138, 1237948, 1237949, 1237950, 1237951 })  -- Revive
-                Add(caster, { 2782, 2893, 8946 })  -- Remove Curse, Abolish Poison, Cure Poison
-                Add(caster, { 18960, 417148 })  -- Teleport: Moonglade, Efflorescence
+                Add(heal, { 740, 8918, 9862, 9863 }) -- Tranquility
+                Add(heal, { 774, 1058, 1430, 2090, 2091, 3627, 8910, 9839, 9840, 9841, 25299 }) -- Rejuvenation
+                Add(heal, { 8936, 8938, 8939, 8940, 8941, 9750, 9856, 9857, 9858 }) -- Regrowth
+                Add(heal, { 5185, 5186, 5187, 5188, 5189, 6778, 8903, 9758, 9888, 9889, 25297 }) -- Healing Touch
+                Add(heal, { 18562, 17116, 408124, 408247 }) -- Swiftmend, Nature's Swiftness, Lifebloom, Nourish
+                Add(caster, { 339, 1062, 5195, 5196, 9852, 9853 }) -- Entangling Roots
+                Add(caster, { 8921, 8924, 8925, 8926, 8927, 8928, 8929, 9833, 9834, 9835 }) -- Moonfire
+                Add(caster, { 5570, 24974, 24975, 24976, 24977 }) -- Insect Swarm
+                Add(caster, { 437138, 1237948, 1237949, 1237950, 1237951 }) -- Revive
+                Add(caster, { 2782, 2893, 8946 }) -- Remove Curse, Abolish Poison, Cure Poison
+                Add(caster, { 18960, 417148 }) -- Teleport: Moonglade, Efflorescence
                 local mark = CludesUI.FOREVER_BUFF_FAMILIES.mark
-                Add(caster, mark.single)  -- Mark of the Wild
-                Add(caster, mark.group)   -- Gift of the Wild
+                Add(caster, mark.single) -- Mark of the Wild
+                Add(caster, mark.group) -- Gift of the Wild
                 -- 456325 T1 Guardian 2P, 1232896 Staff of the Glade, 1301005 T1
                 -- Guardian 3P, 467206 T2 Restoration 6P (in Moonkin Form)
-                casterRules[29166] = { forms = beasts, procs = { [456325] = false, [1232896] = false } }  -- Innervate
-                Add({ forms = beasts, procs = { [456325] = false, [1232896] = false, [1301005] = false } },
-                    { 20484, 20739, 20742, 20747, 20748 })  -- Rebirth
-                Add({ forms = heal.forms, procs = { [467206] = false } }, { 408120, 1238214, 1238215 })  -- Wild Growth
+                casterRules[29166] = { forms = beasts, procs = { [456325] = false, [1232896] = false } } -- Innervate
+                Add(
+                    { forms = beasts, procs = { [456325] = false, [1232896] = false, [1301005] = false } },
+                    { 20484, 20739, 20742, 20747, 20748 }
+                ) -- Rebirth
+                Add({ forms = heal.forms, procs = { [467206] = false } }, { 408120, 1238214, 1238215 }) -- Wild Growth
             else
                 -- Spec passives: Feline Adept (Feral) in Cat, Ursine Adept (Guardian) in Bear
                 local FELINE_ADEPT, URSINE_ADEPT = 300349, 300346
-                local SWIFTNESS = 132158  -- Nature's Swiftness: the talent and its aura
-                Add(heal, { 740, 774, 18562, 33763, 48438 })  -- Tranquility, Rejuvenation, Swiftmend, Lifebloom, Wild Growth
-                Add(heal, { 145205, 102342 })  -- Efflorescence, Ironbark
-                Add(caster, { 18960, 193753, 473909, 474750 })  -- Teleport: Moonglade, Dreamwalk, Ancient of Lore, Symbiotic Relationship
-                Add({ forms = Forms(CAT, TRAVEL, AQUATIC, BEAR, SWIFT_FLIGHT, FLIGHT, MOONKIN) },
-                    { 50769, 212040 })  -- Revive, Revitalize
-                Add({ forms = beasts, formTalents = { [CAT] = { FELINE_ADEPT }, [BEAR] = { URSINE_ADEPT } } },
-                    { 2782, 440015, 88423, 29166 })  -- Remove Corruption (both), Nature's Cure, Innervate
+                local SWIFTNESS = 132158 -- Nature's Swiftness: the talent and its aura
+                Add(heal, { 740, 774, 18562, 33763, 48438 }) -- Tranquility, Rejuvenation, Swiftmend, Lifebloom, Wild Growth
+                Add(heal, { 145205, 102342 }) -- Efflorescence, Ironbark
+                Add(caster, { 18960, 193753, 473909, 474750 }) -- Teleport: Moonglade, Dreamwalk, Ancient of Lore, Symbiotic Relationship
+                Add(
+                    { forms = Forms(CAT, TRAVEL, AQUATIC, BEAR, SWIFT_FLIGHT, FLIGHT, MOONKIN) },
+                    { 50769, 212040 }
+                ) -- Revive, Revitalize
+                Add(
+                    { forms = beasts, formTalents = { [CAT] = { FELINE_ADEPT }, [BEAR] = { URSINE_ADEPT } } },
+                    { 2782, 440015, 88423, 29166 }
+                ) -- Remove Corruption (both), Nature's Cure, Innervate
                 -- 69369 Predatory Swiftness (talent 16974), 372152 Dream of Cenarius (talent 372119).
                 -- overlay: Predatory Swiftness lights the spell, so while the auras
                 -- cannot be read (combat) its proc highlight decides (CasterOutside).
-                casterRules[8936] = { forms = beasts, overlay = true,
-                    procs = { [SWIFTNESS] = SWIFTNESS, [69369] = 16974, [372152] = 372119 } }  -- Regrowth
-                casterRules[339] = { forms = beasts, talents = { 202226 }, overlay = true,
-                    procs = { [SWIFTNESS] = SWIFTNESS, [69369] = 16974 } }  -- Entangling Roots; 202226 Entangling Claws
+                casterRules[8936] = {
+                    forms = beasts,
+                    overlay = true,
+                    procs = { [SWIFTNESS] = SWIFTNESS, [69369] = 16974, [372152] = 372119 },
+                } -- Regrowth
+                casterRules[339] = {
+                    forms = beasts,
+                    talents = { 202226 },
+                    overlay = true,
+                    procs = { [SWIFTNESS] = SWIFTNESS, [69369] = 16974 },
+                } -- Entangling Roots; 202226 Entangling Claws
                 -- Lunar Inspiration (Feral) in Cat; Celestial Guardian (Balance PvP talent) in Bear
-                Add({ forms = beasts, formTalents = { [CAT] = { 155580 }, [BEAR] = { URSINE_ADEPT, 233754 } } },
-                    { 8921, 155625 })  -- Moonfire
-                casterRules[20484] = { forms = beasts, formTalents = { [BEAR] = { URSINE_ADEPT } },
-                    procs = { [SWIFTNESS] = SWIFTNESS } }  -- Rebirth
+                Add(
+                    { forms = beasts, formTalents = { [CAT] = { 155580 }, [BEAR] = { URSINE_ADEPT, 233754 } } },
+                    { 8921, 155625 }
+                ) -- Moonfire
+                casterRules[20484] = {
+                    forms = beasts,
+                    formTalents = { [BEAR] = { URSINE_ADEPT } },
+                    procs = { [SWIFTNESS] = SWIFTNESS },
+                } -- Rebirth
             end
             procAuras = {}
             for _, rule in pairs(casterRules) do
                 if rule.procs then
-                    for aura in pairs(rule.procs) do procAuras[aura] = true end
+                    for aura in pairs(rule.procs) do
+                        procAuras[aura] = true
+                    end
                 end
             end
         end
@@ -817,7 +986,9 @@ do
         local v = known[id]
         if v == nil then
             v = C_SpellBook.IsSpellKnown(id)
-            if issecretvalue(v) or type(v) ~= "boolean" then v = UNREAD end
+            if issecretvalue(v) or type(v) ~= "boolean" then
+                v = UNREAD
+            end
             known[id] = v
         end
         return v
@@ -826,11 +997,15 @@ do
     -- Whether this player can gain an exception aura: its talent is known, or
     -- for an item or set bonus (no talent) the client has the aura at all.
     local function CanProc(aura, talent)
-        if talent then return Knows(talent) end
+        if talent then
+            return Knows(talent)
+        end
         local v = exists[aura]
         if v == nil then
             v = C_Spell.DoesSpellExist(aura)
-            if issecretvalue(v) or type(v) ~= "boolean" then v = UNREAD end
+            if issecretvalue(v) or type(v) ~= "boolean" then
+                v = UNREAD
+            end
             exists[aura] = v
         end
         return v
@@ -842,8 +1017,14 @@ do
     local function ProcActive(aura)
         local v = auraState[aura]
         if v == nil then
-            local allSecret, spellSecret = C_Secrets.ShouldAurasBeSecret(), C_Secrets.ShouldSpellAuraBeSecret(aura)
-            if issecretvalue(allSecret) or issecretvalue(spellSecret) or allSecret ~= false or spellSecret ~= false then
+            local allSecret, spellSecret =
+                C_Secrets.ShouldAurasBeSecret(), C_Secrets.ShouldSpellAuraBeSecret(aura)
+            if
+                issecretvalue(allSecret)
+                or issecretvalue(spellSecret)
+                or allSecret ~= false
+                or spellSecret ~= false
+            then
                 return nil
             end
             v = UNREAD
@@ -855,25 +1036,37 @@ do
                     v = true
                     -- Recorded so the probe sees it go
                     local iid = data.auraInstanceID
-                    if iid ~= nil and not issecretvalue(iid) then procIIDs[iid] = aura end
+                    if iid ~= nil and not issecretvalue(iid) then
+                        procIIDs[iid] = aura
+                    end
                 end
             end
             auraState[aura] = v
         end
-        if v ~= UNREAD then return v end
+        if v ~= UNREAD then
+            return v
+        end
     end
 
     -- Whether a spell's answer can change within a form: its rule has an
     -- exception aura this player can gain.
     function ns.CdmFormNeedsAura(sid)
-        if not _isDruid or issecretvalue(sid) or type(sid) ~= "number" or sid <= 0 then return false end
+        if not _isDruid or issecretvalue(sid) or type(sid) ~= "number" or sid <= 0 then
+            return false
+        end
         local override = C_SpellBook.FindSpellOverrideByID(sid)
-        if issecretvalue(override) then return false end
-        if type(override) == "number" and override > 0 then sid = override end
+        if issecretvalue(override) then
+            return false
+        end
+        if type(override) == "number" and override > 0 then
+            sid = override
+        end
         local rule = CasterRule(sid)
         if rule and rule.procs then
             for aura, talent in pairs(rule.procs) do
-                if CanProc(aura, talent) ~= false then return true end
+                if CanProc(aura, talent) ~= false then
+                    return true
+                end
             end
         end
         return false
@@ -891,11 +1084,17 @@ do
     -- tell. While auras are secret a caller gets one true, so its icons take
     -- the answer for unreadable auras (shown), and one more once they read.
     function ns.CdmFormAuraEdge(updateInfo, who)
-        if not procAuras then return false end
+        if not procAuras then
+            return false
+        end
         local s = C_Secrets.ShouldAurasBeSecret()
         if issecretvalue(s) or s ~= false then
-            if next(auraState) ~= nil then wipe(auraState) end
-            if blindBy[who] then return false end
+            if next(auraState) ~= nil then
+                wipe(auraState)
+            end
+            if blindBy[who] then
+                return false
+            end
             blindBy[who] = true
             return true
         end
@@ -923,7 +1122,9 @@ do
                     if not issecretvalue(id) and procAuras[id] then
                         auraState[id] = nil
                         local iid = aura.auraInstanceID
-                        if iid ~= nil and not issecretvalue(iid) then procIIDs[iid] = id end
+                        if iid ~= nil and not issecretvalue(iid) then
+                            procIIDs[iid] = id
+                        end
                         hit = true
                     end
                 end
@@ -945,16 +1146,24 @@ do
 
     function ns.CdmCurrentFormID()
         local form = GetShapeshiftFormID()
-        if issecretvalue(form) then return nil end
-        if form == nil then return 0 end
-        if type(form) == "number" then return form end
+        if issecretvalue(form) then
+            return nil
+        end
+        if form == nil then
+            return 0
+        end
+        if type(form) == "number" then
+            return form
+        end
     end
 
     -- Any of these spells known (one that cannot be read counts)
     local function Permits(spells)
         if spells then
             for i = 1, #spells do
-                if Knows(spells[i]) ~= false then return true end
+                if Knows(spells[i]) ~= false then
+                    return true
+                end
             end
         end
         return false
@@ -965,23 +1174,34 @@ do
     -- whose proc lights the spell (rule.overlay): there the spell's proc
     -- highlight, readable in combat too, decides.
     local function CasterOutside(rule, form, sid)
-        if not rule.forms[form] then return false end
-        if Permits(rule.talents) or (rule.formTalents and Permits(rule.formTalents[form])) then return false end
+        if not rule.forms[form] then
+            return false
+        end
+        if Permits(rule.talents) or (rule.formTalents and Permits(rule.formTalents[form])) then
+            return false
+        end
         local uncertain = false
         if rule.procs then
             for aura, talent in pairs(rule.procs) do
                 local can = CanProc(aura, talent)
-                if can == UNREAD then uncertain = true
+                if can == UNREAD then
+                    uncertain = true
                 elseif can then
                     local active = ProcActive(aura)
-                    if active then return false end
-                    if active == nil then uncertain = true end
+                    if active then
+                        return false
+                    end
+                    if active == nil then
+                        uncertain = true
+                    end
                 end
             end
         end
         if uncertain and rule.overlay then
             local lit = C_SpellActivationOverlay.IsSpellOverlayed(sid)
-            if not issecretvalue(lit) and type(lit) == "boolean" then return not lit end
+            if not issecretvalue(lit) and type(lit) == "boolean" then
+                return not lit
+            end
         end
         return not uncertain
     end
@@ -991,7 +1211,9 @@ do
     local function DropNoLine()
         for _, row in pairs(outside) do
             for form, v in pairs(row) do
-                if v == NO_LINE then row[form] = nil end
+                if v == NO_LINE then
+                    row[form] = nil
+                end
             end
         end
     end
@@ -1007,27 +1229,41 @@ do
                 local at = type(tpl) == "string" and tpl:find("%s", 1, true)
                 if at then
                     local pre, suf = tpl:sub(1, at - 1), tpl:sub(at + 2)
-                    if text:sub(1, #pre) == pre and text:sub(#text - #suf + 1) == suf then fits = true end
+                    if text:sub(1, #pre) == pre and text:sub(#text - #suf + 1) == suf then
+                        fits = true
+                    end
                 end
             end
-            if not fits then return false end
+            if not fits then
+                return false
+            end
         end
         local n = GetNumShapeshiftForms()
-        if issecretvalue(n) or type(n) ~= "number" then return nil end
+        if issecretvalue(n) or type(n) ~= "number" then
+            return nil
+        end
         if n ~= formCount then
             local names = {}
             for i = 1, n do
                 local _, _, _, formSid = GetShapeshiftFormInfo(i)
-                if issecretvalue(formSid) or type(formSid) ~= "number" or formSid <= 0 then return nil end
+                if issecretvalue(formSid) or type(formSid) ~= "number" or formSid <= 0 then
+                    return nil
+                end
                 local name = C_Spell.GetSpellName(formSid)
-                if issecretvalue(name) or type(name) ~= "string" or name == "" then return nil end
+                if issecretvalue(name) or type(name) ~= "string" or name == "" then
+                    return nil
+                end
                 names[#names + 1] = name
             end
-            if formCount then DropNoLine() end
+            if formCount then
+                DropNoLine()
+            end
             formNames, formCount = names, n
         end
         for i = 1, #formNames do
-            if text:find(formNames[i], 1, true) then return true end
+            if text:find(formNames[i], 1, true) then
+                return true
+            end
         end
         return false
     end
@@ -1040,14 +1276,20 @@ do
     -- one was unreadable is the answer unknown.
     local function Read(sid)
         local data = C_TooltipInfo.GetSpellByID(sid)
-        if not Readable(data) then return nil end
+        if not Readable(data) then
+            return nil
+        end
         local lines = data.lines
-        if not Readable(lines) or #lines == 0 then return nil end
+        if not Readable(lines) or #lines == 0 then
+            return nil
+        end
         local unread = false
         for i = 1, #lines do
             local line = lines[i]
             local ok, t, req = Readable(line)
-            if ok then t, req = line.type, line.requirementType end
+            if ok then
+                t, req = line.type, line.requirementType
+            end
             if not ok or issecretvalue(t) or issecretvalue(req) then
                 unread = true
             else
@@ -1058,27 +1300,45 @@ do
                         unread = true
                     elseif type(text) == "string" then
                         isForm = NamesForm(text, LINE_REQ ~= nil and t == LINE_REQ)
-                        if isForm == nil then unread = true end
+                        if isForm == nil then
+                            unread = true
+                        end
                     end
                 end
                 if isForm then
                     local c = line.leftColor
-                    if not Readable(c) then return nil end
+                    if not Readable(c) then
+                        return nil
+                    end
                     local r, g, b = c.r, c.g, c.b
-                    if issecretvalue(r) or issecretvalue(g) or issecretvalue(b)
-                        or type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" then return nil end
+                    if
+                        issecretvalue(r)
+                        or issecretvalue(g)
+                        or issecretvalue(b)
+                        or type(r) ~= "number"
+                        or type(g) ~= "number"
+                        or type(b) ~= "number"
+                    then
+                        return nil
+                    end
                     return r >= 0.9 and g <= 0.2 and b <= 0.2
                 end
             end
         end
-        if unread then return nil end
+        if unread then
+            return nil
+        end
         return NO_LINE
     end
 
     function ns.CdmSpellOutsideForm(sid)
-        if issecretvalue(sid) or type(sid) ~= "number" or sid <= 0 then return false end
+        if issecretvalue(sid) or type(sid) ~= "number" or sid <= 0 then
+            return false
+        end
         local form = ns.CdmCurrentFormID()
-        if form == nil then return false end
+        if form == nil then
+            return false
+        end
         local rule = CasterRule(sid)
         local casterOutside = rule and CasterOutside(rule, form, sid)
         if rule and rule.procs and rule.forms[form] and procSeen[sid] ~= casterOutside then
@@ -1087,14 +1347,19 @@ do
             local row = outside[sid]
             if row then
                 for key, v in pairs(row) do
-                    if v == true or v == false then row[key] = nil end
+                    if v == true or v == false then
+                        row[key] = nil
+                    end
                 end
             end
         end
         local row = outside[sid]
         local v = row and row[form]
         if v == nil then
-            if not row then row = {}; outside[sid] = row end
+            if not row then
+                row = {}
+                outside[sid] = row
+            end
             v = Read(sid)
             if v == nil then
                 v = UNREAD
@@ -1102,9 +1367,15 @@ do
             end
             row[form] = v
         end
-        if v ~= NO_LINE and v ~= UNREAD then return v == true end
-        if rule then return casterOutside end
-        if v == UNREAD then return false end
+        if v ~= NO_LINE and v ~= UNREAD then
+            return v == true
+        end
+        if rule then
+            return casterOutside
+        end
+        if v == UNREAD then
+            return false
+        end
         if form == 0 then
             casterOK[sid] = not ns.CdmSpellNotUsable(sid)
             return false
@@ -1115,18 +1386,30 @@ do
     -- A form change or combat end: answers that could not be read are read again
     function ns.CdmRetryUnreadForms()
         InvalidateFormAuras()
-        for id, v in pairs(known) do if v == UNREAD then known[id] = nil end end
-        for id, v in pairs(exists) do if v == UNREAD then exists[id] = nil end end
+        for id, v in pairs(known) do
+            if v == UNREAD then
+                known[id] = nil
+            end
+        end
+        for id, v in pairs(exists) do
+            if v == UNREAD then
+                exists[id] = nil
+            end
+        end
         local n = GetNumShapeshiftForms()
         if formCount and not issecretvalue(n) and n ~= formCount then
-            formCount = nil  -- the names are read again
+            formCount = nil -- the names are read again
             DropNoLine()
         end
-        if unreadN == 0 then return end
+        if unreadN == 0 then
+            return
+        end
         unreadN = 0
         for _, row in pairs(outside) do
             for form, v in pairs(row) do
-                if v == UNREAD then row[form] = nil end
+                if v == UNREAD then
+                    row[form] = nil
+                end
             end
         end
     end
@@ -1141,7 +1424,9 @@ do
         unreadN, formCount = 0, nil
         -- A talent can teach or drop an exception: who needs auras is decided again
         ns.CdmFormWatchStale()
-        if ns.FakeActive_SyncFormAuraRules then ns.FakeActive_SyncFormAuraRules() end
+        if ns.FakeActive_SyncFormAuraRules then
+            ns.FakeActive_SyncFormAuraRules()
+        end
     end
 end
 
@@ -1152,7 +1437,18 @@ end
 -- evaluation (charge spells report isActive with charges left, GCD tail races).
 -- The OnUpdate script is installed ONCE per frame object: the hook fires per
 -- repaint, so per-arm work stays plain field writes, never closure creation.
-local function ArmCdStateEval(frame, fd, cse, cseShift, lowAlpha, hideUntilSpent, usable, form, stance, stanceOnly)
+local function ArmCdStateEval(
+    frame,
+    fd,
+    cse,
+    cseShift,
+    lowAlpha,
+    hideUntilSpent,
+    usable,
+    form,
+    stance,
+    stanceOnly
+)
     local pending = fd._cdStatePending
     if not pending then
         pending = CreateFrame("Frame")
@@ -1163,7 +1459,9 @@ local function ArmCdStateEval(frame, fd, cse, cseShift, lowAlpha, hideUntilSpent
             local fc3 = _ecmeFC[frame]
             local sid3 = fc3 and fc3.spellID
             local bk3 = fc3 and fc3.barKey
-            if not sid3 or not bk3 then return end
+            if not sid3 or not bk3 then
+                return
+            end
             -- Stance Bar: hidden on (or off) a stance bar page whatever the
             -- cooldown, with its own Shift Icons choice.
             if self.stance then
@@ -1201,8 +1499,7 @@ local function ArmCdStateEval(frame, fd, cse, cseShift, lowAlpha, hideUntilSpent
                 -- Lowered (not hidden): reuse _cdStateHidden as the "cd-state
                 -- owns this alpha" flag so the opacity appliers leave the lowered
                 -- value alone. A visibility-hidden bar (baseA 0) stays 0 either way.
-                frame:SetAlpha(baseA == 0 and 0
-                    or (onCD and (self.lowAlpha or 0.5) or baseA))
+                frame:SetAlpha(baseA == 0 and 0 or (onCD and (self.lowAlpha or 0.5) or baseA))
                 if fc3 then
                     fc3._cdStateHidden = onCD or false
                     if ns.SetCdStateShiftHidden then
@@ -1267,8 +1564,7 @@ local function EvalCdStateChargeFrame(frame, fd)
         ns._cdStateChargeWatch[frame] = nil
         return
     end
-    ArmCdStateEval(frame, fd, "hiddenReady", csew == "hiddenReadyShift",
-        nil, ssw.chargeHideUntilSpent)
+    ArmCdStateEval(frame, fd, "hiddenReady", csew == "hiddenReadyShift", nil, ssw.chargeHideUntilSpent)
 end
 
 -- Register an icon whose resolved effect is Hidden (CD Ready) (callers check)
@@ -1277,10 +1573,14 @@ end
 -- and RefreshCDMIconAppearance.
 function ns.WatchCdStateChargeIfEnabled(frame)
     local fd = hookFrameData[frame]
-    if not fd then return end
+    if not fd then
+        return
+    end
     local fcw = _ecmeFC[frame]
     local sidw = fcw and fcw.spellID
-    if not sidw then return end
+    if not sidw then
+        return
+    end
     local liveSid = sidw
     if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
         liveSid = C_SpellBook.FindSpellOverrideByID(sidw) or sidw
@@ -1322,10 +1622,10 @@ end
 --  drains itself, and an event unregisters once no icon needs it.
 -------------------------------------------------------------------------------
 do
-    local watch = setmetatable({}, { __mode = "k" })  -- icon frame -> the spell ID it was watched with
+    local watch = setmetatable({}, { __mode = "k" }) -- icon frame -> the spell ID it was watched with
     local eventFrame, flushFrame
     local usableOn, formOn, auraOn, stanceOn = false, false, false, false
-    local flushedForm  -- the form ID the last pass evaluated
+    local flushedForm -- the form ID the last pass evaluated
 
     local function SyncEvents(usable, form, aura, stance)
         stance = stance == true
@@ -1355,8 +1655,11 @@ do
         auraOn = aura
         if usable ~= usableOn then
             usableOn = usable
-            if usable then eventFrame:RegisterEvent("SPELL_UPDATE_USABLE")
-            else eventFrame:UnregisterEvent("SPELL_UPDATE_USABLE") end
+            if usable then
+                eventFrame:RegisterEvent("SPELL_UPDATE_USABLE")
+            else
+                eventFrame:UnregisterEvent("SPELL_UPDATE_USABLE")
+            end
         end
         if form ~= formOn then
             formOn = form
@@ -1391,8 +1694,14 @@ do
             local bk = fc and fc.barKey
             local m, ss, cse, stance
             -- Same ownership guards as the SetDesaturated hook.
-            if fd and sid and bk and bk:sub(1, 7) ~= "__ghost" and bk ~= ns.FOCUSKICK_BAR_KEY
-               and not (ns.PresetHasCdState and ns.PresetHasCdState(frame)) then
+            if
+                fd
+                and sid
+                and bk
+                and bk:sub(1, 7) ~= "__ghost"
+                and bk ~= ns.FOCUSKICK_BAR_KEY
+                and not (ns.PresetHasCdState and ns.PresetHasCdState(frame))
+            then
                 ss = ResolveSpellSettings(frame, sid, false)
                 cse = ns.CdStateHideOf(ss, frame)
                 m = cse and ns.CD_STATE_HIDE[cse]
@@ -1418,8 +1727,18 @@ do
                         elseif cse == "lowerAlphaOnCD" then
                             base, only = cse, false
                         end
-                        ArmCdStateEval(frame, fd, base, shift, (ss and ss.cdStateLowerAlpha) or 0.5,
-                            ss and ss.chargeHideUntilSpent, us, fo, stance, only)
+                        ArmCdStateEval(
+                            frame,
+                            fd,
+                            base,
+                            shift,
+                            (ss and ss.cdStateLowerAlpha) or 0.5,
+                            ss and ss.chargeHideUntilSpent,
+                            us,
+                            fo,
+                            stance,
+                            only
+                        )
                     else
                         ArmCdStateEval(frame, fd, m.base, m.shift, nil, nil, m.usable, m.form)
                     end
@@ -1440,8 +1759,15 @@ do
         local was = watch[frame]
         -- usable: the icon also runs Hidden Until Usable (implied by a plain call)
         local needUsable = usable or (not form and not stance)
-        if was ~= nil and was == sid and (not form or formOn) and (not stance or stanceOn)
-            and (not needUsable or usableOn) then return end
+        if
+            was ~= nil
+            and was == sid
+            and (not form or formOn)
+            and (not stance or stanceOn)
+            and (not needUsable or usableOn)
+        then
+            return
+        end
         watch[frame] = sid or true
         if not eventFrame then
             flushFrame = ns.TakeShell()
@@ -1456,26 +1782,40 @@ do
                     -- Only the icons whose rules hang on exception auras re-read
                 elseif auraOnly then
                     -- Same form: only an exception aura coming or going counts
-                    if not (auraOn and ns.CdmFormAuraEdge(updateInfo, "watch")) then return end
-                elseif event ~= "SPELL_UPDATE_USABLE" and event ~= "UPDATE_BONUS_ACTIONBAR"
-                    and event ~= "UPDATE_STEALTH" then
+                    if not (auraOn and ns.CdmFormAuraEdge(updateInfo, "watch")) then
+                        return
+                    end
+                elseif
+                    event ~= "SPELL_UPDATE_USABLE"
+                    and event ~= "UPDATE_BONUS_ACTIONBAR"
+                    and event ~= "UPDATE_STEALTH"
+                then
                     ns.CdmRetryUnreadForms()
                 end
                 -- A queued form/usability edge keeps its full pass.
-                if not flushFrame:IsShown() then flushFrame.auraOnly = auraOnly
-                elseif not auraOnly then flushFrame.auraOnly = false end
+                if not flushFrame:IsShown() then
+                    flushFrame.auraOnly = auraOnly
+                elseif not auraOnly then
+                    flushFrame.auraOnly = false
+                end
                 flushFrame:Show()
             end)
         end
         local needsAura = form and ns.CdmFormNeedsAura(sid)
-        SyncEvents(usableOn or needUsable == true, formOn or form == true, auraOn or needsAura == true,
-            stanceOn or stance == true)
+        SyncEvents(
+            usableOn or needUsable == true,
+            formOn or form == true,
+            auraOn or needsAura == true,
+            stanceOn or stance == true
+        )
     end
 
     -- A talent change can teach or drop an exception: each watched icon
     -- decides its aura need again on its next pass (ns.CdmWipeFormCache).
     function ns.CdmFormWatchStale()
-        for frame in pairs(watch) do watch[frame] = true end
+        for frame in pairs(watch) do
+            watch[frame] = true
+        end
     end
 end
 
@@ -1494,24 +1834,40 @@ local function SwiftmendEnabled()
     return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
 end
 local function TryHookSwiftmend(frame, fd)
-    if not _isDruid or fd._smVCHooked then return end
+    if not _isDruid or fd._smVCHooked then
+        return
+    end
     local iconWidget = fd.tex
-    if not iconWidget then return end
+    if not iconWidget then
+        return
+    end
     local dispSID, baseSID = ResolveFrameSpellID(frame)
-    if dispSID and issecretvalue(dispSID) then dispSID = nil end
-    if baseSID and issecretvalue(baseSID) then baseSID = nil end
-    if baseSID ~= SWIFTMEND_SID and dispSID ~= SWIFTMEND_SID then return end
+    if dispSID and issecretvalue(dispSID) then
+        dispSID = nil
+    end
+    if baseSID and issecretvalue(baseSID) then
+        baseSID = nil
+    end
+    if baseSID ~= SWIFTMEND_SID and dispSID ~= SWIFTMEND_SID then
+        return
+    end
     fd._smVCHooked = true
     _smHookedIcons[#_smHookedIcons + 1] = iconWidget
     local smGuard = false
     hooksecurefunc(iconWidget, "SetVertexColor", function()
-        if smGuard then return end
-        if not SwiftmendEnabled() then return end
+        if smGuard then
+            return
+        end
+        if not SwiftmendEnabled() then
+            return
+        end
         smGuard = true
         iconWidget:SetVertexColor(1, 1, 1)
         smGuard = false
     end)
-    if SwiftmendEnabled() then iconWidget:SetVertexColor(1, 1, 1) end
+    if SwiftmendEnabled() then
+        iconWidget:SetVertexColor(1, 1, 1)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -1557,24 +1913,36 @@ local function PaintIconTint(frame, fd, tex, base)
 end
 
 local function ApplyResourceTint(frame, fd, fromBlizzard)
-    if not ns._cdmAnyNoResourceTint then return end
+    if not ns._cdmAnyNoResourceTint then
+        return
+    end
     fd = fd or hookFrameData[frame]
     local tex = fd and fd.tex
-    if not tex or fd._isBuffViewerFrame then return end
+    if not tex or fd._isBuffViewerFrame then
+        return
+    end
     -- Our own frames paint their tint themselves (ns.PaintCustomSpellTint).
-    if ns.CdmIsInjectedFrame and ns.CdmIsInjectedFrame(frame) then return end
+    if ns.CdmIsInjectedFrame and ns.CdmIsInjectedFrame(frame) then
+        return
+    end
     local fc = _ecmeFC[frame]
     local sid = fc and fc.spellID
-    if not sid or not (fc and fc.barKey) then return end
+    if not sid or not (fc and fc.barKey) then
+        return
+    end
     local ss = ResolveSpellSettings(frame, sid, false)
     local want = ss and ss.noResourceTint
-    if not want and not fd._resTintOn then return end
+    if not want and not fd._resTintOn then
+        return
+    end
     -- Hooked only once the icon's own spell uses the setting (a lit tint
     -- means the hook is already in).
     if not fd._resTintHooked then
         fd._resTintHooked = true
         hooksecurefunc(tex, "SetVertexColor", function()
-            if fd._resTintBusy then return end
+            if fd._resTintBusy then
+                return
+            end
             ApplyResourceTint(frame, fd, true)
         end)
     end
@@ -1583,7 +1951,9 @@ local function ApplyResourceTint(frame, fd, fromBlizzard)
         liveSid = C_SpellBook.FindSpellOverrideByID(sid) or sid
     end
     local usable, noPower = C_Spell.IsSpellUsable(liveSid)
-    if issecretvalue and (issecretvalue(usable) or issecretvalue(noPower)) then return end
+    if issecretvalue and (issecretvalue(usable) or issecretvalue(noPower)) then
+        return
+    end
     if want then
         if noPower then
             PaintIconTint(frame, fd, tex, RES_WHITE)
@@ -1595,13 +1965,14 @@ local function ApplyResourceTint(frame, fd, fromBlizzard)
     elseif fd._resTintOn then
         fd._resTintOn = nil
         -- A Blizzard write that just landed already holds its own tint.
-        if fromBlizzard then return end
+        if fromBlizzard then
+            return
+        end
         local _, power, grey = ResColors()
         PaintIconTint(frame, fd, tex, usable and RES_WHITE or (noPower and power or grey))
     end
 end
 ns.CdmApplyResourceTint = ApplyResourceTint
-
 
 -------------------------------------------------------------------------------
 --  Per-spell Custom Icon
@@ -1621,10 +1992,14 @@ ns.CdmApplyResourceTint = ApplyResourceTint
 --  context can write tainted values into the frame's table.
 -------------------------------------------------------------------------------
 local function ApplyCustomIcon(frame, fd)
-    if not ns._cdmAnyCustomIcon then return end
+    if not ns._cdmAnyCustomIcon then
+        return
+    end
     fd = fd or hookFrameData[frame]
     local tex = fd and fd.tex
-    if not tex then return end
+    if not tex then
+        return
+    end
     -- Per-frame re-assert hook. Must hook the frame INSTANCE: leaf-mixin functions are
     -- COPIED onto each item frame at creation, so a hooksecurefunc on the mixin table
     -- never fires for frames that predate the install (the custom icon then reverts on
@@ -1646,11 +2021,18 @@ local function ApplyCustomIcon(frame, fd)
         -- cleared the setting, so keep the flag armed for the next pass.
         local fc = _ecmeFC[frame]
         local sid = fc and (fc.resolvedSid or fc.spellID)
-        if type(sid) == "number" and not (issecretvalue and issecretvalue(sid))
-           and sid > 0 and C_Spell and C_Spell.GetSpellTexture then
+        if
+            type(sid) == "number"
+            and not (issecretvalue and issecretvalue(sid))
+            and sid > 0
+            and C_Spell
+            and C_Spell.GetSpellTexture
+        then
             fd._customIconOn = nil
             local real = C_Spell.GetSpellTexture(sid)
-            if real then tex:SetTexture(real) end
+            if real then
+                tex:SetTexture(real)
+            end
         end
     end
 end
@@ -1681,7 +2063,9 @@ ns.ApplyCustomIcon = ApplyCustomIcon
 --  passes re-assert the rest. Cost when off: one field read per call.
 -------------------------------------------------------------------------------
 local function ApplyOnlyNumbers(frame, fd, barData)
-    if not barData then return end
+    if not barData then
+        return
+    end
     fd = fd or hookFrameData[frame]
     local osn = barData.onlyShowNumbers
     if osn or barData.chargesOnly then
@@ -1707,44 +2091,74 @@ local function ApplyOnlyNumbers(frame, fd, barData)
             tex:Hide()
         end
         local bg = (fd and fd.bg) or frame._bg
-        if bg then bg:SetAlpha(0) end
+        if bg then
+            bg:SetAlpha(0)
+        end
         if fd and fd.borderFrame then
             CludesUI.PP.HideBorder(fd.borderFrame)
             local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[fd.borderFrame]
-            if bdFrame then bdFrame:Hide() end
+            if bdFrame then
+                bdFrame:Hide()
+            end
         end
         local ifc = _ecmeFC[frame]
-        if ifc and ifc.shapeBorder then ifc.shapeBorder:SetAlpha(0) end
+        if ifc and ifc.shapeBorder then
+            ifc.shapeBorder:SetAlpha(0)
+        end
         -- Blizzard Style ring goes with the art (the custom-aura buttons hide theirs too).
-        if ifc and ifc.blizzHost then ifc.blizzHost:Hide() end
-        if frame.DebuffBorder then frame.DebuffBorder:SetAlpha(0) end
+        if ifc and ifc.blizzHost then
+            ifc.blizzHost:Hide()
+        end
+        if frame.DebuffBorder then
+            frame.DebuffBorder:SetAlpha(0)
+        end
         local cd = (fd and fd.cooldown) or frame.Cooldown or frame._cooldown
         if cd then
-            if cd.SetDrawSwipe then cd:SetDrawSwipe(false) end
+            if cd.SetDrawSwipe then
+                cd:SetDrawSwipe(false)
+            end
             -- No icon means no recharge edge either.
-            if cd.SetDrawEdge then cd:SetDrawEdge(false) end
+            if cd.SetDrawEdge then
+                cd:SetDrawEdge(false)
+            end
             -- Charges/Stacks Only forces the countdown OFF. The buff variant does
             -- NOT touch it: the duration follows the normal Duration Text
             -- settings, applied by the appearance pass before this re-hide tail.
-            if (not osn) and cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
+            if (not osn) and cd.SetHideCountdownNumbers then
+                cd:SetHideCountdownNumbers(true)
+            end
         end
     elseif fd and fd._osnOn then
         fd._osnOn = nil
         fd._osnHideText = nil
         local tex = fd.tex or frame._tex
-        if tex then tex:SetAlpha(1); tex:Show() end
+        if tex then
+            tex:SetAlpha(1)
+            tex:Show()
+        end
         local bg = fd.bg or frame._bg
-        if bg then bg:SetAlpha(1) end
+        if bg then
+            bg:SetAlpha(1)
+        end
         local ifc = _ecmeFC[frame]
-        if ifc and ifc.shapeBorder then ifc.shapeBorder:SetAlpha(1) end
-        if ifc and ifc.blizzHost then ifc.blizzHost:Show() end
-        if frame.DebuffBorder then frame.DebuffBorder:SetAlpha(1) end
+        if ifc and ifc.shapeBorder then
+            ifc.shapeBorder:SetAlpha(1)
+        end
+        if ifc and ifc.blizzHost then
+            ifc.blizzHost:Show()
+        end
+        if frame.DebuffBorder then
+            frame.DebuffBorder:SetAlpha(1)
+        end
         local cd = fd.cooldown or frame.Cooldown or frame._cooldown
         if cd then
-            if cd.SetDrawSwipe then cd:SetDrawSwipe(true) end
+            if cd.SetDrawSwipe then
+                cd:SetDrawSwipe(true)
+            end
             if cd.SetHideCountdownNumbers then
                 cd:SetHideCountdownNumbers(
-                    ns.CdmDurationHideFor(frame, barData.key, not ns.CdmDurationTextOn(barData)))
+                    ns.CdmDurationHideFor(frame, barData.key, not ns.CdmDurationTextOn(barData))
+                )
             end
         end
         -- Square border / shape ring re-apply on the next style pass

@@ -20,7 +20,9 @@
 -- On 12.1+ this file is two comparisons and exits; no globals, no frames.
 
 local iface = select(4, GetBuildInfo())
-if type(iface) ~= "number" then return end
+if type(iface) ~= "number" then
+    return
+end
 
 -- WoW Forever (Blizzard game type "camelot"): the 12.1 engine with vanilla
 -- content, reporting a 1.60+ toc (16001). Classic Era reports 115xx and
@@ -31,7 +33,9 @@ if iface >= 16000 and iface < 20000 then
     CUI_CLIENT_FOREVER = true
     return
 end
-if iface >= 120100 then return end
+if iface >= 120100 then
+    return
+end
 
 CUI_CLIENT_BLOCKED = true
 
@@ -56,8 +60,12 @@ ev:SetScript("OnEvent", function(self)
         t:SetColorTexture(0.30, 0.79, 0.94, 0.9)
         t:SetPoint(point1)
         t:SetPoint(point2)
-        if w then t:SetWidth(w) end
-        if h then t:SetHeight(h) end
+        if w then
+            t:SetWidth(w)
+        end
+        if h then
+            t:SetHeight(h)
+        end
         return t
     end
     Edge("TOPLEFT", "TOPRIGHT", nil, 1)
@@ -74,7 +82,9 @@ ev:SetScript("OnEvent", function(self)
     body:SetPoint("TOP", title, "BOTTOM", 0, -12)
     body:SetWidth(430)
     body:SetJustifyH("CENTER")
-    body:SetText("This version of CludesUI is built for the Midnight 12.1 patch and has been disabled on this game version.|n|nYour saved settings are safe and untouched. Please install the previous CludesUI release until 12.1 launches.")
+    body:SetText(
+        "This version of CludesUI is built for the Midnight 12.1 patch and has been disabled on this game version.|n|nYour saved settings are safe and untouched. Please install the previous CludesUI release until 12.1 launches."
+    )
 
     local btn = CreateFrame("Button", nil, p)
     btn:SetSize(110, 26)
@@ -86,9 +96,15 @@ ev:SetScript("OnEvent", function(self)
     bl:SetPoint("CENTER")
     bl:SetText("Okay")
     bl:SetTextColor(0, 0, 0)
-    btn:SetScript("OnEnter", function() bbg:SetColorTexture(0.30, 0.79, 0.94, 1) end)
-    btn:SetScript("OnLeave", function() bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85) end)
-    btn:SetScript("OnClick", function() p:Hide() end)
+    btn:SetScript("OnEnter", function()
+        bbg:SetColorTexture(0.30, 0.79, 0.94, 1)
+    end)
+    btn:SetScript("OnLeave", function()
+        bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85)
+    end)
+    btn:SetScript("OnClick", function()
+        p:Hide()
+    end)
 
     tinsert(UISpecialFrames, "CUIClientGatePopup")
 end)

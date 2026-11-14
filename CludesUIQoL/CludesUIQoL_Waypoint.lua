@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Waypoint.lua
 --  /way [#mapID | zone] x y [description] [; ...] prints one link per
@@ -15,15 +17,21 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  handler, on the player's own click.
 -------------------------------------------------------------------------------
 -- Off by default and reload-gated: while off, nothing below runs.
-if not (CludesUIDB and CludesUIDB.waypointCmd and CludesUIDB.waypointCmd.enabled == true) then return end
+if not (CludesUIDB and CludesUIDB.waypointCmd and CludesUIDB.waypointCmd.enabled == true) then
+    return
+end
 
-local ns  = select(2, ...)
+local ns = select(2, ...)
 local CUI = CludesUI
-local CC  = CUI.COLOR_CODES
+local CC = CUI.COLOR_CODES
 
 local PREFIX = CC.BRAND .. "CludesUI:|r "
-local function Say(msg)  CUI.Print(PREFIX .. msg) end
-local function Hint(msg) Say(CC.DIM .. msg .. "|r") end
+local function Say(msg)
+    CUI.Print(PREFIX .. msg)
+end
+local function Hint(msg)
+    Say(CC.DIM .. msg .. "|r")
+end
 
 -- The hand-placed pin option, read live (the options cog writes it).
 local function ManualArrival()
@@ -43,13 +51,15 @@ end
 -------------------------------------------------------------------------------
 local ZONE_TYPES = {
     [Enum.UIMapType.Continent] = true,
-    [Enum.UIMapType.Zone]      = true,
-    [Enum.UIMapType.Dungeon]   = true,
-    [Enum.UIMapType.Micro]     = true,
+    [Enum.UIMapType.Zone] = true,
+    [Enum.UIMapType.Dungeon] = true,
+    [Enum.UIMapType.Micro] = true,
 }
-local zoneIDs, zoneKeys  -- parallel: uiMapID, folded name
+local zoneIDs, zoneKeys -- parallel: uiMapID, folded name
 
-local function Fold(s) return CaseAccentInsensitiveParse(s):lower() end
+local function Fold(s)
+    return CaseAccentInsensitiveParse(s):lower()
+end
 
 local function BuildZones()
     local root = C_Map.GetFallbackWorldMapID()
@@ -73,7 +83,9 @@ end
 -- it). Returns the uiMapIDs (nil: no map has such a name), their distinct
 -- names, and the first name matched.
 local function FindZones(query)
-    if not zoneIDs then BuildZones() end
+    if not zoneIDs then
+        BuildZones()
+    end
     local q = Fold(query)
     local exact, part = {}, {}
     for i, key in ipairs(zoneKeys) do
@@ -84,16 +96,23 @@ local function FindZones(query)
         end
     end
     local hits = #exact > 0 and exact or part
-    if #hits == 0 then return nil end
-    table.sort(hits, function(a, b) return zoneIDs[a] < zoneIDs[b] end)
+    if #hits == 0 then
+        return nil
+    end
+    table.sort(hits, function(a, b)
+        return zoneIDs[a] < zoneIDs[b]
+    end)
     local ids, names, slots, named = {}, {}, {}, {}
     for _, i in ipairs(hits) do
         local id, key = zoneIDs[i], zoneKeys[i]
         local info = C_Map.GetMapInfo(id)
         local parent = C_Map.GetMapInfo(info.parentMapID)
         local slot = key .. ":" .. info.parentMapID
-        if not slots[slot] and C_Map.CanSetUserWaypointOnMap(id)
-            and not (parent and Fold(parent.name) == key) then
+        if
+            not slots[slot]
+            and C_Map.CanSetUserWaypointOnMap(id)
+            and not (parent and Fold(parent.name) == key)
+        then
             slots[slot] = true
             ids[#ids + 1] = id
             if not named[key] then
@@ -108,10 +127,12 @@ end
 -------------------------------------------------------------------------------
 --  Resolving a destination
 -------------------------------------------------------------------------------
-local MAX_MAP_ID = 999999  -- a typed ID stays inside the map API's integer range
+local MAX_MAP_ID = 999999 -- a typed ID stays inside the map API's integer range
 
 local function Pinnable(mapID)
-    if C_Map.CanSetUserWaypointOnMap(mapID) then return { mapID } end
+    if C_Map.CanSetUserWaypointOnMap(mapID) then
+        return { mapID }
+    end
     CUI.PrintError(CludesUI.Lf("Map pins cannot be placed on %1$s.", MapLabel(mapID)))
 end
 
@@ -120,16 +141,22 @@ end
 local function Candidates(spec)
     if not spec.zone then
         local mapID = C_Map.GetBestMapForUnit("player")
-        if mapID then return Pinnable(mapID) end
+        if mapID then
+            return Pinnable(mapID)
+        end
         -- Inside instances the player has no map on WoW Forever.
-        CUI.PrintError(IsInInstance() and CludesUI.L("Map pins cannot be placed inside instances.")
-            or CludesUI.L("Cannot determine your current zone."))
+        CUI.PrintError(
+            IsInInstance() and CludesUI.L("Map pins cannot be placed inside instances.")
+                or CludesUI.L("Cannot determine your current zone.")
+        )
         return
     end
     local id = spec.zone:match("^#?(%d+)$")
     if id then
         local mapID = tonumber(id)
-        if mapID <= MAX_MAP_ID and C_Map.GetMapInfo(mapID) then return Pinnable(mapID) end
+        if mapID <= MAX_MAP_ID and C_Map.GetMapInfo(mapID) then
+            return Pinnable(mapID)
+        end
         CUI.PrintError(CludesUI.Lf("Unknown map ID: %1$s", id))
         return
     end
@@ -139,9 +166,15 @@ local function Candidates(spec)
     elseif #ids == 0 then
         CUI.PrintError(CludesUI.Lf("Map pins cannot be placed on %1$s.", first))
     elseif #names > 1 then
-        table.sort(names, function(a, b) return strcmputf8i(a, b) < 0 end)
-        Say(CludesUI.Lf("Several zones match %1$s:", spec.zone) .. " "
-            .. table.concat(names, ", ", 1, math.min(#names, 8)) .. (#names > 8 and ", ..." or ""))
+        table.sort(names, function(a, b)
+            return strcmputf8i(a, b) < 0
+        end)
+        Say(
+            CludesUI.Lf("Several zones match %1$s:", spec.zone)
+                .. " "
+                .. table.concat(names, ", ", 1, math.min(#names, 8))
+                .. (#names > 8 and ", ..." or "")
+        )
     else
         return ids
     end
@@ -153,17 +186,29 @@ end
 -- The link C_Map.GetUserWaypointHyperlink builds: x, y in 0..100 travel as
 -- 0..10000, in the colour every worldmap link takes.
 local function PinLink(mapID, x, y)
-    return ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(mapID,
-        math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5), MAP_PIN_HYPERLINK)
+    return ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
+        mapID,
+        math.floor(x * 100 + 0.5),
+        math.floor(y * 100 + 0.5),
+        MAP_PIN_HYPERLINK
+    )
 end
 
-local function Coords(x, y) return CC.DIM .. ("%.1f, %.1f"):format(x, y) .. "|r" end
+local function Coords(x, y)
+    return CC.DIM .. ("%.1f, %.1f"):format(x, y) .. "|r"
+end
 
 -- n: the destination's number, when the list holds several.
 local function LinkLine(dest, n)
-    local line = PinLink(dest.mapID, dest.x, dest.y) .. " " .. CC.WHITE .. dest.label .. "|r "
+    local line = PinLink(dest.mapID, dest.x, dest.y)
+        .. " "
+        .. CC.WHITE
+        .. dest.label
+        .. "|r "
         .. Coords(dest.x, dest.y)
-    if dest.desc then line = line .. "  " .. dest.desc end
+    if dest.desc then
+        line = line .. "  " .. dest.desc
+    end
     return n and (CC.BRAND .. n .. ".|r " .. line) or line
 end
 
@@ -178,10 +223,10 @@ end
 --  an addon line printed in combat taints chat history.
 -------------------------------------------------------------------------------
 local ARRIVE_YARDS = 30
-local ev = CreateFrame("Frame")  -- made in the main chunk so its handler bills to this addon
-local listed     -- destinations of the last /way, until all are reached
-local announced  -- the pin last announced, so each one is announced once
-local held = {}  -- arrival lines waiting for the end of combat
+local ev = CreateFrame("Frame") -- made in the main chunk so its handler bills to this addon
+local listed -- destinations of the last /way, until all are reached
+local announced -- the pin last announced, so each one is announced once
+local held = {} -- arrival lines waiting for the end of combat
 local hintedClick, hintedRemove
 
 local function SyncArrival()
@@ -193,10 +238,12 @@ local function SyncArrival()
         ev:UnregisterEvent("PLAYER_STOPPED_MOVING")
     end
 end
-ns.WaypointArrivalSync = SyncArrival  -- the options cog calls it after a change
+ns.WaypointArrivalSync = SyncArrival -- the options cog calls it after a change
 
 local function FlushHeld()
-    for i = 1, #held do Say(held[i]) end
+    for i = 1, #held do
+        Say(held[i])
+    end
     wipe(held)
 end
 
@@ -210,43 +257,70 @@ local function Announce(msg)
 end
 
 local function OnArrival()
-    if not C_Map.HasUserWaypoint() then return end
+    if not C_Map.HasUserWaypoint() then
+        return
+    end
     local pin = C_Map.GetUserWaypoint()
     local mapID, px, py = pin.uiMapID, pin.position.x, pin.position.y
     -- Nil while the player is off the pin's map or inside an instance.
     local pos = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not pos then return end
+    if not pos then
+        return
+    end
     local w, h = C_Map.GetMapWorldSize(mapID)
     local dx, dy = (pos.x - px) * w, (pos.y - py) * h
-    if dx * dx + dy * dy > ARRIVE_YARDS * ARRIVE_YARDS then return end
+    if dx * dx + dy * dy > ARRIVE_YARDS * ARRIVE_YARDS then
+        return
+    end
     local key = mapID .. ":" .. px .. ":" .. py
-    if key == announced then return end
+    if key == announced then
+        return
+    end
 
     -- A listed destination: its link rounded the coordinates to 1/10000.
     local i
     if listed then
         for n, dest in ipairs(listed) do
-            if dest.mapID == mapID and math.abs(dest.x / 100 - px) < 2e-4
-                and math.abs(dest.y / 100 - py) < 2e-4 then
+            if
+                dest.mapID == mapID
+                and math.abs(dest.x / 100 - px) < 2e-4
+                and math.abs(dest.y / 100 - py) < 2e-4
+            then
                 i = n
                 break
             end
         end
     end
     -- A pin the player placed by hand: only with the cog option.
-    if not i and not ManualArrival() then return end
+    if not i and not ManualArrival() then
+        return
+    end
     announced = key
 
     if not i then
-        Announce(CludesUI.L("You have arrived:") .. " " .. CC.WHITE .. MapLabel(mapID) .. "|r "
-            .. Coords(px * 100, py * 100))
+        Announce(
+            CludesUI.L("You have arrived:")
+                .. " "
+                .. CC.WHITE
+                .. MapLabel(mapID)
+                .. "|r "
+                .. Coords(px * 100, py * 100)
+        )
     else
         local dest = listed[i]
-        Announce(CludesUI.L("You have arrived:") .. " " .. CC.WHITE
-            .. (#listed > 1 and (i .. ". ") or "") .. (dest.desc or dest.label) .. "|r")
+        Announce(
+            CludesUI.L("You have arrived:")
+                .. " "
+                .. CC.WHITE
+                .. (#listed > 1 and (i .. ". ") or "")
+                .. (dest.desc or dest.label)
+                .. "|r"
+        )
         -- Same-named maps offered for the same destination count as reached too.
         for _, d in ipairs(listed) do
-            if d.part == dest.part then d.reached = true end
+            if d.part == dest.part then
+                d.reached = true
+            end
         end
         -- The next destination still to reach, after this one in list order.
         for k = 1, #listed - 1 do
@@ -284,18 +358,22 @@ end
 --  pair reads "45.3 67.8", "45,3 67,8", "45.3, 67.8" or "45.3,67.8"; the
 --  first pair splits the zone from the description.
 -------------------------------------------------------------------------------
-local COORD = "^(%d+[%.,]?%d*),?$"        -- one coordinate (a trailing comma separates)
-local PAIR  = "^(%d+%.?%d*),(%d+%.?%d*)$" -- both in one token, comma-joined
+local COORD = "^(%d+[%.,]?%d*),?$" -- one coordinate (a trailing comma separates)
+local PAIR = "^(%d+%.?%d*),(%d+%.?%d*)$" -- both in one token, comma-joined
 
 local function Coord(s)
     local n = s and tonumber((s:gsub(",", ".")))
-    if n and n >= 0 and n <= 100 then return n end
+    if n and n >= 0 and n <= 100 then
+        return n
+    end
 end
 
 -- One destination -> { x, y, zone = text or nil (current zone), desc }, or nil.
 local function ParseOne(part)
     local t = {}
-    for w in part:gmatch("%S+") do t[#t + 1] = w end
+    for w in part:gmatch("%S+") do
+        t[#t + 1] = w
+    end
     for i = 1, #t do
         local x, y, used = Coord(t[i]:match(COORD)), Coord(t[i + 1] and t[i + 1]:match(COORD)), 2
         if not (x and y) then
@@ -304,7 +382,8 @@ local function ParseOne(part)
         end
         if x and y then
             return {
-                x = x, y = y,
+                x = x,
+                y = y,
                 zone = i > 1 and table.concat(t, " ", 1, i - 1) or nil,
                 desc = i + used <= #t and table.concat(t, " ", i + used) or nil,
             }
@@ -312,7 +391,7 @@ local function ParseOne(part)
     end
 end
 
-local slashName = "/cuiway"  -- "/way" once registered under it
+local slashName = "/cuiway" -- "/way" once registered under it
 
 -- Several destinations in one line: separated by ";" or pasted back to back
 -- ("/way A /way B").
@@ -346,14 +425,24 @@ local function HandleWay(msg)
                 if #ids > 1 then
                     -- Same-named maps: told apart by their parent map.
                     local parent = C_Map.GetMapInfo(C_Map.GetMapInfo(id).parentMapID)
-                    if parent then label = label .. " (" .. parent.name .. ")" end
+                    if parent then
+                        label = label .. " (" .. parent.name .. ")"
+                    end
                 end
-                dests[#dests + 1] = { mapID = id, x = spec.x, y = spec.y, desc = spec.desc,
-                    label = label, part = n }
+                dests[#dests + 1] = {
+                    mapID = id,
+                    x = spec.x,
+                    y = spec.y,
+                    desc = spec.desc,
+                    label = label,
+                    part = n,
+                }
             end
         end
     end
-    if #dests > 0 then ShowDestinations(dests) end
+    if #dests > 0 then
+        ShowDestinations(dests)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -363,11 +452,15 @@ end
 --  SlashCmdList.
 -------------------------------------------------------------------------------
 local function SlashTaken(cmd)
-    if hash_SlashCmdList[cmd:upper()] then return true end
+    if hash_SlashCmdList[cmd:upper()] then
+        return true
+    end
     for key in pairs(SlashCmdList) do
         local i, s = 1, _G["SLASH_" .. key .. "1"]
         while type(s) == "string" do
-            if s:lower() == cmd then return true end
+            if s:lower() == cmd then
+                return true
+            end
             i = i + 1
             s = _G["SLASH_" .. key .. i]
         end

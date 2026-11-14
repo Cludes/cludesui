@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_AuraIcons.lua
 --
@@ -33,7 +35,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 local I = ns._hookInternals
-if not I or I.broken or not I._AC then return end
+if not I or I.broken or not I._AC then
+    return
+end
 local _AC, _presetFrames = I._AC, I._presetFrames
 local barDataByKey = ns.barDataByKey
 local IsSecret = CludesUI.IsSecret
@@ -44,11 +48,11 @@ local AKWorker = CludesUI.AuraKit.NewBuildWorker()
 -- +14), under its glows (+16) and text (+23), as DecorateFrame levels them.
 local SLOT_LEVEL = 14
 
-local entries = {}         -- provider key -> entry
-local placed = {}          -- entries attached since the last post-reanchor pass
-local byID = {}            -- spell ID -> the provider that draws it
-local pendingAliases = {}  -- providers whose Aliases have not been read yet
-local buffProviders = {}   -- custom buff spell ID -> its provider
+local entries = {} -- provider key -> entry
+local placed = {} -- entries attached since the last post-reanchor pass
+local byID = {} -- spell ID -> the provider that draws it
+local pendingAliases = {} -- providers whose Aliases have not been read yet
+local buffProviders = {} -- custom buff spell ID -> its provider
 -- host frame -> the entry it holds (one frame per bar and entry)
 local hostEntry = setmetatable({}, { __mode = "k" })
 
@@ -69,29 +73,39 @@ local hostEntry = setmetatable({}, { __mode = "k" })
 -------------------------------------------------------------------------------
 function ns.CDM_AuraIconProvider(spellID, provider)
     byID[spellID] = provider
-    if provider.Aliases then pendingAliases[#pendingAliases + 1] = provider end
+    if provider.Aliases then
+        pendingAliases[#pendingAliases + 1] = provider
+    end
 end
 
 local function ReadAliases()
-    if not ns._cdmDataLoaded then return end
+    if not ns._cdmDataLoaded then
+        return
+    end
     for i = #pendingAliases, 1, -1 do
         local p = table.remove(pendingAliases, i)
         local ids = p.Aliases()
         if ids then
             for j = 1, #ids do
-                if byID[ids[j]] == nil then byID[ids[j]] = p end
+                if byID[ids[j]] == nil then
+                    byID[ids[j]] = p
+                end
             end
         end
         -- What it read can widen the include set of an entry built earlier.
         local E = entries[p.key]
-        if E then E.dirty = true end
+        if E then
+            E.dirty = true
+        end
     end
 end
 
 -- An assigned spell ID a provider draws: kept by the drop pass and the
 -- repopulate, never dimmed as unlearned by the options preview.
 function ns.CDM_AuraIconKeeps(id)
-    if pendingAliases[1] then ReadAliases() end
+    if pendingAliases[1] then
+        ReadAliases()
+    end
     return byID[id] ~= nil
 end
 
@@ -104,12 +118,18 @@ end
 local listening = false
 local events = ns.TakeShell()
 events:SetScript("OnEvent", function()
-    for _, E in pairs(entries) do E.dirty = true end
-    if ns.QueueReanchor then ns.QueueReanchor() end
+    for _, E in pairs(entries) do
+        E.dirty = true
+    end
+    if ns.QueueReanchor then
+        ns.QueueReanchor()
+    end
 end)
 
 local function Listen(on)
-    if on == listening then return end
+    if on == listening then
+        return
+    end
     listening = on
     if on then
         events:RegisterEvent("TRAIT_CONFIG_UPDATED")
@@ -123,7 +143,9 @@ end
 
 local function Entry(provider)
     local E = entries[provider.key]
-    if E then return E end
+    if E then
+        return E
+    end
     E = { provider = provider, styleKey = "cdm:auraicon:" .. provider.key }
     local proxy = CreateFrame("Frame", nil, UIParent)
     proxy:Hide()
@@ -146,10 +168,11 @@ end
 -- before the first layout (the bar's Icon Size stands in).
 local function HostSize(E)
     local host = E.host
-    if not host then return nil end
+    if not host then
+        return nil
+    end
     local w, h = host:GetSize()
-    if type(w) ~= "number" or type(h) ~= "number" or IsSecret(w) or IsSecret(h)
-       or w <= 0 or h <= 0 then
+    if type(w) ~= "number" or type(h) ~= "number" or IsSecret(w) or IsSecret(h) or w <= 0 or h <= 0 then
         return nil
     end
     return w, h
@@ -161,7 +184,9 @@ local function HostStyle(E, bd)
     local w, h = HostSize(E)
     if w then
         style.width, style.height = w, h
-        if style.cdm then style.cdm.size = w end
+        if style.cdm then
+            style.cdm.size = w
+        end
     end
     return style
 end
@@ -170,28 +195,37 @@ end
 -- the look's own regions are cut for.
 local function StyleSig(E, bd)
     local w, h = HostSize(E)
-    return _AC.StyleSig(bd) .. "|" .. tostring(bd.iconSize or 36) .. "|"
-        .. tostring(w) .. "x" .. tostring(h)
+    return _AC.StyleSig(bd) .. "|" .. tostring(bd.iconSize or 36) .. "|" .. tostring(w) .. "x" .. tostring(h)
 end
 
 local function Restyle(E, barKey)
     local bd = barDataByKey[barKey]
-    if not bd then return end
+    if not bd then
+        return
+    end
     local sig = StyleSig(E, bd)
-    if E.styleBar == barKey and E.styleSig == sig then return end
+    if E.styleBar == barKey and E.styleSig == sig then
+        return
+    end
     local AK = CludesUI.AuraKit
     AK.styles[E.styleKey] = HostStyle(E, bd)
     E.styleBar, E.styleSig = barKey, sig
-    if AK.RestyleSoon then AK.RestyleSoon(E.styleKey) end
+    if AK.RestyleSoon then
+        AK.RestyleSoon(E.styleKey)
+    end
 end
 
 -- Levels follow the host: DecorateFrame levels its regions off the frame's
 -- own level, which the reanchor's reparent moves.
 local function Level(E)
     local host, container = E.host, E.container
-    if not (host and container) then return end
+    if not (host and container) then
+        return
+    end
     local lvl = host:GetFrameLevel() + SLOT_LEVEL
-    if E.level == lvl then return end
+    if E.level == lvl then
+        return
+    end
     E.level = lvl
     E.proxy:SetFrameLevel(lvl)
     container:SetFrameLevel(lvl + 1)
@@ -199,11 +233,15 @@ end
 
 local function Build(E, include, sig)
     local bd = E.hostBar and barDataByKey[E.hostBar]
-    if not bd then return end
+    if not bd then
+        return
+    end
     local AK = CludesUI.AuraKit
     AK.styles[E.styleKey] = HostStyle(E, bd)
     E.styleBar, E.styleSig = E.hostBar, StyleSig(E, bd)
-    if E.container then AK.ReleaseContainer(E.container) end
+    if E.container then
+        AK.ReleaseContainer(E.container)
+    end
     local container = AK.CreateContainerShell(E.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(container, {
         key = "aura",
@@ -233,7 +271,9 @@ local function Attach(E, f, barKey)
         proxy:SetAllPoints(f)
         E.level = nil
     end
-    if not proxy:IsShown() then proxy:Show() end
+    if not proxy:IsShown() then
+        proxy:Show()
+    end
     if (not E.container or E.dirty) and not E.queued then
         E.dirty = nil
         local include, sig = E.provider.Include()
@@ -245,7 +285,9 @@ local function Attach(E, f, barKey)
             end, "cdm:auraicon")
         end
     end
-    if E.container and E.styleBar ~= barKey then Restyle(E, barKey) end
+    if E.container and E.styleBar ~= barKey then
+        Restyle(E, barKey)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -255,10 +297,13 @@ local function OnEnter(self)
     local fc = ns._ecmeFC[self]
     local bd = fc and fc.barKey and barDataByKey[fc.barKey]
     local sid = self._auraIconTip
-    if not (bd and bd.showTooltip and sid) then return end
+    if not (bd and bd.showTooltip and sid) then
+        return
+    end
     -- Honor the global "Show Tooltips" mode (Blizzard Skin).
-    if CludesUI._tooltipSuppressedByMode
-       and CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+    if CludesUI._tooltipSuppressedByMode and CludesUI._tooltipSuppressedByMode(GameTooltip) then
+        return
+    end
     GameTooltip_SetDefaultAnchor(GameTooltip, self)
     GameTooltip:SetSpellByID(sid)
     if CludesUI._repointTooltipAtCursor then
@@ -271,7 +316,9 @@ end
 -- changed): its slot's look follows.
 local function OnHostSize(self)
     local E = hostEntry[self]
-    if E and E.host == self and E.container then Restyle(E, E.hostBar) end
+    if E and E.host == self and E.container then
+        Restyle(E, E.hostBar)
+    end
 end
 
 -- Built once per bar and entry, kept in the preset frame map, so the reanchor
@@ -279,23 +326,34 @@ end
 local function HostFrame(barKey, key)
     local fkey = barKey .. ":auraicon:" .. key
     local f = _presetFrames[fkey]
-    if f then return f end
+    if f then
+        return f
+    end
     f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(36, 36); f:Hide()
+    f:SetSize(36, 36)
+    f:Hide()
     f:EnableMouse(true)
-    if f.SetMouseClickEnabled then f:SetMouseClickEnabled(false) end
+    if f.SetMouseClickEnabled then
+        f:SetMouseClickEnabled(false)
+    end
     local tex = f:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints(); ns.CdmOwnIconCrop(tex)
-    f.Icon = tex; f._tex = tex
+    tex:SetAllPoints()
+    ns.CdmOwnIconCrop(tex)
+    f.Icon = tex
+    f._tex = tex
     -- Never armed (the slot draws the aura's swipe); the decoration styles it
     -- like any icon's.
     local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-    cd:SetAllPoints(); cd:SetDrawEdge(false); cd:SetDrawBling(false)
+    cd:SetAllPoints()
+    cd:SetDrawEdge(false)
+    cd:SetDrawBling(false)
     cd:SetHideCountdownNumbers(true)
-    f.Cooldown = cd; f._cooldown = cd
+    f.Cooldown = cd
+    f._cooldown = cd
     f._isPresetFrame = true
     f._isAuraIconFrame = true
-    f.cooldownID = nil; f.cooldownInfo = nil
+    f.cooldownID = nil
+    f.cooldownInfo = nil
     f.layoutIndex = 99999
     f:SetScript("OnEnter", OnEnter)
     f:SetScript("OnLeave", GameTooltip_Hide)
@@ -319,7 +377,9 @@ local function PaintIdle(f, provider)
 end
 
 local function Place(barKey, provider)
-    if provider.Off and provider.Off() then return nil end
+    if provider.Off and provider.Off() then
+        return nil
+    end
     local f = HostFrame(barKey, provider.key)
     -- Attach first: the include read is what tells the idle paint whether
     -- the entry's spell is known.
@@ -334,9 +394,13 @@ end
 -- A positive spell ID no Blizzard frame claimed: the frame of the provider
 -- that draws it, or nil.
 function ns.CDM_AuraIconFor(barKey, sid)
-    if pendingAliases[1] then ReadAliases() end
+    if pendingAliases[1] then
+        ReadAliases()
+    end
     local p = byID[sid]
-    if not p then return nil end
+    if not p then
+        return nil
+    end
     return Place(barKey, p)
 end
 
@@ -344,22 +408,30 @@ end
 -- the spell's own forms (typed, override, base), as on a buff bar.
 local function BuffProvider(sid)
     local p = buffProviders[sid]
-    if p then return p end
+    if p then
+        return p
+    end
     p = {
         key = "buff:" .. sid,
         tip = sid,
         Include = function()
             local set = _AC.AddSpellForms({}, sid)
             local ids = {}
-            for id in pairs(set) do ids[#ids + 1] = id end
+            for id in pairs(set) do
+                ids[#ids + 1] = id
+            end
             table.sort(ids)
             return set, table.concat(ids, ",")
         end,
         Icon = function()
-            if not p.art then p.art = C_Spell.GetSpellTexture(sid) end
+            if not p.art then
+                p.art = C_Spell.GetSpellTexture(sid)
+            end
             return p.art
         end,
-        Desaturate = function() return true end,
+        Desaturate = function()
+            return true
+        end,
     }
     buffProviders[sid] = p
     return p
@@ -383,9 +455,13 @@ function ns.CDM_AuraIconsPlaced()
         any = true
         Level(E)
         local after = E.provider.Placed
-        if after then after() end
+        if after then
+            after()
+        end
     end
-    if not any and listening then Listen(false) end
+    if not any and listening then
+        Listen(false)
+    end
 end
 
 -- RefreshCDMIconAppearance: the slots on this bar take its new look.

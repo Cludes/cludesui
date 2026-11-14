@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarTick.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetTime = GetTime
@@ -37,21 +41,35 @@ local _UpdateCooldownBar, SetAssignDirty = I._UpdateCooldownBar, I.SetAssignDirt
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-I.ecmeSetters[#I.ecmeSetters + 1] = function(v) ECME = v end
+I.ecmeSetters[#I.ecmeSetters + 1] = function(v)
+    ECME = v
+end
 -- Feature-gating flags (rebuilt in BuildTrackedBuffBars, read in tick)
 local _anyPandemic = false
-I.anyPandemicSetters[#I.anyPandemicSetters + 1] = function(v) _anyPandemic = v end
+I.anyPandemicSetters[#I.anyPandemicSetters + 1] = function(v)
+    _anyPandemic = v
+end
 local _anyThreshold = false
-I.anyThresholdSetters[#I.anyThresholdSetters + 1] = function(v) _anyThreshold = v end
+I.anyThresholdSetters[#I.anyThresholdSetters + 1] = function(v)
+    _anyThreshold = v
+end
 local _anyStacks = false
-I.anyStacksSetters[#I.anyStacksSetters + 1] = function(v) _anyStacks = v end
+I.anyStacksSetters[#I.anyStacksSetters + 1] = function(v)
+    _anyStacks = v
+end
 local _anyVisCond = false
-I.anyVisCondSetters[#I.anyVisCondSetters + 1] = function(v) _anyVisCond = v end
+I.anyVisCondSetters[#I.anyVisCondSetters + 1] = function(v)
+    _anyVisCond = v
+end
 local tbbTickFrame
-I.tickFrameSetters[#I.tickFrameSetters + 1] = function(v) tbbTickFrame = v end
+I.tickFrameSetters[#I.tickFrameSetters + 1] = function(v)
+    tbbTickFrame = v
+end
 -- Group reflow gate: see _MarkTBBReflowDirty in CUI_CDM_BuffBarGroups.lua.
 local _tbbReflowDirty = true
-I.reflowDirtySetters[#I.reflowDirtySetters + 1] = function(v) _tbbReflowDirty = v end
+I.reflowDirtySetters[#I.reflowDirtySetters + 1] = function(v)
+    _tbbReflowDirty = v
+end
 -- Smooth-fill switch memo for the tick: GetTBBSmoothSettings walks the profile store,
 -- and its result can only change with the active profile name or the live spec-profile bucket, both re-read per tick without a call.
 local _tickSm, _tickSmProf, _tickSmSp
@@ -64,7 +82,9 @@ local _tickSm, _tickSmProf, _tickSmSp
 --  the shared read yet.
 -------------------------------------------------------------------------------
 local function TBBInCombat()
-    if ns.CDMInCombat then return ns.CDMInCombat() end
+    if ns.CDMInCombat then
+        return ns.CDMInCombat()
+    end
     return InCombatLockdown() and true or false
 end
 
@@ -73,16 +93,22 @@ end
 local function HideTBBBarForCombat(bar)
     -- Already parked: nothing to tear down, and clearing _nameSet here would make the
     -- deferred name-fill pass re-resolve the spell every frame for the whole time out of combat.
-    if not bar:IsShown() then return end
-    if bar._pandemicGlowActive then ClearPandemic(bar) end
-    if bar._stacksText then bar._stacksText:Hide() end
+    if not bar:IsShown() then
+        return
+    end
+    if bar._pandemicGlowActive then
+        ClearPandemic(bar)
+    end
+    if bar._stacksText then
+        bar._stacksText:Hide()
+    end
     bar._stackCount = 0
-    bar._cachedBlizzFillTex   = nil
-    bar._cachedOurFillTex     = nil
-    bar._cachedBlizzIconTex   = nil
+    bar._cachedBlizzFillTex = nil
+    bar._cachedOurFillTex = nil
+    bar._cachedBlizzIconTex = nil
     bar._cachedBlizzIconOwner = nil
     bar._lastIconSID = nil
-    bar._nameSet     = nil
+    bar._nameSet = nil
     bar:Hide()
 end
 
@@ -109,14 +135,29 @@ local function TBBVisibilityHides(cfg)
     end
 
     local vis = cfg.barVisibility or "always"
-    local visExt = CludesUI.EvalVisibilityExtended(cfg, "barVisibility", _tbbVisState, CludesUI.VIS_CAPS_DEFAULT)
-    if visExt ~= nil then return not visExt end
-    if vis == "never" then return true end
-    if vis == "in_combat" then return not _tbbVisState.inCombat end
-    if vis == "out_of_combat" then return _tbbVisState.inCombat end
-    if vis == "in_raid" then return not _tbbVisState.inRaid end
-    if vis == "in_party" then return not _tbbVisState.inParty end
-    if vis == "solo" then return _tbbVisState.inRaid or _tbbVisState.inParty end
+    local visExt =
+        CludesUI.EvalVisibilityExtended(cfg, "barVisibility", _tbbVisState, CludesUI.VIS_CAPS_DEFAULT)
+    if visExt ~= nil then
+        return not visExt
+    end
+    if vis == "never" then
+        return true
+    end
+    if vis == "in_combat" then
+        return not _tbbVisState.inCombat
+    end
+    if vis == "out_of_combat" then
+        return _tbbVisState.inCombat
+    end
+    if vis == "in_raid" then
+        return not _tbbVisState.inRaid
+    end
+    if vis == "in_party" then
+        return not _tbbVisState.inParty
+    end
+    if vis == "solo" then
+        return _tbbVisState.inRaid or _tbbVisState.inParty
+    end
     return false
 end
 
@@ -124,15 +165,23 @@ end
 -- minus hideWhenInactive/onlyInCombat, which flip on the aura and combat edges the sleeper
 -- already wakes on. Option keys come from the shared list so a new one is covered here too.
 local function TBBUsesVisCondition(cfg)
-    if not cfg then return false end
+    if not cfg then
+        return false
+    end
     local vis = cfg.barVisibility
-    if vis and vis ~= "always" then return true end
+    if vis and vis ~= "always" then
+        return true
+    end
     local vm = cfg.visibilityModes
-    if type(vm) == "table" and next(vm) then return true end
+    if type(vm) == "table" and next(vm) then
+        return true
+    end
     local keys = CludesUI.VIS_OPT_KEYS
     if keys then
         for i = 1, #keys do
-            if cfg[keys[i]] then return true end
+            if cfg[keys[i]] then
+                return true
+            end
         end
     end
     return false
@@ -152,9 +201,15 @@ local function TBBContentDue(bar, blzChild, cfg, wasShown, now)
     local cd = blzChild.cooldownID
     local pGen, tGen = _tbbWake._fbPGen, _tbbWake._fbTGen
     local sticky = _tbbStickyCdID[cfg]
-    if not wasShown or bar._cChild ~= blzChild or bar._cPGen ~= pGen
-       or bar._cTGen ~= tGen or bar._cSticky ~= sticky
-       or issecretvalue(cd) or bar._cCdID ~= cd then
+    if
+        not wasShown
+        or bar._cChild ~= blzChild
+        or bar._cPGen ~= pGen
+        or bar._cTGen ~= tGen
+        or bar._cSticky ~= sticky
+        or issecretvalue(cd)
+        or bar._cCdID ~= cd
+    then
         bar._cChild, bar._cPGen, bar._cTGen, bar._cSticky = blzChild, pGen, tGen, sticky
         bar._cCdID = not issecretvalue(cd) and cd or nil
         bar._cAgain = true
@@ -175,10 +230,14 @@ end
 --  min/max/value from Blizzard's Bar, zero duration computation.
 -------------------------------------------------------------------------------
 function ns.UpdateTrackedBuffBarTimers()
-    if not ECME or not ECME.db then return end
+    if not ECME or not ECME.db then
+        return
+    end
     local tbb = ns.GetTrackedBuffBars()
     local bars = tbb.bars
-    if not bars then return end
+    if not bars then
+        return
+    end
 
     -- Liveness for the idle sleeper: set by any branch below that is actually animating or tracking something this tick.
     local tickLive = false
@@ -213,7 +272,9 @@ function ns.UpdateTrackedBuffBarTimers()
         local ap = CludesUI:GetActivePage()
         if am ~= "CludesUICooldownManager" or ap ~= "Tracking Bars" then
             ns._tbbPlaceholderMode = false
-            if ns.HideTBBPlaceholders then ns.HideTBBPlaceholders() end
+            if ns.HideTBBPlaceholders then
+                ns.HideTBBPlaceholders()
+            end
             -- Auras may have moved while the preview was up: re-pair on the first real mirror tick.
             SetAssignDirty(true)
             -- The preview may have written the self-timed bars' timer text and
@@ -221,18 +282,22 @@ function ns.UpdateTrackedBuffBarTimers()
             -- next live tick rewrites them.
             for bi = 1, #tbbFrames do
                 local b = tbbFrames[bi]
-                if b then b._stTxtKey = nil; b._cChild = nil end
+                if b then
+                    b._stTxtKey = nil
+                    b._cChild = nil
+                end
             end
         end
     end
-
 
     -- Pair configs to Blizzard frames ONE-TO-ONE up front, consuming each frame once, so two
     -- configs sharing a cooldownInfo (Eclipse Solar+Lunar) cannot both mirror the same frame and show twice.
     local assignment = AssignFramesToConfigs(bars)
 
     -- Visibility gate inputs, once per pass, only when some bar has a condition.
-    if _anyVisCond then TBBFillVisState() end
+    if _anyVisCond then
+        TBBFillVisState()
+    end
 
     -- Audio on Buff Loss for the self-timed presets: a latch the gain armed
     -- fires at the window's end ahead of every visibility gate below, so a bar
@@ -244,7 +309,9 @@ function ns.UpdateTrackedBuffBarTimers()
         for pk, at in pairs(lossLatch) do
             if now >= at then
                 lossLatch[pk] = nil
-                if now - at < 1 then ns.TBBPresetSoundEdge(pk, false) end
+                if now - at < 1 then
+                    ns.TBBPresetSoundEdge(pk, false)
+                end
             else
                 tickLive = true
             end
@@ -257,7 +324,9 @@ function ns.UpdateTrackedBuffBarTimers()
             -- skip
         elseif ns._tbbPlaceholderMode then
             tickLive = true
-            if not bar:IsShown() then bar:Show() end
+            if not bar:IsShown() then
+                bar:Show()
+            end
         elseif cfg.enabled == false then
             bar:Hide()
         elseif bar._tbbVisCond and TBBVisibilityHides(cfg) then
@@ -267,23 +336,34 @@ function ns.UpdateTrackedBuffBarTimers()
             HideTBBBarForCombat(bar)
         elseif cfg.popularKey == "bloodlust" then
             -- Self-driven 40s lust bar; no Blizzard frame to mirror.
-            if UpdateLustBar(bar, cfg) then tickLive = true end
+            if UpdateLustBar(bar, cfg) then
+                tickLive = true
+            end
         elseif cfg.popularKey == "timespiral" then
             -- Self-driven 10s Time Spiral "Free Move" bar; glow-armed, no frame.
-            if _UpdateSelfTimedBar(bar, cfg, _ts.expiry, TIME_SPIRAL_DURATION) then tickLive = true end
+            if _UpdateSelfTimedBar(bar, cfg, _ts.expiry, TIME_SPIRAL_DURATION) then
+                tickLive = true
+            end
         elseif cfg.popularKey and _potionDur[cfg.popularKey] then
             -- Self-cast potion preset: hardcoded window off the spell-cast edge; no aura tracking, no Blizzard frame to mirror.
-            if _UpdateSelfTimedBar(bar, cfg, _potionExpiry[cfg.popularKey] or 0,
-                _potionDur[cfg.popularKey]) then tickLive = true end
+            if
+                _UpdateSelfTimedBar(bar, cfg, _potionExpiry[cfg.popularKey] or 0, _potionDur[cfg.popularKey])
+            then
+                tickLive = true
+            end
         elseif cfg.trackType == "cooldown" then
             -- Spell-cooldown tracking: self-driven, no Blizzard frame/aura.
             _UpdateCooldownBar(bar, cfg)
             -- Live while an engine handle drives the fill OR the bar is on screen: covers the
             -- secret-timing mirror drain and always-shown bars, both needing per-tick updates.
-            if bar._cdDurObj or bar:IsShown() then tickLive = true end
+            if bar._cdDurObj or bar:IsShown() then
+                tickLive = true
+            end
         else
             local blzChild = assignment[cfg]
-            if blzChild then ns.HookPandemicState(blzChild) end
+            if blzChild then
+                ns.HookPandemicState(blzChild)
+            end
 
             -- Active state MUST come from the CooldownViewer item's IsActive() (real
             -- aura state: expirationTime > now, or infinite auras), NEVER IsShown(): a
@@ -309,9 +389,14 @@ function ns.UpdateTrackedBuffBarTimers()
             -- player-aura query, no scanning), drive the bar from the aura data --
             -- reads only, our own frames only, NEVER pokes the Blizzard frame.
             local fbAura
-            if not isActive and not cfg.spellIDs
-               and cfg.spellID and cfg.spellID > 0
-               and C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+            if
+                not isActive
+                and not cfg.spellIDs
+                and cfg.spellID
+                and cfg.spellID > 0
+                and C_UnitAuras
+                and C_UnitAuras.GetPlayerAuraBySpellID
+            then
                 -- Each half re-queries only after its own aura edge (the wake frame
                 -- counts player aura events in _fbPGen; target aura events and target
                 -- changes in _fbTGen), not on every tick: a refresh or an expiry is
@@ -345,31 +430,40 @@ function ns.UpdateTrackedBuffBarTimers()
                 -- Blizzard's late-bind can land WITHOUT a fresh player aura event. Keep
                 -- the memo dirty while any fallback is live so the next tick re-pairs
                 -- the moment the frame appears (restoring stacks/pandemic from mirror).
-                if fbAura then SetAssignDirty(true) end
+                if fbAura then
+                    SetAssignDirty(true)
+                end
             end
-            if isActive or fbAura then tickLive = true end
+            if isActive or fbAura then
+                tickLive = true
+            end
 
             -- Read Blizzard's StatusBar (the data source for fill/timer)
             local blizzBar = blzChild and blzChild.Bar
 
             if isActive then
                 local wasShown = bar:IsShown()
-                if not wasShown then bar:Show() end
+                if not wasShown then
+                    bar:Show()
+                end
                 local sb = bar._bar
                 -- Name, icon, auto fill colour and stacks: on edges only (TBBContentDue).
                 local content = TBBContentDue(bar, blzChild, cfg, wasShown, now)
 
                 -- Stacks (gated)
-                if _anyStacks and content then UpdateStacks(bar, blzChild, cfg) end
+                if _anyStacks and content then
+                    UpdateStacks(bar, blzChild, cfg)
+                end
 
                 if blizzBar then
                     -- Mirror Blizzard's bar onto ours. Secret values pass natively to widget
                     -- setters (NEVER compared in Lua). Smooth fill is baseline (see UpdateLustBar note).
-                    local smooth = _tbbWake._smoothBuffs and wasShown and Enum
+                    local smooth = _tbbWake._smoothBuffs
+                        and wasShown
+                        and Enum
                         and Enum.StatusBarInterpolation
                         and Enum.StatusBarInterpolation.ExponentialEaseOut
-                    if cfg.stackBasedBar and cfg.trackType ~= "cooldown"
-                       and cfg.stackThresholdMaxEnabled then
+                    if cfg.stackBasedBar and cfg.trackType ~= "cooldown" and cfg.stackThresholdMaxEnabled then
                         -- Stack-based fill: current stacks over the user's Max Stacks instead
                         -- of the time mirror. An unreadable count (no cached aura data, no
                         -- readable instance id) fails open to a full bar, like every unreadable fill here.
@@ -391,7 +485,9 @@ function ns.UpdateTrackedBuffBarTimers()
                         sb:SetMinMaxValues(blizzBar:GetMinMaxValues())
                         sb:SetValue(blizzBar:GetValue())
                     end
-                    if cfg.showSpark and bar._spark then bar._spark:Show() end
+                    if cfg.showSpark and bar._spark then
+                        bar._spark:Show()
+                    end
 
                     -- Auto fill color from Blizzard's bar texture
                     if content and (cfg.fillColorMode or "auto") == "auto" then
@@ -405,12 +501,16 @@ function ns.UpdateTrackedBuffBarTimers()
                             local br, bg, bb, ba = blizzFillTex:GetVertexColor()
                             if br then
                                 if bar._gradientActive and bar._gradTex then
-                                    local c1 = bar._gradColor1 or CreateColor(0,0,0,1)
-                                    local c2 = bar._gradColor2 or CreateColor(0,0,0,1)
+                                    local c1 = bar._gradColor1 or CreateColor(0, 0, 0, 1)
+                                    local c2 = bar._gradColor2 or CreateColor(0, 0, 0, 1)
                                     bar._gradColor1 = c1
                                     bar._gradColor2 = c2
                                     c1.r, c1.g, c1.b, c1.a = br, bg, bb, ba or 1
-                                    c2.r, c2.g, c2.b, c2.a = cfg.gradientR or 0.20, cfg.gradientG or 0.20, cfg.gradientB or 0.80, cfg.gradientA or 1
+                                    c2.r, c2.g, c2.b, c2.a =
+                                        cfg.gradientR or 0.20,
+                                        cfg.gradientG or 0.20,
+                                        cfg.gradientB or 0.80,
+                                        cfg.gradientA or 1
                                     bar._gradTex:SetGradient(cfg.gradientDir or "HORIZONTAL", c1, c2)
                                 else
                                     local ourFillTex = bar._cachedOurFillTex
@@ -418,7 +518,9 @@ function ns.UpdateTrackedBuffBarTimers()
                                         ourFillTex = sb:GetStatusBarTexture()
                                         bar._cachedOurFillTex = ourFillTex
                                     end
-                                    if ourFillTex then ourFillTex:SetVertexColor(br, bg, bb, ba or 1) end
+                                    if ourFillTex then
+                                        ourFillTex:SetVertexColor(br, bg, bb, ba or 1)
+                                    end
                                 end
                             end
                         end
@@ -446,8 +548,12 @@ function ns.UpdateTrackedBuffBarTimers()
                     --  3. The configured spell's name (deterministic).
                     -- None of it runs for a bar with a custom name: the build painted
                     -- that, and nothing else writes the label.
-                    if content and bar._nameText and bar._nameText:IsShown()
-                       and not ns.TBBCustomName(cfg) then
+                    if
+                        content
+                        and bar._nameText
+                        and bar._nameText:IsShown()
+                        and not ns.TBBCustomName(cfg)
+                    then
                         local nameStr
                         -- auraInstanceID may itself be SECRET on the active frame
                         -- (probe-confirmed): type() reads the tag without touching
@@ -458,10 +564,13 @@ function ns.UpdateTrackedBuffBarTimers()
                         -- since binding is caught before its label is read (the
                         -- sticky pass applies the identical test on its own
                         -- schedule); a mismatch skips the label and falls through.
-                        if blzChild and blzChild:IsShown() and blizzBar
-                           and type(blzChild.auraInstanceID) ~= "nil"
-                           and (_tbbStickyCdID[cfg] == nil
-                                or blzChild.cooldownID == _tbbStickyCdID[cfg]) then
+                        if
+                            blzChild
+                            and blzChild:IsShown()
+                            and blizzBar
+                            and type(blzChild.auraInstanceID) ~= "nil"
+                            and (_tbbStickyCdID[cfg] == nil or blzChild.cooldownID == _tbbStickyCdID[cfg])
+                        then
                             local blizzNameFS = GetBlizzBarFontStrings(blizzBar)
                             if blizzNameFS then
                                 local ok, txt = pcall(blizzNameFS.GetText, blizzNameFS)
@@ -474,38 +583,59 @@ function ns.UpdateTrackedBuffBarTimers()
                                         -- Family gate memoized on (cfg, cfg.name,
                                         -- text): the verdict only moves when the
                                         -- rendered string or the config does.
-                                        if bar._labelGateCfg ~= cfg
-                                           or bar._labelGateNm ~= cfg.name
-                                           or bar._labelGateTxt ~= txt then
+                                        if
+                                            bar._labelGateCfg ~= cfg
+                                            or bar._labelGateNm ~= cfg.name
+                                            or bar._labelGateTxt ~= txt
+                                        then
                                             bar._labelGateCfg = cfg
-                                            bar._labelGateNm  = cfg.name
+                                            bar._labelGateNm = cfg.name
                                             bar._labelGateTxt = txt
-                                            bar._labelGateOk  = TbbCfgFamilyMatch(
-                                                cfg, TbbNameFamily(txt), true)
+                                            bar._labelGateOk =
+                                                TbbCfgFamilyMatch(cfg, TbbNameFamily(txt), true)
                                         end
-                                        if bar._labelGateOk then nameStr = txt end
+                                        if bar._labelGateOk then
+                                            nameStr = txt
+                                        end
                                     end
                                 end
                             end
                         end
-                        if not nameStr and blzChild and blzChild.auraInstanceID and blzChild.auraDataUnit
-                           and not (issecretvalue and issecretvalue(blzChild.auraInstanceID)) then
-                            local ok, ad = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID,
-                                blzChild.auraDataUnit, blzChild.auraInstanceID)
+                        if
+                            not nameStr
+                            and blzChild
+                            and blzChild.auraInstanceID
+                            and blzChild.auraDataUnit
+                            and not (issecretvalue and issecretvalue(blzChild.auraInstanceID))
+                        then
+                            local ok, ad = pcall(
+                                C_UnitAuras.GetAuraDataByAuraInstanceID,
+                                blzChild.auraDataUnit,
+                                blzChild.auraInstanceID
+                            )
                             if ok and ad and ad.name and not (issecretvalue and issecretvalue(ad.name)) then
                                 local sid = ad.spellId
                                 if sid ~= nil and not (issecretvalue and issecretvalue(sid)) then
                                     local mine = CfgWantsSID(cfg, sid)
-                                    if not mine and blzChild.cooldownID
-                                       and not (issecretvalue and issecretvalue(blzChild.cooldownID))
-                                       and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-                                        local ok2, info = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, blzChild.cooldownID)
+                                    if
+                                        not mine
+                                        and blzChild.cooldownID
+                                        and not (issecretvalue and issecretvalue(blzChild.cooldownID))
+                                        and C_CooldownViewer
+                                        and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                                    then
+                                        local ok2, info = pcall(
+                                            C_CooldownViewer.GetCooldownViewerCooldownInfo,
+                                            blzChild.cooldownID
+                                        )
                                         if ok2 and info then
                                             local ok3, m = pcall(MatchesSID, info, sid)
                                             mine = ok3 and m
                                         end
                                     end
-                                    if mine then nameStr = ad.name end
+                                    if mine then
+                                        nameStr = ad.name
+                                    end
                                 end
                             end
                         end
@@ -519,7 +649,9 @@ function ns.UpdateTrackedBuffBarTimers()
                         end
                         if not nameStr and cfg.baseSpellID and cfg.baseSpellID > 0 then
                             local spInfo = C_Spell.GetSpellInfo(cfg.baseSpellID)
-                            if spInfo then nameStr = spInfo.name end
+                            if spInfo then
+                                nameStr = spInfo.name
+                            end
                         end
                         if nameStr then
                             bar._nameText:SetText(nameStr)
@@ -568,8 +700,11 @@ function ns.UpdateTrackedBuffBarTimers()
                             end
                         end
                         if not gotIcon and blzChild.auraInstanceID and blzChild.auraDataUnit then
-                            local ok, ad = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID,
-                                blzChild.auraDataUnit, blzChild.auraInstanceID)
+                            local ok, ad = pcall(
+                                C_UnitAuras.GetAuraDataByAuraInstanceID,
+                                blzChild.auraDataUnit,
+                                blzChild.auraInstanceID
+                            )
                             -- Instance ids recycle onto other buffs; only trust a match.
                             if ok and ad and ad.icon and CfgWantsSID(cfg, ad.spellId) then
                                 bar._icon._tex:SetTexture(ad.icon)
@@ -608,8 +743,12 @@ function ns.UpdateTrackedBuffBarTimers()
                         -- TBBs always show OUR glow (Blizzard Default included): the native
                         -- PandemicIcon lives on the hidden blzChild frame, not our visible TBB bar.
                         if inPandemic then
-                            if not bar._pandemicGlowActive then UpdatePandemic(bar, cfg) end
-                            if bar._pandemicGlowTarget then bar._pandemicGlowTarget:SetAlpha(1) end
+                            if not bar._pandemicGlowActive then
+                                UpdatePandemic(bar, cfg)
+                            end
+                            if bar._pandemicGlowTarget then
+                                bar._pandemicGlowTarget:SetAlpha(1)
+                            end
                         elseif bar._pandemicGlowActive then
                             ClearPandemic(bar)
                         end
@@ -620,9 +759,15 @@ function ns.UpdateTrackedBuffBarTimers()
                     -- Active aura but no Blizzard bar data: show full bar
                     sb:SetMinMaxValues(0, 1)
                     sb:SetValue(1)
-                    if bar._timerText then bar._timerText:Hide() end
-                    if bar._spark then bar._spark:Hide() end
-                    if bar._pandemicGlowActive then ClearPandemic(bar) end
+                    if bar._timerText then
+                        bar._timerText:Hide()
+                    end
+                    if bar._spark then
+                        bar._spark:Hide()
+                    end
+                    if bar._pandemicGlowActive then
+                        ClearPandemic(bar)
+                    end
                 end
 
                 -- Threshold feed (gated)
@@ -634,8 +779,13 @@ function ns.UpdateTrackedBuffBarTimers()
                 if bar._ticksDirty and sb then
                     local bw = sb:GetWidth()
                     if bw and bw > 0 then
-                        ApplyTBBTickMarks(sb, cfg, bar._threshTicks,
-                            cfg.verticalOrientation, bar._tickOverlay)
+                        ApplyTBBTickMarks(
+                            sb,
+                            cfg,
+                            bar._threshTicks,
+                            cfg.verticalOrientation,
+                            bar._tickOverlay
+                        )
                         bar._ticksDirty = nil
                     end
                 end
@@ -644,7 +794,9 @@ function ns.UpdateTrackedBuffBarTimers()
                 -- Blizzard's frame catches up; isActive then resumes the normal mirror path seamlessly.
                 bar._cChild = nil
                 local wasShown = bar:IsShown()
-                if not wasShown then bar:Show() end
+                if not wasShown then
+                    bar:Show()
+                end
                 local sb = bar._bar
                 local dur = fbAura.duration
                 local exp = fbAura.expirationTime
@@ -662,7 +814,9 @@ function ns.UpdateTrackedBuffBarTimers()
                         apps = 1
                     end
                     sb:SetMinMaxValues(0, cfg.stackThresholdMax or 10)
-                    local smooth = _tbbWake._smoothBuffs and wasShown and Enum
+                    local smooth = _tbbWake._smoothBuffs
+                        and wasShown
+                        and Enum
                         and Enum.StatusBarInterpolation
                         and Enum.StatusBarInterpolation.ExponentialEaseOut
                     if smooth then
@@ -681,7 +835,9 @@ function ns.UpdateTrackedBuffBarTimers()
                     if clean and dur > 0 then
                         if cfg.showTimer and bar._timerText then
                             local remaining = exp - GetTime()
-                            if remaining < 0 then remaining = 0 end
+                            if remaining < 0 then
+                                remaining = 0
+                            end
                             if not MirrorEngineTimer(bar, cfg) then
                                 bar._timerText:SetText(FormatTime(remaining))
                             end
@@ -692,13 +848,19 @@ function ns.UpdateTrackedBuffBarTimers()
                     elseif bar._timerText then
                         bar._timerText:SetShown(MirrorEngineTimer(bar, cfg))
                     end
-                    if cfg.showSpark and bar._spark then bar._spark:Show() end
+                    if cfg.showSpark and bar._spark then
+                        bar._spark:Show()
+                    end
                 elseif sb then
                     if clean and dur > 0 then
                         local remaining = exp - GetTime()
-                        if remaining < 0 then remaining = 0 end
+                        if remaining < 0 then
+                            remaining = 0
+                        end
                         sb:SetMinMaxValues(0, dur)
-                        local smooth = _tbbWake._smoothBuffs and wasShown and Enum
+                        local smooth = _tbbWake._smoothBuffs
+                            and wasShown
+                            and Enum
                             and Enum.StatusBarInterpolation
                             and Enum.StatusBarInterpolation.ExponentialEaseOut
                         if smooth then
@@ -725,7 +887,9 @@ function ns.UpdateTrackedBuffBarTimers()
                             bar._timerText:SetShown(MirrorEngineTimer(bar, cfg))
                         end
                     end
-                    if cfg.showSpark and bar._spark then bar._spark:Show() end
+                    if cfg.showSpark and bar._spark then
+                        bar._spark:Show()
+                    end
                 end
                 -- Icon/name from the aura data itself: fires when the frame mirror is
                 -- unavailable, and for override/variant spells the build-time saved-form
@@ -738,17 +902,26 @@ function ns.UpdateTrackedBuffBarTimers()
                     bar._lastIconSID = nil
                 end
                 local fbName = fbAura.name
-                if bar._nameText and bar._nameText:IsShown() and fbName
-                   and not (isSec and isSec(fbName)) and not ns.TBBCustomName(cfg) then
+                if
+                    bar._nameText
+                    and bar._nameText:IsShown()
+                    and fbName
+                    and not (isSec and isSec(fbName))
+                    and not ns.TBBCustomName(cfg)
+                then
                     bar._nameText:SetText(fbName)
                     bar._nameSet = true
                 end
                 -- Extras stay quiet in fallback mode: no Blizzard child to read stacks/pandemic from. Skipped when the stack fill drove them.
                 if not (sb and fbStackFill) then
-                    if bar._stacksText then bar._stacksText:Hide() end
+                    if bar._stacksText then
+                        bar._stacksText:Hide()
+                    end
                     bar._stackCount = 0
                 end
-                if bar._pandemicGlowActive then ClearPandemic(bar) end
+                if bar._pandemicGlowActive then
+                    ClearPandemic(bar)
+                end
             else
                 -- Inactive: clear transient state
                 bar._cChild = nil
@@ -757,16 +930,29 @@ function ns.UpdateTrackedBuffBarTimers()
                 bar._cachedBlizzIconTex = nil
                 bar._cachedBlizzIconOwner = nil
                 bar._lastIconSID = nil
-                if _anyPandemic and bar._pandemicGlowActive then ClearPandemic(bar) end
-                if bar._stacksText then bar._stacksText:Hide() end
+                if _anyPandemic and bar._pandemicGlowActive then
+                    ClearPandemic(bar)
+                end
+                if bar._stacksText then
+                    bar._stacksText:Hide()
+                end
                 bar._stackCount = 0
                 if cfg.hideWhenInactive == false then
                     -- "Hide When Inactive" off: keep the bar on screen as an empty idle bar (name visible, no fill/timer/spark).
-                    if not bar:IsShown() then bar:Show() end
+                    if not bar:IsShown() then
+                        bar:Show()
+                    end
                     local sb = bar._bar
-                    if sb then sb:SetMinMaxValues(0, 1); sb:SetValue(0) end
-                    if bar._timerText then bar._timerText:Hide() end
-                    if bar._spark then bar._spark:Hide() end
+                    if sb then
+                        sb:SetMinMaxValues(0, 1)
+                        sb:SetValue(0)
+                    end
+                    if bar._timerText then
+                        bar._timerText:Hide()
+                    end
+                    if bar._spark then
+                        bar._spark:Hide()
+                    end
                 elseif bar:IsShown() then
                     -- Clear the name latch on the hide EDGE only: clearing it every hidden
                     -- tick would make the deferred name fill call C_Spell.GetSpellInfo every tick for every hidden bar.
@@ -778,7 +964,9 @@ function ns.UpdateTrackedBuffBarTimers()
     end
 
     -- Re-pack visible grouped Tracking Bars after the active/inactive pass so hidden buffs do not reserve a slot in the group.
-    if _tbbReflowDirty then ReflowVisibleGroupedTBBars(tbb, bars) end
+    if _tbbReflowDirty then
+        ReflowVisibleGroupedTBBars(tbb, bars)
+    end
 
     -- Deferred name fill: retry each tick when BuildTrackedBuffBars could not resolve the spell name (spell data not loaded yet).
     for i, cfg in ipairs(bars) do
@@ -805,15 +993,13 @@ function ns.UpdateTrackedBuffBarTimers()
         -- parent bar Hides, so without this the loop would keep anchoring sparks of hidden bars every tick forever.
         if bar and bar:IsShown() and bar._spark and bar._spark:IsShown() and bar._bar then
             if not bar._chargeHashFillActive then
-                local anchor = (bar._gradientActive and bar._gradClip)
-                    or bar._cachedOurFillTex
+                local anchor = (bar._gradientActive and bar._gradClip) or bar._cachedOurFillTex
                 if not anchor then
                     anchor = bar._bar:GetStatusBarTexture()
                     bar._cachedOurFillTex = anchor
                 end
                 if anchor then
-                    AnchorTBBSparkState(bar, anchor, bar._lastVertical,
-                        bar._lastReverse, false)
+                    AnchorTBBSparkState(bar, anchor, bar._lastVertical, bar._lastReverse, false)
                 end
             end
         end
@@ -842,7 +1028,9 @@ function ns.UpdateTrackedBuffBarTimers()
     elseif tbbTickFrame and tbbTickFrame:IsShown() then
         local n = _tbbWake._idleTicks + 1
         _tbbWake._idleTicks = n
-        if n >= 30 then _tbbWake.Sleep() end
+        if n >= 30 then
+            _tbbWake.Sleep()
+        end
     end
 end
 

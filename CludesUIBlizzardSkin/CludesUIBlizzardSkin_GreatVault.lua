@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_GreatVault.lua
 --  Great Vault reskin.
@@ -13,7 +15,9 @@ local FFD, GetFFD = CludesUI.NewFrameData()
 --  Config / Theme Access
 -------------------------------------------------------------------------------
 local DEFAULT_RESKIN = {
-    BG_R = 0.03, BG_G = 0.045, BG_B = 0.05,
+    BG_R = 0.03,
+    BG_G = 0.045,
+    BG_B = 0.05,
     QT_ALPHA = 0.96,
     BRD_ALPHA = 0.4,
 }
@@ -87,7 +91,9 @@ end
 --  Low-Level Skin Primitives
 -------------------------------------------------------------------------------
 local function ApplyColorTexture(texture, color, alpha)
-    if not texture or not color then return end
+    if not texture or not color then
+        return
+    end
     texture:SetColorTexture(color.r or 1, color.g or 1, color.b or 1, alpha or color.a or 1)
 end
 
@@ -105,13 +111,21 @@ local function StripTexture(texture)
 end
 
 local function SuppressTexture(texture)
-    if not texture or texture._cuiOwned then return end
+    if not texture or texture._cuiOwned then
+        return
+    end
     local d = GetFFD(texture)
-    if d.suppressed then return end
+    if d.suppressed then
+        return
+    end
     d.suppressed = true
 
-    if texture.Hide then texture:Hide() end
-    if texture.SetAlpha then texture:SetAlpha(0) end
+    if texture.Hide then
+        texture:Hide()
+    end
+    if texture.SetAlpha then
+        texture:SetAlpha(0)
+    end
 
     if texture.Show then
         hooksecurefunc(texture, "Show", function(self)
@@ -122,7 +136,9 @@ local function SuppressTexture(texture)
 end
 
 local function ApplyFont(fontString, theme, size, r, g, b, a, flags)
-    if not fontString then return end
+    if not fontString then
+        return
+    end
 
     CludesUI.PrimeFontShadow(fontString, true)
     fontString:SetFont((theme and theme.fontPath) or STANDARD_TEXT_FONT, size, flags or "")
@@ -130,7 +146,9 @@ local function ApplyFont(fontString, theme, size, r, g, b, a, flags)
 end
 
 local function EnsureBackdrop(frame, theme, alpha)
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     local rs = theme.reskin
     local d = GetFFD(frame)
@@ -151,7 +169,9 @@ local function EnsureBackdrop(frame, theme, alpha)
 end
 
 local function EnsureInsetBackdrop(frame, theme, padding)
-    if not frame then return nil end
+    if not frame then
+        return nil
+    end
 
     local pad = padding or STYLE.paddings.inset
     local pp = theme.borderAPI
@@ -178,7 +198,9 @@ local function EnsureInsetBackdrop(frame, theme, padding)
 end
 
 local function EnsureSelectionGlow(frame, anchorFrame)
-    if not frame then return nil end
+    if not frame then
+        return nil
+    end
 
     local d = GetFFD(frame)
     if not d.selectedGlow then
@@ -197,7 +219,9 @@ local function EnsureSelectionGlow(frame, anchorFrame)
 end
 
 local function EnsureProgressBar(frame, anchorFrame)
-    if not frame then return nil end
+    if not frame then
+        return nil
+    end
 
     local d = GetFFD(frame)
     if not d.progressBarFrame then
@@ -237,7 +261,9 @@ local function EnsureProgressBar(frame, anchorFrame)
 end
 
 local function EnsureLockIcon(frame, anchorFrame)
-    if not frame then return nil end
+    if not frame then
+        return nil
+    end
 
     local d = GetFFD(frame)
     if not d.lockIcon then
@@ -260,7 +286,9 @@ local function ResolveWeeklyRewardItemLink(activityFrame, itemFrame)
     -- displayedItemDBID is the reward Blizzard actually shows (best quality,
     -- keystones skipped); it is set asynchronously by SetDisplayedItem.
     local getLink = C_WeeklyRewards and C_WeeklyRewards.GetItemHyperlink
-    if not getLink then return nil end
+    if not getLink then
+        return nil
+    end
 
     if itemFrame and itemFrame.displayedItemDBID then
         local itemLink = getLink(itemFrame.displayedItemDBID)
@@ -314,7 +342,9 @@ local function ResolveItemBorderColor(itemLink)
 end
 
 local function EnsureIconChrome(itemFrame, theme, borderColor)
-    if not itemFrame or not itemFrame.Icon then return end
+    if not itemFrame or not itemFrame.Icon then
+        return
+    end
 
     local icon = itemFrame.Icon
     local pad = STYLE.paddings.icon
@@ -352,11 +382,21 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
 end
 
 local function SuppressItemButtonChrome(itemFrame)
-    if not itemFrame then return end
+    if not itemFrame then
+        return
+    end
 
     for _, key in ipairs({
-        "Border", "Background", "IconBorder", "IconOverlay", "IconOverlay2",
-        "SlotBackground", "Highlight", "Glow", "NormalTexture", "PushedTexture",
+        "Border",
+        "Background",
+        "IconBorder",
+        "IconOverlay",
+        "IconOverlay2",
+        "SlotBackground",
+        "Highlight",
+        "Glow",
+        "NormalTexture",
+        "PushedTexture",
     }) do
         SuppressTexture(itemFrame[key])
     end
@@ -374,14 +414,21 @@ local function SuppressItemButtonChrome(itemFrame)
     local regions = { itemFrame:GetRegions() }
     for i = 1, #regions do
         local region = regions[i]
-        if region and region:IsObjectType("Texture") and region ~= itemFrame.Icon and not region._cuiOwned then
+        if
+            region
+            and region:IsObjectType("Texture")
+            and region ~= itemFrame.Icon
+            and not region._cuiOwned
+        then
             SuppressTexture(region)
         end
     end
 end
 
 local function ApplyStoredAnchorOffset(frame, cacheKey, offsetX, offsetY)
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     local d = GetFFD(frame)
     local appliedOffsetKey = cacheKey .. "AppliedOffset"
@@ -402,7 +449,9 @@ local function ApplyStoredAnchorOffset(frame, cacheKey, offsetX, offsetY)
     d[cacheKey] = cachedPoints
     d[appliedOffsetKey] = { x = offsetX or 0, y = offsetY or 0 }
 
-    if #cachedPoints == 0 then return end
+    if #cachedPoints == 0 then
+        return
+    end
 
     frame:ClearAllPoints()
     for _, anchor in ipairs(cachedPoints) do
@@ -420,12 +469,16 @@ end
 --  Component Stylers
 -------------------------------------------------------------------------------
 local function RefreshButtonState(button)
-    if not button then return end
+    if not button then
+        return
+    end
     -- Engine button treatment: flat theme block, 1px border, white hover, and
     -- a label that mirrors the enabled/disabled state. Idempotent, so calling
     -- it from every refresh pass is free after the first.
     local WSkin = ns.WSkin
-    if not WSkin or not WSkin.Button then return end
+    if not WSkin or not WSkin.Button then
+        return
+    end
     WSkin.Button(button)
     WSkin.StateButtonLabel(button)
     -- Fully opaque fill: the engine block carries the theme backdrop's
@@ -438,7 +491,9 @@ local function RefreshButtonState(button)
 end
 
 local function RefreshTypeFrameState(frame, theme)
-    if not frame then return end
+    if not frame then
+        return
+    end
     if frame.Name then
         local c = STYLE.colors.typeName
         frame.Name:SetTextColor(c.r, c.g, c.b, 1)
@@ -455,7 +510,9 @@ local function RefreshTypeFrameState(frame, theme)
 end
 
 local function RefreshActivityItemState(itemFrame, activityFrame, theme)
-    if not itemFrame then return end
+    if not itemFrame then
+        return
+    end
 
     SuppressItemButtonChrome(itemFrame)
 
@@ -473,9 +530,13 @@ local function RefreshActivityItemState(itemFrame, activityFrame, theme)
     if not d.displayHooked and itemFrame.SetDisplayedItem then
         d.displayHooked = true
         hooksecurefunc(itemFrame, "SetDisplayedItem", function(self)
-            if not IsGreatVaultSkinEnabled() then return end
+            if not IsGreatVaultSkinEnabled() then
+                return
+            end
             local host = GetFFD(self).iconBorder
-            if not host then return end
+            if not host then
+                return
+            end
             local link = ResolveWeeklyRewardItemLink(self:GetParent(), self)
             SetBorderColor(host, BuildThemeContext(), ResolveItemBorderColor(link), 1)
         end)
@@ -512,7 +573,9 @@ end
 
 local function SetActivityProgressBar(frame, ratio, color, alpha, trackAlpha)
     local d = GetFFD(frame)
-    if not frame or not d.progressBarFrame then return end
+    if not frame or not d.progressBarFrame then
+        return
+    end
 
     local barFrame = d.progressBarFrame
     local clampedRatio = math.max(0, math.min(1, ratio or 0))
@@ -536,14 +599,18 @@ local function RefreshSelectableCardState(theme, skinFrame, glow, state)
         glow:SetShown(state.isSelected and true or false)
     end
 
-    if not skinFrame then return end
+    if not skinFrame then
+        return
+    end
 
     -- Cards keep the faint inset edge; rarity color lives on the icon border only.
     SetBorderColor(skinFrame, theme, STYLE.colors.white, theme.reskin.BRD_ALPHA)
 end
 
 local function RefreshActivityVisualState(frame, selectedActivity, theme)
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     StripTexture(frame.Background)
     if frame.Border then
@@ -618,7 +685,13 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
     skinFrame._cuiDarkOverlay:Show()
 
     if activityState.isComplete then
-        SetActivityProgressBar(frame, 1, complete, STYLE.alpha.progressRewardFill, STYLE.alpha.progressRewardTrack)
+        SetActivityProgressBar(
+            frame,
+            1,
+            complete,
+            STYLE.alpha.progressRewardFill,
+            STYLE.alpha.progressRewardTrack
+        )
     else
         SetActivityProgressBar(
             frame,
@@ -635,7 +708,8 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
     end
 
     if frame.Threshold then
-        local thresholdAlpha = activityState.isComplete and STYLE.alpha.thresholdUnlocked or STYLE.alpha.thresholdLocked
+        local thresholdAlpha = activityState.isComplete and STYLE.alpha.thresholdUnlocked
+            or STYLE.alpha.thresholdLocked
         ApplyFont(frame.Threshold, theme, STYLE.sizes.threshold, 1, 1, 1, thresholdAlpha)
     end
 
@@ -693,7 +767,9 @@ local function RefreshActivityVisualState(frame, selectedActivity, theme)
 end
 
 local function RefreshConcessionVisualState(frame, selectedActivity, theme)
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     StripTexture(frame.Background)
     StripTexture(frame.SelectedTexture)
@@ -712,23 +788,53 @@ local function RefreshConcessionVisualState(frame, selectedActivity, theme)
 
     if frame.RewardsFrame then
         if frame.RewardsFrame.Label then
-            ApplyFont(frame.RewardsFrame.Label, theme, STYLE.sizes.itemName, 1, 1, 1, STYLE.alpha.rewardsLabel)
+            ApplyFont(
+                frame.RewardsFrame.Label,
+                theme,
+                STYLE.sizes.itemName,
+                1,
+                1,
+                1,
+                STYLE.alpha.rewardsLabel
+            )
         end
         if frame.RewardsFrame.Text then
-            ApplyFont(frame.RewardsFrame.Text, theme, STYLE.sizes.itemName, theme.accent.r, theme.accent.g, theme.accent.b, 1)
+            ApplyFont(
+                frame.RewardsFrame.Text,
+                theme,
+                STYLE.sizes.itemName,
+                theme.accent.r,
+                theme.accent.g,
+                theme.accent.b,
+                1
+            )
         end
     end
 end
 
 local function RefreshOverlayState(overlay, theme)
-    if not overlay then return end
+    if not overlay then
+        return
+    end
 
     EnsureBackdrop(overlay, theme, 0.97)
-    if overlay.Background then overlay.Background:SetAlpha(0) end
-    if overlay.NineSlice then overlay.NineSlice:SetAlpha(0) end
+    if overlay.Background then
+        overlay.Background:SetAlpha(0)
+    end
+    if overlay.NineSlice then
+        overlay.NineSlice:SetAlpha(0)
+    end
 
     if overlay.Title then
-        ApplyFont(overlay.Title, theme, STYLE.sizes.overlayTitle, theme.accent.r, theme.accent.g, theme.accent.b, 1)
+        ApplyFont(
+            overlay.Title,
+            theme,
+            STYLE.sizes.overlayTitle,
+            theme.accent.r,
+            theme.accent.g,
+            theme.accent.b,
+            1
+        )
     end
     if overlay.Text then
         ApplyFont(overlay.Text, theme, STYLE.sizes.overlayText, 1, 1, 1, STYLE.alpha.overlayText)
@@ -736,10 +842,14 @@ local function RefreshOverlayState(overlay, theme)
 end
 
 local function RefreshWarningDialogState(frame, theme)
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     EnsureBackdrop(frame, theme, 0.97)
-    if frame.NineSlice then frame.NineSlice:SetAlpha(0) end
+    if frame.NineSlice then
+        frame.NineSlice:SetAlpha(0)
+    end
     if frame.WarningIcon and frame.WarningIcon.SetDesaturated then
         frame.WarningIcon:SetDesaturated(true)
     end
@@ -748,7 +858,9 @@ local function RefreshWarningDialogState(frame, theme)
     end
     -- Any standard buttons on the dialog get the engine treatment too
     -- (depth-capped, no-op when there are none).
-    if ns.WSkin and ns.WSkin.ButtonsIn then ns.WSkin.ButtonsIn(frame) end
+    if ns.WSkin and ns.WSkin.ButtonsIn then
+        ns.WSkin.ButtonsIn(frame)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -757,9 +869,13 @@ end
 local RefreshGreatVaultFrame
 
 local function ScheduleGreatVaultRefresh(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local d = GetFFD(frame)
-    if d.refreshQueued then return end
+    if d.refreshQueued then
+        return
+    end
 
     d.refreshQueued = true
     C_Timer.After(0, function()
@@ -771,7 +887,9 @@ local function ScheduleGreatVaultRefresh(frame)
 end
 
 RefreshGreatVaultFrame = function(frame)
-    if not frame or frame:IsForbidden() or not frame:IsShown() or not IsGreatVaultSkinEnabled() then return end
+    if not frame or frame:IsForbidden() or not frame:IsShown() or not IsGreatVaultSkinEnabled() then
+        return
+    end
 
     local theme = BuildThemeContext()
 
@@ -798,7 +916,9 @@ RefreshGreatVaultFrame = function(frame)
     if ns.WSkin and ns.WSkin.AtlasBorder then
         ns.WSkin.AtlasBorder(d.borderOverlay)
         local ab = ns.WSkin.GetFFD and ns.WSkin.GetFFD(d.borderOverlay).atlasBorderFrame
-        if ab then ab:SetAlpha(0.65) end
+        if ab then
+            ab:SetAlpha(0.65)
+        end
     end
 
     -- Hide Blizzard's border decorations
@@ -851,7 +971,9 @@ RefreshGreatVaultFrame = function(frame)
         end
     end
 
-    local concessionType = Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Concession
+    local concessionType = Enum
+        and Enum.WeeklyRewardChestThresholdType
+        and Enum.WeeklyRewardChestThresholdType.Concession
     if frame.Activities then
         for _, activityFrame in ipairs(frame.Activities) do
             if activityFrame.type == concessionType then
@@ -881,9 +1003,13 @@ end
 
 local function HookGreatVault()
     local frame = _G.WeeklyRewardsFrame
-    if not frame or not IsGreatVaultSkinEnabled() then return end
+    if not frame or not IsGreatVaultSkinEnabled() then
+        return
+    end
     local d = GetFFD(frame)
-    if d.hooked then return end
+    if d.hooked then
+        return
+    end
 
     d.hooked = true
 
@@ -911,9 +1037,14 @@ do
     hookFrame:RegisterEvent("ADDON_LOADED")
     hookFrame:RegisterEvent("PLAYER_LOGIN")
     hookFrame:SetScript("OnEvent", function(self, _, addon)
-        if addon and addon ~= "Blizzard_WeeklyRewards" then return end
+        if addon and addon ~= "Blizzard_WeeklyRewards" then
+            return
+        end
 
-        if addon == "Blizzard_WeeklyRewards" or (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_WeeklyRewards")) then
+        if
+            addon == "Blizzard_WeeklyRewards"
+            or (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_WeeklyRewards"))
+        then
             HookGreatVault()
             self:UnregisterEvent("ADDON_LOADED")
             self:UnregisterEvent("PLAYER_LOGIN")

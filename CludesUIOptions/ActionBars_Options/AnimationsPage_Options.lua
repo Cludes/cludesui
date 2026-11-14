@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ActionBars_Options\AnimationsPage_Options.lua
 --  Action Bars options: the Bar Animations page (Bar Interactions, Custom
@@ -7,7 +9,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  registers in the same order as before; it returns the page builder.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUIActionBars"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
@@ -17,35 +21,55 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 
 local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
     local SECTION_BAR_INTERACTIONS = "BAR INTERACTIONS"
-    local SECTION_PROC_GLOW     = "CUSTOM PROC GLOW"
+    local SECTION_PROC_GLOW = "CUSTOM PROC GLOW"
 
     -- "Light" here is a strength, not the Holy school or Blessing of Light: it
     -- has a key of its own, and English (or a locale without it) shows "Light".
     local lightLabel = CludesUI.L("Light (Strength)")
-    if lightLabel == "Light (Strength)" then lightLabel = "Light" end
-    local interactionTypeValues = { [1] = lightLabel, [2] = "Medium", [3] = "Strong", [4] = "Solid Color", [5] = "Border", [6] = "None" }
-    local interactionTypeOrder  = { 1, 2, 3, 4, 5, 6 }
+    if lightLabel == "Light (Strength)" then
+        lightLabel = "Light"
+    end
+    local interactionTypeValues = {
+        [1] = lightLabel,
+        [2] = "Medium",
+        [3] = "Strong",
+        [4] = "Solid Color",
+        [5] = "Border",
+        [6] = "None",
+    }
+    local interactionTypeOrder = { 1, 2, 3, 4, 5, 6 }
     local pushedTypeValues, pushedTypeOrder = interactionTypeValues, interactionTypeOrder
     local highlightTypeValues, highlightTypeOrder = interactionTypeValues, interactionTypeOrder
     -- Custom Proc Glow: shared glow controls over the proc glow keys. Shape Glow
     -- is internal-only (forced by custom button shapes at render time).
-    local function ProcP() return EAB.db.profile end
+    local function ProcP()
+        return EAB.db.profile
+    end
     local _procGlowPreview
     local UpdateProcGlowPreview
     local GO = CludesUI.GlowOptions
     -- Custom button shapes force Shape Glow at render time (none/cropped do not).
     local function AnyBarHasCustomShape()
         local bars = EAB.db.profile.bars
-        if not bars then return false end
+        if not bars then
+            return false
+        end
         for _, s in pairs(bars) do
-            if s.buttonShape and s.buttonShape ~= "none" and s.buttonShape ~= "cropped" then return true end
+            if s.buttonShape and s.buttonShape ~= "none" and s.buttonShape ~= "cropped" then
+                return true
+            end
         end
         return false
     end
     local procGlowDesc = {
-        host = "icon", excludes = { [4] = true },
-        disabled = function() return CludesUI.BlizzStyle.Get("actionbars") end,
-        disabledTooltip = function() return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled") end,
+        host = "icon",
+        excludes = { [4] = true },
+        disabled = function()
+            return CludesUI.BlizzStyle.Get("actionbars")
+        end,
+        disabledTooltip = function()
+            return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+        end,
         rawTooltip = true,
         -- Custom shapes lock only the style: the forced Shape Glow still takes
         -- the color, and bars without a custom shape keep the saved style.
@@ -53,53 +77,78 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         styleDisabledTooltip = "Custom shapes always use Shape Glow -- change your bar shape to None or Cropped to pick a different glow",
         caps = { mode = true, params = true, bg = true },
         defaultColor = { r = 1, g = 0.776, b = 0.376 },
-        isOff = function() local p = ProcP(); return p.procGlowEnabled == false or p.procGlowType == 0 end,
-        onChange = function() EAB:RefreshProcGlows(); UpdateProcGlowPreview(_procGlowPreview) end,
+        isOff = function()
+            local p = ProcP()
+            return p.procGlowEnabled == false or p.procGlowType == 0
+        end,
+        onChange = function()
+            EAB:RefreshProcGlows()
+            UpdateProcGlowPreview(_procGlowPreview)
+        end,
         get = function(f)
             local p = ProcP()
-            if f == "style" then return p.procGlowType or 1
+            if f == "style" then
+                return p.procGlowType or 1
             elseif f == "mode" then
                 -- The class flag alone decides Class, so a spec override that
                 -- holds only the flag keeps applying; the mode key tells Default
                 -- from Custom. Both are read on every call (override tracing).
                 local m = p.procGlowColorMode
-                if p.procGlowUseClassColor then return "class" end
+                if p.procGlowUseClassColor then
+                    return "class"
+                end
                 return (m == "default") and "default" or "custom"
-            elseif f == "color" then local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }; return c.r, c.g, c.b
+            elseif f == "color" then
+                local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
+                return c.r, c.g, c.b
             end
             return CludesUI.GlowOptions.FlatGet(p, "procGlow", f)
         end,
         set = function(f, a, b2, c2)
             local p = ProcP()
-            if f == "style" then p.procGlowType = a; p.procGlowEnabled = (a ~= 0)
+            if f == "style" then
+                p.procGlowType = a
+                p.procGlowEnabled = (a ~= 0)
             elseif f == "mode" then
                 -- The class flag stays in step (Bar Interactions' unified class toggle writes it too).
                 p.procGlowColorMode = a
                 p.procGlowUseClassColor = (a == "class")
-            else CludesUI.GlowOptions.FlatSet(p, "procGlow", f, a, b2, c2)
+            else
+                CludesUI.GlowOptions.FlatSet(p, "procGlow", f, a, b2, c2)
             end
         end,
         confirm = function(v, commit)
             local p = ProcP()
             if ((p.procGlowType == 0) or (p.procGlowEnabled == false)) and v ~= 0 then
                 CludesUI:ShowConfirmPopup({
-                    title       = "Custom Proc Glow Settings",
-                    message     = "Custom proc glow may cause a slight loss in performance efficiency. Do you want to enable it?",
+                    title = "Custom Proc Glow Settings",
+                    message = "Custom proc glow may cause a slight loss in performance efficiency. Do you want to enable it?",
                     confirmText = "Enable",
-                    cancelText  = "Cancel",
-                    onConfirm   = commit,
-                    onCancel    = function() CludesUI:RefreshPage() end,
+                    cancelText = "Cancel",
+                    onConfirm = commit,
+                    onCancel = function()
+                        CludesUI:RefreshPage()
+                    end,
                 })
                 return
             end
             commit()
         end,
     }
-    GO.RegisterSite({ id = "ab_proc", label = "Custom Proc Glow", group = "module",
-        module = "CludesUIActionBars", page = PAGE_ANIMATIONS, section = "CUSTOM PROC GLOW",
-        highlight = "Custom Proc Glow", desc = procGlowDesc,
+    GO.RegisterSite({
+        id = "ab_proc",
+        label = "Custom Proc Glow",
+        group = "module",
+        module = "CludesUIActionBars",
+        page = PAGE_ANIMATIONS,
+        section = "CUSTOM PROC GLOW",
+        highlight = "Custom Proc Glow",
+        desc = procGlowDesc,
         -- Blizzard Style bars draw Blizzard's own proc glow.
-        blocked = function() return CludesUI.BlizzStyle.Get("actionbars") end })
+        blocked = function()
+            return CludesUI.BlizzStyle.Get("actionbars")
+        end,
+    })
 
     -----------------------------------------------------------------------
     --  Preview icon helper for animation dropdown rows: small square icon with a 1px
@@ -127,11 +176,17 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
 
     -- Unified interaction preview (pushed / highlight)
     local INTERACTION_DEFAULTS = {
-        pushed    = { typeDefault = 3, texFallback = 2, solidColor = { r = 1, g = 0.792, b = 0.427, a = 1 } },
-        highlight = { typeDefault = 2, texFallback = 1, solidColor = { r = 0.973, g = 0.839, b = 0.604, a = 1 } },
+        pushed = { typeDefault = 3, texFallback = 2, solidColor = { r = 1, g = 0.792, b = 0.427, a = 1 } },
+        highlight = {
+            typeDefault = 2,
+            texFallback = 1,
+            solidColor = { r = 0.973, g = 0.839, b = 0.604, a = 1 },
+        },
     }
     local function UpdateInteractionPreview(f, prefix)
-        if not f then return end
+        if not f then
+            return
+        end
         local p = EAB.db.profile
         local defs = INTERACTION_DEFAULTS[prefix]
         local iType = p[prefix .. "TextureType"] or defs.typeDefault
@@ -152,7 +207,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         local bo = f._borderOv
         if iType == 6 then
             ov:Hide()
-            for i = 1, 4 do bo[i]:Hide() end
+            for i = 1, 4 do
+                bo[i]:Hide()
+            end
         elseif iType == 4 then
             ov:SetTexture("Interface\\BUTTONS\\WHITE8X8")
             ov:SetTexCoord(0, 1, 0, 1)
@@ -169,7 +226,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             end
             ov:SetVertexColor(cr, cg, cb, 0.3)
             ov:Show()
-            for i = 1, 4 do bo[i]:Hide() end
+            for i = 1, 4 do
+                bo[i]:Hide()
+            end
         elseif iType == 5 then
             ov:Hide()
             local bsz = p[prefix .. "BorderSize"] or 4
@@ -183,14 +242,34 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 local c = p[prefix .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
                 cr, cg, cb, ca = c.r, c.g, c.b, c.a
             end
-            for i = 1, 4 do bo[i]:SetVertexColor(cr, cg, cb, ca) end
-            bo[1]:ClearAllPoints(); bo[1]:SetPoint("TOPLEFT", f); bo[1]:SetPoint("TOPRIGHT", f); PP.Height(bo[1], bsz); bo[1]:Show()
-            bo[2]:ClearAllPoints(); bo[2]:SetPoint("BOTTOMLEFT", f); bo[2]:SetPoint("BOTTOMRIGHT", f); PP.Height(bo[2], bsz); bo[2]:Show()
-            bo[3]:ClearAllPoints(); bo[3]:SetPoint("TOPLEFT", bo[1], "BOTTOMLEFT"); bo[3]:SetPoint("BOTTOMLEFT", bo[2], "TOPLEFT"); PP.Width(bo[3], bsz); bo[3]:Show()
-            bo[4]:ClearAllPoints(); bo[4]:SetPoint("TOPRIGHT", bo[1], "BOTTOMRIGHT"); bo[4]:SetPoint("BOTTOMRIGHT", bo[2], "TOPRIGHT"); PP.Width(bo[4], bsz); bo[4]:Show()
+            for i = 1, 4 do
+                bo[i]:SetVertexColor(cr, cg, cb, ca)
+            end
+            bo[1]:ClearAllPoints()
+            bo[1]:SetPoint("TOPLEFT", f)
+            bo[1]:SetPoint("TOPRIGHT", f)
+            PP.Height(bo[1], bsz)
+            bo[1]:Show()
+            bo[2]:ClearAllPoints()
+            bo[2]:SetPoint("BOTTOMLEFT", f)
+            bo[2]:SetPoint("BOTTOMRIGHT", f)
+            PP.Height(bo[2], bsz)
+            bo[2]:Show()
+            bo[3]:ClearAllPoints()
+            bo[3]:SetPoint("TOPLEFT", bo[1], "BOTTOMLEFT")
+            bo[3]:SetPoint("BOTTOMLEFT", bo[2], "TOPLEFT")
+            PP.Width(bo[3], bsz)
+            bo[3]:Show()
+            bo[4]:ClearAllPoints()
+            bo[4]:SetPoint("TOPRIGHT", bo[1], "BOTTOMRIGHT")
+            bo[4]:SetPoint("BOTTOMRIGHT", bo[2], "TOPRIGHT")
+            PP.Width(bo[4], bsz)
+            bo[4]:Show()
         else
             local texIdx = iType
-            if texIdx < 1 or texIdx > 3 then texIdx = defs.texFallback end
+            if texIdx < 1 or texIdx > 3 then
+                texIdx = defs.texFallback
+            end
             ov:SetTexture(ns.HIGHLIGHT_TEXTURES[texIdx])
             ov:SetTexCoord(0, 1, 0, 1)
             if p[prefix .. "UseClassColor"] then
@@ -204,11 +283,17 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 ov:SetVertexColor(c.r, c.g, c.b, c.a)
             end
             ov:Show()
-            for i = 1, 4 do bo[i]:Hide() end
+            for i = 1, 4 do
+                bo[i]:Hide()
+            end
         end
     end
-    local function UpdatePushedPreview(f)    UpdateInteractionPreview(f, "pushed")    end
-    local function UpdateHighlightPreview(f) UpdateInteractionPreview(f, "highlight") end
+    local function UpdatePushedPreview(f)
+        UpdateInteractionPreview(f, "pushed")
+    end
+    local function UpdateHighlightPreview(f)
+        UpdateInteractionPreview(f, "highlight")
+    end
 
     -- Proc glow preview: supports FlipBook + procedural glow engines
     local function GetNthActionButtonIcon(n)
@@ -232,16 +317,20 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                     local tex = btn.icon:GetTexture()
                     if tex and tex ~= 0 and tex ~= "" and tex ~= 136235 then
                         found = found + 1
-                        if found >= n then return tex end
+                        if found >= n then
+                            return tex
+                        end
                     end
                 end
             end
         end
-        return 136197  -- fallback: generic spell icon
+        return 136197 -- fallback: generic spell icon
     end
 
     UpdateProcGlowPreview = function(f)
-        if not f then return end
+        if not f then
+            return
+        end
         local G = CludesUI.Glows
         -- The glow draws on its own child frame: on f itself it shares the
         -- border's OVERLAY sublevel and a 1px Pixel Glow can vanish under it.
@@ -256,21 +345,32 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         G.StopAllGlows(ov)
         f:Show()
         -- Hidden (options closed, page left): stays stopped; OnShow restarts it.
-        if not f:IsVisible() then return end
+        if not f:IsVisible() then
+            return
+        end
         -- If disabled (None selected), keep the icon visible but grayed out
         if not GO.IsCustomGlow(procGlowDesc) then
             f:SetAlpha(0.15)
             return
         end
         f:SetAlpha(1)
-        G.StartSpecGlow(ov, GO.Spec(procGlowDesc), PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE, "icon", G.PANEL_EXTRA)
+        G.StartSpecGlow(
+            ov,
+            GO.Spec(procGlowDesc),
+            PREVIEW_ICON_SIZE,
+            PREVIEW_ICON_SIZE,
+            "icon",
+            G.PANEL_EXTRA
+        )
     end
 
     -- Assisted Highlight preview. A custom glow runs on the shared glow engine,
     -- as on the live buttons; the ring and overlay styles draw a plain stand-in
     -- of their own, so the preview never touches a live button's glow.
     local function UpdateAssistGlowPreview(f)
-        if not f then return end
+        if not f then
+            return
+        end
         local p = EAB.db and EAB.db.profile or {}
         local customType = p.assistGlowType or 0
         local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
@@ -302,7 +402,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         local glowHost = f._assistGlowOv
         glowHost:SetFrameLevel(f:GetFrameLevel() + 2)
         ov:Hide()
-        for i = 1, 4 do ring[i]:Hide() end
+        for i = 1, 4 do
+            ring[i]:Hide()
+        end
 
         local list = ns.LOOP_GLOW_TYPES or {}
         if customType > 0 and list[customType] then
@@ -310,12 +412,24 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             f:SetAlpha(1)
             -- Every widget refresh lands here: the engine glow restarts only
             -- when the style or colour moved, or after a hide stopped it.
-            if f:IsVisible() and not (f._assistPvType == customType and f._assistPvR == cr
-                and f._assistPvG == cg and f._assistPvB == cb) then
+            if
+                f:IsVisible()
+                and not (
+                    f._assistPvType == customType
+                    and f._assistPvR == cr
+                    and f._assistPvG == cg
+                    and f._assistPvB == cb
+                )
+            then
                 G.StopAllGlows(glowHost)
-                G.StartSpecGlow(glowHost,
+                G.StartSpecGlow(
+                    glowHost,
                     { style = customType, r = cr, g = cg, b = cb },
-                    PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE, "icon", G.PANEL_EXTRA)
+                    PREVIEW_ICON_SIZE,
+                    PREVIEW_ICON_SIZE,
+                    "icon",
+                    G.PANEL_EXTRA
+                )
                 f._assistPvType, f._assistPvR, f._assistPvG, f._assistPvB = customType, cr, cg, cb
             end
             return
@@ -327,11 +441,25 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
 
         -- The ring and overlay styles: a plain stand-in of each.
         if style == 1 or style == 3 then
-            ring[1]:ClearAllPoints(); ring[1]:SetPoint("TOPLEFT", f); ring[1]:SetPoint("TOPRIGHT", f); ring[1]:SetHeight(2)
-            ring[2]:ClearAllPoints(); ring[2]:SetPoint("BOTTOMLEFT", f); ring[2]:SetPoint("BOTTOMRIGHT", f); ring[2]:SetHeight(2)
-            ring[3]:ClearAllPoints(); ring[3]:SetPoint("TOPLEFT", ring[1], "BOTTOMLEFT"); ring[3]:SetPoint("BOTTOMLEFT", ring[2], "TOPLEFT"); ring[3]:SetWidth(2)
-            ring[4]:ClearAllPoints(); ring[4]:SetPoint("TOPRIGHT", ring[1], "BOTTOMRIGHT"); ring[4]:SetPoint("BOTTOMRIGHT", ring[2], "TOPRIGHT"); ring[4]:SetWidth(2)
-            for i = 1, 4 do ring[i]:Show() end
+            ring[1]:ClearAllPoints()
+            ring[1]:SetPoint("TOPLEFT", f)
+            ring[1]:SetPoint("TOPRIGHT", f)
+            ring[1]:SetHeight(2)
+            ring[2]:ClearAllPoints()
+            ring[2]:SetPoint("BOTTOMLEFT", f)
+            ring[2]:SetPoint("BOTTOMRIGHT", f)
+            ring[2]:SetHeight(2)
+            ring[3]:ClearAllPoints()
+            ring[3]:SetPoint("TOPLEFT", ring[1], "BOTTOMLEFT")
+            ring[3]:SetPoint("BOTTOMLEFT", ring[2], "TOPLEFT")
+            ring[3]:SetWidth(2)
+            ring[4]:ClearAllPoints()
+            ring[4]:SetPoint("TOPRIGHT", ring[1], "BOTTOMRIGHT")
+            ring[4]:SetPoint("BOTTOMRIGHT", ring[2], "TOPRIGHT")
+            ring[4]:SetWidth(2)
+            for i = 1, 4 do
+                ring[i]:Show()
+            end
         end
 
         if style == 2 or style == 3 then
@@ -359,9 +487,11 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
         -------------------------------------------------------------------
         --  BAR INTERACTIONS
         -------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_BAR_INTERACTIONS, y);  y = y - h
+        _, h = W:SectionHeader(parent, SECTION_BAR_INTERACTIONS, y)
+        y = y - h
 
-        local INTERACTIONS_TIP = "Bar Interactions are the light effects that happen when you hover/press a spell, your cooldown swipe line, aura active border glow, etc"
+        local INTERACTIONS_TIP =
+            "Bar Interactions are the light effects that happen when you hover/press a spell, your cooldown swipe line, aura active border glow, etc"
 
         -- Helper: apply unified color to ALL interaction systems
         local function ApplyAllInteractionColors()
@@ -381,7 +511,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             p.cooldownEdgeColor = { r = r, g = g, b = b, a = a }
             p.procGlowColor = { r = r, g = g, b = b }
             -- A Default-mode proc glow would ignore the pick; it takes the unified color as before.
-            if p.procGlowColorMode == "default" then p.procGlowColorMode = "custom" end
+            if p.procGlowColorMode == "default" then
+                p.procGlowColorMode = "custom"
+            end
             ApplyAllInteractionColors()
         end
 
@@ -398,58 +530,90 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             CludesUI:RefreshPage()
         end
 
-        _, h = W:DualRow(parent, y,
-            { type="colorpicker", text="Bar Interactions Color",
-              tooltip=INTERACTIONS_TIP,
-              disabled=function() return CludesUI.BlizzStyle.Get("actionbars") or p.pushedUseClassColor end,
-              disabledTooltip=function()
-                  if CludesUI.BlizzStyle.Get("actionbars") then return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled") end
-                  return "This option requires Class Colors to be disabled"
-              end,
-              rawTooltip=true,
-              getValue=function()
-                  local c = p.pushedCustomColor
-                  if not c then return 0.973, 0.839, 0.604, 1 end
-                  return c.r, c.g, c.b, c.a
-              end,
-              setValue=function(r, g, b, a)
-                  SetUnifiedColor(r, g, b, a)
-              end,
-              hasAlpha=true },
-            { type="toggle", text="Class Colored Bar Interactions",
-              tooltip=INTERACTIONS_TIP,
-              disabled=function() return CludesUI.BlizzStyle.Get("actionbars") end,
-              disabledTooltip=CludesUI.BlizzStyle.Label("actionbars"), requireState="disabled",
-              getValue=function() return p.pushedUseClassColor end,
-              setValue=function(v)
-                  SetUnifiedClassColor(v)
-              end });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "colorpicker",
+            text = "Bar Interactions Color",
+            tooltip = INTERACTIONS_TIP,
+            disabled = function()
+                return CludesUI.BlizzStyle.Get("actionbars") or p.pushedUseClassColor
+            end,
+            disabledTooltip = function()
+                if CludesUI.BlizzStyle.Get("actionbars") then
+                    return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+                end
+                return "This option requires Class Colors to be disabled"
+            end,
+            rawTooltip = true,
+            getValue = function()
+                local c = p.pushedCustomColor
+                if not c then
+                    return 0.973, 0.839, 0.604, 1
+                end
+                return c.r, c.g, c.b, c.a
+            end,
+            setValue = function(r, g, b, a)
+                SetUnifiedColor(r, g, b, a)
+            end,
+            hasAlpha = true,
+        }, {
+            type = "toggle",
+            text = "Class Colored Bar Interactions",
+            tooltip = INTERACTIONS_TIP,
+            disabled = function()
+                return CludesUI.BlizzStyle.Get("actionbars")
+            end,
+            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            requireState = "disabled",
+            getValue = function()
+                return p.pushedUseClassColor
+            end,
+            setValue = function(v)
+                SetUnifiedClassColor(v)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Pushed Type",
-              tooltip="The overlay that appears on the icon when you press and hold a spell button",
-              disabled=function() return CludesUI.BlizzStyle.Get("actionbars") end,
-              disabledTooltip=CludesUI.BlizzStyle.Label("actionbars"), requireState="disabled",
-              values=pushedTypeValues, order=pushedTypeOrder,
-              getValue=function() return p.pushedTextureType or 2 end,
-              setValue=function(v)
-                  p.pushedTextureType = v
-                  EAB:ApplyPushedTextures()
-                  UpdatePushedPreview(_pushedPreview)
-                  CludesUI:RefreshPage()
-              end },
-            { type="dropdown", text="Highlight Type",
-              tooltip="The overlay that appears on the icon when you hover your mouse over a spell button",
-              disabled=function() return CludesUI.BlizzStyle.Get("actionbars") end,
-              disabledTooltip=CludesUI.BlizzStyle.Label("actionbars"), requireState="disabled",
-              values=highlightTypeValues, order=highlightTypeOrder,
-              getValue=function() return p.highlightTextureType or 2 end,
-              setValue=function(v)
-                  p.highlightTextureType = v
-                  EAB:ApplyHighlightTextures()
-                  UpdateHighlightPreview(_highlightPreview)
-                  CludesUI:RefreshPage()
-              end })
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Pushed Type",
+            tooltip = "The overlay that appears on the icon when you press and hold a spell button",
+            disabled = function()
+                return CludesUI.BlizzStyle.Get("actionbars")
+            end,
+            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            requireState = "disabled",
+            values = pushedTypeValues,
+            order = pushedTypeOrder,
+            getValue = function()
+                return p.pushedTextureType or 2
+            end,
+            setValue = function(v)
+                p.pushedTextureType = v
+                EAB:ApplyPushedTextures()
+                UpdatePushedPreview(_pushedPreview)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Highlight Type",
+            tooltip = "The overlay that appears on the icon when you hover your mouse over a spell button",
+            disabled = function()
+                return CludesUI.BlizzStyle.Get("actionbars")
+            end,
+            disabledTooltip = CludesUI.BlizzStyle.Label("actionbars"),
+            requireState = "disabled",
+            values = highlightTypeValues,
+            order = highlightTypeOrder,
+            getValue = function()
+                return p.highlightTextureType or 2
+            end,
+            setValue = function(v)
+                p.highlightTextureType = v
+                EAB:ApplyHighlightTextures()
+                UpdateHighlightPreview(_highlightPreview)
+                CludesUI:RefreshPage()
+            end,
+        })
         -- Preview chrome: the search pre-build's absorber row cannot host frames.
         if not CludesUI._prebuilding then
             local leftRgn = row._leftRegion
@@ -459,29 +623,47 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 _pushedPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
             UpdatePushedPreview(_pushedPreview)
-            CludesUI.RegisterWidgetRefresh(function() UpdatePushedPreview(_pushedPreview) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                UpdatePushedPreview(_pushedPreview)
+            end)
 
             CludesUI.BuildInlineCog(leftRgn, {
                 title = "Pushed Border Settings",
-                anchorTo = _pushedPreview, chain = false,
+                anchorTo = _pushedPreview,
+                chain = false,
                 captureRegion = leftRgn,
-                disabled = function() return (p.pushedTextureType or 2) ~= 5 end,
+                disabled = function()
+                    return (p.pushedTextureType or 2) ~= 5
+                end,
                 disabledTooltip = "Border Pushed Type",
                 rows = {
-                    { type="slider", label="Border Size", min=1, max=10, step=1,
-                      get=function() return p.pushedBorderSize or 4 end,
-                      set=function(v)
-                          p.pushedBorderSize = v
-                          EAB:ApplyPushedTextures()
-                          UpdatePushedPreview(_pushedPreview)
-                      end },
-                    { type="toggle", label="Match Bar Border",
-                      tooltip="On bars with a textured border style, a press lights up the button's own border instead of drawing lines.",
-                      get=function() return p.pushedBorderMatchBar or false end,
-                      set=function(v)
-                          p.pushedBorderMatchBar = v
-                          EAB:ApplyPushedTextures()
-                      end },
+                    {
+                        type = "slider",
+                        label = "Border Size",
+                        min = 1,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            return p.pushedBorderSize or 4
+                        end,
+                        set = function(v)
+                            p.pushedBorderSize = v
+                            EAB:ApplyPushedTextures()
+                            UpdatePushedPreview(_pushedPreview)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Match Bar Border",
+                        tooltip = "On bars with a textured border style, a press lights up the button's own border instead of drawing lines.",
+                        get = function()
+                            return p.pushedBorderMatchBar or false
+                        end,
+                        set = function(v)
+                            p.pushedBorderMatchBar = v
+                            EAB:ApplyPushedTextures()
+                        end,
+                    },
                 },
             })
 
@@ -492,29 +674,47 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 _highlightPreview._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
             UpdateHighlightPreview(_highlightPreview)
-            CludesUI.RegisterWidgetRefresh(function() UpdateHighlightPreview(_highlightPreview) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                UpdateHighlightPreview(_highlightPreview)
+            end)
 
             CludesUI.BuildInlineCog(rightRgn, {
                 title = "Highlight Border Settings",
-                anchorTo = _highlightPreview, chain = false,
+                anchorTo = _highlightPreview,
+                chain = false,
                 captureRegion = rightRgn,
-                disabled = function() return (p.highlightTextureType or 2) ~= 5 end,
+                disabled = function()
+                    return (p.highlightTextureType or 2) ~= 5
+                end,
                 disabledTooltip = "Border Highlight Type",
                 rows = {
-                    { type="slider", label="Border Size", min=1, max=10, step=1,
-                      get=function() return p.highlightBorderSize or 4 end,
-                      set=function(v)
-                          p.highlightBorderSize = v
-                          EAB:ApplyHighlightTextures()
-                          UpdateHighlightPreview(_highlightPreview)
-                      end },
-                    { type="toggle", label="Match Bar Border",
-                      tooltip="On bars with a textured border style, hovering lights up the button's own border instead of drawing lines.",
-                      get=function() return p.highlightBorderMatchBar or false end,
-                      set=function(v)
-                          p.highlightBorderMatchBar = v
-                          EAB:ApplyHighlightTextures()
-                      end },
+                    {
+                        type = "slider",
+                        label = "Border Size",
+                        min = 1,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            return p.highlightBorderSize or 4
+                        end,
+                        set = function(v)
+                            p.highlightBorderSize = v
+                            EAB:ApplyHighlightTextures()
+                            UpdateHighlightPreview(_highlightPreview)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Match Bar Border",
+                        tooltip = "On bars with a textured border style, hovering lights up the button's own border instead of drawing lines.",
+                        get = function()
+                            return p.highlightBorderMatchBar or false
+                        end,
+                        set = function(v)
+                            p.highlightBorderMatchBar = v
+                            EAB:ApplyHighlightTextures()
+                        end,
+                    },
                 },
             })
         end
@@ -522,34 +722,46 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
 
         local function castAnimForced()
             local bars = EAB.db.profile.bars
-            if not bars then return false end
+            if not bars then
+                return false
+            end
             for _, s in pairs(bars) do
-                if s.buttonShape and s.buttonShape ~= "none" then return true end
+                if s.buttonShape and s.buttonShape ~= "none" then
+                    return true
+                end
             end
             return false
         end
         local castRow
-        castRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Hide Casting Animations",
-              tooltip="This is the full overlay that swipes from right to left on the icon during its cast duration",
-              disabled=castAnimForced,
-              disabledTooltip="This option requires a non-custom shaped action bar",
-              rawTooltip=true,
-              getValue=function() return p.hideCastingAnimations or castAnimForced() end,
-              setValue=function(v)
-                  p.hideCastingAnimations = v
-                  -- ActionBarActionEventsFrame dies at file-load; ApplySettings owns casting animation visibility.
-              end },
-            { type="toggle", text="Show Highlight on Spell Cast",
-              tooltip="The highlight overlay that appears on a spell button while it is the active/current action. Disable to hide it.",
-              rawTooltip=true,
-              getValue=function() return p.showCastHighlight ~= false end,
-              setValue=function(v)
-                  p.showCastHighlight = v
-                  EAB:ApplyCheckedTextures()
-                  -- The Spell Cast Highlight cog dims with this toggle.
-                  CludesUI:RefreshPage()
-              end })
+        castRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Hide Casting Animations",
+            tooltip = "This is the full overlay that swipes from right to left on the icon during its cast duration",
+            disabled = castAnimForced,
+            disabledTooltip = "This option requires a non-custom shaped action bar",
+            rawTooltip = true,
+            getValue = function()
+                return p.hideCastingAnimations or castAnimForced()
+            end,
+            setValue = function(v)
+                p.hideCastingAnimations = v
+                -- ActionBarActionEventsFrame dies at file-load; ApplySettings owns casting animation visibility.
+            end,
+        }, {
+            type = "toggle",
+            text = "Show Highlight on Spell Cast",
+            tooltip = "The highlight overlay that appears on a spell button while it is the active/current action. Disable to hide it.",
+            rawTooltip = true,
+            getValue = function()
+                return p.showCastHighlight ~= false
+            end,
+            setValue = function(v)
+                p.showCastHighlight = v
+                EAB:ApplyCheckedTextures()
+                -- The Spell Cast Highlight cog dims with this toggle.
+                CludesUI:RefreshPage()
+            end,
+        })
         -- Spell Cast Highlight cog: the checked highlight as the button's own
         -- border on bars with a textured style (BuildInlineCog returns nothing
         -- during the search pre-build).
@@ -557,38 +769,48 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             title = "Spell Cast Highlight",
             captureRegion = castRow._rightRegion,
             disabled = function()
-                return p.showCastHighlight == false or (CludesUI.BlizzStyle.Get("actionbars") and true or false)
+                return p.showCastHighlight == false
+                    or (CludesUI.BlizzStyle.Get("actionbars") and true or false)
             end,
             disabledTooltip = function()
-                if CludesUI.BlizzStyle.Get("actionbars") then return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled") end
+                if CludesUI.BlizzStyle.Get("actionbars") then
+                    return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
+                end
                 return CludesUI.DisabledTooltip("Show Highlight on Spell Cast")
             end,
             rawTooltip = true,
             rows = {
-                { type="toggle", label="Show as Border",
-                  tooltip="On bars with a textured border style, the active spell shows a colored border instead of the highlight fill.",
-                  get=function() return p.castHighlightBorder or false end,
-                  set=function(v)
-                      p.castHighlightBorder = v
-                      EAB:ApplyCheckedTextures()
-                  end },
+                {
+                    type = "toggle",
+                    label = "Show as Border",
+                    tooltip = "On bars with a textured border style, the active spell shows a colored border instead of the highlight fill.",
+                    get = function()
+                        return p.castHighlightBorder or false
+                    end,
+                    set = function(v)
+                        p.castHighlightBorder = v
+                        EAB:ApplyCheckedTextures()
+                    end,
+                },
             },
         })
         y = y - h
 
-        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
 
         -------------------------------------------------------------------
         --  PROC GLOW EFFECT
         -------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_PROC_GLOW, y);  y = y - h
+        _, h = W:SectionHeader(parent, SECTION_PROC_GLOW, y)
+        y = y - h
 
         local procSpec = GO.DropdownSpec(procGlowDesc, "Custom Proc Glow")
         local function AssistOff()
             return not (GetCVarBool and GetCVarBool("assistedCombatHighlight"))
         end
         -- Row 1: Custom Proc Glow | its color swatches.
-        row, h = W:DualRow(parent, y, procSpec, { type="label", text="Glow Color" })
+        row, h = W:DualRow(parent, y, procSpec, { type = "label", text = "Glow Color" })
         if not CludesUI._prebuilding then
             local leftRgn = row._leftRegion
             GO.AttachInline(leftRgn, procGlowDesc, row._rightRegion)
@@ -605,11 +827,15 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             -- Hidden (options closed, page left or rebuilt), the preview's glow
             -- leaves the glow driver; shown again, it restarts from the current values.
             _procGlowPreview:SetScript("OnHide", function(self)
-                if self._glowOv then CludesUI.Glows.StopAllGlows(self._glowOv) end
+                if self._glowOv then
+                    CludesUI.Glows.StopAllGlows(self._glowOv)
+                end
             end)
             _procGlowPreview:SetScript("OnShow", UpdateProcGlowPreview)
             UpdateProcGlowPreview(_procGlowPreview)
-            CludesUI.RegisterWidgetRefresh(function() UpdateProcGlowPreview(_procGlowPreview) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                UpdateProcGlowPreview(_procGlowPreview)
+            end)
         end
         y = y - h
 
@@ -628,7 +854,9 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
                 assistOrder[#assistOrder + 1] = 100 + i
             end
         end
-        local function assistCustomSelected() return (p.assistGlowType or 0) > 0 end
+        local function assistCustomSelected()
+            return (p.assistGlowType or 0) > 0
+        end
         local function RingOff()
             local style = (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
             return AssistOff() or assistCustomSelected() or style == 2
@@ -640,41 +868,53 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
 
         -- Row 2: Assisted Highlight | Assisted Highlight Outset
         local assistRow
-        assistRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Assisted Highlight",
-              values=assistValues, order=assistOrder,
-              tooltip="How Blizzard's next-spell suggestion is drawn on the button. Button Overlay replaces the blue ring with a flat tint, leaving the button edge free for the proc glow; a glow style runs that glow in combat and shows the ring outside it.",
-              disabled=AssistOff,
-              disabledTooltip="This option requires Blizzard's Assisted Highlight to be enabled",
-              rawTooltip=true,
-              getValue=function()
-                  local custom = p.assistGlowType or 0
-                  local list = ns.LOOP_GLOW_TYPES or {}
-                  if custom > 0 and list[custom] then return 100 + custom end
-                  return (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
-              end,
-              setValue=function(v)
-                  if v >= 100 then
-                      p.assistGlowType = v - 100
-                  else
-                      p.assistGlowType = 0
-                      p.assistGlowStyle = v
-                  end
-                  ns.UpdateAssistHighlights()
-                  UpdateAssistGlowPreview(_assistGlowPreview)
-                  CludesUI:RefreshPage()
-              end },
-            { type="slider", text="Assisted Highlight Outset", min=-10, max=30, step=1,
-              tooltip="Moves the blue Assisted Highlight ring outward (or inward at negative values) so it no longer overlaps the proc glow on the same button. With Ring + Overlay the tint resizes along with it, so the two stay flush.",
-              disabled=RingOff,
-              disabledTooltip="This option requires Glow Ring or Ring + Overlay",
-              rawTooltip=true,
-              getValue=function() return p.assistGlowOutset or 0 end,
-              setValue=function(v)
-                  p.assistGlowOutset = v
-                  ns.UpdateAssistHighlights()
-                  UpdateAssistGlowPreview(_assistGlowPreview)
-              end })
+        assistRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Assisted Highlight",
+            values = assistValues,
+            order = assistOrder,
+            tooltip = "How Blizzard's next-spell suggestion is drawn on the button. Button Overlay replaces the blue ring with a flat tint, leaving the button edge free for the proc glow; a glow style runs that glow in combat and shows the ring outside it.",
+            disabled = AssistOff,
+            disabledTooltip = "This option requires Blizzard's Assisted Highlight to be enabled",
+            rawTooltip = true,
+            getValue = function()
+                local custom = p.assistGlowType or 0
+                local list = ns.LOOP_GLOW_TYPES or {}
+                if custom > 0 and list[custom] then
+                    return 100 + custom
+                end
+                return (p.assistGlowStyle == 0 and 1) or p.assistGlowStyle or 1
+            end,
+            setValue = function(v)
+                if v >= 100 then
+                    p.assistGlowType = v - 100
+                else
+                    p.assistGlowType = 0
+                    p.assistGlowStyle = v
+                end
+                ns.UpdateAssistHighlights()
+                UpdateAssistGlowPreview(_assistGlowPreview)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Assisted Highlight Outset",
+            min = -10,
+            max = 30,
+            step = 1,
+            tooltip = "Moves the blue Assisted Highlight ring outward (or inward at negative values) so it no longer overlaps the proc glow on the same button. With Ring + Overlay the tint resizes along with it, so the two stay flush.",
+            disabled = RingOff,
+            disabledTooltip = "This option requires Glow Ring or Ring + Overlay",
+            rawTooltip = true,
+            getValue = function()
+                return p.assistGlowOutset or 0
+            end,
+            setValue = function(v)
+                p.assistGlowOutset = v
+                ns.UpdateAssistHighlights()
+                UpdateAssistGlowPreview(_assistGlowPreview)
+            end,
+        })
         if not CludesUI._prebuilding then
             local leftRgn = assistRow._leftRegion
             _assistGlowPreview = CreatePreviewIcon(leftRgn)
@@ -689,21 +929,30 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             -- class colour owns it while Use Class Color is on.
             leftRgn._lastInline = _assistGlowPreview
             CludesUI.BuildInlineSwatches(leftRgn, {
-                { tooltip = "Assisted Highlight Glow Color", hasAlpha = false,
-                  getValue = function()
-                      local c = p.assistGlowColor or { r = 0.15, g = 0.5, b = 1 }
-                      return c.r, c.g, c.b
-                  end,
-                  setValue = function(r, g, b)
-                      p.assistGlowColor = { r = r, g = g, b = b }
-                      ns.UpdateAssistHighlights()
-                      UpdateAssistGlowPreview(_assistGlowPreview)
-                  end },
+                {
+                    tooltip = "Assisted Highlight Glow Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = p.assistGlowColor or { r = 0.15, g = 0.5, b = 1 }
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        p.assistGlowColor = { r = r, g = g, b = b }
+                        ns.UpdateAssistHighlights()
+                        UpdateAssistGlowPreview(_assistGlowPreview)
+                    end,
+                },
             }, {
-                disabled = function() return AssistOff() or not assistCustomSelected() or p.assistGlowUseClassColor end,
+                disabled = function()
+                    return AssistOff() or not assistCustomSelected() or p.assistGlowUseClassColor
+                end,
                 disabledTooltip = function()
-                    if AssistOff() then return "This option requires Blizzard's Assisted Highlight to be enabled" end
-                    if not assistCustomSelected() then return "This option requires a custom Assisted Highlight glow to be selected" end
+                    if AssistOff() then
+                        return "This option requires Blizzard's Assisted Highlight to be enabled"
+                    end
+                    if not assistCustomSelected() then
+                        return "This option requires a custom Assisted Highlight glow to be selected"
+                    end
                     return CludesUI.DisabledTooltip("Use Class Color", "disabled")
                 end,
                 rawTooltip = true,
@@ -712,51 +961,69 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
             -- Keep animated preview hosts out of the central glow driver while
             -- this page is hidden; restart them from the current values on show.
             _assistGlowPreview:SetScript("OnHide", function(self)
-                if self._assistGlowOv then CludesUI.Glows.StopAllGlows(self._assistGlowOv) end
+                if self._assistGlowOv then
+                    CludesUI.Glows.StopAllGlows(self._assistGlowOv)
+                end
                 self._assistPvType = nil
             end)
             _assistGlowPreview:SetScript("OnShow", UpdateAssistGlowPreview)
             UpdateAssistGlowPreview(_assistGlowPreview)
-            CludesUI.RegisterWidgetRefresh(function() UpdateAssistGlowPreview(_assistGlowPreview) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                UpdateAssistGlowPreview(_assistGlowPreview)
+            end)
         end
         y = y - h
 
         -- Row 3: Overlay Opacity (+ overlay color) | Fit Ring to Cropped Buttons
         local overlayRow
-        overlayRow, h = W:DualRow(parent, y,
-            { type="slider", text="Overlay Opacity", min=0, max=100, step=1,
-              tooltip="Opacity of the Button Overlay tint.",
-              disabled=OverlayOff,
-              disabledTooltip="This option requires the Button Overlay or Ring + Overlay style",
-              rawTooltip=true,
-              getValue=function() return p.assistGlowOverlayAlpha or 30 end,
-              setValue=function(v)
-                  p.assistGlowOverlayAlpha = v
-                  ns.UpdateAssistHighlights()
-                  UpdateAssistGlowPreview(_assistGlowPreview)
-              end },
-            { type="toggle", text="Fit Ring to Cropped Buttons",
-              tooltip="On Cropped bars, shapes the Assisted Highlight ring to the button instead of a square.",
-              disabled=RingOff,
-              disabledTooltip="This option requires Glow Ring or Ring + Overlay",
-              rawTooltip=true,
-              getValue=function() return p.assistGlowFitCropped or false end,
-              setValue=function(v)
-                  p.assistGlowFitCropped = v
-                  ns.UpdateAssistHighlights()
-              end })
+        overlayRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Overlay Opacity",
+            min = 0,
+            max = 100,
+            step = 1,
+            tooltip = "Opacity of the Button Overlay tint.",
+            disabled = OverlayOff,
+            disabledTooltip = "This option requires the Button Overlay or Ring + Overlay style",
+            rawTooltip = true,
+            getValue = function()
+                return p.assistGlowOverlayAlpha or 30
+            end,
+            setValue = function(v)
+                p.assistGlowOverlayAlpha = v
+                ns.UpdateAssistHighlights()
+                UpdateAssistGlowPreview(_assistGlowPreview)
+            end,
+        }, {
+            type = "toggle",
+            text = "Fit Ring to Cropped Buttons",
+            tooltip = "On Cropped bars, shapes the Assisted Highlight ring to the button instead of a square.",
+            disabled = RingOff,
+            disabledTooltip = "This option requires Glow Ring or Ring + Overlay",
+            rawTooltip = true,
+            getValue = function()
+                return p.assistGlowFitCropped or false
+            end,
+            setValue = function(v)
+                p.assistGlowFitCropped = v
+                ns.UpdateAssistHighlights()
+            end,
+        })
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineSwatches(overlayRow._leftRegion, {
-                { tooltip = "Button Overlay Color", hasAlpha = false,
-                  getValue = function()
-                      local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
-                      return c.r, c.g, c.b
-                  end,
-                  setValue = function(r, g, b)
-                      p.assistGlowOverlayColor = { r = r, g = g, b = b }
-                      ns.UpdateAssistHighlights()
-                      UpdateAssistGlowPreview(_assistGlowPreview)
-                  end },
+                {
+                    tooltip = "Button Overlay Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        p.assistGlowOverlayColor = { r = r, g = g, b = b }
+                        ns.UpdateAssistHighlights()
+                        UpdateAssistGlowPreview(_assistGlowPreview)
+                    end,
+                },
             }, {
                 disabled = OverlayOff,
                 disabledTooltip = "This option requires the Button Overlay or Ring + Overlay style",
@@ -766,19 +1033,25 @@ local function InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
 
         -- Row 4: the custom glow's colour source (its swatch sits beside the
         -- preview icon above).
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Use Class Color",
-              disabled=function() return AssistOff() or not assistCustomSelected() end,
-              disabledTooltip="This option requires a custom Assisted Highlight glow to be selected",
-              rawTooltip=true,
-              getValue=function() return p.assistGlowUseClassColor or false end,
-              setValue=function(v)
-                  p.assistGlowUseClassColor = v
-                  ns.UpdateAssistHighlights()
-                  UpdateAssistGlowPreview(_assistGlowPreview)
-                  CludesUI:RefreshPage()
-              end },
-            CludesUI.BlankRowCfg());  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Use Class Color",
+            disabled = function()
+                return AssistOff() or not assistCustomSelected()
+            end,
+            disabledTooltip = "This option requires a custom Assisted Highlight glow to be selected",
+            rawTooltip = true,
+            getValue = function()
+                return p.assistGlowUseClassColor or false
+            end,
+            setValue = function(v)
+                p.assistGlowUseClassColor = v
+                ns.UpdateAssistHighlights()
+                UpdateAssistGlowPreview(_assistGlowPreview)
+                CludesUI:RefreshPage()
+            end,
+        }, CludesUI.BlankRowCfg())
+        y = y - h
 
         return math.abs(y)
     end

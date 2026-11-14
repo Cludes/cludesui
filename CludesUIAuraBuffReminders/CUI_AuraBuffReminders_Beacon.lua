@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Beacon.lua
 --
@@ -9,7 +11,9 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor = math.floor
@@ -23,13 +27,21 @@ local ICON_SIZE, RemoveGlow, LayoutIcons = I.ICON_SIZE, I.RemoveGlow, I.LayoutIc
 local CursorAttachActive, ReleaseCursorAnchor = I.CursorAttachActive, I.ReleaseCursorAnchor
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local cuiPanelOpen = false
-I.panelOpenSetters[#I.panelOpenSetters + 1] = function(v) cuiPanelOpen = v end
+I.panelOpenSetters[#I.panelOpenSetters + 1] = function(v)
+    cuiPanelOpen = v
+end
 local combatAnchor
-I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v) combatAnchor = v end
+I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v)
+    combatAnchor = v
+end
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v) cursorAnchor = v end
+I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
+    cursorAnchor = v
+end
 
 -------------------------------------------------------------------------------
 --  Last-Used Item Tracking (per-character)
@@ -38,16 +50,28 @@ local TrackItemUse
 do
     local flaskSet, foodSet, weSet = {}, {}, {}
     for _, f in ipairs(FLASK_ITEMS) do
-        for _, id in ipairs(f.items) do flaskSet[id] = true end
+        for _, id in ipairs(f.items) do
+            flaskSet[id] = true
+        end
     end
-    for _, f in ipairs(FOOD_ITEMS) do foodSet[f.itemID] = true end
-    for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do weSet[we.itemID] = true end
+    for _, f in ipairs(FOOD_ITEMS) do
+        foodSet[f.itemID] = true
+    end
+    for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
+        weSet[we.itemID] = true
+    end
     TrackItemUse = function(itemID)
-        if not db or not db.profile then return end
+        if not db or not db.profile then
+            return
+        end
         -- All persistent use-tracking lives in db.profile (this DB layer has no `char` namespace).
-        if flaskSet[itemID] then db.profile.lastUsedFlask = itemID
-        elseif foodSet[itemID] then db.profile.lastUsedFood = itemID
-        elseif weSet[itemID] then db.profile.lastUsedWeaponEnchant = itemID end
+        if flaskSet[itemID] then
+            db.profile.lastUsedFlask = itemID
+        elseif foodSet[itemID] then
+            db.profile.lastUsedFood = itemID
+        elseif weSet[itemID] then
+            db.profile.lastUsedWeaponEnchant = itemID
+        end
     end
 end
 
@@ -63,26 +87,36 @@ _B.iconState = {}
 _B.glowState = {}
 _B.cachedInInstance = false
 _B.refreshPending = false
-_B.onCursor = false  -- shown beacons are placed on the cursor anchor
-local _cursorBeacons = {}  -- BeaconLayoutIcons' scratch list, reused
+_B.onCursor = false -- shown beacons are placed on the cursor anchor
+local _cursorBeacons = {} -- BeaconLayoutIcons' scratch list, reused
 _B.BOL = 53563
 _B.BOF = 156910
 _B.VIRTUE = 200025
 _B.ALL = { _B.BOL, _B.BOF }
-local IsSpellOverlayed = (C_SpellActivationOverlay and C_SpellActivationOverlay.IsSpellOverlayed) or IsSpellOverlayed
+local IsSpellOverlayed = (C_SpellActivationOverlay and C_SpellActivationOverlay.IsSpellOverlayed)
+    or IsSpellOverlayed
 
 local function BeaconUpdateInstanceCache()
     local _, instanceType, difficultyID = GetInstanceInfo()
     difficultyID = tonumber(difficultyID) or 0
     -- PvP instances (arenas/BGs) have difficultyID 0 but are still valid
     if instanceType == "pvp" or instanceType == "arena" then
-        _B.cachedInInstance = true; return
+        _B.cachedInInstance = true
+        return
     end
-    if difficultyID == 0 then _B.cachedInInstance = false; return end
+    if difficultyID == 0 then
+        _B.cachedInInstance = false
+        return
+    end
     if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-        _B.cachedInInstance = false; return
+        _B.cachedInInstance = false
+        return
     end
-    _B.cachedInInstance = (instanceType == "party" or instanceType == "raid" or (instanceType == "scenario" and difficultyID == 208))
+    _B.cachedInInstance = (
+        instanceType == "party"
+        or instanceType == "raid"
+        or (instanceType == "scenario" and difficultyID == 208)
+    )
 end
 
 local function BeaconUpdateOverlayEvents()
@@ -124,7 +158,9 @@ end
 
 local function BeaconLayoutIcons()
     -- Beacon icons are merged into the main LayoutIcons row; the separate beacon anchor is hidden (unused).
-    if _B.anchor then CludesUI.SetElementVisibility(_B.anchor, false) end
+    if _B.anchor then
+        CludesUI.SetElementVisibility(_B.anchor, false)
+    end
 
     -- When cursor-attached, position beacon icons at the cursor anchor
     local useCursor = db and CursorAttachActive(db.profile.display) and cursorAnchor
@@ -143,7 +179,9 @@ local function BeaconLayoutIcons()
             local baseScale = p.scale or 1.0
             local sz = floor(ICON_SIZE * baseScale + 0.5)
             local iconH = sz
-            if p.iconShape and p.iconShape ~= "none" then sz, iconH = ns.IconDimensions(sz, p) end
+            if p.iconShape and p.iconShape ~= "none" then
+                sz, iconH = ns.IconDimensions(sz, p)
+            end
             local totalW = (#visIcons * sz) + ((#visIcons - 1) * spacing)
             local startX = -(totalW / 2) + (sz / 2)
             for i, f in ipairs(visIcons) do
@@ -217,7 +255,9 @@ end
 
 local function BeaconSetVisible(spellID, show)
     local f = _B.icons[spellID]
-    if not f then return end
+    if not f then
+        return
+    end
     local changed = false
     if show then
         if not _B.iconState[spellID] then
@@ -236,11 +276,15 @@ local function BeaconSetVisible(spellID, show)
             changed = true
         end
     end
-    if changed then BeaconLayoutIcons() end
+    if changed then
+        BeaconLayoutIcons()
+    end
 end
 
 local function BeaconRefresh()
-    if not _B.isPaladin then return end
+    if not _B.isPaladin then
+        return
+    end
     if cuiPanelOpen or not IsSpellOverlayed then
         BeaconSetVisible(_B.BOL, false)
         BeaconSetVisible(_B.BOF, false)
@@ -260,10 +304,8 @@ local function BeaconRefresh()
     local au = db and db.profile.auras
     local enabled = au and au.enabled
 
-    local trackBOL = enabled and enabled.bol ~= false
-                     and Known(_B.BOL) and not Known(_B.VIRTUE)
-    local trackBOF = enabled and enabled.bof ~= false
-                     and Known(_B.BOF)
+    local trackBOL = enabled and enabled.bol ~= false and Known(_B.BOL) and not Known(_B.VIRTUE)
+    local trackBOF = enabled and enabled.bof ~= false and Known(_B.BOF)
 
     BeaconSetVisible(_B.BOL, trackBOL and IsSpellOverlayed(_B.BOL))
     BeaconSetVisible(_B.BOF, trackBOF and IsSpellOverlayed(_B.BOF))
@@ -274,13 +316,19 @@ end
 -- row and the cursor. Their layout otherwise runs only when one shows or
 -- hides. Nothing to do for a non-Paladin or with the option off.
 local function BeaconCombatEdge()
-    if not _B.isPaladin then return end
+    if not _B.isPaladin then
+        return
+    end
     local p = db and db.profile.display
-    if p and p.cursorAttach and p.cursorAttachCombatOnly then BeaconLayoutIcons() end
+    if p and p.cursorAttach and p.cursorAttachCombatOnly then
+        BeaconLayoutIcons()
+    end
 end
 
 local function BeaconRefreshSoon()
-    if _B.refreshPending then return end
+    if _B.refreshPending then
+        return
+    end
     _B.refreshPending = true
     C_Timer.After(0, function()
         _B.refreshPending = false
@@ -291,7 +339,9 @@ end
 local function BeaconInit()
     local _, classFile = UnitClass("player")
     _B.isPaladin = (classFile == "PALADIN")
-    if not _B.isPaladin then return end
+    if not _B.isPaladin then
+        return
+    end
 
     _B.icons[_B.BOL] = BeaconMakeIcon(_B.BOL)
     _B.icons[_B.BOF] = BeaconMakeIcon(_B.BOF)
@@ -315,7 +365,7 @@ local function BeaconInit()
 end
 
 -- Expose for options and anchor positioning
-_G._EABR_BeaconRefresh = BeaconRefresh
+_G._CUABR_BeaconRefresh = BeaconRefresh
 
 -- Beacon tracking is retail Holy Paladin; WoW Forever registers nothing here
 -- (BeaconInit is skipped there too, so the handler would only ever return).
@@ -330,7 +380,9 @@ if not EABR.FOREVER then
     _B.frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
 end
 _B.frame:SetScript("OnEvent", function(_, e, id)
-    if not _B.isPaladin then return end
+    if not _B.isPaladin then
+        return
+    end
     if e == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" or e == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
         if id == _B.BOL or id == _B.BOF then
             BeaconRefresh()
@@ -341,9 +393,13 @@ _B.frame:SetScript("OnEvent", function(_, e, id)
         BeaconUpdateInstanceCache()
         BeaconUpdateOverlayEvents()
     end
-    if e == "TRAIT_CONFIG_UPDATED" or e == "PLAYER_TALENT_UPDATE"
-       or e == "SPELLS_CHANGED" or e == "PLAYER_SPECIALIZATION_CHANGED"
-       or e == "PLAYER_LEVEL_CHANGED" then
+    if
+        e == "TRAIT_CONFIG_UPDATED"
+        or e == "PLAYER_TALENT_UPDATE"
+        or e == "SPELLS_CHANGED"
+        or e == "PLAYER_SPECIALIZATION_CHANGED"
+        or e == "PLAYER_LEVEL_CHANGED"
+    then
         -- Invalidates cached spell textures for beacon spells so dynamic icon changes (e.g. BOL morphing to Virtue) pick up the new icon.
         if texCache then
             texCache[_B.BOL] = nil
@@ -353,7 +409,9 @@ _B.frame:SetScript("OnEvent", function(_, e, id)
             local f = _B.icons[sid]
             if f and f._icon then
                 local t = Tex(sid)
-                if t then f._icon:SetTexture(t) end
+                if t then
+                    f._icon:SetTexture(t)
+                end
             end
         end
         BeaconRefreshSoon()

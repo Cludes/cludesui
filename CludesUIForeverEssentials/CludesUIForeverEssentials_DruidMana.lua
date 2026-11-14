@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_DruidMana.lua  (WoW Forever only)
 --  Mana Bar: a druid's mana while in a form that shows rage or energy, and
@@ -21,8 +25,12 @@ local LINE_H = 3
 local holder, bar, line, text
 local lastMana, ruleEnds
 
-local function Font() return CludesUI.GetFontPath("essentials") end
-local function Secret(v) return issecretvalue and issecretvalue(v) end
+local function Font()
+    return CludesUI.GetFontPath("essentials")
+end
+local function Secret(v)
+    return issecretvalue and issecretvalue(v)
+end
 
 local function UsesMana()
     local max = UnitPowerMax("player", MANA)
@@ -31,14 +39,20 @@ end
 
 -- Druid in a form whose bar is not mana, or Always Show for a mana user.
 local function Wanted()
-    if not (Enabled() and UsesMana()) then return false end
-    if CludesUI._unlockActive or Get("always") then return true end
+    if not (Enabled() and UsesMana()) then
+        return false
+    end
+    if CludesUI._unlockActive or Get("always") then
+        return true
+    end
     local _, class = UnitClass("player")
     return class == "DRUID" and UnitPowerType("player") ~= MANA
 end
 
 local function Build()
-    if holder then return holder end
+    if holder then
+        return holder
+    end
     holder = CreateFrame("Frame", "CludesUIManaBar", UIParent)
     bar = CreateFrame("StatusBar", nil, holder)
     bar:SetPoint("TOPLEFT")
@@ -62,14 +76,21 @@ local function Build()
 end
 
 local function Layout()
-    if not holder then return end
+    if not holder then
+        return
+    end
     holder:SetSize(Get("width"), Get("height") + LINE_H + 1)
     bar:SetHeight(Get("height"))
 end
 
 local function UpdateMana()
-    if not holder then return end
-    if not Wanted() then holder:Hide(); return end
+    if not holder then
+        return
+    end
+    if not Wanted() then
+        holder:Hide()
+        return
+    end
     holder:Show()
     local cur, max = UnitPower("player", MANA), UnitPowerMax("player", MANA)
     bar:SetMinMaxValues(0, max)
@@ -88,7 +109,9 @@ local function UpdateMana()
 end
 
 local function Tick()
-    if not (ruleEnds and line) then return end
+    if not (ruleEnds and line) then
+        return
+    end
     local left = ruleEnds - GetTime()
     if left <= 0 or not Get("fiveSecond") then
         ruleEnds = nil
@@ -111,12 +134,21 @@ local function Apply()
         ev:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
         ev:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not ticker then ticker = C_Timer.NewTicker(0.05, Tick) end
-        if not CludesUI._unlockActive then F.Place(holder) end
+        if not ticker then
+            ticker = C_Timer.NewTicker(0.05, Tick)
+        end
+        if not CludesUI._unlockActive then
+            F.Place(holder)
+        end
     else
         ev:UnregisterAllEvents()
-        if ticker then ticker:Cancel(); ticker = nil end
-        if holder then holder:Hide() end
+        if ticker then
+            ticker:Cancel()
+            ticker = nil
+        end
+        if holder then
+            holder:Hide()
+        end
     end
     UpdateMana()
 end
@@ -124,8 +156,20 @@ end
 CludesUI._DruidMana = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
-    key = "CUI_ManaBar", label = "Mana Bar", order = 737,
-    frame = function(build) if build then Build(); Layout(); UpdateMana() end; return holder end,
-    size = function() return Get("width"), Get("height") + LINE_H + 1 end,
-    noAnchorTarget = true, noSizeMatchTarget = true,
+    key = "CUI_ManaBar",
+    label = "Mana Bar",
+    order = 737,
+    frame = function(build)
+        if build then
+            Build()
+            Layout()
+            UpdateMana()
+        end
+        return holder
+    end,
+    size = function()
+        return Get("width"), Get("height") + LINE_H + 1
+    end,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

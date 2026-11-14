@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Engine.lua
 --
@@ -35,7 +37,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 
 local ADDON_NAME, ns = ...
 local CludesUI = _G.CludesUI
-if not CludesUI then return end
+if not CludesUI then
+    return
+end
 
 local issecretvalue = _G.issecretvalue
 local UnitExists, UnitGUID, GetTime = UnitExists, UnitGUID, GetTime
@@ -65,9 +69,21 @@ local CHANNEL_EVENTS = {
     -- UNIT_MAX_HEALTH_MODIFIERS_CHANGED rides health/text: modifier changes can
     -- move the value and effective max with no UNIT_HEALTH/UNIT_MAXHEALTH behind
     -- them (Blizzard's own unit frames repaint health from this event).
-    health   = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_CONNECTION", "UNIT_FACTION",
-                 "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" },
-    power    = { "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER", "UNIT_POWER_BAR_SHOW", "UNIT_POWER_BAR_HIDE", "UNIT_CONNECTION" },
+    health = {
+        "UNIT_HEALTH",
+        "UNIT_MAXHEALTH",
+        "UNIT_CONNECTION",
+        "UNIT_FACTION",
+        "UNIT_MAX_HEALTH_MODIFIERS_CHANGED",
+    },
+    power = {
+        "UNIT_POWER_UPDATE",
+        "UNIT_MAXPOWER",
+        "UNIT_DISPLAYPOWER",
+        "UNIT_POWER_BAR_SHOW",
+        "UNIT_POWER_BAR_HIDE",
+        "UNIT_CONNECTION",
+    },
     -- UNIT_AURA deliberately absent here too: absorb VALUE changes already
     -- ride the two absorb events below, so the long-form Absorb / Heal Absorb
     -- text zones only go stale on the no-event timer-expiry class -- and the
@@ -77,10 +93,21 @@ local CHANNEL_EVENTS = {
     -- UNIT_TARGET: the unit's OWN target changing -- only trigger for
     -- "Name > Target" content, otherwise relies on an unrelated event
     -- (health/power tick) to happen to fire around the same time.
-    text     = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_UPDATE", "UNIT_MAXPOWER", "UNIT_DISPLAYPOWER",
-                 "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_CONNECTION", "UNIT_FACTION",
-                 "UNIT_ABSORB_AMOUNT_CHANGED", "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
-                 "UNIT_MAX_HEALTH_MODIFIERS_CHANGED", "UNIT_TARGET" },
+    text = {
+        "UNIT_HEALTH",
+        "UNIT_MAXHEALTH",
+        "UNIT_POWER_UPDATE",
+        "UNIT_MAXPOWER",
+        "UNIT_DISPLAYPOWER",
+        "UNIT_NAME_UPDATE",
+        "UNIT_LEVEL",
+        "UNIT_CONNECTION",
+        "UNIT_FACTION",
+        "UNIT_ABSORB_AMOUNT_CHANGED",
+        "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
+        "UNIT_MAX_HEALTH_MODIFIERS_CHANGED",
+        "UNIT_TARGET",
+    },
     -- (UNIT_HEAL_PREDICTION deliberately absent: the absorb painter never
     -- renders incoming heals; they are the opt-in healpred channel, whose
     -- events are registered only while a frame shows them.)
@@ -94,9 +121,12 @@ local CHANNEL_EVENTS = {
     -- free (Blizzard's CUF needs health-driven prediction repaints only
     -- because its bars compute widths in Lua). Max range changes still ride
     -- UNIT_MAXHEALTH; the event-less shield clear rides the belt.
-    absorb   = { "UNIT_MAXHEALTH",
-                 "UNIT_ABSORB_AMOUNT_CHANGED", "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
-                 "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" },
+    absorb = {
+        "UNIT_MAXHEALTH",
+        "UNIT_ABSORB_AMOUNT_CHANGED",
+        "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
+        "UNIT_MAX_HEALTH_MODIFIERS_CHANGED",
+    },
     portrait = { "UNIT_PORTRAIT_UPDATE", "UNIT_MODEL_CHANGED", "UNIT_CONNECTION" },
 }
 
@@ -112,10 +142,14 @@ local CHANNEL_EVENTS = {
 -- and the power text through the value flush below; the power channel keeps
 -- the full paint on its own events.
 local OPTIN_EVENTS = {
-    healpred = { "UNIT_HEAL_PREDICTION", "UNIT_MAXHEALTH",
-                 "UNIT_HEAL_ABSORB_AMOUNT_CHANGED", "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" },
-    absglow  = { "UNIT_HEALTH" },
-    maxhp    = { "UNIT_MAX_HEALTH_MODIFIERS_CHANGED", "UNIT_MAXHEALTH" },
+    healpred = {
+        "UNIT_HEAL_PREDICTION",
+        "UNIT_MAXHEALTH",
+        "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
+        "UNIT_MAX_HEALTH_MODIFIERS_CHANGED",
+    },
+    absglow = { "UNIT_HEALTH" },
+    maxhp = { "UNIT_MAX_HEALTH_MODIFIERS_CHANGED", "UNIT_MAXHEALTH" },
     powerval = { "UNIT_POWER_FREQUENT" },
 }
 
@@ -123,11 +157,19 @@ local OPTIN_EVENTS = {
 -- to the painter), never deduped -- a STOP and a START in one frame are both
 -- real.
 local CASTBAR_EVENTS = {
-    "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_STOP",
-    "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_INTERRUPTIBLE",
+    "UNIT_SPELLCAST_START",
+    "UNIT_SPELLCAST_DELAYED",
+    "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_INTERRUPTED",
+    "UNIT_SPELLCAST_INTERRUPTIBLE",
     "UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
-    "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP",
-    "UNIT_SPELLCAST_EMPOWER_START", "UNIT_SPELLCAST_EMPOWER_UPDATE", "UNIT_SPELLCAST_EMPOWER_STOP",
+    "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_UPDATE",
+    "UNIT_SPELLCAST_CHANNEL_STOP",
+    "UNIT_SPELLCAST_EMPOWER_START",
+    "UNIT_SPELLCAST_EMPOWER_UPDATE",
+    "UNIT_SPELLCAST_EMPOWER_STOP",
 }
 
 -------------------------------------------------------------------------------
@@ -155,7 +197,9 @@ do
         -- Empower stage pips outlive the cast otherwise (the old element
         -- wiring hid them in its reset).
         if element.Pips then
-            for _, pip in next, element.Pips do pip:Hide() end
+            for _, pip in next, element.Pips do
+                pip:Hide()
+            end
         end
     end
 
@@ -180,7 +224,9 @@ do
             -- Stay on the grid (a late frame shortens the next wait); start
             -- over after a hitch longer than one step.
             wait = wait + SECRET_TIME_STEP
-            if wait <= 0 then wait = SECRET_TIME_STEP end
+            if wait <= 0 then
+                wait = SECRET_TIME_STEP
+            end
             if self.Time then
                 local durationObject = self:GetTimerDuration()
                 if durationObject then
@@ -189,8 +235,12 @@ do
                         if self.CustomDelayText then
                             self:CustomDelayText(durationObject)
                         else
-                            self.Time:SetFormattedText("%.1f|cffff0000%s%.2f|r",
-                                rem, self.channeling and "-" or "+", self.delay)
+                            self.Time:SetFormattedText(
+                                "%.1f|cffff0000%s%.2f|r",
+                                rem,
+                                self.channeling and "-" or "+",
+                                self.delay
+                            )
                         end
                     elseif self.CustomTimeText then
                         self:CustomTimeText(durationObject)
@@ -271,17 +321,28 @@ do
 
         element:SetTimerDuration(duration, element.smoothing, direction)
 
-        if element.Icon then element.Icon:SetTexture(texture or FALLBACK_ICON) end
-        if element.Spark then element.Spark:Show() end
+        if element.Icon then
+            element.Icon:SetTexture(texture or FALLBACK_ICON)
+        end
+        if element.Spark then
+            element.Spark:Show()
+        end
         -- Full Craft Time (player only): batch countdown and " (n/N)" count.
         if unit == "player" and (element._fullCraft or element._craftExtra) then
-            CludesUI.SetCraftBatch(element, element._fullCraft and element.casting and isTradeSkill,
-                spellID, castID, (endTime - startTime) / 1000)
+            CludesUI.SetCraftBatch(
+                element,
+                element._fullCraft and element.casting and isTradeSkill,
+                spellID,
+                castID,
+                (endTime - startTime) / 1000
+            )
         end
         if element.Text then
             element.Text:SetText(element._craftExtra and (text .. element._craftCountSuffix) or text)
         end
-        if element.Time then element.Time:SetText() end
+        if element.Time then
+            element.Time:SetText()
+        end
 
         local safeZone = element.SafeZone
         if safeZone and unit == "player" then
@@ -290,30 +351,44 @@ do
             safeZone:SetPoint(isHoriz and "TOP" or "LEFT")
             safeZone:SetPoint(isHoriz and "BOTTOM" or "RIGHT")
             if element.channeling then
-                safeZone:SetPoint(element:GetReverseFill() and (isHoriz and "RIGHT" or "TOP")
-                    or (isHoriz and "LEFT" or "BOTTOM"))
+                safeZone:SetPoint(
+                    element:GetReverseFill() and (isHoriz and "RIGHT" or "TOP")
+                        or (isHoriz and "LEFT" or "BOTTOM")
+                )
             else
-                safeZone:SetPoint(element:GetReverseFill() and (isHoriz and "LEFT" or "BOTTOM")
-                    or (isHoriz and "RIGHT" or "TOP"))
+                safeZone:SetPoint(
+                    element:GetReverseFill() and (isHoriz and "LEFT" or "BOTTOM")
+                        or (isHoriz and "RIGHT" or "TOP")
+                )
             end
             local zoneEnd = endTime
-            if element.empowering then zoneEnd = zoneEnd + GetUnitEmpowerHoldAtMaxTime(unit) end
+            if element.empowering then
+                zoneEnd = zoneEnd + GetUnitEmpowerHoldAtMaxTime(unit)
+            end
             local ratio = (select(4, GetNetStats())) / (zoneEnd - startTime)
-            if ratio > 1 then ratio = 1 end
-            safeZone[isHoriz and "SetWidth" or "SetHeight"](safeZone,
-                element[isHoriz and "GetWidth" or "GetHeight"](element) * ratio)
+            if ratio > 1 then
+                ratio = 1
+            end
+            safeZone[isHoriz and "SetWidth" or "SetHeight"](
+                safeZone,
+                element[isHoriz and "GetWidth" or "GetHeight"](element) * ratio
+            )
         end
 
         if element.empowering and element.UpdatePips then
             element:UpdatePips(UnitEmpoweredStagePercentages(unit))
         end
 
-        if element.PostCastStart then element:PostCastStart(unit) end
+        if element.PostCastStart then
+            element:PostCastStart(unit)
+        end
         element:Show()
     end
 
     local function UpdateCast(frame, element, unit, event, castID)
-        if not element:IsShown() or not castID or element.castID ~= castID then return end
+        if not element:IsShown() or not castID or element.castID ~= castID then
+            return
+        end
         local direction = Enum.StatusBarTimerDirection.ElapsedTime
         local duration, name, startTime, _
         if event == "UNIT_SPELLCAST_DELAYED" then
@@ -328,7 +403,9 @@ do
                 direction = Enum.StatusBarTimerDirection.RemainingTime
             end
         end
-        if not name then return end
+        if not name then
+            return
+        end
         if unit == "player" then
             -- Delay accumulates only for the player (readable clock).
             startTime = startTime / 1000
@@ -338,7 +415,9 @@ do
             else
                 delta = startTime - element.startTime
             end
-            if delta < 0 then delta = 0 end
+            if delta < 0 then
+                delta = 0
+            end
             element.delay = (element.delay or 0) + delta
             -- The next pushback is measured from this one's start, so each
             -- adds only its own delay.
@@ -346,7 +425,9 @@ do
         end
         element._cuiTimeWait = 0
         element:SetTimerDuration(duration, element.smoothing, direction)
-        if element.PostCastUpdate then element:PostCastUpdate(unit) end
+        if element.PostCastUpdate then
+            element:PostCastUpdate(unit)
+        end
     end
 
     local function StopCast(frame, element, unit, event, a, b, c)
@@ -358,16 +439,26 @@ do
         else -- UNIT_SPELLCAST_CHANNEL_STOP
             interruptedBy, castID = a, b
         end
-        if not element:IsShown() or not castID or element.castID ~= castID then return end
-        if element.Spark then element.Spark:Hide() end
+        if not element:IsShown() or not castID or element.castID ~= castID then
+            return
+        end
+        if element.Spark then
+            element.Spark:Hide()
+        end
         if interruptedBy then
-            if element.Text then element.Text:SetText(INTERRUPTED) end
+            if element.Text then
+                element.Text:SetText(INTERRUPTED)
+            end
             element.holdTime = element.timeToHold or 0
             element:SetMinMaxValues(0, 1)
             element:SetValue(1)
-            if element.PostCastInterrupted then element:PostCastInterrupted(unit, interruptedBy) end
+            if element.PostCastInterrupted then
+                element:PostCastInterrupted(unit, interruptedBy)
+            end
         else
-            if element.PostCastStop then element:PostCastStop(unit, empowerComplete) end
+            if element.PostCastStop then
+                element:PostCastStop(unit, empowerComplete)
+            end
         end
         ResetCastState(element)
     end
@@ -379,18 +470,26 @@ do
         else -- UNIT_SPELLCAST_FAILED
             castID = a
         end
-        if not element:IsShown() or not castID or element.castID ~= castID then return end
+        if not element:IsShown() or not castID or element.castID ~= castID then
+            return
+        end
         if element.Text then
             element.Text:SetText(event == "UNIT_SPELLCAST_FAILED" and FAILED or INTERRUPTED)
         end
-        if element.Spark then element.Spark:Hide() end
+        if element.Spark then
+            element.Spark:Hide()
+        end
         element.holdTime = element.timeToHold or 0
         element:SetMinMaxValues(0, 1)
         element:SetValue(1)
         if interruptedBy then
-            if element.PostCastInterrupted then element:PostCastInterrupted(unit, interruptedBy) end
+            if element.PostCastInterrupted then
+                element:PostCastInterrupted(unit, interruptedBy)
+            end
         else
-            if element.PostCastFail then element:PostCastFail(unit) end
+            if element.PostCastFail then
+                element:PostCastFail(unit)
+            end
         end
         ResetCastState(element)
     end
@@ -403,8 +502,12 @@ do
     -- names and re-derive the current cast in full.
     local function CastbarPainter(frame, unit, event, _, e2, e3, e4, e5, e6)
         local element = frame.Castbar
-        if not element then return end
-        if not Engine.ElementOn(frame, "Castbar") then return end
+        if not element then
+            return
+        end
+        if not Engine.ElementOn(frame, "Castbar") then
+            return
+        end
         if not element._cuiCastDriver then
             element._cuiCastDriver = true
             -- One-time per-element state the old wiring seeded on enable:
@@ -414,26 +517,34 @@ do
             element.Pips = element.Pips or {}
             element:SetScript("OnUpdate", CastOnUpdate)
         end
-        if event == "UNIT_SPELLCAST_START"
+        if
+            event == "UNIT_SPELLCAST_START"
             or event == "UNIT_SPELLCAST_CHANNEL_START"
-            or event == "UNIT_SPELLCAST_EMPOWER_START" then
+            or event == "UNIT_SPELLCAST_EMPOWER_START"
+        then
             StartCast(frame, element, unit, event)
-        elseif event == "UNIT_SPELLCAST_DELAYED"
+        elseif
+            event == "UNIT_SPELLCAST_DELAYED"
             or event == "UNIT_SPELLCAST_CHANNEL_UPDATE"
-            or event == "UNIT_SPELLCAST_EMPOWER_UPDATE" then
+            or event == "UNIT_SPELLCAST_EMPOWER_UPDATE"
+        then
             UpdateCast(frame, element, unit, event, e4)
-        elseif event == "UNIT_SPELLCAST_STOP"
+        elseif
+            event == "UNIT_SPELLCAST_STOP"
             or event == "UNIT_SPELLCAST_CHANNEL_STOP"
-            or event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+            or event == "UNIT_SPELLCAST_EMPOWER_STOP"
+        then
             StopCast(frame, element, unit, event, e4, e5, e6)
-        elseif event == "UNIT_SPELLCAST_FAILED"
-            or event == "UNIT_SPELLCAST_INTERRUPTED" then
+        elseif event == "UNIT_SPELLCAST_FAILED" or event == "UNIT_SPELLCAST_INTERRUPTED" then
             FailCast(frame, element, unit, event, e4, e5)
-        elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE"
-            or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
-            if not element:IsShown() then return end
+        elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
+            if not element:IsShown() then
+                return
+            end
             element.notInterruptible = event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE"
-            if element.PostCastInterruptible then element:PostCastInterruptible(unit) end
+            if element.PostCastInterruptible then
+                element:PostCastInterruptible(unit)
+            end
         else
             -- Pseudo-event (Show/ForceUpdate/target swap): full re-derive.
             StartCast(frame, element, unit, event)
@@ -445,9 +556,9 @@ end
 -------------------------------------------------------------------------------
 --  Attached frames + trackers
 -------------------------------------------------------------------------------
-local attached = {}      -- frame -> { unit = token, channels = { name, ... } }
-local trackers = {}      -- primary token -> tracker frame
-local unitFrames = {}    -- primary token -> frame (1:1 for our layout)
+local attached = {} -- frame -> { unit = token, channels = { name, ... } }
+local trackers = {} -- primary token -> tracker frame
+local unitFrames = {} -- primary token -> frame (1:1 for our layout)
 
 -- Which secondary token shares a frame's events (vehicle design, see header).
 local SECONDARY_TOKEN = { player = "vehicle", pet = "player" }
@@ -472,14 +583,17 @@ end
 -- hardware frame must still reach the painter (RepaintAll wipes the stamps
 -- for the same reason).
 local IDENTITY_EVENTS = {
-    UNIT_NAME_UPDATE = true, UNIT_LEVEL = true, UNIT_CONNECTION = true, UNIT_FACTION = true,
+    UNIT_NAME_UPDATE = true,
+    UNIT_LEVEL = true,
+    UNIT_CONNECTION = true,
+    UNIT_FACTION = true,
 }
 
 -- Heal prediction's trailing flush: a same-frame repeat can carry state the
 -- first paint could not see (a heal landing and another cast starting, or a
 -- cast and a heal absorb in one frame), so a deduped repeat marks the frame
 -- and ONE next-frame pass repaints it from settled values. Idle while hidden.
-local predPending = {}   -- frame -> true
+local predPending = {} -- frame -> true
 local predFlush = CreateFrame("Frame")
 predFlush:Hide()
 predFlush:SetScript("OnUpdate", function(self)
@@ -487,7 +601,9 @@ predFlush:SetScript("OnUpdate", function(self)
     local fn = painters.healpred
     for frame in pairs(predPending) do
         predPending[frame] = nil
-        if fn and frame:IsShown() then fn(frame, frame._cuiUnit, "Flush") end
+        if fn and frame:IsShown() then
+            fn(frame, frame._cuiUnit, "Flush")
+        end
     end
 end)
 
@@ -499,7 +615,7 @@ end)
 -- (RepaintAll) skip the channel: the full power and text paints cover it
 -- there. Idle while hidden.
 local valuePainter
-local valPending = {}    -- frame -> true
+local valPending = {} -- frame -> true
 local valFlush = CreateFrame("Frame")
 valFlush:Hide()
 valFlush:SetScript("OnUpdate", function(self)
@@ -507,7 +623,9 @@ valFlush:SetScript("OnUpdate", function(self)
     local fn = valuePainter
     for frame in pairs(valPending) do
         valPending[frame] = nil
-        if fn and frame:IsShown() then fn(frame, frame._cuiUnit) end
+        if fn and frame:IsShown() then
+            fn(frame, frame._cuiUnit)
+        end
     end
 end)
 
@@ -517,10 +635,15 @@ end
 
 local function Paint(frame, channel, event)
     local fn = painters[channel]
-    if not fn then return end
+    if not fn then
+        return
+    end
     local gen = Bump()
     local stamps = frame._cuiPaintStamps
-    if not stamps then stamps = {}; frame._cuiPaintStamps = stamps end
+    if not stamps then
+        stamps = {}
+        frame._cuiPaintStamps = stamps
+    end
     -- Castbar events are never deduped: each event name is a distinct edge.
     -- The text painter collapses per zone instead (a value event repaints only
     -- the zones reading that value, so a channel stamp would eat the others).
@@ -542,10 +665,14 @@ end
 -- target swap, vehicle flip, PEW, explicit refresh from settings code).
 function Engine.RepaintAll(frame, event)
     local info = attached[frame]
-    if not info then return end
+    if not info then
+        return
+    end
     -- Clear stamps first: an identity repaint must never be eaten by a
     -- value paint that happened earlier in this same hardware frame.
-    if frame._cuiPaintStamps then wipe(frame._cuiPaintStamps) end
+    if frame._cuiPaintStamps then
+        wipe(frame._cuiPaintStamps)
+    end
     for i = 1, #info.channels do
         Paint(frame, info.channels[i], event or "ForceUpdate")
     end
@@ -576,9 +703,13 @@ local RESETTLE_EVENTS = {
 -- tracker.channelsByEvent: event -> { channelName, ... } for its frame.
 local function TrackerOnEvent(self, event, unitToken, ...)
     local frame = self._cuiFrame
-    if not frame or not frame:IsShown() then return end
+    if not frame or not frame:IsShown() then
+        return
+    end
     local chans = self._cuiChannelsByEvent[event]
-    if not chans then return end
+    if not chans then
+        return
+    end
     -- Boss slots re-sort mid-encounter (a new add takes boss2, the old one
     -- moves to boss3) and no event promises to name the move: the unit
     -- events of the new occupant kept painting health and casts under the
@@ -602,7 +733,9 @@ local function TrackerOnEvent(self, event, unitToken, ...)
             -- and consecutive same-frame events each carry distinct data --
             -- never deduped.
             local fn = painters[ch]
-            if fn then fn(frame, frame._cuiUnit, event, unitToken, ...) end
+            if fn then
+                fn(frame, frame._cuiUnit, event, unitToken, ...)
+            end
         elseif ch == "powerval" then
             -- Value route, filtered like Blizzard's resource display: only a
             -- change of the power type the bar shows (the payload token
@@ -626,15 +759,21 @@ local function TrackerOnEvent(self, event, unitToken, ...)
         C_Timer.After(0, function()
             self._cuiResettle = nil
             local f = self._cuiFrame
-            if not f or not f:IsShown() then return end
-            for i = 1, #chans do Paint(f, chans[i], "Resettle") end
+            if not f or not f:IsShown() then
+                return
+            end
+            for i = 1, #chans do
+                Paint(f, chans[i], "Resettle")
+            end
         end)
     end
 end
 
 local function EnsureTracker(token)
     local t = trackers[token]
-    if t then return t end
+    if t then
+        return t
+    end
     t = CreateFrame("Frame")
     t:SetScript("OnEvent", TrackerOnEvent)
     t._cuiChannelsByEvent = {}
@@ -655,7 +794,9 @@ function Engine.Attach(frame, unit, channels)
     -- skip dispatch), so a freshly shown frame repaints in full.
     if not frame._cuiEngineShowHook then
         frame._cuiEngineShowHook = true
-        frame:HookScript("OnShow", function(f) Engine.RepaintAll(f, "Show") end)
+        frame:HookScript("OnShow", function(f)
+            Engine.RepaintAll(f, "Show")
+        end)
     end
     local secondary = SECONDARY_TOKEN[unit]
     local byEvent = t._cuiChannelsByEvent
@@ -676,8 +817,15 @@ function Engine.Attach(frame, unit, channels)
                     end
                 end
                 local seen = false
-                for k = 1, #list do if list[k] == ch then seen = true break end end
-                if not seen then list[#list + 1] = ch end
+                for k = 1, #list do
+                    if list[k] == ch then
+                        seen = true
+                        break
+                    end
+                end
+                if not seen then
+                    list[#list + 1] = ch
+                end
             end
         end
     end
@@ -692,11 +840,16 @@ end
 function Engine.SetChannelOn(frame, channel, on)
     local info = attached[frame]
     local events = OPTIN_EVENTS[channel]
-    if not (info and events) then return end
+    if not (info and events) then
+        return
+    end
     local chans = info.channels
     local idx
     for i = 1, #chans do
-        if chans[i] == channel then idx = i break end
+        if chans[i] == channel then
+            idx = i
+            break
+        end
     end
     if on and not idx then
         chans[#chans + 1] = channel
@@ -705,7 +858,9 @@ function Engine.SetChannelOn(frame, channel, on)
     end
     local unit = info.unit
     local t = trackers[unit]
-    if not t then return end
+    if not t then
+        return
+    end
     local byEvent = t._cuiChannelsByEvent
     local secondary = SECONDARY_TOKEN[unit]
     for i = 1, #events do
@@ -722,11 +877,20 @@ function Engine.SetChannelOn(frame, channel, on)
                 end
             end
             local seen = false
-            for k = 1, #list do if list[k] == channel then seen = true break end end
-            if not seen then list[#list + 1] = channel end
+            for k = 1, #list do
+                if list[k] == channel then
+                    seen = true
+                    break
+                end
+            end
+            if not seen then
+                list[#list + 1] = channel
+            end
         elseif list then
             for k = #list, 1, -1 do
-                if list[k] == channel then table.remove(list, k) end
+                if list[k] == channel then
+                    table.remove(list, k)
+                end
             end
             if #list == 0 then
                 byEvent[ev] = nil
@@ -744,7 +908,7 @@ end
 --  compared through a secret-safe equality that treats an unreadable GUID as
 --  "changed" so restricted content fails open to a repaint, never to staleness.
 -------------------------------------------------------------------------------
-local pollFrames = {}    -- frame -> true (tot/fot)
+local pollFrames = {} -- frame -> true (tot/fot)
 local pollTicker = CreateFrame("Frame")
 pollTicker:Hide()
 local pollAccum = 0
@@ -767,7 +931,9 @@ end
 
 pollTicker:SetScript("OnUpdate", function(self, elapsed)
     pollAccum = pollAccum + elapsed
-    if pollAccum < POLL_INTERVAL then return end
+    if pollAccum < POLL_INTERVAL then
+        return
+    end
     pollAccum = 0
     for frame in pairs(pollFrames) do
         if frame:IsShown() and UnitExists(frame._cuiUnit) then
@@ -785,7 +951,10 @@ end)
 
 local function PollVisibilityChanged()
     for frame in pairs(pollFrames) do
-        if frame:IsShown() then pollTicker:Show(); return end
+        if frame:IsShown() then
+            pollTicker:Show()
+            return
+        end
     end
     pollTicker:Hide()
 end
@@ -818,7 +987,8 @@ end
 
 -- Everything we spawn parents here: one state driver hides the whole set
 -- during pet battles.
-local petBattleHider = CreateFrame("Frame", "CludesUIUnitFrames_Hider", UIParent, "SecureHandlerStateTemplate")
+local petBattleHider =
+    CreateFrame("Frame", "CludesUIUnitFrames_Hider", UIParent, "SecureHandlerStateTemplate")
 petBattleHider:SetAllPoints(UIParent)
 RegisterStateDriver(petBattleHider, "visibility", "[petbattle] hide; show")
 
@@ -828,15 +998,25 @@ RegisterStateDriver(petBattleHider, "visibility", "[petbattle] hide; show")
 local function ResolveActiveUnit(frame)
     local real = SecureButton_GetUnit(frame)
     local mod = SecureButton_GetModifiedUnit(frame)
-    if real == "playerpet" then real = "pet" end
-    if mod == "playerpet" then mod = "pet" end
-    if mod == "playertarget" then mod = "target" end
-    if mod == "pet" and real ~= "pet" then mod = "vehicle" end
+    if real == "playerpet" then
+        real = "pet"
+    end
+    if mod == "playerpet" then
+        mod = "pet"
+    end
+    if mod == "playertarget" then
+        mod = "target"
+    end
+    if mod == "pet" and real ~= "pet" then
+        mod = "vehicle"
+    end
     return mod or real or frame._cuiBaseUnit
 end
 
 local function EvalActiveUnit(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local resolved = ResolveActiveUnit(frame)
     if resolved and resolved ~= frame._cuiUnit then
         -- Never adopt a unit that does not exist yet. Vehicle entry resolves
@@ -849,7 +1029,9 @@ local function EvalActiveUnit(frame)
         -- the oUF-era swap had. The base unit is exempt: it must always be
         -- adoptable (nonexistent target/focus frames hide via unit-watch, and
         -- refusing the base would strand a stale token instead).
-        if resolved ~= frame._cuiBaseUnit and not UnitExists(resolved) then return end
+        if resolved ~= frame._cuiBaseUnit and not UnitExists(resolved) then
+            return
+        end
         frame._cuiUnit = resolved
         Engine.RepaintAll(frame, "UnitChanged")
     end
@@ -863,8 +1045,11 @@ Engine.EvalActiveUnit = EvalActiveUnit
 --  their fields stay untouched.
 -------------------------------------------------------------------------------
 local ELEMENT_CHANNEL = {
-    Health = "health", Power = "power", Castbar = "castbar",
-    Portrait = "portrait", HealthPrediction = "absorb",
+    Health = "health",
+    Power = "power",
+    Castbar = "castbar",
+    Portrait = "portrait",
+    HealthPrediction = "absorb",
     RaidTargetIndicator = "raidicon",
 }
 
@@ -881,12 +1066,16 @@ end
 local function Frame_EnableElement(self, elementName)
     local off = self._cuiElementsOff
     local wasOff = off and off[elementName]
-    if off then off[elementName] = nil end
+    if off then
+        off[elementName] = nil
+    end
     -- Match the old enable semantics: an immediate refresh of that element.
     local channel = ELEMENT_CHANNEL[elementName]
     if channel == "castbar" then
         local fn = painters[channel]
-        if fn then fn(self, self._cuiUnit, "ForceUpdate") end
+        if fn then
+            fn(self, self._cuiUnit, "ForceUpdate")
+        end
     elseif channel then
         -- A channel with no unit events (the raid marker) is attached only
         -- when its element existed at spawn: one turned on later joins the
@@ -897,26 +1086,40 @@ local function Frame_EnableElement(self, elementName)
             local chans = info.channels
             local listed = false
             for i = 1, #chans do
-                if chans[i] == channel then listed = true break end
+                if chans[i] == channel then
+                    listed = true
+                    break
+                end
             end
-            if not listed then chans[#chans + 1] = channel end
+            if not listed then
+                chans[#chans + 1] = channel
+            end
         end
         -- A paint earlier in this frame (the settings reload repaints every
         -- frame first) skipped the element while it was off: its stamp must
         -- not eat this one.
         local stamps = self._cuiPaintStamps
-        if wasOff and stamps then stamps[channel] = nil end
+        if wasOff and stamps then
+            stamps[channel] = nil
+        end
         Paint(self, channel, "ForceUpdate")
     end
     -- The player's power value channel follows the Power element.
-    if elementName == "Power" then ns.UF_PowerValSync(self) end
+    if elementName == "Power" then
+        ns.UF_PowerValSync(self)
+    end
 end
 
 local function Frame_DisableElement(self, elementName)
     local off = self._cuiElementsOff
-    if not off then off = {}; self._cuiElementsOff = off end
+    if not off then
+        off = {}
+        self._cuiElementsOff = off
+    end
     off[elementName] = true
-    if elementName == "Power" then ns.UF_PowerValSync(self) end
+    if elementName == "Power" then
+        ns.UF_PowerValSync(self)
+    end
 end
 
 --- Spawns one secure unit button. The caller styles it and attaches engine
@@ -933,8 +1136,8 @@ function Engine.SpawnUnitFrame(unit, name)
     -- token lives in `_cuiUnit`, and GetIsPingable/GetTargetInfo are never
     -- overridden here (raw override = securecopy error, secrecy-guarded
     -- override = pings dead in all restricted content; both field-failed).
-    local frame = CreateFrame("Button", name, petBattleHider,
-        "SecureUnitButtonTemplate, PingableUnitFrameTemplate")
+    local frame =
+        CreateFrame("Button", name, petBattleHider, "SecureUnitButtonTemplate, PingableUnitFrameTemplate")
     frame._cuiBaseUnit = unit
     frame._cuiUnit = unit
     frame.IsElementEnabled = Frame_IsElementEnabled
@@ -961,7 +1164,9 @@ end
 --  boss-container-no-reparent rule); the engine just routes to it.
 -------------------------------------------------------------------------------
 function Engine.HideBlizzardUnitFrame(unit)
-    if ns.UF_HideBlizzard then ns.UF_HideBlizzard(unit) end
+    if ns.UF_HideBlizzard then
+        ns.UF_HideBlizzard(unit)
+    end
 end
 
 -- Vehicle/pet transitions for the player and pet frames: the dual-token
@@ -1010,16 +1215,28 @@ globalFrame:RegisterUnitEvent("UNIT_TARGET", "target", "focus")
 globalFrame:SetScript("OnEvent", function(self, event, unit)
     if event == "PLAYER_TARGET_CHANGED" then
         local f = unitFrames.target
-        if f then Engine.RepaintAll(f, event) end
+        if f then
+            Engine.RepaintAll(f, event)
+        end
         local tot = unitFrames.targettarget
-        if tot then tot._cuiLastGuid = nil; pollAccum = POLL_INTERVAL end
+        if tot then
+            tot._cuiLastGuid = nil
+            pollAccum = POLL_INTERVAL
+        end
     elseif event == "PLAYER_FOCUS_CHANGED" then
         local f = unitFrames.focus
-        if f then Engine.RepaintAll(f, event) end
+        if f then
+            Engine.RepaintAll(f, event)
+        end
         local fot = unitFrames.focustarget
-        if fot then fot._cuiLastGuid = nil; pollAccum = POLL_INTERVAL end
+        if fot then
+            fot._cuiLastGuid = nil
+            pollAccum = POLL_INTERVAL
+        end
     elseif event == "UNIT_TARGET" then
-        local f = (unit == "target" and unitFrames.targettarget) or (unit == "focus" and unitFrames.focustarget) or nil
+        local f = (unit == "target" and unitFrames.targettarget)
+            or (unit == "focus" and unitFrames.focustarget)
+            or nil
         if f and f:IsShown() and UnitExists(f._cuiUnit) then
             -- The whole occupant changed, so the repaint is an identity one
             -- (the text painter paints only its target zones for the event
@@ -1032,7 +1249,9 @@ globalFrame:SetScript("OnEvent", function(self, event, unit)
     elseif event == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
         for i = 1, 5 do
             local f = unitFrames["boss" .. i]
-            if f and f:IsShown() then Engine.RepaintAll(f, event) end
+            if f and f:IsShown() then
+                Engine.RepaintAll(f, event)
+            end
         end
         -- The slots can still be settling when the event lands (one occupant
         -- moves down while the new one moves in): one next-frame pass reads
@@ -1043,7 +1262,9 @@ globalFrame:SetScript("OnEvent", function(self, event, unit)
                 self._cuiBossSettle = nil
                 for i = 1, 5 do
                     local f = unitFrames["boss" .. i]
-                    if f and f:IsShown() then Engine.RepaintAll(f, "UnitChanged") end
+                    if f and f:IsShown() then
+                        Engine.RepaintAll(f, "UnitChanged")
+                    end
                 end
             end)
         end
@@ -1051,14 +1272,18 @@ globalFrame:SetScript("OnEvent", function(self, event, unit)
         local fn = painters.raidicon
         if fn then
             for frame, info in pairs(attached) do
-                if frame:IsShown() then fn(frame, frame._cuiUnit, event) end
+                if frame:IsShown() then
+                    fn(frame, frame._cuiUnit, event)
+                end
             end
         end
     elseif event == "PORTRAITS_UPDATED" then
         local fn = painters.portrait
         if fn then
             for frame in pairs(attached) do
-                if frame:IsShown() then fn(frame, frame._cuiUnit, event) end
+                if frame:IsShown() then
+                    fn(frame, frame._cuiUnit, event)
+                end
             end
         end
     else -- PLAYER_ENTERING_WORLD: the world changed under every frame.
@@ -1068,7 +1293,9 @@ globalFrame:SetScript("OnEvent", function(self, event, unit)
         EvalActiveUnit(unitFrames.player)
         EvalActiveUnit(unitFrames.pet)
         for frame in pairs(attached) do
-            if frame:IsShown() then Engine.RepaintAll(frame, event) end
+            if frame:IsShown() then
+                Engine.RepaintAll(frame, event)
+            end
         end
     end
 end)

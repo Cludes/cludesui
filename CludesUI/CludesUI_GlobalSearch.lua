@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_GlobalSearch.lua
 --  Unified fuzzy search across every registered CludesUI sub-addon's
@@ -13,7 +15,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- The module registry is the core's private one (CludesUI.lua), shared
 -- through this addon's namespace. It holds suite modules and plugin modules.
 local _, ns = ...
-ns = ns.__cuiCoreNS or ns  -- standalone builds: the core's own table (CludesUI.lua)
+ns = ns.__cuiCoreNS or ns -- standalone builds: the core's own table (CludesUI.lua)
 
 -- Breadcrumb separator: the house right-arrow glyph rendered inline in the
 -- sub text (module -> page), sized to sit with the 10pt breadcrumb font.
@@ -24,7 +26,8 @@ local BREADCRUMB_ARROW = " |TInterface\\AddOns\\CludesUI\\media\\icons\\cui-arro
 local function ModuleLabel(config, folder)
     local title = CludesUI.L(config.title or folder)
     if config._pluginLabel then
-        return CludesUI.L(config._pluginLabel) .. BREADCRUMB_ARROW .. title, config._pluginLabel .. " " .. title
+        return CludesUI.L(config._pluginLabel) .. BREADCRUMB_ARROW .. title,
+            config._pluginLabel .. " " .. title
     end
     return title, title
 end
@@ -43,21 +46,43 @@ local _seenKeys = {}
 -- Registered by TagOptionRow / SectionHeader as each option row / section
 -- header is built during normal navigation, and by the one-time pre-build
 -- pass below for pages nobody has opened yet this session.
-function CludesUI._RegisterSearchEntry(label, labelLoc, tooltip, moduleFolder, page, sectionName, selectorSetter, selectorKey, isSection)
+function CludesUI._RegisterSearchEntry(
+    label,
+    labelLoc,
+    tooltip,
+    moduleFolder,
+    page,
+    sectionName,
+    selectorSetter,
+    selectorKey,
+    isSection
+)
     -- Opt-out for whole UI regions: a builder sets this around widget
     -- construction it wants excluded from the search entirely (e.g. the QoL
     -- Macro Factory, whose rows must never be indexed or deep-linked).
-    if CludesUI._searchIndexSuppress then return end
+    if CludesUI._searchIndexSuppress then
+        return
+    end
     -- Composite labels (DualRow/TripleRow with an empty slot) can come in as whitespace
     -- only (e.g. a single joining space with nothing on either side) -- trim before the
     -- emptiness check so those don't register as inert, unmatchable junk entries.
-    if label then label = label:match("^%s*(.-)%s*$") end
-    if not label or label == "" or not moduleFolder or not page then return end
+    if label then
+        label = label:match("^%s*(.-)%s*$")
+    end
+    if not label or label == "" or not moduleFolder or not page then
+        return
+    end
     local key = moduleFolder .. "\1" .. page .. "\1" .. label
-    if _seenKeys[key] then return end
+    if _seenKeys[key] then
+        return
+    end
     _seenKeys[key] = true
-    if labelLoc == "" then labelLoc = nil end
-    if type(tooltip) ~= "string" or tooltip == "" then tooltip = nil end
+    if labelLoc == "" then
+        labelLoc = nil
+    end
+    if type(tooltip) ~= "string" or tooltip == "" then
+        tooltip = nil
+    end
     _searchIndex[#_searchIndex + 1] = {
         label = label,
         -- Lowercased once here so a keystroke never re-lowers the whole index.
@@ -96,10 +121,14 @@ local function FuzzyScore(haystack, needle)
     -- Forward pass only finds where the earliest full match ends.
     local hi, ni = 1, 1
     while hi <= hLen and ni <= nLen do
-        if haystack:byte(hi) == needle:byte(ni) then ni = ni + 1 end
+        if haystack:byte(hi) == needle:byte(ni) then
+            ni = ni + 1
+        end
         hi = hi + 1
     end
-    if ni <= nLen then return nil end -- not every needle char found in order
+    if ni <= nLen then
+        return nil
+    end -- not every needle char found in order
     local lastMatch = hi - 1
     -- Backward pass from there finds the latest start, so the match is not
     -- anchored on a stray early letter ("stats" on "secondary stat display"
@@ -124,7 +153,9 @@ local function FuzzyScore(haystack, needle)
     -- real fuzzy match. Flat +8 slack keeps short abbreviations ("aoc" over "Auto Open
     -- Containers") alive while capping how far a longer word may scatter.
     local span = lastMatch - firstMatch + 1
-    if span > nLen + 8 then return nil end
+    if span > nLen + 8 then
+        return nil
+    end
 
     return (score * 100) / span -- density: tighter matches for the same needle score higher
 end
@@ -134,9 +165,13 @@ end
 -- below it; within a tier, earlier position / denser match wins.
 local TIER = 10000
 local function FieldScore(h, nh, needle, stem, ns, exactTier, fuzzyTier)
-    if not h then return nil end
+    if not h then
+        return nil
+    end
     local i = h:find(needle, 1, true)
-    if i then return exactTier * TIER + math.max(0, TIER - 1 - i) end
+    if i then
+        return exactTier * TIER + math.max(0, TIER - 1 - i)
+    end
     if stem then
         -- Singular form must end its word: "stat" in "stat display", not "status".
         i = h:find(stem, 1, true)
@@ -149,9 +184,13 @@ local function FieldScore(h, nh, needle, stem, ns, exactTier, fuzzyTier)
         end
     end
     i = nh:find(ns, 1, true)
-    if i then return (exactTier - 1) * TIER + math.max(0, TIER - 1 - i) end
+    if i then
+        return (exactTier - 1) * TIER + math.max(0, TIER - 1 - i)
+    end
     local s = FuzzyScore(h, needle)
-    if s then return fuzzyTier * TIER + math.min(s, TIER - 1) end
+    if s then
+        return fuzzyTier * TIER + math.min(s, TIER - 1)
+    end
 end
 
 local function ScoreEntry(entry, needle, stem, ns)
@@ -161,9 +200,15 @@ local function ScoreEntry(entry, needle, stem, ns)
     -- Page results also score on the tab name alone: "fonts" hits "Fonts" at
     -- position 1 instead of late in "Global Settings Fonts".
     local d = FieldScore(entry.lPage, entry.nPage, needle, stem, ns, 5, 1)
-    if b and (not a or b > a) then a = b end
-    if c and (not a or c > a) then a = c end
-    if d and (not a or d > a) then a = d end
+    if b and (not a or b > a) then
+        a = b
+    end
+    if c and (not a or c > a) then
+        a = c
+    end
+    if d and (not a or d > a) then
+        a = d
+    end
     return a
 end
 
@@ -185,23 +230,37 @@ do
     end
 end
 local function SortResults(a, b)
-    if a.score ~= b.score then return a.score > b.score end
+    if a.score ~= b.score then
+        return a.score > b.score
+    end
     local xa, xb = a.exact == true, b.exact == true
-    if xa ~= xb then return xa end
+    if xa ~= xb then
+        return xa
+    end
     local ea, eb = a.entry, b.entry
     local ta = ea.displayLabel or ea.label
     local tb = eb.displayLabel or eb.label
-    if #ta ~= #tb then return #ta < #tb end
+    if #ta ~= #tb then
+        return #ta < #tb
+    end
     local ka = KIND_RANK[ea.kind] or (ea.isSection and 2 or 3)
     local kb = KIND_RANK[eb.kind] or (eb.isSection and 2 or 3)
-    if ka ~= kb then return ka < kb end
+    if ka ~= kb then
+        return ka < kb
+    end
     if ea.module ~= eb.module then
         local ra, rb = _moduleRank[ea.module] or 1000, _moduleRank[eb.module] or 1000
-        if ra ~= rb then return ra < rb end
+        if ra ~= rb then
+            return ra < rb
+        end
         return ea.module < eb.module
     end
-    if ea.order and eb.order and ea.order ~= eb.order then return ea.order < eb.order end
-    if ea.page ~= eb.page then return ea.page < eb.page end
+    if ea.order and eb.order and ea.order ~= eb.order then
+        return ea.order < eb.order
+    end
+    if ea.page ~= eb.page then
+        return ea.page < eb.page
+    end
     return ea.label < eb.label
 end
 
@@ -260,18 +319,26 @@ local function BuildModuleAliases()
     _moduleAliases = {}
     local seen = {}
     local function Add(alias, folder)
-        if not alias then return end
+        if not alias then
+            return
+        end
         alias = alias:lower():gsub("^%s+", ""):gsub("%s+$", "")
-        if alias == "" then return end
+        if alias == "" then
+            return
+        end
         local key = alias .. "\1" .. folder
-        if seen[key] then return end
+        if seen[key] then
+            return
+        end
         seen[key] = true
         _moduleAliases[#_moduleAliases + 1] = { alias = alias, folder = folder }
     end
     for folder, config in pairs(ns.modules or {}) do
         Add(config.title and CludesUI.L(config.title), folder)
         -- A plugin's section label filters to all of that plugin's modules.
-        if config._pluginLabel then Add(CludesUI.L(config._pluginLabel), folder) end
+        if config._pluginLabel then
+            Add(CludesUI.L(config._pluginLabel), folder)
+        end
     end
     if CludesUI.ADDON_ROSTER then
         for _, entry in ipairs(CludesUI.ADDON_ROSTER) do
@@ -284,21 +351,36 @@ local function BuildModuleAliases()
     -- how players actually abbreviate the modules. Folders that never
     -- registered a module simply don't get their shorthands.
     local EXTRA_ALIASES = {
-        CludesUIMythicTimer     = { "m+ timer", "m+", "m+ tools", "mythic+ timer" },
+        CludesUIMythicTimer = { "m+ timer", "m+", "m+ tools", "mythic+ timer" },
         CludesUICooldownManager = { "cdm" },
         -- Without the "+", and the module's former name.
-        CludesUIBlizzardSkin    = { "blizzard skins", "blizz ui enhanced" },
-        CludesUIQuickdraw       = { "radial", "wheel", "ring menu", "palette", "grid", "arc", "fan", "action wheel", "action palette", "action menu" },
-        CludesUILoadoutManager  = { "gear swap", "talent swap", "equipment manager", "loadouts" },
+        CludesUIBlizzardSkin = { "blizzard skins", "blizz ui enhanced" },
+        CludesUIQuickdraw = {
+            "radial",
+            "wheel",
+            "ring menu",
+            "palette",
+            "grid",
+            "arc",
+            "fan",
+            "action wheel",
+            "action palette",
+            "action menu",
+        },
+        CludesUILoadoutManager = { "gear swap", "talent swap", "equipment manager", "loadouts" },
         -- The module's former name.
-        CludesUIRaidFrames      = { "raid frames" },
+        CludesUIRaidFrames = { "raid frames" },
     }
     for folder, list in pairs(EXTRA_ALIASES) do
         if ns.modules and ns.modules[folder] then
-            for _, a in ipairs(list) do Add(a, folder) end
+            for _, a in ipairs(list) do
+                Add(a, folder)
+            end
         end
     end
-    table.sort(_moduleAliases, function(a, b) return #a.alias > #b.alias end)
+    table.sort(_moduleAliases, function(a, b)
+        return #a.alias > #b.alias
+    end)
 end
 
 -- Alternate spellings a query may use for a feature whose option labels
@@ -307,60 +389,60 @@ end
 -- first SYNONYM_MIN_PREFIX letters (shorter terms need all of theirs).
 -- Only add pairs whose alternate really appears in option labels.
 local QUERY_SYNONYMS = {
-    { "skyriding",       { "dragon riding", "dragonriding" } },
-    { "sky riding",      { "dragon riding", "dragonriding" } },
+    { "skyriding", { "dragon riding", "dragonriding" } },
+    { "sky riding", { "dragon riding", "dragonriding" } },
     -- Abbreviations
-    { "cd",              { "cooldown" } },
-    { "cds",             { "cooldown" } },
+    { "cd", { "cooldown" } },
+    { "cds", { "cooldown" } },
     { "global cooldown", { "gcd" } },
-    { "hp",              { "health" } },
-    { "ab",              { "action bar" } },
-    { "uf",              { "unit frame" } },
-    { "rf",              { "raid frame" } },
-    { "experience",      { "xp" } },
-    { "lfg",             { "group finder", "queue" } },
-    { "m+",              { "mythic", "keystone" } },
-    { "mplus",           { "mythic", "keystone" } },
+    { "hp", { "health" } },
+    { "ab", { "action bar" } },
+    { "uf", { "unit frame" } },
+    { "rf", { "raid frame" } },
+    { "experience", { "xp" } },
+    { "lfg", { "group finder", "queue" } },
+    { "m+", { "mythic", "keystone" } },
+    { "mplus", { "mythic", "keystone" } },
     -- Other words for the same thing
-    { "transparency",    { "opacity" } },
-    { "alpha",           { "opacity" } },
-    { "kick",            { "interrupt" } },
-    { "interrupt",       { "kick" } },
-    { "cleanse",         { "dispel" } },
-    { "purge",           { "dispel" } },
-    { "decurse",         { "dispel" } },
-    { "aggro",           { "threat" } },
-    { "hotkey",          { "keybind" } },
-    { "keybind",         { "hotkey" } },
-    { "binding",         { "hotkey" } },
-    { "inventory",       { "bag" } },
-    { "bags",            { "bag" } },
-    { "colour",          { "color" } },
-    { "shield",          { "absorb" } },
-    { "absorb",          { "shield" } },
-    { "stacks",          { "charges" } },
-    { "charges",         { "stacks" } },
-    { "plates",          { "nameplate" } },
-    { "hotbar",          { "action bar" } },
-    { "buffs",           { "aura" } },
-    { "debuffs",         { "aura" } },
-    { "aura",            { "buff", "debuff" } },
-    { "move",            { "position", "unlock" } },
-    { "drag",            { "position", "unlock" } },
-    { "layer",           { "strata" } },
-    { "level",           { "strata" } },
-    { "combo points",    { "resource" } },
-    { "holy power",      { "resource" } },
-    { "chi",             { "resource" } },
-    { "soul shards",     { "resource" } },
-    { "runes",           { "resource" } },
-    { "mouse",           { "mouseover" } },
-    { "hover",           { "mouseover" } },
-    { "transparent",     { "fade" } },
-    { "hide when",       { "fade" } },
-    { "quest",           { "objective", "tracker" } },
+    { "transparency", { "opacity" } },
+    { "alpha", { "opacity" } },
+    { "kick", { "interrupt" } },
+    { "interrupt", { "kick" } },
+    { "cleanse", { "dispel" } },
+    { "purge", { "dispel" } },
+    { "decurse", { "dispel" } },
+    { "aggro", { "threat" } },
+    { "hotkey", { "keybind" } },
+    { "keybind", { "hotkey" } },
+    { "binding", { "hotkey" } },
+    { "inventory", { "bag" } },
+    { "bags", { "bag" } },
+    { "colour", { "color" } },
+    { "shield", { "absorb" } },
+    { "absorb", { "shield" } },
+    { "stacks", { "charges" } },
+    { "charges", { "stacks" } },
+    { "plates", { "nameplate" } },
+    { "hotbar", { "action bar" } },
+    { "buffs", { "aura" } },
+    { "debuffs", { "aura" } },
+    { "aura", { "buff", "debuff" } },
+    { "move", { "position", "unlock" } },
+    { "drag", { "position", "unlock" } },
+    { "layer", { "strata" } },
+    { "level", { "strata" } },
+    { "combo points", { "resource" } },
+    { "holy power", { "resource" } },
+    { "chi", { "resource" } },
+    { "soul shards", { "resource" } },
+    { "runes", { "resource" } },
+    { "mouse", { "mouseover" } },
+    { "hover", { "mouseover" } },
+    { "transparent", { "fade" } },
+    { "hide when", { "fade" } },
+    { "quest", { "objective", "tracker" } },
     -- A choice inside a dropdown (dropdown values are not indexed): its row
-    { "compact",         { "bag display", "bank display" } },
+    { "compact", { "bag display", "bank display" } },
 }
 -- WoW Forever's Name Format (first or last names; Forever Essentials > General).
 if CludesUI.IS_FOREVER then
@@ -371,9 +453,15 @@ local SYNONYM_MIN_PREFIX = 3
 local function SearchIndex(query, maxResults)
     maxResults = maxResults or 30
     local needle = (query or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-    if needle == "" then return {} end
-    if not _coarseCandidates then BuildCoarseCandidates() end
-    if not _moduleAliases then BuildModuleAliases() end
+    if needle == "" then
+        return {}
+    end
+    if not _coarseCandidates then
+        BuildCoarseCandidates()
+    end
+    if not _moduleAliases then
+        BuildModuleAliases()
+    end
 
     -- Detect a module name ANYWHERE in the query (whole words only, longest alias
     -- first) and split it off as an ADDITIVE boost: "raid frames border style" and
@@ -390,15 +478,21 @@ local function SearchIndex(query, maxResults)
                 -- Several modules can share one alias (a plugin section label).
                 filterSet = {}
                 for _, other in ipairs(_moduleAliases) do
-                    if other.alias == a then filterSet[other.folder] = true end
+                    if other.alias == a then
+                        filterSet[other.folder] = true
+                    end
                 end
                 subNeedle = (needle:sub(1, s - 1) .. " " .. needle:sub(e + 1))
-                    :gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+                    :gsub("%s+", " ")
+                    :gsub("^%s+", "")
+                    :gsub("%s+$", "")
                 break
             end
             s, e = needle:find(a, s + 1, true)
         end
-        if filterSet then break end
+        if filterSet then
+            break
+        end
     end
 
     -- Progressive variant: while a module name is still being TYPED, the
@@ -409,7 +503,9 @@ local function SearchIndex(query, maxResults)
     -- searched as a union, so ambiguity ("r") just means a wider net.
     if not filterSet then
         local words = {}
-        for w in needle:gmatch("%S+") do words[#words + 1] = w end
+        for w in needle:gmatch("%S+") do
+            words[#words + 1] = w
+        end
         for i = 1, #words do
             local chunk = table.concat(words, " ", i, #words)
             local set
@@ -466,7 +562,9 @@ local function SearchIndex(query, maxResults)
     -- Blizzard Party Panel", which still matches the plain query.
     local scored = ScorePass(nil, needle)
     local seenEntries = {}
-    for _, sc in ipairs(scored) do seenEntries[sc.entry] = sc end
+    for _, sc in ipairs(scored) do
+        seenEntries[sc.entry] = sc
+    end
     -- Merge a further pass by entry: an entry already present keeps its
     -- best score, a new one joins the list.
     local function Merge(list, boost)
@@ -474,7 +572,10 @@ local function SearchIndex(query, maxResults)
             local s = sc.score + boost
             local existing = seenEntries[sc.entry]
             if existing then
-                if s > existing.score then existing.score = s; existing.exact = sc.exact end
+                if s > existing.score then
+                    existing.score = s
+                    existing.exact = sc.exact
+                end
             else
                 sc.score = s
                 seenEntries[sc.entry] = sc
@@ -510,7 +611,9 @@ local function SearchIndex(query, maxResults)
                 end
                 s, e = needle:find(pre, s + 1, true)
             end
-            if matched then break end
+            if matched then
+                break
+            end
         end
     end
     if altNeedles then
@@ -524,7 +627,9 @@ local function SearchIndex(query, maxResults)
 
     table.sort(scored, SortResults)
     local out = {}
-    for i = 1, math.min(maxResults, #scored) do out[i] = scored[i].entry end
+    for i = 1, math.min(maxResults, #scored) do
+        out[i] = scored[i].entry
+    end
     return out
 end
 
@@ -550,8 +655,11 @@ local _hiddenParent
 -- duration of each pre-build call instead, then restore whatever was there before
 -- (nil or the real function).
 local _CONTENT_HEADER_METHODS = {
-    "SetContentHeader", "UpdateContentHeaderHeight", "SetContentHeaderHeightSilent",
-    "ClearContentHeader", "HideContentHeader",
+    "SetContentHeader",
+    "UpdateContentHeaderHeight",
+    "SetContentHeaderHeightSilent",
+    "ClearContentHeader",
+    "HideContentHeader",
 }
 
 -- A single hidden build of one (folder, page). Optionally switches the
@@ -594,22 +702,50 @@ local _absorberMeta
 _absorberMeta = {
     __index = function(_, k)
         -- Numeric keys read as ABSENT so ipairs()/#/array probes terminate.
-        if type(k) == "number" then return nil end
+        if type(k) == "number" then
+            return nil
+        end
         return setmetatable({}, _absorberMeta)
     end,
-    __call = function() return setmetatable({}, _absorberMeta) end,
-    __add = function() return 100 end,
-    __sub = function() return 100 end,
-    __mul = function() return 100 end,
-    __div = function() return 1 end,
-    __mod = function() return 0 end,
-    __pow = function() return 1 end,
-    __unm = function() return -100 end,
-    __concat = function() return "" end,
-    __len = function() return 0 end,
-    __lt = function() return false end,
-    __le = function() return false end,
-    __tostring = function() return "CUIAbsorber" end,
+    __call = function()
+        return setmetatable({}, _absorberMeta)
+    end,
+    __add = function()
+        return 100
+    end,
+    __sub = function()
+        return 100
+    end,
+    __mul = function()
+        return 100
+    end,
+    __div = function()
+        return 1
+    end,
+    __mod = function()
+        return 0
+    end,
+    __pow = function()
+        return 1
+    end,
+    __unm = function()
+        return -100
+    end,
+    __concat = function()
+        return ""
+    end,
+    __len = function()
+        return 0
+    end,
+    __lt = function()
+        return false
+    end,
+    __le = function()
+        return false
+    end,
+    __tostring = function()
+        return "CUIAbsorber"
+    end,
 }
 local function NewAbsorber()
     return setmetatable({}, _absorberMeta)
@@ -621,15 +757,25 @@ end
 -- frame; the absorber parent is shared, so the pass tracks it here), and
 -- the selector context comes from the same global the live path uses.
 local function AbsorberRegister(labelText, tooltipText, isSection)
-    if not CludesUI._RegisterSearchEntry then return end
-    if type(labelText) ~= "string" or labelText == "" then return end
+    if not CludesUI._RegisterSearchEntry then
+        return
+    end
+    if type(labelText) ~= "string" or labelText == "" then
+        return
+    end
     local loc = CludesUI.L(labelText)
     local sel = CludesUI._buildingSelector
-    CludesUI._RegisterSearchEntry(labelText, loc ~= labelText and loc or nil,
+    CludesUI._RegisterSearchEntry(
+        labelText,
+        loc ~= labelText and loc or nil,
         type(tooltipText) == "string" and tooltipText or nil,
-        CludesUI._buildingModule, CludesUI._buildingPage,
+        CludesUI._buildingModule,
+        CludesUI._buildingPage,
         isSection and labelText or _absSection,
-        sel and sel.setter, sel and sel.key, isSection or nil)
+        sel and sel.setter,
+        sel and sel.key,
+        isSection or nil
+    )
 end
 
 local AbsorberW = {}
@@ -669,7 +815,9 @@ end
 function AbsorberW:DualRow(parent, yOffset, leftCfg, rightCfg)
     -- A row the live factory hides for Blizzard Style has nothing to find.
     local BS = CludesUI.BlizzStyle
-    if BS and BS.RowHidden and BS.RowHidden(leftCfg, rightCfg) then return NewAbsorber(), 0 end
+    if BS and BS.RowHidden and BS.RowHidden(leftCfg, rightCfg) then
+        return NewAbsorber(), 0
+    end
     AbsorberRegister(leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
     AbsorberRegister(rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
     return NewAbsorber(), 40
@@ -695,13 +843,34 @@ function AbsorberW:WideDualButton(parent, text1, text2, yOffset, onClick1, onCli
     AbsorberRegister(text2, nil)
     return NewAbsorber(), 40
 end
-function AbsorberW:WideTripleButton(parent, text1, text2, text3, yOffset, onClick1, onClick2, onClick3, btnWidth, disabledOpts)
+function AbsorberW:WideTripleButton(
+    parent,
+    text1,
+    text2,
+    text3,
+    yOffset,
+    onClick1,
+    onClick2,
+    onClick3,
+    btnWidth,
+    disabledOpts
+)
     AbsorberRegister(text1, nil)
     AbsorberRegister(text2, nil)
     AbsorberRegister(text3, nil)
     return NewAbsorber(), 40
 end
-function AbsorberW:WideDropdown(parent, title, yOffset, values, getValue, setValue, order, btnWidth, disabledValuesFn)
+function AbsorberW:WideDropdown(
+    parent,
+    title,
+    yOffset,
+    values,
+    getValue,
+    setValue,
+    order,
+    btnWidth,
+    disabledValuesFn
+)
     AbsorberRegister(title, nil)
     return NewAbsorber(), 40
 end
@@ -723,20 +892,29 @@ end
 -- rather than erroring the whole page -- the page still indexes everything
 -- its known widgets register; dev mode announces the gap so the stub gets
 -- added per the maintenance contract.
-setmetatable(AbsorberW, { __index = function(_, k)
-    if CludesUI.IsDevModeActive() then
-        print("|cffff6060CUI GlobalSearch:|r no absorber stub for W:" .. tostring(k)
-            .. " -- its rows are invisible to search until built live. Add a stub.")
-    end
-    return function() return NewAbsorber(), 40 end
-end })
+setmetatable(AbsorberW, {
+    __index = function(_, k)
+        if CludesUI.IsDevModeActive() then
+            print(
+                "|cffff6060CUI GlobalSearch:|r no absorber stub for W:"
+                    .. tostring(k)
+                    .. " -- its rows are invisible to search until built live. Add a stub."
+            )
+        end
+        return function()
+            return NewAbsorber(), 40
+        end
+    end,
+})
 
 local function PrebuildOnce(config, folder, page, selectorSetter, selectorKey)
     if not _hiddenParent then
         _hiddenParent = CreateFrame("Frame", nil, UIParent)
         _hiddenParent:Hide()
     end
-    if selectorSetter and selectorKey then selectorSetter(selectorKey) end
+    if selectorSetter and selectorKey then
+        selectorSetter(selectorKey)
+    end
 
     -- ONE reused wrapper for every job: with the widget factory absorbed,
     -- the only things ever created on it are the rare custom-chrome frames
@@ -770,10 +948,18 @@ local function PrebuildOnce(config, folder, page, selectorSetter, selectorKey)
     local ok, err = pcall(config.buildPage, page, wrapper, -6)
     CludesUI.Widgets = realWidgets
     if not ok and CludesUI.IsDevModeActive() then
-        print("|cffff6060CUI GlobalSearch:|r prebuild failed for "
-            .. tostring(folder) .. "::" .. tostring(page) .. ": " .. tostring(err))
+        print(
+            "|cffff6060CUI GlobalSearch:|r prebuild failed for "
+                .. tostring(folder)
+                .. "::"
+                .. tostring(page)
+                .. ": "
+                .. tostring(err)
+        )
     end
-    if refreshSnap then CludesUI._RestoreWidgetRefreshList(refreshSnap) end
+    if refreshSnap then
+        CludesUI._RestoreWidgetRefreshList(refreshSnap)
+    end
 
     -- Some buildPage implementations register cleanup (event listeners, etc.) via
     -- parent:HookScript("OnHide", ...), expecting it to fire once the user navigates
@@ -797,7 +983,9 @@ end
 -- budget in RunPrebuildPass then spreads them across frames.
 local function PrebuildJob(job)
     local config = job.config
-    if not config.buildPage then return end
+    if not config.buildPage then
+        return
+    end
     -- Re-check (not just at job-list-build time): the staggered pass spans many
     -- frames, so the player may have visited and cached this exact page live in the
     -- meantime -- rebuilding it hidden would be a redundant, wasted build. The selector
@@ -832,7 +1020,9 @@ end
 local PREBUILD_BUDGET_MS = 4
 
 local function RunPrebuildPass(onComplete)
-    if _prebuildDone then return end
+    if _prebuildDone then
+        return
+    end
     _prebuildDone = true
 
     local jobs = {}
@@ -848,8 +1038,10 @@ local function RunPrebuildPass(onComplete)
                 -- cache-restore could pick up instead of the live ones.
                 local cacheKey = folder .. "::" .. page
                 -- A link tab (config.pageLinks) has no page of its own to build.
-                if not (ns.pageCache and ns.pageCache[cacheKey] and not ns.pageCache[cacheKey].stale)
-                   and not (config.pageLinks and config.pageLinks[page]) then
+                if
+                    not (ns.pageCache and ns.pageCache[cacheKey] and not ns.pageCache[cacheKey].stale)
+                    and not (config.pageLinks and config.pageLinks[page])
+                then
                     -- Selector-driven pages (CDM bar / unit dropdowns) expand to one
                     -- job PER variant so each tick stays one build; the last variant
                     -- job carries the restore of the player's own selection.
@@ -857,8 +1049,11 @@ local function RunPrebuildPass(onComplete)
                     if variants and variants.keys and #variants.keys > 0 then
                         for k, key in ipairs(variants.keys) do
                             local job = {
-                                folder = folder, page = page, config = config,
-                                selectorSetter = variants.setter, selectorKey = key,
+                                folder = folder,
+                                page = page,
+                                config = config,
+                                selectorSetter = variants.setter,
+                                selectorKey = key,
                             }
                             if k == #variants.keys and variants.setter and variants.currentKey then
                                 job.restoreSetter = variants.setter
@@ -879,7 +1074,9 @@ local function RunPrebuildPass(onComplete)
         -- A full page build is a multi-millisecond main-thread hit; never do
         -- that during combat. Pause the pass and resume once combat ends.
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer(StepJob, function() C_Timer.After(0.05, StepJob) end)
+            CludesUI.CombatQueue.Defer(StepJob, function()
+                C_Timer.After(0.05, StepJob)
+            end)
             return
         end
         -- As many builds as fit in a small per-frame budget (at least one),
@@ -889,7 +1086,9 @@ local function RunPrebuildPass(onComplete)
             i = i + 1
             local job = jobs[i]
             if not job then
-                if onComplete then onComplete() end
+                if onComplete then
+                    onComplete()
+                end
                 return
             end
             PrebuildJob(job)
@@ -920,15 +1119,19 @@ local popup, resultRows
 local results, selIdx = {}, 1 -- last shown results; Tab/arrows move selIdx, Enter opens it
 
 local RESULT_ROW_H = 34
-local RESULT_ROW_GAP = 4   -- breathing room between result rows
+local RESULT_ROW_GAP = 4 -- breathing room between result rows
 local MAX_VISIBLE_RESULTS = 12
 
 local function GetModuleDisplayName(folder)
     local config = ns.modules and ns.modules[folder]
-    if config and config.title then return (ModuleLabel(config, folder)) end
+    if config and config.title then
+        return (ModuleLabel(config, folder))
+    end
     if CludesUI.ADDON_ROSTER then
         for _, entry in ipairs(CludesUI.ADDON_ROSTER) do
-            if entry.folder == folder then return CludesUI.L(entry.display) end
+            if entry.folder == folder then
+                return CludesUI.L(entry.display)
+            end
         end
     end
     return folder
@@ -938,7 +1141,9 @@ local function JoinBreadcrumb(...)
     local parts = {}
     for i = 1, select("#", ...) do
         local v = select(i, ...)
-        if v and v ~= "" then parts[#parts + 1] = v end
+        if v and v ~= "" then
+            parts[#parts + 1] = v
+        end
     end
     return table.concat(parts, BREADCRUMB_ARROW)
 end
@@ -951,10 +1156,14 @@ local function TitleCaseSection(s)
     -- Only ALL-CAPS names need the conversion. Already mixed-case section
     -- labels (window-skin card titles like "LFG Menu") pass through
     -- untouched -- lowering them first would mangle acronyms ("Lfg Menu").
-    if s ~= s:upper() then return s end
-    return (s:lower():gsub("(%a)([%w']*)", function(first, rest)
-        return first:upper() .. rest
-    end))
+    if s ~= s:upper() then
+        return s
+    end
+    return (
+        s:lower():gsub("(%a)([%w']*)", function(first, rest)
+            return first:upper() .. rest
+        end)
+    )
 end
 
 local function JumpToResult(entry, sidebarSearchBox)
@@ -983,19 +1192,29 @@ local function JumpToResult(entry, sidebarSearchBox)
         -- Settings' preSelectFn) so the row is actually there to find.
         local preSelectFn
         if entry.selectorSetter and entry.selectorKey then
-            preSelectFn = function() entry.selectorSetter(entry.selectorKey) end
+            preSelectFn = function()
+                entry.selectorSetter(entry.selectorKey)
+            end
         end
         CludesUI:NavigateToElementSettings(entry.module, entry.page, entry.section, preSelectFn, entry.label)
     end
-    if popup then popup:Hide() end
-    if sidebarSearchBox then sidebarSearchBox:SetText("") end
+    if popup then
+        popup:Hide()
+    end
+    if sidebarSearchBox then
+        sidebarSearchBox:SetText("")
+    end
 end
 
 local function EnsureSearchUI()
-    if _searchUIBuilt then return end
+    if _searchUIBuilt then
+        return
+    end
     local clickArea = CludesUI._clickArea
     local sidebarSearchBox = CludesUI._sidebarSearchBox
-    if not clickArea or not sidebarSearchBox then return end
+    if not clickArea or not sidebarSearchBox then
+        return
+    end
     _searchUIBuilt = true
 
     local PP = CludesUI.PanelPP or CludesUI.PP
@@ -1015,7 +1234,9 @@ local function EnsureSearchUI()
     popup._brd = CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.12, popupBg)
     -- House look: an accent cap; hovered and selected results take an accent wash.
     local cap = popup:CreateTexture(nil, "ARTWORK", nil, 3)
-    cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+    cap:SetPoint("TOPLEFT")
+    cap:SetPoint("TOPRIGHT")
+    cap:SetHeight(2)
     popup:HookScript("OnShow", function()
         local c = CludesUI.CLUDES_GREEN
         cap:SetColorTexture(c.r, c.g, c.b, 0.9)
@@ -1056,8 +1277,12 @@ local function EnsureSearchUI()
         sub:SetPoint("LEFT", row, "LEFT", 8, -9)
         sub:SetJustifyH("LEFT")
 
-        row:SetScript("OnEnter", function() Wash(hl, true) end)
-        row:SetScript("OnLeave", function() Wash(hl, (i == selIdx and results[i]) and true or false) end)
+        row:SetScript("OnEnter", function()
+            Wash(hl, true)
+        end)
+        row:SetScript("OnLeave", function()
+            Wash(hl, (i == selIdx and results[i]) and true or false)
+        end)
 
         row._hl = hl
         row._label = lbl
@@ -1079,10 +1304,14 @@ local function EnsureSearchUI()
     -- Started on focus, before the first letter, so the index is usually
     -- complete by the time a query is typed.
     local function StartPrebuild()
-        if _prebuildDone then return end
+        if _prebuildDone then
+            return
+        end
         RunPrebuildPass(function()
             indexReady = true
-            if sidebarSearchBox:GetText() ~= "" then RunSearch() end
+            if sidebarSearchBox:GetText() ~= "" then
+                RunSearch()
+            end
         end)
     end
     sidebarSearchBox:HookScript("OnEditFocusGained", StartPrebuild)
@@ -1098,7 +1327,9 @@ local function EnsureSearchUI()
         if CludesUI.SetLessCommonSearchActive then
             CludesUI.SetLessCommonSearchActive(query ~= "")
         end
-        if query ~= "" then StartPrebuild() end
+        if query ~= "" then
+            StartPrebuild()
+        end
         results = SearchIndex(query, MAX_VISIBLE_RESULTS)
         -- Accent-colored "Page:"/"Section:" prefixes. Hex is computed per
         -- search, so a live accent change is picked up on the next keystroke.
@@ -1118,12 +1349,26 @@ local function EnsureSearchUI()
                         name = name .. "  (" .. TitleCaseSection(entry.labelLoc) .. ")"
                     end
                     row._label:SetText(accentHex .. CludesUI.L("Section") .. ":|r " .. name)
-                    row._sub:SetText(JoinBreadcrumb(GetModuleDisplayName(entry.module), PageLabel(entry.module, entry.page)))
+                    row._sub:SetText(
+                        JoinBreadcrumb(
+                            GetModuleDisplayName(entry.module),
+                            PageLabel(entry.module, entry.page)
+                        )
+                    )
                 else
-                    row._label:SetText(entry.labelLoc and (entry.label .. "  (" .. entry.labelLoc .. ")") or entry.label)
-                    row._sub:SetText(JoinBreadcrumb(GetModuleDisplayName(entry.module), PageLabel(entry.module, entry.page)))
+                    row._label:SetText(
+                        entry.labelLoc and (entry.label .. "  (" .. entry.labelLoc .. ")") or entry.label
+                    )
+                    row._sub:SetText(
+                        JoinBreadcrumb(
+                            GetModuleDisplayName(entry.module),
+                            PageLabel(entry.module, entry.page)
+                        )
+                    )
                 end
-                row:SetScript("OnClick", function() JumpToResult(entry, sidebarSearchBox) end)
+                row:SetScript("OnClick", function()
+                    JumpToResult(entry, sidebarSearchBox)
+                end)
                 row:EnableMouse(true)
                 row:Show()
             else
@@ -1137,7 +1382,7 @@ local function EnsureSearchUI()
             -- shown literally so the query cannot inject escape codes.
             local row = resultRows[1]
             local q = query:gsub("||", "|"):gsub("|", "||")
-            row._label:SetText(CludesUI.Lf("No results for %s", "\"" .. q .. "\""))
+            row._label:SetText(CludesUI.Lf("No results for %s", '"' .. q .. '"'))
             row._sub:SetText(CludesUI.L("Check the spelling or try a different word"))
             row._hl:SetColorTexture(1, 1, 1, 0)
             row:SetScript("OnClick", nil)
@@ -1160,15 +1405,25 @@ local function EnsureSearchUI()
     -- them, so the sidebar addon/page filtering it already does keeps working.
     sidebarSearchBox:HookScript("OnTextChanged", RunSearch)
     sidebarSearchBox:HookScript("OnEnterPressed", function(self)
-        if results[selIdx] then JumpToResult(results[selIdx], self) end
+        if results[selIdx] then
+            JumpToResult(results[selIdx], self)
+        end
     end)
     local function Step(d)
         local n = #results
-        if n > 0 and popup:IsShown() then SetSelected((selIdx - 1 + d) % n + 1) end
+        if n > 0 and popup:IsShown() then
+            SetSelected((selIdx - 1 + d) % n + 1)
+        end
     end
-    sidebarSearchBox:HookScript("OnTabPressed", function() Step(IsShiftKeyDown() and -1 or 1) end)
+    sidebarSearchBox:HookScript("OnTabPressed", function()
+        Step(IsShiftKeyDown() and -1 or 1)
+    end)
     sidebarSearchBox:HookScript("OnArrowPressed", function(_, key)
-        if key == "UP" then Step(-1) elseif key == "DOWN" then Step(1) end
+        if key == "UP" then
+            Step(-1)
+        elseif key == "DOWN" then
+            Step(1)
+        end
     end)
 
     -- Click-anywhere-else closes the results: a global mouse-down listener
@@ -1182,8 +1437,12 @@ local function EnsureSearchUI()
             popup:Hide()
         end
     end)
-    popup:SetScript("OnShow", function() clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
-    popup:SetScript("OnHide", function() clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
+    popup:SetScript("OnShow", function()
+        clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN")
+    end)
+    popup:SetScript("OnHide", function()
+        clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN")
+    end)
 end
 
 -------------------------------------------------------------------------------

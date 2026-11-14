@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Slots.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ns = select(2, ...)
 local I = ns._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
@@ -26,11 +30,15 @@ local CreateInsetBorder, SetInsetBorderColor = I.CreateInsetBorder, I.SetInsetBo
 local _itemDragFrame = CreateFrame("Frame")
 _itemDragFrame:Hide()
 _itemDragFrame:SetScript("OnUpdate", function(self)
-    if IsMouseButtonDown("LeftButton") then return end
+    if IsMouseButtonDown("LeftButton") then
+        return
+    end
     self:Hide()
     -- Blizzard's OnReceiveDrag (bars/equipment) fires BEFORE OnUpdate in the same
     -- frame; if it consumed the item, GetCursorInfo returns nil.
-    if GetCursorInfo() ~= "item" then return end
+    if GetCursorInfo() ~= "item" then
+        return
+    end
     -- Cursor into each button's OWN coordinate space: GetRect() is in effective-scale
     -- units, so divide by btn:GetEffectiveScale() (not UIParent's -- matches only at scale 1.0).
     local rawCx, rawCy = GetCursorPosition()
@@ -77,21 +85,31 @@ end)
 -- Middle-click: unassign an assigned item, else toggle its pin. Shared by the
 -- grid slots and the list rows (ns.SlotMiddleClick).
 local function SlotMiddleClick(self, button)
-    if button ~= "MiddleButton" then return end
+    if button ~= "MiddleButton" then
+        return
+    end
     local bagID = self:GetParent():GetID()
     local slotID = self:GetID()
-    if not bagID or not slotID or slotID == 0 then return end
+    if not bagID or not slotID or slotID == 0 then
+        return
+    end
     local info = C_Container.GetContainerItemInfo(bagID, slotID)
-    if not info or not info.itemID then return end
+    if not info or not info.itemID then
+        return
+    end
     -- If this item has a custom category assignment, middle-click unassigns it
     local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
     if assignments and assignments[info.itemID] then
         CUI_CategoryManager:UnassignItem(info.itemID)
-        if CUI_Bags.RefreshInventory then CUI_Bags:RefreshInventory() end
+        if CUI_Bags.RefreshInventory then
+            CUI_Bags:RefreshInventory()
+        end
         return
     end
     local pinned = PinnedItems(true)
-    if not pinned then return end
+    if not pinned then
+        return
+    end
     local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
     local isGear = IsGearItem(itemLink)
     -- Pin key is the normalized itemID+bonusIDs identity (distinguishes
@@ -106,7 +124,9 @@ local function SlotMiddleClick(self, button)
     local pinKey = NormalizePinKey(itemLink, info.itemID)
     local legacyCur = pinned[info.itemID] or 0
     local cur = pinned[pinKey] or 0
-    if legacyCur > 0 and cur == 0 then cur = legacyCur end
+    if legacyCur > 0 and cur == 0 then
+        cur = legacyCur
+    end
     pinned[info.itemID] = nil
     if isGear then
         -- Gear: per-stack count toggle
@@ -124,7 +144,9 @@ local function SlotMiddleClick(self, button)
             pinned[pinKey] = 999
         end
     end
-    if CUI_Bags.RefreshInventory then CUI_Bags:RefreshInventory() end
+    if CUI_Bags.RefreshInventory then
+        CUI_Bags:RefreshInventory()
+    end
 end
 ns.SlotMiddleClick = SlotMiddleClick
 
@@ -133,16 +155,26 @@ ns.SlotMiddleClick = SlotMiddleClick
 -- clicks don't collide). State lives in an EXTERNAL weak table, never on the frame: PreClick
 -- custom keys taint the secure chain -> ADDON_ACTION_FORBIDDEN. Shared by grid slots and list rows.
 function ns.BankRoutePreClick(self, button)
-    if button ~= "RightButton" then return end
+    if button ~= "RightButton" then
+        return
+    end
     local bank = _G.CUI_BankFrame
-    if not bank or not bank:IsVisible() then return end
+    if not bank or not bank:IsVisible() then
+        return
+    end
     local targetBag = bank:GetSelectedTabBagID()
-    if not targetBag then return end
+    if not targetBag then
+        return
+    end
     local srcBag = self:GetParent():GetID()
     local srcSlot = self:GetID()
-    if not srcBag or not srcSlot or srcSlot == 0 then return end
+    if not srcBag or not srcSlot or srcSlot == 0 then
+        return
+    end
     local info = C_Container.GetContainerItemInfo(srcBag, srcSlot)
-    if not info then return end
+    if not info then
+        return
+    end
     bank:QueueTransfer(srcBag, srcSlot)
     _bankRouted[self] = true
 end
@@ -154,9 +186,14 @@ function ns.BankRouteOnClick(self, button)
 end
 
 local function GetOrCreateReagentSlot(idx)
-    if reagentSlots[idx] then return reagentSlots[idx] end
+    if reagentSlots[idx] then
+        return reagentSlots[idx]
+    end
     -- Never create a secure button during combat (taint). See GetOrCreateSlot.
-    if InCombatLockdown() then CUI_Bags._poolShort = true; return nil end
+    if InCombatLockdown() then
+        CUI_Bags._poolShort = true
+        return nil
+    end
 
     local slotParent = CreateFrame("Frame", nil, CUI_BagsReagent)
     ns.SizeSlot(slotParent)
@@ -167,10 +204,21 @@ local function GetOrCreateReagentSlot(idx)
     btn:RegisterForDrag("LeftButton")
 
     -- Methods only: writing properties onto Blizzard template sub-objects taints
-    if btn.NewItemTexture then btn.NewItemTexture:Hide(); btn.NewItemTexture:SetAlpha(0) end
-    if btn.BattlepayItemTexture then btn.BattlepayItemTexture:Hide(); btn.BattlepayItemTexture:SetAlpha(0) end
-    if btn.flash then btn.flash:Hide(); btn.flash:SetAlpha(0) end
-    if btn.newitemglowAnim then btn.newitemglowAnim:Stop() end
+    if btn.NewItemTexture then
+        btn.NewItemTexture:Hide()
+        btn.NewItemTexture:SetAlpha(0)
+    end
+    if btn.BattlepayItemTexture then
+        btn.BattlepayItemTexture:Hide()
+        btn.BattlepayItemTexture:SetAlpha(0)
+    end
+    if btn.flash then
+        btn.flash:Hide()
+        btn.flash:SetAlpha(0)
+    end
+    if btn.newitemglowAnim then
+        btn.newitemglowAnim:Stop()
+    end
 
     ns.SizeSlot(btn)
     if btn.icon then
@@ -181,18 +229,26 @@ local function GetOrCreateReagentSlot(idx)
     end
 
     local ht = btn:GetHighlightTexture()
-    if ht then ht:ClearAllPoints(); ht:SetAllPoints(btn) end
+    if ht then
+        ht:ClearAllPoints()
+        ht:SetAllPoints(btn)
+    end
     local pt = btn:GetPushedTexture()
     if pt then
         pt:SetAtlas(nil)
         pt:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\highlight-3.png")
         pt:SetTexCoord(0, 1, 0, 1)
-        pt:ClearAllPoints(); pt:SetAllPoints(btn)
+        pt:ClearAllPoints()
+        pt:SetAllPoints(btn)
         pt:SetVertexColor(0.973, 0.839, 0.604, 1)
     end
 
-    if btn.NormalTexture then btn.NormalTexture:SetAlpha(0) end
-    if btn.IconBorder then btn.IconBorder:SetAlpha(0) end
+    if btn.NormalTexture then
+        btn.NormalTexture:SetAlpha(0)
+    end
+    if btn.IconBorder then
+        btn.IconBorder:SetAlpha(0)
+    end
 
     if btn.icon and btn.IconMask then
         btn.icon:RemoveMaskTexture(btn.IconMask)
@@ -233,7 +289,11 @@ local function GetOrCreateReagentSlot(idx)
         btn.ItemLevelText:SetTextColor(1, 1, 1, 1)
     end
     local fontSize = BP().itemlevelFontSize or 12
-    btn.ItemLevelText:SetFont(STANDARD_TEXT_FONT, fontSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+    btn.ItemLevelText:SetFont(
+        STANDARD_TEXT_FONT,
+        fontSize,
+        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+    )
     btn.ItemLevelText:SetText("")
 
     btn:HookScript("PostClick", function(self)
@@ -264,16 +324,27 @@ function CUI_Bags:WarmSlotPool(msBudget)
     elseif listMode then
         -- Pinned and Recent repeat their items as extra rows
         local pinned = PinnedItems()
-        if pinned then for _ in pairs(pinned) do total = total + 1 end end
-        if CUI_Bags._recentItems then
-            for _ in pairs(CUI_Bags._recentItems) do total = total + 1 end
+        if pinned then
+            for _ in pairs(pinned) do
+                total = total + 1
+            end
         end
-        if not ns.WarmListRows(total, t0, msBudget) then return false end
+        if CUI_Bags._recentItems then
+            for _ in pairs(CUI_Bags._recentItems) do
+                total = total + 1
+            end
+        end
+        if not ns.WarmListRows(total, t0, msBudget) then
+            return false
+        end
     else
         for i = 1, total do
             if not itemSlots[i] then
                 local b = ns.GetOrCreateSlot(i)
-                if not b then CUI_Bags._poolShort = true; return false end
+                if not b then
+                    CUI_Bags._poolShort = true
+                    return false
+                end
                 b:GetParent():Hide()
                 if t0 and debugprofilestop() - t0 > msBudget then
                     CUI_Bags._poolShort = true
@@ -285,7 +356,10 @@ function CUI_Bags:WarmSlotPool(msBudget)
     for i = 1, (C_Container.GetContainerNumSlots(5) or 0) do
         if not reagentSlots[i] then
             local b = GetOrCreateReagentSlot(i)
-            if not b then CUI_Bags._poolShort = true; return false end
+            if not b then
+                CUI_Bags._poolShort = true
+                return false
+            end
             b:GetParent():Hide()
             if t0 and debugprofilestop() - t0 > msBudget then
                 CUI_Bags._poolShort = true
@@ -297,7 +371,9 @@ function CUI_Bags:WarmSlotPool(msBudget)
 end
 
 local function GetOrCreateBagSlot(idx)
-    if bagSlots[idx] then return bagSlots[idx] end
+    if bagSlots[idx] then
+        return bagSlots[idx]
+    end
     local slotParent = CreateFrame("Frame", nil, CUI_BagsWindow)
     ns.SizeSlot(slotParent)
     local btn = CreateFrame("Button", nil, slotParent)
@@ -318,19 +394,29 @@ local function GetOrCreateBagSlot(idx)
     -- Drag-and-drop: equip a bag into this slot, or swap it with the
     -- equipped bag on the cursor
     local function TrySwapBag(self)
-        if InCombatLockdown() then return end
-        if not CursorHasItem() then return end
+        if InCombatLockdown() then
+            return
+        end
+        if not CursorHasItem() then
+            return
+        end
         local bagID = self:GetID()
-        if bagID == 0 then return end  -- can't replace backpack
+        if bagID == 0 then
+            return
+        end -- can't replace backpack
         PutItemInBag(C_Container.ContainerIDToInventoryID(bagID))
     end
     btn:SetScript("OnReceiveDrag", TrySwapBag)
     btn:HookScript("OnClick", TrySwapBag)
     -- Drag an equipped bag out of its slot (drop it on another slot to swap)
     btn:SetScript("OnDragStart", function(self)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         local bagID = self:GetID()
-        if bagID == 0 then return end  -- the backpack can't be moved
+        if bagID == 0 then
+            return
+        end -- the backpack can't be moved
         PickupBagFromSlot(C_Container.ContainerIDToInventoryID(bagID))
     end)
 
@@ -348,7 +434,9 @@ local function GetOrCreateBagSlot(idx)
         local bTotal = C_Container.GetContainerNumSlots(bagIdx)
         local bFree = C_Container.GetContainerNumFreeSlots(bagIdx)
         local tip = bName
-        if bTotal > 0 then tip = tip .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")" end
+        if bTotal > 0 then
+            tip = tip .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")"
+        end
         CUI.ShowWidgetTooltip(self, tip)
     end)
     btn:SetScript("OnLeave", function(self)
@@ -369,16 +457,56 @@ local function RefreshTextSizes()
     local ilvlSize = BP().itemlevelFontSize or 12
     local bindTypeSize = BP().bagBindTypeFontSize or 11
     for _, btn in pairs(itemSlots) do
-        if btn.Count then CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags") end
-        if btn.ItemLevelText then btn.ItemLevelText:SetFont(fontPath, ilvlSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
-        if btn.KeystoneText then btn.KeystoneText:SetFont(fontPath, countSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
-        if btn.KeystoneDungeonText then btn.KeystoneDungeonText:SetFont(fontPath, math.max(countSize - 2, 7), (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
-        if btn.BindTypeText then btn.BindTypeText:SetFont(fontPath, bindTypeSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
-        if btn.SetNameText then btn.SetNameText:SetFont(fontPath, BP().bagSetNameFontSize or 9, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
+        if btn.Count then
+            CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags")
+        end
+        if btn.ItemLevelText then
+            btn.ItemLevelText:SetFont(
+                fontPath,
+                ilvlSize,
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
+        if btn.KeystoneText then
+            btn.KeystoneText:SetFont(
+                fontPath,
+                countSize,
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
+        if btn.KeystoneDungeonText then
+            btn.KeystoneDungeonText:SetFont(
+                fontPath,
+                math.max(countSize - 2, 7),
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
+        if btn.BindTypeText then
+            btn.BindTypeText:SetFont(
+                fontPath,
+                bindTypeSize,
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
+        if btn.SetNameText then
+            btn.SetNameText:SetFont(
+                fontPath,
+                BP().bagSetNameFontSize or 9,
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
     end
     for _, btn in pairs(reagentSlots) do
-        if btn.Count then CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags") end
-        if btn.ItemLevelText then btn.ItemLevelText:SetFont(STANDARD_TEXT_FONT, ilvlSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG") end
+        if btn.Count then
+            CludesUI.ApplyIconTextFont(btn.Count, fontPath, countSize, "bags")
+        end
+        if btn.ItemLevelText then
+            btn.ItemLevelText:SetFont(
+                STANDARD_TEXT_FONT,
+                ilvlSize,
+                (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+            )
+        end
     end
 end
 CUI_Bags.RefreshTextSizes = RefreshTextSizes
@@ -389,13 +517,19 @@ CUI_Bags.RefreshTextSizes = RefreshTextSizes
 local function RefreshIconZoom()
     local z = BP().bagItemIconZoom or 0.08
     for _, btn in pairs(itemSlots) do
-        if btn.icon then btn.icon:SetTexCoord(z, 1 - z, z, 1 - z) end
+        if btn.icon then
+            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        end
     end
     for _, btn in pairs(reagentSlots) do
-        if btn.icon then btn.icon:SetTexCoord(z, 1 - z, z, 1 - z) end
+        if btn.icon then
+            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        end
     end
     for _, btn in pairs(bagSlots) do
-        if btn.icon then btn.icon:SetTexCoord(z, 1 - z, z, 1 - z) end
+        if btn.icon then
+            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        end
     end
 end
 CUI_Bags.RefreshIconZoom = RefreshIconZoom
@@ -416,7 +550,11 @@ function CUI_Bags.SetBindTypeText(fs, isWuE, bindType, quality)
         fs:SetText("")
         return
     end
-    if c then fs:SetTextColor(c.r, c.g, c.b) else fs:SetTextColor(1, 1, 1) end
+    if c then
+        fs:SetTextColor(c.r, c.g, c.b)
+    else
+        fs:SetTextColor(1, 1, 1)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -427,8 +565,14 @@ end
 -------------------------------------------------------------------------------
 -- In a block so the main chunk's local count (close to the 200 cap) stays put.
 do
-    local BIND_KEYWORDS = { bop = true, boe = true, wue = true, boa = true, soulbound = true,
-                           warbound = true }
+    local BIND_KEYWORDS = {
+        bop = true,
+        boe = true,
+        wue = true,
+        boa = true,
+        soulbound = true,
+        warbound = true,
+    }
 
     -- Bind expressions: terms joined with and / or / not (also & | !) and
     -- parentheses, not > and > or; terms side by side mean and. A term is a
@@ -437,8 +581,7 @@ do
     -- e.g. "bop=300", "wue 290-300", "boe and not wue", "(bop or boe) and
     -- soulbound". Anything else parses to nil and goes to the native search
     -- untouched.
-    local OPS = { ["="] = "=", ["=="] = "=", [">"] = ">", [">="] = ">=",
-                  ["<"] = "<", ["<="] = "<=" }
+    local OPS = { ["="] = "=", ["=="] = "=", [">"] = ">", [">="] = ">=", ["<"] = "<", ["<="] = "<=" }
     local MAX_DEPTH = 12
 
     local function Tokenize(s)
@@ -447,29 +590,48 @@ do
             local c = s:sub(i, i)
             if c:find("^%s") then
                 i = i + 1
-            elseif c == "(" then toks[#toks + 1] = { k = "lp" }; i = i + 1
-            elseif c == ")" then toks[#toks + 1] = { k = "rp" }; i = i + 1
-            elseif c == "!" then toks[#toks + 1] = { k = "not" }; i = i + 1
-            elseif c == "&" then toks[#toks + 1] = { k = "and" }; i = i + #s:match("^&&?", i)
-            elseif c == "|" then toks[#toks + 1] = { k = "or" }; i = i + #s:match("^||?", i)
+            elseif c == "(" then
+                toks[#toks + 1] = { k = "lp" }
+                i = i + 1
+            elseif c == ")" then
+                toks[#toks + 1] = { k = "rp" }
+                i = i + 1
+            elseif c == "!" then
+                toks[#toks + 1] = { k = "not" }
+                i = i + 1
+            elseif c == "&" then
+                toks[#toks + 1] = { k = "and" }
+                i = i + #s:match("^&&?", i)
+            elseif c == "|" then
+                toks[#toks + 1] = { k = "or" }
+                i = i + #s:match("^||?", i)
             elseif c:find("^[<>=]") then
                 local op = s:match("^[<>=]=?", i)
-                if not OPS[op] then return nil end
-                toks[#toks + 1] = { k = "op", v = OPS[op] }; i = i + #op
+                if not OPS[op] then
+                    return nil
+                end
+                toks[#toks + 1] = { k = "op", v = OPS[op] }
+                i = i + #op
             elseif c:find("^%d") then
                 local a, b, e = s:match("^(%d+)%s*%-%s*(%d+)()", i)
                 if a then
-                    toks[#toks + 1] = { k = "range", lo = tonumber(a), hi = tonumber(b) }; i = e
+                    toks[#toks + 1] = { k = "range", lo = tonumber(a), hi = tonumber(b) }
+                    i = e
                 else
                     local d = s:match("^%d+", i)
-                    toks[#toks + 1] = { k = "num", v = tonumber(d) }; i = i + #d
+                    toks[#toks + 1] = { k = "num", v = tonumber(d) }
+                    i = i + #d
                 end
             elseif c:find("^%a") then
                 local w = s:match("^%a+", i)
                 i = i + #w
-                if w == "and" or w == "or" or w == "not" then toks[#toks + 1] = { k = w }
-                elseif BIND_KEYWORDS[w] then toks[#toks + 1] = { k = "kw", v = w }
-                else return nil end
+                if w == "and" or w == "or" or w == "not" then
+                    toks[#toks + 1] = { k = w }
+                elseif BIND_KEYWORDS[w] then
+                    toks[#toks + 1] = { k = "kw", v = w }
+                else
+                    return nil
+                end
             else
                 return nil
             end
@@ -479,28 +641,40 @@ do
 
     local function ParseBindQuery(text)
         local toks = Tokenize(strtrim(text or ""):lower())
-        if not toks or #toks == 0 then return nil end
+        if not toks or #toks == 0 then
+            return nil
+        end
         local p = 1
         local ParseOr
 
         local function ParsePrimary(depth)
             local t = toks[p]
-            if not t then return nil end
+            if not t then
+                return nil
+            end
             if t.k == "lp" then
-                if depth >= MAX_DEPTH then return nil end
+                if depth >= MAX_DEPTH then
+                    return nil
+                end
                 p = p + 1
                 local e = ParseOr(depth + 1)
-                if not e or not toks[p] or toks[p].k ~= "rp" then return nil end
+                if not e or not toks[p] or toks[p].k ~= "rp" then
+                    return nil
+                end
                 p = p + 1
                 return e
             end
-            if t.k ~= "kw" then return nil end
+            if t.k ~= "kw" then
+                return nil
+            end
             p = p + 1
             local node = { t = "term", kw = t.v }
             local nx = toks[p]
             if nx and nx.k == "op" then
                 local num = toks[p + 1]
-                if not num or num.k ~= "num" then return nil end
+                if not num or num.k ~= "num" then
+                    return nil
+                end
                 node.op, node.lo = nx.v, num.v
                 p = p + 2
             elseif nx and nx.k == "range" then
@@ -516,7 +690,9 @@ do
         local function ParseNot(depth)
             local t = toks[p]
             if t and t.k == "not" then
-                if depth >= MAX_DEPTH then return nil end
+                if depth >= MAX_DEPTH then
+                    return nil
+                end
                 p = p + 1
                 local a = ParseNot(depth + 1)
                 return a and { t = "not", a = a }
@@ -527,9 +703,14 @@ do
         local function ParseAnd(depth)
             local l = ParseNot(depth)
             -- Terms side by side ("wue290-300 not warbound") mean and.
-            while l and toks[p] and (toks[p].k == "and" or toks[p].k == "kw"
-                or toks[p].k == "not" or toks[p].k == "lp") do
-                if toks[p].k == "and" then p = p + 1 end
+            while
+                l
+                and toks[p]
+                and (toks[p].k == "and" or toks[p].k == "kw" or toks[p].k == "not" or toks[p].k == "lp")
+            do
+                if toks[p].k == "and" then
+                    p = p + 1
+                end
                 local r = ParseNot(depth)
                 l = r and { t = "and", a = l, b = r }
             end
@@ -547,7 +728,9 @@ do
         end
 
         local root = ParseOr(0)
-        if root and p == #toks + 1 then return root end
+        if root and p == #toks + 1 then
+            return root
+        end
         return nil
     end
 
@@ -565,13 +748,25 @@ do
             curIlvl = GetItemLevelAtLocation(loc, curLink) or false
         end
         local ilvl = curIlvl
-        if not ilvl then return false end
+        if not ilvl then
+            return false
+        end
         local op, lo = q.op, q.lo
-        if op == "=" then return ilvl == lo end
-        if op == ">" then return ilvl > lo end
-        if op == ">=" then return ilvl >= lo end
-        if op == "<" then return ilvl < lo end
-        if op == "<=" then return ilvl <= lo end
+        if op == "=" then
+            return ilvl == lo
+        end
+        if op == ">" then
+            return ilvl > lo
+        end
+        if op == ">=" then
+            return ilvl >= lo
+        end
+        if op == "<" then
+            return ilvl < lo
+        end
+        if op == "<=" then
+            return ilvl <= lo
+        end
         return ilvl >= lo and ilvl <= q.hi
     end
 
@@ -601,15 +796,23 @@ do
                 match = not curWue and curBindType == Enum.ItemBind.OnEquip
             end
         end
-        if match and q.op then match = ItemLevelMatches(q) end
+        if match and q.op then
+            match = ItemLevelMatches(q)
+        end
         return match and true or false
     end
 
     local function Eval(n)
         local t = n.t
-        if t == "term" then return TermMatches(n) end
-        if t == "not" then return not Eval(n.a) end
-        if t == "and" then return Eval(n.a) and Eval(n.b) end
+        if t == "term" then
+            return TermMatches(n)
+        end
+        if t == "not" then
+            return not Eval(n.a)
+        end
+        if t == "and" then
+            return Eval(n.a) and Eval(n.b)
+        end
         return Eval(n.a) or Eval(n.b)
     end
 
@@ -625,8 +828,12 @@ do
         if CUI_Bags._appliedSearch == "" or not (CUI_Bags:IsVisible() or (bank and bank:IsVisible())) then
             self:UnregisterEvent("INVENTORY_SEARCH_UPDATE")
         end
-        if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
-        if BP().detachReagentBag and CUI_BagsReagent:IsVisible() then CUI_BagsReagent:RefreshInventory() end
+        if CUI_Bags:IsVisible() then
+            CUI_Bags:RefreshInventory()
+        end
+        if BP().detachReagentBag and CUI_BagsReagent:IsVisible() then
+            CUI_BagsReagent:RefreshInventory()
+        end
         ns.RefreshOpenBank()
     end
 
@@ -662,7 +869,9 @@ do
             end
             armed = false
             local text = box:GetText()
-            if text ~= CUI_Bags._appliedSearch then apply(text) end
+            if text ~= CUI_Bags._appliedSearch then
+                apply(text)
+            end
         end
         return function(userInput)
             if userInput then
@@ -674,26 +883,33 @@ do
                 return
             end
             local text = box:GetText()
-            if text ~= CUI_Bags._appliedSearch then apply(text) end
+            if text ~= CUI_Bags._appliedSearch then
+                apply(text)
+            end
         end
     end
 
     -- Clears the game's search unless it is already clear (the clear buttons,
     -- Escape and the bank's open and close, after emptying their box).
     function CUI_Bags.ClearSearch()
-        if CUI_Bags._appliedSearch ~= "" then CUI_Bags.SetSearchText("") end
+        if CUI_Bags._appliedSearch ~= "" then
+            CUI_Bags.SetSearchText("")
+        end
     end
 
     -- Overrides info.isFiltered for the active expression; no-op when none is active.
     function CUI_Bags.ApplyBindKeyword(info, bag, slot)
         local q = CUI_Bags._bindKeyword
-        if not q or not info then return end
+        if not q or not info then
+            return
+        end
         local match = false
         loc:SetBagAndSlot(bag, slot)
         if C_Item.DoesItemExist(loc) then
             curLink, curBound = info.hyperlink, info.isBound
             curBindType = curLink and select(14, GetItemInfo(curLink))
-            curIsAccount = curBindType == Enum.ItemBind.ToWoWAccount or curBindType == Enum.ItemBind.ToBnetAccount
+            curIsAccount = curBindType == Enum.ItemBind.ToWoWAccount
+                or curBindType == Enum.ItemBind.ToBnetAccount
             curWue, curIlvl = nil, nil
             match = Eval(q)
         end
@@ -715,7 +931,9 @@ function ns.QualityBorderColor(quality)
             c = ITEM_QUALITY_COLORS[quality]
         end
     end
-    if c then return c.r, c.g, c.b end
+    if c then
+        return c.r, c.g, c.b
+    end
     return 0.25, 0.25, 0.25
 end
 
@@ -742,7 +960,9 @@ end
 
 function CUI_Bags.RunItemOverlays(btn, data)
     local fns = CUI_Bags.itemOverlayIcons
-    if next(fns) == nil then return end
+    if next(fns) == nil then
+        return
+    end
     for _, fn in pairs(fns) do
         securecallfunction(fn, btn, data)
     end

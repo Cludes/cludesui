@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Clock.lua
 -- Clock block factory.
 
@@ -7,25 +9,25 @@ local L = ns.L
 local K = ns.BlockKit
 
 -- Upvalues
-local CreateFrame      = CreateFrame
+local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local wipe             = wipe
-local format           = string.format
-local floor            = math.floor
-local max              = math.max
-local min              = math.min
-local date             = date
+local wipe = wipe
+local format = string.format
+local floor = math.floor
+local max = math.max
+local min = math.min
+local date = date
 
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  CLOCK
@@ -33,8 +35,12 @@ local BlockColorOf         = K.BlockColorOf
 ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
     inst.key = InstKey(barCtx, blockCfg)
-    inst.events = { "PLAYER_UPDATE_RESTING", "PLAYER_REGEN_ENABLED",
-                    "MAIL_INBOX_UPDATE", "UPDATE_PENDING_MAIL" }
+    inst.events = {
+        "PLAYER_UPDATE_RESTING",
+        "PLAYER_REGEN_ENABLED",
+        "MAIL_INBOX_UPDATE",
+        "UPDATE_PENDING_MAIL",
+    }
 
     local infoTimer, infoIndex = 0, 1
     local lastTimeStr
@@ -43,18 +49,26 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
     local isMouseOver = false
     local _fitTimeBuf = { "" }
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     -- Fixed defaults (26 / 16 off CONTENT_BASE); bar Height never scales text.
     local function FontSizeClock()
         local d = D()
-        if d.fontSizeClock then return d.fontSizeClock end
+        if d.fontSizeClock then
+            return d.fontSizeClock
+        end
         return max(12, floor(CONTENT_BASE * 0.7333 + 0.5))
     end
     local function FontSizeInfo()
         local d = D()
-        if d.fontSizeInfo then return d.fontSizeInfo end
+        if d.fontSizeInfo then
+            return d.fontSizeInfo
+        end
         return max(9, floor(CONTENT_BASE * 0.53 + 0.5))
     end
 
@@ -62,18 +76,26 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
     local function ClockUses()
         local d = D()
         local useLocal = d.localTime
-        if useLocal == nil then useLocal = GetCVar("timeMgrUseLocalTime") == "1" end
+        if useLocal == nil then
+            useLocal = GetCVar("timeMgrUseLocalTime") == "1"
+        end
         local use24 = d.twentyFour
-        if use24 == nil then use24 = GetCVar("timeMgrUseMilitaryTime") == "1" end
+        if use24 == nil then
+            use24 = GetCVar("timeMgrUseMilitaryTime") == "1"
+        end
         return useLocal, use24
     end
 
     -- Matches the minimap clock exactly: padded hour in 24-hour mode (01:04), unpadded hour + AM/PM in 12-hour mode (1:04 PM).
     local function FormatClock(h, m, use24)
-        if use24 then return format("%02d:%02d", h, m) end
+        if use24 then
+            return format("%02d:%02d", h, m)
+        end
         local ampm = h >= 12 and "PM" or "AM"
         h = h % 12
-        if h == 0 then h = 12 end
+        if h == 0 then
+            h = 12
+        end
         return format("%d:%02d %s", h, m, ampm)
     end
 
@@ -81,10 +103,12 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
         local useLocal, use24 = ClockUses()
         local h, m
         if useLocal then
-            h = tonumber(date("%H")); m = tonumber(date("%M"))
+            h = tonumber(date("%H"))
+            m = tonumber(date("%M"))
         else
             local gh, gm = GetGameTime()
-            h = floor(gh); m = floor(gm)
+            h = floor(gh)
+            m = floor(gm)
         end
         return FormatClock(h, m, use24)
     end
@@ -92,7 +116,9 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
     local function RebuildInfoItems()
         -- Empty by design (mail is an icon); rotation kept for future lines.
         wipe(infoItems)
-        if infoIndex > #infoItems then infoIndex = 1 end
+        if infoIndex > #infoItems then
+            infoIndex = 1
+        end
     end
 
     local clockTextFrame = CreateFrame("Button", nil, content)
@@ -174,7 +200,7 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
         local isSide = barCtx.IsVertical()
         local barCfg = BC()
         local clockSz = FontSizeClock()
-        local infoSz  = FontSizeInfo()
+        local infoSz = FontSizeInfo()
         local timeText = GetTimeString()
         local barH = barCtx.GetThickness()
 
@@ -248,9 +274,13 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
         else
             local slotW = HBudget(inst, 120)
             local restExtra = 0
-            if restFrame:IsShown() then restExtra = restW + 4 end
+            if restFrame:IsShown() then
+                restExtra = restW + 4
+            end
             local mailExtra = 0
-            if mailIcon:IsShown() then mailExtra = mailW + 8 end
+            if mailIcon:IsShown() then
+                mailExtra = mailW + 8
+            end
             local textBudget = max(30, slotW - restExtra - mailExtra)
             ns.SetFont(clockText, clockSz, barCfg)
             clockText:SetText(timeText)
@@ -264,7 +294,9 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
 
             local tw = ns.SnapToPixelGrid(clockText:GetStringWidth())
             local th = ns.SnapToPixelGrid(clockText:GetStringHeight())
-            if th < 1 then th = 1 end
+            if th < 1 then
+                th = 1
+            end
 
             content:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
             clockTextFrame:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
@@ -314,7 +346,10 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
 
     inst.eventFrame = MakeEventFrame(inst, function(self, event)
         if event == "PLAYER_REGEN_ENABLED" then
-            if needsResize then needsResize = false; self:Refresh() end
+            if needsResize then
+                needsResize = false
+                self:Refresh()
+            end
         else
             self:Refresh()
         end
@@ -328,14 +363,35 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
         ns.Tip_Begin(clockTextFrame)
         -- date()'s %A/%B come from the C runtime (English in every client), so use the localized calendar globals; FULLDATE carries locale field order.
         local today = C_DateAndTime.GetCurrentCalendarTime()
-        ns.Tip_AddLine(format(FULLDATE, CALENDAR_WEEKDAY_NAMES[today.weekday],
-            CALENDAR_FULLDATE_MONTH_NAMES[today.month], today.monthDay, today.year), 1, 1, 1)
+        ns.Tip_AddLine(
+            format(
+                FULLDATE,
+                CALENDAR_WEEKDAY_NAMES[today.weekday],
+                CALENDAR_FULLDATE_MONTH_NAMES[today.month],
+                today.monthDay,
+                today.year
+            ),
+            1,
+            1,
+            1
+        )
         local gh, gm = GetGameTime()
         local _, tipUse24 = ClockUses()
-        ns.Tip_AddDouble(L["SERVER_TIME"], FormatClock(floor(gh), floor(gm), tipUse24), 0.6, 0.6, 0.6, 1, 1, 1)
+        ns.Tip_AddDouble(
+            L["SERVER_TIME"],
+            FormatClock(floor(gh), floor(gm), tipUse24),
+            0.6,
+            0.6,
+            0.6,
+            1,
+            1,
+            1
+        )
 
         local numInstances = 0
-        if GetNumSavedInstances then numInstances = GetNumSavedInstances() end
+        if GetNumSavedInstances then
+            numInstances = GetNumSavedInstances()
+        end
         if numInstances > 0 then
             ns.Tip_AddLine(" ")
             ns.Tip_AddLine(L["SAVED_INSTANCES"], 1, 0.82, 0)
@@ -348,7 +404,9 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
         end
         ns.Tip_AddLine(" ")
         local dailyReset = 0
-        if GetQuestResetTime then dailyReset = GetQuestResetTime() end
+        if GetQuestResetTime then
+            dailyReset = GetQuestResetTime()
+        end
         if dailyReset > 0 then
             ns.Tip_AddDouble(L["DAILY_RESET"], ns.FormatTimeLeft(dailyReset), 0.6, 0.6, 0.6, 1, 1, 1)
         end
@@ -378,13 +436,20 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
     clockTextFrame:SetScript("OnClick", function(_, button)
         if button == "MiddleButton" and IsShiftKeyDown() then
             -- Never reload mid-combat: it drops the player out of the fight.
-            if InCombatLockdown() then return end
+            if InCombatLockdown() then
+                return
+            end
             CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
         elseif button == "LeftButton" then
-            if ToggleCalendar then ToggleCalendar() end
+            if ToggleCalendar then
+                ToggleCalendar()
+            end
         elseif button == "RightButton" then
-            if ToggleTimeManager then ToggleTimeManager()
-            elseif GameTimeFrame then GameTimeFrame:Click() end
+            if ToggleTimeManager then
+                ToggleTimeManager()
+            elseif GameTimeFrame then
+                GameTimeFrame:Click()
+            end
         end
     end)
 
@@ -409,7 +474,9 @@ ns.BlockFactories.clock = function(blockCfg, slot, content, barCtx)
             local barH = barCtx.GetThickness()
             local textH = clockText:GetStringHeight() or FontSizeClock()
             local infoH = 0
-            if eventText:IsShown() then infoH = (eventText:GetStringHeight() or 0) + 4 end
+            if eventText:IsShown() then
+                infoH = (eventText:GetStringHeight() or 0) + 4
+            end
             return max(8 + textH + infoH + 8, barH, 60)
         end
         local w = clockTextFrame:GetWidth() or 80

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ThreatMeter.lua  (WoW Forever only)
 --  Threat on your target (or focus) for everyone in the group, one bar each,
@@ -41,39 +45,105 @@ local RequestUpdate, Repaint, CreateWindow
 --  while it has nothing to list.
 -------------------------------------------------------------------------------
 local DEFAULTS = {
-    enabled = false, source = "target", focusEnabled = false, pets = true,
-    width = 320, height = 210, barHeight = 18, fontSize = 11, barSpacing = 2,
+    enabled = false,
+    source = "target",
+    focusEnabled = false,
+    pets = true,
+    width = 320,
+    height = 210,
+    barHeight = 18,
+    fontSize = 11,
+    barSpacing = 2,
     position = { point = "CENTER", relPoint = "CENTER", x = 400, y = -100 },
-    locked = false, snapDisabled = false, onlyWithThreat = true,
-    growUp = false, showHeader = true,
-    pullBar = true, pullColor = { r = 0, g = 0.55, b = 0 },
-    showValue = true, showPercent = true, percentMode = "pull",
-    warnSound = false, warnSoundKey = "none", warnAt = 80, warnSkipTank = true,
-    playerColorOn = false, playerColor = { r = 0.8, g = 0.1, b = 0.1 },
+    locked = false,
+    snapDisabled = false,
+    onlyWithThreat = true,
+    growUp = false,
+    showHeader = true,
+    pullBar = true,
+    pullColor = { r = 0, g = 0.55, b = 0 },
+    showValue = true,
+    showPercent = true,
+    percentMode = "pull",
+    warnSound = false,
+    warnSoundKey = "none",
+    warnAt = 80,
+    warnSkipTank = true,
+    playerColorOn = false,
+    playerColor = { r = 0.8, g = 0.1, b = 0.1 },
     showPlayerMarker = true,
-    tankColorOn = false, tankColor = { r = 0.1, g = 0.6, b = 0.1 },
-    font = "__global", outlineMode = "__global",
+    tankColorOn = false,
+    tankColor = { r = 0.1, g = 0.6, b = 0.1 },
+    font = "__global",
+    outlineMode = "__global",
 }
 
 -- Appearance groups, stored under appearance[group] (the Damage Meters shape).
 local STYLE_DEFAULTS = {
-    bars = { barTexture = "atrocity", iconStyle = "blizzard", classIconZoom = 0.06, iconZoom = 0, iconSeparator = false,
-        leftTextOffsetX = 0, leftTextOffsetY = 0, rightTextOffsetX = 0, rightTextOffsetY = 0 },
-    header = { hdrHeight = 22, hdrFontSize = 11, hdrBgColor = { r = 0.106, g = 0.106, b = 0.106 },
-        hdrBgAlpha = 1, hdrTextUseAccent = true, hdrTextColor = { r = 1, g = 1, b = 1 },
-        hdrTextOffX = 0, hdrTextOffY = 0, hdrBottomBorderSize = 0, hdrBottomSeparator = false,
-        hdrBottomBorderColor = { r = 0, g = 0, b = 0, a = 1 } },
-    colors = { showClassColor = true, barColorUseAccent = true, barColor = { r = 0.35, g = 0.55, b = 0.8 },
-        barFillAlpha = 1, bgR = 0, bgG = 0, bgB = 0, bgAlpha = 0.75, bgTexture = "none",
-        barBgR = 0, barBgG = 0, barBgB = 0, barBgAlpha = 0.045, barBgUseClassColor = false,
-        leftTextUseClassColor = false, rightTextUseClassColor = false, rightTextUseThreatGradient = false,
-        leftTextColor = { r = 1, g = 1, b = 1 }, rightTextColor = { r = 1, g = 1, b = 1 } },
-    borders = { windowBorderTexture = "solid", windowBorderSize = 0, windowBorderSizePx = false,
-        windowBorderColor = { r = 0, g = 0, b = 0, a = 1 }, windowBorderIncludeHeader = true,
-        borderTexture = "solid", borderSize = 0, borderSizePx = false, barSeparators = false,
-        borderR = 0, borderG = 0, borderB = 0, borderA = 1,
-        borderTextureOffset = false, borderTextureShiftX = 0, borderTextureShiftY = 0,
-        borderTextureOffsetY = false },
+    bars = {
+        barTexture = "atrocity",
+        iconStyle = "blizzard",
+        classIconZoom = 0.06,
+        iconZoom = 0,
+        iconSeparator = false,
+        leftTextOffsetX = 0,
+        leftTextOffsetY = 0,
+        rightTextOffsetX = 0,
+        rightTextOffsetY = 0,
+    },
+    header = {
+        hdrHeight = 22,
+        hdrFontSize = 11,
+        hdrBgColor = { r = 0.106, g = 0.106, b = 0.106 },
+        hdrBgAlpha = 1,
+        hdrTextUseAccent = true,
+        hdrTextColor = { r = 1, g = 1, b = 1 },
+        hdrTextOffX = 0,
+        hdrTextOffY = 0,
+        hdrBottomBorderSize = 0,
+        hdrBottomSeparator = false,
+        hdrBottomBorderColor = { r = 0, g = 0, b = 0, a = 1 },
+    },
+    colors = {
+        showClassColor = true,
+        barColorUseAccent = true,
+        barColor = { r = 0.35, g = 0.55, b = 0.8 },
+        barFillAlpha = 1,
+        bgR = 0,
+        bgG = 0,
+        bgB = 0,
+        bgAlpha = 0.75,
+        bgTexture = "none",
+        barBgR = 0,
+        barBgG = 0,
+        barBgB = 0,
+        barBgAlpha = 0.045,
+        barBgUseClassColor = false,
+        leftTextUseClassColor = false,
+        rightTextUseClassColor = false,
+        rightTextUseThreatGradient = false,
+        leftTextColor = { r = 1, g = 1, b = 1 },
+        rightTextColor = { r = 1, g = 1, b = 1 },
+    },
+    borders = {
+        windowBorderTexture = "solid",
+        windowBorderSize = 0,
+        windowBorderSizePx = false,
+        windowBorderColor = { r = 0, g = 0, b = 0, a = 1 },
+        windowBorderIncludeHeader = true,
+        borderTexture = "solid",
+        borderSize = 0,
+        borderSizePx = false,
+        barSeparators = false,
+        borderR = 0,
+        borderG = 0,
+        borderB = 0,
+        borderA = 1,
+        borderTextureOffset = false,
+        borderTextureShiftX = 0,
+        borderTextureShiftY = 0,
+        borderTextureOffsetY = false,
+    },
 }
 
 local _NOCFG = {}
@@ -82,7 +152,9 @@ local function Read()
 end
 
 local function Cfg()
-    if not CludesUIDB then return {} end
+    if not CludesUIDB then
+        return {}
+    end
     CludesUIDB.threatMeter = CludesUIDB.threatMeter or {}
     return CludesUIDB.threatMeter
 end
@@ -90,7 +162,9 @@ end
 local Get
 
 local function Triplet(r, g, b)
-    if r == nil then return nil end
+    if r == nil then
+        return nil
+    end
     return { r = r, g = g or 0, b = b or 0 }
 end
 
@@ -98,34 +172,64 @@ end
 -- read falls through to the old key while the new one is unset; nothing is
 -- migrated and the old keys are never removed.
 local LEGACY = {
-    position   = function(c) return c.pos end,
-    pets       = function(c) if c.ignorePets ~= nil then return not c.ignorePets end end,
-    fontSize   = function(c) return c.textSize end,
-    barSpacing = function(c) return c.spacing end,
-    playerColor = function(c) return Triplet(c.playerR, c.playerG, c.playerB) end,
-    tankColor   = function(c) return Triplet(c.tankR, c.tankG, c.tankB) end,
-    pullColor   = function(c) return Triplet(c.pullR, c.pullG, c.pullB) end,
+    position = function(c)
+        return c.pos
+    end,
+    pets = function(c)
+        if c.ignorePets ~= nil then
+            return not c.ignorePets
+        end
+    end,
+    fontSize = function(c)
+        return c.textSize
+    end,
+    barSpacing = function(c)
+        return c.spacing
+    end,
+    playerColor = function(c)
+        return Triplet(c.playerR, c.playerG, c.playerB)
+    end,
+    tankColor = function(c)
+        return Triplet(c.tankR, c.tankG, c.tankB)
+    end,
+    pullColor = function(c)
+        return Triplet(c.pullR, c.pullG, c.pullB)
+    end,
     -- A chosen bar count becomes a window tall enough to show that many rows.
     height = function(c)
         local n = c.maxBars
-        if type(n) ~= "number" then return nil end
+        if type(n) ~= "number" then
+            return nil
+        end
         local gap = Get("barSpacing")
         local header = Get("showHeader") and ns.GetStyleValue("header", "hdrHeight") or 0
         return header + n * (Get("barHeight") + gap) - gap
     end,
 }
 local LEGACY_STYLE = {
-    bars = { barTexture = function(c) return c.texture end },
+    bars = {
+        barTexture = function(c)
+            return c.texture
+        end,
+    },
     colors = {
-        bgAlpha = function(c) return c.bgA end,
+        bgAlpha = function(c)
+            return c.bgA
+        end,
         barFillAlpha = function(c)
-            if type(c.barOpacity) == "number" then return c.barOpacity / 100 end
+            if type(c.barOpacity) == "number" then
+                return c.barOpacity / 100
+            end
         end,
     },
     borders = {
-        windowBorderSize = function(c) return c.borderSize end,
+        windowBorderSize = function(c)
+            return c.borderSize
+        end,
         windowBorderColor = function(c)
-            if c.borderR == nil then return nil end
+            if c.borderR == nil then
+                return nil
+            end
             return { r = c.borderR, g = c.borderG or 0, b = c.borderB or 0, a = 1 }
         end,
     },
@@ -136,8 +240,12 @@ Get = function(key)
     local v = c[key]
     if v == nil then
         local legacy = LEGACY[key]
-        if legacy then v = legacy(c) end
-        if v == nil then v = DEFAULTS[key] end
+        if legacy then
+            v = legacy(c)
+        end
+        if v == nil then
+            v = DEFAULTS[key]
+        end
     end
     return v
 end
@@ -146,12 +254,18 @@ function ns.GetStyleValue(group, key)
     local c = Read()
     local v
     local ap = c.appearance
-    if type(ap) == "table" and type(ap[group]) == "table" then v = ap[group][key] end
+    if type(ap) == "table" and type(ap[group]) == "table" then
+        v = ap[group][key]
+    end
     if v == nil then
         local legacy = LEGACY_STYLE[group]
         legacy = legacy and legacy[key]
-        if legacy then v = legacy(c) end
-        if v == nil then v = STYLE_DEFAULTS[group][key] end
+        if legacy then
+            v = legacy(c)
+        end
+        if v == nil then
+            v = STYLE_DEFAULTS[group][key]
+        end
     end
     return v
 end
@@ -161,19 +275,33 @@ end
 function ns.SetStyleValues(group, values)
     local c = Cfg()
     local ap = c.appearance
-    if type(ap) ~= "table" then ap = {}; c.appearance = ap end
+    if type(ap) ~= "table" then
+        ap = {}
+        c.appearance = ap
+    end
     local saved = ap[group]
-    if type(saved) ~= "table" then saved = {}; ap[group] = saved end
-    for key, value in pairs(values) do saved[key] = CUI.Lite.DeepCopy(value) end
+    if type(saved) ~= "table" then
+        saved = {}
+        ap[group] = saved
+    end
+    for key, value in pairs(values) do
+        saved[key] = CUI.Lite.DeepCopy(value)
+    end
     ns.ApplyStyle()
 end
 
 function ns.SetStyleValue(group, key, value)
     local c = Cfg()
     local ap = c.appearance
-    if type(ap) ~= "table" then ap = {}; c.appearance = ap end
+    if type(ap) ~= "table" then
+        ap = {}
+        c.appearance = ap
+    end
     local saved = ap[group]
-    if type(saved) ~= "table" then saved = {}; ap[group] = saved end
+    if type(saved) ~= "table" then
+        saved = {}
+        ap[group] = saved
+    end
     saved[key] = CUI.Lite.DeepCopy(value)
     ns.ApplyStyle()
 end
@@ -191,7 +319,9 @@ ns.Get, ns.Cfg, ns.Read = Get, Cfg, Read
 local styleKey, forever
 function module.TM_Style()
     if not styleKey then
-        if not CludesUIDB then return "cui" end
+        if not CludesUIDB then
+            return "cui"
+        end
         local c = Read()
         styleKey = (c.useClassicStyle and "classic") or (c.useBlizzardStyle and "blizzard") or "cui"
         -- Blizzard Style's WoW Forever variant, latched with it: the sibling
@@ -205,7 +335,9 @@ ns.TM_Style = module.TM_Style
 -- True when the meter draws the WoW Forever variant this session (TM_Style
 -- still reads "blizzard" then).
 function module.TM_Forever()
-    if not styleKey then module.TM_Style() end
+    if not styleKey then
+        module.TM_Style()
+    end
     return forever == true
 end
 
@@ -218,24 +350,37 @@ end
 -- for a table that arrived already switched.
 function module.TM_SeedStock(c, key, isForever)
     if key == "blizzard" then
-        if c.blizzBgAlphaSeeded then return end
+        if c.blizzBgAlphaSeeded then
+            return
+        end
         c.blizzBgAlphaSeeded = true
     elseif key == "classic" then
-        if c.classicSeeded then return end
+        if c.classicSeeded then
+            return
+        end
         c.classicSeeded = true
     else
         return
     end
     local ap = c.appearance
-    if type(ap) ~= "table" then ap = {}; c.appearance = ap end
+    if type(ap) ~= "table" then
+        ap = {}
+        c.appearance = ap
+    end
     local colors = ap.colors
-    if type(colors) ~= "table" then colors = {}; ap.colors = colors end
+    if type(colors) ~= "table" then
+        colors = {}
+        ap.colors = colors
+    end
     if key == "blizzard" then
         colors.bgAlpha = isForever and 0.65 or 0.4
         return
     end
     local bars = ap.bars
-    if type(bars) ~= "table" then bars = {}; ap.bars = bars end
+    if type(bars) ~= "table" then
+        bars = {}
+        ap.bars = bars
+    end
     colors.bgR, colors.bgG, colors.bgB = 16 / 255, 16 / 255, 16 / 255
     bars.barTexture = "blizzard"
     colors.barBgR, colors.barBgG, colors.barBgB, colors.barBgAlpha = 0, 0, 0, 0.25
@@ -249,14 +394,18 @@ local MENU_OPTS = { above = true, look = "meter", fontKey = "essentials" }
 -- The look's painters go in once, before the first surface is built.
 local lookReady
 local function EnsureLook()
-    if lookReady then return end
+    if lookReady then
+        return
+    end
     lookReady = true
     ns.UseLook(module.TM_Style(), module.TM_Forever())
     MENU_OPTS.look = Look.menuLook
 end
 
 local function TrackedUnit()
-    if Get("focusEnabled") and Get("source") == "focus" then return "focus" end
+    if Get("focusEnabled") and Get("source") == "focus" then
+        return "focus"
+    end
     return "target"
 end
 ns.GetTrackedUnit = TrackedUnit
@@ -264,32 +413,52 @@ ns.GetTrackedUnit = TrackedUnit
 function ns.SetFocusEnabled(enabled)
     local c = Cfg()
     c.focusEnabled = enabled
-    if not enabled and c.source == "focus" then c.source = nil end
+    if not enabled and c.source == "focus" then
+        c.source = nil
+    end
 end
 
-ns.DisplayValues = { none = "None", value = "Threat Value", relative = "Tank %", pull = "Pull %",
-    value_relative = "Threat Value + Tank %", value_pull = "Threat Value + Pull %" }
+ns.DisplayValues = {
+    none = "None",
+    value = "Threat Value",
+    relative = "Tank %",
+    pull = "Pull %",
+    value_relative = "Threat Value + Tank %",
+    value_pull = "Threat Value + Pull %",
+}
 ns.DisplayOrder = { "none", "value", "relative", "pull", "value_relative", "value_pull" }
 
 function ns.GetDisplayedValue()
     local value, percent = Get("showValue"), Get("showPercent")
-    if not percent then return value and "value" or "none" end
+    if not percent then
+        return value and "value" or "none"
+    end
     local pull = Get("percentMode") == "pull"
-    if value then return pull and "value_pull" or "value_relative" end
+    if value then
+        return pull and "value_pull" or "value_relative"
+    end
     return pull and "pull" or "relative"
 end
 
 function ns.SetDisplayedValue(v)
-    if not ns.DisplayValues[v] then return end
+    if not ns.DisplayValues[v] then
+        return
+    end
     local c = Cfg()
     c.showValue = v == "value" or v == "value_relative" or v == "value_pull"
     c.showPercent = v ~= "none" and v ~= "value"
-    if c.showPercent then c.percentMode = v:find("pull", 1, true) and "pull" or "relative" end
+    if c.showPercent then
+        c.percentMode = v:find("pull", 1, true) and "pull" or "relative"
+    end
 end
 
 -- No maximum: a grip drag stops at the screen's edge instead.
-local function ClampW(w) return math.max(MIN_W, w) end
-local function ClampH(h) return math.max(MIN_H, h) end
+local function ClampW(w)
+    return math.max(MIN_W, w)
+end
+local function ClampH(h)
+    return math.max(MIN_H, h)
+end
 
 -------------------------------------------------------------------------------
 --  Media: bar textures and the warning sound list, built on first use.
@@ -338,13 +507,22 @@ local function Style()
     local accent = CUI.CLUDES_GREEN
     local colorGen = CUI._dmGen
     local dm = cachedStyle
-    if dm and dm.globalFont == font and dm.globalOutline == outline and dm.colorGen == colorGen
-        and dm.accentR == accent.r and dm.accentG == accent.g and dm.accentB == accent.b then
+    if
+        dm
+        and dm.globalFont == font
+        and dm.globalOutline == outline
+        and dm.colorGen == colorGen
+        and dm.accentR == accent.r
+        and dm.accentG == accent.g
+        and dm.accentB == accent.b
+    then
         return dm
     end
     dm = {}
     for group, defaults in pairs(STYLE_DEFAULTS) do
-        for key in pairs(defaults) do dm[key] = ns.GetStyleValue(group, key) end
+        for key in pairs(defaults) do
+            dm[key] = ns.GetStyleValue(group, key)
+        end
     end
     dm.barHeight, dm.barSpacing, dm.fontSize = Get("barHeight"), Get("barSpacing"), Get("fontSize")
     dm.showHeader, dm.growUp = Get("showHeader"), Get("growUp")
@@ -371,20 +549,29 @@ local function Style()
         or (showValue and sampleValue or (showPercent and "888%" or nil))
     local fontKey, outlineMode = Get("font"), Get("outlineMode")
     dm.textFont = fontKey ~= "__global" and CUI.ResolveFontName(fontKey) or nil
-    if outlineMode == "outline" then dm.textFlag = CUI.SlugFlag("OUTLINE, SLUG")
-    elseif outlineMode == "thick" then dm.textFlag = CUI.SlugFlag("THICKOUTLINE, SLUG")
-    elseif outlineMode == "none" then dm.textFlag = "" end
+    if outlineMode == "outline" then
+        dm.textFlag = CUI.SlugFlag("OUTLINE, SLUG")
+    elseif outlineMode == "thick" then
+        dm.textFlag = CUI.SlugFlag("THICKOUTLINE, SLUG")
+    elseif outlineMode == "none" then
+        dm.textFlag = ""
+    end
     dm.texturePath = CUI.ResolveTexturePath(ns.BarTextures(), dm.barTexture, "Interface\\Buttons\\WHITE8X8")
     if dm.bgTexture ~= "none" and not Look.stock then
         dm.bgTexturePath = CUI.ResolveTexturePath(ns.BarTextures(), dm.bgTexture, nil)
     end
     if not Look.stock then
-        dm.barSeparatorsOn = dm.barSeparators and dm.borderSize > 0
+        dm.barSeparatorsOn = dm.barSeparators
+            and dm.borderSize > 0
             and CUI.GetBorderCompanion(dm.borderTexture, "sepH") ~= nil
-        dm.headerSeparatorOn = dm.hdrBottomSeparator and dm.showHeader and dm.windowBorderIncludeHeader ~= false
+        dm.headerSeparatorOn = dm.hdrBottomSeparator
+            and dm.showHeader
+            and dm.windowBorderIncludeHeader ~= false
             and dm.windowBorderSize > 0
             and CUI.GetBorderCompanion(dm.windowBorderTexture, "sepH") ~= nil
-        dm.iconSeparatorOn = dm.iconSeparator and dm.iconStyle ~= "none" and dm.borderSize > 0
+        dm.iconSeparatorOn = dm.iconSeparator
+            and dm.iconStyle ~= "none"
+            and dm.borderSize > 0
             and CUI.GetBorderCompanion(dm.borderTexture, "sepV") ~= nil
     end
     if dm.iconStyle ~= "none" and dm.iconStyle ~= "blizzard" then
@@ -427,10 +614,23 @@ local function Border(target, dm, window)
         CUI.ApplyBorderStyle(target, size, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
         return
     end
-    CUI.ApplyBorderStyle(target, size, r, g, b, a, texture,
-        dm.borderTextureOffset or nil, dm.borderTextureOffsetY or nil,
-        dm.borderTextureShiftX or nil, dm.borderTextureShiftY or nil,
-        BORDER_KEY, size, nil, px)
+    CUI.ApplyBorderStyle(
+        target,
+        size,
+        r,
+        g,
+        b,
+        a,
+        texture,
+        dm.borderTextureOffset or nil,
+        dm.borderTextureOffsetY or nil,
+        dm.borderTextureShiftX or nil,
+        dm.borderTextureShiftY or nil,
+        BORDER_KEY,
+        size,
+        nil,
+        px
+    )
 end
 
 -- A size in physical pixels, in UI units.
@@ -448,7 +648,10 @@ local function PlaceSeparators(host)
         local thick = CUI.BorderCompanionThickness(key, size, px, es)
         local lead = PP.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
         local bottom = PP.SnapForES(y - lead, es)
-        if bottom <= -s:GetHeight() + dm.inset then tex:Hide(); return end
+        if bottom <= -s:GetHeight() + dm.inset then
+            tex:Hide()
+            return
+        end
         tex:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
         tex:SetTexCoord(0, 1, 1, 0)
         tex:SetVertexColor(r, g, b, a)
@@ -464,8 +667,17 @@ local function PlaceSeparators(host)
             PP.DisablePixelSnap(host.headerLine)
         end
         local c = dm.windowBorderColor
-        Place(host.headerLine, dm.windowBorderTexture, dm.windowBorderSize, dm.windowBorderSizePx,
-            -dm.inset - dm.headerHeight, c.r or 0, c.g or 0, c.b or 0, c.a or 1)
+        Place(
+            host.headerLine,
+            dm.windowBorderTexture,
+            dm.windowBorderSize,
+            dm.windowBorderSizePx,
+            -dm.inset - dm.headerHeight,
+            c.r or 0,
+            c.g or 0,
+            c.b or 0,
+            c.a or 1
+        )
     elseif host.headerLine then
         host.headerLine:Hide()
     end
@@ -478,10 +690,21 @@ local function PlaceSeparators(host)
             host.lines[i] = tex
         end
         local y = -dm.inset - dm.headerHeight - i * (dm.barHeight + dm.barSpacing) + dm.barSpacing / 2
-        Place(tex, dm.borderTexture, dm.borderSize, dm.borderSizePx, y,
-            dm.borderR, dm.borderG, dm.borderB, dm.borderA)
+        Place(
+            tex,
+            dm.borderTexture,
+            dm.borderSize,
+            dm.borderSizePx,
+            y,
+            dm.borderR,
+            dm.borderG,
+            dm.borderB,
+            dm.borderA
+        )
     end
-    for i = n + 1, #host.lines do host.lines[i]:Hide() end
+    for i = n + 1, #host.lines do
+        host.lines[i]:Hide()
+    end
     n = dm.iconSeparatorOn and host.count or 0
     for i = 1, n do
         local row, tex = s.rows[i], host.iconLines[i]
@@ -491,15 +714,26 @@ local function PlaceSeparators(host)
             host.iconLines[i] = tex
         end
         if row._iconWidth and row._iconWidth > 0 then
-            CUI.PlaceBorderDividerV(tex, row.fill, false, false, dm.borderTexture, dm.borderSize,
-                CUI.BorderPx(dm.borderSizePx, dm.borderSize, dm.borderTexture), es)
+            CUI.PlaceBorderDividerV(
+                tex,
+                row.fill,
+                false,
+                false,
+                dm.borderTexture,
+                dm.borderSize,
+                CUI.BorderPx(dm.borderSizePx, dm.borderSize, dm.borderTexture),
+                es
+            )
             local slot = dm.growUp and (host.count - i + 1) or i
             local above = slot == 1 and host.headerLine or host.lines[slot - 1]
             local below = host.lines[slot]
             local top, bottom = 0, 0
             -- The flipped horizontal strip's solid stroke spans texels 3-7 of 32.
             if above and above:IsShown() then
-                top = PP.SnapForES(math.max(0, above:GetHeight() / 32 - (slot == 1 and 0 or dm.barSpacing / 2)), es)
+                top = PP.SnapForES(
+                    math.max(0, above:GetHeight() / 32 - (slot == 1 and 0 or dm.barSpacing / 2)),
+                    es
+                )
             end
             if below and below:IsShown() then
                 bottom = PP.SnapForES(math.max(0, below:GetHeight() * 3 / 32 - dm.barSpacing / 2), es)
@@ -508,7 +742,8 @@ local function PlaceSeparators(host)
             if top + bottom >= dm.barHeight then
                 tex:Hide()
             else
-                local lead = PP.SnapForES(tex:GetWidth() * 2 / CUI.GetBorderCompanion(dm.borderTexture, "sepSize"), es)
+                local lead =
+                    PP.SnapForES(tex:GetWidth() * 2 / CUI.GetBorderCompanion(dm.borderTexture, "sepSize"), es)
                 tex:SetPoint("TOPLEFT", row.fill, "TOPLEFT", -lead, -top)
                 tex:SetPoint("BOTTOMLEFT", row.fill, "BOTTOMLEFT", -lead, bottom)
             end
@@ -517,7 +752,9 @@ local function PlaceSeparators(host)
             tex:Hide()
         end
     end
-    for i = n + 1, #host.iconLines do host.iconLines[i]:Hide() end
+    for i = n + 1, #host.iconLines do
+        host.iconLines[i]:Hide()
+    end
 end
 
 local function SyncSeparators(s, dm, count, iconsChanged)
@@ -543,8 +780,17 @@ local function SyncSeparators(s, dm, count, iconsChanged)
     end
     local scale, height = host:GetEffectiveScale(), s:GetHeight()
     local strata, level = s:GetFrameStrata(), s.border:GetFrameLevel() + 2
-    if host.style == dm and host.count == count and host.scale == scale and host.height == height
-        and host.strata == strata and host.level == level and not iconsChanged then return end
+    if
+        host.style == dm
+        and host.count == count
+        and host.scale == scale
+        and host.height == height
+        and host.strata == strata
+        and host.level == level
+        and not iconsChanged
+    then
+        return
+    end
     host.style, host.count, host.scale, host.height = dm, count, scale, height
     host.strata, host.level = strata, level
     host:SetFrameStrata(strata)
@@ -552,8 +798,16 @@ local function SyncSeparators(s, dm, count, iconsChanged)
     host.art:SetFrameLevel(level + 1)
     host:Show()
     PlaceSeparators(host)
-    CUI.RegisterPxReapply(host, ((dm.headerSeparatorOn and dm.windowBorderSizePx)
-        or (dm.barSeparatorsOn and dm.borderSizePx) or dm.iconSeparatorOn) and PlaceSeparators or nil)
+    CUI.RegisterPxReapply(
+        host,
+        (
+            (dm.headerSeparatorOn and dm.windowBorderSizePx)
+            or (dm.barSeparatorsOn and dm.borderSizePx)
+            or dm.iconSeparatorOn
+        )
+                and PlaceSeparators
+            or nil
+    )
 end
 
 -------------------------------------------------------------------------------
@@ -568,7 +822,9 @@ end
 -- inside the inset. The live window reports the border's reach to size
 -- matching.
 local function ApplyChrome(dm, s)
-    if s._style == dm then return end
+    if s._style == dm then
+        return
+    end
     s._style = dm
     local header, inset = s.header, dm.inset
     header:ClearAllPoints()
@@ -626,7 +882,9 @@ local function ApplyChrome(dm, s)
     border:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, 0)
     border:SetFrameLevel(header:GetFrameLevel() + 4)
     Border(border, dm, true)
-    if s.unlockKey then CUI.MatchPadChanged(s.unlockKey) end
+    if s.unlockKey then
+        CUI.MatchPadChanged(s.unlockKey)
+    end
 end
 
 -- live: the meter window (header buttons take the mouse and show tooltips);
@@ -657,10 +915,9 @@ local function CreateSurface(parent, name, live)
     surface.title:SetJustifyH("LEFT")
     surface.title:SetWordWrap(false)
     -- Rightmost first.
-    surface.settingsBtn = ns.MakeHeaderButton(surface, "settings", "dm_settings.png",
-        live and CludesUI.L("Settings") or nil)
-    surface.sourceBtn = ns.MakeHeaderTextButton(surface, "source",
-        live and CludesUI.L("Tracked Unit") or nil)
+    surface.settingsBtn =
+        ns.MakeHeaderButton(surface, "settings", "dm_settings.png", live and CludesUI.L("Settings") or nil)
+    surface.sourceBtn = ns.MakeHeaderTextButton(surface, "source", live and CludesUI.L("Tracked Unit") or nil)
     if not live then
         surface.settingsBtn:EnableMouse(false)
         surface.sourceBtn:EnableMouse(false)
@@ -717,8 +974,12 @@ local function RowIcons(row, class, isPet, dm)
     row.classIcon:Hide()
     row.petIcon:Hide()
     local style = dm.iconStyle
-    if style == "none" then return 0 end
-    if isPet then class = nil end
+    if style == "none" then
+        return 0
+    end
+    if isPet then
+        class = nil
+    end
     local size, x = dm.barHeight, 0
     local coords
     if style == "blizzard" then
@@ -781,7 +1042,9 @@ local function PaintRow(row, e, dm, top, gen)
     if restyle or row._key ~= e.key or row._gen ~= gen then
         row._key, row._gen = e.key, gen
         local class = e.class
-        if e.unit then class = ns.ClassOf(e.unit) end
+        if e.unit then
+            class = ns.ClassOf(e.unit)
+        end
         local isPet = e.isPet == true
         if restyle or row._class ~= class or row._isPet ~= isPet then
             -- The texts sit inside the fill wherever the look seats it.
@@ -801,7 +1064,9 @@ local function PaintRow(row, e, dm, top, gen)
         if not e.unit then
             -- A preview row: the Name Format reaches your own sample name.
             local name = e.pull and CludesUI.L("Pull Aggro") or e.name
-            if e.own and dm.nameFormat then name = CUI.ShortName(name, dm.nameFormat) end
+            if e.own and dm.nameFormat then
+                name = CUI.ShortName(name, dm.nameFormat)
+            end
             row.label:SetText(name)
         end
     end
@@ -811,7 +1076,9 @@ local function PaintRow(row, e, dm, top, gen)
     -- player's name; a pet keeps its own and a secret passes whole.
     if e.unit then
         local name = CUI.WithSurname(UnitName(e.unit))
-        if dm.nameFormat and not e.isPet then name = CUI.ShortName(name, dm.nameFormat) end
+        if dm.nameFormat and not e.isPet then
+            name = CUI.ShortName(name, dm.nameFormat)
+        end
         if issecretvalue(name) then
             row.label:SetText(name)
             row._name = nil
@@ -826,16 +1093,28 @@ local function PaintRow(row, e, dm, top, gen)
         local class = row._class
         local color = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
         local fill
-        if e.pull then fill = dm.pullColor
-        elseif row._own and dm.playerColorOn then fill = dm.playerColor
-        elseif aggro and dm.tankColorOn then fill = dm.tankColor
-        elseif dm.showClassColor ~= false and color then fill = color
-        elseif dm.barColorUseAccent ~= false then fill = dm.accent
-        else fill = dm.barColor end
+        if e.pull then
+            fill = dm.pullColor
+        elseif row._own and dm.playerColorOn then
+            fill = dm.playerColor
+        elseif aggro and dm.tankColorOn then
+            fill = dm.tankColor
+        elseif dm.showClassColor ~= false and color then
+            fill = color
+        elseif dm.barColorUseAccent ~= false then
+            fill = dm.accent
+        else
+            fill = dm.barColor
+        end
         row.fill:SetStatusBarColor(fill.r, fill.g, fill.b, dm.barFillAlpha)
         local bg = dm.barBgUseClassColor and color
-        Look.RowBg(row.bg, bg and bg.r or dm.barBgR, bg and bg.g or dm.barBgG,
-            bg and bg.b or dm.barBgB, dm.barBgAlpha)
+        Look.RowBg(
+            row.bg,
+            bg and bg.r or dm.barBgR,
+            bg and bg.g or dm.barBgG,
+            bg and bg.b or dm.barBgB,
+            dm.barBgAlpha
+        )
         PaintText(row.label, dm.leftTextUseClassColor and color or dm.leftTextColor)
         if not dm.rightTextUseThreatGradient then
             PaintText(row.value, dm.rightTextUseClassColor and color or dm.rightTextColor)
@@ -860,7 +1139,11 @@ local function PaintRow(row, e, dm, top, gen)
     local raw = dm.showValue and e.raw or nil
     local pct
     if dm.showPercent and not (e.pull and raw) then
-        if dm.pullPercent then pct = e.scaled else pct = e.rawPct end
+        if dm.pullPercent then
+            pct = e.scaled
+        else
+            pct = e.rawPct
+        end
     end
     if restyle or row._vRaw ~= raw or row._vPct ~= pct then
         row._vRaw, row._vPct = raw, pct
@@ -895,11 +1178,17 @@ local function RenderRows(s, list, first, count, dm, top)
         end
         local iconWidth = row._iconWidth
         PaintRow(row, list[i + first], dm, top, gen)
-        if iconWidth ~= row._iconWidth then iconsChanged = true end
+        if iconWidth ~= row._iconWidth then
+            iconsChanged = true
+        end
     end
     local shown = s._count or #rows
-    for i = count + 1, shown do rows[i]:Hide() end
-    for i = shown + 1, count do rows[i]:Show() end
+    for i = count + 1, shown do
+        rows[i]:Hide()
+    end
+    for i = shown + 1, count do
+        rows[i]:Show()
+    end
     s._count = count
     SyncSeparators(s, dm, count, iconsChanged)
 end
@@ -923,8 +1212,15 @@ local demoList, demoEntries, demoPull = {}, {}, {}
 local demoPets, demoPullBar
 
 local function DemoEntry(i, s)
-    local e = { key = s, raw = s.raw, order = i, pull = false,
-        isPet = s.isPet == true, own = s.own == true, tanking = s.tank == true }
+    local e = {
+        key = s,
+        raw = s.raw,
+        order = i,
+        pull = false,
+        isPet = s.isPet == true,
+        own = s.own == true,
+        tanking = s.tank == true,
+    }
     e.scaled = s.tank and 100 or s.raw * 100 / (DEMO_TANK * s.reach)
     e.rawPct = s.raw * 100 / DEMO_TANK
     if s.own then
@@ -943,19 +1239,28 @@ end
 
 local function DemoList()
     local pets, pullBar = Get("pets"), Get("pullBar")
-    if demoPets == pets and demoPullBar == pullBar then return demoList end
+    if demoPets == pets and demoPullBar == pullBar then
+        return demoList
+    end
     demoPets, demoPullBar = pets, pullBar
     wipe(demoList)
     local me
     for i, s in ipairs(DEMO) do
         if pets or not s.isPet then
             local e = demoEntries[i]
-            if not e then e = DemoEntry(i, s); demoEntries[i] = e end
-            if e.own then me = e end
+            if not e then
+                e = DemoEntry(i, s)
+                demoEntries[i] = e
+            end
+            if e.own then
+                me = e
+            end
             demoList[#demoList + 1] = e
         end
     end
-    if pullBar and ns.FillPullEntry(demoPull, me, DEMO_TANK) then demoList[#demoList + 1] = demoPull end
+    if pullBar and ns.FillPullEntry(demoPull, me, DEMO_TANK) then
+        demoList[#demoList + 1] = demoPull
+    end
     table.sort(demoList, ns.ByThreat)
     return demoList
 end
@@ -973,7 +1278,9 @@ local hookedParents = setmetatable({}, { __mode = "k" })
 
 local function RefreshPreview(self)
     local parent = self:GetParent()
-    if not parent then return end
+    if not parent then
+        return
+    end
     local dm = Style()
     local list = DemoList()
     local n = #list
@@ -988,11 +1295,15 @@ local function RefreshPreview(self)
     ApplyChrome(dm, self)
     RenderRows(self, list, 0, n, dm, list[1].raw)
     self.previewHeight = height * self:GetScale() + 30
-    if self.onHeightChanged then self.onHeightChanged(self.previewHeight) end
+    if self.onHeightChanged then
+        self.onHeightChanged(self.previewHeight)
+    end
 end
 
 local function RefreshSettingsPreview()
-    if settingsPreview and settingsPreview:IsVisible() then RefreshPreview(settingsPreview) end
+    if settingsPreview and settingsPreview:IsVisible() then
+        RefreshPreview(settingsPreview)
+    end
 end
 
 function ns.CreateSettingsPreview(parent, availableWidth, onHeightChanged)
@@ -1012,7 +1323,9 @@ function ns.CreateSettingsPreview(parent, availableWidth, onHeightChanged)
         hookedParents[parent] = dress
         local lastWidth
         parent:HookScript("OnSizeChanged", function(_, width)
-            if width == lastWidth then return end
+            if width == lastWidth then
+                return
+            end
             lastWidth = width
             if settingsPreview:GetParent() == parent and settingsPreview:IsVisible() then
                 RefreshPreview(settingsPreview)
@@ -1028,33 +1341,46 @@ end
 --  Live meter
 -------------------------------------------------------------------------------
 local frame, events, pendingUpdate, followTicker, previewUntil
-local chrome         -- the window's lock / grip / drag handle (AttachChrome)
-local mobUnit        -- the mob token the last pass resolved, nil when none
-local threatOn       -- the two threat events are registered
-local flagsUnit      -- the tracked unit UNIT_FLAGS is registered for
-local shownList      -- the list on screen (the mouse wheel repaints it)
-local titleStamp     -- the mob GUID (or the preview) the title shows
+local chrome -- the window's lock / grip / drag handle (AttachChrome)
+local mobUnit -- the mob token the last pass resolved, nil when none
+local threatOn -- the two threat events are registered
+local flagsUnit -- the tracked unit UNIT_FLAGS is registered for
+local shownList -- the list on screen (the mouse wheel repaints it)
+local titleStamp -- the mob GUID (or the preview) the title shows
 local warned, warnedMob
-local offset = 0     -- rows scrolled past
+local offset = 0 -- rows scrolled past
 local DEMO_STAMP, EMPTY_STAMP, EMPTY = {}, {}, {}
 local visState = {}
 
 -- A tank does not want to be warned about holding aggro: tank role, or, while nobody
 -- in the group has that role, Bear or Dire Bear Form or Defensive Stance.
 local function PlayerIsTank()
-    if UnitGroupRolesAssigned("player") == "TANK" then return true end
-    if CUI.GroupHasTankRole() then return false end
+    if UnitGroupRolesAssigned("player") == "TANK" then
+        return true
+    end
+    if CUI.GroupHasTankRole() then
+        return false
+    end
     return CUI.ForeverTankForm()
 end
 
 -- Plays once when your pull percent reaches the threshold on a mob; re-arms
 -- when it drops back below, and for each new mob.
 local function CheckWarning(me, guid)
-    if not Get("warnSound") then warned, warnedMob = false, nil; return end
-    if guid ~= warnedMob then warned, warnedMob = false, guid end
-    local over = me and not me.tanking and me.scaled >= Get("warnAt")
+    if not Get("warnSound") then
+        warned, warnedMob = false, nil
+        return
+    end
+    if guid ~= warnedMob then
+        warned, warnedMob = false, guid
+    end
+    local over = me
+        and not me.tanking
+        and me.scaled >= Get("warnAt")
         and not (Get("warnSkipTank") and PlayerIsTank())
-    if over and not warned then ns.PlaySoundKey(Get("warnSoundKey")) end
+    if over and not warned then
+        ns.PlaySoundKey(Get("warnSoundKey"))
+    end
     warned = over and true or false
 end
 
@@ -1064,18 +1390,27 @@ end
 
 -- Visibility; "in combat" also counts your pet's and the watched mob's combat.
 function ns.IsVisible(c, state)
-    if c.visibilityMatch ~= "any" and CUI.CheckVisibilityOptions(c) then return false end
+    if c.visibilityMatch ~= "any" and CUI.CheckVisibilityOptions(c) then
+        return false
+    end
     local result = CUI.EvalVisibilityExtended(c, "visibility", state, CUI.VIS_CAPS_DEFAULT)
-    if result ~= nil then return result == true end
-    if c.visibility == "in_combat" then return state.inCombat end
-    if c.visibility == "out_of_combat" then return not state.inCombat end
+    if result ~= nil then
+        return result == true
+    end
+    if c.visibility == "in_combat" then
+        return state.inCombat
+    end
+    if c.visibility == "out_of_combat" then
+        return not state.inCombat
+    end
     return CUI.EvalVisibility(c) == true
 end
 
 -- mob is nil for the empty header (Only With Threat off).
 local function Visible(mob)
     local state = visState
-    state.inCombat = InCombatLockdown() or (Get("pets") and Flag(UnitAffectingCombat("pet")))
+    state.inCombat = InCombatLockdown()
+        or (Get("pets") and Flag(UnitAffectingCombat("pet")))
         or (mob ~= nil and Flag(UnitAffectingCombat(mob)))
     state.inRaid = IsInRaid()
     state.inParty = not state.inRaid and GetNumSubgroupMembers() > 0
@@ -1088,7 +1423,9 @@ end
 -- meter on, and a resolved mob keeps them while the meter hides empty, so the
 -- threat that fills it is always received.
 local function SetThreatEvents(on)
-    if on == threatOn then return end
+    if on == threatOn then
+        return
+    end
     threatOn = on
     if on then
         events:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
@@ -1105,7 +1442,9 @@ end
 -- in that one case, and only in combat.
 local function SetFollow(on)
     if on then
-        if not followTicker then followTicker = C_Timer.NewTicker(FOLLOW_INTERVAL, RequestUpdate) end
+        if not followTicker then
+            followTicker = C_Timer.NewTicker(FOLLOW_INTERVAL, RequestUpdate)
+        end
     elseif followTicker then
         followTicker:Cancel()
         followTicker = nil
@@ -1117,20 +1456,30 @@ local function Paint(list, dm)
     local area = frame:GetHeight() - 2 * dm.inset - dm.headerHeight
     local slack = 2 * CUI.PP.perfect / frame:GetEffectiveScale()
     local capacity = math.floor((area + dm.barSpacing + slack) / step)
-    if capacity < 1 then capacity = 1 end
+    if capacity < 1 then
+        capacity = 1
+    end
     local n = #list
     local maxOffset = n - capacity
-    if maxOffset < 0 then maxOffset = 0 end
-    if offset > maxOffset then offset = maxOffset end
+    if maxOffset < 0 then
+        maxOffset = 0
+    end
+    if offset > maxOffset then
+        offset = maxOffset
+    end
     local count = n - offset
-    if count > capacity then count = capacity end
+    if count > capacity then
+        count = capacity
+    end
     RenderRows(frame, list, offset, count, dm, n > 0 and list[1].raw or 0)
 end
 
 local function Show(list, dm, stamp, mob)
     ApplyChrome(dm, frame)
     if stamp == nil or stamp ~= titleStamp then
-        if stamp ~= nil then offset = 0 end
+        if stamp ~= nil then
+            offset = 0
+        end
         titleStamp = stamp
         if mob then
             frame.title:SetFormattedText(CludesUI.L("Threat - %s"), CUI.WithSurname(UnitName(mob)))
@@ -1157,12 +1506,16 @@ local function ShowEmpty(dm, stamp, mob)
 end
 
 Repaint = function()
-    if shownList and frame and frame:IsShown() then Paint(shownList, Style()) end
+    if shownList and frame and frame:IsShown() then
+        Paint(shownList, Style())
+    end
 end
 
 local function Update()
     pendingUpdate = false
-    if not (frame and events) then return end
+    if not (frame and events) then
+        return
+    end
     if not Get("enabled") then
         SetFollow(false)
         Empty()
@@ -1174,7 +1527,9 @@ local function Update()
         events:RegisterUnitEvent("UNIT_FLAGS", "pet", tracked)
         flagsUnit = tracked
     end
-    if previewUntil and GetTime() >= previewUntil then previewUntil = nil end
+    if previewUntil and GetTime() >= previewUntil then
+        previewUntil = nil
+    end
     -- Preview rows while previewing or while unlock mode is open. Combat lifts
     -- unlock mode and real rows show there; it comes back a moment after
     -- combat with no edge of its own, so the open session out of combat is the
@@ -1211,13 +1566,17 @@ local function Update()
         return
     end
     local guid = UnitGUID(mob)
-    if issecretvalue(guid) then guid = nil end
+    if issecretvalue(guid) then
+        guid = nil
+    end
     if #list == 0 then
         ShowEmpty(dm, guid, mob)
         return
     end
     CheckWarning(me, guid)
-    if Get("pullBar") then ns.AddPullEntry(me, tankRaw) end
+    if Get("pullBar") then
+        ns.AddPullEntry(me, tankRaw)
+    end
     ns.Sort()
     Show(list, dm, guid, mob)
 end
@@ -1225,7 +1584,9 @@ end
 -- Threat updates arrive per unit, so a raid pull is a burst; one redraw per
 -- short window covers the whole burst.
 RequestUpdate = function()
-    if pendingUpdate then return end
+    if pendingUpdate then
+        return
+    end
     pendingUpdate = true
     C_Timer.After(UPDATE_DELAY, Update)
 end
@@ -1240,25 +1601,39 @@ local function OnEvent(_, event, unit)
     if event == "GROUP_ROSTER_UPDATE" then
         ns.RosterChanged()
     elseif event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
-        if (event == "PLAYER_FOCUS_CHANGED") ~= (TrackedUnit() == "focus") then return end
+        if (event == "PLAYER_FOCUS_CHANGED") ~= (TrackedUnit() == "focus") then
+            return
+        end
         offset = 0
         warned, warnedMob = false, nil
     end
-    if pendingUpdate then return end
+    if pendingUpdate then
+        return
+    end
     if event == "UNIT_THREAT_LIST_UPDATE" then
         local mob = mobUnit
-        if not mob then return end
+        if not mob then
+            return
+        end
         if unit ~= mob then
             local same = UnitIsUnit(unit, mob)
-            if not issecretvalue(same) and not same then return end
+            if not issecretvalue(same) and not same then
+                return
+            end
         end
     elseif event == "UNIT_THREAT_SITUATION_UPDATE" then
-        if not (ns.MEMBER_UNITS[unit] or (ns.PET_UNITS[unit] and Get("pets"))) then return end
+        if not (ns.MEMBER_UNITS[unit] or (ns.PET_UNITS[unit] and Get("pets"))) then
+            return
+        end
     elseif event == "UNIT_PET" then
-        if not (ns.MEMBER_UNITS[unit] and Get("pets")) then return end
+        if not (ns.MEMBER_UNITS[unit] and Get("pets")) then
+            return
+        end
     elseif event == "UNIT_TARGET" or event == "UNIT_FLAGS" then
         if unit == "pet" then
-            if not Get("pets") then return end
+            if not Get("pets") then
+                return
+            end
         elseif unit ~= TrackedUnit() then
             return
         end
@@ -1268,7 +1643,9 @@ end
 
 -- The grip owns the anchor while it is held.
 local function SetSavedPoint()
-    if chrome and chrome.resizing then return end
+    if chrome and chrome.resizing then
+        return
+    end
     local p = Get("position")
     frame:ClearAllPoints()
     if type(p) == "table" and p.point then
@@ -1283,7 +1660,9 @@ end
 
 -- The saved spot, then the unlock-mode anchor when the meter has one.
 local function Position()
-    if chrome and chrome.resizing then return end
+    if chrome and chrome.resizing then
+        return
+    end
     SetSavedPoint()
     CUI.ReapplyOwnAnchor(UNLOCK_KEY)
 end
@@ -1303,22 +1682,30 @@ end
 local function SaveMove(left, top)
     Cfg().position = { x = left, y = top }
     local anchors = CludesUIDB and CludesUIDB.unlockAnchors
-    if anchors then anchors[UNLOCK_KEY] = nil end
+    if anchors then
+        anchors[UNLOCK_KEY] = nil
+    end
     CUI.ScheduleSettleReapply()
 end
 
 -- Unlock mode owns the position while it is open (a first build still places
 -- the frame, so its mover has a spot to start from).
 local function ApplyGeometry(firstBuild)
-    if chrome and chrome.resizing then return end
+    if chrome and chrome.resizing then
+        return
+    end
     frame:SetSize(ClampW(Get("width")), ClampH(Get("height")))
-    if firstBuild or not CUI._unlockActive then Position() end
+    if firstBuild or not CUI._unlockActive then
+        Position()
+    end
 end
 
 function ns.Apply()
     cachedStyle = nil
     if Get("enabled") then
-        if not frame then CreateWindow() end
+        if not frame then
+            CreateWindow()
+        end
         if not events then
             events = CreateFrame("Frame")
             events:SetScript("OnEvent", OnEvent)
@@ -1338,13 +1725,17 @@ function ns.Apply()
         ApplyGeometry()
         RequestUpdate()
     else
-        if events then events:UnregisterAllEvents() end
+        if events then
+            events:UnregisterAllEvents()
+        end
         threatOn, flagsUnit, mobUnit, previewUntil = false, nil, nil, nil
         CUI.UnregisterVisibilityUpdater(RequestUpdate)
         SetFollow(false)
         warned, warnedMob = false, nil
         shownList = nil
-        if frame then frame:Hide() end
+        if frame then
+            frame:Hide()
+        end
     end
     -- A reset also reaches a Damage Meters Threat window (ThreatFeed file).
     ns.FeedChanged()
@@ -1353,18 +1744,24 @@ end
 
 function ns.ApplyStyle()
     cachedStyle = nil
-    if frame and Get("enabled") then RequestUpdate() end
+    if frame and Get("enabled") then
+        RequestUpdate()
+    end
     ns.FeedChanged()
     RefreshSettingsPreview()
 end
 
 -- The value column is sized from a formatted sample (Style), so a Number Format
 -- change restyles.
-CUI.RegisterNumberFormatCallback(function() ns.ApplyStyle() end)
+CUI.RegisterNumberFormatCallback(function()
+    ns.ApplyStyle()
+end)
 
 -- Ten seconds of preview rows on the live meter.
 function ns.Preview()
-    if not (frame and Get("enabled")) then return false end
+    if not (frame and Get("enabled")) then
+        return false
+    end
     previewUntil = GetTime() + PREVIEW_SECONDS
     RequestUpdate()
     C_Timer.After(PREVIEW_SECONDS, RequestUpdate)
@@ -1395,10 +1792,20 @@ end
 local function SourceItems()
     local tracked = TrackedUnit()
     return {
-        { text = CludesUI.L("Target"), isActive = tracked == "target",
-          onClick = function() SetSource("target") end },
-        { text = CludesUI.L("Focus"), isActive = tracked == "focus",
-          onClick = function() SetSource("focus") end },
+        {
+            text = CludesUI.L("Target"),
+            isActive = tracked == "target",
+            onClick = function()
+                SetSource("target")
+            end,
+        },
+        {
+            text = CludesUI.L("Focus"),
+            isActive = tracked == "focus",
+            onClick = function()
+                SetSource("focus")
+            end,
+        },
     }
 end
 
@@ -1424,41 +1831,71 @@ local function DataItems(items)
     local shown, values = ns.GetDisplayedValue(), {}
     for _, key in ipairs(ns.DisplayOrder) do
         local value = key
-        values[#values + 1] = { text = CludesUI.L(ns.DisplayValues[value]), isActive = shown == value,
+        values[#values + 1] = {
+            text = CludesUI.L(ns.DisplayValues[value]),
+            isActive = shown == value,
             onClick = function()
                 ns.SetDisplayedValue(value)
                 Changed()
-            end }
+            end,
+        }
     end
     items[#items + 1] = { text = CludesUI.L("Displayed Value"), children = values }
     -- The options page's label: checked while pets are left out.
-    items[#items + 1] = { text = CludesUI.L("Ignore Pets"), isActive = not Get("pets"),
+    items[#items + 1] = {
+        text = CludesUI.L("Ignore Pets"),
+        isActive = not Get("pets"),
         onClick = function()
             Cfg().pets = not Get("pets")
             Changed()
-        end }
+        end,
+    }
     return items
 end
 ns.DataMenuItems = DataItems
 
 local function ShowQuickMenu(anchor)
     local items = DataItems({})
-    items[#items + 1] = { text = CludesUI.L("Warning Sound"), isActive = Get("warnSound") == true,
+    items[#items + 1] = {
+        text = CludesUI.L("Warning Sound"),
+        isActive = Get("warnSound") == true,
         onClick = function()
             Cfg().warnSound = not Get("warnSound")
             Changed()
-        end }
+        end,
+    }
     items[#items + 1] = "---"
-    items[#items + 1] = { text = CludesUI.L("Width"), isInput = true, min = MIN_W,
-        getValue = function() return math.floor(frame:GetWidth() + 0.5) end,
-        setValue = function(v) ResizeTo(math.max(MIN_W, v), frame:GetHeight(), "width") end }
-    items[#items + 1] = { text = CludesUI.L("Height"), isInput = true, min = MIN_H,
-        getValue = function() return math.floor(frame:GetHeight() + 0.5) end,
-        setValue = function(v) ResizeTo(frame:GetWidth(), math.max(MIN_H, v), "height") end }
+    items[#items + 1] = {
+        text = CludesUI.L("Width"),
+        isInput = true,
+        min = MIN_W,
+        getValue = function()
+            return math.floor(frame:GetWidth() + 0.5)
+        end,
+        setValue = function(v)
+            ResizeTo(math.max(MIN_W, v), frame:GetHeight(), "width")
+        end,
+    }
+    items[#items + 1] = {
+        text = CludesUI.L("Height"),
+        isInput = true,
+        min = MIN_H,
+        getValue = function()
+            return math.floor(frame:GetHeight() + 0.5)
+        end,
+        setValue = function(v)
+            ResizeTo(frame:GetWidth(), math.max(MIN_H, v), "height")
+        end,
+    }
     local snapOff = Get("snapDisabled") == true
-    items[#items + 1] = { text = snapOff and CludesUI.L("Enable Snapping") or CludesUI.L("Disable Snapping"),
-        onClick = function() Cfg().snapDisabled = (not snapOff) or nil end }
-    items[#items + 1] = { text = CludesUI.L("Settings"), isDisabled = InCombatLockdown, onClick = OpenSettings }
+    items[#items + 1] = {
+        text = snapOff and CludesUI.L("Enable Snapping") or CludesUI.L("Disable Snapping"),
+        onClick = function()
+            Cfg().snapDisabled = (not snapOff) or nil
+        end,
+    }
+    items[#items + 1] =
+        { text = CludesUI.L("Settings"), isDisabled = InCombatLockdown, onClick = OpenSettings }
     CUI.ShowContextMenu(anchor, items, MENU_OPTS)
 end
 
@@ -1484,10 +1921,18 @@ CreateWindow = function()
     frame.settingsBtn.onClick = ShowQuickMenu
     frame.sourceBtn.onClick = ShowSourceMenu
     chrome = ns.AttachChrome(frame, {
-        IsLocked = function() return Get("locked") == true end,
-        SetLocked = function(locked) Cfg().locked = locked or nil end,
-        SnapDisabled = function() return Get("snapDisabled") == true end,
-        CanMove = function() return not CUI._unlockActive end,
+        IsLocked = function()
+            return Get("locked") == true
+        end,
+        SetLocked = function(locked)
+            Cfg().locked = locked or nil
+        end,
+        SnapDisabled = function()
+            return Get("snapDisabled") == true
+        end,
+        CanMove = function()
+            return not CUI._unlockActive
+        end,
         PinPosition = PinPosition,
         SaveMove = SaveMove,
         SaveSize = function(width, height)
@@ -1502,15 +1947,22 @@ CreateWindow = function()
     end)
     local lastHeight
     frame:HookScript("OnSizeChanged", function(_, _, height)
-        if height == lastHeight then return end
+        if height == lastHeight then
+            return
+        end
         lastHeight = height
         Repaint()
     end)
     -- An accent change repaints the title and accent-coloured bars.
-    CUI.RegAccent({ type = "callback", fn = function()
-        if frame:IsShown() then RequestUpdate() end
-        RefreshSettingsPreview()
-    end })
+    CUI.RegAccent({
+        type = "callback",
+        fn = function()
+            if frame:IsShown() then
+                RequestUpdate()
+            end
+            RefreshSettingsPreview()
+        end,
+    })
     ApplyGeometry(true)
 end
 
@@ -1521,63 +1973,107 @@ end
 --  A size set outside unlock mode (a width or height match) is not saved.
 -------------------------------------------------------------------------------
 local function SetUnlockSize(key, v, low)
-    if not frame then return end
+    if not frame then
+        return
+    end
     v = CUI.PP.Snap(math.max(low, v or low))
-    if key == "width" then frame:SetWidth(v) else frame:SetHeight(v) end
-    if CUI._unlockActive then Cfg()[key] = math.floor(v + 0.5) end
+    if key == "width" then
+        frame:SetWidth(v)
+    else
+        frame:SetHeight(v)
+    end
+    if CUI._unlockActive then
+        Cfg()[key] = math.floor(v + 0.5)
+    end
 end
 
 -- How far a textured window border reaches past the window, so size matching
 -- lines up with what is on screen. nil for a solid border or a stock look.
 local function WindowBorderPad()
-    if Look.stock then return nil end
+    if Look.stock then
+        return nil
+    end
     local size = ns.GetStyleValue("borders", "windowBorderSize") or 0
     local texture = ns.GetStyleValue("borders", "windowBorderTexture") or "solid"
-    if size <= 0 or texture == "solid" then return nil end
+    if size <= 0 or texture == "solid" then
+        return nil
+    end
     local color = ns.GetStyleValue("borders", "windowBorderColor")
-    local l, r, t, b = CUI.BorderReach(size, texture, nil, nil, nil, nil, nil, nil,
-        CUI.BorderPx(ns.GetStyleValue("borders", "windowBorderSizePx"), size, texture), nil,
-        color and color.a or 1)
-    if not l then return nil end
+    local l, r, t, b = CUI.BorderReach(
+        size,
+        texture,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        CUI.BorderPx(ns.GetStyleValue("borders", "windowBorderSizePx"), size, texture),
+        nil,
+        color and color.a or 1
+    )
+    if not l then
+        return nil
+    end
     if ns.GetStyleValue("borders", "windowBorderIncludeHeader") == false and Get("showHeader") then
         t = t - ns.GetStyleValue("header", "hdrHeight")
     end
     local pw = (l > 0 and l or 0) + (r > 0 and r or 0)
     local ph = (t > 0 and t or 0) + (b > 0 and b or 0)
-    if pw <= 0 and ph <= 0 then return nil end
+    if pw <= 0 and ph <= 0 then
+        return nil
+    end
     return pw, ph
 end
 
 local function RegisterUnlock()
     CUI:RegisterUnlockElements({
         CUI.MakeUnlockElement({
-            key      = UNLOCK_KEY,
-            label    = "Threat Meter",
-            group    = "Forever Tools",
-            order    = 731,
-            isHidden = function() return not Get("enabled") end,
+            key = UNLOCK_KEY,
+            label = "Threat Meter",
+            group = "Forever Tools",
+            order = 731,
+            isHidden = function()
+                return not Get("enabled")
+            end,
             getFrame = function()
-                if not Get("enabled") then return nil end
-                if not frame then CreateWindow() end
+                if not Get("enabled") then
+                    return nil
+                end
+                if not frame then
+                    CreateWindow()
+                end
                 return frame
             end,
             getSize = function()
-                if frame then return frame:GetSize() end
+                if frame then
+                    return frame:GetSize()
+                end
                 return ClampW(Get("width")), ClampH(Get("height"))
             end,
             getMatchPad = WindowBorderPad,
-            setWidth = function(_, w) SetUnlockSize("width", w, MIN_W) end,
-            setHeight = function(_, h) SetUnlockSize("height", h, MIN_H) end,
+            setWidth = function(_, w)
+                SetUnlockSize("width", w, MIN_W)
+            end,
+            setHeight = function(_, h)
+                SetUnlockSize("height", h, MIN_H)
+            end,
             savePos = function(_, point, relPoint, x, y)
-                if not point then return end
+                if not point then
+                    return
+                end
                 Cfg().position = { point = point, relPoint = relPoint or point, x = x, y = y }
-                if frame and not CUI._unlockActive then SetSavedPoint() end
+                if frame and not CUI._unlockActive then
+                    SetSavedPoint()
+                end
             end,
             -- A copy; a dragged corner reads as TOPLEFT of the screen's
             -- BOTTOMLEFT (never re-applied on a size change, unlike a centre).
             loadPos = function()
                 local p = Get("position")
-                if type(p) ~= "table" then return nil end
+                if type(p) ~= "table" then
+                    return nil
+                end
                 if p.point then
                     return { point = p.point, relPoint = p.relPoint or p.point, x = p.x or 0, y = p.y or 0 }
                 end
@@ -1587,12 +2083,20 @@ local function RegisterUnlock()
             end,
             clearPos = function()
                 local c = Read()
-                if c ~= _NOCFG then c.position, c.pos = nil, nil end
-                if frame then SetSavedPoint() end
+                if c ~= _NOCFG then
+                    c.position, c.pos = nil, nil
+                end
+                if frame then
+                    SetSavedPoint()
+                end
             end,
             applyPos = function()
-                if not Get("enabled") then return end
-                if not frame then CreateWindow() end
+                if not Get("enabled") then
+                    return
+                end
+                if not frame then
+                    CreateWindow()
+                end
                 SetSavedPoint()
             end,
         }),
@@ -1603,15 +2107,23 @@ end
 
 -- Opening or closing unlock mode swaps between preview and real rows.
 local function OnUnlockModeChanged()
-    if frame and Get("enabled") then RequestUpdate() end
+    if frame and Get("enabled") then
+        RequestUpdate()
+    end
 end
 
 -- Options-page and reset entry points.
 CUI._ThreatMeter = {
-    Get = Get, Cfg = Cfg, Read = Read,
+    Get = Get,
+    Cfg = Cfg,
+    Read = Read,
     Apply = ns.Apply,
     ApplyStyle = ns.ApplyStyle,
-    ApplyPosition = function() if frame then Position() end end,
+    ApplyPosition = function()
+        if frame then
+            Position()
+        end
+    end,
     Preview = ns.Preview,
     Sounds = ns.Sounds,
 }
@@ -1620,7 +2132,9 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if module.TM_Style() == "classic" then module.TM_SeedStock(Cfg(), "classic") end
+    if module.TM_Style() == "classic" then
+        module.TM_SeedStock(Cfg(), "classic")
+    end
     EnsureLook()
     ns.Apply()
     RegisterUnlock()
@@ -1632,7 +2146,9 @@ end)
 -------------------------------------------------------------------------------
 -- Chat feedback; nothing prints in combat.
 local function Say(msg)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
 end
 
@@ -1640,7 +2156,9 @@ SLASH_CLUDESUITHREAT1 = "/cuitm"
 SlashCmdList.CLUDESUITHREAT = function(input)
     local cmd = (input or ""):lower():match("^%s*(.-)%s*$")
     if cmd == "test" then
-        if not ns.Preview() then Say(CludesUI.L("Enable the threat meter first.")) end
+        if not ns.Preview() then
+            Say(CludesUI.L("Enable the threat meter first."))
+        end
     elseif cmd == "target" or cmd == "focus" then
         Cfg().source = Get("focusEnabled") and cmd or "target"
         offset = 0
@@ -1659,7 +2177,9 @@ SlashCmdList.CLUDESUITHREAT = function(input)
     elseif cmd == "reset" then
         -- The older keys too: a saved bar count would otherwise size the window.
         local c = Read()
-        if c ~= _NOCFG then c.position, c.pos, c.width, c.height, c.maxBars = nil, nil, nil, nil, nil end
+        if c ~= _NOCFG then
+            c.position, c.pos, c.width, c.height, c.maxBars = nil, nil, nil, nil, nil
+        end
         ns.Apply()
     else
         Say("/cuitm test, target, focus, show, hide, pets, reset")

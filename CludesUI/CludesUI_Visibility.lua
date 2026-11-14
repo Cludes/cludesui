@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Visibility.lua
 --  Shared visibility dispatcher. Each module (Minimap, Friends, QuestTracker,
@@ -19,7 +21,9 @@ _G.CludesUI = CUI
 -------------------------------------------------------------------------------
 local _inCombat = false
 
-local function IsInCombat() return _inCombat end
+local function IsInCombat()
+    return _inCombat
+end
 
 CUI.IsInCombat = IsInCombat
 
@@ -33,7 +37,9 @@ local DISPATCHER_CAPS = { partyIncludesRaid = false }
 
 -- Returns true = show, false = hide, "mouseover" = mouseover mode
 local function EvalVisibility(cfg)
-    if not cfg then return true end
+    if not cfg then
+        return true
+    end
     -- Under Any, EvalVisibilityExtended owns the whole verdict, the option HIDE veto
     -- included, so asking CheckVisibilityOptions first re-ran every set lane's probe (the
     -- instance lookup, IsResting, the druid aura walk) once per updater per dispatcher
@@ -43,25 +49,46 @@ local function EvalVisibility(cfg)
     -- to exactly the chain an All store takes, veto included.
     local ext
     if cfg.visibilityMatch == "any" then
-        ext = CUI.EvalVisibilityExtended and CUI.EvalVisibilityExtended(cfg, "visibility", nil, DISPATCHER_CAPS)
-        if ext ~= nil then return ext end
+        ext = CUI.EvalVisibilityExtended
+            and CUI.EvalVisibilityExtended(cfg, "visibility", nil, DISPATCHER_CAPS)
+        if ext ~= nil then
+            return ext
+        end
     end
     if CUI.CheckVisibilityOptions(cfg) then
         return false
     end
     ext = CUI.EvalVisibilityExtended and CUI.EvalVisibilityExtended(cfg, "visibility", nil, DISPATCHER_CAPS)
-    if ext ~= nil then return ext end
+    if ext ~= nil then
+        return ext
+    end
     local mode = cfg.visibility or "always"
-    if mode == "mouseover" then return "mouseover" end
-    if mode == "always" then return true end
-    if mode == "never" then return false end
-    if mode == "in_combat" then return _inCombat end
-    if mode == "out_of_combat" then return not _inCombat end
+    if mode == "mouseover" then
+        return "mouseover"
+    end
+    if mode == "always" then
+        return true
+    end
+    if mode == "never" then
+        return false
+    end
+    if mode == "in_combat" then
+        return _inCombat
+    end
+    if mode == "out_of_combat" then
+        return not _inCombat
+    end
     local inGroup = IsInGroup()
-    local inRaid  = IsInRaid()
-    if mode == "in_raid"  then return inRaid end
-    if mode == "in_party" then return inGroup and not inRaid end
-    if mode == "solo"     then return not inGroup end
+    local inRaid = IsInRaid()
+    if mode == "in_raid" then
+        return inRaid
+    end
+    if mode == "in_party" then
+        return inGroup and not inRaid
+    end
+    if mode == "solo" then
+        return not inGroup
+    end
     return true
 end
 
@@ -76,7 +103,9 @@ local updaters = {}
 -- have changed (combat/zone/group/target change). The function should read
 -- its own DB state and Show/Hide its frame accordingly.
 function CUI.RegisterVisibilityUpdater(fn)
-    if type(fn) ~= "function" then return end
+    if type(fn) ~= "function" then
+        return
+    end
     updaters[#updaters + 1] = fn
 end
 
@@ -104,16 +133,21 @@ local mouseoverTargets = {}
 -- visibility-selection write. Each target's isActive closure runs at most once per
 -- generation instead of once per 0.15s tick.
 local _moGen = 1
-local MouseoverScan  -- defined with the scan below; bound here for the subscribe
+local MouseoverScan -- defined with the scan below; bound here for the subscribe
 
 function CUI.RegisterMouseoverTarget(frame, isActive, getAlpha)
-    if not frame or type(isActive) ~= "function" then return end
-    if type(getAlpha) ~= "function" then getAlpha = nil end
+    if not frame or type(isActive) ~= "function" then
+        return
+    end
+    if type(getAlpha) ~= "function" then
+        getAlpha = nil
+    end
     -- visible starts nil = "state not applied yet", not false: the scan below treats nil
     -- as unknown and applies the hidden state on its first active tick. Seeding false
     -- would make that first tick a no-op (already-false edge), so a target that becomes
     -- active with the cursor away never received its Hide() until the first real hover.
-    mouseoverTargets[#mouseoverTargets + 1] = { frame = frame, visible = nil, isActive = isActive, getAlpha = getAlpha }
+    mouseoverTargets[#mouseoverTargets + 1] =
+        { frame = frame, visible = nil, isActive = isActive, getAlpha = getAlpha }
     -- First target arms the shared 0.15s scan on the Mouse service (same-key
     -- subscribe is idempotent). No targets registered = the scan never runs.
     CludesUI.Mouse.SubscribeTick("visMouseover", 0.15, MouseoverScan)
@@ -183,7 +217,9 @@ do
     local ok
     if C_EventUtils and C_EventUtils.IsEventValid then
         ok = C_EventUtils.IsEventValid("PLAYER_IS_GLIDING_CHANGED") and true or false
-        if ok then visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
+        if ok then
+            visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")
+        end
     else
         ok = pcall(visFrame.RegisterEvent, visFrame, "PLAYER_IS_GLIDING_CHANGED") and true or false
     end
@@ -218,9 +254,13 @@ end)
 -- Cursor-in-bounds check (works on hidden frames using saved position/size).
 -- Coordinates come from the shared Mouse service sample.
 local function IsCursorOver(frame, rawX, rawY)
-    if not frame.GetRect then return false end
+    if not frame.GetRect then
+        return false
+    end
     local l, b, w, h = frame:GetRect()
-    if not l then return false end
+    if not l then
+        return false
+    end
     local es = frame:GetEffectiveScale()
     local cx, cy = rawX / es, rawY / es
     return cx >= l and cx <= l + w and cy >= b and cy <= b + h
@@ -253,7 +293,9 @@ MouseoverScan = function(rawX, rawY)
                     if t.visible ~= true then
                         t.visible = true
                         local ga = t.getAlpha
-                        frame:SetAlpha(ga and ga() or 1); frame:EnableMouse(true); frame:Show()
+                        frame:SetAlpha(ga and ga() or 1)
+                        frame:EnableMouse(true)
+                        frame:Show()
                     end
                 elseif t.visible ~= false then
                     t.visible = false
@@ -272,9 +314,9 @@ end
 -------------------------------------------------------------------------------
 --  Compat globals (kept for the many call sites already using them)
 -------------------------------------------------------------------------------
-_G._EBS_InCombat         = IsInCombat
-_G._EBS_EvalVisibility   = EvalVisibility
-_G._EBS_UpdateVisibility = RequestVisibilityUpdate
+_G._CUBS_InCombat = IsInCombat
+_G._CUBS_EvalVisibility = EvalVisibility
+_G._CUBS_UpdateVisibility = RequestVisibilityUpdate
 
 -------------------------------------------------------------------------------
 --  Multi-Select Visibility Engine
@@ -300,7 +342,7 @@ _G._EBS_UpdateVisibility = RequestVisibilityUpdate
 
 CUI.VIS_AXES = {
     combat = { "in_combat", "out_of_combat" },
-    group  = { "in_raid", "in_party", "solo" },
+    group = { "in_raid", "in_party", "solo" },
     dragon = { "show_dragonriding", "show_not_dragonriding" },
 }
 
@@ -317,11 +359,18 @@ CUI.VIS_CAPS_NO_GROUP = { partyIncludesRaid = false, noGroupModes = true }
 -- mode written alongside a multi-selection so older addon versions and every
 -- existing scalar reader see a sane, user-recognizable value.
 local VIS_REPRESENTATIVE_ORDER = {
-    "in_combat", "out_of_combat", "in_raid", "in_party", "solo",
-    "show_dragonriding", "show_not_dragonriding",
+    "in_combat",
+    "out_of_combat",
+    "in_raid",
+    "in_party",
+    "solo",
+    "show_dragonriding",
+    "show_not_dragonriding",
 }
 local VIS_CONDITION_KEYS = {}
-for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do VIS_CONDITION_KEYS[k] = true end
+for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do
+    VIS_CONDITION_KEYS[k] = true
+end
 CUI.VIS_CONDITION_KEYS = VIS_CONDITION_KEYS
 
 -- Mode-row axes: one entry per condition ROW of the shared Visibility checklist, the
@@ -333,24 +382,63 @@ CUI.VIS_CONDITION_KEYS = VIS_CONDITION_KEYS
 -- caller has to resolve the veto in Lua. combatFlip = the probe can change INSIDE combat,
 -- where a driver can no longer be rewritten. group = part of the three-way group row set.
 CUI.VIS_MODE_AXES = {
-    { show = "in_combat", hide = "hide_in_combat", token = "combat",
-      probe = function(state) return state.inCombat and true or false end },
-    { show = "out_of_combat", hide = "hide_out_of_combat", token = "nocombat",
-      probe = function(state) return not state.inCombat end },
-    { show = "in_raid", hide = "hide_in_raid", token = "group:raid", group = true,
-      probe = function(state) return state.inRaid and true or false end },
+    {
+        show = "in_combat",
+        hide = "hide_in_combat",
+        token = "combat",
+        probe = function(state)
+            return state.inCombat and true or false
+        end,
+    },
+    {
+        show = "out_of_combat",
+        hide = "hide_out_of_combat",
+        token = "nocombat",
+        probe = function(state)
+            return not state.inCombat
+        end,
+    },
+    {
+        show = "in_raid",
+        hide = "hide_in_raid",
+        token = "group:raid",
+        group = true,
+        probe = function(state)
+            return state.inRaid and true or false
+        end,
+    },
     -- [group:party] alone is TRUE inside a raid; nogroup:raid narrows it to a real party,
     -- exactly as the driver compilers below do for the show lane.
-    { show = "in_party", hide = "hide_in_party", token = "group:party,nogroup:raid", group = true,
-      probe = function(state, caps)
-          if state.inParty then return true end
-          return (caps and caps.partyIncludesRaid and state.inRaid) and true or false
-      end },
-    { show = "solo", hide = "hide_solo", token = "nogroup", group = true,
-      probe = function(state) return not state.inRaid and not state.inParty end },
-    { show = "show_dragonriding", hide = "hide_dragonriding", token = "advflyable,flying",
-      combatFlip = true,
-      probe = function() return CUI.IsAirborneSkyriding() end },
+    {
+        show = "in_party",
+        hide = "hide_in_party",
+        token = "group:party,nogroup:raid",
+        group = true,
+        probe = function(state, caps)
+            if state.inParty then
+                return true
+            end
+            return (caps and caps.partyIncludesRaid and state.inRaid) and true or false
+        end,
+    },
+    {
+        show = "solo",
+        hide = "hide_solo",
+        token = "nogroup",
+        group = true,
+        probe = function(state)
+            return not state.inRaid and not state.inParty
+        end,
+    },
+    {
+        show = "show_dragonriding",
+        hide = "hide_dragonriding",
+        token = "advflyable,flying",
+        combatFlip = true,
+        probe = function()
+            return CUI.IsAirborneSkyriding()
+        end,
+    },
     -- NOT(advflyable AND flying) has no single positive bracket, so this veto is the one
     -- mode lane a secure driver cannot carry; it is resolved in Lua at build time.
     -- Under Match ANY only, that means the combat escape hatch: entering combat on the
@@ -360,9 +448,15 @@ CUI.VIS_MODE_AXES = {
     -- ("[noadvflyable][noflying] hide; ") rather than the single `token` here, and whether
     -- [noadvflyable] parses is NOT established: macro conditionals are C-side and in no
     -- Lua source. Confirm it in game before widening this on the assumption alone.
-    { show = "show_not_dragonriding", hide = "hide_not_dragonriding", luaOnly = true,
-      combatFlip = true,
-      probe = function() return not CUI.IsAirborneSkyriding() end },
+    {
+        show = "show_not_dragonriding",
+        hide = "hide_not_dragonriding",
+        luaOnly = true,
+        combatFlip = true,
+        probe = function()
+            return not CUI.IsAirborneSkyriding()
+        end,
+    },
 }
 
 -- The seven hide keys as a flat list for the set walks below, and as a lookup for
@@ -379,8 +473,12 @@ end
 -- deliberately stay out of VIS_CONDITION_KEYS / VIS_REPRESENTATIVE_ORDER: a veto lane has
 -- no legacy scalar representation, so it can only ever live inside a stored set.
 local VIS_COMBINABLE_KEYS = { mouseover = true }
-for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do VIS_COMBINABLE_KEYS[k] = true end
-for i = 1, #VIS_MODE_HIDE do VIS_COMBINABLE_KEYS[VIS_MODE_HIDE[i]] = true end
+for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do
+    VIS_COMBINABLE_KEYS[k] = true
+end
+for i = 1, #VIS_MODE_HIDE do
+    VIS_COMBINABLE_KEYS[VIS_MODE_HIDE[i]] = true
+end
 CUI.VIS_COMBINABLE_KEYS = VIS_COMBINABLE_KEYS
 
 -- An override session can only carry one of the three EXCLUSIVE states, and it
@@ -392,7 +490,9 @@ CUI.VIS_COMBINABLE_KEYS = VIS_COMBINABLE_KEYS
 local VIS_OVERRIDE_VALUES = { never = true, always = true, mouseover = true }
 
 function CUI.VisOverrideValue(store)
-    if not store then return nil end
+    if not store then
+        return nil
+    end
     local v = store.visibilityOverride
     return VIS_OVERRIDE_VALUES[v] and v or nil
 end
@@ -407,7 +507,9 @@ end
 -- True when the set carries at least one mode hide lane.
 local function VisHasModeHide(vm)
     for i = 1, #VIS_MODE_HIDE do
-        if vm[VIS_MODE_HIDE[i]] then return true end
+        if vm[VIS_MODE_HIDE[i]] then
+            return true
+        end
     end
     return false
 end
@@ -420,7 +522,9 @@ end
 -- Haranir flight forms are shapeshifts, not mounts, so IsMounted() is false
 -- while [advflyable] still matches).
 function CUI.IsAirborneSkyriding()
-    if not (IsFlying and IsFlying()) then return false end
+    if not (IsFlying and IsFlying()) then
+        return false
+    end
     if C_PlayerInfo and C_PlayerInfo.GetGlidingInfo then
         local _, canGlide = C_PlayerInfo.GetGlidingInfo()
         return canGlide == true
@@ -434,10 +538,14 @@ local function VisRepresentative(modes)
     -- A hover-gated set is represented by "mouseover": downgrades keep the
     -- closest UX (hover-only everywhere), and every legacy scalar reader
     -- (mouseoverEnabled derivation, hover handlers, the poll) engages.
-    if modes.mouseover then return "mouseover" end
+    if modes.mouseover then
+        return "mouseover"
+    end
     for i = 1, #VIS_REPRESENTATIVE_ORDER do
         local k = VIS_REPRESENTATIVE_ORDER[i]
-        if modes[k] then return k end
+        if modes[k] then
+            return k
+        end
     end
     return nil
 end
@@ -456,27 +564,39 @@ end
 -- set. Evaluators and driver compilers pass nothing and keep the replacing behaviour.
 local function ActiveModes(store, legacyKey, ignoreOverride)
     -- An override replaces the whole configuration, the stored set included.
-    if not ignoreOverride and CUI.VisOverrideValue(store) then return nil end
+    if not ignoreOverride and CUI.VisOverrideValue(store) then
+        return nil
+    end
     local vm = store.visibilityModes
-    if type(vm) ~= "table" then return nil end
+    if type(vm) ~= "table" then
+        return nil
+    end
     local rep = VisRepresentative(vm)
     local scalar = store[legacyKey]
     if not rep then
         -- Hide-only set: a veto lane has no scalar of its own, so the pair the setter
         -- writes is "always" plus the set. The heal rule still applies -- any other
         -- scalar proves an out-of-band write that must win.
-        if not VisHasModeHide(vm) then return nil end
-        if scalar ~= nil and scalar ~= "always" then return nil end
+        if not VisHasModeHide(vm) then
+            return nil
+        end
+        if scalar ~= nil and scalar ~= "always" then
+            return nil
+        end
         return vm
     end
-    if scalar ~= nil and scalar ~= rep then return nil end
+    if scalar ~= nil and scalar ~= rep then
+        return nil
+    end
     return vm
 end
 
 -- Public heal-aware read of the raw set: returns the authoritative
 -- visibilityModes table or nil (used by the Action Bars macro compiler).
 function CUI.GetActiveVisibilityModes(store, legacyKey)
-    if not store then return nil end
+    if not store then
+        return nil
+    end
     return ActiveModes(store, legacyKey)
 end
 
@@ -486,13 +606,18 @@ end
 -- InCombatLockdown), so a protected updater has to switch to an unprotected
 -- mechanism for them rather than skip the update.
 function CUI.VisDependsOnCombat(store, legacyKey)
-    if not store then return false end
+    if not store then
+        return false
+    end
     -- None of the three override states can flip on a combat edge.
-    if CUI.VisOverrideValue(store) then return false end
+    if CUI.VisOverrideValue(store) then
+        return false
+    end
     local vm = ActiveModes(store, legacyKey)
     if vm then
-        return (vm.in_combat or vm.out_of_combat
-            or vm.hide_in_combat or vm.hide_out_of_combat) and true or false
+        return (vm.in_combat or vm.out_of_combat or vm.hide_in_combat or vm.hide_out_of_combat)
+                and true
+            or false
     end
     local scalar = store[legacyKey]
     return scalar == "in_combat" or scalar == "out_of_combat"
@@ -503,11 +628,16 @@ end
 -- -- the options row passes it, because it edits the shared value an override replaces.
 function CUI.GetVisibilitySelection(store, legacyKey, ignoreOverride)
     local sel = {}
-    if not store then sel.always = true; return sel, false end
+    if not store then
+        sel.always = true
+        return sel, false
+    end
     local vm = ActiveModes(store, legacyKey, ignoreOverride)
     if vm then
         for k in pairs(vm) do
-            if VIS_COMBINABLE_KEYS[k] then sel[k] = true end
+            if VIS_COMBINABLE_KEYS[k] then
+                sel[k] = true
+            end
         end
         return sel, true
     end
@@ -521,7 +651,9 @@ end
 -- assigned on every multi write (never mutated in place): profile sync, Myslot backups,
 -- and spec-override snapshots may hold references to the previous table.
 function CUI.SetVisibilitySelection(store, legacyKey, selection, applyScalarFn)
-    if not store then return end
+    if not store then
+        return
+    end
     local conditions = {}
     local count = 0
     for i = 1, #VIS_REPRESENTATIVE_ORDER do
@@ -546,9 +678,13 @@ function CUI.SetVisibilitySelection(store, legacyKey, selection, applyScalarFn)
     if count == 0 then
         -- Pure special (or empty -> Always). Conditions win over never/always when both
         -- appear; the checklist enforces that on click, this is defense in depth.
-        if selection.never then scalar = "never"
-        elseif hasMouseover then scalar = "mouseover"
-        else scalar = "always" end
+        if selection.never then
+            scalar = "never"
+        elseif hasMouseover then
+            scalar = "mouseover"
+        else
+            scalar = "always"
+        end
     elseif hasMouseover then
         -- Hover-gated conditions: the set carries mouseover alongside the conditions
         -- and the scalar reads "mouseover" so every legacy mouseover mechanism engages.
@@ -558,7 +694,9 @@ function CUI.SetVisibilitySelection(store, legacyKey, selection, applyScalarFn)
     end
     -- Whenever the scalar reads "mouseover" the set has to carry it too, or the pair
     -- would not match and ActiveModes would drop the set, hide lanes included.
-    if scalar == "mouseover" then conditions.mouseover = true end
+    if scalar == "mouseover" then
+        conditions.mouseover = true
+    end
     if applyScalarFn then
         applyScalarFn(store, scalar)
     else
@@ -567,8 +705,7 @@ function CUI.SetVisibilitySelection(store, legacyKey, selection, applyScalarFn)
     -- A set is stored for >=2 conditions, for any condition + mouseover (which cannot
     -- collapse to a single scalar), and for any hide lane (which has no scalar at all).
     -- Never is terminal, so nothing is stored alongside it.
-    local storeSet = scalar ~= "never"
-        and (count >= 2 or (count >= 1 and hasMouseover) or hideCount >= 1)
+    local storeSet = scalar ~= "never" and (count >= 2 or (count >= 1 and hasMouseover) or hideCount >= 1)
     store.visibilityModes = storeSet and conditions or nil
     -- Direct belt for the shared Visibility widget: a mouseover-mode edit
     -- must re-arm the scan without waiting for a dispatcher event.
@@ -588,35 +725,57 @@ function CUI.TallyVisibilityModeAxes(selection, state, caps, stopAt)
     local c1, c2 = selection.in_combat, selection.out_of_combat
     if c1 and not c2 then
         constrained = constrained + 1
-        if state.inCombat then passed = passed + 1 end
+        if state.inCombat then
+            passed = passed + 1
+        end
     elseif c2 and not c1 then
         constrained = constrained + 1
-        if not state.inCombat then passed = passed + 1 end
+        if not state.inCombat then
+            passed = passed + 1
+        end
     end
 
-    if stopAt == "fail" and passed < constrained then return constrained, passed end
-    if stopAt == "any" and passed > 0 then return constrained, passed end
+    if stopAt == "fail" and passed < constrained then
+        return constrained, passed
+    end
+    if stopAt == "any" and passed > 0 then
+        return constrained, passed
+    end
 
     -- Group axis (the three items are ONE axis, OR'd together)
     local g1, g2, g3 = selection.in_raid, selection.in_party, selection.solo
     if (g1 or g2 or g3) and not (g1 and g2 and g3) then
         constrained = constrained + 1
         local pass = false
-        if g1 and state.inRaid then pass = true end
-        if not pass and g2 and (state.inParty or (incRaid and state.inRaid)) then pass = true end
-        if not pass and g3 and not state.inRaid and not state.inParty then pass = true end
-        if pass then passed = passed + 1 end
+        if g1 and state.inRaid then
+            pass = true
+        end
+        if not pass and g2 and (state.inParty or (incRaid and state.inRaid)) then
+            pass = true
+        end
+        if not pass and g3 and not state.inRaid and not state.inParty then
+            pass = true
+        end
+        if pass then
+            passed = passed + 1
+        end
     end
 
-    if stopAt == "fail" and passed < constrained then return constrained, passed end
-    if stopAt == "any" and passed > 0 then return constrained, passed end
+    if stopAt == "fail" and passed < constrained then
+        return constrained, passed
+    end
+    if stopAt == "any" and passed > 0 then
+        return constrained, passed
+    end
 
     -- Dragonriding axis
     local d1, d2 = selection.show_dragonriding, selection.show_not_dragonriding
     if (d1 or d2) and not (d1 and d2) then
         constrained = constrained + 1
         local dr = CUI.IsAirborneSkyriding()
-        if (d1 and dr) or (d2 and not dr) then passed = passed + 1 end
+        if (d1 and dr) or (d2 and not dr) then
+            passed = passed + 1
+        end
     end
 
     return constrained, passed
@@ -629,7 +788,9 @@ function CUI.EvalVisibilityModes(selection, state, caps)
     -- AND-conjunct of the negated condition the tally already computes for the opposite
     -- SHOW key, so selections without hide lanes -- every pre-existing one -- are
     -- unaffected by this gate.
-    if CUI.VisModeHideVeto(selection, state, caps) then return false end
+    if CUI.VisModeHideVeto(selection, state, caps) then
+        return false
+    end
     local constrained, passed = CUI.TallyVisibilityModeAxes(selection, state, caps, "fail")
     return constrained == passed
 end
@@ -644,7 +805,7 @@ end
 --   "mouseover" hover-gated: conditions pass, reveal on hover only (the
 --               caller's existing mouseover mechanism does the revealing;
 --               a failing set returns plain false, hover included)
-local _dispatchState = {}  -- reused; filled per call when no state is passed
+local _dispatchState = {} -- reused; filled per call when no state is passed
 
 local function FillDispatchState()
     local inRaid = IsInRaid()
@@ -661,15 +822,18 @@ end
 -- unconstrained, the same rule the option tally uses. Second return: the firing axis is
 -- combatFlip, so a driver-building caller must bake a combat escape hatch.
 function CUI.VisModeHideVeto(sel, state, caps, filter)
-    if not sel then return false end
+    if not sel then
+        return false
+    end
     local axes = CUI.VIS_MODE_AXES
     for i = 1, #axes do
         local ax = axes[i]
-        local skip = (filter == "luaOnly" and not ax.luaOnly)
-                  or (filter == "driver" and ax.luaOnly)
+        local skip = (filter == "luaOnly" and not ax.luaOnly) or (filter == "driver" and ax.luaOnly)
         if not skip and sel[ax.hide] and not sel[ax.show] then
             state = state or FillDispatchState()
-            if ax.probe(state, caps) then return true, ax.combatFlip or false end
+            if ax.probe(state, caps) then
+                return true, ax.combatFlip or false
+            end
         end
     end
     return false
@@ -684,21 +848,29 @@ local _anySel, _anySelKey = {}, nil
 local function EvalAnyMatch(store, legacyKey, vm, state, caps)
     local sel = vm
     if not sel then
-        if _anySelKey then _anySel[_anySelKey] = nil end
+        if _anySelKey then
+            _anySel[_anySelKey] = nil
+        end
         _anySelKey = store[legacyKey] or "always"
         _anySel[_anySelKey] = true
         sel = _anySel
     end
     -- Never stays terminal: an exclusive scalar is not an axis, so no other lane can
     -- out-vote it.
-    if sel.never then return false end
+    if sel.never then
+        return false
+    end
     -- So is a firing Hide lane: the match mode governs how the SHOW side combines, a
     -- Hide lane always hides. Mouseover included -- a hover must not reveal what a Hide
     -- lane hid (same rule as UF-3 in VisibilityCombineOr_MasterBriefing.md).
-    if CUI.VisOptionHideVeto(store) then return false end
+    if CUI.VisOptionHideVeto(store) then
+        return false
+    end
     state = state or FillDispatchState()
     -- Same rule for the mode rows' Hide lanes.
-    if CUI.VisModeHideVeto(sel, state, caps) then return false end
+    if CUI.VisModeHideVeto(sel, state, caps) then
+        return false
+    end
     local constrained, passed = CUI.TallyVisibilityModeAxes(sel, state, caps, "any")
     -- One passing disjunct settles it; the option probes (instance, housing, the druid
     -- form walk) only run when no mode axis passed.
@@ -719,13 +891,19 @@ local function EvalAnyMatch(store, legacyKey, vm, state, caps)
 end
 
 function CUI.EvalVisibilityExtended(store, legacyKey, state, caps)
-    if not store then return nil end
+    if not store then
+        return nil
+    end
     -- An applied override settles it alone: this is the one path every Lua consumer
     -- runs through, so the three states reach all of them without a per-module edit.
     local ov = CUI.VisOverrideValue(store)
     if ov then
-        if ov == "never" then return false end
-        if ov == "mouseover" then return "mouseover" end
+        if ov == "never" then
+            return false
+        end
+        if ov == "mouseover" then
+            return "mouseover"
+        end
         return true
     end
     local vm = ActiveModes(store, legacyKey)
@@ -735,8 +913,14 @@ function CUI.EvalVisibilityExtended(store, legacyKey, state, caps)
     -- orphan is stored so that state is unreachable from the UI.
     if store.visibilityMatch == "any" then
         local scalar = store[legacyKey]
-        if vm or scalar == nil or VIS_CONDITION_KEYS[scalar]
-            or scalar == "never" or scalar == "always" or scalar == "mouseover" then
+        if
+            vm
+            or scalar == nil
+            or VIS_CONDITION_KEYS[scalar]
+            or scalar == "never"
+            or scalar == "always"
+            or scalar == "mouseover"
+        then
             return EvalAnyMatch(store, legacyKey, vm, state, caps)
         end
     end
@@ -762,9 +946,13 @@ end
 -- keeps its historical behavior (scalar check only); a hover-gated set
 -- additionally requires its condition axes to pass right now.
 function CUI.VisWantsMouseover(store, legacyKey, state, caps)
-    if not store then return false end
+    if not store then
+        return false
+    end
     local ov = CUI.VisOverrideValue(store)
-    if ov then return ov == "mouseover" end
+    if ov then
+        return ov == "mouseover"
+    end
     -- Under Any the hover gate arms only while the disjunction (option lanes included)
     -- passes, so the verdict comes from the one evaluator that sees both halves.
     if store.visibilityMatch == "any" then
@@ -772,7 +960,9 @@ function CUI.VisWantsMouseover(store, legacyKey, state, caps)
     end
     local vm = ActiveModes(store, legacyKey)
     if vm then
-        if not vm.mouseover then return false end
+        if not vm.mouseover then
+            return false
+        end
         return CUI.EvalVisibilityExtended(store, legacyKey, state, caps) == "mouseover"
     end
     return store[legacyKey] == "mouseover"
@@ -783,17 +973,27 @@ end
 -- both sides (ignoreOverride): the icon reports whether the copy would make them equal,
 -- and a copy carries the shared value, never the per-spec override marker.
 function CUI.VisSelectionEquals(a, aKey, b, bKey)
-    if not a or not b then return false end
-    if (a.visibilityMatch == "any") ~= (b.visibilityMatch == "any") then return false end
+    if not a or not b then
+        return false
+    end
+    if (a.visibilityMatch == "any") ~= (b.visibilityMatch == "any") then
+        return false
+    end
     local ma = ActiveModes(a, aKey, true)
     local mb = ActiveModes(b, bKey, true)
     if ma or mb then
-        if not (ma and mb) then return false end
+        if not (ma and mb) then
+            return false
+        end
         for k in pairs(ma) do
-            if VIS_COMBINABLE_KEYS[k] and not mb[k] then return false end
+            if VIS_COMBINABLE_KEYS[k] and not mb[k] then
+                return false
+            end
         end
         for k in pairs(mb) do
-            if VIS_COMBINABLE_KEYS[k] and not ma[k] then return false end
+            if VIS_COMBINABLE_KEYS[k] and not ma[k] then
+                return false
+            end
         end
         return true
     end
@@ -828,7 +1028,9 @@ function CUI.BuildVisModeConjuncts(vm)
     -- and read as a saturated (unconstrained) axis, while the Lua veto hides everywhere.
     -- An unconditional leading clause is the honest compilation; both compilers prepend
     -- negGate, so it wins as the first matching clause.
-    if (hc1 and hc2) or (hd1 and hd2) then return "", "hide; " end
+    if (hc1 and hc2) or (hd1 and hd2) then
+        return "", "hide; "
+    end
     local d1 = vm.show_dragonriding or hd2
     local d2 = vm.show_not_dragonriding or hd1
     if d1 and not d2 then
@@ -856,8 +1058,7 @@ function CUI.BuildVisModeHideGates(vm, which)
     local axes = CUI.VIS_MODE_AXES
     for i = 1, #axes do
         local ax = axes[i]
-        if ax.token and (which ~= "group" or ax.group)
-            and vm[ax.hide] and not vm[ax.show] then
+        if ax.token and (which ~= "group" or ax.group) and vm[ax.hide] and not vm[ax.show] then
             out = out .. "[" .. ax.token .. "] hide; "
             n = n + 1
         end
@@ -882,16 +1083,24 @@ function CUI.BuildVisibilityDriverString(prefix, vm)
         local out = prefix
         local emitted = {}
         local function emit(tok)
-            if emitted[tok] then return end
+            if emitted[tok] then
+                return
+            end
             emitted[tok] = true
             out = out .. "[" .. conj .. tok .. "] show; "
         end
-        if g1 then emit("group:raid") end
+        if g1 then
+            emit("group:raid")
+        end
         -- [group:party] alone is TRUE inside a raid; nogroup:raid narrows the
         -- party disjunct to a real party (a separate group:raid clause, when
         -- In Raid Group is also checked, still shows there).
-        if g2 then emit("group:party,nogroup:raid") end
-        if g3 then emit("nogroup") end
+        if g2 then
+            emit("group:party,nogroup:raid")
+        end
+        if g3 then
+            emit("nogroup")
+        end
         return out .. "hide"
     end
 
@@ -929,7 +1138,9 @@ function CUI.BuildVisibilityDriverStringAny(prefix, vm, opts, extraConstrained, 
     end
     local emitted = {}
     local function emit(tok)
-        if emitted[tok] then return end
+        if emitted[tok] then
+            return
+        end
         emitted[tok] = true
         out = out .. "[" .. lead .. tok .. "] show; "
     end
@@ -937,32 +1148,43 @@ function CUI.BuildVisibilityDriverStringAny(prefix, vm, opts, extraConstrained, 
     -- Combat axis
     local c1, c2 = vm.in_combat, vm.out_of_combat
     if c1 and not c2 then
-        axes = axes + 1; emit("combat")
+        axes = axes + 1
+        emit("combat")
     elseif c2 and not c1 then
-        axes = axes + 1; emit("nocombat")
+        axes = axes + 1
+        emit("nocombat")
     end
 
     -- Group axis: three items, ONE axis, already OR'd among themselves.
     local g1, g2, g3 = vm.in_raid, vm.in_party, vm.solo
     if (g1 or g2 or g3) and not (g1 and g2 and g3) then
         axes = axes + 1
-        if g1 then emit("group:raid") end
+        if g1 then
+            emit("group:raid")
+        end
         -- [group:party] alone is TRUE inside a raid; nogroup:raid narrows the party
         -- disjunct to a real party, same as the all-match tail does.
-        if g2 then emit("group:party,nogroup:raid") end
-        if g3 then emit("nogroup") end
+        if g2 then
+            emit("group:party,nogroup:raid")
+        end
+        if g3 then
+            emit("nogroup")
+        end
     end
 
     -- Option axes with a macro conditional of their own. SHOW lanes only: their Hide
     -- counterparts are the leading gates above, so no negated disjunct is emitted.
     if opts.visOnlyMounted and not opts.visHideMounted then
-        axes = axes + 1; emit("mounted")
+        axes = axes + 1
+        emit("mounted")
     end
     if opts.visHideNoTarget and not opts.visHideWithTarget then
-        axes = axes + 1; emit("exists")
+        axes = axes + 1
+        emit("exists")
     end
     if opts.visHideNoEnemy and not opts.visHideWithEnemy then
-        axes = axes + 1; emit("harm")
+        axes = axes + 1
+        emit("harm")
     end
 
     -- Dragonriding axis. NOT(advflyable AND flying) has no single bracket form, so the
@@ -971,9 +1193,11 @@ function CUI.BuildVisibilityDriverStringAny(prefix, vm, opts, extraConstrained, 
     local d1, d2 = vm.show_dragonriding, vm.show_not_dragonriding
     local dragonTail = false
     if d1 and not d2 then
-        axes = axes + 1; emit("advflyable,flying")
+        axes = axes + 1
+        emit("advflyable,flying")
     elseif d2 and not d1 then
-        axes = axes + 1; dragonTail = true
+        axes = axes + 1
+        dragonTail = true
     end
 
     local wrappedShow = (wrap ~= "") and ("[" .. wrap .. "] show; hide") or "show"
@@ -981,7 +1205,9 @@ function CUI.BuildVisibilityDriverStringAny(prefix, vm, opts, extraConstrained, 
     if axes == 0 then
         -- Nothing this string can decide: either nothing is constrained anywhere
         -- (Always), or the only constrained axes are Lua-only ones that all failed.
-        if (extraConstrained or 0) > 0 then return prefix .. noMatch, 0, gateCount end
+        if (extraConstrained or 0) > 0 then
+            return prefix .. noMatch, 0, gateCount
+        end
         return prefix .. wrappedShow, 0, gateCount
     end
     if dragonTail then
@@ -1005,13 +1231,16 @@ end
 function CUI.BuildVisOptHideGates(opts)
     local out, n = "", 0
     if opts.visHideMounted and not opts.visOnlyMounted then
-        out = out .. "[mounted] hide; "; n = n + 1
+        out = out .. "[mounted] hide; "
+        n = n + 1
     end
     if opts.visHideWithTarget and not opts.visHideNoTarget then
-        out = out .. "[exists] hide; "; n = n + 1
+        out = out .. "[exists] hide; "
+        n = n + 1
     end
     if opts.visHideWithEnemy and not opts.visHideNoEnemy then
-        out = out .. "[harm] hide; "; n = n + 1
+        out = out .. "[harm] hide; "
+        n = n + 1
     end
     return out, n
 end
@@ -1027,8 +1256,7 @@ end
 local function AnyDriverLaneFixups(store, edges)
     local drop, forceShow, forceHide = nil, false, false
 
-    local wantsTarget = (edges and edges.softTarget)
-        and (store.visHideNoTarget or store.visHideWithTarget)
+    local wantsTarget = (edges and edges.softTarget) and (store.visHideNoTarget or store.visHideWithTarget)
     if wantsTarget then
         local softOnly = not UnitExists("target")
             and (UnitExists("softinteract") or UnitExists("softenemy") or UnitExists("softfriend"))
@@ -1045,8 +1273,7 @@ local function AnyDriverLaneFixups(store, edges)
     end
 
     if store.visOnlyMounted or store.visHideMounted then
-        local formOnly = not (IsMounted and IsMounted())
-            and CUI.IsPlayerMountedLike()
+        local formOnly = not (IsMounted and IsMounted()) and CUI.IsPlayerMountedLike()
         if formOnly then
             -- Show lane: [mounted] misses the form the probe counts as mounted.
             if store.visOnlyMounted and not store.visHideMounted then
@@ -1074,9 +1301,13 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
     -- live axis: it IS a driver worth registering, and it cannot go stale (the value
     -- only changes when the override system rewrites it, which rebuilds the driver).
     local ov = CUI.VisOverrideValue(store)
-    if ov then return (ov == "never") and "hide" or "show", 1, 1 end
+    if ov then
+        return (ov == "never") and "hide" or "show", 1, 1
+    end
     -- Never is an exclusive scalar, not an axis, so nothing can out-vote it.
-    if (store[legacyKey] or "always") == "never" then return "hide", 1, 0 end
+    if (store[legacyKey] or "always") == "never" then
+        return "hide", 1, 0
+    end
 
     -- Hide lanes veto in every match mode, so they settle the verdict before any
     -- disjunct is looked at. The ones this consumer cannot compile are resolved here, at
@@ -1089,7 +1320,9 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
     if CUI.VisOptionHideVeto then
         local vetoed, vetoFlip = CUI.VisOptionHideVeto(store, "luaOnly", edges)
         if vetoed then
-            if not vetoFlip then return "hide", 1, 0 end
+            if not vetoFlip then
+                return "hide", 1, 0
+            end
             combatEscape = true
         end
     end
@@ -1101,7 +1334,9 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
     if vm and CUI.VisModeHideVeto then
         local mVetoed, mFlip = CUI.VisModeHideVeto(vm, nil, nil, "luaOnly")
         if mVetoed then
-            if not mFlip then return "hide", 1, 0 end
+            if not mFlip then
+                return "hide", 1, 0
+            end
             combatEscape = true
         end
     end
@@ -1110,7 +1345,9 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
     -- veto of its own, and a veto outranks a passing disjunct. Its probes only run when
     -- the matching lanes are set.
     local drop, forceShow, forceHide = AnyDriverLaneFixups(store, edges)
-    if forceHide then combatEscape = true end
+    if forceHide then
+        combatEscape = true
+    end
 
     -- Wraps every return below: out of combat the veto stands, in combat the compiled
     -- string decides (mode axes, prefixes and any live gate keep working there).
@@ -1136,7 +1373,9 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
         -- A single stored mode is one constrained axis, the shape a set would have.
         modes = {}
         local scalar = store[legacyKey]
-        if VIS_CONDITION_KEYS[scalar] then modes[scalar] = true end
+        if VIS_CONDITION_KEYS[scalar] then
+            modes[scalar] = true
+        end
     end
     -- The compiler sees only the lanes THIS consumer compiles: Lua-resolved axes are
     -- already in luaC, dropped ones still count as constrained but cannot be disjuncts.
@@ -1144,7 +1383,10 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
     local needsFilter = drop ~= nil
     if not needsFilter and axisList then
         for i = 1, #axisList do
-            if CUI.VisAxisIsLuaOnly(axisList[i], edges) then needsFilter = true; break end
+            if CUI.VisAxisIsLuaOnly(axisList[i], edges) then
+                needsFilter = true
+                break
+            end
         end
     end
     local opts, dropped = store, 0
@@ -1157,7 +1399,9 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
                     -- A dropped SHOW lane is still a constrained disjunct this string
                     -- cannot decide; a dropped HIDE gate is a veto that is NOT firing,
                     -- which constrains nothing at all.
-                    if drop[ax.show] then dropped = dropped + 1 end
+                    if drop[ax.show] then
+                        dropped = dropped + 1
+                    end
                 else
                     opts[ax.show] = store[ax.show]
                     opts[ax.hide] = store[ax.hide]
@@ -1166,8 +1410,15 @@ function CUI.BuildAnyMatchTail(store, legacyKey, vm, wrap, edges)
         end
     end
     local hasMouseover = (vm and vm.mouseover) or (store[legacyKey] == "mouseover") or false
-    local tail, axes, gates = CUI.BuildVisibilityDriverStringAny("", modes, opts,
-        luaC + dropped, wrap, hasMouseover, forceShow or settled)
+    local tail, axes, gates = CUI.BuildVisibilityDriverStringAny(
+        "",
+        modes,
+        opts,
+        luaC + dropped,
+        wrap,
+        hasMouseover,
+        forceShow or settled
+    )
     -- liveAxes counts the gates too: a string that carries nothing but "[mounted] hide"
     -- is still a live driver worth registering.
     return Finish(tail, axes + luaC + dropped, axes + gates)
@@ -1179,7 +1430,9 @@ end
 -- scalar, a now-empty one becomes Always). applyScalarFn runs the target
 -- module's scalar side effects, same contract as SetVisibilitySelection.
 function CUI.VisCopySelection(dst, src, legacyKey, dstCaps, applyScalarFn)
-    if not dst or not src then return end
+    if not dst or not src then
+        return
+    end
     -- The match travels with every copy, mode-only ones included.
     dst.visibilityMatch = (src.visibilityMatch == "any") and "any" or nil
     -- The shared selection, not what an override on the source currently replaces it with.
@@ -1187,7 +1440,9 @@ function CUI.VisCopySelection(dst, src, legacyKey, dstCaps, applyScalarFn)
     if ms then
         local sel = {}
         for k in pairs(ms) do
-            if VIS_COMBINABLE_KEYS[k] then sel[k] = true end
+            if VIS_COMBINABLE_KEYS[k] then
+                sel[k] = true
+            end
         end
         if dstCaps and dstCaps.noGroupModes then
             sel.in_raid, sel.in_party, sel.solo = nil, nil, nil
@@ -1215,10 +1470,14 @@ end
 -- wrap the existing mode-only pair; callers that still build the legacy two-dropdown
 -- layout keep using VisCopySelection / VisSelectionEquals with their own option loop.
 function CUI.VisFullCopy(dst, src, legacyKey, dstCaps, applyScalarFn)
-    if not dst or not src then return end
+    if not dst or not src then
+        return
+    end
     CUI.VisCopySelection(dst, src, legacyKey, dstCaps, applyScalarFn)
     local keys = CUI.VIS_OPT_KEYS
-    if not keys then return end
+    if not keys then
+        return
+    end
     for i = 1, #keys do
         local k = keys[i]
         dst[k] = src[k] or nil
@@ -1230,23 +1489,37 @@ end
 -- hand-written subset here is exactly how a newly added lane silently stops working, so
 -- this always walks VIS_OPT_KEYS rather than naming fields.
 function CUI.VisHasAnyOption(store)
-    if not store then return false end
+    if not store then
+        return false
+    end
     local keys = CUI.VIS_OPT_KEYS
-    if not keys then return false end
+    if not keys then
+        return false
+    end
     for i = 1, #keys do
-        if store[keys[i]] then return true end
+        if store[keys[i]] then
+            return true
+        end
     end
     return false
 end
 
 function CUI.VisFullEquals(a, aKey, b, bKey)
-    if not a or not b then return false end
-    if not CUI.VisSelectionEquals(a, aKey, b, bKey) then return false end
+    if not a or not b then
+        return false
+    end
+    if not CUI.VisSelectionEquals(a, aKey, b, bKey) then
+        return false
+    end
     local keys = CUI.VIS_OPT_KEYS
-    if not keys then return true end
+    if not keys then
+        return true
+    end
     for i = 1, #keys do
         local k = keys[i]
-        if (a[k] or false) ~= (b[k] or false) then return false end
+        if (a[k] or false) ~= (b[k] or false) then
+            return false
+        end
     end
     return true
 end

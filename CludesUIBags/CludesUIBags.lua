@@ -1,10 +1,32 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags.lua -- Enhanced Bags System for CludesUI (Midnight): sidebar category filter + flat item grid layout.
 -------------------------------------------------------------------------------
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.CreateQuantityDialog and CludesUI.ReleaseStaleHold and CludesUI.ForeverLookMajority and CludesUI.ForeverHeavyOK and CludesUI.ForeverHeavy and CludesUI.ForeverHeavySeat and CludesUI.ForeverHeavyTitle and CludesUI.ForeverBorder and CludesUI.ForeverBorderSeat and CludesUI.ForeverBorderPaint) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the stack splitter is the parent's quantity window; ReleaseStaleHold / DropHold, the sort's sound effects mute; the WoW Forever style draws the parent's Forever frames and follows its look majority)
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.CreateQuantityDialog
+        and CludesUI.ReleaseStaleHold
+        and CludesUI.ForeverLookMajority
+        and CludesUI.ForeverHeavyOK
+        and CludesUI.ForeverHeavy
+        and CludesUI.ForeverHeavySeat
+        and CludesUI.ForeverHeavyTitle
+        and CludesUI.ForeverBorder
+        and CludesUI.ForeverBorderSeat
+        and CludesUI.ForeverBorderPaint
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the stack splitter is the parent's quantity window; ReleaseStaleHold / DropHold, the sort's sound effects mute; the WoW Forever style draws the parent's Forever frames and follows its look majority)
 local ns = select(2, ...)
-CludesUI._ModuleNS["CludesUIBags"] = ns  -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS["CludesUIBags"] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 CUI_Bags = CreateFrame("Frame", "CUI_MainBagFrame", UIParent)
@@ -14,10 +36,12 @@ CUI_Bags:Hide()
 -- while open it only grows, never shrinks.
 CUI_Bags:HookScript("OnHide", function(self)
     -- WoW Forever and the Compact display size every open to its content: a hidden UI (Alt-Z) is not a close, keep the size.
-    if (CludesUI.IS_FOREVER or CUI_Bags.IsCompactMode()) and self:IsShown() then return end
-    self._asCols  = nil
+    if (CludesUI.IS_FOREVER or CUI_Bags.IsCompactMode()) and self:IsShown() then
+        return
+    end
+    self._asCols = nil
     self._asMaxGridW = nil
-    self._asMaxH  = nil
+    self._asMaxH = nil
     -- The Compact display's grow-only width (RefreshInventory)
     self._compactCols, self._compactW = nil, nil
 end)
@@ -39,9 +63,13 @@ local _canUseCache = {}
 local ITEM_CLASS_RECIPE = Enum.ItemClass.Recipe
 local function BagsItemUnusable(bagID, slot, itemLink, itemID)
     local item = itemLink or itemID
-    if not item then return false end
+    if not item then
+        return false
+    end
     local cached = _canUseCache[item]
-    if cached ~= nil then return cached end
+    if cached ~= nil then
+        return cached
+    end
     local unusable = false
 
     -- Recipes also have a spell (the teach effect), so they'd hit the tooltip scan
@@ -72,10 +100,15 @@ local function BagsItemUnusable(bagID, slot, itemLink, itemID)
             for _, row in ipairs(tip.lines) do
                 local lc = row.leftColor
                 -- Tolerance, not exact equality: rounding can put red just under r=1.
-                if lc and lc.r > 0.9 and lc.g < 0.2 and lc.b < 0.2
-                   and row.leftText ~= ITEM_SCRAPABLE_NOT
-                   and row.leftText ~= CANNOT_UNEQUIP_COMBAT
-                   and row.leftText ~= ITEM_DISENCHANT_NOT_DISENCHANTABLE then
+                if
+                    lc
+                    and lc.r > 0.9
+                    and lc.g < 0.2
+                    and lc.b < 0.2
+                    and row.leftText ~= ITEM_SCRAPABLE_NOT
+                    and row.leftText ~= CANNOT_UNEQUIP_COMBAT
+                    and row.leftText ~= ITEM_DISENCHANT_NOT_DISENCHANTABLE
+                then
                     unusable = true
                     break
                 end
@@ -95,12 +128,14 @@ local function BagsItemUnusable(bagID, slot, itemLink, itemID)
     _canUseCache[item] = unusable
     return unusable
 end
-CludesUI._BagsItemUnusable = BagsItemUnusable  -- local CUI alias is declared further down
+CludesUI._BagsItemUnusable = BagsItemUnusable -- local CUI alias is declared further down
 do
     local f = CreateFrame("Frame")
     f:RegisterEvent("PLAYER_LEVEL_UP")
     f:RegisterEvent("PLAYER_LEVEL_CHANGED")
-    f:SetScript("OnEvent", function() wipe(_canUseCache) end)
+    f:SetScript("OnEvent", function()
+        wipe(_canUseCache)
+    end)
 end
 -- WoW Forever: the player's bags (1-4) that hold one kind of item only --
 -- quivers, ammo pouches, soul, herb and enchanting bags, by their non-zero bag
@@ -111,12 +146,17 @@ end
 do
     local special = {}
     function ns.SpecialBags()
-        if not CludesUI.IS_FOREVER then return nil end
+        if not CludesUI.IS_FOREVER then
+            return nil
+        end
         wipe(special)
         local any = false
         for bag = 1, 4 do
             local _, family = C_Container.GetContainerNumFreeSlots(bag)
-            if family and family ~= 0 then special[bag] = true; any = true end
+            if family and family ~= 0 then
+                special[bag] = true
+                any = true
+            end
         end
         return any and special or nil
     end
@@ -131,7 +171,9 @@ do
         end
         local t = (sp[bag] or bag == 5) and { bag } or {}
         for b = 0, 4 do
-            if not sp[b] then t[#t + 1] = b end
+            if not sp[b] then
+                t[#t + 1] = b
+            end
         end
         return t
     end
@@ -143,7 +185,9 @@ local _bankRouted = setmetatable({}, { __mode = "k" })
 local CUI = CludesUI
 -- Profile access helper (DB created in CUI_Bags_Options.lua, loaded first per TOC)
 local _emptyP = {}
-local function BP() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
+local function BP()
+    return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
+end
 
 -- Uninstall CUI: Sort to Bottom flips Blizzard's own sort direction, so the
 -- player's is handed back, as turning the option off does.
@@ -164,13 +208,16 @@ do
     }
     if not CUI.IS_FOREVER then
         windows[#windows + 1] = { key = "scrapper", label = "Scrapper", frame = "ScrappingMachineFrame" }
-        windows[#windows + 1] = { key = "itemInteraction", label = "Item Interaction", frame = "ItemInteractionFrame" }
+        windows[#windows + 1] =
+            { key = "itemInteraction", label = "Item Interaction", frame = "ItemInteractionFrame" }
         windows[#windows + 1] = { key = "azerite", label = "Azerite Essences", frame = "AzeriteEssenceUI" }
     end
     ns.BAG_AUTO_WINDOWS = windows
 
     local keyByName = {}
-    for _, w in ipairs(windows) do keyByName[w.frame] = w.key end
+    for _, w in ipairs(windows) do
+        keyByName[w.frame] = w.key
+    end
     -- nil for a window not listed
     function ns.BagAutoWindowKey(frame)
         local name = frame and frame:GetName()
@@ -211,7 +258,9 @@ function CUI_Bags:ApplyWindowLayering()
         sf:SetFrameStrata(strata)
     end
     local bank = _G.CUI_BankFrame
-    if bank and bank.ApplyWindowLayering then bank:ApplyWindowLayering() end
+    if bank and bank.ApplyWindowLayering then
+        bank:ApplyWindowLayering()
+    end
     self:RepinIconLevels()
 end
 
@@ -223,7 +272,9 @@ function CUI_Bags:RepinIconLevels()
     ns.PinItemPool(I.reagentSlots, CUI_BagsReagent, "_slotPinLevel")
     ns.ResyncListRowLevels()
 end
-layerUpdateFrame:SetScript("OnEvent", function() CUI_Bags:ApplyWindowLayering() end)
+layerUpdateFrame:SetScript("OnEvent", function()
+    CUI_Bags:ApplyWindowLayering()
+end)
 
 -- Tracked currencies are PER CHARACTER: their input feed (Blizzard's currency
 -- tab via the TokenFrame.OnTokenWatchChanged sync below) is per-character, so
@@ -233,7 +284,7 @@ layerUpdateFrame:SetScript("OnEvent", function() CUI_Bags:ApplyWindowLayering() 
 -- ApplyProfileData wipes db.profile wholesale on import (would erase every
 -- character's currencies), and profile exports must not ship a character
 -- roster (the PRIVATE_ADDON_KEYS leak class).
-local _bagsCharKey  -- session-constant; UpdateCurrencyDisplays is a render path
+local _bagsCharKey -- session-constant; UpdateCurrencyDisplays is a render path
 local function BagsCharKey()
     if not _bagsCharKey then
         -- nil too early; do not cache a stub
@@ -246,11 +297,18 @@ end
 -- Returns nil only when the DB or the player identity is not up yet (callers
 -- already handle that).
 local function CurrencyOrder()
-    if not CludesUIDB then return nil end
+    if not CludesUIDB then
+        return nil
+    end
     local key = BagsCharKey()
-    if not key then return nil end
+    if not key then
+        return nil
+    end
     local byChar = CludesUIDB.bagCurrencyByChar
-    if type(byChar) ~= "table" then byChar = {}; CludesUIDB.bagCurrencyByChar = byChar end
+    if type(byChar) ~= "table" then
+        byChar = {}
+        CludesUIDB.bagCurrencyByChar = byChar
+    end
     local t = byChar[key]
     if type(t) ~= "table" then
         t = {}
@@ -261,7 +319,9 @@ local function CurrencyOrder()
         local legacy = BP().currencyOrder
         if type(legacy) == "table" then
             for cID, order in pairs(legacy) do
-                if type(order) == "number" then t[cID] = order end
+                if type(order) == "number" then
+                    t[cID] = order
+                end
             end
         end
         byChar[key] = t
@@ -281,23 +341,38 @@ CUI._BagsCurrencyOrder = CurrencyOrder
 -- to write (the character's identity is not readable yet): callers skip.
 local function PinnedItems(create)
     local db = CludesUIDB
-    if not db then return nil end
+    if not db then
+        return nil
+    end
     if db.bagPinsPerCharacter == false then
-        if create and not db.bagPinnedItems then db.bagPinnedItems = {} end
+        if create and not db.bagPinnedItems then
+            db.bagPinnedItems = {}
+        end
         return db.bagPinnedItems
     end
     local key = BagsCharKey()
     local byChar = db.bagPinnedByChar
     local own = key and type(byChar) == "table" and byChar[key]
-    if type(own) == "table" then return own end
-    if not create then return db.bagPinnedItems end
-    if not key then return nil end
+    if type(own) == "table" then
+        return own
+    end
+    if not create then
+        return db.bagPinnedItems
+    end
+    if not key then
+        return nil
+    end
     own = {}
     local shared = db.bagPinnedItems
     if type(shared) == "table" then
-        for k, v in pairs(shared) do own[k] = v end
+        for k, v in pairs(shared) do
+            own[k] = v
+        end
     end
-    if type(byChar) ~= "table" then byChar = {}; db.bagPinnedByChar = byChar end
+    if type(byChar) ~= "table" then
+        byChar = {}
+        db.bagPinnedByChar = byChar
+    end
     byChar[key] = own
     return own
 end
@@ -307,7 +382,9 @@ ns.PinnedItems = PinnedItems
 -- bagDefaultOneBag bool (imports converted in ApplyProfileData before DeepMergeDefaults masks it); exposed on CUI so bank file matches.
 local function GetDefaultBagType()
     local v = BP().bagDefaultBagType
-    if v == "all" or v == "onebag" or v == "multibag" then return v end
+    if v == "all" or v == "onebag" or v == "multibag" then
+        return v
+    end
     return BP().bagDefaultOneBag and "onebag" or "all"
 end
 CUI._GetBagDefaultType = GetDefaultBagType
@@ -319,7 +396,9 @@ CUI._GetBagDefaultType = GetDefaultBagType
 local _listMode
 function CUI_Bags.IsListMode()
     if _listMode == nil then
-        if not CUI.Lite.IsDBReady() then return nil end
+        if not CUI.Lite.IsDBReady() then
+            return nil
+        end
         local mode = BP().bagDisplayMode
         _listMode = mode == "list"
         CUI_Bags._compactMode = mode == "compact"
@@ -328,7 +407,9 @@ function CUI_Bags.IsListMode()
 end
 -- Compact display (CludesUIBags_Compact.lua), on IsListMode's latch
 function CUI_Bags.IsCompactMode()
-    if CUI_Bags.IsListMode() == nil then return nil end
+    if CUI_Bags.IsListMode() == nil then
+        return nil
+    end
     return CUI_Bags._compactMode
 end
 -- Auto-Size to Fit: not offered with the List display (its rows take the
@@ -339,16 +420,24 @@ end
 
 local function ApplyBagScale()
     local s = BP().bagScale or 1
-    if CUI_Bags then CUI_Bags:SetScale(s) end
-    if CUI_BagsReagent then CUI_BagsReagent:SetScale(s) end
-    if CUI_BagsWindow then CUI_BagsWindow:SetScale(s) end
+    if CUI_Bags then
+        CUI_Bags:SetScale(s)
+    end
+    if CUI_BagsReagent then
+        CUI_BagsReagent:SetScale(s)
+    end
+    if CUI_BagsWindow then
+        CUI_BagsWindow:SetScale(s)
+    end
 end
 
 -- Locale-safe gear detection: GetItemInfo type strings are localized ("Armor" only on enUS), so use GetItemInfoInstant's numeric classID.
-local ITEM_CLASS_WEAPON = Enum.ItemClass.Weapon  -- 2
-local ITEM_CLASS_ARMOR  = Enum.ItemClass.Armor   -- 4
+local ITEM_CLASS_WEAPON = Enum.ItemClass.Weapon -- 2
+local ITEM_CLASS_ARMOR = Enum.ItemClass.Armor -- 4
 local function IsGearItem(itemLink)
-    if not itemLink then return false end
+    if not itemLink then
+        return false
+    end
     local _, _, _, _, _, classID = GetItemInfoInstant(itemLink)
     return classID == ITEM_CLASS_WEAPON or classID == ITEM_CLASS_ARMOR
 end
@@ -368,9 +457,13 @@ end
 -- as before, until the middle-click self-heal clears them.
 local pinKeyCache = {}
 local function NormalizePinKey(itemLink, itemID)
-    if type(itemLink) ~= "string" then return itemID end
+    if type(itemLink) ~= "string" then
+        return itemID
+    end
     local cached = pinKeyCache[itemLink]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
     local key
     local payload = itemLink:match("|Hitem:([^|]*)|h")
     if payload then
@@ -378,7 +471,9 @@ local function NormalizePinKey(itemLink, itemID)
         -- 3-6 gems, 7 suffix, 8 uniqueID, 9 linkLevel, 10 specID,
         -- 11 modifiersMask, 12 itemContext, 13 numBonusIDs, 14.. bonusIDs.
         local f = {}
-        for field in (payload .. ":"):gmatch("([^:]*):") do f[#f + 1] = field end
+        for field in (payload .. ":"):gmatch("([^:]*):") do
+            f[#f + 1] = field
+        end
         local id = f[1]
         if id and id ~= "" then
             local n = tonumber(f[13]) or 0
@@ -389,11 +484,15 @@ local function NormalizePinKey(itemLink, itemID)
         end
     end
     key = key or itemID
-    if key then pinKeyCache[itemLink] = key end
+    if key then
+        pinKeyCache[itemLink] = key
+    end
     return key
 end
 local function IsItemPinned(pinnedSet, itemLink, itemID)
-    if not pinnedSet then return nil end
+    if not pinnedSet then
+        return nil
+    end
     local nk = itemLink and NormalizePinKey(itemLink, nil)
     return (nk and pinnedSet[nk]) or (itemID and pinnedSet[itemID])
 end
@@ -401,17 +500,23 @@ ns.IsItemPinned = IsItemPinned
 local function GetItemLevelAtLocation(loc, itemLink)
     if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
         local level = C_Item.GetCurrentItemLevel(loc)
-        if level and level > 0 then return level end
+        if level and level > 0 then
+            return level
+        end
     end
     return itemLink and C_Item.GetDetailedItemLevelInfo(itemLink) or nil
 end
-local function GetFont() return CUI.GetFontPath("bags") end
+local function GetFont()
+    return CUI.GetFontPath("bags")
+end
 local function SetBagFont(fs, size)
     CludesUI.PrimeFontShadow(fs, true)
     fs:SetFont(GetFont(), size, CUI.GetFontOutlineFlag("bags"))
 end
 local function GetAccentRGB()
-    if CUI.GetAccentColor then return CUI.GetAccentColor() end
+    if CUI.GetAccentColor then
+        return CUI.GetAccentColor()
+    end
     return 0.298, 0.788, 0.941
 end
 
@@ -429,15 +534,27 @@ end
 -- Abbreviate a dungeon name to initials (skipping connector words); Cyrillic entries cover clients where GetMapUIInfo returns translated names.
 local _dungeonAbbrCache = {}
 local _skipWords = {
-    ["of"] = true, ["the"] = true, ["a"] = true, ["an"] = true,
-    ["из"] = true, ["за"] = true, ["в"] = true, ["на"] = true,
-    ["и"] = true, ["под"] = true, ["с"] = true,
+    ["of"] = true,
+    ["the"] = true,
+    ["a"] = true,
+    ["an"] = true,
+    ["из"] = true,
+    ["за"] = true,
+    ["в"] = true,
+    ["на"] = true,
+    ["и"] = true,
+    ["под"] = true,
+    ["с"] = true,
 }
 local function AbbrevDungeon(mapID)
     local cached = _dungeonAbbrCache[mapID]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
     local name = C_ChallengeMode and C_ChallengeMode.GetMapUIInfo and C_ChallengeMode.GetMapUIInfo(mapID)
-    if not name or name == "" then return "" end
+    if not name or name == "" then
+        return ""
+    end
     local abbr = ""
     -- Split on whitespace AND hyphens so "Nexus-Point Xenas" abbreviates to NPX.
     for word in name:gmatch("[^%s%-]+") do
@@ -450,7 +567,9 @@ local function AbbrevDungeon(mapID)
     end
     -- Locale files may register CludesUI._dungeonAbbrevOverride (plain data) for locale-specific cuts; applied here at the single render source, not via hook.
     local ov = CludesUI and CludesUI._dungeonAbbrevOverride
-    if ov and ov[abbr] then abbr = ov[abbr] end
+    if ov and ov[abbr] then
+        abbr = ov[abbr]
+    end
     _dungeonAbbrCache[mapID] = abbr
     return abbr
 end
@@ -464,18 +583,35 @@ end
 -- broken: true while an CUI_Bags_*.lua file loads; a file that fails leaves
 -- it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_bagsInternals", {
-    _bankRouted = _bankRouted, AbbrevDungeon = AbbrevDungeon, ApplyBagScale = ApplyBagScale,
-    BagsItemUnusable = BagsItemUnusable, BP = BP, CurrencyOrder = CurrencyOrder,
-    GetAccentRGB = GetAccentRGB, GetCatTitleSize = GetCatTitleSize, GetColumns = GetColumns,
-    GetDefaultBagType = GetDefaultBagType, GetFont = GetFont,
-    GetItemLevelAtLocation = GetItemLevelAtLocation, IsGearItem = IsGearItem,
-    IsItemPinned = IsItemPinned, NormalizePinKey = NormalizePinKey, PinnedItems = PinnedItems,
-    SetBagFont = SetBagFont, SLOT_SIZE = SLOT_SIZE, SPACING = SPACING,
-    categoryIndexSetters = {}, groupNameSetters = {}, gearCatSetSetters = {},
-    anyItemPanelOpenSetters = {}, paintedPanelOpenSetters = {}, slotMetricSetters = {},
+    _bankRouted = _bankRouted,
+    AbbrevDungeon = AbbrevDungeon,
+    ApplyBagScale = ApplyBagScale,
+    BagsItemUnusable = BagsItemUnusable,
+    BP = BP,
+    CurrencyOrder = CurrencyOrder,
+    GetAccentRGB = GetAccentRGB,
+    GetCatTitleSize = GetCatTitleSize,
+    GetColumns = GetColumns,
+    GetDefaultBagType = GetDefaultBagType,
+    GetFont = GetFont,
+    GetItemLevelAtLocation = GetItemLevelAtLocation,
+    IsGearItem = IsGearItem,
+    IsItemPinned = IsItemPinned,
+    NormalizePinKey = NormalizePinKey,
+    PinnedItems = PinnedItems,
+    SetBagFont = SetBagFont,
+    SLOT_SIZE = SLOT_SIZE,
+    SPACING = SPACING,
+    categoryIndexSetters = {},
+    groupNameSetters = {},
+    gearCatSetSetters = {},
+    anyItemPanelOpenSetters = {},
+    paintedPanelOpenSetters = {},
+    slotMetricSetters = {},
 }, {
     SetSelectedCategoryIndex = "categoryIndexSetters",
-    SetSelectedGroupName = "groupNameSetters", SetGearCatSet = "gearCatSetSetters",
+    SetSelectedGroupName = "groupNameSetters",
+    SetGearCatSet = "gearCatSetSetters",
     SetAnyItemPanelOpen = "anyItemPanelOpenSetters",
     SetPaintedPanelOpen = "paintedPanelOpenSetters",
     SetSlotMetrics = "slotMetricSetters",
@@ -499,9 +635,13 @@ function ns.ApplySlotMetrics()
     -- the sliders' ranges: a hand-edited or imported 0 would divide by zero
     local size = math.min(math.max(tonumber(p.bagSlotSize) or 34, 24), 56)
     local gap = math.min(math.max(tonumber(p.bagSlotSpacing) or 4, 0), 12)
-    if (size == SLOT_SIZE and gap == SPACING) or InCombatLockdown() then return end
+    if (size == SLOT_SIZE and gap == SPACING) or InCombatLockdown() then
+        return
+    end
     SLOT_SIZE, SPACING = size, gap
     ns.SLOT_SIZE, ns.SPACING = size, gap
-    for f in pairs(slotFrames) do f:SetSize(size, size) end
+    for f in pairs(slotFrames) do
+        f:SetSize(size, size)
+    end
     ns._bagsInternals.SetSlotMetrics({ size, gap })
 end

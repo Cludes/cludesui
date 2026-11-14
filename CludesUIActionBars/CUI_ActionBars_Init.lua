@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Init.lua
 --
@@ -30,8 +32,7 @@ function EAB:OnInitialize()
     -- Detect first install BEFORE AceDB creates the saved variable.
     -- We use a dedicated flag so "Reset to Defaults" also re-captures.
     local rawDB = CludesUIActionBarsDB
-    local isFirstInstall = not rawDB or not rawDB.profiles
-        or (rawDB.profiles and not next(rawDB.profiles))
+    local isFirstInstall = not rawDB or not rawDB.profiles or (rawDB.profiles and not next(rawDB.profiles))
 
     self.db = CludesUI.Lite.NewDB("CludesUIActionBarsDB", defaults, true)
     self:RefreshCustomFadeGate()
@@ -51,7 +52,7 @@ function EAB:OnInitialize()
     self._needsCapture = not sv._capturedOnce_EAB
 
     -- Expose apply hook for PP scale change re-apply
-    _G._EAB_RecalcFlyouts = function()
+    _G._CUAB_RecalcFlyouts = function()
         for _, info in ipairs(BAR_CONFIG) do
             EAB:RecalcFlyoutDirection(info.key)
         end
@@ -59,11 +60,13 @@ function EAB:OnInitialize()
 
     -- MicroBar position is fully Blizzard-owned (Edit Mode). No anchor
     -- flipping needed. Stubs kept so callers don't error.
-    _G._EAB_UnlockModeOpen = function() end
-    _G._EAB_UnlockModeClose = function() end
+    _G._CUAB_UnlockModeOpen = function() end
+    _G._CUAB_UnlockModeClose = function() end
 
-    _G._EAB_ApplyKeyDown = function() ApplyKeyDownCVar() end
-    _G._EAB_Apply = function()
+    _G._CUAB_ApplyKeyDown = function()
+        ApplyKeyDownCVar()
+    end
+    _G._CUAB_Apply = function()
         EAB:RefreshCustomFadeGate()
         -- Re-point the exposed barPositions view at the active profile's table.
         -- Profile swaps replace db.profile wholesale and the unlock system reads
@@ -82,7 +85,9 @@ function EAB:OnInitialize()
         -- Border here (our own plain frames: safe in combat). Not in ApplyAll,
         -- which also runs at login, where creation already laid them out.
         for _, info in ipairs(ns.EXTRA_BARS) do
-            if info.isDataBar then ns.ApplyDataBarLayout(info.key) end
+            if info.isDataBar then
+                ns.ApplyDataBarLayout(info.key)
+            end
         end
         if not InCombatLockdown() then
             RestoreBarPositions()
@@ -101,7 +106,6 @@ function EAB:OnInitialize()
         EAB:RefreshCountVisibility()
     end
 
-
     -- Rank (crafted quality) icons: EAB paints its own overlay per button. Blizzard's
     -- ProfessionQualityOverlayFrame is created lazily inside the secure button Update
     -- and our buttons no longer receive ACTIONBAR_SLOT_CHANGED (central dispatcher owns
@@ -115,12 +119,14 @@ function EAB:OnInitialize()
     do
         local qf = ns.TakeShell()
         local _qPending = false
-        local _rankAtlas = {}       -- quality -> atlas name (false = none found)
+        local _rankAtlas = {} -- quality -> atlas name (false = none found)
         local QueueQualityScan
 
         local function RankAtlasFor(q)
             local hit = _rankAtlas[q]
-            if hit ~= nil then return hit or nil end
+            if hit ~= nil then
+                return hit or nil
+            end
             local probe = C_Texture and C_Texture.GetAtlasInfo
             local names = {
                 "Professions-Icon-Quality-Tier" .. q .. "-Inv-Small",
@@ -140,7 +146,9 @@ function EAB:OnInitialize()
         local function SetRankShown(btn, atlas)
             local fd = EFD(btn)
             if not atlas then
-                if fd.rankIconTex then fd.rankIconTex:Hide() end
+                if fd.rankIconTex then
+                    fd.rankIconTex:Hide()
+                end
                 return
             end
             local tex = fd.rankIconTex
@@ -148,7 +156,9 @@ function EAB:OnInitialize()
                 -- First paint creates the holder. A new cosmetic child frame
                 -- writes nothing onto the secure button's table; skip only
                 -- in combat lockdown (next out-of-combat scan paints it).
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
                 local holder = CreateFrame("Frame", nil, btn)
                 holder:SetAllPoints(btn)
                 holder:SetFrameLevel((btn:GetFrameLevel() or 1) + 18)
@@ -194,8 +204,11 @@ function EAB:OnInitialize()
                     -- GetActionLink returns nil, and the tooltip's name
                     -- line carries no quality markup.
                     local ab = C_ActionBar
-                    if ab and ab.GetProfessionQualityInfo
-                       and (not ab.IsItemAction or ab.IsItemAction(action)) then
+                    if
+                        ab
+                        and ab.GetProfessionQualityInfo
+                        and (not ab.IsItemAction or ab.IsItemAction(action))
+                    then
                         local qi = ab.GetProfessionQualityInfo(action)
                         rankAtlas = qi and qi.iconInventory
                     end
@@ -205,7 +218,8 @@ function EAB:OnInitialize()
                         local aType, aID = GetActionInfo(action)
                         if aType == "item" and aID then
                             local ts = C_TradeSkillUI
-                            local q = ts and ts.GetItemCraftedQualityByItemInfo
+                            local q = ts
+                                and ts.GetItemCraftedQualityByItemInfo
                                 and ts.GetItemCraftedQualityByItemInfo(aID)
                             if type(q) == "number" and q >= 1 and q <= 5 then
                                 rankAtlas = RankAtlasFor(q)
@@ -221,7 +235,9 @@ function EAB:OnInitialize()
             -- hide for overlays born after the apply pass ran.
             local ov = btn.ProfessionQualityOverlayFrame
             if ov then
-                if ov:IsShown() then ov:SetShown(false) end
+                if ov:IsShown() then
+                    ov:SetShown(false)
+                end
                 if not EFD(btn).qualityHooked then
                     ov:HookScript("OnShow", function(self2)
                         self2:SetShown(false)
@@ -317,7 +333,9 @@ function EAB:OnInitialize()
 
     SLASH_EABQUICKKEYBIND1 = "/kb"
     SlashCmdList["EABQUICKKEYBIND"] = function(msg)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         if not C_AddOns.IsAddOnLoaded("Blizzard_QuickKeybind") then
             C_AddOns.LoadAddOn("Blizzard_QuickKeybind")
         end
@@ -325,7 +343,6 @@ function EAB:OnInitialize()
             QuickKeybindFrame:Show()
         end
     end
-
 end
 
 function EAB:OnEnable()
@@ -348,7 +365,9 @@ function EAB:OnEnable()
         self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnFirstLogin")
         if IsLoggedIn() then
             C_Timer_After(0, function()
-                if self._needsCapture then self:OnFirstLogin() end
+                if self._needsCapture then
+                    self:OnFirstLogin()
+                end
             end)
         end
     else
@@ -375,9 +394,15 @@ function EAB:OnFirstLogin()
     for barKey, data in pairs(captured) do
         local s = self.db.profile.bars[barKey]
         if s and data then
-            if data.numIcons then s.overrideNumIcons = data.numIcons end
-            if data.numRows then s.overrideNumRows = data.numRows end
-            if data.orientation then s.orientation = data.orientation end
+            if data.numIcons then
+                s.overrideNumIcons = data.numIcons
+            end
+            if data.numRows then
+                s.overrideNumRows = data.numRows
+            end
+            if data.orientation then
+                s.orientation = data.orientation
+            end
             if data.blizzIconScale then
                 -- Convert Blizzard's icon scale to explicit button dimensions.
                 -- barBaseSize isn't populated yet (SetupBar runs later), so
@@ -413,8 +438,10 @@ function EAB:OnFirstLogin()
             end
             if data.point then
                 self.db.profile.barPositions[barKey] = {
-                    point = data.point, relPoint = data.relPoint,
-                    x = data.x, y = data.y,
+                    point = data.point,
+                    relPoint = data.relPoint,
+                    x = data.x,
+                    y = data.y,
                 }
             end
         end
@@ -439,24 +466,39 @@ function EAB:OnFirstLogin()
     if CludesUI.IS_FOREVER and self.db.profile.useBlizzardDataBars then
         local mainC, secC = _G.MainStatusTrackingBarContainer, _G.SecondaryStatusTrackingBarContainer
         local function AtDefault(f)
-            if not f.IsInDefaultPosition then return true end
+            if not f.IsInDefaultPosition then
+                return true
+            end
             local ok, v = pcall(f.IsInDefaultPosition, f)
             return not ok or v ~= false
         end
         if mainC and secC and AtDefault(mainC) and AtDefault(secC) then
             local lift = 0
-            if not secC:IsShown() then lift = lift + (secC:GetHeight() or 0) - 1 end
-            if not mainC:IsShown() then lift = lift + (mainC:GetHeight() or 0) + 4 end
+            if not secC:IsShown() then
+                lift = lift + (secC:GetHeight() or 0) - 1
+            end
+            if not mainC:IsShown() then
+                lift = lift + (mainC:GetHeight() or 0) + 4
+            end
             if lift > 0 then
-                local STACKED = { MultiBarBottomLeft = true, MultiBarBottomRight = true,
-                                  StanceBar = true, PetActionBar = true }
+                local STACKED = {
+                    MultiBarBottomLeft = true,
+                    MultiBarBottomRight = true,
+                    StanceBar = true,
+                    PetActionBar = true,
+                }
                 local uiS = UIParent:GetEffectiveScale()
                 for _, info in ipairs(BAR_CONFIG) do
                     local pos = self.db.profile.barPositions[info.key]
                     local bf = STACKED[info.blizzFrame] and _G[info.blizzFrame]
                     local cap = captured[info.key]
-                    if pos and pos.y and bf and AtDefault(bf)
-                        and (bf:IsShown() or (cap and cap.stackSlot)) then
+                    if
+                        pos
+                        and pos.y
+                        and bf
+                        and AtDefault(bf)
+                        and (bf:IsShown() or (cap and cap.stackSlot))
+                    then
                         pos.y = pos.y + lift * bf:GetEffectiveScale() / uiS
                     end
                 end
@@ -474,7 +516,9 @@ function EAB:OnFirstLogin()
     -- barVisibility wins over the legacy booleans.
     for _, key in ipairs({ "StanceBar", "PetBar" }) do
         local s = self.db.profile.bars[key]
-        if s then EAB.VisibilityCompat.ApplyMode(s, "always") end
+        if s then
+            EAB.VisibilityCompat.ApplyMode(s, "always")
+        end
     end
 
     -- Now proceed with normal setup

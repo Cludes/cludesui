@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_ApplyAll.lua
 --
@@ -65,13 +67,21 @@ local function ApplyAll()
         if not inCombat then
             LayoutBar(key)
         end
-        if not inCombat then EAB:ApplyBordersForBar(key) end
-        if not inCombat then EAB:ApplyShapesForBar(key) end
+        if not inCombat then
+            EAB:ApplyBordersForBar(key)
+        end
+        if not inCombat then
+            EAB:ApplyShapesForBar(key)
+        end
         EAB:ApplyFontsForBar(key)
         EAB:ApplyBackgroundForBar(key)
         EAB:ApplyIconBackgroundForBar(key)
-        if not inCombat then EAB:ApplyAlwaysShowButtons(key) end
-        if not inCombat then EAB:ApplyClickThroughForBar(key) end
+        if not inCombat then
+            EAB:ApplyAlwaysShowButtons(key)
+        end
+        if not inCombat then
+            EAB:ApplyClickThroughForBar(key)
+        end
     end
     -- The micro menu's and bag bar's caps (a profile or spec switch changes
     -- their keys without bar 1's layout stamp moving).
@@ -92,22 +102,30 @@ local function ApplyAll()
     EAB:ApplyMiscTextures()
     EAB:ApplyCheckedTextures()
     EAB:ApplyEquippedBorder(true)
-    if not inCombat then EAB:ApplyCombatVisibility() end
-    if not inCombat then EAB:RefreshRuntimeVisibility() end
+    if not inCombat then
+        EAB:ApplyCombatVisibility()
+    end
+    if not inCombat then
+        EAB:RefreshRuntimeVisibility()
+    end
     EAB:RefreshMouseover()
     EAB:RefreshProcGlows()
     EAB:ApplyRangeColoring()
 
     -- A full apply that ran DURING combat skipped every `not inCombat` step
     -- above; the REGEN_ENABLED re-run (gated on this flag) converges them.
-    if inCombat then ns._eabApplyDeferred = true end
+    if inCombat then
+        ns._eabApplyDeferred = true
+    end
 
     -- Dormancy re-sync: a profile swap or options change can re-register
     -- visibility drivers without firing the per-bar OnShow/OnHide edges the
     -- dormancy map saw. Per-key memoized, so unchanged bars cost one table read.
     for _, info in ipairs(BAR_CONFIG) do
         local f = barFrames[info.key]
-        if f then ns.ApplyBarDormancy(info.key, not f:IsVisible()) end
+        if f then
+            ns.ApplyBarDormancy(info.key, not f:IsVisible())
+        end
     end
 
     -- Party Mode orbit: claims the buttons this rebuild built or showed (Party
@@ -122,10 +140,14 @@ local function ApplyAll()
     if not inCombat then
         local rebuilt
         for barKey in pairs(EAB_VTABLE.BAR_KEY_TO_PAGE) do
-            if ns.RebuildBarPaging(barKey, true) then rebuilt = true end
+            if ns.RebuildBarPaging(barKey, true) then
+                rebuilt = true
+            end
         end
         -- The keybind routing pass the rebuilt bars left out, once for all of them.
-        if rebuilt and _G._EAB_UpdateKeybinds then _G._EAB_UpdateKeybinds() end
+        if rebuilt and _G._CUAB_UpdateKeybinds then
+            _G._CUAB_UpdateKeybinds()
+        end
         ns.RefreshPagingCycleMacros()
     end
     SetIsApplyingAll(false)

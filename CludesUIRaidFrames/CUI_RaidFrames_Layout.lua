@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Layout.lua
 --
@@ -8,24 +10,30 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local abs          = math.abs
-local tostring     = tostring
-local IsInRaid              = IsInRaid
-local InCombatLockdown      = InCombatLockdown
-local GetNumGroupMembers    = GetNumGroupMembers
-local CreateFrame           = CreateFrame
+local abs = math.abs
+local tostring = tostring
+local IsInRaid = IsInRaid
+local InCombatLockdown = InCombatLockdown
+local GetNumGroupMembers = GetNumGroupMembers
+local CreateFrame = CreateFrame
 
 local allButtons, ApplyFont, PixelSnap = I.allButtons, I.ApplyFont, I.PixelSnap
 local separatedHdrs, ApplySortToHeaders = I.separatedHdrs, I.ApplySortToHeaders
 local SetContainerFrame = I.SetContainerFrame
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local containerFrame
-I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v) containerFrame = v end
+I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v)
+    containerFrame = v
+end
 
 -------------------------------------------------------------------------------
 --  Header creation
@@ -34,12 +42,18 @@ I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v) containerFra
 -- single flat header for Merge Groups (only structure that can fill/sort across
 -- group boundaries). Only the ACTIVE mode builds at login (full-set build/style
 -- dominates login cost); the other materializes on the first mode flip via
--- ReloadFrames/_ERF_RefreshAll. Combat blocks secure creation -- a combat-time
+-- ReloadFrames/_CURF_RefreshAll. Combat blocks secure creation -- a combat-time
 -- flip flags the REGEN reload path to build there instead.
 ns._BuildHeaderSet = function(merge)
-    if not containerFrame then return end
-    if merge and ns._flatHeader then return end
-    if not merge and separatedHdrs[1] then return end
+    if not containerFrame then
+        return
+    end
+    if merge and ns._flatHeader then
+        return
+    end
+    if not merge and separatedHdrs[1] then
+        return
+    end
     if InCombatLockdown() then
         ns._sizeTierDirtyInCombat = true
         return
@@ -62,8 +76,8 @@ ns._BuildHeaderSet = function(merge)
     -- a same-axis pair (see ns._RFEffectiveGrowth) before deriving anything from
     -- it -- this bootstrap runs from the raw profile, ahead of _LayoutGroupsImpl's
     -- own per-tier resolution and self-heal.
-    local initUnitGrowth, initGroupGrowth = ns._RFEffectiveGrowth(
-        s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", merge)
+    local initUnitGrowth, initGroupGrowth =
+        ns._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", merge)
     local csInit = ns.RF_CellSpacing(s)
     local initPoint, initXOff, initYOff = ns._RFHeaderPoint(initUnitGrowth, csInit)
 
@@ -71,18 +85,21 @@ ns._BuildHeaderSet = function(merge)
     -- chain): a set built with the container hidden (a Merge Groups flip while
     -- solo or in a party) shows the container around the pre-spawn below.
     local hid = not containerFrame:IsShown()
-    if hid then containerFrame:Show() end
+    if hid then
+        containerFrame:Show()
+    end
 
     if not merge then
         -----------------------------------------------------------
         --  8 separated group headers (one per raid group)
         -----------------------------------------------------------
         for group = 1, 8 do
-            local hdr = CreateFrame("Frame", "ERFGroupHeader" .. group, containerFrame, "SecureGroupHeaderTemplate")
+            local hdr =
+                CreateFrame("Frame", "ERFGroupHeader" .. group, containerFrame, "SecureGroupHeaderTemplate")
             -- the header births an AuraContainer per child SECURE-SIDE -- the only
             -- combat-legal container source (covers in-combat /reload and mid-combat
             -- roster growth). The containers file adopts it as the debuff shell.
-                hdr:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
+            hdr:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
             hdr:SetAttribute("template", "SecureUnitButtonTemplate")
             hdr:SetAttribute("templateType", "Button")
             hdr:SetAttribute("initialConfigFunction", initConfig)
@@ -121,7 +138,7 @@ ns._BuildHeaderSet = function(merge)
         --  Flat header for merge-groups mode (all members in one grid)
         -----------------------------------------------------------
         ns._flatHeader = CreateFrame("Frame", "ERFFlatHeader", containerFrame, "SecureGroupHeaderTemplate")
-            ns._flatHeader:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
+        ns._flatHeader:SetAttribute("auraContainerTemplate", "CustomAuraContainerTemplate")
         ns._flatHeader:SetAttribute("template", "SecureUnitButtonTemplate")
         ns._flatHeader:SetAttribute("templateType", "Button")
         ns._flatHeader:SetAttribute("initialConfigFunction", initConfig)
@@ -143,7 +160,7 @@ ns._BuildHeaderSet = function(merge)
         ns._flatHeader:SetAttribute("startingIndex", -39)
         ns._flatHeader:Show()
         ns._flatHeader:SetAttribute("startingIndex", 1)
-        ns._flatHeader:Hide()  -- start hidden; LayoutGroups shows the right headers
+        ns._flatHeader:Hide() -- start hidden; LayoutGroups shows the right headers
 
         -- Window-phase secure styling only; bodies run in the deferred pass.
         for i = 1, 40 do
@@ -155,14 +172,18 @@ ns._BuildHeaderSet = function(merge)
             end
         end
     end
-    if hid then containerFrame:Hide() end
+    if hid then
+        containerFrame:Hide()
+    end
 
     -- Freshly built headers need the current sort attributes.
     ApplySortToHeaders()
 end
 
 local function CreateHeaders()
-    if containerFrame then return end
+    if containerFrame then
+        return
+    end
 
     local s = db.profile
 
@@ -218,17 +239,27 @@ local groupFlowSlots = {}
 -- LayoutGroups (early-returns in combat), SetPoints only our own FontStrings.
 function ns._UpdateGroupNumbers()
     local labels = ns._groupNumberLabels
-    if not labels then return end
-    if InCombatLockdown() then return end
+    if not labels then
+        return
+    end
+    if InCombatLockdown() then
+        return
+    end
     local s = db.profile
     if (not s.showGroupNumbers) or s.mergeGroups or (not IsInRaid()) then
-        for g = 1, 8 do if labels[g] then labels[g]:Hide() end end
+        for g = 1, 8 do
+            if labels[g] then
+                labels[g]:Hide()
+            end
+        end
         return
     end
     -- Effective unit growth (mirror the LayoutGroups tier override)
     local unitGrowth = s.unitGrowth or "DOWN"
     local activeOv = ns._activeTierOverride
-    if activeOv and activeOv.unitGrowth then unitGrowth = activeOv.unitGrowth end
+    if activeOv and activeOv.unitGrowth then
+        unitGrowth = activeOv.unitGrowth
+    end
     local vg = ns._VisibleGroups() or { true, true, true, true, true, true, false, false }
     local size = s.groupNumberSize or 10
     local gc = s.groupNumberColor or {}
@@ -242,7 +273,10 @@ function ns._UpdateGroupNumbers()
             -- First populated unit of this group (empty-but-visible groups -> none)
             for i = 1, 5 do
                 local btn = hdr[i]
-                if btn and btn:IsShown() and btn:GetAttribute("unit") then firstBtn = btn; break end
+                if btn and btn:IsShown() and btn:GetAttribute("unit") then
+                    firstBtn = btn
+                    break
+                end
             end
         end
         if lbl then
@@ -257,7 +291,7 @@ function ns._UpdateGroupNumbers()
                 else -- LEFT
                     lbl:SetPoint("LEFT", firstBtn, "RIGHT", 3 + ox, oy)
                 end
-                ApplyFont(lbl, size)  -- must precede SetText (FontString needs a font first)
+                ApplyFont(lbl, size) -- must precede SetText (FontString needs a font first)
                 lbl:SetText(tostring(group))
                 lbl:SetTextColor(gc.r or 1, gc.g or 1, gc.b or 1, gc.a or 0.75)
                 lbl:Show()
@@ -273,7 +307,9 @@ local function OccupiedGroups()
     local t = {}
     for ri = 1, GetNumGroupMembers() or 0 do
         local _, _, sub = GetRaidRosterInfo(ri)
-        if sub then t[sub] = true end
+        if sub then
+            t[sub] = true
+        end
     end
     return t
 end
@@ -283,8 +319,12 @@ end
 -- SetAttribute) and resizing the container makes Blizzard re-anchor their children
 -- synchronously, which can re-enter layout through our own hooks. Stored on ns.
 ns._LayoutGroupsImpl = function()
-    if not containerFrame then return end
-    if InCombatLockdown() then return end
+    if not containerFrame then
+        return
+    end
+    if InCombatLockdown() then
+        return
+    end
 
     local s = db.profile
     local merged = s.mergeGroups
@@ -292,12 +332,12 @@ ns._LayoutGroupsImpl = function()
     -- still gets its header set built before this tries to show it.
     ns._BuildHeaderSet((merged and true) or false)
     local groupGrowth = s.groupGrowth or "RIGHT"
-    local unitGrowth  = s.unitGrowth or "DOWN"
+    local unitGrowth = s.unitGrowth or "DOWN"
     -- Per-tier growth overrides
     local activeOv = ns._activeTierOverride
     if activeOv then
         groupGrowth = activeOv.groupGrowth or groupGrowth
-        unitGrowth  = activeOv.unitGrowth or unitGrowth
+        unitGrowth = activeOv.unitGrowth or unitGrowth
     end
     -- Backstop: self-heal a same-axis pair that reached here without going
     -- through a guarded write site (see ns._RFEffectiveGrowth).
@@ -337,13 +377,17 @@ ns._LayoutGroupsImpl = function()
         -- Hide separated headers
         for group = 1, 8 do
             local hdr = separatedHdrs[group]
-            if hdr and hdr:IsShown() then hdr:Hide() end
+            if hdr and hdr:IsShown() then
+                hdr:Hide()
+            end
         end
 
         -- Build groupFilter from visible groups
         local gfParts = {}
         for i = 1, 8 do
-            if vg[i] ~= false then gfParts[#gfParts + 1] = tostring(i) end
+            if vg[i] ~= false then
+                gfParts[#gfParts + 1] = tostring(i)
+            end
         end
         local gfStr = table.concat(gfParts, ",")
 
@@ -368,16 +412,21 @@ ns._LayoutGroupsImpl = function()
             -- nameList bails on unresolved names. Role + Prioritize Class and
             -- Sort By = FrameSort own it the same way.
             ns._flatGfStr = gfStr
-            local selfOwnsHeader = (s.showSelfFirst or s.showSelfLast
+            local selfOwnsHeader = (
+                s.showSelfFirst
+                or s.showSelfLast
                 or (s.prioritizeClass == true and s.sortMode == "ROLE")
-                or s.sortMode == "FRAMESORT") and IsInRaid()
+                or s.sortMode == "FRAMESORT"
+            ) and IsInRaid()
             if not selfOwnsHeader and ns._flatHeader:GetAttribute("groupFilter") ~= gfStr then
                 ns._flatHeader:SetAttribute("groupFilter", gfStr)
             end
-            if ns._flatHeader:GetAttribute("point") ~= hdrPoint
-            or ns._flatHeader:GetAttribute("xOffset") ~= hdrXOff
-            or ns._flatHeader:GetAttribute("yOffset") ~= hdrYOff
-            or ns._flatHeader:GetAttribute("columnAnchorPoint") ~= colAnchor then
+            if
+                ns._flatHeader:GetAttribute("point") ~= hdrPoint
+                or ns._flatHeader:GetAttribute("xOffset") ~= hdrXOff
+                or ns._flatHeader:GetAttribute("yOffset") ~= hdrYOff
+                or ns._flatHeader:GetAttribute("columnAnchorPoint") ~= colAnchor
+            then
                 -- Clear child anchors before changing layout direction
                 local ci, child = 1, ns._flatHeader:GetAttribute("child1")
                 while child do
@@ -406,7 +455,9 @@ ns._LayoutGroupsImpl = function()
         --  Per-group mode: 8 separated headers
         ---------------------------------------------------------------
         -- Hide flat header
-        if ns._flatHeader and ns._flatHeader:IsShown() then ns._flatHeader:Hide() end
+        if ns._flatHeader and ns._flatHeader:IsShown() then
+            ns._flatHeader:Hide()
+        end
 
         -- Group slot origins along the growth flow: a plain direction is one
         -- continuous run, the grid flow ("Down and then Right") stacks
@@ -424,8 +475,14 @@ ns._LayoutGroupsImpl = function()
         -- group height/width outside the container, mismatching preview/mover.
         local hdrAnchor = "TOPLEFT"
         local hdrOffX, hdrOffY = 0, 0
-        if unitGrowth == "UP"   then hdrAnchor = "BOTTOMLEFT"; hdrOffY = -groupH end
-        if unitGrowth == "LEFT" then hdrAnchor = "TOPRIGHT";   hdrOffX = groupW  end
+        if unitGrowth == "UP" then
+            hdrAnchor = "BOTTOMLEFT"
+            hdrOffY = -groupH
+        end
+        if unitGrowth == "LEFT" then
+            hdrAnchor = "TOPRIGHT"
+            hdrOffX = groupW
+        end
 
         -- "Hide Empty Groups": collapse memberless subgroups so the remaining
         -- groups close ranks (1/2/3/6 instead of a gap at 4/5). Real frames
@@ -439,7 +496,7 @@ ns._LayoutGroupsImpl = function()
             occupied = OccupiedGroups()
         end
 
-        local visSlot = 0  -- running counter for visible groups (collapses gaps)
+        local visSlot = 0 -- running counter for visible groups (collapses gaps)
         local groupOrder = s.customGroupOrder and ns._RFValidatedGroupOrder(s.groupOrder)
 
         -- Center Groups: shift the whole run by half the box space it leaves
@@ -455,7 +512,9 @@ ns._LayoutGroupsImpl = function()
                 local group = groupOrder and groupOrder[slot] or slot
                 if separatedHdrs[group] and vg[group] ~= false and not (occupied and not occupied[group]) then
                     shown = shown + 1
-                    if occ[group] then n = shown end
+                    if occ[group] then
+                        n = shown
+                    end
                 end
             end
             shiftX, shiftY = ns._RFCenterShift(slots, n)
@@ -465,7 +524,9 @@ ns._LayoutGroupsImpl = function()
             local hdr = separatedHdrs[group]
             if hdr then
                 if vg[group] == false or (occupied and not occupied[group]) then
-                    if hdr:IsShown() then hdr:Hide() end
+                    if hdr:IsShown() then
+                        hdr:Hide()
+                    end
                 else
                     local x = PixelSnap(slots[visSlot][1] - minX + hdrOffX) + shiftX
                     local y = PixelSnap(slots[visSlot][2] - maxY + hdrOffY) + shiftY
@@ -474,9 +535,11 @@ ns._LayoutGroupsImpl = function()
                     hdr:ClearAllPoints()
                     hdr:SetPoint(hdrAnchor, containerFrame, "TOPLEFT", x, y)
                     local layoutChanged = false
-                    if hdr:GetAttribute("point") ~= hdrPoint
-                    or hdr:GetAttribute("xOffset") ~= hdrXOff
-                    or hdr:GetAttribute("yOffset") ~= hdrYOff then
+                    if
+                        hdr:GetAttribute("point") ~= hdrPoint
+                        or hdr:GetAttribute("xOffset") ~= hdrXOff
+                        or hdr:GetAttribute("yOffset") ~= hdrYOff
+                    then
                         -- Clear child anchors before changing layout direction
                         local ci, child = 1, hdr:GetAttribute("child1")
                         while child do
@@ -531,8 +594,10 @@ ns._LayoutGroupsImpl = function()
     -- Snap the container's screen position to the pixel grid. Skip when
     -- element-anchored: ApplyAnchorPosition already pixel-snaps, and a
     -- TOPLEFT re-anchor here would fight the anchor cascade.
-    if not InCombatLockdown()
-       and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("RF_RaidFrames")) then
+    if
+        not InCombatLockdown()
+        and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("RF_RaidFrames"))
+    then
         local l = containerFrame:GetLeft()
         local t = containerFrame:GetTop()
         if l and t then
@@ -578,8 +643,10 @@ local function LayoutGroups()
     -- so it stays diagnosable instead of silently masking a real bug.
     if ns._layoutGroupsDirty and not ns._layoutLoopWarned and not InCombatLockdown() then
         ns._layoutLoopWarned = true
-        print("|cffff5555CludesUI Raid & Party Frames:|r layout did not settle after 3 passes; " ..
-            "a re-entrant loop was bounded. Please report this if frames look wrong.")
+        print(
+            "|cffff5555CludesUI Raid & Party Frames:|r layout did not settle after 3 passes; "
+                .. "a re-entrant loop was bounded. Please report this if frames look wrong."
+        )
     end
 end
 

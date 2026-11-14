@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_TargetFocusBars.lua
 --  Target/Focus Bars (Mythic+ Tools): standalone cast bars for the target and
@@ -15,7 +17,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 
-local db  -- Lite DB handle, handed over by ns.TFB_OnEnable
+local db -- Lite DB handle, handed over by ns.TFB_OnEnable
 
 local function TF()
     local p = db and db.profile
@@ -33,20 +35,22 @@ end
 --  the bar texts take a font family (Cyrillic, Korean and Chinese names
 --  draw); no plain SetFont may reach them after it.
 --------------------------------------------------------------------------------
-local function SetFSFont(fs, size) CludesUI.ApplyModuleFontFamily(fs, nil, size, "mythicTimer") end
+local function SetFSFont(fs, size)
+    CludesUI.ApplyModuleFontFamily(fs, nil, size, "mythicTimer")
+end
 
 --------------------------------------------------------------------------------
 --  State: two bar objects, built lazily. `bars.target` / `bars.focus`.
 --------------------------------------------------------------------------------
 local bars = {}
-local active = false          -- events registered
-local activeCastCount = 0     -- casts live across both bars (watcher arm/disarm)
-local castColorTicker         -- 0.2s re-tint while any cast is up
+local active = false -- events registered
+local activeCastCount = 0 -- casts live across both bars (watcher arm/disarm)
+local castColorTicker -- 0.2s re-tint while any cast is up
 local previewOn = { target = false, focus = false }
 
 local DEFAULT_POS = {
     target = { x = 0, y = -240 },
-    focus  = { x = 0, y = -310 },
+    focus = { x = 0, y = -310 },
 }
 
 local GetActiveKickSpell = CludesUI.GetActiveKickSpell
@@ -57,7 +61,9 @@ local ComputeCastBarTint = CludesUI.ComputeCastBarTint
 --  division never leaves the module's own SetPoint -- the timer lesson).
 --------------------------------------------------------------------------------
 local function ApplyBarPosition(bar)
-    if not bar then return end
+    if not bar then
+        return
+    end
     local cfg = BarCfg(bar.which)
     local pos = cfg and cfg.pos
     bar.frame:ClearAllPoints()
@@ -209,9 +215,13 @@ local function BuildBar(which)
     -- one matching API instead of probing all three every tick; falls back to
     -- the full chain on a transient miss or before any kind is cached.
     bar._timerTick = function(force)
-        if not bar.isCasting and not force then return end
+        if not bar.isCasting and not force then
+            return
+        end
         local cfg = BarCfg(bar.which)
-        if not cfg or cfg.showTimer == false then return true end
+        if not cfg or cfg.showTimer == false then
+            return true
+        end
         if UnitCastingDuration then
             local durObj
             local kind = bar.durKind
@@ -250,7 +260,9 @@ end
 local function StyleBar(bar)
     local cfg = BarCfg(bar.which)
     local tf = TF()
-    if not (cfg and tf) then return end
+    if not (cfg and tf) then
+        return
+    end
     local w = cfg.width or 260
     local h = cfg.height or 22
     bar.frame:SetSize(w, h)
@@ -259,11 +271,16 @@ local function StyleBar(bar)
     bar.iconFrame:SetWidth(showIcon and h or 0.001)
     bar.iconFrame:SetShown(showIcon)
 
-    local texPath = CludesUI.ResolveTexturePath(ns.barTextures, cfg.texture or "none", "Interface\\Buttons\\WHITE8x8")
-        or "Interface\\Buttons\\WHITE8x8"
+    local texPath = CludesUI.ResolveTexturePath(
+        ns.barTextures,
+        cfg.texture or "none",
+        "Interface\\Buttons\\WHITE8x8"
+    ) or "Interface\\Buttons\\WHITE8x8"
     bar.sb:SetStatusBarTexture(texPath)
     local pp = CludesUI.PP
-    if pp and pp.DisablePixelSnap then pp.DisablePixelSnap(bar.sb:GetStatusBarTexture()) end
+    if pp and pp.DisablePixelSnap then
+        pp.DisablePixelSnap(bar.sb:GetStatusBarTexture())
+    end
     -- Fill texture re-mint: re-pin the fill-edge riders.
     bar.overlay:ClearAllPoints()
     bar.overlay:SetAllPoints(bar.sb:GetStatusBarTexture())
@@ -314,13 +331,17 @@ end
 local impScratch = {}
 local function ApplyCastColor(bar, uninterruptible)
     local tf = TF()
-    if not tf then return end
+    if not tf then
+        return
+    end
     local kickReadyTint = tf.interruptReady or { r = 0.92, g = 0.35, b = 0.20 }
     local baseTint = tf.castColor or { r = 0.70, g = 0.40, b = 0.90 }
     if tf.importantEnabled and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
         local imp = tf.importantColor or { r = 1, g = 0.2, b = 0.2 }
         local isImp = bar._castImportant
-        if type(isImp) == "nil" then isImp = false end
+        if type(isImp) == "nil" then
+            isImp = false
+        end
         local ev = C_CurveUtil.EvaluateColorValueFromBoolean
         impScratch.r = ev(isImp, imp.r, baseTint.r)
         impScratch.g = ev(isImp, imp.g, baseTint.g)
@@ -362,7 +383,10 @@ end
 
 local function UpdateKickTick(bar, kickProtected, isChannel, isEmpowered)
     local tf = TF()
-    if not tf then HideKickTick(bar) return end
+    if not tf then
+        HideKickTick(bar)
+        return
+    end
     local tickOn = tf.kickTickEnabled ~= false
     local midOn = tf.midCastEnabled == true
     if (not (tickOn or midOn)) or not GetActiveKickSpell() then
@@ -372,8 +396,9 @@ local function UpdateKickTick(bar, kickProtected, isChannel, isEmpowered)
     bar._kickProtected = kickProtected
     bar._kickIsChannel = isChannel
     bar._kickIsEmpowered = isEmpowered
-    if not (C_Spell and C_Spell.GetSpellCooldownDuration
-        and UnitCastingDuration and bar.sb.SetTimerDuration) then
+    if
+        not (C_Spell and C_Spell.GetSpellCooldownDuration and UnitCastingDuration and bar.sb.SetTimerDuration)
+    then
         HideKickTick(bar)
         return
     end
@@ -382,14 +407,22 @@ local function UpdateKickTick(bar, kickProtected, isChannel, isEmpowered)
         if isEmpowered and UnitEmpoweredChannelDuration then
             castDuration = UnitEmpoweredChannelDuration(bar.unit, true)
         end
-        if not castDuration then castDuration = UnitChannelDuration(bar.unit) end
+        if not castDuration then
+            castDuration = UnitChannelDuration(bar.unit)
+        end
     else
         castDuration = UnitCastingDuration(bar.unit)
     end
-    if not castDuration then HideKickTick(bar) return end
+    if not castDuration then
+        HideKickTick(bar)
+        return
+    end
     local totalDur = castDuration:GetTotalDuration()
     local interruptCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-    if not interruptCD then HideKickTick(bar) return end
+    if not interruptCD then
+        HideKickTick(bar)
+        return
+    end
 
     local h = bar.frame:GetHeight()
     local barW = bar.sb:GetWidth()
@@ -462,7 +495,9 @@ local function UpdateKickTick(bar, kickProtected, isChannel, isEmpowered)
         bar.kickTick:SetAlpha(0)
         bar.kickReadyFill:SetAlpha(0)
     end
-    if bar._kickTicker then bar._kickTicker:Cancel() end
+    if bar._kickTicker then
+        bar._kickTicker:Cancel()
+    end
     local myTicker
     myTicker = C_Timer.NewTicker(0.1, function()
         if bar._kickTicker ~= myTicker then
@@ -496,18 +531,26 @@ local function RefreshKickTick(bar)
         return
     end
     local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-    if not icd then return end -- transient miss: keep current state, no blink
-    if not UnitCastingDuration then return end
+    if not icd then
+        return
+    end -- transient miss: keep current state, no blink
+    if not UnitCastingDuration then
+        return
+    end
     local castDuration
     if bar._kickIsChannel then
         if bar._kickIsEmpowered and UnitEmpoweredChannelDuration then
             castDuration = UnitEmpoweredChannelDuration(bar.unit, true)
         end
-        if not castDuration then castDuration = UnitChannelDuration(bar.unit) end
+        if not castDuration then
+            castDuration = UnitChannelDuration(bar.unit)
+        end
     else
         castDuration = UnitCastingDuration(bar.unit)
     end
-    if not castDuration then return end
+    if not castDuration then
+        return
+    end
     bar.kickPositioner:SetValue(castDuration:GetElapsedDuration())
     bar.kickMarker:SetValue(icd:GetRemainingDuration())
 end
@@ -532,8 +575,12 @@ kickWatcher:SetScript("OnEvent", function()
 end)
 
 local function NotifyCastStarted(bar)
-    if bar._timerTick then bar._timerTick(true) end
-    if bar._timerTicker then bar._timerTicker.Start() end
+    if bar._timerTick then
+        bar._timerTick(true)
+    end
+    if bar._timerTicker then
+        bar._timerTicker.Start()
+    end
     activeCastCount = activeCastCount + 1
     if activeCastCount == 1 then
         kickWatcher:RegisterEvent("SPELL_UPDATE_COOLDOWN")
@@ -572,7 +619,9 @@ end
 -- to the name whenever this cast has no target text to show.
 local function SizeNameForTarget(bar, hasTarget)
     local cfg = BarCfg(bar.which)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     local w = cfg.width or 260
     local h = cfg.height or 22
     local reserve = (cfg.showTimer ~= false) and ((cfg.timerSize or 11) * 2.2) or 0
@@ -584,7 +633,9 @@ end
 local function ShowsTarget(tf, which)
     local cfg = BarCfg(which)
     local v = cfg and cfg.showTarget
-    if v == nil then v = tf.showTarget end
+    if v == nil then
+        v = tf.showTarget
+    end
     return v ~= false
 end
 
@@ -613,10 +664,18 @@ local function PaintTarget(bar)
     end
     if tf.targetClassColor ~= false and type(spellTargetClass) ~= "nil" and C_ClassColor then
         local col = C_ClassColor.GetClassColor(spellTargetClass)
-        if col then fs:SetTextColor(col:GetRGB()) else fs:SetTextColor(1, 1, 1, 1) end
+        if col then
+            fs:SetTextColor(col:GetRGB())
+        else
+            fs:SetTextColor(1, 1, 1, 1)
+        end
     else
         local tc = tf.targetColor
-        if tc then fs:SetTextColor(tc.r, tc.g, tc.b, 1) else fs:SetTextColor(1, 1, 1, 1) end
+        if tc then
+            fs:SetTextColor(tc.r, tc.g, tc.b, 1)
+        else
+            fs:SetTextColor(1, 1, 1, 1)
+        end
     end
     fs:SetText(spellTarget)
     fs:Show()
@@ -628,14 +687,20 @@ end
 --------------------------------------------------------------------------------
 local function ArmFill(bar, isChannel)
     local sb = bar.sb
-    if not (UnitCastingDuration and sb.SetTimerDuration) then return false end
+    if not (UnitCastingDuration and sb.SetTimerDuration) then
+        return false
+    end
     local dur, isEmp
     if isChannel then
         if UnitEmpoweredChannelDuration then
             dur = UnitEmpoweredChannelDuration(bar.unit, true)
-            if dur then isEmp = true end
+            if dur then
+                isEmp = true
+            end
         end
-        if not dur then dur = UnitChannelDuration(bar.unit) end
+        if not dur then
+            dur = UnitChannelDuration(bar.unit)
+        end
         if dur then
             sb:SetReverseFill(false)
             local dirn = isEmp and Enum.StatusBarTimerDirection.ElapsedTime
@@ -669,7 +734,9 @@ local function TeardownCast(bar)
 end
 
 local function UpdateCast(bar)
-    if previewOn[bar.which] then return end
+    if previewOn[bar.which] then
+        return
+    end
     local cfg = BarCfg(bar.which)
     if not (cfg and cfg.enabled == true) then
         TeardownCast(bar)
@@ -734,13 +801,17 @@ local function UpdateCast(bar)
         end
         bar.timer:SetText("")
 
-        if type(kickProtected) == "nil" then kickProtected = false end
+        if type(kickProtected) == "nil" then
+            kickProtected = false
+        end
         bar._kickProtected = kickProtected
         -- Important flag may be SECRET: stored raw, fed only to color curves.
         bar._castImportant = false
         if C_Spell and C_Spell.IsSpellImportant then
             local impOK, imp = pcall(C_Spell.IsSpellImportant, castSpellID or 0)
-            if impOK then bar._castImportant = imp end
+            if impOK then
+                bar._castImportant = imp
+            end
         end
         ApplyCastColor(bar, kickProtected)
     end
@@ -750,7 +821,9 @@ local function UpdateCast(bar)
     if armed and not bar.isCasting then
         NotifyCastStarted(bar)
     end
-    if armed then bar.isCasting = true end
+    if armed then
+        bar.isCasting = true
+    end
 
     if isFullSetup then
         bar._kickGeoDirty = nil
@@ -767,7 +840,9 @@ local function KickProtectionChanged(bar)
     -- disabled bar can still exist (unlock getFrame builds it), so gate here --
     -- UpdateCast's own gate runs too late for this one.
     local cfg = BarCfg(bar.which)
-    if not (cfg and cfg.enabled == true) then return end
+    if not (cfg and cfg.enabled == true) then
+        return
+    end
     local kickProtected
     local sName, _, _, _, _, _, _, kp = UnitCastingInfo(bar.unit)
     if type(sName) ~= "nil" then
@@ -775,10 +850,14 @@ local function KickProtectionChanged(bar)
     else
         local chName
         chName, _, _, _, _, _, kp = UnitChannelInfo(bar.unit)
-        if type(chName) == "nil" then return end
+        if type(chName) == "nil" then
+            return
+        end
         kickProtected = kp
     end
-    if type(kickProtected) == "nil" then kickProtected = false end
+    if type(kickProtected) == "nil" then
+        kickProtected = false
+    end
     bar._kickProtected = kickProtected
     ApplyCastColor(bar, kickProtected)
     RefreshKickTick(bar)
@@ -786,12 +865,20 @@ end
 
 local function ShowInterruptedFlash(bar, interrupterGUID)
     local tf = TF()
-    if not tf or tf.interruptedFlash == false then return end
+    if not tf or tf.interruptedFlash == false then
+        return
+    end
     local cfg = BarCfg(bar.which)
-    if not (cfg and cfg.enabled == true) then return end
+    if not (cfg and cfg.enabled == true) then
+        return
+    end
     local protected = bar._kickProtected
-    if type(interrupterGUID) == "nil" then return end
-    if not ((issecretvalue and issecretvalue(protected)) or not protected) then return end
+    if type(interrupterGUID) == "nil" then
+        return
+    end
+    if not ((issecretvalue and issecretvalue(protected)) or not protected) then
+        return
+    end
     bar._interrupted = true
     bar.flash:Show()
     bar.name:SetText(CludesUI.L("Interrupted") or "Interrupted")
@@ -799,12 +886,16 @@ local function ShowInterruptedFlash(bar, interrupterGUID)
     bar.target:Hide()
     bar.timer:SetText("")
     bar.frame:Show()
-    if bar._interruptTimer then bar._interruptTimer:Cancel() end
+    if bar._interruptTimer then
+        bar._interruptTimer:Cancel()
+    end
     bar._interruptTimer = C_Timer.NewTimer(1.0, function()
         bar._interruptTimer = nil
         bar._interrupted = nil
         bar.flash:Hide()
-        if not bar.isCasting then bar.frame:Hide() end
+        if not bar.isCasting then
+            bar.frame:Hide()
+        end
     end)
 end
 
@@ -815,12 +906,18 @@ end
 local evt = CreateFrame("Frame")
 
 local UNIT_EVENTS = {
-    "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START",
-    "UNIT_SPELLCAST_EMPOWER_START", "UNIT_SPELLCAST_DELAYED",
-    "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_EMPOWER_UPDATE",
-    "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED",
-    "UNIT_SPELLCAST_EMPOWER_STOP", "UNIT_SPELLCAST_CHANNEL_STOP",
-    "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_INTERRUPTIBLE",
+    "UNIT_SPELLCAST_START",
+    "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_EMPOWER_START",
+    "UNIT_SPELLCAST_DELAYED",
+    "UNIT_SPELLCAST_CHANNEL_UPDATE",
+    "UNIT_SPELLCAST_EMPOWER_UPDATE",
+    "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_EMPOWER_STOP",
+    "UNIT_SPELLCAST_CHANNEL_STOP",
+    "UNIT_SPELLCAST_INTERRUPTED",
+    "UNIT_SPELLCAST_INTERRUPTIBLE",
     "UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
 }
 
@@ -846,20 +943,27 @@ evt:SetScript("OnEvent", function(_, event, unit, ...)
         return
     end
     local bar = bars[unit]
-    if not bar then return end
-    if previewOn[unit] then return end
-    if event == "UNIT_SPELLCAST_START"
+    if not bar then
+        return
+    end
+    if previewOn[unit] then
+        return
+    end
+    if
+        event == "UNIT_SPELLCAST_START"
         or event == "UNIT_SPELLCAST_CHANNEL_START"
-        or event == "UNIT_SPELLCAST_EMPOWER_START" then
+        or event == "UNIT_SPELLCAST_EMPOWER_START"
+    then
         bar._castDirtyFull = true
         UpdateCast(bar)
-    elseif event == "UNIT_SPELLCAST_DELAYED"
+    elseif
+        event == "UNIT_SPELLCAST_DELAYED"
         or event == "UNIT_SPELLCAST_CHANNEL_UPDATE"
-        or event == "UNIT_SPELLCAST_EMPOWER_UPDATE" then
+        or event == "UNIT_SPELLCAST_EMPOWER_UPDATE"
+    then
         bar._kickGeoDirty = true
         UpdateCast(bar)
-    elseif event == "UNIT_SPELLCAST_STOP"
-        or event == "UNIT_SPELLCAST_FAILED" then
+    elseif event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_FAILED" then
         UpdateCast(bar)
     elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
         -- An interrupted empower carries the interrupter GUID as the 4th arg
@@ -867,7 +971,9 @@ evt:SetScript("OnEvent", function(_, event, unit, ...)
         local _, _, _, interrupterGUID = ...
         if type(interrupterGUID) ~= "nil" then
             TeardownCast(bar)
-            if not bar._interrupted then ShowInterruptedFlash(bar, interrupterGUID) end
+            if not bar._interrupted then
+                ShowInterruptedFlash(bar, interrupterGUID)
+            end
         else
             UpdateCast(bar)
         end
@@ -885,8 +991,7 @@ evt:SetScript("OnEvent", function(_, event, unit, ...)
         local _, _, interrupterGUID = ...
         ShowInterruptedFlash(bar, interrupterGUID)
         UpdateCast(bar)
-    elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE"
-        or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
+    elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
         KickProtectionChanged(bar)
         UpdateCast(bar)
     end
@@ -899,7 +1004,9 @@ local function AnyEnabled()
 end
 
 local function Activate()
-    if active then return end
+    if active then
+        return
+    end
     active = true
     for i = 1, #UNIT_EVENTS do
         evt:RegisterUnitEvent(UNIT_EVENTS[i], "target", "focus")
@@ -909,7 +1016,9 @@ local function Activate()
 end
 
 local function Deactivate()
-    if not active then return end
+    if not active then
+        return
+    end
     active = false
     evt:UnregisterAllEvents()
     for _, bar in pairs(bars) do
@@ -934,7 +1043,9 @@ local function PaintSampleCast(bar, which, tf)
         -- Class token only: UnitClassBase also returns the class ID, which would
         -- land in GetClassColor's optional tint color argument and be rejected.
         local col = C_ClassColor.GetClassColor((UnitClassBase("player")))
-        if col then bar.target:SetTextColor(col:GetRGB()) end
+        if col then
+            bar.target:SetTextColor(col:GetRGB())
+        end
     elseif tc then
         bar.target:SetTextColor(tc.r, tc.g, tc.b, 1)
     end
@@ -974,7 +1085,9 @@ local sampleBars = {}
 function ns.TFB_PaintSample(host, which)
     local cfg = BarCfg(which)
     local tf = TF()
-    if not (cfg and tf) then return nil end
+    if not (cfg and tf) then
+        return nil
+    end
     local bar = sampleBars[which]
     if not bar then
         bar = BuildBarChrome(which, host)
@@ -998,7 +1111,9 @@ function ns.TFB_SetPreview(which, on)
         if bar then
             bar.frame:Hide()
             bar.sb:SetValue(0)
-            if active then UpdateCast(bar) end
+            if active then
+                UpdateCast(bar)
+            end
         end
     end
 end
@@ -1052,7 +1167,7 @@ end
 local function MakeBarUnlockElement(which, label, order)
     local MK = CludesUI.MakeUnlockElement
     return MK({
-        key   = which == "target" and "EMT_TargetCastBar" or "EMT_FocusCastBar",
+        key = which == "target" and "EMT_TargetCastBar" or "EMT_FocusCastBar",
         label = label,
         group = "Mythic+",
         order = order,
@@ -1076,13 +1191,17 @@ local function MakeBarUnlockElement(which, label, order)
         end,
         setWidth = function(_, w)
             local cfg = BarCfg(which)
-            if not cfg then return end
+            if not cfg then
+                return
+            end
             cfg.width = math.floor(w + 0.5)
             ns.TFB_Refresh()
         end,
         setHeight = function(_, h)
             local cfg = BarCfg(which)
-            if not cfg then return end
+            if not cfg then
+                return
+            end
             cfg.height = math.floor(h + 0.5)
             ns.TFB_Refresh()
         end,
@@ -1090,29 +1209,41 @@ local function MakeBarUnlockElement(which, label, order)
             -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
             -- still sits at the dragged spot, so never read the live position.
             local cfg = BarCfg(which)
-            if not (cfg and x and y) then return end
+            if not (cfg and x and y) then
+                return
+            end
             cfg.pos = { centerX = x, centerY = y }
-            if not CludesUI._unlockActive then ApplyBarPosition(bars[which]) end
+            if not CludesUI._unlockActive then
+                ApplyBarPosition(bars[which])
+            end
         end,
         loadPos = function()
             local cfg = BarCfg(which)
             local pos = cfg and cfg.pos
-            if not (pos and pos.centerX and pos.centerY) then return nil end
+            if not (pos and pos.centerX and pos.centerY) then
+                return nil
+            end
             return { point = "CENTER", relPoint = "CENTER", x = pos.centerX, y = pos.centerY }
         end,
         clearPos = function()
             local cfg = BarCfg(which)
-            if cfg then cfg.pos = nil end
+            if cfg then
+                cfg.pos = nil
+            end
         end,
         applyPos = function()
             local bar = bars[which]
-            if bar then ApplyBarPosition(bar) end
+            if bar then
+                ApplyBarPosition(bar)
+            end
         end,
     })
 end
 
 local function RegisterUnlock()
-    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
+        return
+    end
     CludesUI:RegisterUnlockElements({
         MakeBarUnlockElement("target", "Target Cast Bar", 522),
         MakeBarUnlockElement("focus", "Focus Cast Bar", 523),
@@ -1122,13 +1253,16 @@ local function RegisterUnlock()
         local function Listener(which, key)
             return function(unlockActive)
                 local cfg = BarCfg(which)
-                if not (cfg and cfg.enabled == true) then return end
+                if not (cfg and cfg.enabled == true) then
+                    return
+                end
                 ns.TFB_SetPreview(which, unlockActive == true)
-                local anchored = CludesUI.IsUnlockAnchored
-                    and CludesUI.IsUnlockAnchored(key)
+                local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
                 if not anchored then
                     local bar = bars[which]
-                    if bar then ApplyBarPosition(bar) end
+                    if bar then
+                        ApplyBarPosition(bar)
+                    end
                 end
             end
         end
@@ -1142,7 +1276,9 @@ end
 --------------------------------------------------------------------------------
 function ns.TFB_OnEnable(database)
     db = database
-    if not db then return end
+    if not db then
+        return
+    end
     RegisterUnlock()
     ns.TFB_Refresh()
 end

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Apply.lua
 --
@@ -9,7 +11,9 @@ local _, ns = ...
 local I = ns._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI = CludesUI
@@ -25,7 +29,9 @@ ns.RefreshMeter = function()
     ns.DMInvalidateAppearance()
     local cfg = DB()
     for _, w in ipairs(_windows) do
-        if cfg.barSeparators or cfg.iconSeparator or w._decorSync then ns.DMSetWindowBorderLayer(w, cfg) end
+        if cfg.barSeparators or cfg.iconSeparator or w._decorSync then
+            ns.DMSetWindowBorderLayer(w, cfg)
+        end
         w.Refresh()
     end
 end
@@ -35,25 +41,30 @@ end
 -- anchors; busting _barCacheKey makes the next refresh re-anchor them. Rows are
 -- otherwise only re-anchored on a settings change or from the in-combat ticker,
 -- so out of combat the old grid would survive until the next fight. Deliberately
--- not _EDM_Apply (a full re-apply of every window): the core scale slider calls
+-- not _CUDM_Apply (a full re-apply of every window): the core scale slider calls
 -- this on every drag step.
 ns.Rescale = function()
     ns.DMInvalidateAppearance()
     for _, w in ipairs(_windows) do
         w._barCacheKey = nil
         w.Refresh()
-        if w.sourceOpen and w.RefreshBreakdown then w.RefreshBreakdown() end
+        if w.sourceOpen and w.RefreshBreakdown then
+            w.RefreshBreakdown()
+        end
     end
-    if ns.ApplySpellHistory then ns.ApplySpellHistory() end
+    if ns.ApplySpellHistory then
+        ns.ApplySpellHistory()
+    end
 end
 -- Called by the core right after PP.SetUIScale, alongside the other modules' re-apply hooks
-_G._EDM_Rescale = ns.Rescale
+_G._CUDM_Rescale = ns.Rescale
 
 -- Bust per-class color caches and repaint when global custom class colors change, so bars/text
 -- recolor live without a /reload (color is cached keyed only on classFile, which the palette edit doesn't change).
 ns.RefreshColors = function()
     for _, w in ipairs(_windows) do
-        w._stickyClassCache = false; w._stickySpecCache = nil
+        w._stickyClassCache = false
+        w._stickySpecCache = nil
         -- The key bust re-seeds every populated row's colour memo (the full-rebuild pass).
         w._barCacheKey = nil
         w.Refresh()
@@ -70,7 +81,9 @@ ns.RefreshNames = function()
     for _, w in ipairs(_windows) do
         local pool = w.rowPool
         if pool then
-            for i = 1, #pool do pool[i]._cachedSrcName = nil end
+            for i = 1, #pool do
+                pool[i]._cachedSrcName = nil
+            end
         end
         w._stickyNameCache = nil
         w.Refresh()
@@ -82,7 +95,9 @@ ns.ApplyBorder = function()
     for _, w in ipairs(_windows) do
         if w.rowPool then
             for _, bar in ipairs(w.rowPool) do
-                if bar.ApplyBorder then bar.ApplyBorder() end
+                if bar.ApplyBorder then
+                    bar.ApplyBorder()
+                end
             end
         end
         if w.stickyPlayer and w.stickyPlayer.ApplyBorder then
@@ -96,7 +111,9 @@ ns.ApplyBarBg = function()
     for _, w in ipairs(_windows) do
         if w.rowPool then
             for _, bar in ipairs(w.rowPool) do
-                if bar.ApplyBg then bar.ApplyBg() end
+                if bar.ApplyBg then
+                    bar.ApplyBg()
+                end
             end
         end
         if w.stickyPlayer and w.stickyPlayer.ApplyBg then
@@ -109,7 +126,9 @@ ns.ApplyBarTextOffsets = function()
     for _, w in ipairs(_windows) do
         if w.rowPool then
             for _, bar in ipairs(w.rowPool) do
-                if bar.ApplyTextOffsets then bar.ApplyTextOffsets() end
+                if bar.ApplyTextOffsets then
+                    bar.ApplyTextOffsets()
+                end
             end
         end
         if w.stickyPlayer and w.stickyPlayer.ApplyTextOffsets then
@@ -122,11 +141,17 @@ ns.ApplyBackground = function()
     local cfg = DB()
     local r, g, b, a = cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgAlpha or 0.75
     for _, w in ipairs(_windows) do
-        if w.frame and w.frame._bg then ns.DMPaintWindowBg(w.frame._bg, r, g, b, a, true, cfg.bgTexture) end
-        if w.sourceFrame and w.sourceFrame._bg then ns.DMPaintWindowBg(w.sourceFrame._bg, r, g, b, a, nil, cfg.bgTexture) end
+        if w.frame and w.frame._bg then
+            ns.DMPaintWindowBg(w.frame._bg, r, g, b, a, true, cfg.bgTexture)
+        end
+        if w.sourceFrame and w.sourceFrame._bg then
+            ns.DMPaintWindowBg(w.sourceFrame._bg, r, g, b, a, nil, cfg.bgTexture)
+        end
     end
     -- Under Classic WoW UI the header tint is shaded from the window colour.
-    if ns.DMClassic() then ns.ApplyHeader() end
+    if ns.DMClassic() then
+        ns.ApplyHeader()
+    end
 end
 
 ns.ApplyWindowBorder = function()
@@ -157,33 +182,53 @@ ns.ApplyWindowBorder = function()
             target:SetPoint("BOTTOMRIGHT", w.frame, "BOTTOMRIGHT", offsetX, -offsetY)
             -- Offsets are represented by the target geometry itself, which also makes them work for the solid four-strip border implementation
             CUI.ApplyBorderStyle(target, size, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
-            if cfg.hdrBottomSeparator or w._headerSeparator then ns.DMApplyHeaderSeparator(w) end
+            if cfg.hdrBottomSeparator or w._headerSeparator then
+                ns.DMApplyHeaderSeparator(w)
+            end
             -- The row decorations read no window border setting but its level.
-            if relayered then ns.DMRefreshRowDecor(w) end
+            if relayered then
+                ns.DMRefreshRowDecor(w)
+            end
         end
     end
     -- Border reach counts in size matching (each window's getMatchPad reads
     -- these settings): re-push a window's matches when it moved (deferred).
     if CUI.MatchPadChanged then
-        for i = 1, #_windows do CUI.MatchPadChanged("EDM_Win" .. i) end
+        for i = 1, #_windows do
+            CUI.MatchPadChanged("EDM_Win" .. i)
+        end
     end
 end
 
 ns.ApplyHeader = function()
     local cfg = DB()
-    local hc = cfg.hdrBgColor; local hR = hc and hc.r or 0x1B/255; local hG = hc and hc.g or 0x1B/255; local hB = hc and hc.b or 0x1B/255
+    local hc = cfg.hdrBgColor
+    local hR = hc and hc.r or 0x1B / 255
+    local hG = hc and hc.g or 0x1B / 255
+    local hB = hc and hc.b or 0x1B / 255
     local hA = cfg.hdrBgAlpha or 1
     local tR, tG, tB
-    if cfg.hdrTextUseAccent ~= false then tR, tG, tB = ns.DMTitleRGB()
-    else local c = cfg.hdrTextColor; tR = c and c.r or 1; tG = c and c.g or 1; tB = c and c.b or 1 end
+    if cfg.hdrTextUseAccent ~= false then
+        tR, tG, tB = ns.DMTitleRGB()
+    else
+        local c = cfg.hdrTextColor
+        tR = c and c.r or 1
+        tG = c and c.g or 1
+        tB = c and c.b or 1
+    end
     local hdrFS = cfg.hdrFontSize or 11
     local hdrH = GetHeaderH()
     local iconSz = ns.DMHdrIconSize(cfg)
     for _, w in ipairs(_windows) do
         if w.header then
             w.header:SetHeight(hdrH)
-            if w.header._hdrBg then ns.DMPaintHeaderBg(w.header._hdrBg, hR, hG, hB, hA) end
-            if w.header._bottomBorder and not ns.DMClassicSeparator(w.header._bottomBorder, PhysicalPixels(1)) then
+            if w.header._hdrBg then
+                ns.DMPaintHeaderBg(w.header._hdrBg, hR, hG, hB, hA)
+            end
+            if
+                w.header._bottomBorder
+                and not ns.DMClassicSeparator(w.header._bottomBorder, PhysicalPixels(1))
+            then
                 local size = cfg.hdrBottomBorderSize or 0
                 local color = cfg.hdrBottomBorderColor or {}
                 w.header._bottomBorder:SetHeight(PhysicalPixels(size))
@@ -216,7 +261,9 @@ ns.ApplyHeader = function()
 
         ApplyHeaderButtonsHoverVisibility(w, cfg)
         w._fitFull = nil
-        if w.FitTitle then w.FitTitle() end
+        if w.FitTitle then
+            w.FitTitle()
+        end
     end
     ns.ApplyWindowBorder()
 end
@@ -224,12 +271,20 @@ end
 ns.ApplyIconColor = function()
     local cfg = DB()
     local r, g, b
-    if cfg.iconColorUseAccent then r, g, b = GetAccentRGB()
-    else local c = cfg.iconColor; r = c and c.r or 1; g = c and c.g or 1; b = c and c.b or 1 end
+    if cfg.iconColorUseAccent then
+        r, g, b = GetAccentRGB()
+    else
+        local c = cfg.iconColor
+        r = c and c.r or 1
+        g = c and c.g or 1
+        b = c and c.b or 1
+    end
     for _, w in ipairs(_windows) do
         for _, icon in ipairs(w.hdrIcons) do
             -- Stock-style art carries its own colours.
-            if not icon._hdrArt then icon:SetVertexColor(r, g, b, ICON_ALPHA) end
+            if not icon._hdrArt then
+                icon:SetVertexColor(r, g, b, ICON_ALPHA)
+            end
         end
     end
 end
@@ -238,7 +293,9 @@ ns.ApplyIconBorder = function()
     for _, w in ipairs(_windows) do
         if w.rowPool then
             for _, bar in ipairs(w.rowPool) do
-                if bar.ApplyIconBorder then bar.ApplyIconBorder() end
+                if bar.ApplyIconBorder then
+                    bar.ApplyIconBorder()
+                end
             end
         end
         if w.stickyPlayer and w.stickyPlayer.ApplyIconBorder then

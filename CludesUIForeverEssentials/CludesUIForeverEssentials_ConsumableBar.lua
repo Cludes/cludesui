@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ConsumableBar.lua  (WoW Forever only)
 --  Consumable Bar: the consumables in your bags on a bar you can click,
@@ -17,22 +21,31 @@ local _, module = ...
 
 -- Consumable subclasses (wago.tools ItemSubClass, ClassID 0, build 1.60.1.70888).
 local SUB = { explosive = 0, potion = 1, elixir = 2, flask = 3, scroll = 4, food = 5, bandage = 7, other = 8 }
-local CATEGORIES = {   -- key, label, subclasses, in bar order
-    { key = "potions",   label = "Potions",          subs = { SUB.potion } },
-    { key = "elixirs",   label = "Elixirs and Flasks", subs = { SUB.elixir, SUB.flask } },
-    { key = "food",      label = "Food and Drink",   subs = { SUB.food } },
-    { key = "bandages",  label = "Bandages",         subs = { SUB.bandage } },
-    { key = "scrolls",   label = "Scrolls",          subs = { SUB.scroll } },
-    { key = "other",     label = "Stones, Oils and Healthstones", subs = { SUB.other } },
-    { key = "explosives", label = "Explosives",      subs = { SUB.explosive } },
+local CATEGORIES = { -- key, label, subclasses, in bar order
+    { key = "potions", label = "Potions", subs = { SUB.potion } },
+    { key = "elixirs", label = "Elixirs and Flasks", subs = { SUB.elixir, SUB.flask } },
+    { key = "food", label = "Food and Drink", subs = { SUB.food } },
+    { key = "bandages", label = "Bandages", subs = { SUB.bandage } },
+    { key = "scrolls", label = "Scrolls", subs = { SUB.scroll } },
+    { key = "other", label = "Stones, Oils and Healthstones", subs = { SUB.other } },
+    { key = "explosives", label = "Explosives", subs = { SUB.explosive } },
 }
 module.CONSUMABLE_CATEGORIES = CATEGORIES
 
 local DEFAULTS = {
-    enabled = false, iconSize = 32, maxIcons = 12,
-    potions = true, elixirs = true, food = true, bandages = true, scrolls = true, other = true, explosives = false,
+    enabled = false,
+    iconSize = 32,
+    maxIcons = 12,
+    potions = true,
+    elixirs = true,
+    food = true,
+    bandages = true,
+    scrolls = true,
+    other = true,
+    explosives = false,
 }
-local F = module.Feature("consumableBar", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = -280 })
+local F =
+    module.Feature("consumableBar", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = -280 })
 local Get, Enabled = F.Get, F.Enabled
 
 local GAP = 3
@@ -40,13 +53,19 @@ local holder
 local buttons = {}
 local dirty = true
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font()
+    return CludesUI.GetFontPath("essentials")
+end
 
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
     local want = {}
     for i, c in ipairs(CATEGORIES) do
-        if Get(c.key) then for _, s in ipairs(c.subs) do want[s] = i end end
+        if Get(c.key) then
+            for _, s in ipairs(c.subs) do
+                want[s] = i
+            end
+        end
     end
     return want
 end
@@ -68,7 +87,9 @@ local function Collect()
         end
     end
     table.sort(list, function(a, b)
-        if a.order ~= b.order then return a.order < b.order end
+        if a.order ~= b.order then
+            return a.order < b.order
+        end
         return a.id < b.id
     end)
     return list
@@ -76,7 +97,9 @@ end
 
 local function Button(i)
     local b = buttons[i]
-    if b then return b end
+    if b then
+        return b
+    end
     b = CreateFrame("Button", nil, holder, "SecureActionButtonTemplate")
     b:RegisterForClicks("AnyUp", "AnyDown")
     b:SetAttribute("type", "item")
@@ -93,12 +116,16 @@ local function Button(i)
     CludesUI.Kit.Font(b.count, 11, "essentials")
     b.count:SetPoint("BOTTOMRIGHT", -2, 2)
     b:SetScript("OnEnter", function(self)
-        if not self.itemID then return end
+        if not self.itemID then
+            return
+        end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetItemByID(self.itemID)
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    b:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     buttons[i] = b
     return b
 end
@@ -122,8 +149,14 @@ end
 
 -- Lays the row out again; out of combat only, the buttons are secure.
 local function Layout()
-    if not holder then return end
-    if InCombatLockdown() then dirty = true; Paint(); return end
+    if not holder then
+        return
+    end
+    if InCombatLockdown() then
+        dirty = true
+        Paint()
+        return
+    end
     dirty = false
     local size, max = Get("iconSize"), Get("maxIcons")
     local list = Enabled() and Collect() or {}
@@ -139,13 +172,18 @@ local function Layout()
         b:SetPoint("LEFT", holder, "LEFT", (i - 1) * (size + GAP), 0)
         b:Show()
     end
-    for i = n + 1, #buttons do buttons[i]:Hide(); buttons[i].itemID = nil end
+    for i = n + 1, #buttons do
+        buttons[i]:Hide()
+        buttons[i].itemID = nil
+    end
     holder:SetSize(math.max(1, n) * (size + GAP) - GAP, size)
     Paint()
 end
 
 local function Build()
-    if holder then return holder end
+    if holder then
+        return holder
+    end
     holder = CreateFrame("Frame", "CludesUIConsumableBar", UIParent)
     holder:SetSize(Get("iconSize"), Get("iconSize"))
     return holder
@@ -154,11 +192,20 @@ end
 local ev = CreateFrame("Frame")
 local queued
 ev:SetScript("OnEvent", function(_, event)
-    if event == "BAG_UPDATE_COOLDOWN" then return Paint() end
-    if event == "PLAYER_REGEN_ENABLED" and not dirty then return end
-    if queued then return end
+    if event == "BAG_UPDATE_COOLDOWN" then
+        return Paint()
+    end
+    if event == "PLAYER_REGEN_ENABLED" and not dirty then
+        return
+    end
+    if queued then
+        return
+    end
     queued = true
-    C_Timer.After(0.3, function() queued = nil; Layout() end)
+    C_Timer.After(0.3, function()
+        queued = nil
+        Layout()
+    end)
 end)
 
 local function Apply()
@@ -169,7 +216,9 @@ local function Apply()
         ev:RegisterEvent("PLAYER_REGEN_ENABLED")
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
         ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holder) end
+        if not CludesUI._unlockActive and not InCombatLockdown() then
+            F.Place(holder)
+        end
     else
         ev:UnregisterAllEvents()
     end
@@ -179,11 +228,19 @@ end
 CludesUI._ConsumableBar = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Categories = CATEGORIES }
 
 F.Start(Apply, {
-    key = "CUI_ConsumableBar", label = "Consumable Bar", order = 738,
-    frame = function(build) if build then Build() end; return holder end,
+    key = "CUI_ConsumableBar",
+    label = "Consumable Bar",
+    order = 738,
+    frame = function(build)
+        if build then
+            Build()
+        end
+        return holder
+    end,
     size = function()
         local size = Get("iconSize")
         return size * 6 + GAP * 5, size
     end,
-    noAnchorTarget = true, noSizeMatchTarget = true,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

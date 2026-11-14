@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarStore.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local max = math.max
@@ -19,7 +23,9 @@ local TBB_DEFAULT_BAR = I.TBB_DEFAULT_BAR
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-I.ecmeSetters[#I.ecmeSetters + 1] = function(v) ECME = v end
+I.ecmeSetters[#I.ecmeSetters + 1] = function(v)
+    ECME = v
+end
 
 -------------------------------------------------------------------------------
 --  Per-spec unlock-link views (anchor / width-match / height-match entries)
@@ -46,22 +52,30 @@ do
 
     local function LiveStores(create)
         local db = CludesUIDB
-        if not db then return nil end
+        if not db then
+            return nil
+        end
         if create then
-            db.unlockAnchors     = db.unlockAnchors     or {}
-            db.unlockWidthMatch  = db.unlockWidthMatch  or {}
+            db.unlockAnchors = db.unlockAnchors or {}
+            db.unlockWidthMatch = db.unlockWidthMatch or {}
             db.unlockHeightMatch = db.unlockHeightMatch or {}
         end
         return db.unlockAnchors, db.unlockWidthMatch, db.unlockHeightMatch
     end
 
     local function Bucket(profileName, specKey, create)
-        if not profileName or not specKey then return nil end
+        if not profileName or not specKey then
+            return nil
+        end
         local sp = ns.GetSpecProfilesForProfile and ns.GetSpecProfilesForProfile(profileName)
-        if not sp then return nil end
+        if not sp then
+            return nil
+        end
         local prof = sp[specKey]
         if not prof then
-            if not create then return nil end
+            if not create then
+                return nil
+            end
             prof = { barSpells = {} }
             sp[specKey] = prof
         end
@@ -74,11 +88,15 @@ do
     -- Copy a live store's TBB child entries into a bucket table (slot-keyed).
     local function BankOne(store, dest)
         wipe(dest)
-        if not store then return end
+        if not store then
+            return
+        end
         for k, v in pairs(store) do
             if type(k) == "string" then
                 local slot = k:match("^TBB_(%d+)$")
-                if slot then dest[slot] = CopyEntry(v) end
+                if slot then
+                    dest[slot] = CopyEntry(v)
+                end
             end
         end
     end
@@ -92,12 +110,19 @@ do
         local store = db and db[liveField]
         local dest = b[field]
         if not dest then
-            if not store then return end
+            if not store then
+                return
+            end
             local any
             for k in pairs(store) do
-                if type(k) == "string" and k:find("^TBB_%d+$") then any = true; break end
+                if type(k) == "string" and k:find("^TBB_%d+$") then
+                    any = true
+                    break
+                end
             end
-            if not any then return end
+            if not any then
+                return
+            end
             dest = {}
             b[field] = dest
         end
@@ -110,12 +135,18 @@ do
         -- bucket would steer which key the next session reads; a missing
         -- bucket has nothing live to bank.
         if CludesUI.IS_FOREVER then
-            local sp = profileName and specKey and ns.GetSpecProfilesForProfile
+            local sp = profileName
+                and specKey
+                and ns.GetSpecProfilesForProfile
                 and ns.GetSpecProfilesForProfile(profileName)
-            if not (sp and sp[specKey]) then return end
+            if not (sp and sp[specKey]) then
+                return
+            end
         end
         local b = Bucket(profileName, specKey, true)
-        if not b then return end
+        if not b then
+            return
+        end
         local an, wm, hm = LiveStores(false)
         BankOne(an, b.anchors)
         BankOne(wm, b.wm)
@@ -134,7 +165,9 @@ do
             end
         end
         if kill then
-            for _, k in ipairs(kill) do store[k] = nil end
+            for _, k in ipairs(kill) do
+                store[k] = nil
+            end
         end
         for slot, v in pairs(src) do
             store["TBB_" .. slot] = CopyEntry(v)
@@ -149,7 +182,9 @@ do
         local db = CludesUIDB
         local store = db[liveField]
         if not store then
-            if not src or next(src) == nil then return end
+            if not src or next(src) == nil then
+                return
+            end
             store = {}
             db[liveField] = store
         end
@@ -158,11 +193,15 @@ do
 
     local function SwapIn(profileName, specKey)
         local an, wm, hm = LiveStores(true)
-        if not an then return end
+        if not an then
+            return
+        end
         local b = Bucket(profileName, specKey, false)
         if not b then
             b = Bucket(profileName, specKey, true)
-            if not b then return end
+            if not b then
+                return
+            end
             -- First view for this spec: seed from live entries, keeping only slots that have a bar here.
             BankOne(an, b.anchors)
             BankOne(wm, b.wm)
@@ -179,7 +218,9 @@ do
                     end
                 end
                 if drop then
-                    for _, slot in ipairs(drop) do set[slot] = nil end
+                    for _, slot in ipairs(drop) do
+                        set[slot] = nil
+                    end
                 end
             end
             -- Extras seed and prune like their links.
@@ -190,7 +231,9 @@ do
                 local set = xsets[i]
                 if set then
                     for slot in pairs(set) do
-                        if not bars[tonumber(slot)] then set[slot] = nil end
+                        if not bars[tonumber(slot)] then
+                            set[slot] = nil
+                        end
                     end
                 end
             end
@@ -205,11 +248,15 @@ do
     end
 
     function ns.SyncTBBUnlockLinks(force)
-        if not CludesUIDB then return end
+        if not CludesUIDB then
+            return
+        end
         local profName = ns.GetActiveProfileName and ns.GetActiveProfileName()
-        local specKey  = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
-        if not profName or not specKey then return end
-        local own  = CludesUIDB._tbbLinkOwner
+        local specKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+        if not profName or not specKey then
+            return
+        end
+        local own = CludesUIDB._tbbLinkOwner
         local same = own and own.profile == profName and own.spec == specKey
         if force then
             SwapIn(profName, specKey)
@@ -217,7 +264,9 @@ do
             Bank(profName, specKey)
             return
         else
-            if own then Bank(own.profile, own.spec) end
+            if own then
+                Bank(own.profile, own.spec)
+            end
             SwapIn(profName, specKey)
         end
         CludesUIDB._tbbLinkOwner = { profile = profName, spec = specKey }
@@ -237,10 +286,12 @@ do
     -- bucket (only while live belongs to it), so a profile restore before the next
     -- bar build cannot swap an older bucket over them.
     CludesUI._TBBBankUnlockLinks = function()
-        if not CludesUIDB then return end
+        if not CludesUIDB then
+            return
+        end
         local own = CludesUIDB._tbbLinkOwner
         local profName = ns.GetActiveProfileName and ns.GetActiveProfileName()
-        local specKey  = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
+        local specKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
         if own and own.profile == profName and own.spec == specKey then
             Bank(profName, specKey)
         end
@@ -283,7 +334,9 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
     -- Base from pure defaults (spell identity, enable state and stack-threshold numbers
     -- start fresh), then dress it: the style key set is the authoritative visual copy.
     local newBar = {}
-    for k, v in pairs(TBB_DEFAULT_BAR) do newBar[k] = v end
+    for k, v in pairs(TBB_DEFAULT_BAR) do
+        newBar[k] = v
+    end
     if preset then
         ns.ApplyTBBStylePresetToCfg(preset, newBar)
     elseif styleSrc then
@@ -325,14 +378,18 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
                     -- Step sideways by the previous bar's on-screen width (width/height are always VISUAL dimensions).
                     local barW = (prevCfg and prevCfg.width or 24) + 4
                     _tbbPos[tostring(#bars)] = {
-                        point = prevPos.point, relPoint = prevPos.relPoint or prevPos.point,
-                        x = px + barW, y = py,
+                        point = prevPos.point,
+                        relPoint = prevPos.relPoint or prevPos.point,
+                        x = px + barW,
+                        y = py,
                     }
                 else
                     local barH = (prevCfg and prevCfg.height or 24) + 4
                     _tbbPos[tostring(#bars)] = {
-                        point = prevPos.point, relPoint = prevPos.relPoint or prevPos.point,
-                        x = px, y = py + barH,
+                        point = prevPos.point,
+                        relPoint = prevPos.relPoint or prevPos.point,
+                        x = px,
+                        y = py + barH,
                     }
                 end
             end
@@ -351,7 +408,9 @@ end
 
 function ns.RemoveTrackedBuffBar(idx)
     local tbb = ns.GetTrackedBuffBars()
-    if idx < 1 or idx > #tbb.bars then return end
+    if idx < 1 or idx > #tbb.bars then
+        return
+    end
     local oldCount = #tbb.bars
     table.remove(tbb.bars, idx)
     -- Positions are keyed by bar index: re-key so bars after the removed index keep their coordinates.
@@ -365,7 +424,9 @@ function ns.RemoveTrackedBuffBar(idx)
     if CludesUI and CludesUI.ShiftIndexedAnchorKeys then
         CludesUI.ShiftIndexedAnchorKeys("TBB_", idx, oldCount)
     end
-    if tbb.selectedBar > #tbb.bars then tbb.selectedBar = max(1, #tbb.bars) end
+    if tbb.selectedBar > #tbb.bars then
+        tbb.selectedBar = max(1, #tbb.bars)
+    end
     ns.BuildTrackedBuffBars()
 end
 
@@ -379,28 +440,37 @@ function ns.MoveTrackedBuffBarInGroup(idx, pos)
     local bars = tbb.bars
     local cfg = bars[idx]
     local gid = ns.TBBBarGroupID(cfg)
-    if gid == 0 then return idx end
+    if gid == 0 then
+        return idx
+    end
     local slots, members, from = {}, {}, nil
     for j, c in ipairs(bars) do
         if ns.TBBBarGroupID(c) == gid then
             slots[#slots + 1] = j
             members[#members + 1] = c
-            if j == idx then from = #slots end
+            if j == idx then
+                from = #slots
+            end
         end
     end
     pos = max(1, math.min(pos, #slots))
-    if pos == from then return idx end
+    if pos == from then
+        return idx
+    end
     local oldAnchor = ns.TBBGroupAnchorIndex(gid)
     table.remove(members, from)
     table.insert(members, pos, cfg)
-    for k, j in ipairs(slots) do bars[j] = members[k] end
+    for k, j in ipairs(slots) do
+        bars[j] = members[k]
+    end
     -- A disabled member can hand the anchor role to another slot: carry the
     -- group origin there, as the group mover's save does for every member.
     local newAnchor = ns.TBBGroupAnchorIndex(gid)
     local posDB = ns.GetTBBPositions()
     local origin = oldAnchor and posDB[tostring(oldAnchor)]
     if newAnchor and newAnchor ~= oldAnchor and origin then
-        posDB[tostring(newAnchor)] = { point = origin.point, relPoint = origin.relPoint, x = origin.x, y = origin.y }
+        posDB[tostring(newAnchor)] =
+            { point = origin.point, relPoint = origin.relPoint, x = origin.x, y = origin.y }
     end
     ns.BuildTrackedBuffBars()
     return slots[pos]
@@ -413,10 +483,18 @@ end
 -- apart from a custom buff by having NO customDuration (custom-buff popup always sets
 -- one, CDM picker clears it). Freshly-added empty bars return nil.
 function ns.TBBBroadcastKey(cfg)
-    if type(cfg) ~= "table" then return nil end
-    if cfg.popularKey and cfg.popularKey ~= "" then return "p:" .. cfg.popularKey end
-    if cfg.spellID and cfg.spellID > 0
-       and type(cfg.customDuration) == "number" and cfg.customDuration > 0 then
+    if type(cfg) ~= "table" then
+        return nil
+    end
+    if cfg.popularKey and cfg.popularKey ~= "" then
+        return "p:" .. cfg.popularKey
+    end
+    if
+        cfg.spellID
+        and cfg.spellID > 0
+        and type(cfg.customDuration) == "number"
+        and cfg.customDuration > 0
+    then
         return "s:" .. tostring(cfg.spellID)
     end
     return nil
@@ -430,7 +508,9 @@ end
 -- True when the bar's buff is marked broadcast to all specs (button reads "Remove Bar from All Specs"). Read from the persistent per-profile set.
 function ns.IsTrackedBuffBarBroadcast(cfg)
     local key = ns.TBBBroadcastKey(cfg)
-    if not key then return false end
+    if not key then
+        return false
+    end
     local set = ns.GetActiveTBBBroadcastSet and ns.GetActiveTBBBroadcastSet()
     return set ~= nil and set[key] == true
 end
@@ -441,27 +521,40 @@ end
 -- Returns the number of specs added to.
 function ns.AddBarToAllSpecs(srcIdx)
     local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
-    if not DeepCopy then return 0 end
+    if not DeepCopy then
+        return 0
+    end
     local activeKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
-    if not activeKey then return 0 end
+    if not activeKey then
+        return 0
+    end
 
     local srcTbb = ns.GetTrackedBuffBars()
     local srcBar = srcTbb and srcTbb.bars and srcTbb.bars[srcIdx]
-    if not ns.IsTrackedBuffBarBroadcastable(srcBar) then return 0 end
+    if not ns.IsTrackedBuffBarBroadcastable(srcBar) then
+        return 0
+    end
 
     local srcPos = ns.GetTBBPositions()[tostring(srcIdx)]
 
     local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
-    if not sp then return 0 end
+    if not sp then
+        return 0
+    end
 
     local function HasSameBar(bars)
         for _, b in ipairs(bars) do
             -- A cooldown-tracking bar is never the same bar as a buff bar for the same spell: track types must match first.
             if (b.trackType or "buff") == (srcBar.trackType or "buff") then
                 if srcBar.popularKey and srcBar.popularKey ~= "" then
-                    if b.popularKey == srcBar.popularKey then return true end
-                elseif (not b.popularKey or b.popularKey == "")
-                       and b.spellID and b.spellID == srcBar.spellID then
+                    if b.popularKey == srcBar.popularKey then
+                        return true
+                    end
+                elseif
+                    (not b.popularKey or b.popularKey == "")
+                    and b.spellID
+                    and b.spellID == srcBar.spellID
+                then
                     return true
                 end
             end
@@ -478,7 +571,9 @@ function ns.AddBarToAllSpecs(srcIdx)
         if specID then
             local key = tostring(specID)
             if key ~= activeKey then
-                if not sp[key] then sp[key] = { barSpells = {} } end
+                if not sp[key] then
+                    sp[key] = { barSpells = {} }
+                end
                 local prof = sp[key]
                 if not prof.trackedBuffBars then
                     prof.trackedBuffBars = { selectedBar = 1, bars = {} }
@@ -495,14 +590,19 @@ function ns.AddBarToAllSpecs(srcIdx)
                     else
                         gid = ns.TBBBarGroupID(tbb.bars[1])
                         for j = 2, #tbb.bars do
-                            if ns.TBBBarGroupID(tbb.bars[j]) ~= gid then gid = 0; break end
+                            if ns.TBBBarGroupID(tbb.bars[j]) ~= gid then
+                                gid = 0
+                                break
+                            end
                         end
                     end
                     ns.TBBSetBarGroup(newBar, gid)
                     local newIdx = #tbb.bars + 1
                     tbb.bars[newIdx] = newBar
                     if srcPos then
-                        if not prof.tbbPositions then prof.tbbPositions = {} end
+                        if not prof.tbbPositions then
+                            prof.tbbPositions = {}
+                        end
                         prof.tbbPositions[tostring(newIdx)] = DeepCopy(srcPos)
                     end
                     added = added + 1
@@ -516,7 +616,9 @@ function ns.AddBarToAllSpecs(srcIdx)
     local set = (not CludesUI.IS_FOREVER) and ns.GetActiveTBBBroadcastSet and ns.GetActiveTBBBroadcastSet()
     if set then
         local key = ns.TBBBroadcastKey(srcBar)
-        if key then set[key] = true end
+        if key then
+            set[key] = true
+        end
     end
 
     return added
@@ -526,15 +628,21 @@ end
 -- broadcast flag. The CURRENT spec's bar is left untouched. Returns specs removed from.
 function ns.RemoveBarFromAllSpecs(srcIdx)
     local activeKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
-    if not activeKey then return 0 end
+    if not activeKey then
+        return 0
+    end
 
     local srcTbb = ns.GetTrackedBuffBars()
     local srcBar = srcTbb and srcTbb.bars and srcTbb.bars[srcIdx]
     local broadcastKey = ns.TBBBroadcastKey(srcBar)
-    if not broadcastKey then return 0 end
+    if not broadcastKey then
+        return 0
+    end
 
     local sp = ns.GetActiveSpecProfiles and ns.GetActiveSpecProfiles()
-    if not sp then return 0 end
+    if not sp then
+        return 0
+    end
 
     local function Matches(b)
         -- Track types must match: a broadcast buff bar for spell X must NEVER delete a cooldown-tracking bar for the same spell.
@@ -544,8 +652,7 @@ function ns.RemoveBarFromAllSpecs(srcIdx)
         if srcBar.popularKey and srcBar.popularKey ~= "" then
             return b.popularKey == srcBar.popularKey
         else
-            return (not b.popularKey or b.popularKey == "")
-                   and b.spellID and b.spellID == srcBar.spellID
+            return (not b.popularKey or b.popularKey == "") and b.spellID and b.spellID == srcBar.spellID
         end
     end
 
@@ -570,7 +677,9 @@ function ns.RemoveBarFromAllSpecs(srcIdx)
                         else
                             newBars[#newBars + 1] = b
                             local p = oldPos[tostring(j)]
-                            if p then newPos[tostring(#newBars)] = p end
+                            if p then
+                                newPos[tostring(#newBars)] = p
+                            end
                         end
                     end
                     if didRemove then
@@ -588,7 +697,9 @@ function ns.RemoveBarFromAllSpecs(srcIdx)
 
     -- Clear the broadcast flag so the button flips back to "Add...".
     local set = ns.GetActiveTBBBroadcastSet and ns.GetActiveTBBBroadcastSet()
-    if set then set[broadcastKey] = nil end
+    if set then
+        set[broadcastKey] = nil
+    end
 
     return removed
 end

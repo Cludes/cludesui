@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUINameplates_Faction.lua
 --  Faction badge (Horde/Alliance) on friendly nameplates. Enemy plates carry it
@@ -32,7 +34,9 @@ end
 -- the friendly plate builds (point+size regions drift inside plate subtrees).
 local function ArrowTo(fp, anchor)
     local la = fp.leftArrow
-    if not la or fp._facArrowTo == anchor then return end
+    if not la or fp._facArrowTo == anchor then
+        return
+    end
     fp._facArrowTo = anchor
     -- The width we set, never la:GetWidth(): the arrow hangs off the name, and a
     -- secret name (restricted content) makes its measured width secret.
@@ -48,15 +52,23 @@ end
 -- full-plate mode and is released before its unit becomes an enemy plate.
 local function Refresh(fp)
     local nameplate, unit = fp.nameplate, fp.unit
-    if not (nameplate and unit) then return end
+    if not (nameplate and unit) then
+        return
+    end
     local b = badges[nameplate]
     local atlas, dim
     -- Slot None: no unit queries, only a badge left up from before is hidden.
-    if ns.NP_GetFactionSlot() ~= "none" then atlas, dim = ns.NP_FactionBadge(unit) end
+    if ns.NP_GetFactionSlot() ~= "none" then
+        atlas, dim = ns.NP_FactionBadge(unit)
+    end
     local fs = fp.name
     if not (atlas and fs) then
-        if b then b:Hide() end
-        if fs then ArrowTo(fp, fs) end
+        if b then
+            b:Hide()
+        end
+        if fs then
+            ArrowTo(fp, fs)
+        end
         return
     end
     b = b or GetBadge(nameplate)
@@ -88,12 +100,18 @@ ns.NP_FriendlyFactionRefresh = Refresh
 -- unit promoted to an enemy plate, which draws its own badge.
 function ns.NP_FriendlyFactionHide(fp)
     local b = fp.nameplate and badges[fp.nameplate]
-    if b then b:Hide() end
-    if fp.name then ArrowTo(fp, fp.name) end
+    if b then
+        b:Hide()
+    end
+    if fp.name then
+        ArrowTo(fp, fp.name)
+    end
 end
 
 -- Every friendly full plate: runs after a settings change or profile switch.
 function ns.NP_RefreshFriendlyFaction()
     -- Slot None costs one compare per plate: Refresh hides and puts arrows back.
-    for _, fp in pairs(ns.friendlyPlates) do Refresh(fp) end
+    for _, fp in pairs(ns.friendlyPlates) do
+        Refresh(fp)
+    end
 end

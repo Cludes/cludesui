@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Interrupts.lua -- Raid Lead: kick rotation.
 --
@@ -26,14 +28,24 @@ function ns.KickSettings()
     local p = ns.RaidLeadDB()
     p.kicks = p.kicks or {}
     local s = p.kicks
-    if s.enabled == nil then s.enabled = true end
-    if s.unit == nil then s.unit = "focus" end
-    if s.sound == nil then s.sound = true end
-    if s.order == nil then s.order = "" end
+    if s.enabled == nil then
+        s.enabled = true
+    end
+    if s.unit == nil then
+        s.unit = "focus"
+    end
+    if s.sound == nil then
+        s.sound = true
+    end
+    if s.order == nil then
+        s.order = ""
+    end
     return s
 end
 
-local function Lower(s) return (s or ""):lower() end
+local function Lower(s)
+    return (s or ""):lower()
+end
 
 --- The rotation lines between intstart and intend in a note.
 function ns.ParseKickBlock(text)
@@ -41,12 +53,18 @@ function ns.ParseKickBlock(text)
     for raw in (text or ""):gmatch("[^\r\n]+") do
         local line = raw:gsub("|+c%x%x%x%x%x%x%x%x", ""):gsub("|+r", ""):match("^%s*(.-)%s*$")
         local l = Lower(line)
-        if l == "intstart" then inside = true
-        elseif l == "intend" then break
+        if l == "intstart" then
+            inside = true
+        elseif l == "intend" then
+            break
         elseif inside and line ~= "" then
             local names = {}
-            for n in line:gmatch("%S+") do names[#names + 1] = n end
-            if #names > 0 then lines[#lines + 1] = names end
+            for n in line:gmatch("%S+") do
+                names[#names + 1] = n
+            end
+            if #names > 0 then
+                lines[#lines + 1] = names
+            end
         end
     end
     return lines
@@ -64,11 +82,18 @@ function ns.MyKickRotation(noteText)
     local lines = ns.ParseKickBlock(noteText)
     if #lines == 0 then
         local typed = ns.KickSettings().order
-        if typed ~= "" then lines = { {} } for n in typed:gmatch("%S+") do table.insert(lines[1], n) end end
+        if typed ~= "" then
+            lines = { {} }
+            for n in typed:gmatch("%S+") do
+                table.insert(lines[1], n)
+            end
+        end
     end
     for _, names in ipairs(lines) do
         for i, n in ipairs(names) do
-            if IsMe(n) then return names, i end
+            if IsMe(n) then
+                return names, i
+            end
         end
     end
     return nil
@@ -78,12 +103,16 @@ end
 --  Display
 -------------------------------------------------------------------------------
 local box, num, label
-local rot              -- { names, mine, count, casting }
+local rot -- { names, mine, count, casting }
 
-local function Font() return CludesUI.GetFontPath(nil) end
+local function Font()
+    return CludesUI.GetFontPath(nil)
+end
 
 local function Build()
-    if box then return end
+    if box then
+        return
+    end
     box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
     box:SetSize(W, H)
     CludesUI.Kit.Panel(box)
@@ -98,7 +127,9 @@ local function Build()
 end
 
 function ns.ApplyKickPosition()
-    if not box or InCombatLockdown() then return end
+    if not box or InCombatLockdown() then
+        return
+    end
     local p = ns.KickSettings().pos
     box:ClearAllPoints()
     if p then
@@ -109,7 +140,9 @@ function ns.ApplyKickPosition()
 end
 
 local function Paint()
-    if not (box and rot) then return end
+    if not (box and rot) then
+        return
+    end
     local n = #rot.names
     local who = rot.names[rot.count]
     local nextUp = rot.count % n + 1
@@ -140,31 +173,48 @@ local function Stop()
     ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
     ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
     ev:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    if box then box:Hide() end
+    if box then
+        box:Hide()
+    end
 end
 ns.StopKicks = Stop
 
 --- Starts the rotation from a note (nil: the typed order).
 function ns.StartKicks(noteText)
     local s = ns.KickSettings()
-    if not s.enabled then return end
+    if not s.enabled then
+        return
+    end
     local names, mine = ns.MyKickRotation(noteText)
-    if not names then return Stop() end
+    if not names then
+        return Stop()
+    end
     Build()
     rot = { names = names, mine = mine, count = 1, casting = false }
-    for _, e in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_STOP",
-                         "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTED" }) do
+    for _, e in ipairs({
+        "UNIT_SPELLCAST_START",
+        "UNIT_SPELLCAST_CHANNEL_START",
+        "UNIT_SPELLCAST_STOP",
+        "UNIT_SPELLCAST_CHANNEL_STOP",
+        "UNIT_SPELLCAST_INTERRUPTED",
+    }) do
         ev:RegisterUnitEvent(e, s.unit)
     end
     Paint()
 end
 
 ev:SetScript("OnEvent", function(_, event)
-    if event == "ENCOUNTER_START" or event == "PLAYER_REGEN_DISABLED" then return end
-    if not rot then return end
+    if event == "ENCOUNTER_START" or event == "PLAYER_REGEN_DISABLED" then
+        return
+    end
+    if not rot then
+        return
+    end
     if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
         rot.casting = true
-        if rot.count == rot.mine and ns.KickSettings().sound then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
+        if rot.count == rot.mine and ns.KickSettings().sound then
+            PlaySound(SOUNDKIT.RAID_WARNING, "Master")
+        end
     elseif rot.casting then
         -- A cast that ended (kicked or not) passes the turn on.
         rot.casting = false
@@ -182,37 +232,59 @@ boss:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered, inEncounter
 boss:SetScript("OnEvent", function(_, event, _, encounterName)
     if event == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
+            return
+        end
         Build()
         registered = true
         CludesUI:RegisterUnlockElements({
             CludesUI.MakeUnlockElement({
-                key = "RLEAD_Kicks", label = "Kick Rotation", group = "Raid Lead", order = 664,
-                noAnchorTarget = true, noResize = true,
-                isHidden = function() return not ns.KickSettings().enabled end,
-                getFrame = function() return box end,
-                getSize = function() return W, H end,
+                key = "RLEAD_Kicks",
+                label = "Kick Rotation",
+                group = "Raid Lead",
+                order = 664,
+                noAnchorTarget = true,
+                noResize = true,
+                isHidden = function()
+                    return not ns.KickSettings().enabled
+                end,
+                getFrame = function()
+                    return box
+                end,
+                getSize = function()
+                    return W, H
+                end,
                 savePos = function(_, point, relPoint, x, y)
                     ns.KickSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
                 end,
-                loadPos = function() return ns.KickSettings().pos end,
-                clearPos = function() ns.KickSettings().pos = nil end,
+                loadPos = function()
+                    return ns.KickSettings().pos
+                end,
+                clearPos = function()
+                    ns.KickSettings().pos = nil
+                end,
                 applyPos = ns.ApplyKickPosition,
             }),
         }, "CludesUIRaidLead")
     elseif event == "ENCOUNTER_START" then
         inEncounter = true
-        local note = type(encounterName) == "string" and not (issecretvalue and issecretvalue(encounterName))
-            and ns.NoteFor and ns.NoteFor(encounterName)
+        local note = type(encounterName) == "string"
+            and not (issecretvalue and issecretvalue(encounterName))
+            and ns.NoteFor
+            and ns.NoteFor(encounterName)
         ns.StartKicks(note or nil)
     elseif event == "ENCOUNTER_END" then
         inEncounter = false
         Stop()
     elseif event == "PLAYER_REGEN_DISABLED" then
         -- Trash and keys: the typed order runs for any fight in a group.
-        if not inEncounter and IsInGroup() and ns.KickSettings().order ~= "" then ns.StartKicks(nil) end
+        if not inEncounter and IsInGroup() and ns.KickSettings().order ~= "" then
+            ns.StartKicks(nil)
+        end
     elseif event == "PLAYER_REGEN_ENABLED" then
-        if not inEncounter then Stop() end
+        if not inEncounter then
+            Stop()
+        end
     end
 end)
 
@@ -221,5 +293,9 @@ function ns.PreviewKicks()
     Build()
     rot = { names = { UnitName("player"), "Alice", "Bob" }, mine = 1, count = 1, casting = false }
     Paint()
-    C_Timer.After(8, function() if rot and rot.names[2] == "Alice" then Stop() end end)
+    C_Timer.After(8, function()
+        if rot and rot.names[2] == "Alice" then
+            Stop()
+        end
+    end)
 end

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI or CludesUI.IS_FOREVER then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIQoL_RaidBuffCheck.lua -- Raid Buff Check, part of Raid Tools
 --
@@ -23,15 +27,15 @@ local IsSecret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
 local RT = ns.RT
 
 local WELL_FED_ICON = 136000
-local EATING_ICON   = 133950
+local EATING_ICON = 133950
 local AURA_SCAN_LIMIT = 255
-local EXPIRE_SOON = 600     -- under 10 minutes left shows the time instead of a check
-local TICK = 15             -- countdown repaint interval while one shows
-local TEX_YES  = "Interface\\RaidFrame\\ReadyCheck-Ready"
-local TEX_NO   = "Interface\\RaidFrame\\ReadyCheck-NotReady"
+local EXPIRE_SOON = 600 -- under 10 minutes left shows the time instead of a check
+local TICK = 15 -- countdown repaint interval while one shows
+local TEX_YES = "Interface\\RaidFrame\\ReadyCheck-Ready"
+local TEX_NO = "Interface\\RaidFrame\\ReadyCheck-NotReady"
 -- SEASON UPDATE: the season's augment rune and Vantus Rune items (header icons).
-local RUNE_ITEM   = 259085   -- header icons come from items: the buff spells have no cached texture
-local VANTUS_ITEM = 272195   -- Vantus Rune: Tides
+local RUNE_ITEM = 259085 -- header icons come from items: the buff spells have no cached texture
+local VANTUS_ITEM = 272195 -- Vantus Rune: Tides
 
 -- Buff IDs: the shared lists AuraBuff Reminders reads too. Older augment runes
 -- count as missing. Raid buffs: only those whose class is in the group are checked.
@@ -44,23 +48,23 @@ local RAID_BUFFS = PREP.raidBuffs
 local PAD, TITLE_H, HEAD_H = 8, RT.TOPBAR_H, 20
 local ROW_H, NAME_W, CELL_W, ICON = 18, 110, 24, 14
 local BUFF_SLOTS, BUFF_STEP = 6, 16
-local CELLS = 4             -- flask, food, rune, vantus
+local CELLS = 4 -- flask, food, rune, vantus
 local RUNE_COL, VANTUS_COL = 3, 4
 local BLOCK_GAP = 12
 local ROWS_PER_BLOCK = 20
-local TOTAL_ROWS = 3        -- Missing, Expiring soon, Unknown
-local MIN_W = 400           -- fits the note line; the checkbox row can widen it
+local TOTAL_ROWS = 3 -- Missing, Expiring soon, Unknown
+local MIN_W = 400 -- fits the note line; the checkbox row can widen it
 local NOTE_H = 16
-local CB_H = 22             -- checkbox row between the totals and the note
+local CB_H = 22 -- checkbox row between the totals and the note
 
 local ev = CreateFrame("Frame")
 local frame
 local rows, heads = {}, {}
-local units = {}            -- display order
-local isMember = {}         -- [unit] = true for listed group members
-local states = {}           -- [unit] = last computed state, reused
-local shownUnits = {}       -- units drawn, in order
-local Render                -- defined with the refresh code below
+local units = {} -- display order
+local isMember = {} -- [unit] = true for listed group members
+local states = {} -- [unit] = last computed state, reused
+local shownUnits = {} -- units drawn, in order
+local Render -- defined with the refresh code below
 
 -- Column geometry. The rune and vantus columns drop out while their Require
 -- box is off; SetColumns recomputes this and bumps colsKey, and every row,
@@ -70,21 +74,25 @@ local buffsX, blockW
 local colsKey = 0
 
 local function SetColumns(runeShown, vantusShown)
-    if buffsX and colShown[RUNE_COL] == runeShown and colShown[VANTUS_COL] == vantusShown then return end
+    if buffsX and colShown[RUNE_COL] == runeShown and colShown[VANTUS_COL] == vantusShown then
+        return
+    end
     colShown[RUNE_COL], colShown[VANTUS_COL] = runeShown, vantusShown
     local x = NAME_W
     for k = 1, CELLS do
         colX[k] = x
-        if colShown[k] then x = x + CELL_W end
+        if colShown[k] then
+            x = x + CELL_W
+        end
     end
     buffsX = x + 4
     blockW = buffsX + BUFF_SLOTS * BUFF_STEP + 2
     colsKey = colsKey + 1
 end
 SetColumns(true, false)
-local providers = {}        -- [classToken] = true for connected members
+local providers = {} -- [classToken] = true for connected members
 local dirty, flushPending, rosterDirty = {}, false, false
-local runeReadable, vantusReadable  -- every ID of the list is non-secret on this client; set on first open
+local runeReadable, vantusReadable -- every ID of the list is non-secret on this client; set on first open
 
 local function CDB()
     return ns.RaidToolsProfile and ns.RaidToolsProfile()
@@ -136,10 +144,14 @@ end
 -------------------------------------------------------------------------------
 local function AllReadable(ids)
     local should = C_Secrets and C_Secrets.ShouldSpellAuraBeSecret
-    if not should then return true end
+    if not should then
+        return true
+    end
     for i = 1, #ids do
         local ok, secret = pcall(should, ids[i])
-        if not ok or IsSecret(secret) or secret ~= false then return false end
+        if not ok or IsSecret(secret) or secret ~= false then
+            return false
+        end
     end
     return true
 end
@@ -148,14 +160,18 @@ end
 -- secret or the aura never expires.
 local function Present(aura)
     local exp = aura.expirationTime
-    if exp == nil or IsSecret(exp) or exp == 0 then return true end
+    if exp == nil or IsSecret(exp) or exp == 0 then
+        return true
+    end
     return exp
 end
 
 -- Non-nil means the aura is there, even when its fields are secret.
 local function FindID(unit, id)
     local ok, aura = pcall(C_UnitAuras.GetUnitAuraBySpellID, unit, id)
-    if ok and aura ~= nil then return Present(aura) end
+    if ok and aura ~= nil then
+        return Present(aura)
+    end
 end
 
 -- State values: true or an expiration time = has it, false = verified
@@ -163,17 +179,25 @@ end
 local function ListState(unit, ids, readable, restricted)
     for i = 1, #ids do
         local v = FindID(unit, ids[i])
-        if v then return v end
+        if v then
+            return v
+        end
     end
-    if restricted and not readable then return nil end
+    if restricted and not readable then
+        return nil
+    end
     return false
 end
 
 -- Seconds left when under EXPIRE_SOON, else nil.
 local function SoonLeft(v, now)
-    if type(v) ~= "number" then return nil end
+    if type(v) ~= "number" then
+        return nil
+    end
     local left = v - now
-    if left < EXPIRE_SOON then return math.max(0, left) end
+    if left < EXPIRE_SOON then
+        return math.max(0, left)
+    end
 end
 
 local function MinutesText(left)
@@ -182,22 +206,36 @@ end
 
 -- "eating" while the food channel is up.
 local function FoodState(unit, restricted)
-    if restricted then return nil end
+    if restricted then
+        return nil
+    end
     local sawReadable, eating = false, false
     for i = 1, AURA_SCAN_LIMIT do
         local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, unit, i, "HELPFUL")
-        if not ok then return nil end
-        if not aura then break end
+        if not ok then
+            return nil
+        end
+        if not aura then
+            break
+        end
         local ic = aura.icon
         if ic ~= nil and not IsSecret(ic) then
             sawReadable = true
-            if ic == WELL_FED_ICON then return Present(aura) end
+            if ic == WELL_FED_ICON then
+                return Present(aura)
+            end
             -- Eating only counts when no stat buff is up: refreshing one shows both.
-            if ic == EATING_ICON then eating = true end
+            if ic == EATING_ICON then
+                eating = true
+            end
         end
     end
-    if eating then return "eating" end
-    if not sawReadable then return nil end
+    if eating then
+        return "eating"
+    end
+    if not sawReadable then
+        return nil
+    end
     return false
 end
 
@@ -258,8 +296,8 @@ local function MakeRow(i)
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
     r.flask = MakeCell(r)
-    r.food  = MakeCell(r)
-    r.rune  = MakeCell(r)
+    r.food = MakeCell(r)
+    r.rune = MakeCell(r)
     r.vantus = MakeCell(r)
     r.cells = { r.flask, r.food, r.rune, r.vantus }
     r.buffs = {}
@@ -280,7 +318,9 @@ local function MakeRow(i)
 end
 
 local function PlaceRow(r)
-    if r._colsKey == colsKey then return end
+    if r._colsKey == colsKey then
+        return
+    end
     r._colsKey = colsKey
     r:SetWidth(blockW)
     for k = 1, CELLS do
@@ -298,7 +338,9 @@ local function PlaceRow(r)
 end
 
 local function PlaceHeader(h)
-    if h._colsKey == colsKey then return end
+    if h._colsKey == colsKey then
+        return
+    end
     h._colsKey = colsKey
     h:SetWidth(blockW)
     for k = 1, CELLS do
@@ -312,7 +354,9 @@ local function PlaceHeader(h)
 end
 
 local function PlaceTotals(tr)
-    if tr._colsKey == colsKey then return end
+    if tr._colsKey == colsKey then
+        return
+    end
     tr._colsKey = colsKey
     tr:SetWidth(blockW)
     for k = 1, CELLS do
@@ -339,8 +383,12 @@ local function MakeHeader(b)
         t:SetTexture(tex)
         t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         hit:EnableMouse(true)
-        hit:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, tip) end)
-        hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        hit:SetScript("OnEnter", function(self)
+            CludesUI.ShowWidgetTooltip(self, tip)
+        end)
+        hit:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
     end
     Icon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CludesUI.L("Flask"))
     Icon(WELL_FED_ICON, CludesUI.L("Food"))
@@ -355,7 +403,9 @@ end
 -- The window's events follow the window; READY_CHECK follows the option.
 local function Listen(shown)
     ev:UnregisterAllEvents()
-    if Enabled() and OpenOnReady() then ev:RegisterEvent("READY_CHECK") end
+    if Enabled() and OpenOnReady() then
+        ev:RegisterEvent("READY_CHECK")
+    end
     if shown then
         ev:RegisterEvent("UNIT_AURA")
         ev:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -368,9 +418,13 @@ end
 -- the filter, and the top-left corner must stay put while they do.
 local function SavePosition()
     local c = CDB()
-    if not c then return end
+    if not c then
+        return
+    end
     local left, top = frame:GetLeft(), frame:GetTop()
-    if not (left and top) then return end
+    if not (left and top) then
+        return
+    end
     local x, y = left, top - UIParent:GetTop()
     frame:ClearAllPoints()
     frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", x, y)
@@ -378,12 +432,16 @@ local function SavePosition()
 end
 
 local function StopWake()
-    if frame._wake then frame._wake:Cancel() end
+    if frame._wake then
+        frame._wake:Cancel()
+    end
     frame._wake, frame._wakeAt = nil, nil
 end
 
 local function Build()
-    if frame then return end
+    if frame then
+        return
+    end
     frame = CreateFrame("Frame", "CludesUIRaidBuffCheck", UIParent)
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
@@ -416,9 +474,15 @@ local function Build()
     cfs:SetPoint("CENTER", close, "CENTER", 0, 1)
     cfs:SetText("x")
     cfs:SetAlpha(0.7)
-    close:SetScript("OnEnter", function() cfs:SetAlpha(1) end)
-    close:SetScript("OnLeave", function() cfs:SetAlpha(0.7) end)
-    close:SetScript("OnClick", function() frame:Hide() end)
+    close:SetScript("OnEnter", function()
+        cfs:SetAlpha(1)
+    end)
+    close:SetScript("OnLeave", function()
+        cfs:SetAlpha(0.7)
+    end)
+    close:SetScript("OnClick", function()
+        frame:Hide()
+    end)
 
     -- Checkbox row above the note, left to right; each label is part of its
     -- box's hit rect.
@@ -444,19 +508,25 @@ local function Build()
     end
     frame.onlyBox = MakeCheckbox(CludesUI.L("Hide Fully Buffed"), function()
         local c = CDB()
-        if not c then return end
+        if not c then
+            return
+        end
         c.buffCheckOnlyMissing = not OnlyMissing()
         Render()
     end)
     frame.runeBox = MakeCheckbox(CludesUI.L("Require Augment Rune"), function()
         local c = CDB()
-        if not c then return end
+        if not c then
+            return
+        end
         c.buffCheckRuneRequired = not RuneRequired()
         Render()
     end)
     frame.vantusBox = MakeCheckbox(CludesUI.L("Require Vantus Rune"), function()
         local c = CDB()
-        if not c then return end
+        if not c then
+            return
+        end
         c.buffCheckVantusRequired = not VantusRequired()
         Render()
     end)
@@ -518,8 +588,12 @@ local sortName = {}
 local function SortByName(a, b)
     local na, nb = sortName[a], sortName[b]
     if na ~= nb then
-        if not na then return false end
-        if not nb then return true end
+        if not na then
+            return false
+        end
+        if not nb then
+            return true
+        end
         return na < nb
     end
     return a < b
@@ -532,52 +606,73 @@ local function CollectUnits()
     if IsInRaid() then
         for i = 1, GetNumGroupMembers() do
             local u = "raid" .. i
-            if UnitExists(u) then units[#units + 1] = u end
+            if UnitExists(u) then
+                units[#units + 1] = u
+            end
         end
     else
         units[1] = "player"
         for i = 1, GetNumSubgroupMembers() do
             local u = "party" .. i
-            if UnitExists(u) then units[#units + 1] = u end
+            if UnitExists(u) then
+                units[#units + 1] = u
+            end
         end
     end
     wipe(sortName)
     for i = 1, #units do
         local u = units[i]
         local name = PlainString(UnitName(u))
-        if name then sortName[u] = strlower(name) end
+        if name then
+            sortName[u] = strlower(name)
+        end
     end
     table.sort(units, SortByName)
     for i = 1, #units do
         local u = units[i]
         isMember[u] = true
         local cls = UnitIsConnected(u) and UnitClassToken(u)
-        if cls then providers[cls] = true end
+        if cls then
+            providers[cls] = true
+        end
     end
 end
 
 local function ComputeState(unit, restricted)
     local s = states[unit]
-    if not s then s = { icons = {} }; states[unit] = s end
+    if not s then
+        s = { icons = {} }
+        states[unit] = s
+    end
     local online = UnitIsConnected(unit)
     local dead = UnitIsDeadOrGhost(unit)
     local visible = UnitIsVisible(unit)
-    if IsSecret(online) then online = true end
-    if IsSecret(dead) then dead = false end
-    if IsSecret(visible) then visible = true end
+    if IsSecret(online) then
+        online = true
+    end
+    if IsSecret(dead) then
+        dead = false
+    end
+    if IsSecret(visible) then
+        visible = true
+    end
     s.online = online
     s.missing = 0
     s.buffsExp = nil
     local icons = s.icons
     if not online or dead or not visible then
         s.flask, s.food, s.rune, s.vantus = nil, nil, nil, nil
-        for j = #icons, 1, -1 do icons[j] = nil end
+        for j = #icons, 1, -1 do
+            icons[j] = nil
+        end
         return
     end
     s.flask = ListState(unit, FLASK_BUFF_IDS, true, false)
     s.food = FoodState(unit, restricted)
     s.rune = ListState(unit, RUNE_IDS, runeReadable, restricted)
-    if not s.rune and ListState(unit, OLD_RUNE_IDS, true, false) then s.rune = false end
+    if not s.rune and ListState(unit, OLD_RUNE_IDS, true, false) then
+        s.rune = false
+    end
     s.vantus = ListState(unit, VANTUS_IDS, vantusReadable, restricted)
     local n = 0
     for _, buff in ipairs(RAID_BUFFS) do
@@ -586,7 +681,9 @@ local function ComputeState(unit, restricted)
             local ids = buff.buffIDs
             for k = 1, #ids do
                 has = FindID(unit, ids[k])
-                if has then break end
+                if has then
+                    break
+                end
             end
             if not has then
                 n = n + 1
@@ -596,16 +693,26 @@ local function ComputeState(unit, restricted)
             end
         end
     end
-    for j = #icons, n + 1, -1 do icons[j] = nil end
+    for j = #icons, n + 1, -1 do
+        icons[j] = nil
+    end
     s.missing = n
 end
 
 -- Missing, unknown (nil) and running out count; eating does not.
 local function NotFullyBuffed(s, now, runeRequired, vantusRequired)
-    if runeRequired and (not s.rune or SoonLeft(s.rune, now)) then return true end
-    if vantusRequired and (not s.vantus or SoonLeft(s.vantus, now)) then return true end
-    return not s.flask or not s.food or s.missing > 0
-        or SoonLeft(s.flask, now) or SoonLeft(s.food, now) or SoonLeft(s.buffsExp, now)
+    if runeRequired and (not s.rune or SoonLeft(s.rune, now)) then
+        return true
+    end
+    if vantusRequired and (not s.vantus or SoonLeft(s.vantus, now)) then
+        return true
+    end
+    return not s.flask
+        or not s.food
+        or s.missing > 0
+        or SoonLeft(s.flask, now)
+        or SoonLeft(s.food, now)
+        or SoonLeft(s.buffsExp, now)
 end
 
 local function PaintRow(r, unit, now)
@@ -613,7 +720,11 @@ local function PaintRow(r, unit, now)
     r.name:SetText(UnitName(unit))
     local cls = UnitClassToken(unit)
     local cc = cls and CludesUI.GetClassColor(cls)
-    if cc and s.online then r.name:SetTextColor(cc.r, cc.g, cc.b) else r.name:SetTextColor(0.5, 0.5, 0.5) end
+    if cc and s.online then
+        r.name:SetTextColor(cc.r, cc.g, cc.b)
+    else
+        r.name:SetTextColor(0.5, 0.5, 0.5)
+    end
     SetCell(r.flask, s.flask, now)
     SetCell(r.food, s.food, now)
     SetCell(r.rune, s.rune, now)
@@ -648,7 +759,9 @@ end
 local function MinWidth()
     local w = PAD + 4
     for i, cb in ipairs(frame.boxes) do
-        if i > 1 then w = w + 16 end
+        if i > 1 then
+            w = w + 16
+        end
         w = w + 14 + 6 + cb.label:GetStringWidth()
     end
     return math.max(MIN_W, w + PAD)
@@ -671,7 +784,9 @@ local function Layout(n, nTotals)
         h:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + (b - 1) * (blockW + BLOCK_GAP), -TITLE_H - 2)
         h:Show()
     end
-    for b = blocks + 1, #heads do heads[b]:Hide() end
+    for b = blocks + 1, #heads do
+        heads[b]:Hide()
+    end
     for i = 1, n do
         local r = rows[i] or MakeRow(i)
         PlaceRow(r)
@@ -681,9 +796,13 @@ local function Layout(n, nTotals)
         r:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
         r:Show()
     end
-    for i = n + 1, #rows do rows[i]:Hide() end
-    frame:SetSize(math.max(MinWidth(), PAD * 2 + blocks * blockW + (blocks - 1) * BLOCK_GAP),
-        TITLE_H + 2 + HEAD_H + perBlock * ROW_H + 6 + nTotals * ROW_H + CB_H + NOTE_H)
+    for i = n + 1, #rows do
+        rows[i]:Hide()
+    end
+    frame:SetSize(
+        math.max(MinWidth(), PAD * 2 + blocks * blockW + (blocks - 1) * BLOCK_GAP),
+        TITLE_H + 2 + HEAD_H + perBlock * ROW_H + 6 + nTotals * ROW_H + CB_H + NOTE_H
+    )
     frame._bgFit()
 end
 
@@ -691,9 +810,13 @@ end
 local totals = { {}, {}, {} }
 
 local function Tally(t, col, v, now)
-    if v == false then t[1][col] = t[1][col] + 1
-    elseif v == nil then t[3][col] = t[3][col] + 1
-    elseif SoonLeft(v, now) then t[2][col] = t[2][col] + 1 end
+    if v == false then
+        t[1][col] = t[1][col] + 1
+    elseif v == nil then
+        t[3][col] = t[3][col] + 1
+    elseif SoonLeft(v, now) then
+        t[2][col] = t[2][col] + 1
+    end
 end
 
 -- The next time the drawing changes on its own: a countdown's next step, or a
@@ -701,10 +824,16 @@ end
 -- an earlier time.
 local wakeAt
 local function Wake(v, now)
-    if type(v) ~= "number" then return end
+    if type(v) ~= "number" then
+        return
+    end
     local at = v - EXPIRE_SOON
-    if at <= now then at = now + TICK end
-    if not wakeAt or at < wakeAt then wakeAt = at end
+    if at <= now then
+        at = now + TICK
+    end
+    if not wakeAt or at < wakeAt then
+        wakeAt = at
+    end
 end
 
 local function OnWake()
@@ -718,7 +847,9 @@ function Render()
     SetColumns(runeRequired, vantusRequired)
     local now = GetTime()
     for t = 1, TOTAL_ROWS do
-        for k = 1, CELLS + 1 do totals[t][k] = 0 end
+        for k = 1, CELLS + 1 do
+            totals[t][k] = 0
+        end
     end
     wipe(shownUnits)
     wakeAt = nil
@@ -740,8 +871,12 @@ function Render()
             end
             Wake(s.flask, now)
             Wake(s.food, now)
-            if runeRequired then Wake(s.rune, now) end
-            if vantusRequired then Wake(s.vantus, now) end
+            if runeRequired then
+                Wake(s.rune, now)
+            end
+            if vantusRequired then
+                Wake(s.vantus, now)
+            end
             Wake(s.buffsExp, now)
             if not filter or NotFullyBuffed(s, now, runeRequired, vantusRequired) then
                 shownUnits[#shownUnits + 1] = u
@@ -763,7 +898,9 @@ function Render()
             else
                 tr.counts[k]:SetTextColor(1, 0.3, 0.3)
                 -- A hidden column's count does not keep its row up.
-                if k > CELLS or colShown[k] then any = true end
+                if k > CELLS or colShown[k] then
+                    any = true
+                end
             end
         end
         tr:SetShown(any)
@@ -782,7 +919,9 @@ function Render()
     frame.sep:SetShown(top ~= nil)
 
     Layout(n, nTotals)
-    for i = 1, n do PaintRow(rows[i], shownUnits[i], now) end
+    for i = 1, n do
+        PaintRow(rows[i], shownUnits[i], now)
+    end
     -- Nobody listed (everyone fully buffed): no header and no totals either,
     -- even when a count is non-zero for a column the filter ignores.
     frame.table:SetShown(n > 0)
@@ -796,18 +935,24 @@ function Render()
         frame.note:SetText(CludesUI.L("? = unknown (offline, dead or out of range)"))
     end
     if wakeAt and (not frame._wakeAt or wakeAt < frame._wakeAt) then
-        if frame._wake then frame._wake:Cancel() end
+        if frame._wake then
+            frame._wake:Cancel()
+        end
         frame._wake = C_Timer.NewTimer(wakeAt - now, OnWake)
         frame._wakeAt = wakeAt
     end
 end
 
 local function Rebuild()
-    if not frame or not frame:IsShown() or InCombatLockdown() then return end
+    if not frame or not frame:IsShown() or InCombatLockdown() then
+        return
+    end
     CollectUnits()
     local restricted = Restricted()
     frame._restricted = restricted
-    for i = 1, #units do ComputeState(units[i], restricted) end
+    for i = 1, #units do
+        ComputeState(units[i], restricted)
+    end
     Render()
 end
 
@@ -829,7 +974,9 @@ local function Flush()
     local restricted = Restricted()
     frame._restricted = restricted
     for unit in pairs(dirty) do
-        if isMember[unit] then ComputeState(unit, restricted) end
+        if isMember[unit] then
+            ComputeState(unit, restricted)
+        end
     end
     wipe(dirty)
     Render()
@@ -862,34 +1009,52 @@ end
 
 -- Called by RaidTools' Apply (login, settings, profile switch).
 function ns.BuffCheckSync()
-    if not Enabled() and frame then frame:Hide() end
+    if not Enabled() and frame then
+        frame:Hide()
+    end
     Listen(frame and frame:IsShown())
 end
 
 ev:SetScript("OnEvent", function(_, event, unit)
     if event == "UNIT_AURA" then
-        if not isMember[unit] then return end
+        if not isMember[unit] then
+            return
+        end
         dirty[unit] = true
         Schedule()
     elseif event == "UNIT_CONNECTION" then
         -- Also who can provide the raid buffs.
-        if not isMember[unit] then return end
+        if not isMember[unit] then
+            return
+        end
         rosterDirty = true
         Schedule()
     elseif event == "GROUP_ROSTER_UPDATE" then
-        if not IsInGroup() then frame:Hide(); return end
+        if not IsInGroup() then
+            frame:Hide()
+            return
+        end
         rosterDirty = true
         Schedule()
     elseif event == "READY_CHECK" then
-        if RT.HasAssist() then Open() end
+        if RT.HasAssist() then
+            Open()
+        end
     elseif event == "PLAYER_REGEN_DISABLED" then
-        if frame then frame:Hide() end
+        if frame then
+            frame:Hide()
+        end
     end
 end)
 
 -- The Buff Check button.
 function ns.ToggleBuffCheck()
-    if not Enabled() then return end
-    if frame and frame:IsShown() then frame:Hide(); return end
+    if not Enabled() then
+        return
+    end
+    if frame and frame:IsShown() then
+        frame:Hide()
+        return
+    end
     Open()
 end

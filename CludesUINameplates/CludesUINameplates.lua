@@ -1,7 +1,31 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local addon, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI._Pool and CludesUI.Glows and CludesUI.Glows.FlatKeys and CludesUI.AbbreviateValue and CludesUI.IsZeroValue and CludesUI.UnitNameFormat and CludesUI.OwnSurnameHidden and CludesUI.ApplyModuleFontFamily and CludesUI.SetFontFamily and CludesUI.SetFontObjectFace and CludesUI.SnapshotFontObject and CludesUI.RestoreFontObject) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, the Name Format asks its UnitNameFormat, the [name:last] and [target:last] tags its OwnSurnameHidden, the plate texts take font families through its ApplyModuleFontFamily / SetFontFamily, and the friendly name-only fonts change through its SetFontObjectFace / SnapshotFontObject / RestoreFontObject)
-CludesUI._ModuleNS[addon] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI._Pool
+        and CludesUI.Glows
+        and CludesUI.Glows.FlatKeys
+        and CludesUI.AbbreviateValue
+        and CludesUI.IsZeroValue
+        and CludesUI.UnitNameFormat
+        and CludesUI.OwnSurnameHidden
+        and CludesUI.ApplyModuleFontFamily
+        and CludesUI.SetFontFamily
+        and CludesUI.SetFontObjectFace
+        and CludesUI.SnapshotFontObject
+        and CludesUI.RestoreFontObject
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, the Name Format asks its UnitNameFormat, the [name:last] and [target:last] tags its OwnSurnameHidden, the plate texts take font families through its ApplyModuleFontFamily / SetFontFamily, and the friendly name-only fonts change through its SetFontObjectFace / SnapshotFontObject / RestoreFontObject)
+CludesUI._ModuleNS[addon] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local ENP = CludesUI.Lite.NewAddon("CludesUINameplates")
@@ -18,19 +42,31 @@ local UnitIsUnit = UnitIsUnit
 -- preview's next build. A plate's parent is no pool host: a plain CreateFrame.
 local Pool = CludesUI._Pool
 
-local function GetFont() return CludesUI.GetFontPath("nameplates") end
+local function GetFont()
+    return CludesUI.GetFontPath("nameplates")
+end
 -- Slug-gated at the source (GetFontOutlineFlag); SetFSFont gates the
 -- explicit-flag path too, so aura literals are covered.
-local function GetNPOutline() return CludesUI.GetFontOutlineFlag("nameplates") end
-local function GetNPUseShadow() return CludesUI.GetFontUseShadow("nameplates") end
+local function GetNPOutline()
+    return CludesUI.GetFontOutlineFlag("nameplates")
+end
+local function GetNPUseShadow()
+    return CludesUI.GetFontUseShadow("nameplates")
+end
 -- Every plate text takes a font family (names, guilds, titles and cast targets can be
 -- other players' writing): the chosen font draws what it can, Blizzard's Cyrillic,
 -- Korean and Chinese faces the rest. Once a string has its family, every later font
 -- write to it goes through this helper (or SetFontFamily), never a plain SetFont.
 local function SetFSFont(fs, size, flags)
-  -- "Never Show Slug": gates the explicit-flag path so hardcoded aura
-  -- "OUTLINE, SLUG" literals drop the slug (body text is gated at the source).
-  CludesUI.ApplyModuleFontFamily(fs, nil, size or 11, "nameplates", CludesUI.SlugFlag(flags or GetNPOutline()))
+    -- "Never Show Slug": gates the explicit-flag path so hardcoded aura
+    -- "OUTLINE, SLUG" literals drop the slug (body text is gated at the source).
+    CludesUI.ApplyModuleFontFamily(
+        fs,
+        nil,
+        size or 11,
+        "nameplates",
+        CludesUI.SlugFlag(flags or GetNPOutline())
+    )
 end
 
 ns.GetFont = GetFont
@@ -49,115 +85,327 @@ local _npYOffsetState = setmetatable({}, { __mode = "k" })
 -- top corners (top) and never truncate (corner); see PlaceSlotText. They follow the
 -- three bar slots, and every entry is also read by index (bottom 4, 5; top 6, 7).
 local HP_BAR_SLOTS = {
-    { key = "textSlotRight",  anchor = "RIGHT",  point = "RIGHT",  xOff = -2 },
-    { key = "textSlotLeft",   anchor = "LEFT",   point = "LEFT",   xOff = 4 },
+    { key = "textSlotRight", anchor = "RIGHT", point = "RIGHT", xOff = -2 },
+    { key = "textSlotLeft", anchor = "LEFT", point = "LEFT", xOff = 4 },
     { key = "textSlotCenter", anchor = "CENTER", point = "CENTER", xOff = 0 },
-    { key = "textSlotBottomLeft",  anchor = "TOPLEFT",  point = "BOTTOMLEFT",  xOff = 0, justify = "LEFT",  bottom = true,
-      corner = true, xKey = "textSlotBottomLeftXOffset",  yKey = "textSlotBottomLeftYOffset" },
-    { key = "textSlotBottomRight", anchor = "TOPRIGHT", point = "BOTTOMRIGHT", xOff = 0, justify = "RIGHT", bottom = true,
-      corner = true, xKey = "textSlotBottomRightXOffset", yKey = "textSlotBottomRightYOffset" },
-    { key = "textSlotTopLeft",  anchor = "BOTTOMLEFT",  point = "TOPLEFT",  xOff = 0, justify = "LEFT",  top = true,
-      corner = true, xKey = "textSlotTopLeftXOffset",  yKey = "textSlotTopLeftYOffset" },
-    { key = "textSlotTopRight", anchor = "BOTTOMRIGHT", point = "TOPRIGHT", xOff = 0, justify = "RIGHT", top = true,
-      corner = true, xKey = "textSlotTopRightXOffset", yKey = "textSlotTopRightYOffset" },
+    {
+        key = "textSlotBottomLeft",
+        anchor = "TOPLEFT",
+        point = "BOTTOMLEFT",
+        xOff = 0,
+        justify = "LEFT",
+        bottom = true,
+        corner = true,
+        xKey = "textSlotBottomLeftXOffset",
+        yKey = "textSlotBottomLeftYOffset",
+    },
+    {
+        key = "textSlotBottomRight",
+        anchor = "TOPRIGHT",
+        point = "BOTTOMRIGHT",
+        xOff = 0,
+        justify = "RIGHT",
+        bottom = true,
+        corner = true,
+        xKey = "textSlotBottomRightXOffset",
+        yKey = "textSlotBottomRightYOffset",
+    },
+    {
+        key = "textSlotTopLeft",
+        anchor = "BOTTOMLEFT",
+        point = "TOPLEFT",
+        xOff = 0,
+        justify = "LEFT",
+        top = true,
+        corner = true,
+        xKey = "textSlotTopLeftXOffset",
+        yKey = "textSlotTopLeftYOffset",
+    },
+    {
+        key = "textSlotTopRight",
+        anchor = "BOTTOMRIGHT",
+        point = "TOPRIGHT",
+        xOff = 0,
+        justify = "RIGHT",
+        top = true,
+        corner = true,
+        xKey = "textSlotTopRightXOffset",
+        yKey = "textSlotTopRightYOffset",
+    },
 }
 
 ns.NP_ABSORB_STYLE_TEX = {
     blizzard = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\blizzard-nameplates.png",
-    striped  = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
-    clean    = "Interface\\Buttons\\WHITE8X8",
-    pixelsShield     = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield.tga",
+    striped = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
+    clean = "Interface\\Buttons\\WHITE8X8",
+    pixelsShield = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield.tga",
     pixelsShieldEdge = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-edge.tga",
     pixelsShieldFill = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-fill.tga",
 }
 ns.NP_ABSORB_STYLE_ALPHA = {
     blizzard = 0.8,
-    striped  = 0.8,
-    clean    = 0.3,
+    striped = 0.8,
+    clean = 0.3,
 }
 
 -- Overflow for _displayPresetKeys; outside the main function scope to stay
 -- under Lua 5.1's 200-local limit.
 function ns._appendDisplayPresetKeys(t)
     for _, k in ipairs({
-        "topSlotSize", "topSlotXOffset", "topSlotYOffset", "topSlotRaiseStrata",
-        "rightSlotSize", "rightSlotXOffset", "rightSlotYOffset", "rightSlotRaiseStrata",
-        "leftSlotSize", "leftSlotXOffset", "leftSlotYOffset", "leftSlotRaiseStrata",
-        "toprightSlotSize", "toprightSlotXOffset", "toprightSlotYOffset", "toprightSlotGrowth", "toprightSlotRaiseStrata",
-        "topleftSlotSize", "topleftSlotXOffset", "topleftSlotYOffset", "topleftSlotGrowth", "topleftSlotRaiseStrata",
+        "topSlotSize",
+        "topSlotXOffset",
+        "topSlotYOffset",
+        "topSlotRaiseStrata",
+        "rightSlotSize",
+        "rightSlotXOffset",
+        "rightSlotYOffset",
+        "rightSlotRaiseStrata",
+        "leftSlotSize",
+        "leftSlotXOffset",
+        "leftSlotYOffset",
+        "leftSlotRaiseStrata",
+        "toprightSlotSize",
+        "toprightSlotXOffset",
+        "toprightSlotYOffset",
+        "toprightSlotGrowth",
+        "toprightSlotRaiseStrata",
+        "topleftSlotSize",
+        "topleftSlotXOffset",
+        "topleftSlotYOffset",
+        "topleftSlotGrowth",
+        "topleftSlotRaiseStrata",
         -- Core Positions chains: the order of a slot's elements (a string) and their spacing.
-        "topSlotOrder", "rightSlotOrder", "leftSlotOrder", "toprightSlotOrder", "topleftSlotOrder", "bottomSlotOrder",
-        "topSlotElementSpacing", "rightSlotElementSpacing", "leftSlotElementSpacing",
-        "toprightSlotElementSpacing", "topleftSlotElementSpacing", "bottomSlotElementSpacing",
-        "textSlotTopSize", "textSlotTopXOffset", "textSlotTopYOffset", "textSlotTopStrata",
-        "textSlotRightSize", "textSlotRightXOffset", "textSlotRightYOffset", "textSlotRightStrata",
-        "textSlotLeftSize", "textSlotLeftXOffset", "textSlotLeftYOffset", "textSlotLeftStrata",
-        "textSlotCenterSize", "textSlotCenterXOffset", "textSlotCenterYOffset", "textSlotCenterStrata",
-        "textSlotBottomLeftSize", "textSlotBottomLeftXOffset", "textSlotBottomLeftYOffset", "textSlotBottomLeftStrata",
-        "textSlotBottomRightSize", "textSlotBottomRightXOffset", "textSlotBottomRightYOffset", "textSlotBottomRightStrata",
-        "textSlotTopLeftSize", "textSlotTopLeftXOffset", "textSlotTopLeftYOffset", "textSlotTopLeftStrata",
-        "textSlotTopRightSize", "textSlotTopRightXOffset", "textSlotTopRightYOffset", "textSlotTopRightStrata",
-        "textSlotTopColor", "textSlotRightColor", "textSlotLeftColor", "textSlotCenterColor",
-        "textSlotBottomLeftColor", "textSlotBottomRightColor", "textSlotTopLeftColor", "textSlotTopRightColor",
-        "threatColorHealth", "threatColorBorder", "threatColorName",
-        "textSlotTopClassColor", "textSlotRightClassColor", "textSlotLeftClassColor", "textSlotCenterClassColor",
-        "textSlotBottomLeftClassColor", "textSlotBottomRightClassColor",
-        "textSlotTopLeftClassColor", "textSlotTopRightClassColor",
-        "textSlotTopColorMode", "textSlotTopNameColorOn", "textSlotTopNameColor",
-        "textSlotTopLevelColorOn", "textSlotTopLevelColor", "textSlotTopLevelDiffOn",
-        "textSlotRightColorMode", "textSlotRightNameColorOn", "textSlotRightNameColor",
-        "textSlotRightLevelColorOn", "textSlotRightLevelColor", "textSlotRightLevelDiffOn",
-        "textSlotLeftColorMode", "textSlotLeftNameColorOn", "textSlotLeftNameColor",
-        "textSlotLeftLevelColorOn", "textSlotLeftLevelColor", "textSlotLeftLevelDiffOn",
-        "textSlotCenterColorMode", "textSlotCenterNameColorOn", "textSlotCenterNameColor",
-        "textSlotCenterLevelColorOn", "textSlotCenterLevelColor", "textSlotCenterLevelDiffOn",
-        "textSlotBottomLeftColorMode", "textSlotBottomLeftNameColorOn", "textSlotBottomLeftNameColor",
-        "textSlotBottomLeftLevelColorOn", "textSlotBottomLeftLevelColor", "textSlotBottomLeftLevelDiffOn",
-        "textSlotBottomRightColorMode", "textSlotBottomRightNameColorOn", "textSlotBottomRightNameColor",
-        "textSlotBottomRightLevelColorOn", "textSlotBottomRightLevelColor", "textSlotBottomRightLevelDiffOn",
-        "textSlotTopLeftColorMode", "textSlotTopLeftNameColorOn", "textSlotTopLeftNameColor",
-        "textSlotTopLeftLevelColorOn", "textSlotTopLeftLevelColor", "textSlotTopLeftLevelDiffOn",
-        "textSlotTopRightColorMode", "textSlotTopRightNameColorOn", "textSlotTopRightNameColor",
-        "textSlotTopRightLevelColorOn", "textSlotTopRightLevelColor", "textSlotTopRightLevelDiffOn",
-        "tankHasAggroEnabled", "tankHasAggro", "classicTankAggro", "tankHasAggroOverrideMobType",
+        "topSlotOrder",
+        "rightSlotOrder",
+        "leftSlotOrder",
+        "toprightSlotOrder",
+        "topleftSlotOrder",
+        "bottomSlotOrder",
+        "topSlotElementSpacing",
+        "rightSlotElementSpacing",
+        "leftSlotElementSpacing",
+        "toprightSlotElementSpacing",
+        "topleftSlotElementSpacing",
+        "bottomSlotElementSpacing",
+        "textSlotTopSize",
+        "textSlotTopXOffset",
+        "textSlotTopYOffset",
+        "textSlotTopStrata",
+        "textSlotRightSize",
+        "textSlotRightXOffset",
+        "textSlotRightYOffset",
+        "textSlotRightStrata",
+        "textSlotLeftSize",
+        "textSlotLeftXOffset",
+        "textSlotLeftYOffset",
+        "textSlotLeftStrata",
+        "textSlotCenterSize",
+        "textSlotCenterXOffset",
+        "textSlotCenterYOffset",
+        "textSlotCenterStrata",
+        "textSlotBottomLeftSize",
+        "textSlotBottomLeftXOffset",
+        "textSlotBottomLeftYOffset",
+        "textSlotBottomLeftStrata",
+        "textSlotBottomRightSize",
+        "textSlotBottomRightXOffset",
+        "textSlotBottomRightYOffset",
+        "textSlotBottomRightStrata",
+        "textSlotTopLeftSize",
+        "textSlotTopLeftXOffset",
+        "textSlotTopLeftYOffset",
+        "textSlotTopLeftStrata",
+        "textSlotTopRightSize",
+        "textSlotTopRightXOffset",
+        "textSlotTopRightYOffset",
+        "textSlotTopRightStrata",
+        "textSlotTopColor",
+        "textSlotRightColor",
+        "textSlotLeftColor",
+        "textSlotCenterColor",
+        "textSlotBottomLeftColor",
+        "textSlotBottomRightColor",
+        "textSlotTopLeftColor",
+        "textSlotTopRightColor",
+        "threatColorHealth",
+        "threatColorBorder",
+        "threatColorName",
+        "textSlotTopClassColor",
+        "textSlotRightClassColor",
+        "textSlotLeftClassColor",
+        "textSlotCenterClassColor",
+        "textSlotBottomLeftClassColor",
+        "textSlotBottomRightClassColor",
+        "textSlotTopLeftClassColor",
+        "textSlotTopRightClassColor",
+        "textSlotTopColorMode",
+        "textSlotTopNameColorOn",
+        "textSlotTopNameColor",
+        "textSlotTopLevelColorOn",
+        "textSlotTopLevelColor",
+        "textSlotTopLevelDiffOn",
+        "textSlotRightColorMode",
+        "textSlotRightNameColorOn",
+        "textSlotRightNameColor",
+        "textSlotRightLevelColorOn",
+        "textSlotRightLevelColor",
+        "textSlotRightLevelDiffOn",
+        "textSlotLeftColorMode",
+        "textSlotLeftNameColorOn",
+        "textSlotLeftNameColor",
+        "textSlotLeftLevelColorOn",
+        "textSlotLeftLevelColor",
+        "textSlotLeftLevelDiffOn",
+        "textSlotCenterColorMode",
+        "textSlotCenterNameColorOn",
+        "textSlotCenterNameColor",
+        "textSlotCenterLevelColorOn",
+        "textSlotCenterLevelColor",
+        "textSlotCenterLevelDiffOn",
+        "textSlotBottomLeftColorMode",
+        "textSlotBottomLeftNameColorOn",
+        "textSlotBottomLeftNameColor",
+        "textSlotBottomLeftLevelColorOn",
+        "textSlotBottomLeftLevelColor",
+        "textSlotBottomLeftLevelDiffOn",
+        "textSlotBottomRightColorMode",
+        "textSlotBottomRightNameColorOn",
+        "textSlotBottomRightNameColor",
+        "textSlotBottomRightLevelColorOn",
+        "textSlotBottomRightLevelColor",
+        "textSlotBottomRightLevelDiffOn",
+        "textSlotTopLeftColorMode",
+        "textSlotTopLeftNameColorOn",
+        "textSlotTopLeftNameColor",
+        "textSlotTopLeftLevelColorOn",
+        "textSlotTopLeftLevelColor",
+        "textSlotTopLeftLevelDiffOn",
+        "textSlotTopRightColorMode",
+        "textSlotTopRightNameColorOn",
+        "textSlotTopRightNameColor",
+        "textSlotTopRightLevelColorOn",
+        "textSlotTopRightLevelColor",
+        "textSlotTopRightLevelDiffOn",
+        "tankHasAggroEnabled",
+        "tankHasAggro",
+        "classicTankAggro",
+        "tankHasAggroOverrideMobType",
         "tankHasAggroOverrideBoss",
-        "dpsHasAggro", "dpsNearAggro", "offTankAggroEnabled", "offTankAggro",
-        "dpsNoAggroEnabled", "dpsNoAggro", "dpsNoAggroOverrideMiniBoss", "dpsNoAggroOverrideCaster",
+        "dpsHasAggro",
+        "dpsNearAggro",
+        "offTankAggroEnabled",
+        "offTankAggro",
+        "dpsNoAggroEnabled",
+        "dpsNoAggro",
+        "dpsNoAggroOverrideMiniBoss",
+        "dpsNoAggroOverrideCaster",
         "dpsNoAggroOverrideBoss",
-        "targetArrowDouble", "targetArrowStyle", "targetArrowColor", "targetArrowClassColor",
-        "auraStackTextSize", "auraStackTextColor",
-        "auraStackTextPosition", "auraStackTextX", "auraStackTextY",
-        "auraDurationTextX", "auraDurationTextY",
-        "debuffDurationTextSize", "debuffDurationTextX", "debuffDurationTextY", "debuffDurationTextColor",
-        "buffDurationTextSize", "buffDurationTextX", "buffDurationTextY", "buffDurationTextColor",
-        "ccDurationTextSize", "ccDurationTextX", "ccDurationTextY", "ccDurationTextColor",
-        "buffTextSize", "buffTextColor", "ccTextSize", "ccTextColor",
-        "raidMarkerPos", "classificationSlot", "classificationShowInInstances",
-        "factionSlot", "classificationIncludeFaction",
-        "classificationHideRare", "classificationHideQuest",
+        "targetArrowDouble",
+        "targetArrowStyle",
+        "targetArrowColor",
+        "targetArrowClassColor",
+        "auraStackTextSize",
+        "auraStackTextColor",
+        "auraStackTextPosition",
+        "auraStackTextX",
+        "auraStackTextY",
+        "auraDurationTextX",
+        "auraDurationTextY",
+        "debuffDurationTextSize",
+        "debuffDurationTextX",
+        "debuffDurationTextY",
+        "debuffDurationTextColor",
+        "buffDurationTextSize",
+        "buffDurationTextX",
+        "buffDurationTextY",
+        "buffDurationTextColor",
+        "ccDurationTextSize",
+        "ccDurationTextX",
+        "ccDurationTextY",
+        "ccDurationTextColor",
+        "buffTextSize",
+        "buffTextColor",
+        "ccTextSize",
+        "ccTextColor",
+        "raidMarkerPos",
+        "classificationSlot",
+        "classificationShowInInstances",
+        "factionSlot",
+        "classificationIncludeFaction",
+        "classificationHideRare",
+        "classificationHideQuest",
         -- Core Positions elements (no defaults: unset reads the views in Layout.lua).
-        "debuffCoreSize", "buffCoreSize", "ccCoreSize", "raidMarkerCoreSize",
-        "rareCoreSize", "questCoreSize", "factionCoreSize", "questTextSlot",
-        "rareShowInInstances", "questShowInInstances", "questTextShowInInstances",
-        "castNameSize", "castNameColor", "castCombineNameTarget",
-        "castTargetSize", "castTargetClassColor", "castTargetColor",
-        "showCastTimer", "castTimerSize", "castTimerColor", "targetScale", "minorEnemyScale", "nonEliteEnemyScale",
-        "castNameSide", "castTargetSide", "castTimerSide",
-        "castNameWidthPct", "castNameWrap", "castCombinedWidthPct", "castTargetWidthPct", "castTargetWrap",
-        "enemyNameWidthPct", "enemyNameWrap", "wrapBorderCastbar", "wrapBorderSeam",
-        "debuffSlot", "buffSlot", "ccSlot",
-        "debuffYOffset", "sideAuraXOffset", "auraSpacing",
-        "debuffSpacing", "buffSpacing", "ccSpacing",
-        "debuffTimerPosition", "buffTimerPosition", "ccTimerPosition",
-        "auraDurationTextSize", "auraDurationTextColor",
-        "debuffCropIcons", "buffCropIcons", "ccCropIcons",
-        "debuffCropPercent", "buffCropPercent", "ccCropPercent",
-        "hideCastIconBorder", "hideDebuffIconBorder", "hideBuffIconBorder", "hideCCIconBorder",
+        "debuffCoreSize",
+        "buffCoreSize",
+        "ccCoreSize",
+        "raidMarkerCoreSize",
+        "rareCoreSize",
+        "questCoreSize",
+        "factionCoreSize",
+        "questTextSlot",
+        "rareShowInInstances",
+        "questShowInInstances",
+        "questTextShowInInstances",
+        "castNameSize",
+        "castNameColor",
+        "castCombineNameTarget",
+        "castTargetSize",
+        "castTargetClassColor",
+        "castTargetColor",
+        "showCastTimer",
+        "castTimerSize",
+        "castTimerColor",
+        "targetScale",
+        "minorEnemyScale",
+        "nonEliteEnemyScale",
+        "castNameSide",
+        "castTargetSide",
+        "castTimerSide",
+        "castNameWidthPct",
+        "castNameWrap",
+        "castCombinedWidthPct",
+        "castTargetWidthPct",
+        "castTargetWrap",
+        "enemyNameWidthPct",
+        "enemyNameWrap",
+        "wrapBorderCastbar",
+        "wrapBorderSeam",
+        "debuffSlot",
+        "buffSlot",
+        "ccSlot",
+        "debuffYOffset",
+        "sideAuraXOffset",
+        "auraSpacing",
+        "debuffSpacing",
+        "buffSpacing",
+        "ccSpacing",
+        "debuffTimerPosition",
+        "buffTimerPosition",
+        "ccTimerPosition",
+        "auraDurationTextSize",
+        "auraDurationTextColor",
+        "debuffCropIcons",
+        "buffCropIcons",
+        "ccCropIcons",
+        "debuffCropPercent",
+        "buffCropPercent",
+        "ccCropPercent",
+        "hideCastIconBorder",
+        "hideDebuffIconBorder",
+        "hideBuffIconBorder",
+        "hideCCIconBorder",
         "showCastLockoutAsCrowdControl",
-        "castIconOffsetX", "castIconOffsetY",
-        "targetGlowCludesUI", "targetGlowBorderColor", "targetGlowHighlight", "targetBorderColor",
-        "targetGlowBorderSize", "targetBorderSizeValue",
-    }) do t[#t + 1] = k end
+        "castIconOffsetX",
+        "castIconOffsetY",
+        "targetGlowCludesUI",
+        "targetGlowBorderColor",
+        "targetGlowHighlight",
+        "targetBorderColor",
+        "targetGlowBorderSize",
+        "targetBorderSizeValue",
+    }) do
+        t[#t + 1] = k
+    end
 end
 
 local defaults = {
@@ -190,14 +438,14 @@ local defaults = {
     absorbEdgeMode = "overlay",
     hostile = { r = 0.39, g = 0.11, b = 0.09 },
     neutral = { r = 0.81, g = 0.72, b = 0.19 },
-    tapped  = { r = 0.50, g = 0.50, b = 0.50 },
+    tapped = { r = 0.50, g = 0.50, b = 0.50 },
     focus = { r = 0.051, g = 0.820, b = 0.620 },
     focusColorEnabled = true,
     focusOverlayTexture = "striped-v2",
     focusOverlayAlpha = 1.0,
     focusOverlayColor = { r = 1.0, g = 1.0, b = 1.0 },
-    focusOverlayFullBgAlpha = false,  -- on: empty bar shows focus texture at full opacity (vs dimmed 30% default)
-    focusOverlayNoTint = false,  -- on: overlay tints with the bar's health color instead of focusOverlayColor
+    focusOverlayFullBgAlpha = false, -- on: empty bar shows focus texture at full opacity (vs dimmed 30% default)
+    focusOverlayNoTint = false, -- on: overlay tints with the bar's health color instead of focusOverlayColor
     focusLetterEnabled = false,
     focusLetterAnchor = "CENTER",
     focusLetterX = 0,
@@ -208,16 +456,16 @@ local defaults = {
     targetOverlayTexture = "none",
     targetOverlayAlpha = 1.0,
     targetOverlayColor = { r = 1.0, g = 1.0, b = 1.0 },
-    targetOverlayFullBgAlpha = false,  -- on: empty bar shows target texture at full opacity instead of dimmed 30%
-    targetOverlayNoTint = false,  -- mirrors focusOverlayNoTint, for the target overlay
+    targetOverlayFullBgAlpha = false, -- on: empty bar shows target texture at full opacity instead of dimmed 30%
+    targetOverlayNoTint = false, -- mirrors focusOverlayNoTint, for the target overlay
     hoverOverlayTexture = "none",
-    caster  = { r = 0.231, g = 0.510, b = 0.965 },
+    caster = { r = 0.231, g = 0.510, b = 0.965 },
     miniboss = { r = 0.518, g = 0.243, b = 0.984 },
     boss = { r = 0.518, g = 0.243, b = 0.984 },
     enemyInCombat = { r = 0.800, g = 0.137, b = 0.137 },
     -- "Mini Enemies" (non-elite trash) has no static default: unset views enemyInCombat, so it
     -- starts identical to "Enemies" (see GetReactionColor).
-    miniColoringMPlusOnly = false,  -- on = Mini Enemies color only in 5-mans; off = everywhere
+    miniColoringMPlusOnly = false, -- on = Mini Enemies color only in 5-mans; off = everywhere
     -- Simple Coloring When Not In M+ (inline cog on Enemy Types): outside 5-mans, mob-type colors (Mini
     -- Enemies/Casters/Mini-Bosses/Bosses) collapse to owBasicColor; Neutral keeps its own color out of
     -- combat and takes owBasicColor in combat.
@@ -229,13 +477,19 @@ local defaults = {
     castingEnemyColors = false,
     -- Enemy Players Use Enemy Color: enemy players take the Enemies color, not their class color.
     enemyPlayerEnemyColor = false,
-    castingIntColor   = { r = 0.310, g = 0.702, b = 1.000 },
+    castingIntColor = { r = 0.310, g = 0.702, b = 1.000 },
     castingUnintColor = { r = 0.953, g = 0.573, b = 0.000 },
-    castingIntNormal = true, castingIntElite = true, castingIntMiniBoss = true, castingIntBoss = true,
-    castingUnintNormal = true, castingUnintElite = true, castingUnintMiniBoss = false, castingUnintBoss = false,
+    castingIntNormal = true,
+    castingIntElite = true,
+    castingIntMiniBoss = true,
+    castingIntBoss = true,
+    castingUnintNormal = true,
+    castingUnintElite = true,
+    castingUnintMiniBoss = false,
+    castingUnintBoss = false,
     darkenEnemiesOOC = true,
-    darkenOOCRecolor = false,  -- Modify Out of Combat "Change Color": recolor OOC enemies rather than dimming
-    darkenOOCColor   = { r = 0.5, g = 0.5, b = 0.5 },
+    darkenOOCRecolor = false, -- Modify Out of Combat "Change Color": recolor OOC enemies rather than dimming
+    darkenOOCColor = { r = 0.5, g = 0.5, b = 0.5 },
     -- Threat Colors channel multi-check: which surfaces carry the threat color.
     -- Health Bar is the historical single channel (on by default, so existing profiles
     -- keep their exact colors); Border and Text are opt-in SECOND channels that carry
@@ -246,26 +500,26 @@ local defaults = {
     -- the bar as well and it is purely mob-type/reaction colored.
     threatColorHealth = true,
     threatColorBorder = false,
-    threatColorName   = false,
+    threatColorName = false,
     -- Show Threat Colors: where the threat colors apply -- "never", "instances" (party/raid
     -- instances and delves) or "always". Per client: WoW Forever defaults to "always".
     threatColorMode = (CludesUI.IS_FOREVER == true) and "always" or "instances",
     tankHasAggro = { r = 0.30, g = 0.79, b = 0.94 },
     tankHasAggroEnabled = false,
-    tankHasAggroOverrideMobType = false,  -- on: overrides Mini-Boss/Caster (above priority step 7); off = stays low
-    tankHasAggroOverrideBoss = true,  -- on (default): overrides Boss color; off = held just below Boss
+    tankHasAggroOverrideMobType = false, -- on: overrides Mini-Boss/Caster (above priority step 7); off = stays low
+    tankHasAggroOverrideBoss = true, -- on (default): overrides Boss color; off = held just below Boss
     classicTankAggro = false,
     tankLosingAggro = { r = 0.81, g = 0.72, b = 0.19 },
     tankNoAggro = { r = 1.00, g = 0.22, b = 0.17 },
     dpsNearAggro = { r = 0.81, g = 0.72, b = 0.19 },
-    threatNearAggroGlow = false,  -- Non-Tank Threat cog: red glow while the Near Aggro color is active
-    threatPctEnabled = false,  -- Threat % text: WoW Forever only
+    threatNearAggroGlow = false, -- Non-Tank Threat cog: red glow while the Near Aggro color is active
+    threatPctEnabled = false, -- Threat % text: WoW Forever only
     threatPctPosition = "CENTER",
     threatPctColorByThreat = true,
     threatPctSize = 10,
     threatPctXOffset = 0,
     threatPctYOffset = 0,
-    threatPctMode = "percent",  -- "gap": the target's plate shows the Threat Gap
+    threatPctMode = "percent", -- "gap": the target's plate shows the Threat Gap
     threatGapAheadColor = { r = 0.30, g = 0.90, b = 0.30 },
     threatGapBehindColor = { r = 0.35, g = 0.60, b = 1.00 },
     dpsHasAggro = { r = 1.00, g = 0.50, b = 0.00 },
@@ -273,10 +527,10 @@ local defaults = {
     offTankAggroEnabled = true,
     dpsNoAggro = { r = 0.35, g = 0.75, b = 0.35 },
     dpsNoAggroEnabled = false,
-    dpsNoAggroOverrideMiniBoss = false,  -- on: overrides Mini-Boss (above priority step 7); off = stays low
-    dpsNoAggroOverrideCaster = false,  -- on: overrides Caster (above priority step 8); off = Casters keep own color
-    dpsNoAggroOverrideBoss = true,  -- on (default, the pre-toggle behaviour): overrides Boss (step 10b); off = Bosses keep own color
-    interruptReady = { r = 0.92, g = 0.35, b = 0.20 },  
+    dpsNoAggroOverrideMiniBoss = false, -- on: overrides Mini-Boss (above priority step 7); off = stays low
+    dpsNoAggroOverrideCaster = false, -- on: overrides Caster (above priority step 8); off = Casters keep own color
+    dpsNoAggroOverrideBoss = true, -- on (default, the pre-toggle behaviour): overrides Boss (step 10b); off = Bosses keep own color
+    interruptReady = { r = 0.92, g = 0.35, b = 0.20 },
     castBar = { r = 0.70, g = 0.40, b = 0.90 },
     interruptMidCastEnabled = false,
     interruptMidCastColor = { r = 0.318, g = 0.820, b = 0.357 },
@@ -349,7 +603,7 @@ local defaults = {
     classPowerBgColor = { r = 0.082, g = 0.082, b = 0.082, a = 1.0 },
     classPowerEmptyColor = { r = 0.2, g = 0.2, b = 0.2, a = 1.0 },
     classPowerGap = 2,
-    classPowerShape = "rectangle",  -- rectangle | square | circle | diamond | hexagon | shield
+    classPowerShape = "rectangle", -- rectangle | square | circle | diamond | hexagon | shield
     classPowerBorder = false,
     classPowerBorderColor = { r = 0, g = 0, b = 0, a = 1.0 },
     classPowerBorderSize = 1,
@@ -383,13 +637,13 @@ local defaults = {
     sideAuraXOffset = 2,
     nameYOffset = 0,
     auraSpacing = 2,
-    debuffSpacing = 2,  -- per-element icon gap; all default to the global auraSpacing value
+    debuffSpacing = 2, -- per-element icon gap; all default to the global auraSpacing value
     buffSpacing = 2,
     ccSpacing = 2,
-    debuffCropIcons = false,  -- cropped icons: trim top/bottom to rectangular (80% of width), mirrors Unit Frames
+    debuffCropIcons = false, -- cropped icons: trim top/bottom to rectangular (80% of width), mirrors Unit Frames
     buffCropIcons = false,
     ccCropIcons = false,
-    debuffCropPercent = 10,  -- per-side trim % for cropped mode (5-25); 10 == the fixed 80%-of-width crop
+    debuffCropPercent = 10, -- per-side trim % for cropped mode (5-25); 10 == the fixed 80%-of-width crop
     buffCropPercent = 10,
     ccCropPercent = 10,
     hideDebuffIconBorder = false,
@@ -407,9 +661,9 @@ local defaults = {
     -- targetGlowCludesUI/targetGlowBorderColor/targetGlowHighlight deliberately have NO
     -- default: they stay nil so getters can live-convert from the targetGlowStyle string.
     targetBorderColor = { r = 1, g = 1, b = 1 },
-    targetGlowColor = { r = 0.4117, g = 0.6667, b = 1.0 },  -- "Glow Color" for the CUI background glow (signature blue)
+    targetGlowColor = { r = 0.4117, g = 0.6667, b = 1.0 }, -- "Glow Color" for the CUI background glow (signature blue)
     targetGlowAlpha = 1.0,
-    targetHighlightColor = { r = 1, g = 1, b = 1 },  -- Target Highlight wash color/opacity
+    targetHighlightColor = { r = 1, g = 1, b = 1 }, -- Target Highlight wash color/opacity
     targetHighlightAlpha = 0.20,
     nameRaidMarkerEnabled = false,
     nameRaidMarkerSize = 14,
@@ -422,15 +676,15 @@ local defaults = {
     classificationShowInInstances = (CludesUI.IS_FOREVER == true) and true or false,
     -- Faction badge (Horde/Alliance), a Core Positions slot element; rules in ns.NP_FactionBadge.
     factionSlot = "none",
-    factionStyle = "pvp",  -- Icon Style: a key of CludesUI.FACTION_ART
-    classificationIncludeFaction = false,  -- "Rare/Quest + Faction": the badge shares the classification slot
+    factionStyle = "pvp", -- Icon Style: a key of CludesUI.FACTION_ART
+    classificationIncludeFaction = false, -- "Rare/Quest + Faction": the badge shares the classification slot
     -- The classification element's two halves, each switchable in Core Positions:
     -- the Elite/Rare Indicator (elite and rare marks) and the Quest Indicator.
     classificationHideRare = false,
     classificationHideQuest = false,
     factionOppositeOnly = false,
     factionPlayersOnly = false,
-    factionPvP = "dim",  -- "dim" greys unflagged units, "only" hides them, "ignore" draws both alike
+    factionPvP = "dim", -- "dim" greys unflagged units, "only" hides them, "ignore" draws both alike
     rareEliteIconSize = 20,
     castBarHeight = 17,
     castBarOffsetY = 0,
@@ -441,23 +695,23 @@ local defaults = {
     castNameColor = { r = 1, g = 1, b = 1 },
     castNameOffsetX = 0,
     castNameOffsetY = 0,
-    castNameSide = "left",  -- cast bar text line side for spell name: left|right|center|none
+    castNameSide = "left", -- cast bar text line side for spell name: left|right|center|none
     -- Spell name truncation: width as a % of cast bar width; wrap off = single line + ellipsis.
     castNameWidthPct = 42,
     castNameWrap = false,
     castCombineNameTarget = false,
-    castCombinedWidthPct = 80,  -- combined "Spell - Target" width, % of cast bar
+    castCombinedWidthPct = 80, -- combined "Spell - Target" width, % of cast bar
     castTargetSize = 10,
     castTargetClassColor = true,
     castTargetColor = { r = 1, g = 1, b = 1 },
     castTargetOffsetX = 0,
     castTargetOffsetY = 0,
-    castTargetSide = "right",  -- side the spell target occupies: left|right|center|none
+    castTargetSide = "right", -- side the spell target occupies: left|right|center|none
     -- Spell target truncation: % of cast bar width + wrap toggle.
     castTargetWidthPct = 42,
     castTargetWrap = false,
     showCastTimer = true,
-    castTimerSide = "right",  -- side when shown; visibility governed by showCastTimer
+    castTimerSide = "right", -- side when shown; visibility governed by showCastTimer
     castTimerSize = 10,
     castTimerColor = { r = 1, g = 1, b = 1 },
     castTimerOffsetX = 0,
@@ -467,21 +721,21 @@ local defaults = {
     enemyNameWidthPct = 100,
     enemyNameWrap = false,
     targetScale = 100,
-    minorEnemyScale = 100,  -- minor/trivial mob plates; 100 = off
-    nonEliteEnemyScale = 100,  -- normal (non-elite, non-minor) mob plates in dungeons; 100 = off
+    minorEnemyScale = 100, -- minor/trivial mob plates; 100 = off
+    nonEliteEnemyScale = 100, -- normal (non-elite, non-minor) mob plates in dungeons; 100 = off
     nonTargetKeepFocus = true,
-    nonTargetCastFull = false,           -- casting plates ignore Non-Target Opacity
-    nonTargetCastImportantOnly = false,  -- ...only for casts the game flags important
+    nonTargetCastFull = false, -- casting plates ignore Non-Target Opacity
+    nonTargetCastImportantOnly = false, -- ...only for casts the game flags important
     outOfRangeAlpha = 50,
     outOfRangeMode = "disabled",
     showAllDebuffs = false,
-    rangeTextEnabled = false,  -- Distance to Target Text (range bucket on the target's nameplate)
+    rangeTextEnabled = false, -- Distance to Target Text (range bucket on the target's nameplate)
     rangeTextSize = 11,
     rangeTextOffsetX = 0,
     rangeTextOffsetY = 0,
-    rangeTextColor = { r = 0.816, g = 0.357, b = 0.220 },  -- #D05B38
+    rangeTextColor = { r = 0.816, g = 0.357, b = 0.220 }, -- #D05B38
     maxDebuffs = 5,
-    showAuraTooltips = false,  -- Buff / Debuff icons show their tooltip on hover
+    showAuraTooltips = false, -- Buff / Debuff icons show their tooltip on hover
     showBorder = true,
     borderSize = 1,
     borderColor = { r = 0.067, g = 0.067, b = 0.067 },
@@ -494,8 +748,12 @@ local defaults = {
     -- Classic WoW UI: the level and the boss icon seated in the health
     -- border's plate. A size of 0 follows the bar's own height; read only
     -- while that style renders.
-    classicLevelSize = 0, classicLevelX = 0, classicLevelY = 0,
-    classicSkullSize = 0, classicSkullX = 0, classicSkullY = 0,
+    classicLevelSize = 0,
+    classicLevelX = 0,
+    classicLevelY = 0,
+    classicSkullSize = 0,
+    classicSkullX = 0,
+    classicSkullY = 0,
     -- Custom border (opt-in): shared CludesUI border engine (same as Unit Frames, full
     -- SharedMedia). When false, NONE of these keys are read; the simple border above renders instead.
     customBorderEnabled = false,
@@ -516,9 +774,9 @@ local defaults = {
     pandemicGlowSpeed = 4,
     pandemicGlowBackground = false,
     pandemicGlowBackgroundColor = { r = 0, g = 0, b = 0 },
-    lowHpGlow = false,  -- Execute Pulse Glow (Extras): red glow around plates below 30% health
-    hideBloodPlagueCopies = true,  -- Extras (Blood DK only): collapse the Blood Plague copies to one debuff icon
-    showSunderArmor = false,  -- Extras (Forever warriors only): Sunder Armor from any warrior on enemy plates
+    lowHpGlow = false, -- Execute Pulse Glow (Extras): red glow around plates below 30% health
+    hideBloodPlagueCopies = true, -- Extras (Blood DK only): collapse the Blood Plague copies to one debuff icon
+    showSunderArmor = false, -- Extras (Forever warriors only): Sunder Armor from any warrior on enemy plates
     dispelGlow = false,
     dispelGlowStyle = 2,
     -- Swatch display only: the getter returns nil while the user has never
@@ -537,7 +795,7 @@ local defaults = {
     -- is unset: on, the text takes the Quest Indicator's slot. Its WoW Forever default is
     -- what shows the text on a fresh Forever profile. No UI writes it.
     replaceQuestIconWithObjective = (CludesUI.IS_FOREVER == true) and true or false,
-    questObjectiveTextSize = 14,  -- the Quest Objective Text element's Text Size
+    questObjectiveTextSize = 14, -- the Quest Objective Text element's Text Size
     showQuestObjectiveTypeIcon = false,
     questObjectiveTypeIconScale = 100,
     showCastIcon = true,
@@ -559,7 +817,7 @@ local defaults = {
     bgColor = { r = 0.12, g = 0.12, b = 0.12 },
     hoverColor = { r = 1, g = 1, b = 1 },
     hoverAlpha = 0.3,
-    hoverOverlayFullBgAlpha = false,  -- on: empty bar shows hover texture at full opacity instead of dimmed 30%
+    hoverOverlayFullBgAlpha = false, -- on: empty bar shows hover texture at full opacity instead of dimmed 30%
     castBgAlpha = 0.9,
     castBgColor = { r = 0.1, g = 0.1, b = 0.1 },
     castBorderSize = 0,
@@ -577,7 +835,7 @@ local defaults = {
     importantCastGlowSpeed = 4,
     importantCastGlowBackground = false,
     importantCastGlowBackgroundColor = { r = 0, g = 0, b = 0 },
-    castTargetGlow = false,  -- glow the cast bar while the cast targets the player
+    castTargetGlow = false, -- glow the cast bar while the cast targets the player
     castTargetGlowStyle = 1,
     castTargetGlowColor = { r = 1, g = 1, b = 1 },
     castTargetGlowLines = 8,
@@ -587,29 +845,67 @@ local defaults = {
     castTargetGlowBackgroundColor = { r = 0, g = 0, b = 0 },
     -- Core Positions: per-slot XY offsets. <pos>SlotSize is the fallback of each element's
     -- own size key (debuffCoreSize, raidMarkerCoreSize, ..., no defaults: ns.NP_ElementSize).
-    topSlotSize = 26,        topSlotXOffset = 0,      topSlotYOffset = 0,      topSlotRaiseStrata = false,
-    rightSlotSize = 24,      rightSlotXOffset = 0,    rightSlotYOffset = 0,    rightSlotRaiseStrata = false,
-    leftSlotSize = 24,       leftSlotXOffset = 0,     leftSlotYOffset = 0,     leftSlotRaiseStrata = false,
-    toprightSlotSize = 24,   toprightSlotXOffset = 0, toprightSlotYOffset = 0, toprightSlotGrowth = "right", toprightSlotRaiseStrata = false,
-    topleftSlotSize = 24,    topleftSlotXOffset = 0,  topleftSlotYOffset = 0,  topleftSlotGrowth = "left",   topleftSlotRaiseStrata = false,
-    bottomSlotSize = 26,     bottomSlotXOffset = 0,   bottomSlotYOffset = 0,   bottomSlotRaiseStrata = false,
+    topSlotSize = 26,
+    topSlotXOffset = 0,
+    topSlotYOffset = 0,
+    topSlotRaiseStrata = false,
+    rightSlotSize = 24,
+    rightSlotXOffset = 0,
+    rightSlotYOffset = 0,
+    rightSlotRaiseStrata = false,
+    leftSlotSize = 24,
+    leftSlotXOffset = 0,
+    leftSlotYOffset = 0,
+    leftSlotRaiseStrata = false,
+    toprightSlotSize = 24,
+    toprightSlotXOffset = 0,
+    toprightSlotYOffset = 0,
+    toprightSlotGrowth = "right",
+    toprightSlotRaiseStrata = false,
+    topleftSlotSize = 24,
+    topleftSlotXOffset = 0,
+    topleftSlotYOffset = 0,
+    topleftSlotGrowth = "left",
+    topleftSlotRaiseStrata = false,
+    bottomSlotSize = 26,
+    bottomSlotXOffset = 0,
+    bottomSlotYOffset = 0,
+    bottomSlotRaiseStrata = false,
     -- Core Text Positions: slot-based size + XY offsets (WoW Forever: a larger
     -- top text, raised 3px; retail keeps 10 / 0)
     textSlotTopSize = (CludesUI.IS_FOREVER == true) and 12 or 10,
     textSlotTopXOffset = 0,
     textSlotTopYOffset = (CludesUI.IS_FOREVER == true) and 3 or 0,
-    textSlotRightSize = 10,  textSlotRightXOffset = 0, textSlotRightYOffset = 0,
-    textSlotLeftSize = 10,   textSlotLeftXOffset = 0,  textSlotLeftYOffset = 0,
-    textSlotCenterSize = 10, textSlotCenterXOffset = 0, textSlotCenterYOffset = 0,
-    textSlotBottomLeftSize = 10,  textSlotBottomLeftXOffset = 0,  textSlotBottomLeftYOffset = 0,
-    textSlotBottomRightSize = 10, textSlotBottomRightXOffset = 0, textSlotBottomRightYOffset = 0,
-    textSlotTopLeftSize = 10,  textSlotTopLeftXOffset = 0,  textSlotTopLeftYOffset = 0,
-    textSlotTopRightSize = 10, textSlotTopRightXOffset = 0, textSlotTopRightYOffset = 0,
+    textSlotRightSize = 10,
+    textSlotRightXOffset = 0,
+    textSlotRightYOffset = 0,
+    textSlotLeftSize = 10,
+    textSlotLeftXOffset = 0,
+    textSlotLeftYOffset = 0,
+    textSlotCenterSize = 10,
+    textSlotCenterXOffset = 0,
+    textSlotCenterYOffset = 0,
+    textSlotBottomLeftSize = 10,
+    textSlotBottomLeftXOffset = 0,
+    textSlotBottomLeftYOffset = 0,
+    textSlotBottomRightSize = 10,
+    textSlotBottomRightXOffset = 0,
+    textSlotBottomRightYOffset = 0,
+    textSlotTopLeftSize = 10,
+    textSlotTopLeftXOffset = 0,
+    textSlotTopLeftYOffset = 0,
+    textSlotTopRightSize = 10,
+    textSlotTopRightXOffset = 0,
+    textSlotTopRightYOffset = 0,
     -- Core Text Positions: slot-based strata (MEDIUM = the shared text tier)
-    textSlotTopStrata = "MEDIUM",  textSlotRightStrata = "MEDIUM",
-    textSlotLeftStrata = "MEDIUM", textSlotCenterStrata = "MEDIUM",
-    textSlotBottomLeftStrata = "MEDIUM", textSlotBottomRightStrata = "MEDIUM",
-    textSlotTopLeftStrata = "MEDIUM", textSlotTopRightStrata = "MEDIUM",
+    textSlotTopStrata = "MEDIUM",
+    textSlotRightStrata = "MEDIUM",
+    textSlotLeftStrata = "MEDIUM",
+    textSlotCenterStrata = "MEDIUM",
+    textSlotBottomLeftStrata = "MEDIUM",
+    textSlotBottomRightStrata = "MEDIUM",
+    textSlotTopLeftStrata = "MEDIUM",
+    textSlotTopRightStrata = "MEDIUM",
     -- Core Text Positions: slot-based colors
     textSlotTopColor = { r = 1, g = 1, b = 1 },
     textSlotRightColor = { r = 1, g = 1, b = 1 },
@@ -621,14 +917,18 @@ local defaults = {
     textSlotTopRightColor = { r = 1, g = 1, b = 1 },
     -- Core Text Positions: per-slot class colour flag, read only by ns.NP_SlotColorMode
     -- while the slot's Text Coloring mode (<slot>ColorMode, no default) is unset.
-    textSlotTopClassColor = false, textSlotRightClassColor = false,
-    textSlotLeftClassColor = false, textSlotCenterClassColor = false,
-    textSlotBottomLeftClassColor = false, textSlotBottomRightClassColor = false,
-    textSlotTopLeftClassColor = false, textSlotTopRightClassColor = false,
-    healthBarTexture = "none",  -- bar texture overlay
+    textSlotTopClassColor = false,
+    textSlotRightClassColor = false,
+    textSlotLeftClassColor = false,
+    textSlotCenterClassColor = false,
+    textSlotBottomLeftClassColor = false,
+    textSlotBottomRightClassColor = false,
+    textSlotTopLeftClassColor = false,
+    textSlotTopRightClassColor = false,
+    healthBarTexture = "none", -- bar texture overlay
     castBarTexture = "none",
-    healthTextureBg = false,  -- Textured Background (Bar Texture cog)
-    castTextureBg = false,    -- Textured Background (Cast Bar Texture cog)
+    healthTextureBg = false, -- Textured Background (Bar Texture cog)
+    castTextureBg = false, -- Textured Background (Cast Bar Texture cog)
 }
 local BAR_W = 150
 ns.defaults = defaults
@@ -642,11 +942,13 @@ do
     if CludesUI and CludesUI.RegisterBorderDefaults then
         local function AllSizes(ox, oy, sx, sy)
             local t = {}
-            for k = 0, 4 do t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy } end
+            for k = 0, 4 do
+                t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+            end
             return t
         end
         CludesUI.RegisterBorderDefaults("nameplates", {
-            ["glow"]  = { defaultSize = 1, sizes = AllSizes(0, 0, 0, 0) },
+            ["glow"] = { defaultSize = 1, sizes = AllSizes(0, 0, 0, 0) },
             ["blizz"] = {
                 defaultSize = 4,
                 sizes = {
@@ -679,25 +981,37 @@ end
 function ns.IsCustomBorderEnabled()
     -- Stock styles: the Blizzard background art, or the classic plate's plain
     -- 1px edge, stands in for the custom border.
-    if ns.NP_Blizz() then return false end
+    if ns.NP_Blizz() then
+        return false
+    end
     local v = p and p.customBorderEnabled
-    if v == nil then return defaults.customBorderEnabled end
+    if v == nil then
+        return defaults.customBorderEnabled
+    end
     return v
 end
 -- szOverride: optional size for the "Border Size" target effect (rebuilds at that size).
 function ns.ApplyCustomBorderStyle(plate, szOverride)
-    if not plate or not plate.health then return end
-    if not (CludesUI and CludesUI.ApplyBorderStyle) then return end
-    local tex    = (p and p.customBorderTexture) or defaults.customBorderTexture
-    local sz     = szOverride or (p and p.customBorderSize) or defaults.customBorderSize
+    if not plate or not plate.health then
+        return
+    end
+    if not (CludesUI and CludesUI.ApplyBorderStyle) then
+        return
+    end
+    local tex = (p and p.customBorderTexture) or defaults.customBorderTexture
+    local sz = szOverride or (p and p.customBorderSize) or defaults.customBorderSize
     -- Exact pixel size (customBorderSizePx) counts only for the plate's own size; a
     -- target/hover effect size is a substitute and keeps the legacy path.
     local px
-    if not szOverride then px = CludesUI.BorderPx(p and p.customBorderSizePx, sz, tex) end
-    local col    = (p and p.customBorderColor) or defaults.customBorderColor
-    local a      = (p and p.customBorderAlpha) or defaults.customBorderAlpha or 1
+    if not szOverride then
+        px = CludesUI.BorderPx(p and p.customBorderSizePx, sz, tex)
+    end
+    local col = (p and p.customBorderColor) or defaults.customBorderColor
+    local a = (p and p.customBorderAlpha) or defaults.customBorderAlpha or 1
     local behind = p and p.customBorderBehind
-    if behind == nil then behind = defaults.customBorderBehind end
+    if behind == nil then
+        behind = defaults.customBorderBehind
+    end
     local bf = plate._customBorder
     if not bf then
         bf = CreateFrame("Frame", nil, plate.health)
@@ -710,33 +1024,58 @@ function ns.ApplyCustomBorderStyle(plate, szOverride)
     -- ARTWORK health fill, so lift it onto MEDIUM strata (same escape the plate uses for
     -- text/aura layers). Set before ApplyBorderStyle so any backdrop child it creates inherits it.
     bf:SetFrameStrata("MEDIUM")
-    bf:SetFrameLevel(behind and math.max(1, plate.health:GetFrameLevel() - 1) or (plate.health:GetFrameLevel() + 1))
-    CludesUI.ApplyBorderStyle(bf, sz, col.r, col.g, col.b, a, tex,
-        p and p.customBorderOffset, p and p.customBorderOffsetY,
-        p and p.customBorderShiftX, p and p.customBorderShiftY,
-        "nameplates", sz, nil, px)
+    bf:SetFrameLevel(
+        behind and math.max(1, plate.health:GetFrameLevel() - 1) or (plate.health:GetFrameLevel() + 1)
+    )
+    CludesUI.ApplyBorderStyle(
+        bf,
+        sz,
+        col.r,
+        col.g,
+        col.b,
+        a,
+        tex,
+        p and p.customBorderOffset,
+        p and p.customBorderOffsetY,
+        p and p.customBorderShiftX,
+        p and p.customBorderShiftY,
+        "nameplates",
+        sz,
+        nil,
+        px
+    )
     -- Solid strips need the scaleGuard the Basic border has, or Scale Target/Casting
     -- Nameplate leaves them sub-pixel and their sides vanish as the plate moves.
-    if PP.GetBorders(bf) then PP.CreateBorder(bf, nil, nil, nil, nil, nil, nil, nil, true) end
+    if PP.GetBorders(bf) then
+        PP.CreateBorder(bf, nil, nil, nil, nil, nil, nil, nil, true)
+    end
     -- The size it is drawn at (a target/hover effect size included): the cast bar
     -- wrap's lower piece and seam copy it (ns.NP_UpdateCustomBorderWrap).
     bf._cbTex, bf._cbSz, bf._cbPx = tex, sz, px
     -- A target/hover effect size redraws a rounded glow at that size (ApplyBorder
     -- rounds after its own call).
-    if szOverride and plate._npRounded then ns.NP_ApplyRounding(plate, "health") end
+    if szOverride and plate._npRounded then
+        ns.NP_ApplyRounding(plate, "health")
+    end
 end
 function ns.ApplyCustomBorderColor(plate)
-    if not plate or not plate._customBorder then return end
-    if not (CludesUI and CludesUI.SetBorderStyleColor) then return end
+    if not plate or not plate._customBorder then
+        return
+    end
+    if not (CludesUI and CludesUI.SetBorderStyleColor) then
+        return
+    end
     local col = (p and p.customBorderColor) or defaults.customBorderColor
-    local a   = (p and p.customBorderAlpha) or defaults.customBorderAlpha or 1
+    local a = (p and p.customBorderAlpha) or defaults.customBorderAlpha or 1
     CludesUI.SetBorderStyleColor(plate._customBorder, col.r, col.g, col.b, a)
 end
 function ns.HideCustomBorder(plate)
     local bf = plate and plate._customBorder
     if bf and CludesUI and CludesUI.ApplyBorderStyle then
         -- A border wrapping the cast bar gets its anchors back first.
-        if plate._cbWrapActive then ns.NP_UnwrapCustomBorder(plate) end
+        if plate._cbWrapActive then
+            ns.NP_UnwrapCustomBorder(plate)
+        end
         CludesUI.ApplyBorderStyle(bf, 0)
         bf:Hide()
     end
@@ -757,9 +1096,19 @@ end
 -- plate._cbWrapActive. ns fields (local cap).
 function ns.NP_UpdateCustomBorderWrap(plate)
     local bf, cast = plate._customBorder, plate.cast
-    if not (bf and bf._cbSz and cast and ns.GetWrapBorderCastbar() and cast:IsShown()
-            and ns.IsCustomBorderEnabled()) then
-        if plate._cbWrapActive then ns.NP_UnwrapCustomBorder(plate) end
+    if
+        not (
+            bf
+            and bf._cbSz
+            and cast
+            and ns.GetWrapBorderCastbar()
+            and cast:IsShown()
+            and ns.IsCustomBorderEnabled()
+        )
+    then
+        if plate._cbWrapActive then
+            ns.NP_UnwrapCustomBorder(plate)
+        end
         return
     end
     local CUI = CludesUI
@@ -802,12 +1151,22 @@ function ns.NP_UpdateCustomBorderWrap(plate)
         local shX, shY = p and p.customBorderShiftX, p and p.customBorderShiftY
         -- Full restyle only when a style input moved, the level was reset or the piece
         -- is down; a colour change alone is a tint.
-        if not lower:IsShown() or lower:GetFrameLevel() ~= lvl
-            or lower._sTex ~= tex or lower._sSz ~= sz or lower._sPx ~= px
-            or lower._sOX ~= offX or lower._sOY ~= offY or lower._sSX ~= shX or lower._sSY ~= shY then
+        if
+            not lower:IsShown()
+            or lower:GetFrameLevel() ~= lvl
+            or lower._sTex ~= tex
+            or lower._sSz ~= sz
+            or lower._sPx ~= px
+            or lower._sOX ~= offX
+            or lower._sOY ~= offY
+            or lower._sSX ~= shX
+            or lower._sSY ~= shY
+        then
             lower:SetFrameLevel(lvl)
             CUI.ApplyBorderStyle(lower, sz, r, g, b, a, tex, offX, offY, shX, shY, "nameplates", sz, nil, px)
-            if PP.GetBorders(lower) then PP.CreateBorder(lower, nil, nil, nil, nil, nil, nil, nil, true) end
+            if PP.GetBorders(lower) then
+                PP.CreateBorder(lower, nil, nil, nil, nil, nil, nil, nil, true)
+            end
             lower._sTex, lower._sSz, lower._sPx = tex, sz, px
             lower._sOX, lower._sOY, lower._sSX, lower._sSY = offX, offY, shX, shY
         else
@@ -818,18 +1177,36 @@ function ns.NP_UpdateCustomBorderWrap(plate)
         local join = solid or nil
         if uc and uc._hideBottom ~= join then
             uc._hideBottom = join
-            if uc:IsShown() then PP.SetBorderSize(bf, px or sz) end
+            if uc:IsShown() then
+                PP.SetBorderSize(bf, px or sz)
+            end
         end
         local lc = PP.GetBorders(lower)
         if lc and lc._hideTop ~= join then
             lc._hideTop = join
-            if lc:IsShown() then PP.SetBorderSize(lower, px or sz) end
+            if lc:IsShown() then
+                PP.SetBorderSize(lower, px or sz)
+            end
         end
         -- Textured: the same join from the backdrop pieces (off for solid).
         ns.NP_SetWrapJoin(plate, not solid, tex, r, g, b, a)
-        ns.NP_SetWrapSeam(lower, cast, (p and p.wrapBorderSeam) == true, tex, sz, px, r, g, b, a, plate.health)
+        ns.NP_SetWrapSeam(
+            lower,
+            cast,
+            (p and p.wrapBorderSeam) == true,
+            tex,
+            sz,
+            px,
+            r,
+            g,
+            b,
+            a,
+            plate.health
+        )
     else
-        if plate._cbWrapMode == "split" then ns.NP_DropCustomWrapLower(plate) end
+        if plate._cbWrapMode == "split" then
+            ns.NP_DropCustomWrapLower(plate)
+        end
         if plate._cbWrapMode ~= "single" then
             bf:ClearAllPoints()
             bf:SetPoint("TOPLEFT", plate.health, "TOPLEFT", 0, 0)
@@ -842,13 +1219,19 @@ function ns.NP_UpdateCustomBorderWrap(plate)
     plate._cbWrapActive = true
     -- The 1px icon separator would show inside the outline (NP_UnwrapCustomBorder
     -- gives it back).
-    if plate.castLeftBorder then plate.castLeftBorder:Hide() end
+    if plate.castLeftBorder then
+        plate.castLeftBorder:Hide()
+    end
     -- Tint the full-size cast icon's border like the wrapped bar (the Basic wrap's rule).
     local icon = plate.castIconFrame
     if icon and PP.GetBorders(icon) then
-        if p and p.castIconTargetBorder
-            and ns.GetShowCastIcon() and ns.GetCastIconFullSize()
-            and plate.unit and UnitIsUnit(plate.unit, "target")
+        if
+            p
+            and p.castIconTargetBorder
+            and ns.GetShowCastIcon()
+            and ns.GetCastIconFullSize()
+            and plate.unit
+            and UnitIsUnit(plate.unit, "target")
             and ns.GetTargetGlowBorderColor()
         then
             PP.SetBorderColor(icon, r, g, b, a)
@@ -876,8 +1259,9 @@ function ns.NP_SetWrapJoin(plate, on, tex, r, g, b, a)
     -- bottom back and drop the fillers. A joined lower piece keeps its top down, which
     -- only matters while it draws, and every setting that stops one backdrop drawing
     -- (size 0, a missing border file) stops both.
-    if not (ubd and lbd and ubd:IsShown() and lbd:IsShown()
-            and ubd.BottomLeftCorner and lbd.TopLeftCorner) then
+    if
+        not (ubd and lbd and ubd:IsShown() and lbd:IsShown() and ubd.BottomLeftCorner and lbd.TopLeftCorner)
+    then
         local joined = bf and bf._cbJoinBd
         if joined then
             joined.BottomEdge:Show()
@@ -935,7 +1319,9 @@ function ns.NP_DropCustomWrapLower(plate)
     if lower then
         ns.NP_SetWrapSeam(lower, nil, false)
         local lc = PP.GetBorders(lower)
-        if lc then lc._hideTop = nil end
+        if lc then
+            lc._hideTop = nil
+        end
         CludesUI.ApplyBorderStyle(lower, 0)
         lower:Hide()
         lower._sTex = nil
@@ -944,7 +1330,9 @@ function ns.NP_DropCustomWrapLower(plate)
     local uc = bf and PP.GetBorders(bf)
     if uc and uc._hideBottom then
         uc._hideBottom = nil
-        if uc:IsShown() then PP.SetBorderSize(bf, bf._cbPx or bf._cbSz or 1) end
+        if uc:IsShown() then
+            PP.SetBorderSize(bf, bf._cbPx or bf._cbSz or 1)
+        end
     end
 end
 function ns.NP_UnwrapCustomBorder(plate)
@@ -961,7 +1349,9 @@ function ns.NP_UnwrapCustomBorder(plate)
         end
     end
     -- The icon separator comes back unless the Basic wrap (this same pass) owns it now.
-    if plate.castLeftBorder and not plate._wrapActive then plate.castLeftBorder:Show() end
+    if plate.castLeftBorder and not plate._wrapActive then
+        plate.castLeftBorder:Show()
+    end
     if plate.castIconFrame and PP.GetBorders(plate.castIconFrame) then
         PP.SetBorderColor(plate.castIconFrame, 0, 0, 0, 1)
     end
@@ -1003,11 +1393,15 @@ function ns.NP_SetWrapSeam(owner, anchor, show, tex, step, px, r, g, b, a, healt
 end
 function ns.NP_LayoutWrapSeam(host)
     local t, anchor, health = host._seam, host._seamAnchor, host._seamHealth
-    if not (t and anchor and health) then return end
+    if not (t and anchor and health) then
+        return
+    end
     local CUI = CludesUI
     local tex, step, px = host._seamTex, host._seamStep, host._seamPx
     local es = host:GetEffectiveScale()
-    if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
+    if not (es and es > 0.01) then
+        es = UIParent:GetEffectiveScale()
+    end
     local path = CUI.GetBorderCompanion(tex, "sepH")
     local thick = path and CUI.BorderCompanionThickness(tex, step, px, es)
     if not thick or thick <= 0 then
@@ -1021,7 +1415,12 @@ function ns.NP_LayoutWrapSeam(host)
         t:SetTexture(path)
         host._seamPath = path
     end
-    if host._lThick ~= thick or host._lRaise ~= raise or host._lAnchor ~= anchor or host._lHealth ~= health then
+    if
+        host._lThick ~= thick
+        or host._lRaise ~= raise
+        or host._lAnchor ~= anchor
+        or host._lHealth ~= health
+    then
         t:ClearAllPoints()
         t:SetPoint("TOP", anchor, "TOP", 0, raise)
         t:SetPoint("LEFT", health, "LEFT", 0, 0)
@@ -1040,9 +1439,19 @@ end
 -- broken: true while an CUI_Nameplates_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_npInternals", {
-    _npYOffsetState = _npYOffsetState, BAR_W = BAR_W, CAST_H = CAST_H, defaults = defaults,
-    ENP = ENP, GetFont = GetFont, GetNPOutline = GetNPOutline, HP_BAR_SLOTS = HP_BAR_SLOTS,
+    _npYOffsetState = _npYOffsetState,
+    BAR_W = BAR_W,
+    CAST_H = CAST_H,
+    defaults = defaults,
+    ENP = ENP,
+    GetFont = GetFont,
+    GetNPOutline = GetNPOutline,
+    HP_BAR_SLOTS = HP_BAR_SLOTS,
     SetFSFont = SetFSFont,
-    profileSetters = { function(v) p = v end },
+    profileSetters = {
+        function(v)
+            p = v
+        end,
+    },
     classPowerTypeSetters = {},
 }, { SetProfile = "profileSetters", SetClassPowerType = "classPowerTypeSetters" })

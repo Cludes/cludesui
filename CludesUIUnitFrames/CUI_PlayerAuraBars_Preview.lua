@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Preview.lua
 --
@@ -9,7 +11,9 @@ local _, ns = ...
 local I = ns._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ExpandFamily, PAB, PAB_FxListView = I.ExpandFamily, I.PAB, I.PAB_FxListView
@@ -43,19 +47,19 @@ local PAB_MaybeRefreshPreview
 -- PreviewSpellIcon's fallback), so a wrong/renamed ID just shows the question-mark
 -- icon. Keyed by the class FILE token (UnitClass's 2nd return, e.g. "PRIEST").
 local CLASS_PREVIEW_BUFFS = {
-    WARRIOR     = { 6673, 97462, 871, 12975, 1719, 107574, 184364, 118038, 46924, 3411 },
-    PALADIN     = { 465, 6940, 1044, 1022, 31850, 86659, 642, 498, 31884, 105809 },
-    HUNTER      = { 186257, 288613, 19574, 186265, 109304, 5384, 34477, 264735, 193530, 90355 },
-    ROGUE       = { 13750, 1784, 5277, 31224, 1966, 2983, 13877, 121471, 185311, 1856 },
-    PRIEST      = { 21562, 17, 139, 33206, 47788, 586, 47585, 41635, 6346, 64843 },
+    WARRIOR = { 6673, 97462, 871, 12975, 1719, 107574, 184364, 118038, 46924, 3411 },
+    PALADIN = { 465, 6940, 1044, 1022, 31850, 86659, 642, 498, 31884, 105809 },
+    HUNTER = { 186257, 288613, 19574, 186265, 109304, 5384, 34477, 264735, 193530, 90355 },
+    ROGUE = { 13750, 1784, 5277, 31224, 1966, 2983, 13877, 121471, 185311, 1856 },
+    PRIEST = { 21562, 17, 139, 33206, 47788, 586, 47585, 41635, 6346, 64843 },
     DEATHKNIGHT = { 48792, 48707, 55233, 49039, 51052, 42650, 47568, 194844, 194679, 81256 },
-    SHAMAN      = { 2825, 108271, 79206, 98008, 108281, 8178, 30823, 51490, 16188, 974 },
-    MAGE        = { 1459, 11426, 190319, 45438, 55342, 12042, 108978, 66, 80353, 12051 },
-    WARLOCK     = { 104773, 108416, 111400, 6789, 20707, 89808, 108503, 755, 6229, 5697 },
-    MONK        = { 115203, 122470, 116849, 122783, 115176, 116841, 124682, 116680, 101643, 322507 },
-    DRUID       = { 1126, 774, 22812, 61336, 102342, 106898, 29166, 33891, 192081, 108238 },
+    SHAMAN = { 2825, 108271, 79206, 98008, 108281, 8178, 30823, 51490, 16188, 974 },
+    MAGE = { 1459, 11426, 190319, 45438, 55342, 12042, 108978, 66, 80353, 12051 },
+    WARLOCK = { 104773, 108416, 111400, 6789, 20707, 89808, 108503, 755, 6229, 5697 },
+    MONK = { 115203, 122470, 116849, 122783, 115176, 116841, 124682, 116680, 101643, 322507 },
+    DRUID = { 1126, 774, 22812, 61336, 102342, 106898, 29166, 33891, 192081, 108238 },
     DEMONHUNTER = { 191427, 198589, 196555, 203720, 196718, 258920, 217832, 195072, 191786, 188501 },
-    EVOKER      = { 364342, 374348, 355936, 357170, 363916, 358267, 370960, 360995, 359816, 370537 },
+    EVOKER = { 364342, 374348, 355936, 357170, 363916, 358267, 370960, 360995, 359816, 370537 },
 }
 
 -- Fallback for an unrecognized class token (defensive only) or a missing entry.
@@ -72,7 +76,9 @@ local EXTRA_WORLD_PREVIEW_BUFFS = { 1236998, 1236616, 1239479, 1236994 }
 -- Shuffles a fresh copy of `source` (Fisher-Yates), never mutating the source table.
 local function ShuffleCopy(source)
     local out = {}
-    for i = 1, #source do out[i] = source[i] end
+    for i = 1, #source do
+        out[i] = source[i]
+    end
     for i = #out, 2, -1 do
         local j = math.random(i)
         out[i], out[j] = out[j], out[i]
@@ -93,22 +99,28 @@ end
 local function BuildBuffPreviewPool()
     local combined = {}
     for _, spells in pairs(CLASS_PREVIEW_BUFFS) do
-        for i = 1, #spells do combined[#combined + 1] = spells[i] end
+        for i = 1, #spells do
+            combined[#combined + 1] = spells[i]
+        end
     end
-    for i = 1, #EXTRA_WORLD_PREVIEW_BUFFS do combined[#combined + 1] = EXTRA_WORLD_PREVIEW_BUFFS[i] end
-    if #combined == 0 then combined = PREVIEW_BUFF_SPELLS end
+    for i = 1, #EXTRA_WORLD_PREVIEW_BUFFS do
+        combined[#combined + 1] = EXTRA_WORLD_PREVIEW_BUFFS[i]
+    end
+    if #combined == 0 then
+        combined = PREVIEW_BUFF_SPELLS
+    end
     return ShuffleCopy(combined)
 end
 
 -- Curated by hand (mostly recent Mythic+/dungeon trash debuffs): no verified debuff
 -- catalog in this repo to source from, unlike CLASS_PREVIEW_BUFFS.
 local PREVIEW_DEBUFF_SPELLS = {
-    { id = 122,   dispel = "Magic" },   -- Frost Nova
-    { id = 702,   dispel = "Curse" },   -- Curse of Weakness
-    { id = 2823,  dispel = "Poison" },  -- Deadly Poison
+    { id = 122, dispel = "Magic" }, -- Frost Nova
+    { id = 702, dispel = "Curse" }, -- Curse of Weakness
+    { id = 2823, dispel = "Poison" }, -- Deadly Poison
     { id = 55095, dispel = "Disease" }, -- Frost Fever
-    { id = 772,   dispel = "Bleed" },   -- Rend
-    { id = 6788,  dispel = nil },       -- Weakened Soul -- NOT dispellable, previews the plain base border color (no dispel-type override)
+    { id = 772, dispel = "Bleed" }, -- Rend
+    { id = 6788, dispel = nil }, -- Weakened Soul -- NOT dispellable, previews the plain base border color (no dispel-type override)
     -- Magic
     { id = 434083, dispel = "Magic" }, -- Lightning Bolt Volley
     { id = 426735, dispel = "Magic" }, -- Void Rift
@@ -189,7 +201,9 @@ end
 local previewIconCache = {}
 local function PreviewSpellIcon(spellID)
     local cached = previewIconCache[spellID]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
     local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)
     local icon = (info and info.iconID) or 134400
     previewIconCache[spellID] = icon
@@ -223,9 +237,13 @@ local function PreviewEnchantSlots()
     local out = {}
     for i = #PREVIEW_ENCHANT_SLOTS, 1, -1 do
         local slot = PREVIEW_ENCHANT_SLOTS[i]
-        if GetInventoryItemTexture("player", slot) then out[#out + 1] = slot end
+        if GetInventoryItemTexture("player", slot) then
+            out[#out + 1] = slot
+        end
     end
-    if #out == 0 then out[1] = PREVIEW_ENCHANT_SLOTS[1] end
+    if #out == 0 then
+        out[1] = PREVIEW_ENCHANT_SLOTS[1]
+    end
     return out
 end
 
@@ -235,15 +253,19 @@ end
 -- C_PaperDollInfo.GetInventorySlotInfo(slotName) -> id, textureName, checkRelic
 -- (verified against Blizzard_UIPanels_Game/PaperDollFrame.lua, which uses the
 -- same namespaced call).
-local PREVIEW_ENCHANT_SLOT_NAMES = { [INVSLOT_MAINHAND or 16] = "MainHandSlot",
-    [INVSLOT_OFFHAND or 17] = "SecondaryHandSlot" }
+local PREVIEW_ENCHANT_SLOT_NAMES =
+    { [INVSLOT_MAINHAND or 16] = "MainHandSlot", [INVSLOT_OFFHAND or 17] = "SecondaryHandSlot" }
 local function PreviewEnchantIcon(slot)
     local tex = GetInventoryItemTexture("player", slot)
-    if tex then return tex end
+    if tex then
+        return tex
+    end
     local name = PREVIEW_ENCHANT_SLOT_NAMES[slot]
     if name and C_PaperDollInfo and C_PaperDollInfo.GetInventorySlotInfo then
         local _, slotTex = C_PaperDollInfo.GetInventorySlotInfo(name)
-        if slotTex then return slotTex end
+        if slotTex then
+            return slotTex
+        end
     end
     return 134400
 end
@@ -252,7 +274,9 @@ end
 local previewNameCache = {}
 local function PreviewSpellName(spellID)
     local cached = previewNameCache[spellID]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
     local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)
     local name = (info and info.name) or ""
     previewNameCache[spellID] = name
@@ -288,14 +312,18 @@ local function SortPreviewList(list, isBuff, cfg)
     end
 
     local tagged = {}
-    for i = 1, #list do tagged[i] = { entry = list[i], idx = i } end
+    for i = 1, #list do
+        tagged[i] = { entry = list[i], idx = i }
+    end
 
     if method == "Expiration" then
         table.sort(tagged, function(a, b)
             local da = PREVIEW_DURATIONS[((a.idx - 1) % #PREVIEW_DURATIONS) + 1]
             local db = PREVIEW_DURATIONS[((b.idx - 1) % #PREVIEW_DURATIONS) + 1]
             if da ~= db then
-                if reverse then return da > db end
+                if reverse then
+                    return da > db
+                end
                 return da < db
             end
             return a.idx < b.idx
@@ -306,7 +334,9 @@ local function SortPreviewList(list, isBuff, cfg)
             local sb = isBuff and b.entry or b.entry.id
             local na, nb = PreviewSpellName(sa), PreviewSpellName(sb)
             if na ~= nb then
-                if reverse then return na > nb end
+                if reverse then
+                    return na > nb
+                end
                 return na < nb
             end
             return a.idx < b.idx
@@ -318,7 +348,9 @@ local function SortPreviewList(list, isBuff, cfg)
             local ia = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(sa)) and 0 or 1
             local ib = (C_Spell and C_Spell.IsSpellImportant and C_Spell.IsSpellImportant(sb)) and 0 or 1
             if ia ~= ib then
-                if reverse then return ia > ib end
+                if reverse then
+                    return ia > ib
+                end
                 return ia < ib
             end
             return a.idx < b.idx
@@ -346,7 +378,10 @@ local activePreview
 local pvCDSeeds = {}
 local function GetPvCDSeed(i)
     local v = pvCDSeeds[i]
-    if not v then v = 0.2 + math.random() * 0.7; pvCDSeeds[i] = v end
+    if not v then
+        v = 0.2 + math.random() * 0.7
+        pvCDSeeds[i] = v
+    end
     return v
 end
 
@@ -384,7 +419,9 @@ local function CreatePreviewIcon(box)
     -- the bar's shape or the plain swipe either way. A new cooldown keeps its
     -- template swipe untouched.
     local cdGen = Pool.Gen and Pool.Gen(btn.cooldown)
-    if cdGen and cdGen > 1 then btn._cdShapeApplied = false end
+    if cdGen and cdGen > 1 then
+        btn._cdShapeApplied = false
+    end
     btn.border = CreateFrame("Frame", nil, btn)
     -- The border frame is its own secret-safe border state (as the boss preview's
     -- aura border): a pooled frame's reset wipes these keys, so a pixel-grid
@@ -409,7 +446,9 @@ end
 -- lookups every other engine-side path uses.
 local function ResolvePreviewCfg(kind, id)
     local s = PAB()
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     if id == "default" then
         local isBuff = kind == "buff"
         return (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)), isBuff
@@ -433,7 +472,9 @@ end
 -- only the panel's OWN extra SetScale factor matters.
 local function PreviewScaleFactor()
     local s = (CludesUI.GetPopupScale()) or 1
-    if not s or s <= 0 then return 1 end
+    if not s or s <= 0 then
+        return 1
+    end
     return 1 / s
 end
 
@@ -442,9 +483,13 @@ end
 -- "unset" means -- keep in sync if BuildStyle's defaults change. Non-size fields
 -- (growDirection, iconsPerRow/maxRows/maxTotal, dispel colors, ...) pass through.
 local function ApplyPreviewScale(cfg, comp)
-    if comp == 1 then return cfg end
+    if comp == 1 then
+        return cfg
+    end
     local out = {}
-    for k, v in pairs(cfg) do out[k] = v end
+    for k, v in pairs(cfg) do
+        out[k] = v
+    end
     out.iconSize = (cfg.iconSize or 32) * comp
     out.padding = (cfg.padding or 5) * comp
     out.rowSpacing = cfg.rowSpacing and (cfg.rowSpacing * comp) or nil
@@ -488,8 +533,12 @@ local function ApplyPreviewScale(cfg, comp)
         for i = 1, #cfg.fxList do
             local e = cfg.fxList[i]
             local se = {}
-            for k, v in pairs(e) do se[k] = v end
-            if se.size then se.size = se.size * comp end
+            for k, v in pairs(e) do
+                se[k] = v
+            end
+            if se.size then
+                se.size = se.size * comp
+            end
             scaledFx[i] = se
         end
         out.fxList = scaledFx
@@ -523,8 +572,14 @@ end
 -- ComputeGrid/BuildContainerSpec's own corner-anchored flow layout so the preview
 -- wraps exactly like the live bar.
 local function HasAnyTrue(map)
-    if not map then return false end
-    for _, v in pairs(map) do if v then return true end end
+    if not map then
+        return false
+    end
+    for _, v in pairs(map) do
+        if v then
+            return true
+        end
+    end
     return false
 end
 
@@ -542,7 +597,9 @@ local function HasFillerSource(isBuff, cfg)
         return cfg.showAllBuffs ~= false or cfg.hasDuration == true
     end
     -- Match All picks that can never match together render nothing.
-    if ns.PAB_DebuffMatchEmpty(cfg) then return false end
+    if ns.PAB_DebuffMatchEmpty(cfg) then
+        return false
+    end
     return cfg.showAllDebuffs ~= false or cfg.hasDuration == true or HasAnyTrue(cfg.classFilters)
 end
 
@@ -610,8 +667,9 @@ local function BuildMixedRealSpells(cfg)
                 if cfg.filters[f.id] then
                     local ids = {}
                     for id, on in pairs(f.spells) do
-                        if on and not (negSet and negSet[id])
-                            and not ns.PAB_OtherClientSpell(f, id) then ids[#ids + 1] = id end
+                        if on and not (negSet and negSet[id]) and not ns.PAB_OtherClientSpell(f, id) then
+                            ids[#ids + 1] = id
+                        end
                     end
                     if #ids > 0 then
                         table.sort(ids)
@@ -623,7 +681,9 @@ local function BuildMixedRealSpells(cfg)
     end
     if cfg.spells and #cfg.spells > 0 then
         local extra = {}
-        for i = 1, #cfg.spells do extra[i] = cfg.spells[i] end
+        for i = 1, #cfg.spells do
+            extra[i] = cfg.spells[i]
+        end
         sources[#sources + 1] = extra
     end
 
@@ -638,7 +698,9 @@ local function BuildMixedRealSpells(cfg)
                 addedAny = true
             end
         end
-        if not addedAny then break end
+        if not addedAny then
+            break
+        end
         idx = idx + 1
     end
     return out
@@ -678,7 +740,9 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
     if mixed then
         local numSelected = math.min(#mixed, avail)
         local selected = {}
-        for i = 1, numSelected do selected[i] = mixed[i] end
+        for i = 1, numSelected do
+            selected[i] = mixed[i]
+        end
         extraIDs, extraSrc = SortPreviewList(selected, isBuff, cfg)
     end
     local numExtra = extraIDs and #extraIDs or 0
@@ -721,7 +785,9 @@ local function BuildPreviewSlots(isBuff, cfg, list, listLen, count)
             if subSet then
                 local n = 0
                 for scan = 1, listLen do
-                    if n >= numFiller then break end
+                    if n >= numFiller then
+                        break
+                    end
                     local e = list[scan]
                     if not subSet[e] then
                         n = n + 1
@@ -773,7 +839,9 @@ local function ApplyPreviewFx(btn, e)
         local sz = btn:GetWidth() or 18
         Glows.StartSpecGlow(gov, spec, sz, btn:GetHeight() or sz, "engine", Glows.PANEL_EXTRA)
     elseif gov then
-        if gov._cuiGlowActive then Glows.StopGlow(gov) end
+        if gov._cuiGlowActive then
+            Glows.StopGlow(gov)
+        end
         gov:Hide()
     end
 
@@ -855,7 +923,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
         if fxListView and #fxListView > 0 then
             local fakeIdx = {}
             for i = 1, #slots do
-                if slots[i].kind == "fake" then fakeIdx[#fakeIdx + 1] = i end
+                if slots[i].kind == "fake" then
+                    fakeIdx[#fakeIdx + 1] = i
+                end
             end
             local nFake = #fakeIdx
             if nFake > 0 then
@@ -887,7 +957,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
         local e = fxBySlot and fxBySlot[i]
         local sz = e and tonumber(e.size)
         slotSize[i] = PabShapedSize((sz and sz > 0) and sz or iconSize, cfg.iconShape)
-        if slotHeight then slotHeight[i] = ns.PAB_CroppedHeight(slotSize[i], cfg) end
+        if slotHeight then
+            slotHeight[i] = ns.PAB_CroppedHeight(slotSize[i], cfg)
+        end
     end
 
     local rowWidth, rowHeight, colOffset, rowYOffset = {}, {}, {}, {}
@@ -898,12 +970,17 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
         -- line and row 2 wraps back to the bar's own edge, no per-row indent.
         -- Their cells come out of the aura cap, so the box always fits.
         local runningX, runningY = {}, 0
-        for r = 0, rows - 1 do runningX[r] = 0 end
+        for r = 0, rows - 1 do
+            runningX[r] = 0
+        end
         for i = 1, total do
             local r = math.floor((i - 1) / cols)
             colOffset[i] = runningX[r] or 0
-            runningX[r] = (runningX[r] or 0) + (vertical and slotHeight and slotHeight[i] or slotSize[i]) + pad
-            rowHeight[r] = math.max(rowHeight[r] or 0, (not vertical) and slotHeight and slotHeight[i] or slotSize[i])
+            runningX[r] = (runningX[r] or 0)
+                + (vertical and slotHeight and slotHeight[i] or slotSize[i])
+                + pad
+            rowHeight[r] =
+                math.max(rowHeight[r] or 0, (not vertical) and slotHeight and slotHeight[i] or slotSize[i])
         end
         for r = 0, rows - 1 do
             rowWidth[r] = math.max(0, runningX[r] - pad) -- drop the trailing gap
@@ -917,7 +994,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
     -- axis) and "across-lines" (wrap axis) -- screen X/Y only for horizontal growth.
     -- Vertical growth (Up/Down) swaps which maps to X vs Y below.
     local blockW = 0
-    for r = 0, rows - 1 do blockW = math.max(blockW, rowWidth[r] or 0) end
+    for r = 0, rows - 1 do
+        blockW = math.max(blockW, rowWidth[r] or 0)
+    end
     local blockH = math.max(0, (rowYOffset[rows - 1] or 0) + (rowHeight[rows - 1] or 0))
     local halfPrimary, halfCross = blockW / 2, blockH / 2
     local growUp = (growDir == "UP")
@@ -954,7 +1033,8 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                 btnX = wrapRight and (-halfCross + acrossLinesStep) or (halfCross - acrossLinesStep)
             else
                 btnY = wrapUp and (-halfCross + acrossLinesStep) or (halfCross - acrossLinesStep)
-                btnX = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT") and (halfPrimary - withinLineStep) or (-halfPrimary + withinLineStep)
+                btnX = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT") and (halfPrimary - withinLineStep)
+                    or (-halfPrimary + withinLineStep)
             end
             btn:ClearAllPoints()
             btn:SetPoint(centeredVertical and "CENTER" or corner, box, "CENTER", btnX, btnY)
@@ -1021,9 +1101,10 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
             end
 
             btn.border:SetAllPoints(shapeActive and btn or btn.icon)
-            btn.border:SetFrameLevel(style.border and style.border.behind
-                and math.max(0, btn:GetFrameLevel() - 1)
-                or (btn:GetFrameLevel() + 1))
+            btn.border:SetFrameLevel(
+                style.border and style.border.behind and math.max(0, btn:GetFrameLevel() - 1)
+                    or (btn:GetFrameLevel() + 1)
+            )
             -- Type-icon host above the border's strip container (+1) and the fx
             -- border/glow hosts (+1/+2), like the live dispel holder clears them.
             btn.typeHost:SetFrameLevel(btn.border:GetFrameLevel() + 3)
@@ -1038,29 +1119,64 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                 if shapeActive and style.shapeBorderPath and PP.ApplyMaskedShapeBorder then
                     CludesUI.HideBorderStyle(btn.border)
                     if btn.borderState and btn.borderState._secretBorderEdges then
-                        for _, tex in pairs(btn.borderState._secretBorderEdges) do tex:Hide() end
+                        for _, tex in pairs(btn.borderState._secretBorderEdges) do
+                            tex:Hide()
+                        end
                     end
-                    PP:ApplyMaskedShapeBorder(btn.border, btn.shapeMask, style.shapeBorderPath, style.shapeBorderSize or size, br, bg, bb, ba)
+                    PP:ApplyMaskedShapeBorder(
+                        btn.border,
+                        btn.shapeMask,
+                        style.shapeBorderPath,
+                        style.shapeBorderSize or size,
+                        br,
+                        bg,
+                        bb,
+                        ba
+                    )
                     btn.border:Show()
                 else
-                    if PP.HideMaskedShapeBorder then PP:HideMaskedShapeBorder(btn.border)
-                    elseif btn.border._shapeBorderTex then btn.border._shapeBorderTex:Hide() end
+                    if PP.HideMaskedShapeBorder then
+                        PP:HideMaskedShapeBorder(btn.border)
+                    elseif btn.border._shapeBorderTex then
+                        btn.border._shapeBorderTex:Hide()
+                    end
                     local b = style.border
                     local appliedSize = (b.texture and b.texture ~= "" and b.texture ~= "solid")
-                        and (b.textureSize or size) or size
-                    CludesUI.ApplySecretSafeBorderStyle(btn.border, btn.borderState,
-                        appliedSize, br, bg, bb, ba, b.texture or "solid",
-                        b.offsetX, b.offsetY, b.shiftX, b.shiftY,
-                        b.addonKey or "unitframes", b.sizeKey or size, b.edgeScale, b.edgePx)
+                            and (b.textureSize or size)
+                        or size
+                    CludesUI.ApplySecretSafeBorderStyle(
+                        btn.border,
+                        btn.borderState,
+                        appliedSize,
+                        br,
+                        bg,
+                        bb,
+                        ba,
+                        b.texture or "solid",
+                        b.offsetX,
+                        b.offsetY,
+                        b.shiftX,
+                        b.shiftY,
+                        b.addonKey or "unitframes",
+                        b.sizeKey or size,
+                        b.edgeScale,
+                        b.edgePx
+                    )
                     btn.borderMade = true
                 end
             else
                 if CludesUI.ApplySecretSafeBorderStyle then
-                    CludesUI.ApplySecretSafeBorderStyle(btn.border, btn.borderState,
-                        0, 0, 0, 0, 0, "solid")
-                elseif PP and PP.HideBorder then PP.HideBorder(btn.border) else btn.border:Hide() end
-                if PP and PP.HideMaskedShapeBorder then PP:HideMaskedShapeBorder(btn.border)
-                elseif btn.border._shapeBorderTex then btn.border._shapeBorderTex:Hide() end
+                    CludesUI.ApplySecretSafeBorderStyle(btn.border, btn.borderState, 0, 0, 0, 0, 0, "solid")
+                elseif PP and PP.HideBorder then
+                    PP.HideBorder(btn.border)
+                else
+                    btn.border:Hide()
+                end
+                if PP and PP.HideMaskedShapeBorder then
+                    PP:HideMaskedShapeBorder(btn.border)
+                elseif btn.border._shapeBorderTex then
+                    btn.border._shapeBorderTex:Hide()
+                end
             end
 
             -- Dispel-type indicator icon (style.dispelTypeIcon): the live bar's
@@ -1078,8 +1194,7 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                 btn.typeIcon:SetSize(tiSz, tiSz)
                 btn.typeIcon:ClearAllPoints()
                 local tiPt = PV_DISPEL_ICON_POINTS[ti.pos] or "CENTER"
-                btn.typeIcon:SetPoint(tiPt, btn, tiPt,
-                    cfg.dispelIconOffsetX or 0, cfg.dispelIconOffsetY or 0)
+                btn.typeIcon:SetPoint(tiPt, btn, tiPt, cfg.dispelIconOffsetX or 0, cfg.dispelIconOffsetY or 0)
                 btn.typeIcon:Show()
             elseif btn.typeIcon then
                 btn.typeIcon:Hide()
@@ -1094,7 +1209,9 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
                     end
                 else
                     pcall(btn.cooldown.RemoveMaskTexture, btn.cooldown, btn.shapeMask)
-                    if btn.cooldown.SetSwipeTexture then pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, "") end
+                    if btn.cooldown.SetSwipeTexture then
+                        pcall(btn.cooldown.SetSwipeTexture, btn.cooldown, "")
+                    end
                 end
                 btn._cdShapeApplied = cdMaskKey
             end
@@ -1105,8 +1222,13 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
 
                 btn.duration:ClearAllPoints()
                 btn.duration:SetFont(fontPath, style.durationFontSize or 11, "OUTLINE")
-                btn.duration:SetPoint(style.durationPoint or "CENTER", btn, style.durationRelPoint or "CENTER",
-                    style.durationX or 0, style.durationY or 0)
+                btn.duration:SetPoint(
+                    style.durationPoint or "CENTER",
+                    btn,
+                    style.durationRelPoint or "CENTER",
+                    style.durationX or 0,
+                    style.durationY or 0
+                )
                 local dc = style.durationColor
                 btn.duration:SetTextColor(dc and dc.r or 1, dc and dc.g or 1, dc and dc.b or 1)
                 btn.duration:SetShown(not style.hideDurationText)
@@ -1115,13 +1237,20 @@ local function RenderPreviewIcons(box, icons, isBuff, cfg, fontPath, pool)
 
                 btn.stack:ClearAllPoints()
                 btn.stack:SetFont(fontPath, style.stackFontSize or 11, "OUTLINE")
-                btn.stack:SetPoint(style.stackPoint or "BOTTOMRIGHT", btn, style.stackPoint or "BOTTOMRIGHT",
-                    style.stackX or 0, style.stackY or 0)
+                btn.stack:SetPoint(
+                    style.stackPoint or "BOTTOMRIGHT",
+                    btn,
+                    style.stackPoint or "BOTTOMRIGHT",
+                    style.stackX or 0,
+                    style.stackY or 0
+                )
                 local sc = style.stackColor
                 btn.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
                 local stackVal = PREVIEW_STACKS[((pv - 1) % #PREVIEW_STACKS) + 1]
                 btn.stack:SetShown(style.showStacks ~= false and stackVal ~= nil)
-                if stackVal then btn.stack:SetText(stackVal) end
+                if stackVal then
+                    btn.stack:SetText(stackVal)
+                end
             end
 
             -- Duration-swipe preview: randomized FROZEN sweep -- a stable per-slot
@@ -1275,9 +1404,17 @@ function ns.PAB_BuildPreviewBox(outerFrame, fontPath, startY, kind, id, cfg)
         pool = BuildDebuffPreviewPool()
     end
     activePreview = {
-        kind = kind, id = id, box = box, icons = icons, fontPath = fontPath, pool = pool,
-        outerFrame = outerFrame, boxTopY = sy, bandTopY = startY,
-        headerBg = headerBg, divider = divider,
+        kind = kind,
+        id = id,
+        box = box,
+        icons = icons,
+        fontPath = fontPath,
+        pool = pool,
+        outerFrame = outerFrame,
+        boxTopY = sy,
+        bandTopY = startY,
+        headerBg = headerBg,
+        divider = divider,
         -- the box's dress (nil off the pool): PAB_MaybeRefreshPreview stands down
         -- once a later render parked the box or dressed it again
         gen = CludesUI._Pool.Gen(box),
@@ -1293,7 +1430,9 @@ end
 -- standalone module-level var) so a callback from a since-torn-down detail pane can
 -- never fire against the wrong pane's box after a tab switch rebuilds activePreview.
 function ns.PAB_SetPreviewResizeHandler(fn)
-    if activePreview then activePreview.onResize = fn end
+    if activePreview then
+        activePreview.onResize = fn
+    end
 end
 
 -- Piggyback hook, called at the end of every live-apply path (ApplyLiveConfig,
@@ -1301,11 +1440,16 @@ end
 -- stays in sync with slider drags/dropdown changes without CUI_PlayerAuraBars_
 -- ManagerPages.lua needing to know the preview exists or wrap its ApplyBar() closures.
 PAB_MaybeRefreshPreview = function(kind, id)
-    if not (activePreview and activePreview.kind == kind and activePreview.id == id) then return end
+    if not (activePreview and activePreview.kind == kind and activePreview.id == id) then
+        return
+    end
     -- The page was left: its root waits parked and hidden until its next
     -- render, which builds a new preview, so nothing is drawn into the hidden
     -- box meanwhile (ns._pabRoot is nil only while the root is parked).
-    if not ns._pabRoot then activePreview = nil; return end
+    if not ns._pabRoot then
+        activePreview = nil
+        return
+    end
     -- A render of the kept manager root without this box parked it (or a later
     -- one dressed it again): its frames belong to the pool now, not to this
     -- preview. (activePreview exists only once the options addon, and with it
@@ -1316,7 +1460,9 @@ PAB_MaybeRefreshPreview = function(kind, id)
         return
     end
     local cfg, isBuff = ResolvePreviewCfg(kind, id)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
 
     -- Re-derive the box's footprint from the SAME scaled grid RenderPreviewIcons is
     -- about to draw into, mirroring PAB_BuildPreviewBox's own boxHeight/bottomY math
@@ -1334,9 +1480,18 @@ PAB_MaybeRefreshPreview = function(kind, id)
         activePreview.divider:SetPoint("TOPLEFT", activePreview.outerFrame, "TOPLEFT", 0, bottomY)
         activePreview.divider:SetPoint("TOPRIGHT", activePreview.outerFrame, "TOPRIGHT", 0, bottomY)
     end
-    if activePreview.onResize then activePreview.onResize(bottomY) end
+    if activePreview.onResize then
+        activePreview.onResize(bottomY)
+    end
 
-    RenderPreviewIcons(activePreview.box, activePreview.icons, isBuff, cfg, activePreview.fontPath, activePreview.pool)
+    RenderPreviewIcons(
+        activePreview.box,
+        activePreview.icons,
+        isBuff,
+        cfg,
+        activePreview.fontPath,
+        activePreview.pool
+    )
 end
 SetMaybeRefreshPreview(PAB_MaybeRefreshPreview)
 

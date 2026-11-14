@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookPresetCooldowns.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ECME = ns.ECME
@@ -39,7 +43,9 @@ local PotSwap = {}
 do
     local byPrimary, chains, chainByItem
     local famByKey = {}
-    for _, fam in ipairs(ns.COMBAT_POTION_FAMILIES or {}) do famByKey[fam.key] = fam end
+    for _, fam in ipairs(ns.COMBAT_POTION_FAMILIES or {}) do
+        famByKey[fam.key] = fam
+    end
 
     -- The profile-wide switch the Extras section used to hold: the default of an
     -- icon whose own Swap Combat Pots When Missing was never set.
@@ -54,9 +60,13 @@ do
     function PotSwap.Settings(itemID)
         local cas = ns.GetCustomActiveState(-itemID)
         local swap = cas and cas.potSwap
-        if swap == nil then swap = PotSwap.LegacySwap() end
+        if swap == nil then
+            swap = PotSwap.LegacySwap()
+        end
         local order = cas and cas.potOrder
-        if type(order) ~= "string" then order = nil end
+        if type(order) ~= "string" then
+            order = nil
+        end
         return swap == true, order
     end
 
@@ -87,14 +97,18 @@ do
         if not byPrimary then
             byPrimary = {}
             for _, pr in ipairs(ns.CDM_ITEM_PRESETS or {}) do
-                if pr.displayOrder then byPrimary[pr.itemID] = pr end
+                if pr.displayOrder then
+                    byPrimary[pr.itemID] = pr
+                end
             end
         end
         return byPrimary[itemID]
     end
 
     PotSwap.gen = 1
-    function PotSwap.Bump() PotSwap.gen = PotSwap.gen + 1 end
+    function PotSwap.Bump()
+        PotSwap.gen = PotSwap.gen + 1
+    end
 
     -- Ordered item ids an icon walks: for a combat potion, the first family's
     -- displayOrder with every later family's appended while the icon swaps; for
@@ -102,16 +116,22 @@ do
     -- shared by every icon that resolves to it, memoized per item key against the
     -- generation and the two settings, so the polls (FakeActive) never rebuild it.
     function PotSwap.Chain(preset, itemID)
-        if not preset.potFamily then return preset.displayOrder end
+        if not preset.potFamily then
+            return preset.displayOrder
+        end
         local swap, orderStr = PotSwap.Settings(itemID)
-        if not chainByItem then chainByItem = {} end
+        if not chainByItem then
+            chainByItem = {}
+        end
         local m = chainByItem[itemID]
         if m and m.gen == PotSwap.gen and m.swap == swap and m.order == orderStr then
             return m.chain
         end
         local keys = PotSwap.Order(preset, orderStr)
         local sig = (swap and "1" or "0") .. table.concat(keys, ",")
-        if not chains then chains = {} end
+        if not chains then
+            chains = {}
+        end
         local chain = chains[sig]
         if not chain then
             chain = {}
@@ -119,12 +139,17 @@ do
                 local fam = famByKey[keys[i]]
                 local list = fam and fam.preset.displayOrder
                 if list then
-                    for j = 1, #list do chain[#chain + 1] = list[j] end
+                    for j = 1, #list do
+                        chain[#chain + 1] = list[j]
+                    end
                 end
             end
             chains[sig] = chain
         end
-        if not m then m = {}; chainByItem[itemID] = m end
+        if not m then
+            m = {}
+            chainByItem[itemID] = m
+        end
         m.gen, m.swap, m.order, m.chain = PotSwap.gen, swap, orderStr, chain
         return chain
     end
@@ -138,10 +163,15 @@ do
     -- count 0, so the icon keeps its slot (greyed) instead of vanishing.
     function PotSwap.Ensure(f)
         local preset = f._presetData
-        if not (preset and preset.displayOrder and f._presetItemID == preset.itemID) then return nil end
+        if not (preset and preset.displayOrder and f._presetItemID == preset.itemID) then
+            return nil
+        end
         local swap, orderStr = PotSwap.Settings(f._presetItemID)
-        if f._potResolveGen == PotSwap.gen and f._potResolveSwap == swap
-           and f._potResolveOrder == orderStr then
+        if
+            f._potResolveGen == PotSwap.gen
+            and f._potResolveSwap == swap
+            and f._potResolveOrder == orderStr
+        then
             return f._displayItemID
         end
         f._potResolveGen, f._potResolveSwap, f._potResolveOrder = PotSwap.gen, swap, orderStr
@@ -149,18 +179,24 @@ do
         local id, count
         for i = 1, #chain do
             local c = C_Item.GetItemCount(chain[i], false, true) or 0
-            if c > 0 then id, count = chain[i], c; break end
+            if c > 0 then
+                id, count = chain[i], c
+                break
+            end
         end
-        if not id then id, count = preset.itemID, 0 end
+        if not id then
+            id, count = preset.itemID, 0
+        end
         f._displayCount = count
         if f._displayItemID ~= id then
             f._displayItemID = id
             -- preset.icon is PICKER-ONLY art (the current-tier pot): every resolved
             -- variant, the primary included, paints its own item art so the icon
             -- always matches the counted/tooltipped variant.
-            local icon = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(id))
-                or preset.icon
-            if f._tex then f._tex:SetTexture(icon) end
+            local icon = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(id)) or preset.icon
+            if f._tex then
+                f._tex:SetTexture(icon)
+            end
         end
         return id
     end
@@ -195,7 +231,9 @@ function ns.ItemEntryPreview(barKey, key)
             if fc and fc.spellID == key then
                 local tex = f._tex or f.Icon
                 local art = tex and tex.GetTexture and tex:GetTexture()
-                if art then return art, f._displayItemID or itemID end
+                if art then
+                    return art, f._displayItemID or itemID
+                end
                 break
             end
         end
@@ -232,7 +270,9 @@ function ns._ItemPresetCount(pd, itemID)
         for _, altID in ipairs(pd.altItemIDs) do
             local c = C_Item.GetItemCount(altID, false, true) or 0
             total = total + c
-            if not owned and c > 0 then owned = altID end
+            if not owned and c > 0 then
+                owned = altID
+            end
         end
     end
     return total, owned
@@ -248,9 +288,13 @@ end
 -- stone's entry never shows, not even dimmed. Read by the reanchor pass; talent and
 -- spell changes always queue one. On ns: 200-local cap.
 function ns._HealthstoneHiddenByPact(itemID)
-    if itemID ~= 5512 and itemID ~= 224464 then return false end
+    if itemID ~= 5512 and itemID ~= 224464 then
+        return false
+    end
     local pact = C_SpellBook.IsSpellKnown(386689) == true
-    if itemID == 5512 then return pact end
+    if itemID == 5512 then
+        return pact
+    end
     return not pact
 end
 
@@ -261,12 +305,16 @@ do
     local hooked = setmetatable({}, { __mode = "k" })
     local inCombat = false
     local CI = ns._internals
-    CI.inCombatSetters[#CI.inCombatSetters + 1] = function(v) inCombat = v end
+    CI.inCombatSetters[#CI.inCombatSetters + 1] = function(v)
+        inCombat = v
+    end
 
     -- The stone preset an entry key stands for, else nil.
     local function StonePreset(key)
         local p = key and ns.ItemPresetForKey(key)
-        if p and (p.key == "healthstone" or p.key == "demonic_healthstone") then return p end
+        if p and (p.key == "healthstone" or p.key == "demonic_healthstone") then
+            return p
+        end
     end
 
     local function Apply(frame)
@@ -274,12 +322,19 @@ do
         local cc = frame.ChargeCount
         local fs = cc and cc.Current
         -- Pooled frames: the cdID check drops a frame Blizzard re-used before the next reanchor.
-        local p = fc and fs and fc.healthstoneCdID and frame.cooldownID == fc.healthstoneCdID
+        local p = fc
+            and fs
+            and fc.healthstoneCdID
+            and frame.cooldownID == fc.healthstoneCdID
             and StonePreset(fc.spellID)
-        if not p then return end
+        if not p then
+            return
+        end
         local bd = fc.barKey and barDataByKey[fc.barKey]
         local show = not bd or bd.showItemCount ~= false
-        if show and bd and bd.itemCountOOC and inCombat then show = false end
+        if show and bd and bd.itemCountOOC and inCombat then
+            show = false
+        end
         local count = show and ns._ItemPresetCount(p, p.itemID) or 0
         if count > 0 then
             fs:SetText(count)
@@ -292,7 +347,9 @@ do
 
     function ns._ClaimNativeHealthstone(frame, cdID)
         local fc = _ecmeFC[frame]
-        if not (fc and StonePreset(fc.spellID)) then return end
+        if not (fc and StonePreset(fc.spellID)) then
+            return
+        end
         fc.healthstoneCdID = cdID
         ns._nativeHealthstoneClaimed = true
         if not hooked[frame] and frame.RefreshSpellChargeInfo then
@@ -303,7 +360,9 @@ do
     end
 
     function ns._RefreshNativeHealthstoneCounts()
-        if not ns._nativeHealthstoneClaimed then return end
+        if not ns._nativeHealthstoneClaimed then
+            return
+        end
         for vi = 1, 2 do
             local viewer = I.GetViewerFrame(vi)
             local pool = viewer and viewer.itemFramePool
@@ -364,7 +423,9 @@ end
 -------------------------------------------------------------------------------
 local function ApplyPresetGCDSwipe(f, sid, cdInfo, barKey)
     local cdF = f and f._cooldown
-    if not (sid and cdF and cdF.SetSwipeColor) then return end
+    if not (sid and cdF and cdF.SetSwipeColor) then
+        return
+    end
     if not barKey then
         local fc = _ecmeFC[f]
         barKey = fc and fc.barKey
@@ -463,8 +524,16 @@ local function ProcessPresetCooldowns()
                 -- that arm (a cast unsettles the drain and its named events arm
                 -- the exact frame; a charge regen completing while settled
                 -- wakes via the listener's settled-state charge lane).
-                if sid and (fullSweep or f._cdPushArm or f._cdEvalArm
-                   or f._lastOnRealCD ~= false or f._lastVertexDim) then
+                if
+                    sid
+                    and (
+                        fullSweep
+                        or f._cdPushArm
+                        or f._cdEvalArm
+                        or f._lastOnRealCD ~= false
+                        or f._lastVertexDim
+                    )
+                then
                     local textArm = (fullSweep or f._cdPushArm or f._cdEvalArm) and true or nil
                     f._cdEvalArm = nil
                     local cdInfo = C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(sid)
@@ -481,12 +550,15 @@ local function ProcessPresetCooldowns()
                     end
                     if f._cdPushArm then
                         f._cdPushArm = false
-                        local durObj = C_Spell.GetSpellCooldownDuration and C_Spell.GetSpellCooldownDuration(sid)
+                        local durObj = C_Spell.GetSpellCooldownDuration
+                            and C_Spell.GetSpellCooldownDuration(sid)
                         if durObj and f._cooldown and f._cooldown.SetCooldownFromDurationObject then
                             f._cooldown:SetCooldownFromDurationObject(durObj, true)
                         end
                     end
-                    if onRealCD then anyUnsettled = true end
+                    if onRealCD then
+                        anyUnsettled = true
+                    end
                     -- Binary desat from the SAME readable bools this pass already
                     -- holds: the desat curve is a STEP (0->0, 0.001->1), so it
                     -- reduces to (onRealCD and 1 or 0). GCD-only stays saturated,
@@ -507,7 +579,9 @@ local function ProcessPresetCooldowns()
                     if f._isCustomSpellFrame and f._tex then
                         ns.PaintCustomSpellTint(f, sid, onRealCD)
                     end
-                    if f._lastVertexDim then anyUnsettled = true end
+                    if f._lastVertexDim then
+                        anyUnsettled = true
+                    end
                     -- "Show Charges" (opt-in, CD/utility custom spells only):
                     -- Blizzard reports no charge frame for a manually-added spell,
                     -- so on request show its count -- the display charge count when
@@ -519,7 +593,9 @@ local function ProcessPresetCooldowns()
                         local fcF = _ecmeFC[f]
                         local bkF = fcF and fcF.barKey
                         local sdF = bkF and ns.GetBarSpellData and ns.GetBarSpellData(bkF)
-                        local forceCount = sdF and sdF.customSpellForceCount and sdF.customSpellForceCount[sid]
+                        local forceCount = sdF
+                            and sdF.customSpellForceCount
+                            and sdF.customSpellForceCount[sid]
                         if forceCount then
                             -- Render only on ARMED passes: the count moves only
                             -- on edges that arm (gate comment above). An armed
@@ -534,7 +610,11 @@ local function ProcessPresetCooldowns()
                                     ns.StyleCustomChargeText(f, bkF)
                                 end
                                 local chargeInfo = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(sid)
-                                local n = (chargeInfo and C_Spell.GetSpellDisplayCount and C_Spell.GetSpellDisplayCount(sid))
+                                local n = (
+                                    chargeInfo
+                                    and C_Spell.GetSpellDisplayCount
+                                    and C_Spell.GetSpellDisplayCount(sid)
+                                )
                                     or (C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(sid))
                                 -- The count is a SECRET value in Midnight (cannot be read or
                                 -- compared -- issecretvalue was making the old code bail), so
@@ -547,7 +627,9 @@ local function ProcessPresetCooldowns()
                                 end
                                 if ok and str then
                                     f._castCountText:SetText(str)
-                                    if not f._castCountText:IsShown() then f._castCountText:Show() end
+                                    if not f._castCountText:IsShown() then
+                                        f._castCountText:Show()
+                                    end
                                 elseif f._castCountText:IsShown() then
                                     f._castCountText:SetText("")
                                     f._castCountText:Hide()
@@ -560,15 +642,24 @@ local function ProcessPresetCooldowns()
                         end
                     end
                 end
-            elseif f._isItemPresetFrame and f._presetItemID and now >= _encounterResetUntil
-               -- Item read-skip (probe-proven capture #12: the item branch was the
-               -- drain's entire remaining cost): a READY, un-armed, un-desaturated item
-               -- frame cannot change state -- loot/bag edges arm it, lockout/desat keep
-               -- it polling, an on-cd frame polls for its own expiry edge, and the 5s
-               -- sweep heals anything missed.
-               and (fullSweep or f._itemWalkArm ~= false or f._countArm ~= false
-                    or f._inCombatLockout or f._lastDesat
-                    or (f._cdStart and f._cdDur and now < f._cdStart + f._cdDur)) then
+            elseif
+                f._isItemPresetFrame
+                and f._presetItemID
+                and now >= _encounterResetUntil
+                -- Item read-skip (probe-proven capture #12: the item branch was the
+                -- drain's entire remaining cost): a READY, un-armed, un-desaturated item
+                -- frame cannot change state -- loot/bag edges arm it, lockout/desat keep
+                -- it polling, an on-cd frame polls for its own expiry edge, and the 5s
+                -- sweep heals anything missed.
+                and (
+                    fullSweep
+                    or f._itemWalkArm ~= false
+                    or f._countArm ~= false
+                    or f._inCombatLockout
+                    or f._lastDesat
+                    or (f._cdStart and f._cdDur and now < f._cdStart + f._cdDur)
+                )
+            then
                 -- Pot presets: re-resolve the display variant (generation-gated,
                 -- one compare when nothing changed) and drive count/cooldown off
                 -- the resolved chain. Every other item preset keeps the legacy
@@ -608,8 +699,12 @@ local function ProcessPresetCooldowns()
                     else
                         probeID = f._itemCdSource or f._presetItemID
                     end
-                    if getContainerCD then start, dur = getContainerCD(probeID) end
-                    if not (start and dur and dur > 1.5) then start, dur = C_Item.GetItemCooldown(probeID) end
+                    if getContainerCD then
+                        start, dur = getContainerCD(probeID)
+                    end
+                    if not (start and dur and dur > 1.5) then
+                        start, dur = C_Item.GetItemCooldown(probeID)
+                    end
                     -- One-time seed per frame object: post-/reload a residual
                     -- cd can live on an id we have no memory of (used before
                     -- the reload, nothing owned now) -- find and remember it.
@@ -622,11 +717,18 @@ local function ProcessPresetCooldowns()
                                 for i = 1, #list do
                                     local cid = list[i]
                                     if cid ~= probeID then
-                                        if getContainerCD then start, dur = getContainerCD(cid) end
-                                        if not (start and dur and dur > 1.5) then start, dur = C_Item.GetItemCooldown(cid) end
+                                        if getContainerCD then
+                                            start, dur = getContainerCD(cid)
+                                        end
+                                        if not (start and dur and dur > 1.5) then
+                                            start, dur = C_Item.GetItemCooldown(cid)
+                                        end
                                         if start and dur and dur > 1.5 then
-                                            if dispID then f._lastOwnedDispID = cid
-                                            else f._itemCdSource = cid end
+                                            if dispID then
+                                                f._lastOwnedDispID = cid
+                                            else
+                                                f._itemCdSource = cid
+                                            end
                                             break
                                         end
                                     end
@@ -636,14 +738,18 @@ local function ProcessPresetCooldowns()
                     end
                     if start and dur and dur > 1.5 then
                         f._cooldown:SetCooldown(start, dur)
-                        f._cdStart = start; f._cdDur = dur
+                        f._cdStart = start
+                        f._cdDur = dur
                     elseif not (f._cdStart and f._cdDur and (now < f._cdStart + f._cdDur)) then
                         f._cooldown:Clear()
-                        f._cdStart = nil; f._cdDur = nil
+                        f._cdStart = nil
+                        f._cdDur = nil
                     end
                 end
                 local itemOnCD = f._cdStart and f._cdDur and (now < f._cdStart + f._cdDur)
-                if itemOnCD or f._inCombatLockout then anyUnsettled = true end
+                if itemOnCD or f._inCombatLockout then
+                    anyUnsettled = true
+                end
                 local total
                 if dispID then
                     -- Exact count of the resolved variant only -- never a sum
@@ -665,7 +771,9 @@ local function ProcessPresetCooldowns()
                     f._countArm = false
                     local owned
                     total, owned = ns._ReadItemPresetCount(f)
-                    if owned then f._itemCdSource = owned end
+                    if owned then
+                        f._itemCdSource = owned
+                    end
                     f._cachedTotal = total
                 else
                     total = f._cachedTotal or 0
@@ -690,7 +798,9 @@ local function ProcessPresetCooldowns()
                             f._itemCountText:SetText(displayCount)
                             f._lastItemCount = displayCount
                         end
-                        if not f._itemCountText:IsShown() then f._itemCountText:Show() end
+                        if not f._itemCountText:IsShown() then
+                            f._itemCountText:Show()
+                        end
                     elseif f._lastItemCount then
                         f._itemCountText:SetText("")
                         f._itemCountText:Hide()
@@ -704,13 +814,18 @@ local function ProcessPresetCooldowns()
                     local fc2 = _ecmeFC[f]
                     local bk2 = fc2 and fc2.barKey
                     local bd2 = bk2 and barDataByKey[bk2]
-                    ApplyItemQualityPip(f, f._displayItemID or f._presetItemID,
-                        bd2 and bd2.showItemQuality == true)
+                    ApplyItemQualityPip(
+                        f,
+                        f._displayItemID or f._presetItemID,
+                        bd2 and bd2.showItemQuality == true
+                    )
                 end
                 local shouldDesat = (total == 0 or itemOnCD or f._inCombatLockout) and true or false
                 if shouldDesat ~= f._lastDesat then
                     f._lastDesat = shouldDesat
-                    if f._tex then f._tex:SetDesaturated(shouldDesat) end
+                    if f._tex then
+                        f._tex:SetDesaturated(shouldDesat)
+                    end
                 end
             end
         end
@@ -718,7 +833,9 @@ local function ProcessPresetCooldowns()
     _pcAllSettled = not anyUnsettled
 end
 ns._ProcessPresetCooldowns = ProcessPresetCooldowns
-ns._isPresetCdDirty = function() return _presetCdDirty end
+ns._isPresetCdDirty = function()
+    return _presetCdDirty
+end
 -- Setter so the inject path can request a preset desaturation re-evaluation. A
 -- full rebuild wipes and re-injects preset frames with no cached desat state; if
 -- no game event (bag/cooldown/combat) follows -- e.g. an in-panel sync/import --
@@ -726,9 +843,10 @@ ns._isPresetCdDirty = function() return _presetCdDirty end
 ns._MarkPresetCdDirty = function()
     _presetCdDirty = true
     _pcAllSettled = false
-    if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+    if ns.ArmBuffTicker then
+        ns.ArmBuffTicker()
+    end
 end
-
 
 -- "Hide Items if Missing": detect when a tracked consumable's bag presence
 -- flips (acquired or fully used up) for any bar that opted in, and queue a
@@ -742,8 +860,7 @@ local function CheckItemPresenceForHide()
             local bd = f._ownerBarKey and barDataByKey[f._ownerBarKey]
             -- A stone the Pact of Gluttony rule hides is never injected, so its
             -- stale presence cache must not queue a reanchor on every bag edge.
-            if bd and bd.hideItemsIfMissing
-               and not ns._HealthstoneHiddenByPact(f._presetItemID) then
+            if bd and bd.hideItemsIfMissing and not ns._HealthstoneHiddenByPact(f._presetItemID) then
                 local total
                 if PotSwap.Ensure(f) then
                     -- Pot presets: present = the resolved chain owns anything
@@ -752,11 +869,15 @@ local function CheckItemPresenceForHide()
                 else
                     total = ns._ReadItemPresetCount(f)
                 end
-                if (total > 0) ~= f._hidePresenceCached then changed = true end
+                if (total > 0) ~= f._hidePresenceCached then
+                    changed = true
+                end
             end
         end
     end
-    if changed and ns.QueueReanchor then ns.QueueReanchor() end
+    if changed and ns.QueueReanchor then
+        ns.QueueReanchor()
+    end
 end
 
 -- Readable plain number: payload ids can in principle be secret in combat;
@@ -788,11 +909,15 @@ ns._pcBagFlush = function()
     end
     _presetCdDirty = true
     _pcAllSettled = false
-    if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+    if ns.ArmBuffTicker then
+        ns.ArmBuffTicker()
+    end
 end
 ns._pcBagFlushTimerFn = function()
     ns._pcBagFlushQueued = nil
-    if ns._pcBagPend then ns._pcBagFlush() end
+    if ns._pcBagPend then
+        ns._pcBagFlush()
+    end
 end
 
 _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
@@ -835,13 +960,21 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         -- unheld family preset would count every one of its ranks.
         local hit, crossed
         for f in pairs(_pcActive) do
-            if f._isItemPresetFrame and f._presetItemID and not f._displayItemID
-               and f._cachedTotal and f._cachedTotal > 0 and f._countArm == false then
+            if
+                f._isItemPresetFrame
+                and f._presetItemID
+                and not f._displayItemID
+                and f._cachedTotal
+                and f._cachedTotal > 0
+                and f._countArm == false
+            then
                 local old, n = f._cachedTotal, ns._ReadItemPresetCount(f)
                 if n ~= old then
                     f._countArm = true
                     hit = true
-                    if (n == 0) ~= (old == 0) then crossed = true end
+                    if (n == 0) ~= (old == 0) then
+                        crossed = true
+                    end
                 end
             end
         end
@@ -850,8 +983,12 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             _pcAllSettled = false
             -- Fast lane like a cast: the new count lands after the cast's own pass, inside the 1 Hz cap.
             ns._pcLast = 0
-            if ns.ArmBuffTicker then ns.ArmBuffTicker() end
-            if crossed then CheckItemPresenceForHide() end
+            if ns.ArmBuffTicker then
+                ns.ArmBuffTicker()
+            end
+            if crossed then
+                CheckItemPresenceForHide()
+            end
         end
         -- THE item-cooldown edge: fires when any item cooldown starts, ends
         -- early or is modified. Re-walk the item chains on the next pass;
@@ -867,10 +1004,14 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         -- it is the only charge-only count refresh and arms only on a change.
         if not _pcAllSettled then
             for f in pairs(_pcActive) do
-                if f._isItemPresetFrame then f._itemWalkArm = true end
+                if f._isItemPresetFrame then
+                    f._itemWalkArm = true
+                end
             end
             _presetCdDirty = true
-            if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+            if ns.ArmBuffTicker then
+                ns.ArmBuffTicker()
+            end
         end
         return
     end
@@ -878,9 +1019,15 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         if event == "CHALLENGE_MODE_START" or select(2, GetInstanceInfo()) == "raid" then
             for _, f in pairs(_presetFrames) do
                 if f._isItemPresetFrame then
-                    f._cdStart = nil; f._cdDur = nil; f._inCombatLockout = nil
-                    if f._cooldown then f._cooldown:Clear() end
-                    if f._tex then f._tex:SetDesaturated(false) end
+                    f._cdStart = nil
+                    f._cdDur = nil
+                    f._inCombatLockout = nil
+                    if f._cooldown then
+                        f._cooldown:Clear()
+                    end
+                    if f._tex then
+                        f._tex:SetDesaturated(false)
+                    end
                     f._lastDesat = false
                     f._itemWalkArm = true
                 end
@@ -910,14 +1057,20 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         _presetCdDirty = true
         _pcAllSettled = false
         ns._pcLast = 0
-        if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+        if ns.ArmBuffTicker then
+            ns.ArmBuffTicker()
+        end
         local targetItemID = spellID and _combatLockoutSpells[spellID]
         if targetItemID and InCombatLockdown() then
             for _, f in pairs(_presetFrames) do
                 if f._isItemPresetFrame and f._presetItemID == targetItemID then
                     f._inCombatLockout = true
-                    if f._cooldown then f._cooldown:Clear() end
-                    if f._tex then f._tex:SetDesaturated(true) end
+                    if f._cooldown then
+                        f._cooldown:Clear()
+                    end
+                    if f._tex then
+                        f._tex:SetDesaturated(true)
+                    end
                     f._lastDesat = true
                 end
             end
@@ -927,13 +1080,17 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
     if event == "PLAYER_REGEN_ENABLED" then
         for _, f in pairs(_presetFrames) do
             if f._isItemPresetFrame then
-                if f._inCombatLockout then f._inCombatLockout = nil end
+                if f._inCombatLockout then
+                    f._inCombatLockout = nil
+                end
                 f._itemWalkArm = true
             end
         end
-        _presetCdDirty = true  -- refresh desaturation on combat end
+        _presetCdDirty = true -- refresh desaturation on combat end
         _pcAllSettled = false
-        if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+        if ns.ArmBuffTicker then
+            ns.ArmBuffTicker()
+        end
         return
     end
     if event == "SPELL_UPDATE_USABLE" then
@@ -946,10 +1103,14 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             if nowU >= (ns._pcUsableNext or 0) then
                 ns._pcUsableNext = nowU + 0.2
                 for f in pairs(_pcActive) do
-                    if f._isCustomSpellFrame then f._cdEvalArm = true end
+                    if f._isCustomSpellFrame then
+                        f._cdEvalArm = true
+                    end
                 end
                 _presetCdDirty = true
-                if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+                if ns.ArmBuffTicker then
+                    ns.ArmBuffTicker()
+                end
             end
         end
         return
@@ -973,8 +1134,7 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             for f in pairs(_pcActive) do
                 if not f._isItemPresetFrame then
                     local fsid = f._cachedPresetSID
-                    if not named or not fsid or fsid == sid
-                       or (baseOk and fsid == base) then
+                    if not named or not fsid or fsid == sid or (baseOk and fsid == base) then
                         f._cdPushArm = true
                     end
                 end
@@ -993,7 +1153,9 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             end
         end
         _presetCdDirty = true
-        if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+        if ns.ArmBuffTicker then
+            ns.ArmBuffTicker()
+        end
     elseif event == "SPELL_UPDATE_CHARGES" and ns._cdmAnyCustomForceCount then
         -- Settled-state charge wake, shown charge texts ONLY: a charge regen
         -- completing is the one count edge that arrives with no cast and no
@@ -1008,10 +1170,12 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             local named = _PlainNum(sid)
             local hit
             for f in pairs(_pcActive) do
-                if f._isCustomSpellFrame and f._castCountText
-                   and f._castCountText:IsShown()
-                   and (not named or not f._cachedPresetSID
-                        or f._cachedPresetSID == sid) then
+                if
+                    f._isCustomSpellFrame
+                    and f._castCountText
+                    and f._castCountText:IsShown()
+                    and (not named or not f._cachedPresetSID or f._cachedPresetSID == sid)
+                then
                     f._cdEvalArm = true
                     hit = true
                 end
@@ -1019,7 +1183,9 @@ _racialCdListener:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
             if hit then
                 ns._pcChargeNext = nowC + 0.2
                 _presetCdDirty = true
-                if ns.ArmBuffTicker then ns.ArmBuffTicker() end
+                if ns.ArmBuffTicker then
+                    ns.ArmBuffTicker()
+                end
             end
         end
     end
@@ -1037,12 +1203,19 @@ _customBuffFrame:Hide()
 local CUSTOM_BUFF_THROTTLE = 0.05
 local _lastCustomBuffTime = 0
 _customBuffFrame:SetScript("OnUpdate", function(self)
-    if not _customBuffDirty then self:Hide(); return end
+    if not _customBuffDirty then
+        self:Hide()
+        return
+    end
     local now = GetTime()
-    if now - _lastCustomBuffTime < CUSTOM_BUFF_THROTTLE then return end
+    if now - _lastCustomBuffTime < CUSTOM_BUFF_THROTTLE then
+        return
+    end
     _customBuffDirty = false
     _lastCustomBuffTime = now
-    if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+    if ns.UpdateCustomBuffBars then
+        ns.UpdateCustomBuffBars()
+    end
 end)
 
 local function QueueCustomBuffUpdate()
@@ -1057,13 +1230,15 @@ ns.QueueCustomBuffUpdate = QueueCustomBuffUpdate
 -- no duplicate display code. Both faction IDs are flagged so a profile shared
 -- across factions still resolves (only the bar's own ID is actually tracked).
 local LUST_PRESET_SPELLS = { [2825] = true, [32182] = true }
-ns.IsLustPresetSpell = function(sid) return LUST_PRESET_SPELLS[sid] == true end
+ns.IsLustPresetSpell = function(sid)
+    return LUST_PRESET_SPELLS[sid] == true
+end
 
 -- Called from the lust listener's rising edge: mark the lust buff as "just cast"
 -- so UpdateCustomBuffBars starts its 40s self-timed icon. A no-op for any bar not
 -- tracking it (the pending flag is wiped each pass).
 function ns.SignalLustCast()
-    _pendingCastIDs[2825]  = true
+    _pendingCastIDs[2825] = true
     _pendingCastIDs[32182] = true
     QueueCustomBuffUpdate()
 end
@@ -1072,13 +1247,17 @@ end
 -- shared lust-buff listener stays armed even with no Tracking Bar lust bar present.
 function ns.AnyCustomAuraLust()
     local p = ECME and ECME.db and ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then return false end
+    if not (p and p.cdmBars and p.cdmBars.bars) then
+        return false
+    end
     for _, bd in ipairs(p.cdmBars.bars) do
         if bd.enabled and (bd.barType == "custom_buff" or bd.barType == "buffs") then
             local sd = ns.GetBarSpellData and ns.GetBarSpellData(bd.key)
             if sd and sd.assignedSpells then
                 for _, sid in ipairs(sd.assignedSpells) do
-                    if LUST_PRESET_SPELLS[sid] then return true end
+                    if LUST_PRESET_SPELLS[sid] then
+                        return true
+                    end
                 end
             end
         end
@@ -1113,7 +1292,9 @@ function ns.SignalTimeSpiralEnd()
     end
     if any then
         QueueCustomBuffUpdate()
-        if ns.QueueReanchor then ns.QueueReanchor() end
+        if ns.QueueReanchor then
+            ns.QueueReanchor()
+        end
     end
 end
 
@@ -1121,13 +1302,17 @@ end
 -- so the shared glow listener stays armed even with no Tracking Bar present.
 function ns.AnyCustomAuraTimeSpiral()
     local p = ECME and ECME.db and ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then return false end
+    if not (p and p.cdmBars and p.cdmBars.bars) then
+        return false
+    end
     for _, bd in ipairs(p.cdmBars.bars) do
         if bd.enabled and (bd.barType == "custom_buff" or bd.barType == "buffs") then
             local sd = ns.GetBarSpellData and ns.GetBarSpellData(bd.key)
             if sd and sd.assignedSpells then
                 for _, sid in ipairs(sd.assignedSpells) do
-                    if sid == 374968 then return true end
+                    if sid == 374968 then
+                        return true
+                    end
                 end
             end
         end

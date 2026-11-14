@@ -1,33 +1,51 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Optional row decorations use window overlays with their own viewport clips.
 local _, ns = ...
 local I = ns._dmInternals
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI, PP = CludesUI, CludesUI.PP
 local cached, generation = nil, 0
 
 function ns.DMInvalidateAppearance()
-    if cached then cached, generation = nil, generation + 1 end
+    if cached then
+        cached, generation = nil, generation + 1
+    end
 end
 
 function ns.DMUseBarSeparators(c)
-    return c.barSeparators and not c.borderFollowFill and not ns.DMBlizz()
-        and (c.borderSize or 0) > 0 and CUI.GetBorderCompanion(c.borderTexture, "sepH") ~= nil
+    return c.barSeparators
+        and not c.borderFollowFill
+        and not ns.DMBlizz()
+        and (c.borderSize or 0) > 0
+        and CUI.GetBorderCompanion(c.borderTexture, "sepH") ~= nil
 end
 
 function ns.DMUsesRowSeparators(c)
-    return ns.DMUseBarSeparators(c) or (c.iconSeparator and (c.iconStyle or "spec") ~= "none"
-        and not ns.DMBlizz() and (c.borderSize or 0) > 0 and CUI.GetBorderCompanion(c.borderTexture, "sepV") ~= nil)
+    return ns.DMUseBarSeparators(c)
+        or (
+            c.iconSeparator
+            and (c.iconStyle or "spec") ~= "none"
+            and not ns.DMBlizz()
+            and (c.borderSize or 0) > 0
+            and CUI.GetBorderCompanion(c.borderTexture, "sepV") ~= nil
+        )
 end
 
 -- Returns true when the window border moved to another level (the row
 -- decorations take their level from it).
 function ns.DMSetWindowBorderLayer(w, c)
     local level = w.header:GetFrameLevel() + 4
-    if c.windowBorderBehind then level = math.max(0, w.frame:GetFrameLevel() - 1)
-    elseif ns.DMUsesRowSeparators(c) then level = w.header:GetFrameLevel() + 10 end
+    if c.windowBorderBehind then
+        level = math.max(0, w.frame:GetFrameLevel() - 1)
+    elseif ns.DMUsesRowSeparators(c) then
+        level = w.header:GetFrameLevel() + 10
+    end
     if w.windowBorderTarget:GetFrameLevel() ~= level then
         w.windowBorderTarget:SetFrameLevel(level)
         if w._headerSeparator then
@@ -49,11 +67,17 @@ end
 
 function ns.DMPrepareValueGradient(window, sources, count)
     local range = window._valueGradientRange
-    if not range then range = {}; window._valueGradientRange = range end
+    if not range then
+        range = {}
+        window._valueGradientRange = range
+    end
     range.count, range.low, range.high, range.key = count, nil, nil, nil
     local kind = window.curDMType
-    if kind == "threat" or kind == Enum.DamageMeterType.Deaths then return end
-    local perSecond = ns.EDM.DB().numberFormat == 0 and kind ~= Enum.DamageMeterType.Interrupts
+    if kind == "threat" or kind == Enum.DamageMeterType.Deaths then
+        return
+    end
+    local perSecond = ns.EDM.DB().numberFormat == 0
+        and kind ~= Enum.DamageMeterType.Interrupts
         and kind ~= Enum.DamageMeterType.Dispels
     range.key = perSecond and "amountPerSecond" or "totalAmount"
     for i = 1, count do
@@ -84,18 +108,26 @@ function ns.DMPaintValueGradient(bar, window, src, index)
     t = math.max(0, math.min(1, t)) * 2
     -- Painted only when the colour moves; the row's other colour passes clear
     -- the memo (a full rebuild, the pinned row's hand-back).
-    if bar._gradT == t then return end
+    if bar._gradT == t then
+        return
+    end
     bar._gradT = t
     bar.amount:SetTextColor(math.min(1, t), math.min(1, 2 - t), 0)
 end
 
 local function Style(c)
-    if cached and cached.cfg == c then return cached end
-    local pixels = not ns.DMBlizz() and (c.borderSize or 0) > 0
+    if cached and cached.cfg == c then
+        return cached
+    end
+    local pixels = not ns.DMBlizz()
+        and (c.borderSize or 0) > 0
         and CUI.GetBorderCompanion(c.borderTexture, "sepH") ~= nil
-    cached = { cfg = c, bars = ns.DMUseBarSeparators(c),
+    cached = {
+        cfg = c,
+        bars = ns.DMUseBarSeparators(c),
         icons = c.iconSeparator and pixels and (c.iconStyle or "spec") ~= "none",
-        marker = c.showPlayerMarker }
+        marker = c.showPlayerMarker,
+    }
     return cached
 end
 
@@ -108,10 +140,14 @@ end
 -- Parks a host (hidden, out of the UI-scale pass). Returns at once when it is
 -- parked already: the marker-only mode parks every other row's host each refresh.
 local function HideRowDecor(host)
-    if host.active == false and host.shownAs == false then return end
+    if host.active == false and host.shownAs == false then
+        return
+    end
     host.active, host.shownAs, host.placed = false, false, nil
     host:Hide()
-    if host.iconHost then host.iconHost:Hide() end
+    if host.iconHost then
+        host.iconHost:Hide()
+    end
     CUI.RegisterPxReapply(host, nil)
 end
 
@@ -124,31 +160,48 @@ local function PositionRowDecor(host)
     if host.shownAs ~= visible then
         host.shownAs = visible
         host:SetShown(visible)
-        if host.iconHost then host.iconHost:SetShown(visible) end
+        if host.iconHost then
+            host.iconHost:SetShown(visible)
+        end
     end
-    if not visible then return end
+    if not visible then
+        return
+    end
     local es = host:GetEffectiveScale()
     local h, _, stride = ns._RowMetrics(host.style.cfg.barHeight or 18, host.style.cfg.barSpacing or 2, es)
     local scroll = host.slot > 0 and w.viewport:GetVerticalScroll() or 0
     local count, viewH = w.visibleCount or 0, w.viewport:GetHeight()
     local atTop = w.stickyAtTop == true
     local pinBottom = host.slot > 0 and not atTop and w.stickyPlayer.row:IsShown()
-    if host.placed and host.pEs == es and host.pH == h and host.pStride == stride and host.pScroll == scroll
-        and host.pCount == count and host.pViewH == viewH and host.pAtTop == atTop
-        and host.pPinBottom == pinBottom then
+    if
+        host.placed
+        and host.pEs == es
+        and host.pH == h
+        and host.pStride == stride
+        and host.pScroll == scroll
+        and host.pCount == count
+        and host.pViewH == viewH
+        and host.pAtTop == atTop
+        and host.pPinBottom == pinBottom
+    then
         return false
     end
     host.placed, host.pEs, host.pH, host.pStride, host.pScroll = true, es, h, stride, scroll
     host.pCount, host.pViewH, host.pAtTop, host.pPinBottom = count, viewH, atTop, pinBottom
-    local joinBottom = host.style.icons and pinBottom
-        and host.slot == math.ceil((scroll + viewH) / stride) or false
+    local joinBottom = host.style.icons and pinBottom and host.slot == math.ceil((scroll + viewH) / stride)
+        or false
     local joinChanged = host.joinBottom ~= joinBottom
     host.joinBottom = joinBottom
     -- Keep the end separator when the whole list fits without scrolling.
-    host.lineVisible = host.style.bars and (host.slot <= 0
-        or (host.slot < count and host.slot * stride < scroll + viewH)
-        or (host.slot == count and count * stride <= viewH))
-    if host.line then host.line:SetShown(host.lineVisible) end
+    host.lineVisible = host.style.bars
+        and (
+            host.slot <= 0
+            or (host.slot < count and host.slot * stride < scroll + viewH)
+            or (host.slot == count and count * stride <= viewH)
+        )
+    if host.line then
+        host.line:SetShown(host.lineVisible)
+    end
     local clip = host.slot <= 0 and w.frame or w.viewport
     host:ClearAllPoints()
     host:SetAllPoints(clip)
@@ -166,7 +219,13 @@ local function PositionRowDecor(host)
     host.fill:SetPoint("BOTTOMRIGHT", host.art, "BOTTOMRIGHT", 0, 0)
     if host.iconHost then
         host.iconHost:ClearAllPoints()
-        host.iconHost:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, host.slot > 0 and w.stickyAtTop and PP.perfect / es or 0)
+        host.iconHost:SetPoint(
+            "TOPLEFT",
+            clip,
+            "TOPLEFT",
+            0,
+            host.slot > 0 and w.stickyAtTop and PP.perfect / es or 0
+        )
         -- Let the scrolling dividers reach the one-pixel rail above a bottom-pinned row.
         local bottom = pinBottom and -PP.perfect / es or 0
         host.iconHost:SetPoint("BOTTOMRIGHT", clip, "BOTTOMRIGHT", 0, bottom)
@@ -184,7 +243,9 @@ local function PlaceRow(host)
     local thick = CUI.BorderCompanionThickness(key, step, px, es)
     local r, g, b, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     if host.style.bars then
-        if not host.line then host.line = NewTexture(host) end
+        if not host.line then
+            host.line = NewTexture(host)
+        end
         local tex = host.line
         local lead = PP.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
         tex:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
@@ -228,7 +289,9 @@ local function PlaceRow(host)
         local top, bottom = 0, 0
         -- Pinned rows have a separate rail; the scrolling row trims shorten their divider.
         if host.style.bars and host.slot > 0 then
-            if host.slot > 1 then top = math.max(0, thick / 32 - gap / 2) end
+            if host.slot > 1 then
+                top = math.max(0, thick / 32 - gap / 2)
+            end
             bottom = math.max(0, thick * 3 / 32 - gap / 2)
         end
         top = PP.SnapForES(top, es)
@@ -238,8 +301,12 @@ local function PlaceRow(host)
             top = top + PP.perfect / es
         end
         bottom = PP.SnapForES(bottom, es)
-        if host.joinBottom then bottom = bottom - PP.perfect / es end
-        if host.slot == 0 then bottom = bottom + PP.perfect / es end
+        if host.joinBottom then
+            bottom = bottom - PP.perfect / es
+        end
+        if host.slot == 0 then
+            bottom = bottom + PP.perfect / es
+        end
         if top + bottom >= h then
             tex:Hide()
         else
@@ -273,12 +340,17 @@ local function ReapplyRowDecor(host)
 end
 
 local function SyncRowDecor(host, enabled)
-    if not enabled then HideRowDecor(host); return end
+    if not enabled then
+        HideRowDecor(host)
+        return
+    end
     local pinTop = host.window.stickyAtTop == true
     if host.active and host.pinTop ~= pinTop then
         host.pinTop = pinTop
         ReapplyRowDecor(host)
-    elseif PositionRowDecor(host) then PlaceRow(host) end
+    elseif PositionRowDecor(host) then
+        PlaceRow(host)
+    end
 end
 
 function ns.DMSyncRowDecor(w)
@@ -287,22 +359,30 @@ function ns.DMSyncRowDecor(w)
     for _, bar in ipairs(w.rowPool) do
         -- A parked host has nothing to follow.
         local host = bar._decor
-        if host and (host.active or not enabled) then SyncRowDecor(host, enabled) end
+        if host and (host.active or not enabled) then
+            SyncRowDecor(host, enabled)
+        end
     end
-    if w.stickyPlayer._decor then SyncRowDecor(w.stickyPlayer._decor, enabled) end
+    if w.stickyPlayer._decor then
+        SyncRowDecor(w.stickyPlayer._decor, enabled)
+    end
     w._decorSync = enabled or nil
 end
 
 function ns.DMApplyRowDecor(bar, window, src, slot)
     local c, host = ns.EDM.DB(), bar._decor
     if not (c.barSeparators or c.iconSeparator or c.showPlayerMarker) then
-        if host then HideRowDecor(host) end
+        if host then
+            HideRowDecor(host)
+        end
         return
     end
     local style = Style(c)
     local own = style.marker and ns._IsOwnRow(src) or false
     if not style.bars and not style.icons and not own then
-        if host then HideRowDecor(host) end
+        if host then
+            HideRowDecor(host)
+        end
         return
     end
     if not host then
@@ -316,15 +396,27 @@ function ns.DMApplyRowDecor(bar, window, src, slot)
         host.bar, host.window, bar._decor = bar, window, host
     end
     -- Shared levels keep every icon divider above every bar divider, including pinned rows.
-    local rowLevel = window.stickyPlayer and window.stickyPlayer.row:GetFrameLevel() or window.frame:GetFrameLevel() + 8
+    local rowLevel = window.stickyPlayer and window.stickyPlayer.row:GetFrameLevel()
+        or window.frame:GetFrameLevel() + 8
     local level = math.max(window.windowBorderTarget:GetFrameLevel() + 4, rowLevel + 7)
     local scale, iconShown = host:GetEffectiveScale(), bar.classIcon:IsShown()
     local strata = window.frame:GetFrameStrata()
     local pinTop = window.stickyAtTop == true
-    if host:IsShown() and host.gen == generation and host.style == style and host.slot == slot
-        and host.own == own and host.iconShown == iconShown and host.level == level and host.scale == scale
-        and host.strata == strata and host.pinTop == pinTop then
-        if PositionRowDecor(host) then PlaceRow(host) end
+    if
+        host:IsShown()
+        and host.gen == generation
+        and host.style == style
+        and host.slot == slot
+        and host.own == own
+        and host.iconShown == iconShown
+        and host.level == level
+        and host.scale == scale
+        and host.strata == strata
+        and host.pinTop == pinTop
+    then
+        if PositionRowDecor(host) then
+            PlaceRow(host)
+        end
         return
     end
     host.gen, host.style, host.slot, host.own = generation, style, slot, own
@@ -364,13 +456,18 @@ end
 
 function ns.DMApplyHeaderSeparator(w)
     local c, host = ns.EDM.DB(), w._headerSeparator
-    local enabled = c.hdrBottomSeparator and not ns.DMBlizz() and c.windowBorderIncludeHeader ~= false
-        and (c.windowBorderSize or 0) > 0 and CUI.GetBorderCompanion(c.windowBorderTexture, "sepH") ~= nil
+    local enabled = c.hdrBottomSeparator
+        and not ns.DMBlizz()
+        and c.windowBorderIncludeHeader ~= false
+        and (c.windowBorderSize or 0) > 0
+        and CUI.GetBorderCompanion(c.windowBorderTexture, "sepH") ~= nil
     if not enabled then
         if host then
             host:Hide()
             CUI.RegisterPxReapply(host, nil)
-            if not ns.DMBlizz() then w.header._bottomBorder:SetShown((c.hdrBottomBorderSize or 0) > 0) end
+            if not ns.DMBlizz() then
+                w.header._bottomBorder:SetShown((c.hdrBottomBorderSize or 0) > 0)
+            end
         end
         return
     end

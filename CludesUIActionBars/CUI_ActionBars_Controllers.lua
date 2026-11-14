@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Controllers.lua
 --
@@ -21,14 +23,15 @@ local I = ns._internals
 --  table, implements bitwise showgrid, and defers visibility flush so rapid
 --  state changes batch into a single update pass.
 -------------------------------------------------------------------------------
-local ActionButtonController = CreateFrame("Frame", "EABActionButtonController", UIParent, "SecureHandlerAttributeTemplate")
+local ActionButtonController =
+    CreateFrame("Frame", "EABActionButtonController", UIParent, "SecureHandlerAttributeTemplate")
 
 -- Showgrid reasons (bitwise flags)
 local SHOWGRID = {
     GAME_EVENT = 2,
-    SPELLBOOK  = 4,
-    KEYBOUND   = 16,
-    ALWAYS     = 32,
+    SPELLBOOK = 4,
+    KEYBOUND = 16,
+    ALWAYS = 32,
 }
 
 -- Lua-side button registry: [button] = actionSlot
@@ -41,7 +44,9 @@ ActionButtonController:Execute([[
 
 -- Secure method: SetShowGrid (bitwise flag toggle). Restricted Lua has no bit
 -- library, so modular arithmetic tests/flips individual bits in the bitmask.
-ActionButtonController:SetAttributeNoHandler("SetShowGrid", [[
+ActionButtonController:SetAttributeNoHandler(
+    "SetShowGrid",
+    [[
     local show, reason, force = ...
     local cur = self:GetAttribute("showgrid") or 0
     local prev = cur
@@ -58,28 +63,35 @@ ActionButtonController:SetAttributeNoHandler("SetShowGrid", [[
             btn:RunAttribute("SetShowGrid", show, reason)
         end
     end
-]])
+]]
+)
 
 -- Secure method: run a named RunAttribute on every button matching an action slot
-ActionButtonController:SetAttributeNoHandler("ForActionSlot", [[
+ActionButtonController:SetAttributeNoHandler(
+    "ForActionSlot",
+    [[
     local slot, method = ...
     for btn, act in pairs(_eabBtnMap) do
         if act == slot then btn:RunAttribute(method) end
     end
-]])
+]]
+)
 
 -- Deferred visibility: "flush"=0 marks dirty; the attribute driver resets it
 -- to 1 after ~200ms, applying pending changes in one batch instead of per-change.
 RegisterAttributeDriver(ActionButtonController, "flush", 1)
 
-ActionButtonController:SetAttributeNoHandler("_onattributechanged", [[
+ActionButtonController:SetAttributeNoHandler(
+    "_onattributechanged",
+    [[
     if name == "flush" and value == 1 then
         for btn in pairs(_eabPendingVis) do
             btn:RunAttribute("UpdateShown")
             _eabPendingVis[btn] = nil
         end
     end
-]])
+]]
+)
 
 -- Per-button secure snippets (installed via WrapScript during registration)
 local BTN_ON_ATTRIBUTE_CHANGED = [[
@@ -115,19 +127,27 @@ local BTN_ON_SHOW_HIDE = [[
 -- Showgrid monitor: when Blizzard changes ActionButton1's showgrid
 -- (e.g. during spell drag in combat), propagate to all our buttons.
 local function InitShowGridMonitor()
-    if not ActionButton1 then return end
-    ActionButtonController:WrapScript(ActionButton1, "OnAttributeChanged", [[
+    if not ActionButton1 then
+        return
+    end
+    ActionButtonController:WrapScript(
+        ActionButton1,
+        "OnAttributeChanged",
+        [[
         if name ~= "showgrid" then return end
         for r = 2, 4, 2 do
             local on = value % (r * 2) >= r
             control:RunAttribute("SetShowGrid", on, r)
         end
-    ]])
+    ]]
+    )
 end
 
 -- Register a button with the controller (adds WrapScript handlers + secure table entry)
 local function RegisterButtonWithController(btn)
-    if _controllerButtons[btn] then return end
+    if _controllerButtons[btn] then
+        return
+    end
 
     -- On /reload, Lua locals reset but frames survive: if the button already
     -- carries our secure snippets, skip WrapScript+Execute (re-wrapping in
@@ -139,7 +159,12 @@ local function RegisterButtonWithController(btn)
 
     ActionButtonController:WrapScript(btn, "OnAttributeChanged", BTN_ON_ATTRIBUTE_CHANGED)
     ActionButtonController:WrapScript(btn, "PostClick", BTN_POST_CLICK)
-    ActionButtonController:WrapScript(btn, "OnReceiveDrag", BTN_ON_RECEIVE_DRAG_BEFORE, BTN_ON_RECEIVE_DRAG_AFTER)
+    ActionButtonController:WrapScript(
+        btn,
+        "OnReceiveDrag",
+        BTN_ON_RECEIVE_DRAG_BEFORE,
+        BTN_ON_RECEIVE_DRAG_AFTER
+    )
     ActionButtonController:WrapScript(btn, "OnShow", BTN_ON_SHOW_HIDE)
     ActionButtonController:WrapScript(btn, "OnHide", BTN_ON_SHOW_HIDE)
     -- Combat drag belt: dragging FROM one of our buttons reveals empty drop
@@ -158,11 +183,15 @@ local function RegisterButtonWithController(btn)
     -- seconds, or when I use the spell"). Mirror Blizzard's own condition so
     -- the reveal only fires when the drag will actually pick the action up.
     -- IsModifiedClick is whitelisted in the restricted environment.
-    ActionButtonController:WrapScript(btn, "OnDragStart", [[
+    ActionButtonController:WrapScript(
+        btn,
+        "OnDragStart",
+        [[
         if control:GetAttribute("eab-barslocked") ~= 1 or IsModifiedClick("PICKUPACTION") then
             control:RunAttribute("SetShowGrid", true, 2)
         end
-    ]])
+    ]]
+    )
 
     -- Per-button showgrid: toggle the flag bit and update visibility. With "Always Show
     -- Buttons" off, empty slots are parked statehidden+Hidden+ alpha0+mouse-off, and
@@ -173,7 +202,9 @@ local function RegisterButtonWithController(btn)
     -- a visible button is never stomped). eab-withincutoff keeps icon-cutoff buttons
     -- out of the override; eab-click carries the bar's click-through setting so a
     -- reveal never turns a click-through bar clickable.
-    btn:SetAttributeNoHandler("SetShowGrid", [[
+    btn:SetAttributeNoHandler(
+        "SetShowGrid",
+        [[
         local show, reason, force = ...
         local cur = self:GetAttribute("showgrid") or 0
         local prev = cur
@@ -210,12 +241,15 @@ local function RegisterButtonWithController(btn)
                 self:Hide(true)
             end
         end
-    ]])
+    ]]
+    )
 
     -- Visibility: show if grid active or action exists, unless explicitly
     -- state-hidden. Same transient-grid override and edge-gated alpha/mouse
     -- restore as SetShowGrid, so a mid-drag flush cannot re-hide a revealed target.
-    btn:SetAttributeNoHandler("UpdateShown", [[
+    btn:SetAttributeNoHandler(
+        "UpdateShown",
+        [[
         local cur = self:GetAttribute("showgrid") or 0
         local hasAct = HasAction(self:GetAttribute("action") or 0)
         local hidden = self:GetAttribute("statehidden")
@@ -238,7 +272,8 @@ local function RegisterButtonWithController(btn)
         else
             self:Hide(true)
         end
-    ]])
+    ]]
+    )
 
     -- Add to the secure button map
     ActionButtonController:SetFrameRef("add", btn)
@@ -255,8 +290,13 @@ end
 
 -- Lua-side showgrid manipulation (out of combat only)
 local function SetShowGridInsecure(btn, show, reason, force)
-    if InCombatLockdown() then ns._eabApplyDeferred = true return end
-    if type(reason) ~= "number" then return end
+    if InCombatLockdown() then
+        ns._eabApplyDeferred = true
+        return
+    end
+    if type(reason) ~= "number" then
+        return
+    end
 
     local value = btn:GetAttribute("showgrid") or 0
     local prevValue = value
@@ -280,10 +320,12 @@ end
 -------------------------------------------------------------------------------
 local OverrideController
 do
-    OverrideController = CreateFrame("Frame", "EABOverrideController", UIParent,
-        "SecureHandlerAttributeTemplate")
+    OverrideController =
+        CreateFrame("Frame", "EABOverrideController", UIParent, "SecureHandlerAttributeTemplate")
 
-    OverrideController:SetAttributeNoHandler("_onattributechanged", [[
+    OverrideController:SetAttributeNoHandler(
+        "_onattributechanged",
+        [[
         -- Propagate known state attributes to all registered bar frames
         if name == "overrideui" or name == "petbattleui" or name == "overridepage" then
             for _, f in pairs(_eabBarFrames) do
@@ -304,7 +346,8 @@ do
                 self:SetAttribute("overridepage", pg)
             end
         end
-    ]])
+    ]]
+    )
 
     -- Secure table of bar frames that receive state broadcasts
     OverrideController:Execute([[ _eabBarFrames = table.new() ]])

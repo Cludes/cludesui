@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Config.lua
 --
@@ -10,7 +12,9 @@ local _, ns = ...
 local I = ns._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local PAB, PAB_FxListView, PAB_FxSafeToForce = I.PAB, I.PAB_FxListView, I.PAB_FxSafeToForce
@@ -47,7 +51,9 @@ local function MaxIconSizeFor(isBuff, cfg)
         if list then
             for i = 1, #list do
                 local sz = tonumber(list[i].size)
-                if sz and sz > size then size = sz end
+                if sz and sz > size then
+                    size = sz
+                end
             end
         end
     end
@@ -68,8 +74,7 @@ local ENCH_SLOT_COUNT = 3
 
 local function ComputeGrid(isBuff, cfg)
     local iconSize, rawIconSize = MaxIconSizeFor(isBuff, cfg)
-    local rawIconHeight = cfg.iconShape == "cropped"
-        and ns.PAB_CroppedHeight(rawIconSize, cfg) or rawIconSize
+    local rawIconHeight = cfg.iconShape == "cropped" and ns.PAB_CroppedHeight(rawIconSize, cfg) or rawIconSize
     local iconHeight = cfg.iconShape == "cropped" and PabSnap(rawIconHeight) or iconSize
     local pad = cfg.padding or 5
     local rowGap = cfg.rowSpacing or 12
@@ -94,7 +99,11 @@ local function ComputeGrid(isBuff, cfg)
     -- Horizontal growth: a "line" is a row, so lineExtent -> width. Vertical growth
     -- modes: a "line" is a column, so lineExtent -> height -- see
     -- CornerFor/BuildContainerSpec for the matching growthH/growthV swap.
-    local vertical = (cfg.growDirection == "UP" or cfg.growDirection == "DOWN" or cfg.growDirection == "CENTER_VERTICAL")
+    local vertical = (
+        cfg.growDirection == "UP"
+        or cfg.growDirection == "DOWN"
+        or cfg.growDirection == "CENTER_VERTICAL"
+    )
     local primarySize = vertical and iconHeight or iconSize
     local crossSize = vertical and iconSize or iconHeight
     local lineExtent = cols * primarySize + (cols - 1) * layoutPad
@@ -157,7 +166,9 @@ ns.PAB_DefaultDebuffsCfg = DefaultDebuffsCfg
 -- Enchants" Filters row only existed while they had to be drawn by hand --
 -- and custom buff bars never carry them.
 function ns.PAB_EnchantsOn(cfg)
-    if not cfg or (cfg.showAllBuffs == false and cfg.hasDuration ~= true) then return false end
+    if not cfg or (cfg.showAllBuffs == false and cfg.hasDuration ~= true) then
+        return false
+    end
     local s = PAB()
     return s ~= nil and s.defaultBuffs == cfg
 end
@@ -199,7 +210,9 @@ end
 -- (ApplyBarPosition) while Blizzard's anchor can chain to an arbitrary frame (observed:
 -- Buffs relativeTo="DebuffFrame"); absolute screen coordinates sidestep that chain.
 local function SeedBarFromEditMode(frame, cfg, posKey, s, isBuff)
-    if not (frame and frame.AuraContainer) then return end
+    if not (frame and frame.AuraContainer) then
+        return
+    end
     local ac = frame.AuraContainer
 
     local uiLeft, uiTop = UIParent:GetLeft(), UIParent:GetTop()
@@ -208,8 +221,12 @@ local function SeedBarFromEditMode(frame, cfg, posKey, s, isBuff)
         s[posKey] = { point = "TOPLEFT", relPoint = "TOPLEFT", x = left - uiLeft, y = top - uiTop }
     end
 
-    if ac.iconPadding then cfg.padding = ac.iconPadding end
-    if ac.iconScale then cfg.iconSize = math.floor(32 * ac.iconScale + 0.5) end
+    if ac.iconPadding then
+        cfg.padding = ac.iconPadding
+    end
+    if ac.iconScale then
+        cfg.iconSize = math.floor(32 * ac.iconScale + 0.5)
+    end
     if ac.iconStride then
         cfg.iconsPerRow = ac.iconStride
         -- Keep the full icon cap reachable when the migrated row width is narrower
@@ -248,21 +265,47 @@ end
 -- PAB has its own per-bar iconZoom.
 local function MigratePlayerAuraStyle(buffCfg, debuffCfg)
     local old = ns.db and ns.db.profile and ns.db.profile.playerAuras
-    if not (old and old.enabled) then return end
+    if not (old and old.enabled) then
+        return
+    end
 
     for _, cfg in ipairs({ buffCfg, debuffCfg }) do
-        if old.borderSize then cfg.borderSize = old.borderSize end
-        if old.borderR then cfg.borderR = old.borderR end
-        if old.borderG then cfg.borderG = old.borderG end
-        if old.borderB then cfg.borderB = old.borderB end
-        if old.borderA then cfg.borderA = old.borderA end
-        if old.borderTexture then cfg.borderTexture = old.borderTexture end
-        if old.borderTextureOffset ~= nil then cfg.borderTextureOffset = old.borderTextureOffset end
-        if old.borderTextureOffsetY ~= nil then cfg.borderTextureOffsetY = old.borderTextureOffsetY end
-        if old.borderTextureShiftX ~= nil then cfg.borderTextureShiftX = old.borderTextureShiftX end
-        if old.borderTextureShiftY ~= nil then cfg.borderTextureShiftY = old.borderTextureShiftY end
-        if old.borderBehind ~= nil then cfg.borderBehind = old.borderBehind end
-        if old.showText ~= nil then cfg.durationShow = old.showText end
+        if old.borderSize then
+            cfg.borderSize = old.borderSize
+        end
+        if old.borderR then
+            cfg.borderR = old.borderR
+        end
+        if old.borderG then
+            cfg.borderG = old.borderG
+        end
+        if old.borderB then
+            cfg.borderB = old.borderB
+        end
+        if old.borderA then
+            cfg.borderA = old.borderA
+        end
+        if old.borderTexture then
+            cfg.borderTexture = old.borderTexture
+        end
+        if old.borderTextureOffset ~= nil then
+            cfg.borderTextureOffset = old.borderTextureOffset
+        end
+        if old.borderTextureOffsetY ~= nil then
+            cfg.borderTextureOffsetY = old.borderTextureOffsetY
+        end
+        if old.borderTextureShiftX ~= nil then
+            cfg.borderTextureShiftX = old.borderTextureShiftX
+        end
+        if old.borderTextureShiftY ~= nil then
+            cfg.borderTextureShiftY = old.borderTextureShiftY
+        end
+        if old.borderBehind ~= nil then
+            cfg.borderBehind = old.borderBehind
+        end
+        if old.showText ~= nil then
+            cfg.durationShow = old.showText
+        end
         if old.textSize then
             cfg.durationTextSize = old.textSize
             cfg.stackTextSize = old.textSize
@@ -279,14 +322,20 @@ end
 -- Stale add-mode selections that Show All used to bypass would suddenly subtract
 -- content -- clear them once on every Show All debuff bar; add-mode bars keep theirs.
 local function EnsureDebuffFilterV2(s)
-    if s.pabDebuffFiltersV2 then return end
+    if s.pabDebuffFiltersV2 then
+        return
+    end
     s.pabDebuffFiltersV2 = true
     local d = s.defaultDebuffs
-    if d and d.showAllDebuffs ~= false then d.classFilters = nil end
+    if d and d.showAllDebuffs ~= false then
+        d.classFilters = nil
+    end
     if s.customDebuffBars then
         for i = 1, #s.customDebuffBars do
             local bar = s.customDebuffBars[i]
-            if bar.showAllDebuffs ~= false then bar.classFilters = nil end
+            if bar.showAllDebuffs ~= false then
+                bar.classFilters = nil
+            end
         end
     end
 end
@@ -297,18 +346,23 @@ end
 -- subtracting -- move them to the hide lane so rendering is bit-identical; add-mode
 -- selections already mean SHOW and stay put. Runs after EnsureDebuffFilterV2.
 local function EnsureFilterLanes(s)
-    if s.pabFilterLanesV1 then return end
+    if s.pabFilterLanesV1 then
+        return
+    end
     s.pabFilterLanesV1 = true
     local function SplitBuff(bar)
-        if not bar then return end
-        if (bar.showAllBuffs ~= false or bar.hasDuration == true)
-            and bar.filters and next(bar.filters) then
+        if not bar then
+            return
+        end
+        if (bar.showAllBuffs ~= false or bar.hasDuration == true) and bar.filters and next(bar.filters) then
             bar.negFilters = bar.filters
             bar.filters = nil
         end
     end
     local function SplitDebuff(bar)
-        if not bar then return end
+        if not bar then
+            return
+        end
         if bar.showAllDebuffs ~= false and bar.classFilters and next(bar.classFilters) then
             bar.negClassFilters = bar.classFilters
             bar.classFilters = nil
@@ -316,11 +370,15 @@ local function EnsureFilterLanes(s)
     end
     SplitBuff(s.defaultBuffs)
     if s.customBuffBars then
-        for i = 1, #s.customBuffBars do SplitBuff(s.customBuffBars[i]) end
+        for i = 1, #s.customBuffBars do
+            SplitBuff(s.customBuffBars[i])
+        end
     end
     SplitDebuff(s.defaultDebuffs)
     if s.customDebuffBars then
-        for i = 1, #s.customDebuffBars do SplitDebuff(s.customDebuffBars[i]) end
+        for i = 1, #s.customDebuffBars do
+            SplitDebuff(s.customDebuffBars[i])
+        end
     end
 end
 ns.PAB_EnsureFilterLanes = EnsureFilterLanes
@@ -331,9 +389,15 @@ ns.PAB_EnsureFilterLanes = EnsureFilterLanes
 -- broad modes (ns.PAB_EnchantsOn) rather than counting as one. Shared by the
 -- enable migration below and the options dropdowns' guards.
 local function BuffBarHasContent(bar, isDefault)
-    if bar.showAllBuffs ~= false or bar.hasDuration == true then return true end
-    if bar.filters and next(bar.filters) then return true end
-    if bar.spells and #bar.spells > 0 then return true end
+    if bar.showAllBuffs ~= false or bar.hasDuration == true then
+        return true
+    end
+    if bar.filters and next(bar.filters) then
+        return true
+    end
+    if bar.spells and #bar.spells > 0 then
+        return true
+    end
     return false
 end
 -- Debuff content besides the All Debuffs mode: Show-lane classes, or an Icon
@@ -341,10 +405,14 @@ end
 -- the chain builders' fx wrapper renders those categories even in add mode, so
 -- an fx-only bar is NOT empty).
 local function DebuffBarOtherContent(bar)
-    if bar.classFilters and next(bar.classFilters) then return true end
+    if bar.classFilters and next(bar.classFilters) then
+        return true
+    end
     if bar.fxList then
         local function AnyForced(list)
-            if not list then return false end
+            if not list then
+                return false
+            end
             for i = 1, #list do
                 local class = list[i]
                 if PAB_FxSafeToForce(class) and PAB_FxWantsCategory(bar.fxList, class.key) then
@@ -360,7 +428,9 @@ local function DebuffBarOtherContent(bar)
     return false
 end
 local function DebuffBarHasContent(bar)
-    if bar.showAllDebuffs ~= false or bar.hasDuration == true then return true end
+    if bar.showAllDebuffs ~= false or bar.hasDuration == true then
+        return true
+    end
     return DebuffBarOtherContent(bar)
 end
 ns.PAB_BuffBarHasContent = BuffBarHasContent
@@ -396,17 +466,23 @@ local function EnsureBarEnable(s)
             d.showWeaponEnchants = nil
         end
     end
-    if s.pabBarEnableV1 then return end
+    if s.pabBarEnableV1 then
+        return
+    end
     s.pabBarEnableV1 = true
     local function MapBuff(bar, isDefault)
-        if not bar then return end
+        if not bar then
+            return
+        end
         if bar.enabled ~= false and not BuffBarHasContent(bar, isDefault) then
             bar.showAllBuffs = nil -- All Buffs back on (nil = on)
             bar.enabled = false
         end
     end
     local function MapDebuff(bar)
-        if not bar then return end
+        if not bar then
+            return
+        end
         if bar.enabled ~= false and not DebuffBarHasContent(bar) then
             bar.showAllDebuffs = nil
             bar.enabled = false
@@ -414,17 +490,23 @@ local function EnsureBarEnable(s)
     end
     MapBuff(s.defaultBuffs, true)
     if s.customBuffBars then
-        for i = 1, #s.customBuffBars do MapBuff(s.customBuffBars[i], false) end
+        for i = 1, #s.customBuffBars do
+            MapBuff(s.customBuffBars[i], false)
+        end
     end
     MapDebuff(s.defaultDebuffs)
     if s.customDebuffBars then
-        for i = 1, #s.customDebuffBars do MapDebuff(s.customDebuffBars[i]) end
+        for i = 1, #s.customDebuffBars do
+            MapDebuff(s.customDebuffBars[i])
+        end
     end
 end
 ns.PAB_EnsureBarEnable = EnsureBarEnable
 
 local function SeedDefaultBuffsDebuffsFromLegacySources(s)
-    if s.pabEditModeSeeded then return end
+    if s.pabEditModeSeeded then
+        return
+    end
     s.pabEditModeSeeded = true -- set first: never retry even if a read below errors/fails partway
     local buffCfg, debuffCfg = DefaultBuffsCfg(s), DefaultDebuffsCfg(s)
     SeedBarFromEditMode(BuffFrame, buffCfg, "buffsPos", s, true)
@@ -443,7 +525,9 @@ end
 -- retired position slots (s.extDefPos / the legacy module's unlockPos) become the
 -- bar's own pos.
 local function EnsureExtDefCustomBar(s)
-    if s.pabExtDefSeeded == 2 then return end
+    if s.pabExtDefSeeded == 2 then
+        return
+    end
     local extId
     do
         local list = ns.PAB_Filters and ns.PAB_Filters()
@@ -484,49 +568,125 @@ local function EnsureExtDefCustomBar(s)
         enabled = false,
         showAllBuffs = false,
         filters = extId and { [extId] = true } or {},
-        spells = {}, ownOnlySpells = {},
+        spells = {},
+        ownOnlySpells = {},
         growDirection = "LEFT",
-        iconsPerRow = 4, maxRows = 1, maxTotal = 4,
+        iconsPerRow = 4,
+        maxRows = 1,
+        maxTotal = 4,
         durationPosition = "CENTER",
     }
     s.nextBarId = s.nextBarId + 1
     if from then
-        if from.enabled ~= nil then bar.enabled = from.enabled == true end
-        if from.iconSize then bar.iconSize = from.iconSize end
-        if from.growDirection then bar.growDirection = string.upper(from.growDirection) end
-        if from.durationShow ~= nil then bar.durationShow = from.durationShow
-        elseif from.showText ~= nil then bar.durationShow = from.showText end
-        if from.stackTextSize then bar.stackTextSize = from.stackTextSize
-        elseif from.textSize then bar.stackTextSize = from.textSize end
-        if from.durationPosition then bar.durationPosition = from.durationPosition end
-        if from.durationTextSize then bar.durationTextSize = from.durationTextSize end
-        if from.durationOffsetX then bar.durationOffsetX = from.durationOffsetX end
-        if from.durationOffsetY then bar.durationOffsetY = from.durationOffsetY end
-        if from.durationColorR then bar.durationColorR, bar.durationColorG, bar.durationColorB = from.durationColorR, from.durationColorG, from.durationColorB end
-        if from.stackShow ~= nil then bar.stackShow = from.stackShow end
-        if from.stackPosition then bar.stackPosition = from.stackPosition end
-        if from.stackOffsetX then bar.stackOffsetX = from.stackOffsetX end
-        if from.stackOffsetY then bar.stackOffsetY = from.stackOffsetY end
-        if from.stackColorR then bar.stackColorR, bar.stackColorG, bar.stackColorB = from.stackColorR, from.stackColorG, from.stackColorB end
-        if from.iconsPerRow then bar.iconsPerRow = from.iconsPerRow end
-        if from.maxRows then bar.maxRows = from.maxRows end
-        if from.maxTotal then bar.maxTotal = from.maxTotal end
-        if from.padding then bar.padding = from.padding end
-        if from.rowSpacing then bar.rowSpacing = from.rowSpacing end
-        if from.iconZoom then bar.iconZoom = from.iconZoom end
-        if from.showSwipe ~= nil then bar.showSwipe = from.showSwipe end
-        if from.reverseSwipe ~= nil then bar.reverseSwipe = from.reverseSwipe end
-        if from.fontOutline then bar.fontOutline = from.fontOutline end
-        if from.sortMethod then bar.sortMethod = from.sortMethod end
-        if from.sortDirection then bar.sortDirection = from.sortDirection end
-        if from.borderSize then bar.borderSize = from.borderSize end
-        if from.borderR then bar.borderR, bar.borderG, bar.borderB, bar.borderA = from.borderR, from.borderG, from.borderB, from.borderA end
-        if from.borderTexture then bar.borderTexture = from.borderTexture end
-        if from.borderTextureOffset ~= nil then bar.borderTextureOffset = from.borderTextureOffset end
-        if from.borderTextureOffsetY ~= nil then bar.borderTextureOffsetY = from.borderTextureOffsetY end
-        if from.borderTextureShiftX ~= nil then bar.borderTextureShiftX = from.borderTextureShiftX end
-        if from.borderTextureShiftY ~= nil then bar.borderTextureShiftY = from.borderTextureShiftY end
-        if from.borderBehind ~= nil then bar.borderBehind = from.borderBehind end
+        if from.enabled ~= nil then
+            bar.enabled = from.enabled == true
+        end
+        if from.iconSize then
+            bar.iconSize = from.iconSize
+        end
+        if from.growDirection then
+            bar.growDirection = string.upper(from.growDirection)
+        end
+        if from.durationShow ~= nil then
+            bar.durationShow = from.durationShow
+        elseif from.showText ~= nil then
+            bar.durationShow = from.showText
+        end
+        if from.stackTextSize then
+            bar.stackTextSize = from.stackTextSize
+        elseif from.textSize then
+            bar.stackTextSize = from.textSize
+        end
+        if from.durationPosition then
+            bar.durationPosition = from.durationPosition
+        end
+        if from.durationTextSize then
+            bar.durationTextSize = from.durationTextSize
+        end
+        if from.durationOffsetX then
+            bar.durationOffsetX = from.durationOffsetX
+        end
+        if from.durationOffsetY then
+            bar.durationOffsetY = from.durationOffsetY
+        end
+        if from.durationColorR then
+            bar.durationColorR, bar.durationColorG, bar.durationColorB =
+                from.durationColorR, from.durationColorG, from.durationColorB
+        end
+        if from.stackShow ~= nil then
+            bar.stackShow = from.stackShow
+        end
+        if from.stackPosition then
+            bar.stackPosition = from.stackPosition
+        end
+        if from.stackOffsetX then
+            bar.stackOffsetX = from.stackOffsetX
+        end
+        if from.stackOffsetY then
+            bar.stackOffsetY = from.stackOffsetY
+        end
+        if from.stackColorR then
+            bar.stackColorR, bar.stackColorG, bar.stackColorB =
+                from.stackColorR, from.stackColorG, from.stackColorB
+        end
+        if from.iconsPerRow then
+            bar.iconsPerRow = from.iconsPerRow
+        end
+        if from.maxRows then
+            bar.maxRows = from.maxRows
+        end
+        if from.maxTotal then
+            bar.maxTotal = from.maxTotal
+        end
+        if from.padding then
+            bar.padding = from.padding
+        end
+        if from.rowSpacing then
+            bar.rowSpacing = from.rowSpacing
+        end
+        if from.iconZoom then
+            bar.iconZoom = from.iconZoom
+        end
+        if from.showSwipe ~= nil then
+            bar.showSwipe = from.showSwipe
+        end
+        if from.reverseSwipe ~= nil then
+            bar.reverseSwipe = from.reverseSwipe
+        end
+        if from.fontOutline then
+            bar.fontOutline = from.fontOutline
+        end
+        if from.sortMethod then
+            bar.sortMethod = from.sortMethod
+        end
+        if from.sortDirection then
+            bar.sortDirection = from.sortDirection
+        end
+        if from.borderSize then
+            bar.borderSize = from.borderSize
+        end
+        if from.borderR then
+            bar.borderR, bar.borderG, bar.borderB, bar.borderA =
+                from.borderR, from.borderG, from.borderB, from.borderA
+        end
+        if from.borderTexture then
+            bar.borderTexture = from.borderTexture
+        end
+        if from.borderTextureOffset ~= nil then
+            bar.borderTextureOffset = from.borderTextureOffset
+        end
+        if from.borderTextureOffsetY ~= nil then
+            bar.borderTextureOffsetY = from.borderTextureOffsetY
+        end
+        if from.borderTextureShiftX ~= nil then
+            bar.borderTextureShiftX = from.borderTextureShiftX
+        end
+        if from.borderTextureShiftY ~= nil then
+            bar.borderTextureShiftY = from.borderTextureShiftY
+        end
+        if from.borderBehind ~= nil then
+            bar.borderBehind = from.borderBehind
+        end
     end
     local pos = s.extDefPos or (legacy and legacy.unlockPos)
     if pos and pos.point then

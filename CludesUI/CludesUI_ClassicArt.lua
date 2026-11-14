@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_ClassicArt.lua
 --
@@ -28,7 +30,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  the style is off (no caller reaches it).
 -------------------------------------------------------------------------------
 local CludesUI = _G.CludesUI
-if not CludesUI then return end
+if not CludesUI then
+    return
+end
 
 local FILE = "Interface\\CastingBar\\UI-CastingBar-Border"
 -- Sheet cut lines as texcoords (columns 16, 48, 208, 240 of 256; rows 16,
@@ -67,7 +71,9 @@ local RIM_L, RIM_R, RIM_T, RIM_B = 3.5, 3.5, 6, 5
 -- width, extra height.
 function CF.Pad(k, vertical)
     k = k or 1
-    if vertical then return (RIM_T + RIM_B) * k, (RIM_L + RIM_R) * k end
+    if vertical then
+        return (RIM_T + RIM_B) * k, (RIM_L + RIM_R) * k
+    end
     return (RIM_L + RIM_R) * k, (RIM_T + RIM_B) * k
 end
 
@@ -82,14 +88,19 @@ function CF.Create(parent, layer, sub)
     for i = 1, N do
         local t = parent:CreateTexture(nil, layer or "OVERLAY", nil, sub or 2)
         t:SetTexture(FILE)
-        if t.SetSnapToPixelGrid then t:SetSnapToPixelGrid(false); t:SetTexelSnappingBias(0) end
+        if t.SetSnapToPixelGrid then
+            t:SetSnapToPixelGrid(false)
+            t:SetTexelSnappingBias(0)
+        end
         p[i] = t
     end
     return p
 end
 
 function CF.SetShown(p, shown)
-    for i = 1, N do p[i]:SetShown(shown and true or false) end
+    for i = 1, N do
+        p[i]:SetShown(shown and true or false)
+    end
 end
 
 -- A sheet sub-rectangle on a piece: upright, or turned a quarter turn
@@ -105,26 +116,38 @@ end
 -- Lays the frame round `rect` at scale k (1 = the sheet's pixels). Memoized
 -- on rect, k and orientation; every layout pass may call it.
 function CF.Seat(p, rect, k, vertical)
-    if not (p and rect) then return end
+    if not (p and rect) then
+        return
+    end
     k = k or 1
     vertical = vertical and true or false
-    if p._rect == rect and p._k == k and p._vert == vertical then return end
+    if p._rect == rect and p._k == k and p._vert == vertical then
+        return
+    end
     p._rect, p._k, p._vert = rect, k, vertical
-    for i = 1, N do p[i]:ClearAllPoints() end
+    for i = 1, N do
+        p[i]:ClearAllPoints()
+    end
     local cap, top, bot = CAP * k, TOP * k, BOT * k
     if not vertical then
-        Coords(p[TL], X0, X1, Y0, Y1); p[TL]:SetSize(cap, top)
+        Coords(p[TL], X0, X1, Y0, Y1)
+        p[TL]:SetSize(cap, top)
         p[TL]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_L * k, OVER_T * k)
-        Coords(p[TR], X2, X3, Y0, Y1); p[TR]:SetSize(cap, top)
+        Coords(p[TR], X2, X3, Y0, Y1)
+        p[TR]:SetSize(cap, top)
         p[TR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_R * k, OVER_T * k)
-        Coords(p[T], X1, X2, Y0, Y1); p[T]:SetHeight(top)
+        Coords(p[T], X1, X2, Y0, Y1)
+        p[T]:SetHeight(top)
         p[T]:SetPoint("TOPLEFT", p[TL], "TOPRIGHT", 0, 0)
         p[T]:SetPoint("TOPRIGHT", p[TR], "TOPLEFT", 0, 0)
-        Coords(p[BL], X0, X1, Y2, Y3); p[BL]:SetSize(cap, bot)
+        Coords(p[BL], X0, X1, Y2, Y3)
+        p[BL]:SetSize(cap, bot)
         p[BL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_L * k, -OVER_B * k)
-        Coords(p[BR], X2, X3, Y2, Y3); p[BR]:SetSize(cap, bot)
+        Coords(p[BR], X2, X3, Y2, Y3)
+        p[BR]:SetSize(cap, bot)
         p[BR]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_R * k, -OVER_B * k)
-        Coords(p[B], X1, X2, Y2, Y3); p[B]:SetHeight(bot)
+        Coords(p[B], X1, X2, Y2, Y3)
+        p[B]:SetHeight(bot)
         p[B]:SetPoint("BOTTOMLEFT", p[BL], "BOTTOMRIGHT", 0, 0)
         p[B]:SetPoint("BOTTOMRIGHT", p[BR], "BOTTOMLEFT", 0, 0)
         -- The window band stretches to the bar's height between the rims.
@@ -141,18 +164,24 @@ function CF.Seat(p, rect, k, vertical)
         -- Turned: the art's top band runs along the bar's left (width top),
         -- its bottom band along the right (width bot), its right cap sits at
         -- the bar's top and its left cap at the bottom (height cap).
-        Coords(p[TR], X2, X3, Y0, Y1, true); p[TR]:SetSize(top, cap)
+        Coords(p[TR], X2, X3, Y0, Y1, true)
+        p[TR]:SetSize(top, cap)
         p[TR]:SetPoint("TOPLEFT", rect, "TOPLEFT", -OVER_T * k, OVER_R * k)
-        Coords(p[TL], X0, X1, Y0, Y1, true); p[TL]:SetSize(top, cap)
+        Coords(p[TL], X0, X1, Y0, Y1, true)
+        p[TL]:SetSize(top, cap)
         p[TL]:SetPoint("BOTTOMLEFT", rect, "BOTTOMLEFT", -OVER_T * k, -OVER_L * k)
-        Coords(p[T], X1, X2, Y0, Y1, true); p[T]:SetWidth(top)
+        Coords(p[T], X1, X2, Y0, Y1, true)
+        p[T]:SetWidth(top)
         p[T]:SetPoint("TOPLEFT", p[TR], "BOTTOMLEFT", 0, 0)
         p[T]:SetPoint("BOTTOMLEFT", p[TL], "TOPLEFT", 0, 0)
-        Coords(p[BR], X2, X3, Y2, Y3, true); p[BR]:SetSize(bot, cap)
+        Coords(p[BR], X2, X3, Y2, Y3, true)
+        p[BR]:SetSize(bot, cap)
         p[BR]:SetPoint("TOPRIGHT", rect, "TOPRIGHT", OVER_B * k, OVER_R * k)
-        Coords(p[BL], X0, X1, Y2, Y3, true); p[BL]:SetSize(bot, cap)
+        Coords(p[BL], X0, X1, Y2, Y3, true)
+        p[BL]:SetSize(bot, cap)
         p[BL]:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", OVER_B * k, -OVER_L * k)
-        Coords(p[B], X1, X2, Y2, Y3, true); p[B]:SetWidth(bot)
+        Coords(p[B], X1, X2, Y2, Y3, true)
+        p[B]:SetWidth(bot)
         p[B]:SetPoint("TOPRIGHT", p[BR], "BOTTOMRIGHT", 0, 0)
         p[B]:SetPoint("BOTTOMRIGHT", p[BL], "TOPRIGHT", 0, 0)
         -- The window band stretches to the bar's width between the rims.
@@ -166,5 +195,7 @@ function CF.Seat(p, rect, k, vertical)
         p[C]:SetPoint("TOPLEFT", p[R], "BOTTOMLEFT", 0, 0)
         p[C]:SetPoint("BOTTOMRIGHT", p[L], "TOPRIGHT", 0, 0)
     end
-    for i = 1, N do p[i]:Show() end
+    for i = 1, N do
+        p[i]:Show()
+    end
 end

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_PixelPerfect.lua
 --  Pixel perfect system (PP), panel pixel perfect (PanelPP) and the border
@@ -12,7 +14,11 @@ local CludesUI = _G.CludesUI
 -- so nothing written to the public slot later can reach those paths.
 local Pool = CludesUI._Pool
 if type(Pool) ~= "table" then
-    Pool = { CreateFrame = function(...) return CreateFrame(...) end }
+    Pool = {
+        CreateFrame = function(...)
+            return CreateFrame(...)
+        end,
+    }
     CludesUI._Pool = Pool
 end
 
@@ -72,10 +78,14 @@ do
     --- Defers to PLAYER_REGEN_ENABLED if called during combat.
     function PP.SetUIScale(newScale)
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("SetUIScale", function() PP.SetUIScale(newScale) end)
+            CludesUI.CombatQueue.Defer("SetUIScale", function()
+                PP.SetUIScale(newScale)
+            end)
             return
         end
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local currentScale = UIParent and UIParent:GetScale() or 1
         local scaleChanged = math.abs(currentScale - newScale) > 0.0001
         CludesUIDB.ppUIScale = newScale
@@ -84,25 +94,43 @@ do
         if scaleChanged then
             -- Exact-size borders are pixels at UIParent scale (this path never fires
             -- UI_SCALE_CHANGED, so the watcher below cannot do it).
-            if CludesUI.ReapplyPxBorders then CludesUI.ReapplyPxBorders() end
+            if CludesUI.ReapplyPxBorders then
+                CludesUI.ReapplyPxBorders()
+            end
             -- Re-snap all stored values to the new pixel grid
             if CludesUI.SnapProfilePositions then
                 local activeName = CludesUIDB.activeProfile or "Default"
                 local profData = CludesUIDB.profiles and CludesUIDB.profiles[activeName]
-                if profData then CludesUI.SnapProfilePositions(profData) end
+                if profData then
+                    CludesUI.SnapProfilePositions(profData)
+                end
             end
-            if _G._EUF_ReloadFrames then _G._EUF_ReloadFrames() end
-            if _G._ERB_Apply then _G._ERB_Apply() end
-            if _G._EAB_Apply then _G._EAB_Apply() end
-            if _G._ECME_Apply then _G._ECME_Apply() end
-            if _G._EDM_Rescale then _G._EDM_Rescale() end
-            if _G._ERF_PixelGridChanged then _G._ERF_PixelGridChanged() end
+            if _G._CUUF_ReloadFrames then
+                _G._CUUF_ReloadFrames()
+            end
+            if _G._CURB_Apply then
+                _G._CURB_Apply()
+            end
+            if _G._CUAB_Apply then
+                _G._CUAB_Apply()
+            end
+            if _G._CUCME_Apply then
+                _G._CUCME_Apply()
+            end
+            if _G._CUDM_Rescale then
+                _G._CUDM_Rescale()
+            end
+            if _G._CURF_PixelGridChanged then
+                _G._CURF_PixelGridChanged()
+            end
             -- Re-sync width/height matches against the new grid. UIParent:SetScale()
             -- does NOT fire UI_SCALE_CHANGED (that event is CVar-tied), so no listener
             -- catches this path. Debounced: the Options slider calls this repeatedly
             -- while dragged and re-matching on every call never converges.
             if CludesUI.ApplyAllWidthHeightMatches then
-                if PP._scaleMatchDebounce then PP._scaleMatchDebounce:Cancel() end
+                if PP._scaleMatchDebounce then
+                    PP._scaleMatchDebounce:Cancel()
+                end
                 PP._scaleMatchDebounce = C_Timer.NewTimer(0.3, function()
                     PP._scaleMatchDebounce = nil
                     CludesUI.ApplyAllWidthHeightMatches()
@@ -116,9 +144,13 @@ do
     --  Divides x into whole-pixel chunks of `mult`, truncating toward zero (positive floors, negative ceils).
     ---------------------------------------------------------------------------
     function PP.Scale(x)
-        if x == 0 then return 0 end
+        if x == 0 then
+            return 0
+        end
         local m = PP.mult
-        if m == 1 then return x end
+        if m == 1 then
+            return x
+        end
         local pixels = x / m
         -- Epsilon-guarded truncation: pixel-unit slider values sit exactly ON a grid boundary
         -- (px*mult); float dust can land a hair below, dropping a whole pixel at floor. 0.001 px is below any legitimate distance.
@@ -129,25 +161,33 @@ do
     --- Snap a value to the nearest physical pixel at UIParent scale.
     --- Convenience wrapper for save paths that don't have a frame reference.
     function PP.Snap(x)
-        if x == 0 then return 0 end
+        if x == 0 then
+            return 0
+        end
         local m = PP.mult
         local result = math.floor(x / m + 0.5) * m
         -- Clean float dust: within 0.001 of an integer, round to it (prevents drift)
         local rounded = math.floor(result + 0.5)
-        if math.abs(result - rounded) < 0.001 then result = rounded end
+        if math.abs(result - rounded) < 0.001 then
+            result = rounded
+        end
         return result
     end
 
     --- Coord-space value -> physical pixel count (for display). Epsilon-guarded round (ties up):
     --- a value a hair off a half-pixel boundary (uiScale CVar != 768/screenHeight) must round the same every call/reload or coords flip by 1.
     function PP.ToPixels(coord)
-        if coord == 0 then return 0 end
+        if coord == 0 then
+            return 0
+        end
         return math.floor(coord / PP.mult + 0.5 + 0.001)
     end
 
     --- Convert a physical pixel count to a grid-aligned coord value (for storage).
     function PP.FromPixels(px)
-        if px == 0 then return 0 end
+        if px == 0 then
+            return 0
+        end
         return px * PP.mult
     end
 
@@ -160,14 +200,18 @@ do
     ---------------------------------------------------------------------------
     do
         local huge = math.huge
-        local okNaN, nan = pcall(function() return huge - huge end)
+        local okNaN, nan = pcall(function()
+            return huge - huge
+        end)
         if okNaN and type(nan) == "number" and nan ~= nan then
             function PP.IsNum(n)
                 return type(n) == "number" and n == n and n ~= huge and n ~= -huge
             end
         else
             function PP.IsNum(n)
-                if type(n) ~= "number" then return false end
+                if type(n) ~= "number" then
+                    return false
+                end
                 local s = tostring(n)
                 return not (s:find("nan", 1, true) or s:find("inf", 1, true))
             end
@@ -181,15 +225,21 @@ do
     --  A value or scale that is not a real number snaps to 0 / scale 1 instead of erroring.
     ---------------------------------------------------------------------------
     function PP.SnapForES(x, es)
-        if x == 0 or not PP.IsNum(x) then return 0 end
-        if not (PP.IsNum(es) and es > 0) then es = 1 end
+        if x == 0 or not PP.IsNum(x) then
+            return 0
+        end
+        if not (PP.IsNum(es) and es > 0) then
+            es = 1
+        end
         local onePixel = PP.perfect / es
         -- Epsilon-guarded round (ties up): inputs a hair below a half-pixel boundary
         -- (imperfect uiScale CVars) must snap the same way or frames shift 1px per reload.
         local physPixels = math.floor(x / onePixel + 0.5 + 0.001)
         local result = physPixels * onePixel
         local rounded = math.floor(result + 0.5)
-        if math.abs(result - rounded) < 0.001 then result = rounded end
+        if math.abs(result - rounded) < 0.001 then
+            result = rounded
+        end
         return result
     end
 
@@ -200,18 +250,28 @@ do
     --  plain SnapForES loses the +0.5 for odd dims and drifts 1px on save/exit, profile change, spec swap.
     ---------------------------------------------------------------------------
     function PP.SnapCenterForDim(value, dim, es)
-        if value == nil then return value end
-        if not PP.IsNum(value) then return 0 end
+        if value == nil then
+            return value
+        end
+        if not PP.IsNum(value) then
+            return 0
+        end
         es = es or (UIParent and UIParent:GetEffectiveScale() or 1)
-        if not (PP.IsNum(es) and es > 0) then es = 1 end
+        if not (PP.IsNum(es) and es > 0) then
+            es = 1
+        end
         -- A dim that is not a real number is unknown (the even/whole-pixel path).
-        if dim and not PP.IsNum(dim) then dim = nil end
+        if dim and not PP.IsNum(dim) then
+            dim = nil
+        end
         local onePixel = PP.perfect / es
         local valuePx = value / onePixel
         -- Clean float dust BEFORE any floor: N +/- 1e-9 must not flip which half/whole pixel it
         -- lands on between reloads (visible 1px jump); cleaned, an exact integer takes the +0.5 odd-branch side.
         local vClean = math.floor(valuePx + 0.5)
-        if math.abs(valuePx - vClean) < 0.001 then valuePx = vClean end
+        if math.abs(valuePx - vClean) < 0.001 then
+            valuePx = vClean
+        end
         local result
         if dim and dim > 0 then
             local dimPx = math.floor(dim / onePixel + 0.5 + 0.001)
@@ -220,14 +280,18 @@ do
                 result = (math.floor(valuePx) + 0.5) * onePixel
                 -- Clean floating point dust (half-pixel values)
                 local rounded = math.floor(result) + 0.5
-                if math.abs(result - rounded) < 0.001 then result = rounded end
+                if math.abs(result - rounded) < 0.001 then
+                    result = rounded
+                end
                 return result
             end
         end
         -- Even dimension (or unknown): snap center to nearest whole pixel.
         result = math.floor(valuePx + 0.5 + 0.001) * onePixel
         local rounded = math.floor(result + 0.5)
-        if math.abs(result - rounded) < 0.001 then result = rounded end
+        if math.abs(result - rounded) < 0.001 then
+            result = rounded
+        end
         return result
     end
 
@@ -238,14 +302,20 @@ do
     --  rounding, or ToPixels' tie-up maps N+0.5 to N+1 and the delta overshoots a whole pixel (even dims behave like ToPixels).
     ---------------------------------------------------------------------------
     function PP.CenterToPixels(center, dim, es)
-        if center == nil or not PP.IsNum(center) then return nil end
+        if center == nil or not PP.IsNum(center) then
+            return nil
+        end
         local v = center / PP.mult
         if dim and PP.IsNum(dim) and dim > 0 then
             es = es or (UIParent and UIParent:GetEffectiveScale() or 1)
-            if not (PP.IsNum(es) and es > 0) then es = 1 end
+            if not (PP.IsNum(es) and es > 0) then
+                es = 1
+            end
             local onePixel = PP.perfect / es
             local dimPx = math.floor(dim / onePixel + 0.5 + 0.001)
-            if dimPx % 2 == 1 then v = v - 0.5 end
+            if dimPx % 2 == 1 then
+                v = v - 0.5
+            end
         end
         return math.floor(v + 0.5 + 0.001)
     end
@@ -266,11 +336,21 @@ do
     end
 
     function PP.Point(obj, anchor, p1, p2, p3, p4)
-        if not p1 then p1 = obj:GetParent() end
-        if type(p1) == "number" then p1 = PP.Scale(p1) end
-        if type(p2) == "number" then p2 = PP.Scale(p2) end
-        if type(p3) == "number" then p3 = PP.Scale(p3) end
-        if type(p4) == "number" then p4 = PP.Scale(p4) end
+        if not p1 then
+            p1 = obj:GetParent()
+        end
+        if type(p1) == "number" then
+            p1 = PP.Scale(p1)
+        end
+        if type(p2) == "number" then
+            p2 = PP.Scale(p2)
+        end
+        if type(p3) == "number" then
+            p3 = PP.Scale(p3)
+        end
+        if type(p4) == "number" then
+            p4 = PP.Scale(p4)
+        end
         obj:SetPoint(anchor, p1, p2, p3, p4)
     end
 
@@ -302,11 +382,21 @@ do
     local _pixelSnapDisabled = setmetatable({}, { __mode = "k" })
 
     function PP.DisablePixelSnap(obj)
-        if not obj then return end
-        if issecretvalue and issecretvalue(obj) then return end
-        if issecrettable and issecrettable(obj) then return end
-        if _pixelSnapDisabled[obj] then return end
-        if obj.IsForbidden and obj:IsForbidden() then return end
+        if not obj then
+            return
+        end
+        if issecretvalue and issecretvalue(obj) then
+            return
+        end
+        if issecrettable and issecrettable(obj) then
+            return
+        end
+        if _pixelSnapDisabled[obj] then
+            return
+        end
+        if obj.IsForbidden and obj:IsForbidden() then
+            return
+        end
 
         -- Textures and FontStrings expose SetSnapToPixelGrid directly
         local target = obj
@@ -348,7 +438,9 @@ do
     --  bar-fill swaps MUST call PP.DisablePixelSnap on the new GetStatusBarTexture() themselves.
     ---------------------------------------------------------------------------
     local function WatchPixelSnap(frame, snap)
-        if issecrettable and issecrettable(frame) then return end
+        if issecrettable and issecrettable(frame) then
+            return
+        end
         if (frame and not frame:IsForbidden()) and _pixelSnapDisabled[frame] and snap then
             _pixelSnapDisabled[frame] = nil
         end
@@ -357,19 +449,38 @@ do
     local _hookedMetatables = {}
     local function HookPixelSnap(object)
         local mk = getmetatable(object)
-        if not mk then return end
+        if not mk then
+            return
+        end
         mk = mk.__index
-        if not mk or _hookedMetatables[mk] then return end
+        if not mk or _hookedMetatables[mk] then
+            return
+        end
 
-        if mk.SetSnapToPixelGrid or mk.SetStatusBarTexture or mk.SetColorTexture
-           or mk.SetAtlas or mk.SetTexture then
+        if
+            mk.SetSnapToPixelGrid
+            or mk.SetStatusBarTexture
+            or mk.SetColorTexture
+            or mk.SetAtlas
+            or mk.SetTexture
+        then
             -- Rationale in the banner. CreateTexture is NOT hooked: hooksecurefunc
             -- passes the parent frame, not the new texture, so it would be a no-op.
-            if mk.SetSnapToPixelGrid then hooksecurefunc(mk, "SetSnapToPixelGrid", WatchPixelSnap) end
-            if mk.SetStatusBarTexture then hooksecurefunc(mk, "SetStatusBarTexture", PP.DisablePixelSnap) end
-            if mk.SetColorTexture then hooksecurefunc(mk, "SetColorTexture", PP.DisablePixelSnap) end
-            if mk.SetAtlas then hooksecurefunc(mk, "SetAtlas", PP.DisablePixelSnap) end
-            if mk.SetTexture then hooksecurefunc(mk, "SetTexture", PP.DisablePixelSnap) end
+            if mk.SetSnapToPixelGrid then
+                hooksecurefunc(mk, "SetSnapToPixelGrid", WatchPixelSnap)
+            end
+            if mk.SetStatusBarTexture then
+                hooksecurefunc(mk, "SetStatusBarTexture", PP.DisablePixelSnap)
+            end
+            if mk.SetColorTexture then
+                hooksecurefunc(mk, "SetColorTexture", PP.DisablePixelSnap)
+            end
+            if mk.SetAtlas then
+                hooksecurefunc(mk, "SetAtlas", PP.DisablePixelSnap)
+            end
+            if mk.SetTexture then
+                hooksecurefunc(mk, "SetTexture", PP.DisablePixelSnap)
+            end
             _hookedMetatables[mk] = true
         end
     end
@@ -409,7 +520,9 @@ do
         sb:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         HookPixelSnap(sb)
         local sbt = sb:GetStatusBarTexture()
-        if sbt then HookPixelSnap(sbt) end
+        if sbt then
+            HookPixelSnap(sbt)
+        end
     end
 
     ---------------------------------------------------------------------------
@@ -427,9 +540,13 @@ do
     ---------------------------------------------------------------------------
 
     local function SnapBorderTextures(container, frame, borderSize)
-        if not container.GetEffectiveScale then return end
+        if not container.GetEffectiveScale then
+            return
+        end
         local ok, es = pcall(container.GetEffectiveScale, container)
-        if not ok or not es then return end
+        if not ok or not es then
+            return
+        end
         -- Degenerate PARENT-scale guard, OPT-IN via container._scaleGuard (nameplates, see
         -- PP.CreateBorder): those containers are scale-DECOUPLED so their own es pins to 1
         -- and onePixel cannot explode, but the plate they anchor to hits near-zero scale during
@@ -457,10 +574,15 @@ do
         local edgeSize = bs > 0 and math.max(onePixel, math.floor(bs + 0.5) * onePixel) or 0
 
         local t, b, l, r = container._top, container._bottom, container._left, container._right
-        if not t then return end
+        if not t then
+            return
+        end
 
         if edgeSize == 0 then
-            t:Hide(); b:Hide(); l:Hide(); r:Hide()
+            t:Hide()
+            b:Hide()
+            l:Hide()
+            r:Hide()
             -- Clear the geometry key so the next non-zero pass cannot match a stale one and skip the Show().
             container._snapEdge = nil
             return
@@ -471,8 +593,12 @@ do
         -- edges also drop the matching side-strip inset so stacked borders fuse with no
         -- corner notch.
         local topInset, botInset = -edgeSize, edgeSize
-        if container._hideTop then topInset = 0 end
-        if container._hideBottom then botInset = 0 end
+        if container._hideTop then
+            topInset = 0
+        end
+        if container._hideBottom then
+            botInset = 0
+        end
 
         -- Geometry is idempotent (~30 frame API calls per invocation, per-aura-per-refresh):
         -- skip when the layout is identical. Compare POST-transform values (edgeSize + both
@@ -501,7 +627,8 @@ do
                 t:ClearAllPoints()
                 t:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
                 t:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-                t:SetHeight(edgeSize); t:Show()
+                t:SetHeight(edgeSize)
+                t:Show()
             end
             if container._hideBottom then
                 b:Hide()
@@ -509,7 +636,8 @@ do
                 b:ClearAllPoints()
                 b:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
                 b:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-                b:SetHeight(edgeSize); b:Show()
+                b:SetHeight(edgeSize)
+                b:Show()
             end
             if container._hideLeft then
                 l:Hide()
@@ -517,7 +645,8 @@ do
                 l:ClearAllPoints()
                 l:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, topInset)
                 l:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, botInset)
-                l:SetWidth(edgeSize); l:Show()
+                l:SetWidth(edgeSize)
+                l:Show()
             end
             if container._hideRight then
                 r:Hide()
@@ -525,7 +654,8 @@ do
                 r:ClearAllPoints()
                 r:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, topInset)
                 r:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, botInset)
-                r:SetWidth(edgeSize); r:Show()
+                r:SetWidth(edgeSize)
+                r:Show()
             end
         end
 
@@ -553,7 +683,9 @@ do
         end
         local pok, pes = pcall(frame.GetEffectiveScale, frame)
         -- Still collapsed (shown inside a hidden/zero-scale ancestor): stay armed for the next show.
-        if not pok or not pes or pes < 0.1 then return end
+        if not pok or not pes or pes < 0.1 then
+            return
+        end
         container._pendingSnap = nil
         container:SetScript("OnShow", nil)
         local bd = _ppBorderData[frame]
@@ -561,7 +693,9 @@ do
     end
 
     function PP.ArmPendingSnap(container, frame)
-        if container._pendingSnap then return end
+        if container._pendingSnap then
+            return
+        end
         container._pendingSnap = frame
         container:SetScript("OnShow", PP._pendingSnapOnShow)
     end
@@ -597,14 +731,18 @@ do
     function PP.ResnapAllBorders()
         for i = 1, allBordersN do
             local entry = allBorders[i]
-            if entry.container and entry.frame then SnapEntry(entry) end
+            if entry.container and entry.frame then
+                SnapEntry(entry)
+            end
         end
     end
 
     --- Re-snap only borders whose parent frame descends from `root`. Tab switch uses
     --- this instead of resnapping 600+ borders when only ~30 on the page need it.
     function PP.ResnapBordersUnder(root)
-        if not root then return PP.ResnapAllBorders() end
+        if not root then
+            return PP.ResnapAllBorders()
+        end
         -- Shared method ref for the climb: engine aura buttons deny addon access while
         -- auras are secret. Under pcall a denied step is a chain dead-end = not under
         -- root, which is correct (aura subtrees are never inside the options panel).
@@ -617,9 +755,14 @@ do
                 local parent = f
                 for _ = 1, 10 do
                     local ok, p = pcall(GetParentFn, parent)
-                    if not ok or not p then break end
+                    if not ok or not p then
+                        break
+                    end
                     parent = p
-                    if parent == root then SnapEntry(entry); break end
+                    if parent == root then
+                        SnapEntry(entry)
+                        break
+                    end
                 end
             end
         end
@@ -640,12 +783,18 @@ do
                 local parent, mode = f, nil
                 for _ = 1, 10 do
                     local ok, p = pcall(GetParentFn, parent)
-                    if not ok or not p then break end
+                    if not ok or not p then
+                        break
+                    end
                     parent = p
                     mode = roots[parent]
-                    if mode then break end
+                    if mode then
+                        break
+                    end
                 end
-                if mode and mode ~= "skip" and (mode ~= "shown" or f:IsVisible()) then SnapEntry(entry) end
+                if mode and mode ~= "skip" and (mode ~= "shown" or f:IsVisible()) then
+                    SnapEntry(entry)
+                end
             end
         end
     end
@@ -663,8 +812,12 @@ do
     --  2. SnapBorderTextures skips work while the PARENT's effective scale is degenerate (< 0.1,
     --     the SetScale(0.001) hide path). Every other caller leaves scaleGuard nil, unaffected.
     local function DecoupleBorderScale(container)
-        if container._scaleDecoupled then return end
-        if not container.SetIgnoreParentScale then return end
+        if container._scaleDecoupled then
+            return
+        end
+        if not container.SetIgnoreParentScale then
+            return
+        end
         container._scaleDecoupled = true
         container:SetIgnoreParentScale(true)
         container:SetScale(1)
@@ -674,7 +827,10 @@ do
     -- generation changed since the border was made): the kept container and
     -- strips take this call's look, exactly as a new border would.
     local function RedressBorder(frame, bd, gen, r, g, b, a, borderSize, drawLayer, subLevel, scaleGuard)
-        r = r or 0; g = g or 0; b = b or 0; a = a or 1
+        r = r or 0
+        g = g or 0
+        b = b or 0
+        a = a or 1
         borderSize = borderSize or 1
         drawLayer = drawLayer or "OVERLAY"
         subLevel = subLevel or 0
@@ -720,7 +876,9 @@ do
         c:SetScript("OnUpdate", function(self)
             ticks = ticks + 1
             SnapBorderTextures(self, frame, bd.borderSize or 1)
-            if ticks >= 2 then pcall(self.SetScript, self, "OnUpdate", nil) end
+            if ticks >= 2 then
+                pcall(self.SetScript, self, "OnUpdate", nil)
+            end
         end)
         return c
     end
@@ -734,7 +892,19 @@ do
             if bd.gen ~= nil then
                 local gen = Pool.Gen(frame)
                 if gen ~= bd.gen then
-                    return RedressBorder(frame, bd, gen, r, g, b, a, borderSize, drawLayer, subLevel, scaleGuard)
+                    return RedressBorder(
+                        frame,
+                        bd,
+                        gen,
+                        r,
+                        g,
+                        b,
+                        a,
+                        borderSize,
+                        drawLayer,
+                        subLevel,
+                        scaleGuard
+                    )
                 end
             end
             -- A later call can opt an existing border into the guard. Decoupling changes
@@ -746,7 +916,10 @@ do
             end
             return bd.container
         end
-        r = r or 0; g = g or 0; b = b or 0; a = a or 1
+        r = r or 0
+        g = g or 0
+        b = b or 0
+        a = a or 1
         borderSize = borderSize or 1
         drawLayer = drawLayer or "OVERLAY"
         subLevel = subLevel or 0
@@ -765,21 +938,25 @@ do
             PP.DisablePixelSnap(tx)
             return tx
         end
-        container._top    = MakeTex()
+        container._top = MakeTex()
         container._bottom = MakeTex()
-        container._left   = MakeTex()
-        container._right  = MakeTex()
+        container._left = MakeTex()
+        container._right = MakeTex()
 
         container._bdColor = { r, g, b, a }
         container._scaleGuard = scaleGuard or nil
-        if scaleGuard then DecoupleBorderScale(container) end
+        if scaleGuard then
+            DecoupleBorderScale(container)
+        end
         bd = { container = container, borderSize = borderSize, borderColor = { r, g, b, a } }
         _ppBorderData[frame] = bd
         -- A frame of the options page pool keeps its border through every reuse:
         -- the container rides on it (hidden at its reset) and the next call on
         -- its new dress takes the RedressBorder path above.
         local gen = Pool.Gen and Pool.Gen(frame)
-        if gen and Pool.Attach(frame, container) then bd.gen = gen end
+        if gen and Pool.Attach(frame, container) then
+            bd.gen = gen
+        end
 
         SnapBorderTextures(container, frame, borderSize)
 
@@ -792,7 +969,9 @@ do
         container:SetScript("OnUpdate", function(self)
             ticks = ticks + 1
             SnapBorderTextures(self, frame, bd.borderSize or 1)
-            if ticks >= 2 then pcall(self.SetScript, self, "OnUpdate", nil) end
+            if ticks >= 2 then
+                pcall(self.SetScript, self, "OnUpdate", nil)
+            end
         end)
 
         RegisterBorder(container, frame)
@@ -808,14 +987,20 @@ do
     -- frame pays one field read.
     function PP.GetBorders(frame)
         local bd = _ppBorderData[frame]
-        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then bd = nil end
+        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then
+            bd = nil
+        end
         return bd and bd.container
     end
 
     function PP.SetBorderSize(frame, borderSize)
         local bd = _ppBorderData[frame]
-        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then bd = nil end
-        if not bd then return end
+        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then
+            bd = nil
+        end
+        if not bd then
+            return
+        end
         borderSize = borderSize or 1
         SnapBorderTextures(bd.container, frame, borderSize)
         bd.borderSize = borderSize
@@ -823,8 +1008,12 @@ do
 
     function PP.SetBorderColor(frame, r, g, b, a)
         local bd = _ppBorderData[frame]
-        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then bd = nil end
-        if not bd then return end
+        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then
+            bd = nil
+        end
+        if not bd then
+            return
+        end
         a = a or 1
 
         -- Mutated in place, never replaced: called per-aura-per-refresh, and a fresh {r,g,b,a}
@@ -839,9 +1028,8 @@ do
         if secret then
             bd.colDirty = true
         elseif col then
-            if not bd.colDirty
-               and col[1] == r and col[2] == g and col[3] == b and col[4] == a then
-                return   -- unchanged; the four texture writes below are redundant
+            if not bd.colDirty and col[1] == r and col[2] == g and col[3] == b and col[4] == a then
+                return -- unchanged; the four texture writes below are redundant
             end
             bd.colDirty = nil
             col[1], col[2], col[3], col[4] = r, g, b, a
@@ -849,30 +1037,50 @@ do
             col = { r, g, b, a }
             bd.borderColor = col
         end
-        if col then bd.container._bdColor = col end
+        if col then
+            bd.container._bdColor = col
+        end
 
         local c = bd.container
-        if c._top then c._top:SetVertexColor(r, g, b, a) end
-        if c._bottom then c._bottom:SetVertexColor(r, g, b, a) end
-        if c._left then c._left:SetVertexColor(r, g, b, a) end
-        if c._right then c._right:SetVertexColor(r, g, b, a) end
+        if c._top then
+            c._top:SetVertexColor(r, g, b, a)
+        end
+        if c._bottom then
+            c._bottom:SetVertexColor(r, g, b, a)
+        end
+        if c._left then
+            c._left:SetVertexColor(r, g, b, a)
+        end
+        if c._right then
+            c._right:SetVertexColor(r, g, b, a)
+        end
     end
 
     function PP.UpdateBorder(frame, borderSize, r, g, b, a)
-        if r then PP.SetBorderColor(frame, r, g, b, a) end
+        if r then
+            PP.SetBorderColor(frame, r, g, b, a)
+        end
         PP.SetBorderSize(frame, borderSize)
     end
 
     function PP.HideBorder(frame)
         local bd = _ppBorderData[frame]
-        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then bd = nil end
-        if bd then bd.container:Hide() end
+        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then
+            bd = nil
+        end
+        if bd then
+            bd.container:Hide()
+        end
     end
 
     function PP.ShowBorder(frame)
         local bd = _ppBorderData[frame]
-        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then bd = nil end
-        if bd then bd.container:Show() end
+        if bd and bd.gen ~= nil and Pool.Gen(frame) ~= bd.gen then
+            bd = nil
+        end
+        if bd then
+            bd.container:Show()
+        end
     end
 
     -- Variable-thickness border ring drawn from a single pre-shaped texture (natively
@@ -880,7 +1088,9 @@ do
     -- so self.Point resolves to whichever PP module owns host's frame hierarchy
     -- (world PP vs PanelPP) -- calling with `.` shifts every argument left by one.
     function PP:ApplyMaskedShapeBorder(host, mask, texPath, rawBorderSize, r, g, b, a)
-        if not host then return end
+        if not host then
+            return
+        end
         rawBorderSize = rawBorderSize or 0
         if rawBorderSize <= 0 or not texPath then
             if host._shapeBorderShown then
@@ -892,15 +1102,25 @@ do
         r, g, b, a = r or 0, g or 0, b or 0, a or 1
         -- Every field guarded: callers invoke this on every restyle pass regardless
         -- of whether the border changed, and Remove/AddMaskTexture aren't cheap.
-        if host._shapeBorderShown and host._sbTex == texPath and host._sbSize == rawBorderSize
-            and host._sbMask == mask and host._sbR == r and host._sbG == g
-            and host._sbB == b and host._sbA == a then
+        if
+            host._shapeBorderShown
+            and host._sbTex == texPath
+            and host._sbSize == rawBorderSize
+            and host._sbMask == mask
+            and host._sbR == r
+            and host._sbG == g
+            and host._sbB == b
+            and host._sbA == a
+        then
             return
         end
         if not host._shapeBorderTex then
             host._shapeBorderTex = host:CreateTexture(nil, "OVERLAY")
             local t = host._shapeBorderTex
-            if t.SetSnapToPixelGrid then t:SetSnapToPixelGrid(false); t:SetTexelSnappingBias(0) end
+            if t.SetSnapToPixelGrid then
+                t:SetSnapToPixelGrid(false)
+                t:SetTexelSnappingBias(0)
+            end
         end
         local tex = host._shapeBorderTex
         local bExp = 7 - math.min(rawBorderSize, 7)
@@ -952,7 +1172,9 @@ do
             PP.UpdateMult()
         end
         PP.ResnapAllBorders()
-        if CludesUI.ReapplyPxBorders then CludesUI.ReapplyPxBorders() end
+        if CludesUI.ReapplyPxBorders then
+            CludesUI.ReapplyPxBorders()
+        end
         -- Re-sync panel scale after loading screens / resolution / UI scale changes
         local mf = CludesUI._mainFrame
         if mf and mf:IsShown() then
@@ -962,7 +1184,9 @@ do
                 local baseScale = sw / physW
                 local userScale = (CludesUIDB and CludesUIDB.panelScale) or 1.0
                 mf:SetScale(baseScale * userScale)
-                if CludesUI.PanelPP then CludesUI.PanelPP.UpdateMult() end
+                if CludesUI.PanelPP then
+                    CludesUI.PanelPP.UpdateMult()
+                end
             end
         end
     end)
@@ -986,16 +1210,22 @@ do
 
     function PanelPP.UpdateMult()
         local userScale = (CludesUIDB and CludesUIDB.panelScale) or 1.0
-        if userScale == 0 then userScale = 1 end
+        if userScale == 0 then
+            userScale = 1
+        end
         -- 1 physical pixel = 1/userScale panel units
         PanelPP.mult = 1 / userScale
     end
 
     -- Snap a value to the nearest physical pixel boundary in panel coords
     function PanelPP.Scale(x)
-        if x == 0 then return 0 end
+        if x == 0 then
+            return 0
+        end
         local m = PanelPP.mult
-        if m == 1 then return floor(x + 0.5) end
+        if m == 1 then
+            return floor(x + 0.5)
+        end
         -- Same snapping algorithm as PP.Scale
         local y = m > 1 and m or -m
         return x - x % (x < 0 and y or -y)
@@ -1015,16 +1245,28 @@ do
     end
 
     function PanelPP.Point(obj, arg1, arg2, arg3, arg4, arg5)
-        if not arg2 then arg2 = obj:GetParent() end
-        if type(arg2) == "number" then arg2 = PanelPP.Scale(arg2) end
-        if type(arg3) == "number" then arg3 = PanelPP.Scale(arg3) end
-        if type(arg4) == "number" then arg4 = PanelPP.Scale(arg4) end
-        if type(arg5) == "number" then arg5 = PanelPP.Scale(arg5) end
+        if not arg2 then
+            arg2 = obj:GetParent()
+        end
+        if type(arg2) == "number" then
+            arg2 = PanelPP.Scale(arg2)
+        end
+        if type(arg3) == "number" then
+            arg3 = PanelPP.Scale(arg3)
+        end
+        if type(arg4) == "number" then
+            arg4 = PanelPP.Scale(arg4)
+        end
+        if type(arg5) == "number" then
+            arg5 = PanelPP.Scale(arg5)
+        end
         obj:SetPoint(arg1, arg2, arg3, arg4, arg5)
     end
 
     function PanelPP.SetInside(obj, anchor, xOff, yOff)
-        if not anchor then anchor = obj:GetParent() end
+        if not anchor then
+            anchor = obj:GetParent()
+        end
         local x = PanelPP.Scale(xOff or 1)
         local y = PanelPP.Scale(yOff or 1)
         obj:ClearAllPoints()
@@ -1034,7 +1276,9 @@ do
     end
 
     function PanelPP.SetOutside(obj, anchor, xOff, yOff)
-        if not anchor then anchor = obj:GetParent() end
+        if not anchor then
+            anchor = obj:GetParent()
+        end
         local x = PanelPP.Scale(xOff or 1)
         local y = PanelPP.Scale(yOff or 1)
         obj:ClearAllPoints()
@@ -1047,13 +1291,13 @@ do
     PanelPP.DisablePixelSnap = PP.DisablePixelSnap
 
     -- Panel borders delegate to the unified PP border system
-    PanelPP.CreateBorder  = PP.CreateBorder
-    PanelPP.GetBorders    = PP.GetBorders
+    PanelPP.CreateBorder = PP.CreateBorder
+    PanelPP.GetBorders = PP.GetBorders
     PanelPP.SetBorderSize = PP.SetBorderSize
     PanelPP.SetBorderColor = PP.SetBorderColor
-    PanelPP.UpdateBorder  = PP.UpdateBorder
-    PanelPP.HideBorder    = PP.HideBorder
-    PanelPP.ShowBorder    = PP.ShowBorder
+    PanelPP.UpdateBorder = PP.UpdateBorder
+    PanelPP.HideBorder = PP.HideBorder
+    PanelPP.ShowBorder = PP.ShowBorder
     PanelPP.ApplyMaskedShapeBorder = PP.ApplyMaskedShapeBorder
     PanelPP.HideMaskedShapeBorder = PP.HideMaskedShapeBorder
 end
@@ -1088,8 +1332,12 @@ do
     --- every frame anchored to secret aura geometry, which uses the solid path on purpose).
     local function ReadBorderSize(frame)
         local ok, w, h = pcall(frame.GetSize, frame)
-        if not ok then return false end
-        if issecretvalue and (issecretvalue(w) or issecretvalue(h)) then return true end
+        if not ok then
+            return false
+        end
+        if issecretvalue and (issecretvalue(w) or issecretvalue(h)) then
+            return true
+        end
         return true, w, h
     end
 
@@ -1108,13 +1356,21 @@ do
     --- Get per-addon border defaults for a texture+size combo.
     --- Returns offsetX, offsetY, shiftX, shiftY (all 0 if not registered).
     function CludesUI.GetBorderDefaults(addonKey, textureKey, sizeKey)
-        if textureKey == "shadow" then textureKey = "glow" end  -- Shadow shares Glow's defaults
+        if textureKey == "shadow" then
+            textureKey = "glow"
+        end -- Shadow shares Glow's defaults
         local addon = _borderDefaults[addonKey]
-        if not addon then return 0, 0, 0, 0 end
+        if not addon then
+            return 0, 0, 0, 0
+        end
         local tex = addon[textureKey]
-        if not tex or not tex.sizes then return 0, 0, 0, 0 end
+        if not tex or not tex.sizes then
+            return 0, 0, 0, 0
+        end
         local s = tex.sizes[sizeKey]
-        if not s then return 0, 0, 0, 0 end
+        if not s then
+            return 0, 0, 0, 0
+        end
         return s.offsetX or 0, s.offsetY or 0, s.shiftX or 0, s.shiftY or 0
     end
 
@@ -1122,18 +1378,26 @@ do
     --- registry row, then the built-in entry's defaultSize, then 1 for SharedMedia.
     --- Returns nil if none applies (caller keeps current size).
     function CludesUI.GetBorderDefaultSize(addonKey, textureKey)
-        if textureKey == "shadow" then textureKey = "glow" end  -- Shadow shares Glow's defaults
+        if textureKey == "shadow" then
+            textureKey = "glow"
+        end -- Shadow shares Glow's defaults
         local addon = _borderDefaults[addonKey]
         local tex = addon and addon[textureKey]
-        if tex and tex.defaultSize then return tex.defaultSize end
+        if tex and tex.defaultSize then
+            return tex.defaultSize
+        end
         -- Then a built-in style's own default step (a number; label modules convert it).
         -- Only the Pixels entries carry one, so every other built-in answers nil as before.
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == textureKey then return entry.defaultSize end
+            if entry.key == textureKey then
+                return entry.defaultSize
+            end
         end
         -- Any SharedMedia border ("sm:<name>") defaults to size 1 unless registered above
         -- (shared, applies to every consumer). Called only from a dropdown setValue, never load/apply, so stored sizes stay untouched until picked.
-        if type(textureKey) == "string" and textureKey:sub(1, 3) == "sm:" then return 1 end
+        if type(textureKey) == "string" and textureKey:sub(1, 3) == "sm:" then
+            return 1
+        end
         return nil
     end
 
@@ -1142,7 +1406,9 @@ do
     do
         local function AllSizes(ox, oy, sx, sy)
             local t = {}
-            for k = 0, 4 do t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy } end
+            for k = 0, 4 do
+                t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+            end
             return t
         end
         CludesUI.BORDER_DEFAULTS_BARS = {
@@ -1186,7 +1452,9 @@ do
         local ALL_SIZES = { "none", "thin", "normal", "heavy", "strong" }
         local function AllSizes(ox, oy, sx, sy)
             local t = {}
-            for _, k in ipairs(ALL_SIZES) do t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy } end
+            for _, k in ipairs(ALL_SIZES) do
+                t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+            end
             return t
         end
         CludesUI.BORDER_DEFAULTS_BUTTONS = {
@@ -1197,10 +1465,10 @@ do
             ["blizz"] = {
                 defaultSize = "heavy",
                 sizes = {
-                    none   = { offsetX = 0, offsetY = 0, shiftX = 0, shiftY = 0 },
-                    thin   = { offsetX = 2, offsetY = 1, shiftX = 0, shiftY = 0 },
+                    none = { offsetX = 0, offsetY = 0, shiftX = 0, shiftY = 0 },
+                    thin = { offsetX = 2, offsetY = 1, shiftX = 0, shiftY = 0 },
                     normal = { offsetX = 3, offsetY = 2, shiftX = 0, shiftY = 0 },
-                    heavy  = { offsetX = 4, offsetY = 2, shiftX = 1, shiftY = 0 },
+                    heavy = { offsetX = 4, offsetY = 2, shiftX = 1, shiftY = 0 },
                     strong = { offsetX = 4, offsetY = 2, shiftX = 2, shiftY = 0 },
                 },
             },
@@ -1218,7 +1486,9 @@ do
         local ALL_SIZES = { [0] = true, [1] = true, [2] = true, [3] = true, [4] = true }
         local function AllSizes(ox, oy, sx, sy)
             local t = {}
-            for k in pairs(ALL_SIZES) do t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy } end
+            for k in pairs(ALL_SIZES) do
+                t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+            end
             return t
         end
         CludesUI.BORDER_DEFAULTS_FRAMES = {
@@ -1258,40 +1528,86 @@ do
     -- outside the mask, which the consumer handles (Unit Frames portraits only).
     local SHAPE_MEDIA = "Interface\\AddOns\\CludesUI\\media\\portraits\\"
     CludesUI.SHAPE_MASKS = {
-        circle   = SHAPE_MEDIA .. "circle_mask.tga",
-        csquare  = SHAPE_MEDIA .. "csquare_mask.tga",
-        diamond  = SHAPE_MEDIA .. "diamond_mask.tga",
-        hexagon  = SHAPE_MEDIA .. "hexagon_mask.tga",
+        circle = SHAPE_MEDIA .. "circle_mask.tga",
+        csquare = SHAPE_MEDIA .. "csquare_mask.tga",
+        diamond = SHAPE_MEDIA .. "diamond_mask.tga",
+        hexagon = SHAPE_MEDIA .. "hexagon_mask.tga",
         pixelsCircle = SHAPE_MEDIA .. "circle_mask.tga",
         portrait = SHAPE_MEDIA .. "portrait_mask.tga",
-        shield   = SHAPE_MEDIA .. "shield_mask.tga",
-        square   = SHAPE_MEDIA .. "square_mask.tga",
+        shield = SHAPE_MEDIA .. "shield_mask.tga",
+        square = SHAPE_MEDIA .. "square_mask.tga",
     }
     CludesUI.SHAPE_BORDERS = {
-        circle   = SHAPE_MEDIA .. "circle_border.tga",
-        csquare  = SHAPE_MEDIA .. "csquare_border.tga",
-        diamond  = SHAPE_MEDIA .. "diamond_border.tga",
-        hexagon  = SHAPE_MEDIA .. "hexagon_border.tga",
+        circle = SHAPE_MEDIA .. "circle_border.tga",
+        csquare = SHAPE_MEDIA .. "csquare_border.tga",
+        diamond = SHAPE_MEDIA .. "diamond_border.tga",
+        hexagon = SHAPE_MEDIA .. "hexagon_border.tga",
         pixelsCircle = SHAPE_MEDIA .. "pixels_circle_border.tga",
         portrait = SHAPE_MEDIA .. "portrait_border.tga",
-        shield   = SHAPE_MEDIA .. "shield_border.tga",
-        square   = SHAPE_MEDIA .. "square_border.tga",
+        shield = SHAPE_MEDIA .. "shield_border.tga",
+        square = SHAPE_MEDIA .. "square_border.tga",
     }
     -- Top pixel inset from a 128px mask's edge to its visible opening.
     CludesUI.SHAPE_INSETS = {
-        circle = 17, csquare = 17, diamond = 14,
-        hexagon = 17, pixelsCircle = 17, portrait = 17, shield = 13, square = 17,
+        circle = 17,
+        csquare = 17,
+        diamond = 14,
+        hexagon = 17,
+        pixelsCircle = 17,
+        portrait = 17,
+        shield = 13,
+        square = 17,
     }
 
     -- Built-in border textures (always available, no SharedMedia). defaultOffset = outward extension from the content edge, tuned per-texture (internal padding differs).
     CludesUI._builtinBorderTextures = {
-        { key = "solid",   name = "Solid" },
-        { key = "glow",    name = "Glow",            path = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border",  defaultOffset = 0, defaultOffsetY = 0, scaleOffset = true, defaultThickness = "normal" },
+        { key = "solid", name = "Solid" },
+        {
+            key = "glow",
+            name = "Glow",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border",
+            defaultOffset = 0,
+            defaultOffsetY = 0,
+            scaleOffset = true,
+            defaultThickness = "normal",
+        },
         -- Shadow = the Glow texture drawn behind the frame in black; aliases to glow in default lookups, "behind + black" applied by GetBorderStyleSelectDefaults.
-        { key = "shadow",  name = "Shadow",          labelKey = "Shadow (Border Style)", path = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border",  defaultOffset = 0, defaultOffsetY = 0, scaleOffset = true, defaultThickness = "normal" },
-        { key = "blizz",   name = "Blizzard",        path = "Interface\\AddOns\\CludesUI\\media\\borders\\blizz-border", defaultOffset = 3, defaultOffsetY = 2, scaleOffset = true, defaultThickness = "heavy" },
-        { key = "lightspark", name = "Lightspark Border", path = "Interface\\AddOns\\CludesUI\\media\\borders\\lightspark-border", defaultOffset = 0, defaultOffsetY = 0, scaleOffset = true, defaultThickness = "normal" },
-        { key = "dialog",  name = "Blizzard Dialog",  path = "Interface\\DialogFrame\\UI-DialogBox-Border",                 defaultOffset = 4, defaultOffsetY = 4, defaultThickness = "normal" },
+        {
+            key = "shadow",
+            name = "Shadow",
+            labelKey = "Shadow (Border Style)",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border",
+            defaultOffset = 0,
+            defaultOffsetY = 0,
+            scaleOffset = true,
+            defaultThickness = "normal",
+        },
+        {
+            key = "blizz",
+            name = "Blizzard",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\blizz-border",
+            defaultOffset = 3,
+            defaultOffsetY = 2,
+            scaleOffset = true,
+            defaultThickness = "heavy",
+        },
+        {
+            key = "lightspark",
+            name = "Lightspark Border",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\lightspark-border",
+            defaultOffset = 0,
+            defaultOffsetY = 0,
+            scaleOffset = true,
+            defaultThickness = "normal",
+        },
+        {
+            key = "dialog",
+            name = "Blizzard Dialog",
+            path = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            defaultOffset = 4,
+            defaultOffsetY = 4,
+            defaultThickness = "normal",
+        },
         -- Pixels: white art that keeps its shading, so the border colour tints the face
         -- and the outline stays dark; a pick seeds selectColor (GetBorderSelectColor).
         -- Pixels Textured has its colours baked in and picks white like the others.
@@ -1301,21 +1617,37 @@ do
         -- sepSize = strip thickness against the step-2 edge of 16, ring / ringShadow =
         -- portrait rings. Never give these keys a RegisterBorderDefaults row: a
         -- registry size would win over defaultSize, and its offsets add to edge/2.
-        { key = "pixels", name = "Pixels", path = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels",
-          defaultOffset = 0, defaultOffsetY = 0, scaleOffset = true, defaultThickness = "normal", defaultSize = 2,
-          selectColor = { r = 0.57, g = 0.57, b = 0.57 },
-          sepH = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-sep.tga",
-          sepV = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-vsep.tga",
-          sepSize = 16,
-          ring = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring.tga",
-          ringShadow = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_shadow.tga" },
-        { key = "pixels-textured", name = "Pixels Textured", path = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured",
-          defaultOffset = 0, defaultOffsetY = 0, scaleOffset = true, defaultThickness = "normal", defaultSize = 2,
-          sepH = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured-sep.tga",
-          sepV = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured-vsep.tga",
-          sepSize = 16,
-          ring = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_textured.tga",
-          ringShadow = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_textured_shadow.tga" },
+        {
+            key = "pixels",
+            name = "Pixels",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels",
+            defaultOffset = 0,
+            defaultOffsetY = 0,
+            scaleOffset = true,
+            defaultThickness = "normal",
+            defaultSize = 2,
+            selectColor = { r = 0.57, g = 0.57, b = 0.57 },
+            sepH = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-sep.tga",
+            sepV = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-vsep.tga",
+            sepSize = 16,
+            ring = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring.tga",
+            ringShadow = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_shadow.tga",
+        },
+        {
+            key = "pixels-textured",
+            name = "Pixels Textured",
+            path = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured",
+            defaultOffset = 0,
+            defaultOffsetY = 0,
+            scaleOffset = true,
+            defaultThickness = "normal",
+            defaultSize = 2,
+            sepH = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured-sep.tga",
+            sepV = "Interface\\AddOns\\CludesUI\\media\\borders\\pixels-textured-vsep.tga",
+            sepSize = 16,
+            ring = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_textured.tga",
+            ringShadow = "Interface\\AddOns\\CludesUI\\media\\portraits\\pixels_ring_textured_shadow.tga",
+        },
     }
 
     --- A border style's companion art, or nil for a style without it (every style
@@ -1326,13 +1658,25 @@ do
     --- are accepted as the long spellings. Tint every piece with the host's live border
     --- colour. Read at style-apply time only, never on a colour-only path or per frame.
     function CludesUI.GetBorderCompanion(textureKey, role)
-        if not textureKey or textureKey == "" or textureKey == "solid" then return nil end
-        if role == "separatorH" then role = "sepH"
-        elseif role == "separatorV" then role = "sepV"
-        elseif role == "separatorSize" then role = "sepSize" end
+        if not textureKey or textureKey == "" or textureKey == "solid" then
+            return nil
+        end
+        if role == "separatorH" then
+            role = "sepH"
+        elseif role == "separatorV" then
+            role = "sepV"
+        elseif role == "separatorSize" then
+            role = "sepSize"
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
             if entry.key == textureKey then
-                if role == "sepH" or role == "sepV" or role == "sepSize" or role == "ring" or role == "ringShadow" then
+                if
+                    role == "sepH"
+                    or role == "sepV"
+                    or role == "sepSize"
+                    or role == "ring"
+                    or role == "ringShadow"
+                then
                     return entry[role]
                 end
                 return nil
@@ -1349,7 +1693,9 @@ do
         local key = entry.labelKey
         if key then
             local text = CludesUI.L(key)
-            if text ~= key then return text end
+            if text ~= key then
+                return text
+            end
         end
         return entry.name
     end
@@ -1409,34 +1755,52 @@ do
 
     --- Get the default border thickness for a texture key.
     function CludesUI.GetBorderTextureDefaultThickness(key)
-        if not key or key == "" or key == "solid" then return nil end
+        if not key or key == "" or key == "solid" then
+            return nil
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == key then return entry.defaultThickness end
+            if entry.key == key then
+                return entry.defaultThickness
+            end
         end
         local smName = key:match("^sm:(.+)")
-        if smName and LSM_DEFAULT_OFFSETS[smName] then return LSM_DEFAULT_OFFSETS[smName].thickness end
+        if smName and LSM_DEFAULT_OFFSETS[smName] then
+            return LSM_DEFAULT_OFFSETS[smName].thickness
+        end
         return nil
     end
 
     --- Get the default X offset for a border texture key.
     function CludesUI.GetBorderTextureDefaultOffset(key)
-        if not key or key == "" or key == "solid" then return 0 end
+        if not key or key == "" or key == "solid" then
+            return 0
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == key then return entry.defaultOffset or DEFAULT_LSM_OFFSET end
+            if entry.key == key then
+                return entry.defaultOffset or DEFAULT_LSM_OFFSET
+            end
         end
         local smName = key:match("^sm:(.+)")
-        if smName and LSM_DEFAULT_OFFSETS[smName] then return LSM_DEFAULT_OFFSETS[smName].x end
+        if smName and LSM_DEFAULT_OFFSETS[smName] then
+            return LSM_DEFAULT_OFFSETS[smName].x
+        end
         return DEFAULT_LSM_OFFSET
     end
 
     --- Get the default Y offset for a border texture key.
     function CludesUI.GetBorderTextureDefaultOffsetY(key)
-        if not key or key == "" or key == "solid" then return 0 end
+        if not key or key == "" or key == "solid" then
+            return 0
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == key then return entry.defaultOffsetY or entry.defaultOffset or DEFAULT_LSM_OFFSET end
+            if entry.key == key then
+                return entry.defaultOffsetY or entry.defaultOffset or DEFAULT_LSM_OFFSET
+            end
         end
         local smName = key:match("^sm:(.+)")
-        if smName and LSM_DEFAULT_OFFSETS[smName] then return LSM_DEFAULT_OFFSETS[smName].y end
+        if smName and LSM_DEFAULT_OFFSETS[smName] then
+            return LSM_DEFAULT_OFFSETS[smName].y
+        end
         return DEFAULT_LSM_OFFSET
     end
 
@@ -1460,16 +1824,20 @@ do
     -- defaults table: an untouched profile takes the legacy path unchanged.
     -- One local: this block sits inside the main chunk near its local cap.
     local _px = {
-        num = {}, step = {}, tex = {},                        -- parse memo by value string
-        borders = setmetatable({}, { __mode = "k" }),        -- borderFrame -> true (backdrop path)
-        secret = setmetatable({}, { __mode = "k" }),         -- borderFrame -> state (8-slice path)
-        owners = setmetatable({}, { __mode = "k" }),         -- owner -> fn (RegisterPxReapply)
-        edgeFill = setmetatable({}, { __mode = "k" }),       -- borderFrame -> true (SetBorderEdgeFill)
+        num = {},
+        step = {},
+        tex = {}, -- parse memo by value string
+        borders = setmetatable({}, { __mode = "k" }), -- borderFrame -> true (backdrop path)
+        secret = setmetatable({}, { __mode = "k" }), -- borderFrame -> state (8-slice path)
+        owners = setmetatable({}, { __mode = "k" }), -- owner -> fn (RegisterPxReapply)
+        edgeFill = setmetatable({}, { __mode = "k" }), -- borderFrame -> true (SetBorderEdgeFill)
     }
 
     --- px, step, tex of a *Px value; nil for nil / false / anything else.
     function CludesUI.BorderPxParts(value)
-        if type(value) ~= "string" then return nil end
+        if type(value) ~= "string" then
+            return nil
+        end
         local px = _px.num[value]
         if px == nil then
             local p, s, t = value:match("^(%d+)|(%d+)|(.*)$")
@@ -1480,7 +1848,9 @@ do
             px = tonumber(p)
             _px.num[value], _px.step[value], _px.tex[value] = px, tonumber(s), t
         end
-        if px == false then return nil end
+        if px == false then
+            return nil
+        end
         return px, _px.step[value], _px.tex[value]
     end
 
@@ -1488,16 +1858,26 @@ do
     --- its *Px key, step = the legacy step it renders with (a number), textureKey
     --- = its texture key (nil / "" = solid).
     function CludesUI.BorderPx(value, step, textureKey)
-        if not value then return nil end
+        if not value then
+            return nil
+        end
         local px, s, t = CludesUI.BorderPxParts(value)
-        if not px or px <= 0 or s ~= step then return nil end
-        if not textureKey or textureKey == "" then textureKey = "solid" end
-        if t ~= textureKey then return nil end
+        if not px or px <= 0 or s ~= step then
+            return nil
+        end
+        if not textureKey or textureKey == "" then
+            textureKey = "solid"
+        end
+        if t ~= textureKey then
+            return nil
+        end
         return px
     end
 
     function CludesUI.BorderPxString(px, step, textureKey)
-        if not textureKey or textureKey == "" then textureKey = "solid" end
+        if not textureKey or textureKey == "" then
+            textureKey = "solid"
+        end
         return string.format("%d|%d|%s", px, step, textureKey)
     end
 
@@ -1511,7 +1891,9 @@ do
         local best, bestD = 1, math.huge
         for i = 1, #EDGE_MAP do
             local d = math.abs(EDGE_MAP[i] - units)
-            if d < bestD then best, bestD = i, d end
+            if d < bestD then
+                best, bestD = i, d
+            end
         end
         return best
     end
@@ -1523,7 +1905,9 @@ do
         if not textureKey or textureKey == "" or textureKey == "solid" then
             return math.max(0, math.floor((step or 0) + 0.5))
         end
-        if not step or step <= 0 then return 0 end
+        if not step or step <= 0 then
+            return 0
+        end
         local units = EDGE_MAP[step] or EDGE_MAP[1]
         return math.floor(units / (CludesUI.PP and CludesUI.PP.mult or 1) + 0.5)
     end
@@ -1536,7 +1920,9 @@ do
     --- nil when the style has no separator or the host border is off (step 0, no edgePx).
     function CludesUI.BorderCompanionThickness(textureKey, step, edgePx, es, ratio)
         local sepSize = CludesUI.GetBorderCompanion(textureKey, "sepSize")
-        if not sepSize then return nil end
+        if not sepSize then
+            return nil
+        end
         local PP = CludesUI.PP
         local edge
         if edgePx then
@@ -1546,7 +1932,9 @@ do
         else
             return nil
         end
-        if not (es and es > 0.01) then es = UIParent and UIParent:GetEffectiveScale() or 1 end
+        if not (es and es > 0.01) then
+            es = UIParent and UIParent:GetEffectiveScale() or 1
+        end
         return PP.SnapForES(sepSize * edge * (ratio or 1) / 16, es)
     end
 
@@ -1561,7 +1949,10 @@ do
     --- The caller tints tex. Settings and UI-scale re-layout passes only.
     function CludesUI.PlaceBorderDividerV(tex, anchor, right, over, textureKey, step, edgePx, es)
         local thick = CludesUI.BorderCompanionThickness(textureKey, step, edgePx, es)
-        if not thick or thick <= 0 then tex:Hide(); return end
+        if not thick or thick <= 0 then
+            tex:Hide()
+            return
+        end
         local PP = CludesUI.PP
         local lead = PP.SnapForES(thick * 2 / CludesUI.GetBorderCompanion(textureKey, "sepSize"), es)
         tex:SetTexture(CludesUI.GetBorderCompanion(textureKey, "sepV"))
@@ -1587,18 +1978,26 @@ do
     --- Unsnapped: every caller snaps it once with its offset added (snapping here too
     --- would round twice when that offset is not a whole pixel).
     function CludesUI.BorderHalfEdge(textureKey, edge, es)
-        if not CludesUI._pixelArtBorders[textureKey] then return edge / 2 end
+        if not CludesUI._pixelArtBorders[textureKey] then
+            return edge / 2
+        end
         local PP = CludesUI.PP
-        if not (PP.IsNum(es) and es > 0) then es = 1 end
+        if not (PP.IsNum(es) and es > 0) then
+            es = 1
+        end
         -- 0.002 px under: beats SnapForES's 0.001 px tie-up epsilon.
         return edge / 2 - 0.002 * PP.perfect / es
     end
 
     --- Check if a border texture uses scaled offset (edgeSize/2 base).
     function CludesUI.BorderTextureUsesScaleOffset(key)
-        if not key or key == "" or key == "solid" then return false end
+        if not key or key == "" or key == "solid" then
+            return false
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == key then return entry.scaleOffset == true end
+            if entry.key == key then
+                return entry.scaleOffset == true
+            end
         end
         return false
     end
@@ -1607,11 +2006,15 @@ do
     --- it in the profile), or nil for a style without one (only Pixels has one).
     --- Setters that hard-code their own pick colour write this one when it answers.
     function CludesUI.GetBorderSelectColor(textureKey)
-        if not textureKey or textureKey == "" or textureKey == "solid" then return nil end
+        if not textureKey or textureKey == "" or textureKey == "solid" then
+            return nil
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
             if entry.key == textureKey then
                 local c = entry.selectColor
-                if c then return { r = c.r, g = c.g, b = c.b } end
+                if c then
+                    return { r = c.r, g = c.g, b = c.b }
+                end
                 return nil
             end
         end
@@ -1622,7 +2025,9 @@ do
     --- only style rendered behind both its icon and Unit Frame). Returns (colorTable, behindBool, behindUnitFrameBool).
     --- colorTable is always a fresh table: the style's select colour, else white (textured) or black.
     function CludesUI.GetBorderStyleSelectDefaults(textureKey)
-        if textureKey == "shadow" then return { r = 0, g = 0, b = 0 }, true, true end
+        if textureKey == "shadow" then
+            return { r = 0, g = 0, b = 0 }, true, true
+        end
         if not textureKey or textureKey == "" or textureKey == "solid" then
             return { r = 0, g = 0, b = 0 }, false, false
         end
@@ -1631,19 +2036,27 @@ do
 
     --- Resolve a border texture key to a file path; nil for "solid" (use PP system).
     function CludesUI.ResolveBorderTexture(key)
-        if not key or key == "" or key == "solid" then return nil end
+        if not key or key == "" or key == "solid" then
+            return nil
+        end
         for _, entry in ipairs(CludesUI._builtinBorderTextures) do
-            if entry.key == key then return entry.path end
+            if entry.key == key then
+                return entry.path
+            end
         end
         local smName = key:match("^sm:(.+)")
         if smName then
             local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
             if LSM then
                 local path = LSM:Fetch("border", smName)
-                if path and path ~= "" then return path end
+                if path and path ~= "" then
+                    return path
+                end
             end
         end
-        if key:find("\\") or key:find("/") then return key end
+        if key:find("\\") or key:find("/") then
+            return key
+        end
         return nil
     end
 
@@ -1684,21 +2097,46 @@ do
         return bdFrame
     end
 
-    function CludesUI.ApplyBorderStyle(borderFrame, size, r, g, b, a, textureKey, offsetOverride, offsetYOverride, shiftX, shiftY, addonKey, sizeKey, normalizeScale, edgePx)
+    function CludesUI.ApplyBorderStyle(
+        borderFrame,
+        size,
+        r,
+        g,
+        b,
+        a,
+        textureKey,
+        offsetOverride,
+        offsetYOverride,
+        shiftX,
+        shiftY,
+        addonKey,
+        sizeKey,
+        normalizeScale,
+        edgePx
+    )
         local PP = CludesUI.PP
-        if not PP or not borderFrame then return end
+        if not PP or not borderFrame then
+            return
+        end
         a = a or 1
         -- Probe before the first widget call: a restyle can land while the owner is anchored
         -- to a forbidden frame (tooltips on UI-widget hover), and then anchoring, frame level
         -- and color would each raise in turn. Skipping leaves the last-good border; the next apply, off that anchor, restyles normally.
-        if not ReadBorderSize(borderFrame) then return end
+        if not ReadBorderSize(borderFrame) then
+            return
+        end
 
         local isSolid = not textureKey or textureKey == "" or textureKey == "solid"
 
         if isSolid then
             local bdFrame = BdFrameFor(borderFrame)
-            if bdFrame then bdFrame:Hide() end
-            if bdFrame and bdFrame._pxEdge then bdFrame._pxEdge = nil; _px.borders[borderFrame] = nil end
+            if bdFrame then
+                bdFrame:Hide()
+            end
+            if bdFrame and bdFrame._pxEdge then
+                bdFrame._pxEdge = nil
+                _px.borders[borderFrame] = nil
+            end
             local sz = edgePx or size
             -- PP system
             if sz > 0 then
@@ -1713,7 +2151,9 @@ do
                 end
                 borderFrame:Show()
             else
-                if PP.GetBorders(borderFrame) then PP.HideBorder(borderFrame) end
+                if PP.GetBorders(borderFrame) then
+                    PP.HideBorder(borderFrame)
+                end
                 borderFrame:Hide()
             end
         else
@@ -1721,11 +2161,20 @@ do
             local texPath = CludesUI.ResolveBorderTexture(textureKey)
             if not texPath or size <= 0 then
                 local bdFrame = BdFrameFor(borderFrame)
-                if bdFrame then bdFrame:Hide() end
+                if bdFrame then
+                    bdFrame:Hide()
+                end
                 -- A hidden border must not come back from the UI-scale re-apply.
-                if bdFrame and bdFrame._pxEdge then bdFrame._pxEdge = nil; _px.borders[borderFrame] = nil end
-                if PP.GetBorders(borderFrame) then PP.HideBorder(borderFrame) end
-                if size <= 0 then borderFrame:Hide() end
+                if bdFrame and bdFrame._pxEdge then
+                    bdFrame._pxEdge = nil
+                    _px.borders[borderFrame] = nil
+                end
+                if PP.GetBorders(borderFrame) then
+                    PP.HideBorder(borderFrame)
+                end
+                if size <= 0 then
+                    borderFrame:Hide()
+                end
                 return
             end
             -- Hide PP borders and zero their alpha so they can't flash
@@ -1733,10 +2182,18 @@ do
                 PP.HideBorder(borderFrame)
                 local ppC = PP.GetBorders(borderFrame)
                 if ppC then
-                    if ppC._top then ppC._top:SetAlpha(0) end
-                    if ppC._bottom then ppC._bottom:SetAlpha(0) end
-                    if ppC._left then ppC._left:SetAlpha(0) end
-                    if ppC._right then ppC._right:SetAlpha(0) end
+                    if ppC._top then
+                        ppC._top:SetAlpha(0)
+                    end
+                    if ppC._bottom then
+                        ppC._bottom:SetAlpha(0)
+                    end
+                    if ppC._left then
+                        ppC._left:SetAlpha(0)
+                    end
+                    if ppC._right then
+                        ppC._right:SetAlpha(0)
+                    end
                 end
             end
             local bdFrame = BdFrameFor(borderFrame)
@@ -1753,7 +2210,9 @@ do
                 -- either way (edges keep last-good texcoords and stretch, same as the throwing path left them, minus the per-resize error).
                 bdFrame:SetScript("OnSizeChanged", function(self)
                     local usable, w = ReadBorderSize(self)
-                    if not usable or not w then return end
+                    if not usable or not w then
+                        return
+                    end
                     self:OnBackdropSizeChanged()
                 end)
                 _bdBorderData[borderFrame] = bdFrame
@@ -1767,7 +2226,9 @@ do
             if normalizeScale then
                 local eok, es = pcall(bdFrame.GetEffectiveScale, bdFrame)
                 local uiES = UIParent and UIParent:GetEffectiveScale() or 1
-                if eok and es and es > 0.01 and uiES > 0 then ratio = uiES / es end
+                if eok and es and es > 0.01 and uiES > 0 then
+                    ratio = uiES / es
+                end
             end
             local edgeSize
             if edgePx then
@@ -1791,8 +2252,8 @@ do
             end
             local adjX = offsetOverride or dox
             local adjY = offsetYOverride or doy
-            local sx   = shiftX or dsx
-            local sy   = shiftY or dsy
+            local sx = shiftX or dsx
+            local sy = shiftY or dsy
             -- Same factor as edgeSize, or a normalized edge would be positioned by offsets still in the frame's scaled units.
             adjX, adjY = adjX * ratio, adjY * ratio
             sx, sy = sx * ratio, sy * ratio
@@ -1805,7 +2266,9 @@ do
             -- left edges read one pixel thicker than the bottom and right. The owner is
             -- already on the grid (PP.Point/PP.Size); this keeps the border there with it.
             local sok, ses = pcall(bdFrame.GetEffectiveScale, bdFrame)
-            if not (sok and ses and ses > 0.01) then ses = UIParent and UIParent:GetEffectiveScale() or 1 end
+            if not (sok and ses and ses > 0.01) then
+                ses = UIParent and UIParent:GetEffectiveScale() or 1
+            end
             local offsetX, offsetY
             if CludesUI.BorderTextureUsesScaleOffset(textureKey) then
                 local half = CludesUI.BorderHalfEdge(textureKey, edgeSize, ses)
@@ -1825,8 +2288,14 @@ do
             -- Edge fill (SetBorderEdgeFill): on an owner that moves by sub-pixels the Pixels
             -- line covers the owner's edge pixel only with its soft fade; hard strips under it.
             local fill = bdFrame._edgeFill
-            if _px.edgeFill[borderFrame] and CludesUI._pixelArtBorders[textureKey]
-                and adjX == 0 and adjY == 0 and sx == 0 and sy == 0 then
+            if
+                _px.edgeFill[borderFrame]
+                and CludesUI._pixelArtBorders[textureKey]
+                and adjX == 0
+                and adjY == 0
+                and sx == 0
+                and sy == 0
+            then
                 if not fill then
                     fill = {}
                     for i = 1, 4 do
@@ -1839,12 +2308,18 @@ do
                     -- (the apply that turns it on recolours after setting fill.on).
                     hooksecurefunc(bdFrame, "SetBackdropBorderColor", function(self, cr, cg, cb, ca)
                         local f = self._edgeFill
-                        if not f.on then return end
-                        for i = 1, 4 do f[i]:SetVertexColor(cr, cg, cb, 1) end
+                        if not f.on then
+                            return
+                        end
+                        for i = 1, 4 do
+                            f[i]:SetVertexColor(cr, cg, cb, 1)
+                        end
                         -- A colour read back from a border tinted with a secret (a nameplate's
                         -- off-tank threat colour) arrives secret: written above, but its alpha
                         -- cannot be compared, so the fill keeps its opacity state.
-                        if issecretvalue and issecretvalue(ca) then return end
+                        if issecretvalue and issecretvalue(ca) then
+                            return
+                        end
                         local opaque = (ca or 1) >= 0.999
                         if f.opaque ~= opaque then
                             f.opaque = opaque
@@ -1894,7 +2369,9 @@ do
             bdFrame:SetBackdropBorderColor(r, g, b, a)
             bdFrame:Show()
             borderFrame:Show()
-            if fill then CludesUI.SyncBorderEdgeFill(borderFrame) end
+            if fill then
+                CludesUI.SyncBorderEdgeFill(borderFrame)
+            end
             -- An exact edge is pixels at UIParent scale, so a UI scale change must re-apply
             -- it (the legacy edge is UI units and needs nothing): keep the call's arguments
             -- on our backdrop frame (scalars, no table per apply) for ReapplyPxBorders.
@@ -1920,10 +2397,10 @@ do
     -- Value = (that texel - 2) / 28: the backdrop samples texels 2-29 of each 32-texel
     -- cell. Pixels: texel 12 on all four sides (10/28); Pixels Textured: texel 11 (9/28).
     CludesUI._borderInk = {
-        blizz      = { 0.5,   0.607, 0.5,   0.5   },
-        glow       = { 0.357, 0.357, 0.357, 0.357 },
+        blizz = { 0.5, 0.607, 0.5, 0.5 },
+        glow = { 0.357, 0.357, 0.357, 0.357 },
         lightspark = { 0.071, 0.071, 0.071, 0.071 },
-        pixels     = { 0.357, 0.357, 0.357, 0.357 },
+        pixels = { 0.357, 0.357, 0.357, 0.357 },
         ["pixels-textured"] = { 0.321, 0.321, 0.321, 0.321 },
     }
 
@@ -1980,16 +2457,37 @@ do
     --- nil when nothing is drawn outside: solid (PP strips sit inside the frame),
     --- shadow (a shadow is not the frame's edge), size 0, no texture, alpha 0.
     --- Reads settings only, never a frame.
-    function CludesUI.BorderReach(size, tex, offX, offY, shX, shY, addonKey, sizeKey, edgePx, ratio, alpha, es)
-        if not size or size <= 0 or not tex or tex == "" or tex == "solid" or tex == "shadow" then return nil end
-        if alpha and alpha <= 0 then return nil end
-        if not CludesUI.ResolveBorderTexture(tex) then return nil end
-        local edge, ox, oy, sx, sy = CludesUI.BorderPlacement(size, tex, offX, offY, shX, shY,
-            addonKey, sizeKey, edgePx, ratio, es)
+    function CludesUI.BorderReach(
+        size,
+        tex,
+        offX,
+        offY,
+        shX,
+        shY,
+        addonKey,
+        sizeKey,
+        edgePx,
+        ratio,
+        alpha,
+        es
+    )
+        if not size or size <= 0 or not tex or tex == "" or tex == "solid" or tex == "shadow" then
+            return nil
+        end
+        if alpha and alpha <= 0 then
+            return nil
+        end
+        if not CludesUI.ResolveBorderTexture(tex) then
+            return nil
+        end
+        local edge, ox, oy, sx, sy =
+            CludesUI.BorderPlacement(size, tex, offX, offY, shX, shY, addonKey, sizeKey, edgePx, ratio, es)
         -- The ink stays fractional: it is texture content, not an anchor.
         local ink = CludesUI._borderInk[tex]
         local il, ir, it, ib = 0, 0, 0, 0
-        if ink then il, ir, it, ib = ink[1] * edge, ink[2] * edge, ink[3] * edge, ink[4] * edge end
+        if ink then
+            il, ir, it, ib = ink[1] * edge, ink[2] * edge, ink[3] * edge, ink[4] * edge
+        end
         return ox - sx - il, ox + sx - ir, oy + sy - it, oy - sy - ib
     end
 
@@ -1997,12 +2495,30 @@ do
     --- clamped at 0, both sides summed) for an unlock element's getMatchPad; nil when
     --- it adds none. Same arguments as BorderReach. The anchors are snapped as
     --- ApplyBorderStyle snaps them; the match engine still snaps the sum once.
-    function CludesUI.BorderMatchPad(size, tex, offX, offY, shX, shY, addonKey, sizeKey, edgePx, ratio, alpha, es)
-        local l, r, t, b = CludesUI.BorderReach(size, tex, offX, offY, shX, shY, addonKey, sizeKey, edgePx, ratio, alpha, es)
-        if not l then return nil end
+    function CludesUI.BorderMatchPad(
+        size,
+        tex,
+        offX,
+        offY,
+        shX,
+        shY,
+        addonKey,
+        sizeKey,
+        edgePx,
+        ratio,
+        alpha,
+        es
+    )
+        local l, r, t, b =
+            CludesUI.BorderReach(size, tex, offX, offY, shX, shY, addonKey, sizeKey, edgePx, ratio, alpha, es)
+        if not l then
+            return nil
+        end
         local w = (l > 0 and l or 0) + (r > 0 and r or 0)
         local h = (t > 0 and t or 0) + (b > 0 and b or 0)
-        if w <= 0 and h <= 0 then return nil end
+        if w <= 0 and h <= 0 then
+            return nil
+        end
         return w, h
     end
 
@@ -2018,24 +2534,46 @@ do
     --- (an owner hidden with its border still set keeps its px current for its next Show).
     function CludesUI.ReapplyPxBorders()
         local m = CludesUI.PP.mult
-        if _px.mult == m then return end
+        if _px.mult == m then
+            return
+        end
         for bf in pairs(_px.borders) do
             local bd = BdFrameFor(bf)
             if ReadBorderSize(bf) then
                 if not (bf:GetParent() and bd and bd._pxEdge and bd:IsShown()) then
-                    if bd then bd._pxEdge = nil end
+                    if bd then
+                        bd._pxEdge = nil
+                    end
                     _px.borders[bf] = nil
                 else
                     local lvl = bd:GetFrameLevel()
                     local cr, cg, cb, ca = bd:GetBackdropBorderColor()
                     local wasShown = bf:IsShown()
-                    CludesUI.ApplyBorderStyle(bf, bd._pxSize, bd._pxR, bd._pxG, bd._pxB, bd._pxA,
-                        bd._pxTex, bd._pxOffX, bd._pxOffY, bd._pxShX, bd._pxShY,
-                        bd._pxAddon, bd._pxSizeKey, bd._pxNorm, bd._pxEdge)
+                    CludesUI.ApplyBorderStyle(
+                        bf,
+                        bd._pxSize,
+                        bd._pxR,
+                        bd._pxG,
+                        bd._pxB,
+                        bd._pxA,
+                        bd._pxTex,
+                        bd._pxOffX,
+                        bd._pxOffY,
+                        bd._pxShX,
+                        bd._pxShY,
+                        bd._pxAddon,
+                        bd._pxSizeKey,
+                        bd._pxNorm,
+                        bd._pxEdge
+                    )
                     -- The apply shows its owner: one its owner hid stays hidden (IsShown: a Show denied in combat needs no Hide).
-                    if not wasShown and bf:IsShown() then bf:Hide() end
+                    if not wasShown and bf:IsShown() then
+                        bf:Hide()
+                    end
                     bd:SetFrameLevel(lvl)
-                    if cr then bd:SetBackdropBorderColor(cr, cg, cb, ca) end
+                    if cr then
+                        bd:SetBackdropBorderColor(cr, cg, cb, ca)
+                    end
                 end
             end
         end
@@ -2046,16 +2584,33 @@ do
                     st._pxsbEdge = nil
                     _px.secret[bf] = nil
                 else
-                    CludesUI.ApplySecretSafeBorderStyle(bf, st, st._pxsbSize, st._pxsbR, st._pxsbG,
-                        st._pxsbB, st._pxsbA, st._pxsbTex, st._pxsbOffX, st._pxsbOffY, st._pxsbShX,
-                        st._pxsbShY, st._pxsbAddon, st._pxsbSizeKey, st._pxsbScale, st._pxsbEdge)
+                    CludesUI.ApplySecretSafeBorderStyle(
+                        bf,
+                        st,
+                        st._pxsbSize,
+                        st._pxsbR,
+                        st._pxsbG,
+                        st._pxsbB,
+                        st._pxsbA,
+                        st._pxsbTex,
+                        st._pxsbOffX,
+                        st._pxsbOffY,
+                        st._pxsbShX,
+                        st._pxsbShY,
+                        st._pxsbAddon,
+                        st._pxsbSizeKey,
+                        st._pxsbScale,
+                        st._pxsbEdge
+                    )
                 end
             end
         end
         -- Art sized from an exact border px but drawn outside the two border calls
         -- (companion strips, dividers, rings) re-derives through its owner's fn.
         if next(_px.owners) then
-            for owner, fn in pairs(_px.owners) do fn(owner) end
+            for owner, fn in pairs(_px.owners) do
+                fn(owner)
+            end
         end
         _px.mult = m
     end
@@ -2069,11 +2624,15 @@ do
     --- owner (a repeat call replaces it, no closure per apply). fn re-sizes only that
     --- owner's own art, and must not register a NEW owner while it runs. Weak-keyed.
     function CludesUI.RegisterPxReapply(owner, fn)
-        if not owner then return end
+        if not owner then
+            return
+        end
         _px.owners[owner] = fn
         -- Stamp the grid the art was sized on, as an exact border apply does, so the
         -- loading-screen pass that follows (same grid) runs nothing.
-        if fn then _px.mult = CludesUI.PP.mult end
+        if fn then
+            _px.mult = CludesUI.PP.mult
+        end
     end
 
     -- BackdropTemplate does arithmetic on its owner's width/height, so it is unusable for
@@ -2082,37 +2641,84 @@ do
     -- caching the eight textures (FFD, AuraKit button data). edgeScale is preview-only
     -- geometry compensation; live callers leave it nil.
     local SECRET_BORDER_UV = {
-        topLeft     = { 0.5078125, 0.0625, 0.5078125, 0.9375, 0.6171875, 0.0625, 0.6171875, 0.9375 },
-        topRight    = { 0.6328125, 0.0625, 0.6328125, 0.9375, 0.7421875, 0.0625, 0.7421875, 0.9375 },
-        bottomLeft  = { 0.7578125, 0.0625, 0.7578125, 0.9375, 0.8671875, 0.0625, 0.8671875, 0.9375 },
+        topLeft = { 0.5078125, 0.0625, 0.5078125, 0.9375, 0.6171875, 0.0625, 0.6171875, 0.9375 },
+        topRight = { 0.6328125, 0.0625, 0.6328125, 0.9375, 0.7421875, 0.0625, 0.7421875, 0.9375 },
+        bottomLeft = { 0.7578125, 0.0625, 0.7578125, 0.9375, 0.8671875, 0.0625, 0.8671875, 0.9375 },
         bottomRight = { 0.8828125, 0.0625, 0.8828125, 0.9375, 0.9921875, 0.0625, 0.9921875, 0.9375 },
-        top         = { 0.2578125, 0.9375, 0.3671875, 0.9375, 0.2578125, 0.0625, 0.3671875, 0.0625 },
-        bottom      = { 0.3828125, 0.9375, 0.4921875, 0.9375, 0.3828125, 0.0625, 0.4921875, 0.0625 },
-        left        = { 0.0078125, 0.0625, 0.0078125, 0.9375, 0.1171875, 0.0625, 0.1171875, 0.9375 },
-        right       = { 0.1328125, 0.0625, 0.1328125, 0.9375, 0.2421875, 0.0625, 0.2421875, 0.9375 },
+        top = { 0.2578125, 0.9375, 0.3671875, 0.9375, 0.2578125, 0.0625, 0.3671875, 0.0625 },
+        bottom = { 0.3828125, 0.9375, 0.4921875, 0.9375, 0.3828125, 0.0625, 0.4921875, 0.0625 },
+        left = { 0.0078125, 0.0625, 0.0078125, 0.9375, 0.1171875, 0.0625, 0.1171875, 0.9375 },
+        right = { 0.1328125, 0.0625, 0.1328125, 0.9375, 0.2421875, 0.0625, 0.2421875, 0.9375 },
     }
     -- Read-only: other eight-slice sets cut from the same edge art (AuraKit's textured
     -- dispel ring) write these texcoords once at creation.
     CludesUI.SECRET_BORDER_UV = SECRET_BORDER_UV
 
     --- edgePx: as ApplyBorderStyle's (the exact size, else the legacy EDGE_MAP path).
-    function CludesUI.ApplySecretSafeBorderStyle(borderFrame, state, size, r, g, b, a,
-        textureKey, offsetX, offsetY, shiftX, shiftY, addonKey, sizeKey, edgeScale, edgePx)
-        if not borderFrame or not state then return end
+    function CludesUI.ApplySecretSafeBorderStyle(
+        borderFrame,
+        state,
+        size,
+        r,
+        g,
+        b,
+        a,
+        textureKey,
+        offsetX,
+        offsetY,
+        shiftX,
+        shiftY,
+        addonKey,
+        sizeKey,
+        edgeScale,
+        edgePx
+    )
+        if not borderFrame or not state then
+            return
+        end
         size, textureKey = size or 0, textureKey or "solid"
         local edges = state._secretBorderEdges
         -- Inlined, not a local closure: runs per-aura-per-refresh, and a closure built on entry (before the early-outs below) is pure garbage on the common path.
         if textureKey == "" or textureKey == "solid" or size <= 0 then
-            if edges then for _, tex in pairs(edges) do tex:Hide() end end
-            if state._pxsbEdge then state._pxsbEdge = nil; _px.secret[borderFrame] = nil end
-            CludesUI.ApplyBorderStyle(borderFrame, size, r, g, b, a, "solid",
-                nil, nil, nil, nil, nil, nil, nil, edgePx)
+            if edges then
+                for _, tex in pairs(edges) do
+                    tex:Hide()
+                end
+            end
+            if state._pxsbEdge then
+                state._pxsbEdge = nil
+                _px.secret[borderFrame] = nil
+            end
+            CludesUI.ApplyBorderStyle(
+                borderFrame,
+                size,
+                r,
+                g,
+                b,
+                a,
+                "solid",
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                edgePx
+            )
             return
         end
         local path = CludesUI.ResolveBorderTexture(textureKey)
         if not path then
-            if edges then for _, tex in pairs(edges) do tex:Hide() end end
-            if state._pxsbEdge then state._pxsbEdge = nil; _px.secret[borderFrame] = nil end
+            if edges then
+                for _, tex in pairs(edges) do
+                    tex:Hide()
+                end
+            end
+            if state._pxsbEdge then
+                state._pxsbEdge = nil
+                _px.secret[borderFrame] = nil
+            end
             CludesUI.ApplyBorderStyle(borderFrame, 0, 0, 0, 0, 0, "solid")
             return
         end
@@ -2123,7 +2729,8 @@ do
             edges = {}
             for key, uv in pairs(SECRET_BORDER_UV) do
                 local tex = borderFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-                tex:SetTexCoord(unpack(uv)); edges[key] = tex
+                tex:SetTexCoord(unpack(uv))
+                edges[key] = tex
             end
             state._secretBorderEdges = edges
         end
@@ -2143,11 +2750,24 @@ do
             state._pxsbEdge = nil
             _px.secret[borderFrame] = nil
         end
-        local edgeSize, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(borderFrame, size,
-            textureKey, offsetX, offsetY, shiftX, shiftY, addonKey, sizeKey, edgeScale, edgePx)
+        local edgeSize, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
+            borderFrame,
+            size,
+            textureKey,
+            offsetX,
+            offsetY,
+            shiftX,
+            shiftY,
+            addonKey,
+            sizeKey,
+            edgeScale,
+            edgePx
+        )
         for _, tex in pairs(edges) do
-            tex:SetTexture(path, true, true); tex:SetVertexColor(r, g, b, a or 1)
-            tex:ClearAllPoints(); tex:Show()
+            tex:SetTexture(path, true, true)
+            tex:SetVertexColor(r, g, b, a or 1)
+            tex:ClearAllPoints()
+            tex:Show()
         end
         CludesUI.LayoutSecretBorderEdges(edges, borderFrame, edgeSize, aL, aT, aR, aB)
     end
@@ -2158,8 +2778,19 @@ do
     --- the owner (left, top, right, bottom). Same arguments as that function; owner is
     --- read only for its effective scale. Shared with AuraKit's textured dispel ring,
     --- which must sit exactly on the aura border it recolours.
-    function CludesUI.SecretBorderGeometry(owner, size, textureKey, offsetX, offsetY,
-        shiftX, shiftY, addonKey, sizeKey, edgeScale, edgePx)
+    function CludesUI.SecretBorderGeometry(
+        owner,
+        size,
+        textureKey,
+        offsetX,
+        offsetY,
+        shiftX,
+        shiftY,
+        addonKey,
+        sizeKey,
+        edgeScale,
+        edgePx
+    )
         edgeScale = edgeScale or 1
         local edgeSize
         if edgePx then
@@ -2174,13 +2805,17 @@ do
             local f = (edgePx * PPm.mult) / (EDGE_MAP[size] or EDGE_MAP[1])
             ox, oy, sx, sy = PPm.Snap(ox * f), PPm.Snap(oy * f), PPm.Snap(sx * f), PPm.Snap(sy * f)
         end
-        ox = offsetX ~= nil and offsetX or ox; oy = offsetY ~= nil and offsetY or oy
-        sx = shiftX ~= nil and shiftX or sx; sy = shiftY ~= nil and shiftY or sy
+        ox = offsetX ~= nil and offsetX or ox
+        oy = offsetY ~= nil and offsetY or oy
+        sx = shiftX ~= nil and shiftX or sx
+        sy = shiftY ~= nil and shiftY or sy
         ox, oy, sx, sy = ox * edgeScale, oy * edgeScale, sx * edgeScale, sy * edgeScale
         -- Same pixel snap as ApplyBorderStyle's backdrop anchors (see there): the
         -- corner pieces carry the outer edges, so their four anchor offsets go on the grid.
         local sok, ses = pcall(owner.GetEffectiveScale, owner)
-        if not (sok and ses and ses > 0.01) then ses = UIParent and UIParent:GetEffectiveScale() or 1 end
+        if not (sok and ses and ses > 0.01) then
+            ses = UIParent and UIParent:GetEffectiveScale() or 1
+        end
         local PP = CludesUI.PP
         if CludesUI.BorderTextureUsesScaleOffset(textureKey) then
             local half = CludesUI.BorderHalfEdge(textureKey, edgeSize, ses)
@@ -2195,20 +2830,34 @@ do
     --- SecretBorderGeometry's numbers. Sizes and points only: the caller clears the
     --- old points first and owns texture, colour and visibility.
     function CludesUI.LayoutSecretBorderEdges(edges, owner, edgeSize, aL, aT, aR, aB)
-        edges.topLeft:SetSize(edgeSize, edgeSize); edges.topLeft:SetPoint("TOPLEFT", owner, "TOPLEFT", aL, aT)
-        edges.topRight:SetSize(edgeSize, edgeSize); edges.topRight:SetPoint("TOPRIGHT", owner, "TOPRIGHT", aR, aT)
-        edges.bottomLeft:SetSize(edgeSize, edgeSize); edges.bottomLeft:SetPoint("BOTTOMLEFT", owner, "BOTTOMLEFT", aL, aB)
-        edges.bottomRight:SetSize(edgeSize, edgeSize); edges.bottomRight:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", aR, aB)
-        edges.top:SetHeight(edgeSize); edges.top:SetPoint("TOPLEFT", edges.topLeft, "TOPRIGHT"); edges.top:SetPoint("TOPRIGHT", edges.topRight, "TOPLEFT")
-        edges.bottom:SetHeight(edgeSize); edges.bottom:SetPoint("BOTTOMLEFT", edges.bottomLeft, "BOTTOMRIGHT"); edges.bottom:SetPoint("BOTTOMRIGHT", edges.bottomRight, "BOTTOMLEFT")
-        edges.left:SetWidth(edgeSize); edges.left:SetPoint("TOPLEFT", edges.topLeft, "BOTTOMLEFT"); edges.left:SetPoint("BOTTOMLEFT", edges.bottomLeft, "TOPLEFT")
-        edges.right:SetWidth(edgeSize); edges.right:SetPoint("TOPRIGHT", edges.topRight, "BOTTOMRIGHT"); edges.right:SetPoint("BOTTOMRIGHT", edges.bottomRight, "TOPRIGHT")
+        edges.topLeft:SetSize(edgeSize, edgeSize)
+        edges.topLeft:SetPoint("TOPLEFT", owner, "TOPLEFT", aL, aT)
+        edges.topRight:SetSize(edgeSize, edgeSize)
+        edges.topRight:SetPoint("TOPRIGHT", owner, "TOPRIGHT", aR, aT)
+        edges.bottomLeft:SetSize(edgeSize, edgeSize)
+        edges.bottomLeft:SetPoint("BOTTOMLEFT", owner, "BOTTOMLEFT", aL, aB)
+        edges.bottomRight:SetSize(edgeSize, edgeSize)
+        edges.bottomRight:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", aR, aB)
+        edges.top:SetHeight(edgeSize)
+        edges.top:SetPoint("TOPLEFT", edges.topLeft, "TOPRIGHT")
+        edges.top:SetPoint("TOPRIGHT", edges.topRight, "TOPLEFT")
+        edges.bottom:SetHeight(edgeSize)
+        edges.bottom:SetPoint("BOTTOMLEFT", edges.bottomLeft, "BOTTOMRIGHT")
+        edges.bottom:SetPoint("BOTTOMRIGHT", edges.bottomRight, "BOTTOMLEFT")
+        edges.left:SetWidth(edgeSize)
+        edges.left:SetPoint("TOPLEFT", edges.topLeft, "BOTTOMLEFT")
+        edges.left:SetPoint("BOTTOMLEFT", edges.bottomLeft, "TOPLEFT")
+        edges.right:SetWidth(edgeSize)
+        edges.right:SetPoint("TOPRIGHT", edges.topRight, "BOTTOMRIGHT")
+        edges.right:SetPoint("BOTTOMRIGHT", edges.bottomRight, "TOPRIGHT")
     end
 
     --- Set border color on whichever system is active (PP or backdrop); used for hover highlights and other dynamic color changes.
     function CludesUI.SetBorderStyleColor(borderFrame, r, g, b, a)
         local PP = CludesUI.PP
-        if not PP or not borderFrame then return end
+        if not PP or not borderFrame then
+            return
+        end
         a = a or 1
         local ppContainer = PP.GetBorders(borderFrame)
         if ppContainer and ppContainer:IsShown() then
@@ -2224,12 +2873,21 @@ do
     --- Hide whichever ApplyBorderStyle system is drawn on borderFrame (PP pixel border or
     --- BackdropTemplate texture) WITHOUT hiding borderFrame itself, for when another renderer (the dashed ants border) takes over the same frame.
     function CludesUI.HideBorderStyle(borderFrame)
-        if not borderFrame then return end
+        if not borderFrame then
+            return
+        end
         local PP = CludesUI.PP
-        if PP and PP.GetBorders and PP.GetBorders(borderFrame) then PP.HideBorder(borderFrame) end
+        if PP and PP.GetBorders and PP.GetBorders(borderFrame) then
+            PP.HideBorder(borderFrame)
+        end
         local bdFrame = BdFrameFor(borderFrame)
-        if bdFrame then bdFrame:Hide() end
-        if bdFrame and bdFrame._pxEdge then bdFrame._pxEdge = nil; _px.borders[borderFrame] = nil end
+        if bdFrame then
+            bdFrame:Hide()
+        end
+        if bdFrame and bdFrame._pxEdge then
+            bdFrame._pxEdge = nil
+            _px.borders[borderFrame] = nil
+        end
     end
 
     --- Opts a border into the Pixels edge fill (see ApplyBorderStyle) from its next apply.
@@ -2241,7 +2899,9 @@ do
     function CludesUI.SyncBorderEdgeFill(borderFrame)
         local bdFrame = BdFrameFor(borderFrame)
         local fill = bdFrame and bdFrame._edgeFill
-        if not fill then return end
+        if not fill then
+            return
+        end
         local on = fill.on == true and fill.opaque ~= false
         local te, be, le, re = bdFrame.TopEdge, bdFrame.BottomEdge, bdFrame.LeftEdge, bdFrame.RightEdge
         fill[1]:SetShown(on and te ~= nil and te:IsShown())
@@ -2250,4 +2910,3 @@ do
         fill[4]:SetShown(on and re ~= nil and re:IsShown())
     end
 end
-

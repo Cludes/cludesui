@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Filters.lua
 --
@@ -10,13 +12,17 @@ local _, ns = ...
 local I = ns._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ExpandFamily, PAB, BuffBarHasContent = I.ExpandFamily, I.PAB, I.BuffBarHasContent
 
 local ReloadAllCustomBars
-I.reloadAllSetters[#I.reloadAllSetters + 1] = function(v) ReloadAllCustomBars = v end
+I.reloadAllSetters[#I.reloadAllSetters + 1] = function(v)
+    ReloadAllCustomBars = v
+end
 
 -------------------------------------------------------------------------------
 --  Custom bars (free bar creator)
@@ -43,7 +49,9 @@ I.reloadAllSetters[#I.reloadAllSetters + 1] = function(v) ReloadAllCustomBars = 
 -- never persists. Only CRUD (write) functions call this.
 local function PABEnsure()
     local db = ns.db
-    if not (db and db.profile) then return nil end
+    if not (db and db.profile) then
+        return nil
+    end
     db.profile.playerAuraBars = db.profile.playerAuraBars or {}
     return db.profile.playerAuraBars
 end
@@ -52,7 +60,9 @@ end
 if CludesUI.FvBW then
     PABEnsure = function()
         local db = ns.db
-        if not (db and db.profile) then return nil end
+        if not (db and db.profile) then
+            return nil
+        end
         db.profile.playerAuraBars = db.profile.playerAuraBars or {}
         return PAB()
     end
@@ -94,10 +104,14 @@ function ns.PAB_Filters()
     local s = PAB()
     local store = s and s.pabFilters
     local list = store and store.list or nil
-    if not list or next(ns.PAB_OTHER_ONLY_PRESETS) == nil then return list end
+    if not list or next(ns.PAB_OTHER_ONLY_PRESETS) == nil then
+        return list
+    end
     local out = {}
     for i = 1, #list do
-        if not ns.PAB_OtherClientPreset(list[i]) then out[#out + 1] = list[i] end
+        if not ns.PAB_OtherClientPreset(list[i]) then
+            out[#out + 1] = list[i]
+        end
     end
     return out
 end
@@ -108,11 +122,15 @@ function ns.PAB_GetFilter(id)
     local s = PAB()
     local store = s and s.pabFilters
     local list = store and store.list
-    if not list then return nil end
+    if not list then
+        return nil
+    end
     for i = 1, #list do
         local f = list[i]
         if f.id == id then
-            if ns.PAB_OtherClientPreset(f) then return nil end
+            if ns.PAB_OtherClientPreset(f) then
+                return nil
+            end
             return f
         end
     end
@@ -134,9 +152,13 @@ end
 -- may add such an id by hand, so only the seed's own note tells them apart.
 function ns.PAB_OtherClientSpell(f, id)
     local key = f.preset and ns.PAB_PRESET_KEY[f.name]
-    if not key then return false end
+    if not key then
+        return false
+    end
     local here = CludesUI.BUFF_PRESET_IDS[key]
-    if here and here[id] then return false end
+    if here and here[id] then
+        return false
+    end
     if CludesUI.IS_FOREVER == true then
         local other = CludesUI.BUFF_PRESET_OTHER_IDS[key]
         return (other and other[id]) == true
@@ -149,20 +171,28 @@ end
 -- offers (ns.PAB_GetFilter returns nil for it); false for every other id,
 -- dangling ones included. Always false while this client offers every preset.
 function ns.PAB_HiddenPresetFilter(id)
-    if next(ns.PAB_OTHER_ONLY_PRESETS) == nil then return false end
+    if next(ns.PAB_OTHER_ONLY_PRESETS) == nil then
+        return false
+    end
     local s = PAB()
     local store = s and s.pabFilters
     local list = store and store.list
-    if not list then return false end
+    if not list then
+        return false
+    end
     for i = 1, #list do
-        if list[i].id == id then return ns.PAB_OtherClientPreset(list[i]) == true end
+        if list[i].id == id then
+            return ns.PAB_OtherClientPreset(list[i]) == true
+        end
     end
     return false
 end
 
 function ns.PAB_AddFilter(name)
     local s = PABEnsure()
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     local store = FilterStore(s)
     local f = { id = store.nextId, name = name or "New Filter", spells = {} }
     store.nextId = store.nextId + 1
@@ -172,7 +202,9 @@ end
 
 function ns.PAB_RenameFilter(id, name)
     local f = ns.PAB_GetFilter(id)
-    if f and name and name ~= "" then f.name = name end
+    if f and name and name ~= "" then
+        f.name = name
+    end
 end
 
 -- Also strips the filter's assignment from every buff-side cfg that could reference
@@ -181,14 +213,22 @@ end
 -- (buffFilters/buffNegFilters, see PlayerBuffChain in CUI_UnitFrames_AuraContainers.lua).
 function ns.PAB_DeleteFilter(id)
     local s = PAB()
-    if not (s and s.pabFilters) then return end
+    if not (s and s.pabFilters) then
+        return
+    end
     local list = s.pabFilters.list
     for i = #list, 1, -1 do
-        if list[i].id == id then table.remove(list, i) end
+        if list[i].id == id then
+            table.remove(list, i)
+        end
     end
     local function Strip(bar, isDefault)
-        if bar.filters then bar.filters[id] = nil end
-        if bar.negFilters then bar.negFilters[id] = nil end
+        if bar.filters then
+            bar.filters[id] = nil
+        end
+        if bar.negFilters then
+            bar.negFilters[id] = nil
+        end
         -- No-empty rule: deleting an ENABLED bar's last content source falls
         -- back to All Buffs, same as unchecking it in the Filters dropdown
         -- would. Disabled bars keep their stored state untouched (the
@@ -197,7 +237,9 @@ function ns.PAB_DeleteFilter(id)
             bar.showAllBuffs = nil
         end
     end
-    if s.defaultBuffs then Strip(s.defaultBuffs, true) end
+    if s.defaultBuffs then
+        Strip(s.defaultBuffs, true)
+    end
     local customBuffBars = s.customBuffBars
     if customBuffBars then
         for i = 1, #customBuffBars do
@@ -209,23 +251,34 @@ function ns.PAB_DeleteFilter(id)
         for _, b in pairs(s.pabSpecBars) do
             local bl = b.buffBars
             if bl then
-                for i = 1, #bl do Strip(bl[i], false) end
+                for i = 1, #bl do
+                    Strip(bl[i], false)
+                end
             end
         end
     end
     local ps = ns.db and ns.db.profile and ns.db.profile.player
     if ps then
-        if ps.buffFilters then ps.buffFilters[id] = nil end
-        if ps.buffNegFilters then ps.buffNegFilters[id] = nil end
+        if ps.buffFilters then
+            ps.buffFilters[id] = nil
+        end
+        if ps.buffNegFilters then
+            ps.buffNegFilters[id] = nil
+        end
         -- Same fallback for the player frame's buff filter (shared registry).
-        if ps.buffShowAll == false and ps.buffHasDuration ~= true
+        if
+            ps.buffShowAll == false
+            and ps.buffHasDuration ~= true
             and not (ps.buffFilters and next(ps.buffFilters))
-            and not (ps.buffSpells and #ps.buffSpells > 0) then
+            and not (ps.buffSpells and #ps.buffSpells > 0)
+        then
             ps.buffShowAll = nil
         end
         -- The player FRAME's buff container resolves this registry through the
         -- UF reload pass, not through the PAB apply the caller runs.
-        if _G._EUF_ReloadFrames then _G._EUF_ReloadFrames() end
+        if _G._CUUF_ReloadFrames then
+            _G._CUUF_ReloadFrames()
+        end
     end
 end
 
@@ -242,7 +295,9 @@ end
 -- rewritten from here.
 function ns.PAB_SetSpellState(filterId, spellID, state)
     local f = ns.PAB_GetFilter(filterId)
-    if not f then return end
+    if not f then
+        return
+    end
     local function Write(id)
         if state == nil then
             f.spells[id] = nil
@@ -258,15 +313,17 @@ function ns.PAB_SetSpellState(filterId, spellID, state)
     local fam = ns.PAB_SPELL_FAMILY and ns.PAB_SPELL_FAMILY[spellID]
     if fam then
         for i = 1, #fam do
-            if fam[i] ~= spellID and f.spells[fam[i]] ~= nil
-                and not ns.PAB_OtherClientSpell(f, fam[i]) then Write(fam[i]) end
+            if fam[i] ~= spellID and f.spells[fam[i]] ~= nil and not ns.PAB_OtherClientSpell(f, fam[i]) then
+                Write(fam[i])
+            end
         end
     end
     local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellID)
     if name then
         for id in pairs(f.spells) do
-            if id ~= spellID and not ns.PAB_OtherClientSpell(f, id)
-                and C_Spell.GetSpellName(id) == name then Write(id) end
+            if id ~= spellID and not ns.PAB_OtherClientSpell(f, id) and C_Spell.GetSpellName(id) == name then
+                Write(id)
+            end
         end
     end
 end
@@ -276,12 +333,16 @@ end
 -- its id after a delete): the added id is an ordinary row on both clients.
 function ns.PAB_AddSpellToFilter(filterId, spellID)
     local f = ns.PAB_GetFilter(filterId)
-    if not (f and spellID and spellID > 0) then return false end
+    if not (f and spellID and spellID > 0) then
+        return false
+    end
     local m = CludesUI.IS_FOREVER ~= true and f.foreverSeeded or nil
     if f.spells[spellID] ~= nil and not (m and ns.PAB_OtherClientSpell(f, spellID)) then
         return false -- already present
     end
-    if m then m[spellID] = nil end
+    if m then
+        m[spellID] = nil
+    end
     f.spells[spellID] = true
     return true
 end
@@ -336,11 +397,15 @@ function ns.PAB_ResolveSpells(cfg)
             end
         end
         for id in pairs(hide) do
-            if not (direct and direct[id]) then set[id] = nil end
+            if not (direct and direct[id]) then
+                set[id] = nil
+            end
         end
     end
     local out = {}
-    for id in pairs(set) do out[#out + 1] = id end
+    for id in pairs(set) do
+        out[#out + 1] = id
+    end
     table.sort(out)
     return out
 end
@@ -359,7 +424,9 @@ local function NameToId(list)
     local m = {}
     for i = 1, #list do
         local f = list[i]
-        if m[f.name] == nil then m[f.name] = f.id end
+        if m[f.name] == nil then
+            m[f.name] = f.id
+        end
     end
     return m
 end
@@ -372,7 +439,9 @@ end
 function ns.PAB_CopyBM2FiltersIn()
     local br = CludesUI._BM2FilterBridge
     local s = PABEnsure()
-    if not (br and s) then return false end
+    if not (br and s) then
+        return false
+    end
     local src = br.Filters() or {}
     local altsMap = br.PresetAlts and br.PresetAlts() or nil
     -- An id typed into a library filter tracks that aura alone there, so it
@@ -396,7 +465,9 @@ function ns.PAB_CopyBM2FiltersIn()
                     spells[id] = state
                     local a = altsMap and altsMap[id]
                     if a and not (typedIn and typedIn(sf, id)) then
-                        for j = 1, #a do spells[a[j]] = state end
+                        for j = 1, #a do
+                            spells[a[j]] = state
+                        end
                     end
                 end
             end
@@ -404,19 +475,25 @@ function ns.PAB_CopyBM2FiltersIn()
             -- Forever-seed note.
             local m = tf.foreverSeeded
             if m and CludesUI.IS_FOREVER ~= true then
-                for id in pairs(spells) do m[id] = nil end
+                for id in pairs(spells) do
+                    m[id] = nil
+                end
             end
             -- The copy overwrites what this editor shows; ids kept only for
             -- the other client are not shown, so they stay.
             for id, on in pairs(tf.spells) do
-                if spells[id] == nil and ns.PAB_OtherClientSpell(tf, id) then spells[id] = on end
+                if spells[id] == nil and ns.PAB_OtherClientSpell(tf, id) then
+                    spells[id] = on
+                end
             end
             tf.spells = spells
         end
     end
     -- The player FRAME's buff container resolves this registry through the UF
     -- reload pass, not through the PAB apply the caller runs.
-    if _G._EUF_ReloadFrames then _G._EUF_ReloadFrames() end
+    if _G._CUUF_ReloadFrames then
+        _G._CUUF_ReloadFrames()
+    end
     return true
 end
 
@@ -428,7 +505,9 @@ end
 function ns.PAB_CopyOwnFiltersIntoBM2()
     local br = CludesUI._BM2FilterBridge
     local s = PAB()
-    if not (br and s) then return false end
+    if not (br and s) then
+        return false
+    end
     -- Alt id -> primary: our registry flattens talent/rank alternates into
     -- their own keys; the Buff Manager library stores primaries and expands
     -- alternates at resolution, so alternates fold onto their primary here.
@@ -436,7 +515,9 @@ function ns.PAB_CopyOwnFiltersIntoBM2()
     local altsMap = br.PresetAlts and br.PresetAlts() or nil
     if altsMap then
         for primary, alts in pairs(altsMap) do
-            for i = 1, #alts do altToPrimary[alts[i]] = primary end
+            for i = 1, #alts do
+                altToPrimary[alts[i]] = primary
+            end
         end
     end
     -- Presets only the other client offers stay out (ns.PAB_Filters' view).
@@ -458,7 +539,9 @@ function ns.PAB_CopyOwnFiltersIntoBM2()
                     local p = altToPrimary[id]
                     if p then
                         -- Primary's own explicit state wins over an alternate's.
-                        if of.spells[p] == nil and desired[p] == nil then desired[p] = on and true or false end
+                        if of.spells[p] == nil and desired[p] == nil then
+                            desired[p] = on and true or false
+                        end
                     else
                         desired[id] = on and true or false
                     end
@@ -468,8 +551,10 @@ function ns.PAB_CopyOwnFiltersIntoBM2()
             for id, on in pairs(desired) do
                 -- An id the library keeps only for the other client counts as
                 -- absent (BM2_AddCustomSpell takes it over).
-                if (tf.spells[id] == nil or br.OtherClientSpell(tf, id))
-                    and not (curated and curated[id]) then
+                if
+                    (tf.spells[id] == nil or br.OtherClientSpell(tf, id))
+                    and not (curated and curated[id])
+                then
                     -- New non-curated id must carry the custom marker or the
                     -- library's curation prune strips it on the next merge.
                     br.AddCustomSpell(tid, id)
@@ -499,7 +584,9 @@ end
 -- Filter Editor drive its one-time copy from its side. Absent = this module
 -- is disabled, and its button hides.
 CludesUI._PABFilterBridge = {
-    CopyIntoBM2 = function() return ns.PAB_CopyOwnFiltersIntoBM2() end,
+    CopyIntoBM2 = function()
+        return ns.PAB_CopyOwnFiltersIntoBM2()
+    end,
 }
 
 function ns.PAB_CustomBuffBars()
@@ -540,13 +627,17 @@ do
             for id, info in pairs(list) do
                 local dst = info.disabled and disabled or enabled
                 dst[#dst + 1] = id
-                if info.class ~= "ALL" then SPELL_CLASS_HINTS[id] = info.class end
+                if info.class ~= "ALL" then
+                    SPELL_CLASS_HINTS[id] = info.class
+                end
                 if info.alts then
                     PRESET_ALTS[id] = info.alts
                     for j = 1, #info.alts do
                         local alt = info.alts[j]
                         dst[#dst + 1] = alt
-                        if info.class ~= "ALL" then SPELL_CLASS_HINTS[alt] = info.class end
+                        if info.class ~= "ALL" then
+                            SPELL_CLASS_HINTS[alt] = info.class
+                        end
                     end
                 end
             end
@@ -562,8 +653,12 @@ do
     local fams = {}
     for primary, alts in pairs(PRESET_ALTS) do
         local fam = { primary }
-        for i = 1, #alts do fam[#fam + 1] = alts[i] end
-        for i = 1, #fam do fams[fam[i]] = fam end
+        for i = 1, #alts do
+            fam[#fam + 1] = alts[i]
+        end
+        for i = 1, #fam do
+            fams[fam[i]] = fam
+        end
     end
     ns.PAB_SPELL_FAMILY = fams
     -- Preset name -> key across both clients' catalogues, and the names of the
@@ -577,8 +672,12 @@ do
     local other = CludesUI.BUFF_PRESET_OTHER_FILTERS
     for i = 1, #other do
         local def = other[i]
-        if keyByName[def.name] == nil then keyByName[def.name] = def.key end
-        if not offered[def.key] then otherOnly[def.name] = true end
+        if keyByName[def.name] == nil then
+            keyByName[def.name] = def.key
+        end
+        if not offered[def.key] then
+            otherOnly[def.name] = true
+        end
     end
     ns.PAB_PRESET_KEY = keyByName
     ns.PAB_OTHER_ONLY_PRESETS = otherOnly
@@ -597,11 +696,17 @@ function ns.PAB_AllPresetSpells()
     local set = {}
     for i = 1, #BM2_FILTER_SEED do
         local seed = BM2_FILTER_SEED[i]
-        for j = 1, #seed.enabled do set[seed.enabled[j]] = true end
-        for j = 1, #seed.disabled do set[seed.disabled[j]] = true end
+        for j = 1, #seed.enabled do
+            set[seed.enabled[j]] = true
+        end
+        for j = 1, #seed.disabled do
+            set[seed.disabled[j]] = true
+        end
     end
     local out = {}
-    for id in pairs(set) do out[#out + 1] = id end
+    for id in pairs(set) do
+        out[#out + 1] = id
+    end
     table.sort(out)
     return out
 end
@@ -609,7 +714,9 @@ end
 function ns.PAB_ImportBM2Filters()
     local byName = {}
     local list = ns.PAB_Filters() or {}
-    for i = 1, #list do byName[list[i].name] = list[i] end
+    for i = 1, #list do
+        byName[list[i].name] = list[i]
+    end
 
     -- WoW Forever: every id this seed adds that the retail catalogue does not
     -- curate under the preset is noted on the filter (f.foreverSeeded), so
@@ -617,11 +724,18 @@ function ns.PAB_ImportBM2Filters()
     -- (ns.PAB_OtherClientSpell). Nothing is noted on retail.
     local retailIds = CludesUI.IS_FOREVER == true and CludesUI.BUFF_PRESET_OTHER_IDS or nil
     local function NoteSeed(f, key, id)
-        if not retailIds then return end
+        if not retailIds then
+            return
+        end
         local cur = retailIds[key]
-        if cur and cur[id] then return end
+        if cur and cur[id] then
+            return
+        end
         local m = f.foreverSeeded
-        if not m then m = {}; f.foreverSeeded = m end
+        if not m then
+            m = {}
+            f.foreverSeeded = m
+        end
         m[id] = true
     end
 
@@ -632,11 +746,19 @@ function ns.PAB_ImportBM2Filters()
         if not f then
             f = ns.PAB_AddFilter(seed.name)
             if f then
-                for j = 1, #seed.enabled do f.spells[seed.enabled[j]] = true end
-                for j = 1, #seed.disabled do f.spells[seed.disabled[j]] = false end
+                for j = 1, #seed.enabled do
+                    f.spells[seed.enabled[j]] = true
+                end
+                for j = 1, #seed.disabled do
+                    f.spells[seed.disabled[j]] = false
+                end
                 if retailIds then
-                    for j = 1, #seed.enabled do NoteSeed(f, seed.key, seed.enabled[j]) end
-                    for j = 1, #seed.disabled do NoteSeed(f, seed.key, seed.disabled[j]) end
+                    for j = 1, #seed.enabled do
+                        NoteSeed(f, seed.key, seed.enabled[j])
+                    end
+                    for j = 1, #seed.disabled do
+                        NoteSeed(f, seed.key, seed.disabled[j])
+                    end
                 end
                 created = created + 1
             end
@@ -652,11 +774,17 @@ function ns.PAB_ImportBM2Filters()
             -- removing non-seed ids would delete user additions.
             for j = 1, #seed.enabled do
                 local id = seed.enabled[j]
-                if f.spells[id] == nil then f.spells[id] = true; NoteSeed(f, seed.key, id) end
+                if f.spells[id] == nil then
+                    f.spells[id] = true
+                    NoteSeed(f, seed.key, id)
+                end
             end
             for j = 1, #seed.disabled do
                 local id = seed.disabled[j]
-                if f.spells[id] == nil then f.spells[id] = false; NoteSeed(f, seed.key, id) end
+                if f.spells[id] == nil then
+                    f.spells[id] = false
+                    NoteSeed(f, seed.key, id)
+                end
             end
             -- Family heal: a checked PRIMARY whose curated alternates were left
             -- unchecked (the pre-fix editor toggled only the visible row) pulls
@@ -665,7 +793,9 @@ function ns.PAB_ImportBM2Filters()
             for primary, alts in pairs(PRESET_ALTS) do
                 if f.spells[primary] == true then
                     for k = 1, #alts do
-                        if f.spells[alts[k]] == false then f.spells[alts[k]] = true end
+                        if f.spells[alts[k]] == false then
+                            f.spells[alts[k]] = true
+                        end
                     end
                 end
             end
@@ -686,7 +816,9 @@ function ns.PAB_GetCustomBuffBar(id)
     local list = ns.PAB_CustomBuffBars()
     if list then
         for i = 1, #list do
-            if list[i].id == id then return list[i], "allspecs" end
+            if list[i].id == id then
+                return list[i], "allspecs"
+            end
         end
     end
     local s = PAB()
@@ -696,7 +828,9 @@ function ns.PAB_GetCustomBuffBar(id)
             local bl = b.buffBars
             if bl then
                 for i = 1, #bl do
-                    if bl[i].id == id then return bl[i], key end
+                    if bl[i].id == id then
+                        return bl[i], key
+                    end
                 end
             end
         end
@@ -707,7 +841,9 @@ function ns.PAB_GetCustomDebuffBar(id)
     local list = ns.PAB_CustomDebuffBars()
     if list then
         for i = 1, #list do
-            if list[i].id == id then return list[i], "allspecs" end
+            if list[i].id == id then
+                return list[i], "allspecs"
+            end
         end
     end
     local s = PAB()
@@ -717,7 +853,9 @@ function ns.PAB_GetCustomDebuffBar(id)
             local bl = b.debuffBars
             if bl then
                 for i = 1, #bl do
-                    if bl[i].id == id then return bl[i], key end
+                    if bl[i].id == id then
+                        return bl[i], key
+                    end
                 end
             end
         end
@@ -735,15 +873,17 @@ end
 -- fresh bar renders with sane defaults and Options only writes fields the user touches.
 function ns.PAB_AddCustomBuffBar(name, bucketKey)
     local s = PABEnsure()
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     s.customBuffBars = s.customBuffBars or {}
     local bar = {
         id = NextBarId(s),
         name = name or "New Buff Bar",
         enabled = true,
-        filters = {},         -- [filterId] = true (BM2-style assigned filters)
-        spells = {},           -- {spellID, ...} direct/custom spells
-        ownOnlySpells = {},    -- [spellID] = bool
+        filters = {}, -- [filterId] = true (BM2-style assigned filters)
+        spells = {}, -- {spellID, ...} direct/custom spells
+        ownOnlySpells = {}, -- [spellID] = bool
         growDirection = "LEFT",
         -- Starting grid: a compact single row, deliberately distinct from the default
         -- bars' ComputeGrid fallback (11x3 for buffs) -- a fresh custom bar starts
@@ -761,13 +901,15 @@ end
 
 function ns.PAB_AddCustomDebuffBar(name, bucketKey)
     local s = PABEnsure()
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     s.customDebuffBars = s.customDebuffBars or {}
     local bar = {
         id = NextBarId(s),
         name = name or "New Debuff Bar",
         enabled = true,
-        classFilters = {},    -- [classKey] = true, same vocabulary as BuildChain
+        classFilters = {}, -- [classKey] = true, same vocabulary as BuildChain
         growDirection = "LEFT",
         -- Same starting-grid reasoning as PAB_AddCustomBuffBar above.
         iconsPerRow = 8,
@@ -788,9 +930,13 @@ end
 -- global id; the source is untouched.
 function ns.PAB_CopyCustomBar(isBuff, src, bucketKey)
     local s = PABEnsure()
-    if not (s and src) then return nil end
+    if not (s and src) then
+        return nil
+    end
     local target = ns.PAB_BucketBars(isBuff, bucketKey, true)
-    if not target then return nil end
+    if not target then
+        return nil
+    end
     local bar = CopyTable(src)
     bar.id = NextBarId(s)
     target[#target + 1] = bar
@@ -802,21 +948,29 @@ end
 -- deleted bar's key could only leak).
 local function DeleteFromSpecBuckets(s, id, listField)
     local st = s.pabSpecBars
-    if not st then return end
+    if not st then
+        return
+    end
     for _, b in pairs(st) do
         local bl = b[listField]
         if bl then
             for i = #bl, 1, -1 do
-                if bl[i].id == id then table.remove(bl, i) end
+                if bl[i].id == id then
+                    table.remove(bl, i)
+                end
             end
         end
-        if b.inhDis then b.inhDis[id] = nil end
+        if b.inhDis then
+            b.inhDis[id] = nil
+        end
     end
 end
 
 function ns.PAB_DeleteCustomBuffBar(id)
     local s = PABEnsure()
-    if not s then return end
+    if not s then
+        return
+    end
     -- WoW Forever: a delete can empty the bucket the player's class renders
     -- (its bars, or the per-spec disables the sweep clears), which moves it
     -- to the next class spec with data (ns.PAB_ForeverSpecID); a move
@@ -824,25 +978,35 @@ function ns.PAB_DeleteCustomBuffBar(id)
     local fvSid = CludesUI.IS_FOREVER and ns.PAB_ForeverSpecID() or nil
     if s.customBuffBars then
         for i = #s.customBuffBars, 1, -1 do
-            if s.customBuffBars[i].id == id then table.remove(s.customBuffBars, i) end
+            if s.customBuffBars[i].id == id then
+                table.remove(s.customBuffBars, i)
+            end
         end
     end
     DeleteFromSpecBuckets(s, id, "buffBars")
-    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then ReloadAllCustomBars() end
+    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then
+        ReloadAllCustomBars()
+    end
 end
 
 function ns.PAB_DeleteCustomDebuffBar(id)
     local s = PABEnsure()
-    if not s then return end
+    if not s then
+        return
+    end
     -- WoW Forever: same bucket-move check as ns.PAB_DeleteCustomBuffBar.
     local fvSid = CludesUI.IS_FOREVER and ns.PAB_ForeverSpecID() or nil
     if s.customDebuffBars then
         for i = #s.customDebuffBars, 1, -1 do
-            if s.customDebuffBars[i].id == id then table.remove(s.customDebuffBars, i) end
+            if s.customDebuffBars[i].id == id then
+                table.remove(s.customDebuffBars, i)
+            end
         end
     end
     DeleteFromSpecBuckets(s, id, "debuffBars")
-    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then ReloadAllCustomBars() end
+    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then
+        ReloadAllCustomBars()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -863,13 +1027,25 @@ end
 -- "All Non Healers/Aug" its exact complement.
 local function RoleBucketForSpecID(specID)
     -- WoW Forever specs carry no role (same rule as the RaidFrames twin).
-    if CludesUI.IS_FOREVER then return nil end
-    if not specID then return nil end
-    if specID == 1473 then return "healers" end
+    if CludesUI.IS_FOREVER then
+        return nil
+    end
+    if not specID then
+        return nil
+    end
+    if specID == 1473 then
+        return "healers"
+    end
     local role = GetSpecializationInfoByID and select(5, GetSpecializationInfoByID(specID))
-    if role == "HEALER" then return "healers" end
-    if role == "TANK" then return "tanks" end
-    if role then return "dps" end
+    if role == "HEALER" then
+        return "healers"
+    end
+    if role == "TANK" then
+        return "tanks"
+    end
+    if role then
+        return "dps"
+    end
     -- Unknown spec/unavailable API: no role bucket beats a wrong one.
     return nil
 end
@@ -877,7 +1053,9 @@ ns.PAB_RoleBucketForSpecID = RoleBucketForSpecID
 
 local function CurrentSpecID()
     -- WoW Forever: the retail spec the player's class acts as.
-    if CludesUI.IS_FOREVER then return ns.PAB_ForeverSpecID() end
+    if CludesUI.IS_FOREVER then
+        return ns.PAB_ForeverSpecID()
+    end
     local idx = GetSpecialization and GetSpecialization()
     return idx and GetSpecializationInfo and GetSpecializationInfo(idx) or nil
 end
@@ -887,25 +1065,38 @@ end
 function ns.PAB_InheritedGroupsFor(bucketKey)
     local m = type(bucketKey) == "string" and bucketKey:match("^spec(%d+)$")
     local sid = m and tonumber(m)
-    if not sid then return nil end
+    if not sid then
+        return nil
+    end
     -- WoW Forever has no spec roles: a class view inherits All Specs only.
-    if CludesUI.IS_FOREVER then return { "allspecs" } end
+    if CludesUI.IS_FOREVER then
+        return { "allspecs" }
+    end
     local out = { "allspecs" }
     local roleKey = RoleBucketForSpecID(sid)
-    if roleKey ~= "healers" then out[#out + 1] = "nonhealer" end
-    if roleKey then out[#out + 1] = roleKey end
+    if roleKey ~= "healers" then
+        out[#out + 1] = "nonhealer"
+    end
+    if roleKey then
+        out[#out + 1] = roleKey
+    end
     return out
 end
 
 local function SpecBarBucket(s, key, create)
     local st = s.pabSpecBars
     if not st then
-        if not create then return nil end
-        st = {}; s.pabSpecBars = st
+        if not create then
+            return nil
+        end
+        st = {}
+        s.pabSpecBars = st
     end
     local b = st[key]
     if not b then
-        if not create then return nil end
+        if not create then
+            return nil
+        end
         b = { buffBars = {}, debuffBars = {}, inhDis = {} }
         st[key] = b
     end
@@ -921,21 +1112,33 @@ end
 -- class. Resolved per reload / page build / removal, never per frame.
 function ns.PAB_BucketHasData(id, st)
     local b = st and st["spec" .. id]
-    if b == nil then return false end
-    if (b.buffBars and #b.buffBars > 0) or (b.debuffBars and #b.debuffBars > 0) then return true end
+    if b == nil then
+        return false
+    end
+    if (b.buffBars and #b.buffBars > 0) or (b.debuffBars and #b.debuffBars > 0) then
+        return true
+    end
     local dis = b.inhDis
-    if not (dis and next(dis) ~= nil) then return false end
-    if not CludesUI.IS_FOREVER then return true end
+    if not (dis and next(dis) ~= nil) then
+        return false
+    end
+    if not CludesUI.IS_FOREVER then
+        return true
+    end
     -- WoW Forever renders All Specs and the class's own bucket only, so only
     -- a disable of an All Specs bar counts. Scans the bar arrays in place.
     local s = PAB()
     local list = s and s.customBuffBars
     for i = 1, (list and #list or 0) do
-        if dis[list[i].id] then return true end
+        if dis[list[i].id] then
+            return true
+        end
     end
     list = s and s.customDebuffBars
     for i = 1, (list and #list or 0) do
-        if dis[list[i].id] then return true end
+        if dis[list[i].id] then
+            return true
+        end
     end
     return false
 end
@@ -952,18 +1155,28 @@ end
 -- Bucket bar array for an EDITED view ("allspecs"/nil = the legacy arrays).
 function ns.PAB_BucketBars(isBuff, key, create)
     local s = create and PABEnsure() or PAB()
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     if not key or key == "allspecs" then
         if isBuff then
-            if create then s.customBuffBars = s.customBuffBars or {} end
+            if create then
+                s.customBuffBars = s.customBuffBars or {}
+            end
             return s.customBuffBars
         end
-        if create then s.customDebuffBars = s.customDebuffBars or {} end
+        if create then
+            s.customDebuffBars = s.customDebuffBars or {}
+        end
         return s.customDebuffBars
     end
     local b = SpecBarBucket(s, key, create)
-    if not b then return nil end
-    if isBuff then return b.buffBars end
+    if not b then
+        return nil
+    end
+    if isBuff then
+        return b.buffBars
+    end
     return b.debuffBars
 end
 
@@ -977,25 +1190,39 @@ end
 
 function ns.PAB_SetInhDisabled(concreteKey, id, disabled)
     local s = PABEnsure()
-    if not (s and concreteKey and id) then return end
+    if not (s and concreteKey and id) then
+        return
+    end
     -- WoW Forever: clearing the last per-spec disable can move the bucket
     -- the player's class renders (see ns.PAB_DeleteCustomBuffBar).
     local fvSid = CludesUI.IS_FOREVER and ns.PAB_ForeverSpecID() or nil
     local b = SpecBarBucket(s, concreteKey, true)
     b.inhDis[id] = disabled and true or nil
-    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then ReloadAllCustomBars() end
+    if fvSid and ns.PAB_ForeverSpecID() ~= fvSid then
+        ReloadAllCustomBars()
+    end
 end
 
 -- Does bucketKey's content render for the given spec?
 local function BucketApplies(bucketKey, sid)
-    if not bucketKey or bucketKey == "allspecs" then return true end
+    if not bucketKey or bucketKey == "allspecs" then
+        return true
+    end
     local m = bucketKey:match("^spec(%d+)$")
-    if m then return sid == tonumber(m) end
+    if m then
+        return sid == tonumber(m)
+    end
     -- WoW Forever has no spec roles: no group bucket applies there.
-    if CludesUI.IS_FOREVER then return false end
-    if not sid then return false end
+    if CludesUI.IS_FOREVER then
+        return false
+    end
+    if not sid then
+        return false
+    end
     local roleKey = RoleBucketForSpecID(sid)
-    if bucketKey == "nonhealer" then return roleKey ~= "healers" end
+    if bucketKey == "nonhealer" then
+        return roleKey ~= "healers"
+    end
     return bucketKey == roleKey
 end
 
@@ -1005,16 +1232,24 @@ end
 -- CURRENT spec, and (group buckets, All Specs included) this spec hasn't
 -- per-spec disabled it. bucketKey nil = legacy = "allspecs".
 function ns.PAB_BarActive(bar, bucketKey)
-    if not bar or bar.enabled == false then return false end
+    if not bar or bar.enabled == false then
+        return false
+    end
     local sMaster = PAB()
-    if not sMaster or sMaster.enabled ~= true then return false end
+    if not sMaster or sMaster.enabled ~= true then
+        return false
+    end
     local sid = CurrentSpecID()
-    if not BucketApplies(bucketKey, sid) then return false end
+    if not BucketApplies(bucketKey, sid) then
+        return false
+    end
     local isOwn = bucketKey and bucketKey:match("^spec%d") and true or false
     if not isOwn and sid then
         local s = PAB()
         local con = s and s.pabSpecBars and s.pabSpecBars["spec" .. sid]
-        if con and con.inhDis and con.inhDis[bar.id] then return false end
+        if con and con.inhDis and con.inhDis[bar.id] then
+            return false
+        end
     end
     return true
 end

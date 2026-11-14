@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Secure.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local MAX_LATTICE, PA, REGION_MAX = I.MAX_LATTICE, I.PA, I.REGION_MAX
@@ -18,7 +22,9 @@ local EnsureScrollCatcher, EnsureSecureHeader = I.EnsureScrollCatcher, I.EnsureS
 local SetCancelButton = I.SetCancelButton
 
 local cancelButton
-I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v) cancelButton = v end
+I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v)
+    cancelButton = v
+end
 
 -------------------------------------------------------------------------------
 --  Secure activation
@@ -38,8 +44,12 @@ I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v) cancelButton = v
 local function LayoutModel(paletteIndex)
     local p = PA(paletteIndex)
     local layout = (p and p.layout) or "ARC"
-    if layout == "ARC" then return "ANGULAR" end
-    if layout == "GRID" then return "POINTER" end
+    if layout == "ARC" then
+        return "ANGULAR"
+    end
+    if layout == "GRID" then
+        return "POINTER"
+    end
     -- A fan is always wheel-steered now -- see IsHoverFan.
     return "SCROLL"
 end
@@ -984,7 +994,9 @@ SNIPPET_PRE = SNIPPET_PRE:gsub("__LATTICE_MAX__", tostring(MAX_LATTICE))
 -- A FUNCTION replacement rather than a plain string: gsub reads "%" in a
 -- replacement string as a capture reference, and a fragment that ever grows a
 -- modulo would otherwise fail here rather than where it was written.
-SNIPPET_PRE = SNIPPET_PRE:gsub("__ARM_CLAIM__", function() return ARM_CLAIM end)
+SNIPPET_PRE = SNIPPET_PRE:gsub("__ARM_CLAIM__", function()
+    return ARM_CLAIM
+end)
 -- Parenthesised: gsub returns the count as a second value, and an unparenthesised
 -- call in a multiple-assignment or an argument list leaks it into the next slot.
 SNIPPET_PRE = (SNIPPET_PRE:gsub("__CONFIRM_BUTTON__", CONFIRM_BUTTON))
@@ -1078,10 +1090,11 @@ local function OnCancelClick()
 end
 
 local function EnsureCancelButton()
-    if cancelButton then return cancelButton end
+    if cancelButton then
+        return cancelButton
+    end
 
-    local btn = CreateFrame("Button", "CUIQuickdrawCancel", UIParent,
-        "SecureActionButtonTemplate")
+    local btn = CreateFrame("Button", "CUIQuickdrawCancel", UIParent, "SecureActionButtonTemplate")
     -- Down only: ESCAPE should take effect the instant it is pressed, and a
     -- second run on the up edge would only re-raise a flag that is already set.
     btn:RegisterForClicks("AnyDown")

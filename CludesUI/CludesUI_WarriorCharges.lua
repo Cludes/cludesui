@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CludesUI_WarriorCharges.lua
 -- 12.1 ONLY: engine-fed charge fills for the two Warrior class-resource buffs
 -- the aura read surface refuses outright (not whitelisted: GetPlayerAuraBySpellID
@@ -99,9 +101,13 @@ local HostRecolor -- forward (lift re-applies through it)
 local HostSyncByKey -- forward
 
 local function EnsureLift()
-    if S.liftHooked then return end
+    if S.liftHooked then
+        return
+    end
     local AK = CludesUI.AuraKit
-    if not (AK and AK.OnRestrictionLift) then return end
+    if not (AK and AK.OnRestrictionLift) then
+        return
+    end
     S.liftHooked = true
     AK.OnRestrictionLift(function()
         for _, H in pairs(S.hosts) do
@@ -125,12 +131,18 @@ end
 -- always stashed as pend: the creation-window bake reads it (the only write
 -- that always lands) and the lift re-applies it.
 HostRecolor = function(H, powerKey, r, g, b, a)
-    if H.armed ~= powerKey then return end
+    if H.armed ~= powerKey then
+        return
+    end
     H.pendR, H.pendG, H.pendB, H.pendA = r, g, b, a
     local st = H.ph[powerKey]
     local bft = st and st.bft
-    if not bft then return end -- not built yet: stash only, no write to try
-    if H.lastR == r and H.lastG == g and H.lastB == b and H.lastA == a then return end
+    if not bft then
+        return
+    end -- not built yet: stash only, no write to try
+    if H.lastR == r and H.lastG == g and H.lastB == b and H.lastA == a then
+        return
+    end
     if pcall(bft.SetVertexColor, bft, r, g, b, a or 1) then
         H.lastR, H.lastG, H.lastB, H.lastA = r, g, b, a
     else
@@ -147,11 +159,12 @@ local function BuildHostPhase(H, powerKey, opts)
     local AK = CludesUI.AuraKit
     local cfg = PHASES[powerKey]
     local st = H.ph[powerKey]
-    if st.container then return end
+    if st.container then
+        return
+    end
 
     local styleKey = "war:" .. H.key .. ":" .. powerKey
-    AK.styles[styleKey] = AK.styles[styleKey]
-        or { noRegions = true, width = 1, height = 1 }
+    AK.styles[styleKey] = AK.styles[styleKey] or { noRegions = true, width = 1, height = 1 }
     if not H.proxy then
         H.proxy = CreateFrame("Frame", nil, UIParent)
         H.proxy:Hide()
@@ -185,8 +198,12 @@ local function BuildHostPhase(H, powerKey, opts)
             -- Display-only overlay: an engine aura button comes mouse-enabled,
             -- and clicks alone would make it an invisible blocker over the
             -- host's row for as long as the buff is up.
-            if button.SetMouseClickEnabled then button:SetMouseClickEnabled(false) end
-            if button.SetMouseMotionEnabled then button:SetMouseMotionEnabled(false) end
+            if button.SetMouseClickEnabled then
+                button:SetMouseClickEnabled(false)
+            end
+            if button.SetMouseMotionEnabled then
+                button:SetMouseMotionEnabled(false)
+            end
             st.btn = button
 
             local bar = CreateFrame("StatusBar", nil, button)
@@ -202,7 +219,9 @@ local function BuildHostPhase(H, powerKey, opts)
             local bft = bar:GetStatusBarTexture()
             if bft then
                 bft:SetVertexColor(r, g, b, a)
-                if fillAlpha < 1 then bft:SetAlpha(fillAlpha) end
+                if fillAlpha < 1 then
+                    bft:SetAlpha(fillAlpha)
+                end
             end
             -- ARMORED: an uncaught error here aborts the engine's
             -- CreateFrameBatch and kills the slot; failures land in st.err and
@@ -214,7 +233,10 @@ local function BuildHostPhase(H, powerKey, opts)
                 end
                 button:SetApplicationBar(bar, barOpts)
             end)
-            if not ok then st.err = err; return end
+            if not ok then
+                st.err = err
+                return
+            end
             st.bar = bar
             st.bft = bft
             st.regMax = maxApps
@@ -230,8 +252,12 @@ local function BuildHostPhase(H, powerKey, opts)
             -- ARTWORK on the bar draws above the fill; the separator ticks
             -- live at +4 above all of it.
             st.thMask = bar:CreateMaskTexture()
-            st.thMask:SetTexture("Interface\\Buttons\\WHITE8x8",
-                "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
+            st.thMask:SetTexture(
+                "Interface\\Buttons\\WHITE8x8",
+                "CLAMPTOBLACKADDITIVE",
+                "CLAMPTOBLACKADDITIVE",
+                "NEAREST"
+            )
             st.thMask:SetAllPoints(bft)
             st.thStrips = {}
             for i = 1, 5 do
@@ -257,7 +283,9 @@ local function BuildHostPhase(H, powerKey, opts)
                     local fs = tc:CreateFontString(nil, "OVERLAY")
                     local lc = opts.text.fontFrom
                     local f, sz, fl
-                    if lc and lc.GetFont then f, sz, fl = lc:GetFont() end
+                    if lc and lc.GetFont then
+                        f, sz, fl = lc:GetFont()
+                    end
                     if f then
                         fs:SetFont(f, sz, fl)
                     else
@@ -267,20 +295,31 @@ local function BuildHostPhase(H, powerKey, opts)
                     local anchor = opts.text.anchor or "CENTER"
                     fs:SetPoint(anchor, button, anchor, opts.text.x or 0, opts.text.y or 0)
                     local fmt
-                    if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter
-                       and Enum.NumericRuleFormatRounding then
+                    if
+                        C_StringUtil
+                        and C_StringUtil.CreateNumericRuleFormatter
+                        and Enum.NumericRuleFormatRounding
+                    then
                         local nf = C_StringUtil.CreateNumericRuleFormatter()
                         local okB = pcall(nf.SetBreakpoints, nf, {
-                            { threshold = 0, format = "%d", step = 1,
-                              rounding = Enum.NumericRuleFormatRounding.Down },
+                            {
+                                threshold = 0,
+                                format = "%d",
+                                step = 1,
+                                rounding = Enum.NumericRuleFormatRounding.Down,
+                            },
                         })
-                        if okB then fmt = nf end
+                        if okB then
+                            fmt = nf
+                        end
                     end
                     button:SetApplicationCount(fs, fmt and { formatter = fmt } or nil)
                     st.tc, st.fs = tc, fs
                     tc:SetShown(opts.text.shown and true or false)
                 end)
-                if not okT then st.textErr = errT end
+                if not okT then
+                    st.textErr = errT
+                end
             end
         end,
     })
@@ -291,17 +330,27 @@ end
 
 local function EnsureHostBuilt(H, powerKey, opts)
     local st = H.ph[powerKey]
-    if not st then st = {}; H.ph[powerKey] = st end
-    if st.built or st.queued or st.err then return end
+    if not st then
+        st = {}
+        H.ph[powerKey] = st
+    end
+    if st.built or st.queued or st.err then
+        return
+    end
     local AK = CludesUI.AuraKit
-    if not (AK and AK.QueueBuildJob) then return end
+    if not (AK and AK.QueueBuildJob) then
+        return
+    end
     st.queued = true
     AK.QueueBuildJob(function()
         st.queued = nil
         -- Latched, not retried: a hard build failure must not re-enter on
         -- every consumer pass and turn one broken container into a storm.
         local ok, err = pcall(BuildHostPhase, H, powerKey, opts)
-        if not ok then st.err = err; return end
+        if not ok then
+            st.err = err
+            return
+        end
         -- The build was deferred past the Sync that requested it: re-run the
         -- attach with the stored sync args.
         if H.armed == powerKey and H.syncFrame then
@@ -339,8 +388,12 @@ local function StyleSeparators(H, frame, sp, n)
     local PP = CludesUI.PP
     local es = (frame.GetEffectiveScale and frame:GetEffectiveScale()) or 1
     local sepW = sep.w or sp.pipSpacing or 1
-    if PP and PP.SnapForES then sepW = PP.SnapForES(sepW, es) end
-    if sepW <= 0 then sepW = 1 end
+    if PP and PP.SnapForES then
+        sepW = PP.SnapForES(sepW, es)
+    end
+    if sepW <= 0 then
+        sepW = 1
+    end
     local len = (vertical and frame:GetHeight() or frame:GetWidth()) or 0
 
     -- Optional empty-cell strip UNDER the engine fill (hosts whose legacy
@@ -359,8 +412,12 @@ local function StyleSeparators(H, frame, sp, n)
             H.emptyTex:SetPoint("TOPLEFT", H.proxy, "TOPLEFT", inset, 0)
             H.emptyTex:SetPoint("BOTTOMRIGHT", H.proxy, "BOTTOMRIGHT", -inset, 0)
         end
-        H.emptyTex:SetColorTexture(sep.empty.r or 0.2, sep.empty.g or 0.2,
-            sep.empty.b or 0.2, sep.empty.a or 1)
+        H.emptyTex:SetColorTexture(
+            sep.empty.r or 0.2,
+            sep.empty.g or 0.2,
+            sep.empty.b or 0.2,
+            sep.empty.a or 1
+        )
         H.emptyTex:Show()
     elseif H.emptyTex then
         H.emptyTex:Hide()
@@ -393,7 +450,9 @@ local function StyleSeparators(H, frame, sp, n)
         -- Snap the tick's EDGE offset, not just the boundary center: a
         -- half-pixel-offset 1px line can disappear into the pixel grid.
         local off = BoundaryPos(i) - sepW / 2
-        if PP and PP.SnapForES then off = PP.SnapForES(off, es) end
+        if PP and PP.SnapForES then
+            off = PP.SnapForES(off, es)
+        end
         if vertical then
             -- Fill runs top-down (or bottom-up for VERTICAL_UP); either way
             -- the boundaries sit at the same fractions from the fill edge.
@@ -413,7 +472,9 @@ local function StyleSeparators(H, frame, sp, n)
         end
         t:Show()
     end
-    for i = n, #H.seps do H.seps[i]:Hide() end
+    for i = n, #H.seps do
+        H.seps[i]:Hide()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -433,7 +494,9 @@ end
 local function StyleThresholds(H, frame, sp, n)
     local st = H.armed and H.ph[H.armed]
     local strips = st and st.thStrips
-    if not strips then return end
+    if not strips then
+        return
+    end
     local spec = H.thSpec
     -- Every write below touches the slot subtree post-window (the strips and
     -- mask were BAKED in the creation window; an outside mask anchored to
@@ -443,7 +506,9 @@ local function StyleThresholds(H, frame, sp, n)
     -- re-run restyles, and a throw can never abort the caller's paint pass again
     local ok = pcall(function()
         if not spec or n <= 0 then
-            for i = 1, #strips do strips[i]:Hide() end
+            for i = 1, #strips do
+                strips[i]:Hide()
+            end
             return
         end
         local ori = sp.pipOrientation or "HORIZONTAL"
@@ -452,8 +517,7 @@ local function StyleThresholds(H, frame, sp, n)
         local used = 0
         for k = 1, #spec do
             local band = spec[k]
-            if band.start and band.start >= 1 and band.start <= n
-               and used < #strips then
+            if band.start and band.start >= 1 and band.start <= n and used < #strips then
                 used = used + 1
                 local t = strips[used]
                 t:SetColorTexture(band.r, band.g, band.b, band.a)
@@ -481,7 +545,9 @@ local function StyleThresholds(H, frame, sp, n)
                 t:Show()
             end
         end
-        for i = used + 1, #strips do strips[i]:Hide() end
+        for i = used + 1, #strips do
+            strips[i]:Hide()
+        end
     end)
     if not ok then
         H.dirty = true
@@ -492,45 +558,69 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(H, powerKey, mode, count, r, g, b, a,
-                              bandOn, bands, bandReverse, reverse)
-    if H.armed ~= powerKey then return end
+local function HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
+    if H.armed ~= powerKey then
+        return
+    end
     local st = H.ph[powerKey]
     local n = (st and st.regMax) or 0
     -- v1: "Up to" modes render nothing (no engine expression).
-    if reverse then count = nil end
-    if bandReverse then bandOn = false end
+    if reverse then
+        count = nil
+    end
+    if bandReverse then
+        bandOn = false
+    end
     local inp = H.thIn
-    if not inp then inp = { bands = {} }; H.thIn = inp end
+    if not inp then
+        inp = { bands = {} }
+        H.thIn = inp
+    end
     local bn = (bandOn and bands and #bands) or 0
-    local changed = inp.mode ~= mode or inp.count ~= count or inp.n ~= n
-        or inp.r ~= r or inp.g ~= g or inp.b ~= b or inp.a ~= a or inp.bn ~= bn
+    local changed = inp.mode ~= mode
+        or inp.count ~= count
+        or inp.n ~= n
+        or inp.r ~= r
+        or inp.g ~= g
+        or inp.b ~= b
+        or inp.a ~= a
+        or inp.bn ~= bn
     if not changed and bn > 0 then
         for k = 1, bn do
             local sb, b2 = inp.bands[k], bands[k]
-            if not sb or sb.to ~= b2.to or sb.r ~= b2.r or sb.g ~= b2.g
-               or sb.b ~= b2.b or sb.a ~= b2.a then
+            if not sb or sb.to ~= b2.to or sb.r ~= b2.r or sb.g ~= b2.g or sb.b ~= b2.b or sb.a ~= b2.a then
                 changed = true
                 break
             end
         end
     end
-    if not changed then return end
+    if not changed then
+        return
+    end
     inp.mode, inp.count, inp.n = mode, count, n
     inp.r, inp.g, inp.b, inp.a, inp.bn = r, g, b, a, bn
     local spec = H.thSpecStore
-    if not spec then spec = {}; H.thSpecStore = spec end
+    if not spec then
+        spec = {}
+        H.thSpecStore = spec
+    end
     local used = 0
     if bn > 0 then
         local prev = 0
         for k = 1, bn do
             local b2 = bands[k]
             local sb = inp.bands[k]
-            if not sb then sb = {}; inp.bands[k] = sb end
+            if not sb then
+                sb = {}
+                inp.bands[k] = sb
+            end
             sb.to, sb.r, sb.g, sb.b, sb.a = b2.to, b2.r, b2.g, b2.b, b2.a
             used = used + 1
             local e = spec[used]
-            if not e then e = {}; spec[used] = e end
+            if not e then
+                e = {}
+                spec[used] = e
+            end
             e.start = prev + 1
             e.r, e.g, e.b = b2.r or 1, b2.g or 1, b2.b or 1
             e.a = b2.a or a or 1
@@ -544,10 +634,15 @@ local function HostThresholds(H, powerKey, mode, count, r, g, b, a,
         local start = count
         used = 1
         local e = spec[1]
-        if not e then e = {}; spec[1] = e end
+        if not e then
+            e = {}
+            spec[1] = e
+        end
         e.start, e.r, e.g, e.b, e.a = start, r or 1, g or 1, b or 1, a or 1
     end
-    for i = used + 1, #spec do spec[i] = nil end
+    for i = used + 1, #spec do
+        spec[i] = nil
+    end
     H.thSpec = (used > 0) and spec or nil
     if H.lastStyleFrame then
         StyleThresholds(H, H.lastStyleFrame, H.lastStyleOpts, H.lastStyleN)
@@ -560,28 +655,38 @@ end
 
 local function HostGate(H)
     H.armed = nil
-    if H.proxy then H.proxy:Hide() end
+    if H.proxy then
+        H.proxy:Hide()
+    end
 end
 
 HostSyncByKey = function(H, frame, powerKey, opts)
-    if S.class ~= "WARRIOR" then return end
+    if S.class ~= "WARRIOR" then
+        return
+    end
     local cfg = powerKey and PHASES[powerKey]
     if not (cfg and frame and opts) then
         HostGate(H)
         return
     end
-    if H.armed ~= powerKey then H.lastR = nil end -- phase swap: re-apply color
+    if H.armed ~= powerKey then
+        H.lastR = nil
+    end -- phase swap: re-apply color
     H.armed = powerKey
     H.syncFrame, H.syncOpts = frame, opts
     local st = H.ph[powerKey]
     if not (st and st.built) then
         EnsureHostBuilt(H, powerKey, opts)
         -- Nothing to show yet (sub-second build window): row stays empty.
-        if H.proxy then H.proxy:Hide() end
+        if H.proxy then
+            H.proxy:Hide()
+        end
         return
     end
     if st.err or not st.bar then
-        if H.proxy then H.proxy:Hide() end
+        if H.proxy then
+            H.proxy:Hide()
+        end
         return
     end
     -- Attach: the proxy rides the host's row frame (the Ebon Might shape);
@@ -640,12 +745,16 @@ HostSyncByKey = function(H, frame, powerKey, opts)
     -- Only one phase is ever armed per host; park the others so a spec swap
     -- never leaves two overlays stacked on the same rect.
     for key, other in pairs(H.ph) do
-        if key ~= powerKey and other.container then other.container:Hide() end
+        if key ~= powerKey and other.container then
+            other.container:Hide()
+        end
     end
 end
 
 local function HostEngineOn(H, powerKey)
-    if not H or H.armed ~= powerKey then return false end
+    if not H or H.armed ~= powerKey then
+        return false
+    end
     local st = H.ph[powerKey]
     return (st and st.built and st.bar and not st.err) and true or false
 end
@@ -664,24 +773,26 @@ _G._EWC = {
     Sync = function(hostKey, frame, powerKey, opts)
         HostSyncByKey(Host(hostKey), frame, powerKey, opts)
     end,
-    Thresholds = function(hostKey, powerKey, mode, count, r, g, b, a,
-                          bandOn, bands, bandReverse, reverse)
+    Thresholds = function(hostKey, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
         local H = S.hosts[hostKey]
         if H then
-            HostThresholds(H, powerKey, mode, count, r, g, b, a,
-                bandOn, bands, bandReverse, reverse)
+            HostThresholds(H, powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
         end
     end,
     Gate = function(hostKey)
         local H = S.hosts[hostKey]
-        if H then HostGate(H) end
+        if H then
+            HostGate(H)
+        end
     end,
     EngineOn = function(hostKey, powerKey)
         return HostEngineOn(S.hosts[hostKey], powerKey)
     end,
     Recolor = function(hostKey, powerKey, r, g, b, a)
         local H = S.hosts[hostKey]
-        if H then HostRecolor(H, powerKey, r, g, b, a) end
+        if H then
+            HostRecolor(H, powerKey, r, g, b, a)
+        end
     end,
     -- Talent-aware registration cap for a power key (0 for unknown keys) --
     -- consumers size their layouts from this so geometry and fill scale agree.

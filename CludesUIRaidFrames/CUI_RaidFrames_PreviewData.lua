@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewData.lua
 --
@@ -8,10 +10,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local UnitName              = UnitName
+local UnitName = UnitName
 
 local RF = ns._internals -- the table of the Raid Frames chain
 local ApplyFont, ApplyRoleIcon, defaults = RF.ApplyFont, RF.ApplyRoleIcon, RF.defaults
@@ -25,9 +29,13 @@ local previewClassTokens, previewRoles = I.previewClassTokens, I.previewRoles
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v) db = v end
+RF.dbSetters[#RF.dbSetters + 1] = function(v)
+    db = v
+end
 local PP
-RF.PPSetters[#RF.PPSetters + 1] = function(v) PP = v end
+RF.PPSetters[#RF.PPSetters + 1] = function(v)
+    PP = v
+end
 
 ns.previewAbsorbValues = ns.previewAbsorbValues or {}
 local previewHealthValues = {}
@@ -48,18 +56,23 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- captured keys to panel-closed values and is NOT tier-scaled, so this holds.
     local s = ns._previewSettingsOverride or ns._pvOverlayProxy or db.profile
     local compact = ns.RF_ButtonCompact(f, s)
-    local classToken = previewClassTokens[index] or ns._PV_CLASS_TOKENS[((index - 1) % #ns._PV_CLASS_TOKENS) + 1]
+    local classToken = previewClassTokens[index]
+        or ns._PV_CLASS_TOKENS[((index - 1) % #ns._PV_CLASS_TOKENS) + 1]
     local playerSlot = previewRoles._playerSlot or 1
     local name
     if index == playerSlot then
         name = UnitName("player") or "Player"
-        if Ambiguate then name = Ambiguate(name, "short") end
+        if Ambiguate then
+            name = Ambiguate(name, "short")
+        end
     else
         -- Legends roster names are RAID-preview-only (user directive): the
         -- party preview (which sandwiches this fn with _previewSettingsOverride
         -- set and its own class tokens) keeps the generic name pool.
-        local legend = not ns._partyPvActive and not ns._previewSettingsOverride
-            and ns._pvNames and ns._pvNames[index]
+        local legend = not ns._partyPvActive
+            and not ns._previewSettingsOverride
+            and ns._pvNames
+            and ns._pvNames[index]
         name = legend or ns._PV_NAMES[((index - 1) % #ns._PV_NAMES) + 1]
     end
     local healthPct = previewHealthValues[index] or (40 + math.random(60))
@@ -76,7 +89,17 @@ local function ApplyPreviewData(f, index, roles, classTokens)
 
     -- Health bar height/anchor + Top Name Bar (helper re-anchors health top to
     -- -topBarH; the per-unit power block below re-sets only the height)
-    LayoutTopNameBar(s, h, powerH, f._health, f._topNameBar, f._topNameBarBg, f._topNameBarText, f._power, true)
+    LayoutTopNameBar(
+        s,
+        h,
+        powerH,
+        f._health,
+        f._topNameBar,
+        f._topNameBarBg,
+        f._topNameBarText,
+        f._power,
+        true
+    )
 
     -- Health bar
     if f._health then
@@ -86,7 +109,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         f._health:SetMinMaxValues(0, 100)
         -- Preview: honor invert setting by flipping the displayed fill percentage
         local healthBarPct = healthPct
-        if pvInvert then healthBarPct = 100 - healthBarPct end
+        if pvInvert then
+            healthBarPct = 100 - healthBarPct
+        end
         f._health:SetValue(healthBarPct)
         f._healthPct = healthPct
         f._classToken = classToken
@@ -96,29 +121,43 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         if mode == "dark" then
             local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
             f._health:SetStatusBarColor(dfr, dfg, dfb, 1)
-            if fillTex then fillTex:SetAlpha(dfa) end
+            if fillTex then
+                fillTex:SetAlpha(dfa)
+            end
         elseif mode == "classic" then
-            if fillTex then fillTex:SetAlpha(1) end
+            if fillTex then
+                fillTex:SetAlpha(1)
+            end
             local pct = healthPct / 100
             local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
             local g = pct > 0.5 and 1 or (pct * 2)
             f._health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
         elseif mode == "customDynamic" then
-            if fillTex then fillTex:SetAlpha(1) end
+            if fillTex then
+                fillTex:SetAlpha(1)
+            end
             local r, g, b = ns.ResolveDynamicColor(s, healthPct / 100)
             f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
         elseif mode == "classReactive" then
-            if fillTex then fillTex:SetAlpha(1) end
+            if fillTex then
+                fillTex:SetAlpha(1)
+            end
             local r, g, b = ns.ResolveClassReactiveColor(s, classToken, healthPct / 100)
             f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
         elseif mode == "custom" then
-            if fillTex then fillTex:SetAlpha(1) end
+            if fillTex then
+                fillTex:SetAlpha(1)
+            end
             local c = s.customFillColor
             f._health:SetStatusBarColor(c.r, c.g, c.b, (s.healthBarOpacity or 100) / 100)
         else
-            if fillTex then fillTex:SetAlpha(1) end
+            if fillTex then
+                fillTex:SetAlpha(1)
+            end
             local cc = CludesUI.GetClassColor(classToken)
-            if cc then f._health:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100) end
+            if cc then
+                f._health:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
+            end
         end
     end
 
@@ -135,8 +174,11 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             f._topNameBarText:SetTextColor(c.r, c.g, c.b)
         else
             local cc = CludesUI.GetClassColor(classToken)
-            if cc then f._topNameBarText:SetTextColor(cc.r, cc.g, cc.b)
-            else f._topNameBarText:SetTextColor(1, 1, 1) end
+            if cc then
+                f._topNameBarText:SetTextColor(cc.r, cc.g, cc.b)
+            else
+                f._topNameBarText:SetTextColor(1, 1, 1)
+            end
         end
     end
 
@@ -167,8 +209,11 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             end
         end
         -- Textured Background, as on the live frames.
-        ns.RF_TexBgLayer(f._health, f._bg, not f.kit
-            and ns.RF_TexBgOpaque(s, s.healthColorMode == "dark") and ns.RF_TexBgPath(s) or nil)
+        ns.RF_TexBgLayer(
+            f._health,
+            f._bg,
+            not f.kit and ns.RF_TexBgOpaque(s, s.healthColorMode == "dark") and ns.RF_TexBgPath(s) or nil
+        )
         if s.healthColorMode == "dark" then
             AnchorPreviewBg()
             f._bg:SetColorTexture(CludesUI.GetDarkModeBg())
@@ -190,11 +235,16 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- Absorb shield preview (dual clip-frame: backfill + forward)
     if f._absorbBar then
         local absStyle = s.absorbStyle or "none"
-        if ns._indicatorsVisible then absStyle = "none"
+        if ns._indicatorsVisible then
+            absStyle = "none"
         elseif ns._testMode then
-            if ns._testAbsorbs == false then absStyle = "none"
-            elseif ns._testAbsorbs and absStyle == "none" then absStyle = "striped" end
-        elseif not ns._absorbsPreviewVisible then absStyle = "none"
+            if ns._testAbsorbs == false then
+                absStyle = "none"
+            elseif ns._testAbsorbs and absStyle == "none" then
+                absStyle = "striped"
+            end
+        elseif not ns._absorbsPreviewVisible then
+            absStyle = "none"
         end
         local absorbAmt = ns.previewAbsorbValues[index] or 0
         local fw = f._absorbBar._forward
@@ -204,15 +254,28 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         if topBar then
             local barPos = ns.GetAbsorbBarPosition(s)
             local barOn = barPos ~= "none"
-            if ns._indicatorsVisible then barOn = false
+            if ns._indicatorsVisible then
+                barOn = false
             elseif ns._testMode then
-                if ns._testAbsorbs == false then barOn = false end
-            elseif not ns._absorbsPreviewVisible then barOn = false
+                if ns._testAbsorbs == false then
+                    barOn = false
+                end
+            elseif not ns._absorbsPreviewVisible then
+                barOn = false
             end
             if barOn and absorbAmt > 0 then
                 local bc = s.absorbBarColor or { r = 1, g = 1, b = 1 }
                 -- (Party Frames kit: laid out on the kit bar and host, as live.)
-                ns.ApplyStripBarLayout(topBar, f._absorbBar, ((f.kit or f._health._cuiBarArea) and f._health) or f, barPos, s.absorbBarHeight or 4, nil, nil, s.absorbBarGrowDir or "up")
+                ns.ApplyStripBarLayout(
+                    topBar,
+                    f._absorbBar,
+                    ((f.kit or f._health._cuiBarArea) and f._health) or f,
+                    barPos,
+                    s.absorbBarHeight or 4,
+                    nil,
+                    nil,
+                    s.absorbBarGrowDir or "up"
+                )
                 topBar:SetStatusBarColor(bc.r, bc.g, bc.b, bc.a or 1)
                 topBar:SetValue(absorbAmt)
                 topBar:Show()
@@ -227,15 +290,28 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             if healTopBarPv then
                 local healBarPos = ns.GetHealAbsorbBarPosition(s)
                 local healBarOn = healBarPos ~= "none"
-                if ns._indicatorsVisible then healBarOn = false
+                if ns._indicatorsVisible then
+                    healBarOn = false
                 elseif ns._testMode then
-                    if ns._testHealAbsorbs == false then healBarOn = false end
-                elseif not ns._absorbsPreviewVisible then healBarOn = false
+                    if ns._testHealAbsorbs == false then
+                        healBarOn = false
+                    end
+                elseif not ns._absorbsPreviewVisible then
+                    healBarOn = false
                 end
                 local haAmtPv = ns.previewHealAbsorbValues[index] or 0
                 if healBarOn and haAmtPv > 0 then
-                    local hbc = s.healAbsorbBarColor or { r = 200/255, g = 29/255, b = 29/255 }
-                    ns.ApplyStripBarLayout(healTopBarPv, f._absorbBar, ((f.kit or f._health._cuiBarArea) and f._health) or f, healBarPos, s.healAbsorbBarHeight or 4, ns.GetAbsorbBarPosition(s), s.absorbBarHeight or 4, s.healAbsorbBarGrowDir or "up")
+                    local hbc = s.healAbsorbBarColor or { r = 200 / 255, g = 29 / 255, b = 29 / 255 }
+                    ns.ApplyStripBarLayout(
+                        healTopBarPv,
+                        f._absorbBar,
+                        ((f.kit or f._health._cuiBarArea) and f._health) or f,
+                        healBarPos,
+                        s.healAbsorbBarHeight or 4,
+                        ns.GetAbsorbBarPosition(s),
+                        s.absorbBarHeight or 4,
+                        s.healAbsorbBarGrowDir or "up"
+                    )
                     healTopBarPv:SetStatusBarColor(hbc.r, hbc.g, hbc.b, hbc.a or 1)
                     healTopBarPv:SetValue(haAmtPv)
                     healTopBarPv:Show()
@@ -248,7 +324,17 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             local modern = (absStyle == "blizzardModern")
             local tex = ns.ResolveAbsorbStyleTex(absStyle, "Interface\\Buttons\\WHITE8X8")
             local alpha = (s.absorbOpacity or 90) / 100
-            local tiled = (absStyle == "striped" or absStyle == "stripedReversed" or absStyle == "stripedThick" or absStyle == "stripedThickR" or absStyle == "largeStripes" or absStyle == "largeStripesR" or absStyle == "largeOutlinedStripes" or absStyle == "largeOutlinedStripesR" or absStyle == "pixelsShieldFill")
+            local tiled = (
+                absStyle == "striped"
+                or absStyle == "stripedReversed"
+                or absStyle == "stripedThick"
+                or absStyle == "stripedThickR"
+                or absStyle == "largeStripes"
+                or absStyle == "largeStripesR"
+                or absStyle == "largeOutlinedStripes"
+                or absStyle == "largeOutlinedStripesR"
+                or absStyle == "pixelsShieldFill"
+            )
             -- (the Party Frames kit's health bar is its own rect)
             local hpW = f.kitG and f.kitG.health.w or w
             local hpH = f.kitG and f.kitG.health.h or healthH
@@ -257,23 +343,33 @@ local function ApplyPreviewData(f, index, roles, classTokens)
 
             f._absorbBar:SetWidth(hpW)
             f._absorbBar:SetHeight(hpH)
-            if fw then fw:SetWidth(hpW); fw:SetHeight(hpH) end
+            if fw then
+                fw:SetWidth(hpW)
+                fw:SetHeight(hpH)
+            end
 
             if modern then
                 -- Forward = modern texture; backfill = flat 10% white overshield (mirrors live).
-                if fw then ns.ApplyModernAbsorbBar(fw, mask) end
+                if fw then
+                    ns.ApplyModernAbsorbBar(fw, mask)
+                end
                 ns.HideModernAbsorbBase(f._absorbBar)
                 f._absorbBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
                 f._absorbBar:SetStatusBarColor(1, 1, 1, 0.10)
                 local bfFill = f._absorbBar:GetStatusBarTexture()
                 if bfFill then
                     bfFill:SetDrawLayer("ARTWORK", 1)
-                    bfFill:SetHorizTile(false); bfFill:SetVertTile(false)
-                    if mask then ns.RF_AddMaskOnce(bfFill, mask) end
+                    bfFill:SetHorizTile(false)
+                    bfFill:SetVertTile(false)
+                    if mask then
+                        ns.RF_AddMaskOnce(bfFill, mask)
+                    end
                 end
             else
                 ns.HideModernAbsorbBase(f._absorbBar)
-                if fw then ns.HideModernAbsorbBase(fw) end
+                if fw then
+                    ns.HideModernAbsorbBase(fw)
+                end
 
                 -- Apply style to backfill bar
                 f._absorbBar:SetStatusBarTexture(tex)
@@ -283,7 +379,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                     bfFill:SetDrawLayer("ARTWORK", 1)
                     bfFill:SetHorizTile(tiled)
                     bfFill:SetVertTile(tiled)
-                    if mask then ns.RF_AddMaskOnce(bfFill, mask) end
+                    if mask then
+                        ns.RF_AddMaskOnce(bfFill, mask)
+                    end
                 end
 
                 -- Apply style to forward bar
@@ -295,7 +393,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                         fwFill:SetDrawLayer("ARTWORK", 1)
                         fwFill:SetHorizTile(tiled)
                         fwFill:SetVertTile(tiled)
-                        if mask then ns.RF_AddMaskOnce(fwFill, mask) end
+                        if mask then
+                            ns.RF_AddMaskOnce(fwFill, mask)
+                        end
                     end
                 end
             end
@@ -304,7 +404,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             -- Mirror the live Show Overshield gate: when off (overlay-like modes) feed
             -- the backfill 0 so the overshield does not render in the preview.
             local pvOsm = s.overshieldMode
-            if pvOsm == nil then pvOsm = (s.showOvershield == false) and "never" or "always" end
+            if pvOsm == nil then
+                pvOsm = (s.showOvershield == false) and "never" or "always"
+            end
             local pvOvershieldOn = pvOsm ~= "never"
             local pvOverlayLike = modern or (s.absorbEdgeMode or "overlay") == "overlay"
             local pvAbValue = (not pvOvershieldOn and pvOverlayLike) and 0 or absorbAmt
@@ -323,17 +425,28 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             local pvGlowVert = ns.RF_IsVerticalFill(s)
             if modern and fw and not pvGlowVert then
                 local fmb = fw._modernBase
-                if fmb then fmb:SetAllPoints(fw:GetStatusBarTexture()) end
+                if fmb then
+                    fmb:SetAllPoints(fw:GetStatusBarTexture())
+                end
             end
             local pvGlowSet = s.absorbGlowLine
             local pvEm = s.absorbEdgeMode or "overlay"
-            if (pvGlowSet == true or (pvGlowSet == nil and modern)) and fw and not pvGlowVert
-                and (modern or pvEm ~= "left") then
+            if
+                (pvGlowSet == true or (pvGlowSet == nil and modern))
+                and fw
+                and not pvGlowVert
+                and (modern or pvEm ~= "left")
+            then
                 local ge
-                if modern then ge = 1
-                elseif pvEm == "overlay" then ge = (pvOsm == "fromleft") and 2 or 1
-                elseif pvEm == "right" then ge = 5
-                else ge = 3 end
+                if modern then
+                    ge = 1
+                elseif pvEm == "overlay" then
+                    ge = (pvOsm == "fromleft") and 2 or 1
+                elseif pvEm == "right" then
+                    ge = 5
+                else
+                    ge = 3
+                end
                 local bft = f._absorbBar:GetStatusBarTexture()
                 local previewOver = absorbAmt > (100 - (healthPct or 100))
                 local g, sp = fw._edgeGate, fw._edgeSpark
@@ -348,7 +461,11 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                     g:SetValue(absorbAmt)
                     sp:SetAllPoints(g:GetStatusBarTexture())
                     local spOn = true
-                    if ge <= 2 then spOn = not previewOver elseif ge == 5 then spOn = previewOver end
+                    if ge <= 2 then
+                        spOn = not previewOver
+                    elseif ge == 5 then
+                        spOn = previewOver
+                    end
                     sp:SetAlpha(spOn and 1 or 0)
                     sp:Show()
                 end
@@ -372,15 +489,25 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                 end
             elseif fw and fw._edgeSpark then
                 fw._edgeSpark:Hide()
-                if fw._bfSpark then fw._bfSpark:Hide() end
+                if fw._bfSpark then
+                    fw._bfSpark:Hide()
+                end
             end
         else
             f._absorbBar:Hide()
-            if fw then fw:Hide() end
+            if fw then
+                fw:Hide()
+            end
             ns.HideModernAbsorbBase(f._absorbBar)
-            if fw then ns.HideModernAbsorbBase(fw) end
-            if fw and fw._edgeSpark then fw._edgeSpark:Hide() end
-            if fw and fw._bfSpark then fw._bfSpark:Hide() end
+            if fw then
+                ns.HideModernAbsorbBase(fw)
+            end
+            if fw and fw._edgeSpark then
+                fw._edgeSpark:Hide()
+            end
+            if fw and fw._bfSpark then
+                fw._bfSpark:Hide()
+            end
         end
         -- Position clip frames + backfill based on shield absorb placement
         -- (mirrors the live ReanchorAbsorbToFill).
@@ -419,7 +546,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                         f._absorbBar:SetPoint("TOPLEFT", f._health, "TOPLEFT", 0, 0)
                         f._absorbBar:SetPoint("TOPRIGHT", f._health, "TOPRIGHT", 0, 0)
                     end
-                    if fw then fw:Hide() end
+                    if fw then
+                        fw:Hide()
+                    end
                 elseif absorbMode == "overlayReverse" or absorbMode == "overlayReverseFull" then
                     -- Whole absorb fills DOWN into the fill from its top edge;
                     -- the filled-region clip masks excess (mirrors live). Full
@@ -447,7 +576,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                     mc:SetPoint("TOPRIGHT", f._health, "TOPRIGHT", 0, 0)
                     f._absorbBar:ClearAllPoints()
                     local pvOsm2 = s.overshieldMode
-                    if pvOsm2 == nil then pvOsm2 = (s.showOvershield == false) and "never" or "always" end
+                    if pvOsm2 == nil then
+                        pvOsm2 = (s.showOvershield == false) and "never" or "always"
+                    end
                     if pvOsm2 == "fromleft" and s.absorbStyle ~= "blizzardModern" then
                         f._absorbBar:SetReverseFill(false)
                         f._absorbBar:SetPoint("TOPLEFT", vfill, hpA, 0, 0)
@@ -482,7 +613,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                     f._absorbBar:SetPoint("TOPRIGHT", f._health, "TOPRIGHT", 0, 0)
                     f._absorbBar:SetPoint("BOTTOMRIGHT", f._health, "BOTTOMRIGHT", 0, 0)
                 end
-                if fw then fw:Hide() end
+                if fw then
+                    fw:Hide()
+                end
             elseif absorbMode == "overlayReverse" or absorbMode == "overlayReverseFull" then
                 -- Whole absorb backfills from the fill's leading edge INTO the
                 -- fill; the filled-region clip masks excess (mirrors live). Full
@@ -515,7 +648,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                 -- right-anchored reverse fill.
                 f._absorbBar:ClearAllPoints()
                 local pvOsm2 = s.overshieldMode
-                if pvOsm2 == nil then pvOsm2 = (s.showOvershield == false) and "never" or "always" end
+                if pvOsm2 == nil then
+                    pvOsm2 = (s.showOvershield == false) and "never" or "always"
+                end
                 if pvOsm2 == "fromleft" and s.absorbStyle ~= "blizzardModern" then
                     f._absorbBar:SetReverseFill(false)
                     f._absorbBar:SetPoint("TOPRIGHT", fill, hpA, 0, 0)
@@ -545,19 +680,40 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- Heal absorb preview
     if f._healAbsorbBar then
         local haStyle = s.healAbsorbStyle or "clean"
-        if ns._indicatorsVisible then haStyle = "none"
+        if ns._indicatorsVisible then
+            haStyle = "none"
         elseif ns._testMode then
-            if ns._testHealAbsorbs == false then haStyle = "none"
-            elseif ns._testHealAbsorbs and haStyle == "none" then haStyle = "clean" end
-        elseif not ns._absorbsPreviewVisible then haStyle = "none"
+            if ns._testHealAbsorbs == false then
+                haStyle = "none"
+            elseif ns._testHealAbsorbs and haStyle == "none" then
+                haStyle = "clean"
+            end
+        elseif not ns._absorbsPreviewVisible then
+            haStyle = "none"
         end
         local haAmt = ns.previewHealAbsorbValues[index] or 0
         if haStyle ~= "none" and haAmt > 0 then
             local haTex = ns.ResolveAbsorbStyleTex(haStyle, "Interface\\Buttons\\WHITE8X8")
             local haAlpha = (s.healAbsorbOpacity or 75) / 100
             local hc = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
-            if haStyle == "healBlizzModern" or haStyle == "largeOutlinedStripes" or haStyle == "largeOutlinedStripesR" then hc = { r = 1, g = 1, b = 1 } end
-            local tiled = (haStyle == "striped" or haStyle == "stripedReversed" or haStyle == "stripedThick" or haStyle == "stripedThickR" or haStyle == "largeStripes" or haStyle == "largeStripesR" or haStyle == "largeOutlinedStripes" or haStyle == "largeOutlinedStripesR" or haStyle == "pixelsShieldFill")
+            if
+                haStyle == "healBlizzModern"
+                or haStyle == "largeOutlinedStripes"
+                or haStyle == "largeOutlinedStripesR"
+            then
+                hc = { r = 1, g = 1, b = 1 }
+            end
+            local tiled = (
+                haStyle == "striped"
+                or haStyle == "stripedReversed"
+                or haStyle == "stripedThick"
+                or haStyle == "stripedThickR"
+                or haStyle == "largeStripes"
+                or haStyle == "largeStripesR"
+                or haStyle == "largeOutlinedStripes"
+                or haStyle == "largeOutlinedStripesR"
+                or haStyle == "pixelsShieldFill"
+            )
             local hpW = f.kitG and f.kitG.health.w or w
             local hpH = f.kitG and f.kitG.health.h or healthH
             local mask = f._healAbsorbBar._mask
@@ -570,7 +726,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                 haFillPv:SetDrawLayer("ARTWORK", 2)
                 haFillPv:SetHorizTile(tiled)
                 haFillPv:SetVertTile(tiled)
-                if mask then ns.RF_AddMaskOnce(haFillPv, mask) end
+                if mask then
+                    ns.RF_AddMaskOnce(haFillPv, mask)
+                end
             end
             f._healAbsorbBar:SetMinMaxValues(0, 100)
             f._healAbsorbBar:SetValue(haAmt)
@@ -652,10 +810,13 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     if f._healPredBar then
         local predAmt = ns.previewHealPredValues and ns.previewHealPredValues[index] or 0
         local wantPred = s.healPrediction
-        if ns._indicatorsVisible then wantPred = false
-        elseif ns._testMode and ns._testHealPrediction ~= nil then wantPred = ns._testHealPrediction end
+        if ns._indicatorsVisible then
+            wantPred = false
+        elseif ns._testMode and ns._testHealPrediction ~= nil then
+            wantPred = ns._testHealPrediction
+        end
         if wantPred and predAmt > 0 then
-            local pc = s.healPredColor or { r = 102/255, g = 243/255, b = 102/255 }
+            local pc = s.healPredColor or { r = 102 / 255, g = 243 / 255, b = 102 / 255 }
             local pAlpha = (s.healPredOpacity or 75) / 100
             f._healPredBar:SetStatusBarColor(pc.r, pc.g, pc.b, pAlpha)
             f._healPredBar:SetWidth(f.kitG and f.kitG.health.w or w)
@@ -698,7 +859,7 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             or (not ns._testMode and not ns._indicatorsVisible and ns._absorbsPreviewVisible)
         if rmhShow and rmhAmt > 0 and rmhStyle ~= "none" then
             ns.ApplyMaxHealthStyle(f._reducedMaxHealthBar, rmhStyle, s)
-            do  -- eats the far end of the bar: the right edge, or the top when vertical
+            do -- eats the far end of the bar: the right edge, or the top when vertical
                 local pvRmhVert = ns.RF_IsVerticalFill(s)
                 f._reducedMaxHealthBar:SetOrientation(pvRmhVert and "VERTICAL" or "HORIZONTAL")
                 ns.RF_ApplyFillRotation(f._reducedMaxHealthBar)
@@ -722,7 +883,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         or (role == "DAMAGER" and s.powerShowForDPS)
     local hidePower = powerH <= 0 or not showForRole
     -- Party Frames kit: the stock mana bar always shows (the kit pass sizes it).
-    if f.kitG then hidePower = false end
+    if f.kitG then
+        hidePower = false
+    end
 
     if f._power then
         if not hidePower then
@@ -760,12 +923,18 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         if hidePower then
             f._powerBg:Hide()
         else
-            local bgc = CludesUI.GetPowerColor and s.powerBgPowerColored
+            local bgc = CludesUI.GetPowerColor
+                and s.powerBgPowerColored
                 and CludesUI.GetPowerColor(CludesUI.CLASS_POWER_MAP[classToken] or "MANA")
             local pf = bgc and CludesUI.GetPowerBgDarkenFactor() or 1
             bgc = bgc or s.powerBgColor
             ns.RF_TexBgTint(f._powerBg, ns.RF_TexBgPath(s))
-            f._powerBg:SetColorTexture(((bgc or {}).r or 0) * pf, ((bgc or {}).g or 0) * pf, ((bgc or {}).b or 0) * pf, (s.powerBgDarkness or 70) / 100)
+            f._powerBg:SetColorTexture(
+                ((bgc or {}).r or 0) * pf,
+                ((bgc or {}).g or 0) * pf,
+                ((bgc or {}).b or 0) * pf,
+                (s.powerBgDarkness or 70) / 100
+            )
             f._powerBg:Show()
         end
     end
@@ -774,20 +943,34 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- the frame border below)
     if f._powerBorder and PP then
         if hidePower or f.stockDiv or f.kitG then
-            if f._powerBorder._powerArtKey then ns.RF_ClearPowerBorderArt(f._powerBorder) end
+            if f._powerBorder._powerArtKey then
+                ns.RF_ClearPowerBorderArt(f._powerBorder)
+            end
             f._powerBorder:Hide()
-        elseif not ((s.powerBorderMatchFrame == true or f._powerBorder._powerArtKey)
-            and ns.RF_ApplyPowerBorderArt(f._powerBorder, s, true, true)) then
+        elseif
+            not (
+                (s.powerBorderMatchFrame == true or f._powerBorder._powerArtKey)
+                and ns.RF_ApplyPowerBorderArt(f._powerBorder, s, true, true)
+            )
+        then
             local pbStyle = s.powerBorderStyle or "cui"
             if pbStyle == "cui" then
                 PP.UpdateBorder(f._powerBorder, 1, 1, 1, 1, 0.2)
                 f._powerBorder:Show()
                 local ppC = PP.GetBorders(f._powerBorder)
                 if ppC then
-                    if ppC._bottom then ppC._bottom:SetAlpha(0) end
-                    if ppC._left then ppC._left:SetAlpha(0) end
-                    if ppC._right then ppC._right:SetAlpha(0) end
-                    if ppC._top then ppC._top:SetAlpha(0.2) end
+                    if ppC._bottom then
+                        ppC._bottom:SetAlpha(0)
+                    end
+                    if ppC._left then
+                        ppC._left:SetAlpha(0)
+                    end
+                    if ppC._right then
+                        ppC._right:SetAlpha(0)
+                    end
+                    if ppC._top then
+                        ppC._top:SetAlpha(0.2)
+                    end
                 end
             else
                 local pbSize = s.powerBorderSize or 1
@@ -801,15 +984,31 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                     local ppC = PP.GetBorders(f._powerBorder)
                     if ppC then
                         if pbStyle == "divider" then
-                            if ppC._bottom then ppC._bottom:SetAlpha(0) end
-                            if ppC._left then ppC._left:SetAlpha(0) end
-                            if ppC._right then ppC._right:SetAlpha(0) end
-                            if ppC._top then ppC._top:SetAlpha(pba) end
+                            if ppC._bottom then
+                                ppC._bottom:SetAlpha(0)
+                            end
+                            if ppC._left then
+                                ppC._left:SetAlpha(0)
+                            end
+                            if ppC._right then
+                                ppC._right:SetAlpha(0)
+                            end
+                            if ppC._top then
+                                ppC._top:SetAlpha(pba)
+                            end
                         else
-                            if ppC._top then ppC._top:SetAlpha(pba) end
-                            if ppC._bottom then ppC._bottom:SetAlpha(pba) end
-                            if ppC._left then ppC._left:SetAlpha(pba) end
-                            if ppC._right then ppC._right:SetAlpha(pba) end
+                            if ppC._top then
+                                ppC._top:SetAlpha(pba)
+                            end
+                            if ppC._bottom then
+                                ppC._bottom:SetAlpha(pba)
+                            end
+                            if ppC._left then
+                                ppC._left:SetAlpha(pba)
+                            end
+                            if ppC._right then
+                                ppC._right:SetAlpha(pba)
+                            end
                         end
                     end
                 end
@@ -823,27 +1022,50 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         f._border:SetFrameLevel(f:GetFrameLevel() + 8)
         CludesUI.ApplyBorderStyle(f._border, 0, 0, 0, 0, 0, "solid")
         f._border._hlBorderSize = nil
-        if f._ApplyBorderColor then f._ApplyBorderColor() end
+        if f._ApplyBorderColor then
+            f._ApplyBorderColor()
+        end
     elseif f._border and PP and f.stockEdge then
         f._border:SetFrameLevel(f:GetFrameLevel() + 8)
         CludesUI.ApplyBorderStyle(f._border, 0, 0, 0, 0, 0, "solid")
         f._border._hlBorderSize = nil
         ns.RF_StockSeat(f)
-        if f.stockDiv and f._power and f._power:IsShown() then ns.RF_StockDivider(f) end
-        if f._ApplyBorderColor then f._ApplyBorderColor() end
+        if f.stockDiv and f._power and f._power:IsShown() then
+            ns.RF_StockDivider(f)
+        end
+        if f._ApplyBorderColor then
+            f._ApplyBorderColor()
+        end
     elseif f._border and PP and compact then
         CludesUI.ApplyBorderStyle(f._border, 0, 0, 0, 0, 0, "solid")
-        if f._ApplyBorderColor then f._ApplyBorderColor() end
+        if f._ApplyBorderColor then
+            f._ApplyBorderColor()
+        end
     elseif f._border and PP then
         local bs = s.borderSize or 1
         local bc = s.borderColor or { r = 0, g = 0, b = 0 }
         local pl = f:GetFrameLevel()
         f._border:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
-        CludesUI.ApplyBorderStyle(f._border, bs, bc.r, bc.g, bc.b, s.borderAlpha or 1,
-            s.borderTexture or "solid", s.borderTextureOffset, s.borderTextureOffsetY,
-            s.borderTextureShiftX, s.borderTextureShiftY, "unitframes", bs, nil,
-            CludesUI.BorderPx(s.borderSizePx, bs, s.borderTexture or "solid"))
-        if f._ApplyBorderColor then f._ApplyBorderColor() end
+        CludesUI.ApplyBorderStyle(
+            f._border,
+            bs,
+            bc.r,
+            bc.g,
+            bc.b,
+            s.borderAlpha or 1,
+            s.borderTexture or "solid",
+            s.borderTextureOffset,
+            s.borderTextureOffsetY,
+            s.borderTextureShiftX,
+            s.borderTextureShiftY,
+            "unitframes",
+            bs,
+            nil,
+            CludesUI.BorderPx(s.borderSizePx, bs, s.borderTexture or "solid")
+        )
+        if f._ApplyBorderColor then
+            f._ApplyBorderColor()
+        end
     end
     -- Rounded corners, as on the live cells (stock styles stay square).
     if f._border then
@@ -852,7 +1074,8 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             CludesUI.RoundCorners(f, radius, {
                 roots = { f._health, f._power, f._topNameBar, f._powerBorder },
                 textures = { f._bg },
-                border = f._border, style = s.borderTexture or "solid",
+                border = f._border,
+                style = s.borderTexture or "solid",
                 corners = s.cornerMask,
             })
         else
@@ -870,8 +1093,12 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         local bs = s.threatBorderSize or 0
         local rc = not compact and s.threatCustomBorder == true and ns.RF_CustomBorderOn(s)
         local wantThreat = bs > 0 or rc
-        if ns._testMode and ns._testThreat ~= nil then wantThreat = ns._testThreat end
-        local showThreat = wantThreat and (ns._testMode or ns._healthAnimActive) and previewRoles._threatIndex == index
+        if ns._testMode and ns._testThreat ~= nil then
+            wantThreat = ns._testThreat
+        end
+        local showThreat = wantThreat
+            and (ns._testMode or ns._healthAnimActive)
+            and previewRoles._threatIndex == index
         local agg
         if f.stockHl then
             f._threatFrame:Hide()
@@ -885,7 +1112,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         end
         if f._pvAggroBdr ~= agg then
             f._pvAggroBdr = agg
-            if f._ApplyBorderColor then f._ApplyBorderColor() end
+            if f._ApplyBorderColor then
+                f._ApplyBorderColor()
+            end
         end
     end
 
@@ -898,11 +1127,19 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- below hover/target and aggro), only over a custom border like the real
     -- frames; a change repaints it, the border pass above ran first.
     do
-        local bdrC = dispVis and dispelDC and s.dispelCustomBorder == true
-            and not compact and (dispelDC.a or 1) > 0 and ns.RF_CustomBorderOn(s) and dispelDC or nil
+        local bdrC = dispVis
+                and dispelDC
+                and s.dispelCustomBorder == true
+                and not compact
+                and (dispelDC.a or 1) > 0
+                and ns.RF_CustomBorderOn(s)
+                and dispelDC
+            or nil
         if f._pvDispelBdrC ~= bdrC then
             f._pvDispelBdrC = bdrC
-            if f._ApplyBorderColor then f._ApplyBorderColor() end
+            if f._ApplyBorderColor then
+                f._ApplyBorderColor()
+            end
         end
     end
     if dispVis and dispelDC then
@@ -936,10 +1173,13 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             elseif olMode == "gradient" or olMode == "gradient_sharp" or olMode == "gradient_reverse" then
                 -- Same pre-baked gradient textures as the live frames so the preview matches.
                 olTex:SetAllPoints(f._health)
-                olTex:SetTexture(olMode == "gradient"
-                    and "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-tb.tga"
-                    or "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-sharp.tga")
-                if olMode == "gradient_reverse" then olTex:SetTexCoord(0, 1, 1, 0) end
+                olTex:SetTexture(
+                    olMode == "gradient" and "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-tb.tga"
+                        or "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-sharp.tga"
+                )
+                if olMode == "gradient_reverse" then
+                    olTex:SetTexCoord(0, 1, 1, 0)
+                end
                 olTex:SetVertexColor(dispelDC.r, dispelDC.g, dispelDC.b, olAlpha)
             end
             olTex:Show()
@@ -949,7 +1189,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
         -- Dispel type icon (positioned per setting)
         if s.showDispelIcons and f._dispelIcon and f._dispelIconTex then
             local atlas = DISPEL_ICON_ATLAS[dispelType]
-            if atlas then f._dispelIconTex:SetAtlas(atlas) end
+            if atlas then
+                f._dispelIconTex:SetAtlas(atlas)
+            end
             f._dispelIcon:ClearAllPoints()
             local diSz = s.dispelIconSize or 16
             f._dispelIcon:SetSize(diSz, diSz)
@@ -983,9 +1225,15 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             f._dispelIcon:Hide()
         end
     else
-        if f._dispelBdrFrame then f._dispelBdrFrame:Hide() end
-        if f._dispelOLTex then f._dispelOLTex:Hide() end
-        if f._dispelIcon then f._dispelIcon:Hide() end
+        if f._dispelBdrFrame then
+            f._dispelBdrFrame:Hide()
+        end
+        if f._dispelOLTex then
+            f._dispelOLTex:Hide()
+        end
+        if f._dispelIcon then
+            f._dispelIcon:Hide()
+        end
     end
 
     -- Static dispel debuff icon (shows a fake debuff matching user's debuff settings)
@@ -996,7 +1244,11 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             -- preview icon follows that location, its offsets and its size.
             local dispSplit = (s.dispellableDebuffLocation or "same") ~= "same"
             local dbSz
-            if dispSplit then dbSz = ns.RFC_SnapSize(ns.DispellableDebuffSize(s)) else dbSz = ns.RFC_DebuffSize(s) end
+            if dispSplit then
+                dbSz = ns.RFC_SnapSize(ns.DispellableDebuffSize(s))
+            else
+                dbSz = ns.RFC_DebuffSize(s)
+            end
             ddi:SetSize(dbSz, dbSz)
             ddi._tex:SetTexture(ns._PV_DISPEL_DB_ICONS[dispelType])
             local _z = s.debuffIconZoom or 0.08
@@ -1038,13 +1290,25 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             -- Border (dispel-type colored)
             local border = ns.RFC_AuraBorder(s, "debuffBorder")
             local dc = GetDispelColor(dispelType, s)
-            if border and dc then border[1], border[2], border[3] = dc.r, dc.g, dc.b end
-            ns.RFC_ApplyAuraBorder(ddi._borderFrame, ddi._borderFrame, border,
-                (ddi._cooldown or ddi):GetFrameLevel())
+            if border and dc then
+                border[1], border[2], border[3] = dc.r, dc.g, dc.b
+            end
+            ns.RFC_ApplyAuraBorder(
+                ddi._borderFrame,
+                ddi._borderFrame,
+                border,
+                (ddi._cooldown or ddi):GetFrameLevel()
+            )
 
-            if ddi._cooldown then ddi._cooldown:Hide() end
-            if ddi._count then ddi._count:SetText("") end
-            if ddi._durText then ddi._durText:Hide() end
+            if ddi._cooldown then
+                ddi._cooldown:Hide()
+            end
+            if ddi._count then
+                ddi._count:SetText("")
+            end
+            if ddi._durText then
+                ddi._durText:Hide()
+            end
             ddi:Show()
         else
             f._pvDispelDebuff:Hide()
@@ -1056,8 +1320,9 @@ local function ApplyPreviewData(f, index, roles, classTokens)
 
     -- Raid marker (1 random in group 1, 1 random in group 4)
     if f._raidMarker then
-        local isMarked = indVis and s.showRaidMarker and
-            (index == previewRoles._markerSlot1 or index == previewRoles._markerSlot2)
+        local isMarked = indVis
+            and s.showRaidMarker
+            and (index == previewRoles._markerSlot1 or index == previewRoles._markerSlot2)
         if isMarked then
             local rmSz = PixelSnap(s.raidMarkerSize or 16)
             f._raidMarker:SetSize(rmSz, rmSz)
@@ -1101,19 +1366,23 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     end
 
     -- WoW Forever: Missing Buffs (CUI_RaidFrames_ForeverMissingBuffs.lua).
-    if ns.RF_FvMissingPreview then ns.RF_FvMissingPreview(f, index, s, indVis) end
+    if ns.RF_FvMissingPreview then
+        ns.RF_FvMissingPreview(f, index, s, indVis)
+    end
 
     -- Ready check icon
     if f._readyCheck then
         local rcStatuses = previewRoles._readyCheck
         local rcStatus = rcStatuses and rcStatuses[index]
         local isSummon = rcStatus and rcStatus:sub(1, 6) == "summon"
-        local isRez    = rcStatus == "rez"
-        local showRC = indVis and rcStatus and (
-            (isRez and s.showIncomingRez) or
-            (isSummon and s.showSummonPending) or
-            (not isSummon and not isRez and s.showReadyCheck)
-        )
+        local isRez = rcStatus == "rez"
+        local showRC = indVis
+            and rcStatus
+            and (
+                (isRez and s.showIncomingRez)
+                or (isSummon and s.showSummonPending)
+                or (not isSummon and not isRez and s.showReadyCheck)
+            )
         if showRC then
             local rcSz = PixelSnap(s.readyCheckSize or 20)
             f._readyCheck:SetSize(rcSz, rcSz)
@@ -1166,20 +1435,21 @@ local function ApplyPreviewData(f, index, roles, classTokens)
     -- Text band level: mirrors AnchorTexts on the live buttons ("Show Above Icons"
     -- lifts the carrier over the aura band). The texts are painted below.
     if f.textCarrier then
-        f.textCarrier:SetFrameLevel(f:GetFrameLevel()
-            + (s.nameTextAboveIcons and (ns.LVL_AURA + 6) or ns.LVL_TEXT))
+        f.textCarrier:SetFrameLevel(
+            f:GetFrameLevel() + (s.nameTextAboveIcons and (ns.LVL_AURA + 6) or ns.LVL_TEXT)
+        )
     end
 
     -- Dead/offline/AFK states (only when indicators eyeball is on). The rez slot is
     -- a second corpse (dimmed, no "DEAD" text) that shows an incoming-rez icon in
     -- place of the status text -- mirrors the live "hide DEAD while rezzing" behavior.
     local isRezCorpse = indVis and index == previewRoles._rezSlot
-    local isDead      = indVis and (index == previewRoles._deadSlot or isRezCorpse)
-    local isOffline   = indVis and index == previewRoles._offlineSlot
+    local isDead = indVis and (index == previewRoles._deadSlot or isRezCorpse)
+    local isOffline = indVis and index == previewRoles._offlineSlot
     -- Mark dead/offline preview frames so the animated-preview ticker skips them
     -- (their health bar is emptied and health text hidden -- never animated).
     f._pvHideHealthText = (isDead or isOffline) or nil
-    local isAfk     = indVis and index == previewRoles._afkSlot
+    local isAfk = indVis and index == previewRoles._afkSlot
 
     -- The texts from this member's made-up values, kept on the frame (f._pv) for the
     -- animated previews: health and power as its bars show them, a heal absorb of 3000 per
@@ -1256,35 +1526,47 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             -- current-health area the dispel wash covers stays empty, as live.
             f._health:SetValue(pvInvert and 100 or 0)
             local ft = f._health:GetStatusBarTexture()
-            if ft then ft:SetAlpha(0) end
+            if ft then
+                ft:SetAlpha(0)
+            end
         end
         if f._bg then
-            local c = s.statusColorDead or { r = 0x24/255, g = 0x17/255, b = 0x17/255 }
-            f._bg:ClearAllPoints(); f._bg:SetAllPoints(f._health)
+            local c = s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 }
+            f._bg:ClearAllPoints()
+            f._bg:SetAllPoints(f._health)
             f._bg:SetColorTexture(c.r, c.g, c.b, 1)
         end
         -- Hide shield on dead players
         if f._absorbBar then
             f._absorbBar:Hide()
-            if f._absorbBar._forward then f._absorbBar._forward:Hide() end
-            if f._absorbBar._topBar then f._absorbBar._topBar:Hide() end
+            if f._absorbBar._forward then
+                f._absorbBar._forward:Hide()
+            end
+            if f._absorbBar._topBar then
+                f._absorbBar._topBar:Hide()
+            end
         end
     elseif isOffline then
         if f._health then
-            f._health:SetValue(pvInvert and 100 or 0)  -- see the dead branch
+            f._health:SetValue(pvInvert and 100 or 0) -- see the dead branch
             local ft = f._health:GetStatusBarTexture()
-            if ft then ft:SetAlpha(0) end
+            if ft then
+                ft:SetAlpha(0)
+            end
         end
         if f._bg then
-            local c = s.statusColorOffline or { r = 0x66/255, g = 0x66/255, b = 0x66/255 }
-            f._bg:ClearAllPoints(); f._bg:SetAllPoints(f._health)
+            local c = s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 }
+            f._bg:ClearAllPoints()
+            f._bg:SetAllPoints(f._health)
             f._bg:SetColorTexture(c.r, c.g, c.b, 1)
         end
     end
 
     -- Role icon (not affected by indicators toggle)
     if f._roleIcon then
-        if f._roleIcon._roleText then f._roleIcon._roleText:Hide() end
+        if f._roleIcon._roleText then
+            f._roleIcon._roleText:Hide()
+        end
         local style = s.roleIconStyle or "modern"
         if s.roleText or style ~= "none" then
             local role = previewRoles[index] or "DAMAGER"
@@ -1297,19 +1579,35 @@ local function ApplyPreviewData(f, index, roles, classTokens)
                 -- Mirror the live carrier's "Show Behind Border" level (see AnchorRoleIcon).
                 local rc = f._roleIcon:GetParent()
                 if rc then
-                    rc:SetFrameLevel(f:GetFrameLevel()
-                        + (s.roleIconBehindBorder and ns.LVL_ROLE_BEHIND or (ns.LVL_AURA - 1)))
+                    rc:SetFrameLevel(
+                        f:GetFrameLevel()
+                            + (s.roleIconBehindBorder and ns.LVL_ROLE_BEHIND or (ns.LVL_AURA - 1))
+                    )
                 end
                 f._roleIcon:ClearAllPoints()
                 if s.roleIconOnNameBar and s.topNameBarEnabled and f._topNameBar then
                     local pos = (s.roleNameBarPosition or "left"):upper()
-                    f._roleIcon:SetPoint(pos, f._topNameBar, pos, s.roleNameBarOffsetX or 0, s.roleNameBarOffsetY or 0)
+                    f._roleIcon:SetPoint(
+                        pos,
+                        f._topNameBar,
+                        pos,
+                        s.roleNameBarOffsetX or 0,
+                        s.roleNameBarOffsetY or 0
+                    )
                 else
                     local pos = (s.roleIconPosition or "bottomleft"):upper()
-                    f._roleIcon:SetPoint(pos, ns.RF_AnchorHost(f._health, s), pos, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
+                    f._roleIcon:SetPoint(
+                        pos,
+                        ns.RF_AnchorHost(f._health, s),
+                        pos,
+                        s.roleIconOffsetX or 0,
+                        s.roleIconOffsetY or 0
+                    )
                 end
                 f._roleIcon:Show()
-                if s.roleText then ns.ApplyRoleText(f._roleIcon, role, s) end
+                if s.roleText then
+                    ns.ApplyRoleText(f._roleIcon, role, s)
+                end
             else
                 f._roleIcon:Hide()
             end
@@ -1334,7 +1632,13 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             f._leaderIcon:SetSize(liSz, liSz)
             f._leaderIcon:ClearAllPoints()
             local liPos = (s.leaderIconPosition or "top"):upper()
-            f._leaderIcon:SetPoint(liPos, ns.RF_AnchorHost(f._health, s), liPos, s.leaderIconOffsetX or 0, s.leaderIconOffsetY or 0)
+            f._leaderIcon:SetPoint(
+                liPos,
+                ns.RF_AnchorHost(f._health, s),
+                liPos,
+                s.leaderIconOffsetX or 0,
+                s.leaderIconOffsetY or 0
+            )
             f._leaderIcon:SetTexture("Interface\\GroupFrame\\UI-Group-LeaderIcon")
             f._leaderIcon:Show()
         else
@@ -1349,20 +1653,31 @@ local function ApplyPreviewData(f, index, roles, classTokens)
             f._combatIcon:SetSize(cciSz, cciSz)
             f._combatIcon:ClearAllPoints()
             local ciPos = (s.combatIndicatorPosition or "right"):upper()
-            f._combatIcon:SetPoint(ciPos, ns.RF_AnchorHost(f._health, s), ciPos, s.combatIndicatorOffsetX or 0, s.combatIndicatorOffsetY or 0)
+            f._combatIcon:SetPoint(
+                ciPos,
+                ns.RF_AnchorHost(f._health, s),
+                ciPos,
+                s.combatIndicatorOffsetX or 0,
+                s.combatIndicatorOffsetY or 0
+            )
             local style = s.combatIndicatorStyle or "standard"
             local MEDIA = ns._COMBAT_MEDIA
             if style:find("^combat%d") then
                 f._combatIcon:SetTexture(MEDIA .. style .. ".tga")
                 f._combatIcon:SetTexCoord(0, 1, 0, 1)
-                if f._combatIcon.SetDesaturated then f._combatIcon:SetDesaturated(false) end
+                if f._combatIcon.SetDesaturated then
+                    f._combatIcon:SetDesaturated(false)
+                end
                 f._combatIcon:SetVertexColor(1, 1, 1, 1)
             else
                 if style == "class" then
                     f._combatIcon:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
                     local coords = classToken and ns._COMBAT_CLASS_COORDS[classToken]
-                    if coords then f._combatIcon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
-                    else f._combatIcon:SetTexCoord(0, 1, 0, 1) end
+                    if coords then
+                        f._combatIcon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                    else
+                        f._combatIcon:SetTexCoord(0, 1, 0, 1)
+                    end
                 else
                     f._combatIcon:SetTexture(MEDIA .. "combat-indicator-custom.png")
                     f._combatIcon:SetTexCoord(0, 1, 0, 1)
@@ -1392,7 +1707,9 @@ end
 ns._previewInitialized = false
 
 local function InitPreviewHealthValues()
-    if ns._previewInitialized then return end
+    if ns._previewInitialized then
+        return
+    end
     ns._previewInitialized = true
     for i = 1, 20 do
         previewHealthValues[i] = 40 + math.random(60)
@@ -1415,7 +1732,9 @@ local function InitPreviewHealthValues()
     end
     -- Assign heal absorbs: 2 random slots
     local haPool = {}
-    for i = 2, 20 do haPool[#haPool + 1] = i end
+    for i = 2, 20 do
+        haPool[#haPool + 1] = i
+    end
     for i = #haPool, 2, -1 do
         local j = math.random(i)
         haPool[i], haPool[j] = haPool[j], haPool[i]
@@ -1425,23 +1744,35 @@ local function InitPreviewHealthValues()
 
     -- Assign heal prediction: 2 random slots (non-full-health frames)
     ns.previewHealPredValues = {}
-    for i = 1, 20 do ns.previewHealPredValues[i] = 0 end
+    for i = 1, 20 do
+        ns.previewHealPredValues[i] = 0
+    end
     local hpPool = {}
     for i = 1, 20 do
-        if previewHealthValues[i] < 95 then hpPool[#hpPool + 1] = i end
+        if previewHealthValues[i] < 95 then
+            hpPool[#hpPool + 1] = i
+        end
     end
     for i = #hpPool, 2, -1 do
         local j = math.random(i)
         hpPool[i], hpPool[j] = hpPool[j], hpPool[i]
     end
-    if hpPool[1] then ns.previewHealPredValues[hpPool[1]] = 10 + math.random(20) end
-    if hpPool[2] then ns.previewHealPredValues[hpPool[2]] = 10 + math.random(20) end
+    if hpPool[1] then
+        ns.previewHealPredValues[hpPool[1]] = 10 + math.random(20)
+    end
+    if hpPool[2] then
+        ns.previewHealPredValues[hpPool[2]] = 10 + math.random(20)
+    end
 
     -- Reduced max health: 2 random slots with 10-25% health loss
     ns.previewReducedMaxHealth = {}
-    for i = 1, 20 do ns.previewReducedMaxHealth[i] = 0 end
+    for i = 1, 20 do
+        ns.previewReducedMaxHealth[i] = 0
+    end
     local rmhPool = {}
-    for i = 2, 20 do rmhPool[#rmhPool + 1] = i end
+    for i = 2, 20 do
+        rmhPool[#rmhPool + 1] = i
+    end
     for i = #rmhPool, 2, -1 do
         local j = math.random(i)
         rmhPool[i], rmhPool[j] = rmhPool[j], rmhPool[i]

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Presets.lua
 --
@@ -15,25 +17,24 @@ local CludesUI = _G.CludesUI
 local PP = CludesUI.PanelPP
 
 -- Utility functions
-local MakeFont         = CludesUI.MakeFont
+local MakeFont = CludesUI.MakeFont
 local DisablePixelSnap = CludesUI.DisablePixelSnap
-local lerp             = CludesUI.lerp
+local lerp = CludesUI.lerp
 local MakeDropdownArrow = CludesUI.MakeDropdownArrow
 
 -- Visual constants
-local CLUDES_GREEN  = CludesUI.CLUDES_GREEN
-local CLASS_COLOR_MAP  = CludesUI.CLASS_COLOR_MAP
+local CLUDES_GREEN = CludesUI.CLUDES_GREEN
+local CLASS_COLOR_MAP = CludesUI.CLASS_COLOR_MAP
 
 -- Numeric constants used in spec assignment popup
-local BORDER_R     = CludesUI.BORDER_R
-local BORDER_G     = CludesUI.BORDER_G
-local BORDER_B     = CludesUI.BORDER_B
-local CB_BOX_R     = CludesUI.CB_BOX_R
-local CB_BOX_G     = CludesUI.CB_BOX_G
-local CB_BOX_B     = CludesUI.CB_BOX_B
-local CB_BRD_A     = CludesUI.CB_BRD_A
+local BORDER_R = CludesUI.BORDER_R
+local BORDER_G = CludesUI.BORDER_G
+local BORDER_B = CludesUI.BORDER_B
+local CB_BOX_R = CludesUI.CB_BOX_R
+local CB_BOX_G = CludesUI.CB_BOX_G
+local CB_BOX_B = CludesUI.CB_BOX_B
+local CB_BRD_A = CludesUI.CB_BRD_A
 local CB_ACT_BRD_A = CludesUI.CB_ACT_BRD_A
-
 
 -------------------------------------------------------------------------------
 --  SPEC ASSIGNMENT POPUP
@@ -51,16 +52,16 @@ do
                 { id = 250, name = "Blood" },
                 { id = 251, name = "Frost" },
                 { id = 252, name = "Unholy" },
-            }
+            },
         },
         {
             class = "DEMONHUNTER",
             name = "Demon Hunter",
             specs = {
-                { id = 577,  name = "Havoc" },
-                { id = 581,  name = "Vengeance" },
+                { id = 577, name = "Havoc" },
+                { id = 581, name = "Vengeance" },
                 { id = 1480, name = "Devourer" },
-            }
+            },
         },
         {
             class = "DRUID",
@@ -70,7 +71,7 @@ do
                 { id = 103, name = "Feral" },
                 { id = 104, name = "Guardian" },
                 { id = 105, name = "Restoration" },
-            }
+            },
         },
         {
             class = "EVOKER",
@@ -79,7 +80,7 @@ do
                 { id = 1467, name = "Devastation" },
                 { id = 1468, name = "Preservation" },
                 { id = 1473, name = "Augmentation" },
-            }
+            },
         },
         {
             class = "HUNTER",
@@ -88,7 +89,7 @@ do
                 { id = 253, name = "Beast Mastery" },
                 { id = 254, name = "Marksmanship" },
                 { id = 255, name = "Survival" },
-            }
+            },
         },
         {
             class = "MAGE",
@@ -97,7 +98,7 @@ do
                 { id = 62, name = "Arcane" },
                 { id = 63, name = "Fire" },
                 { id = 64, name = "Frost" },
-            }
+            },
         },
         {
             class = "MONK",
@@ -106,7 +107,7 @@ do
                 { id = 268, name = "Brewmaster" },
                 { id = 270, name = "Mistweaver" },
                 { id = 269, name = "Windwalker" },
-            }
+            },
         },
         {
             class = "PALADIN",
@@ -115,7 +116,7 @@ do
                 { id = 65, name = "Holy" },
                 { id = 66, name = "Protection" },
                 { id = 70, name = "Retribution" },
-            }
+            },
         },
         {
             class = "PRIEST",
@@ -124,7 +125,7 @@ do
                 { id = 256, name = "Discipline" },
                 { id = 257, name = "Holy" },
                 { id = 258, name = "Shadow" },
-            }
+            },
         },
         {
             class = "ROGUE",
@@ -133,7 +134,7 @@ do
                 { id = 259, name = "Assassination" },
                 { id = 260, name = "Outlaw" },
                 { id = 261, name = "Subtlety" },
-            }
+            },
         },
         {
             class = "SHAMAN",
@@ -142,7 +143,7 @@ do
                 { id = 262, name = "Elemental" },
                 { id = 263, name = "Enhancement" },
                 { id = 264, name = "Restoration" },
-            }
+            },
         },
         {
             class = "WARLOCK",
@@ -151,7 +152,7 @@ do
                 { id = 265, name = "Affliction" },
                 { id = 266, name = "Demonology" },
                 { id = 267, name = "Destruction" },
-            }
+            },
         },
         {
             class = "WARRIOR",
@@ -160,7 +161,7 @@ do
                 { id = 71, name = "Arms" },
                 { id = 72, name = "Fury" },
                 { id = 73, name = "Protection" },
-            }
+            },
         },
     }
     CludesUI._SPEC_DATA = SPEC_DATA
@@ -178,27 +179,43 @@ do
     ---------------------------------------------------------------------------
     -- Forever class -> Forever spec ID (ChrSpecialization, Forever 1.60.1).
     CludesUI.FOREVER_CLASS_SPEC = {
-        MAGE = 1482, DRUID = 1484, HUNTER = 1485, PALADIN = 1486, PRIEST = 1487,
-        ROGUE = 1488, SHAMAN = 1489, WARLOCK = 1490, WARRIOR = 1491,
+        MAGE = 1482,
+        DRUID = 1484,
+        HUNTER = 1485,
+        PALADIN = 1486,
+        PRIEST = 1487,
+        ROGUE = 1488,
+        SHAMAN = 1489,
+        WARLOCK = 1490,
+        WARRIOR = 1491,
     }
     -- Heals a Forever class range-checks with, best first: the retail-parity
     -- heal (learned at level 12-20 there), then the class's level-1 heal.
     CludesUI.FOREVER_HEAL_SPELLS = {
-        PRIEST  = { 2061, 2050 },   -- Flash Heal, Lesser Heal
-        PALADIN = { 19750, 635 },   -- Flash of Light, Holy Light
-        SHAMAN  = { 8004, 331 },    -- Lesser Healing Wave, Healing Wave
-        DRUID   = { 8936, 5185 },   -- Regrowth, Healing Touch
+        PRIEST = { 2061, 2050 }, -- Flash Heal, Lesser Heal
+        PALADIN = { 19750, 635 }, -- Flash of Light, Holy Light
+        SHAMAN = { 8004, 331 }, -- Lesser Healing Wave, Healing Wave
+        DRUID = { 8936, 5185 }, -- Regrowth, Healing Touch
     }
     local FOREVER_CLASS_ID = {
-        WARRIOR = 1, PALADIN = 2, HUNTER = 3, ROGUE = 4, PRIEST = 5,
-        SHAMAN = 7, MAGE = 8, WARLOCK = 9, DRUID = 11,
+        WARRIOR = 1,
+        PALADIN = 2,
+        HUNTER = 3,
+        ROGUE = 4,
+        PRIEST = 5,
+        SHAMAN = 7,
+        MAGE = 8,
+        WARLOCK = 9,
+        DRUID = 11,
     }
 
-    local fv            -- lookup tables, built on first use (Forever only)
-    local playerClass   -- the player's class token (never changes in a session)
+    local fv -- lookup tables, built on first use (Forever only)
+    local playerClass -- the player's class token (never changes in a session)
 
     local function FV()
-        if fv then return fv end
+        if fv then
+            return fv
+        end
         -- specs/order: the Forever classes only. class/name/specName: every
         -- class in SPEC_DATA, plus each Forever spec ID -> its class.
         fv = { specs = {}, order = {}, class = {}, name = {}, specName = {} }
@@ -213,7 +230,9 @@ do
             local fid = CludesUI.FOREVER_CLASS_SPEC[cls.class]
             if fid then
                 local ids = {}
-                for j = 1, #cls.specs do ids[j] = cls.specs[j].id end
+                for j = 1, #cls.specs do
+                    ids[j] = cls.specs[j].id
+                end
                 fv.specs[cls.class] = ids
                 fv.order[#fv.order + 1] = cls.class
                 fv.class[fid] = cls.class
@@ -223,7 +242,9 @@ do
     end
 
     local function PlayerClass()
-        if not playerClass then playerClass = select(2, UnitClass("player")) end
+        if not playerClass then
+            playerClass = select(2, UnitClass("player"))
+        end
         return playerClass
     end
 
@@ -232,9 +253,13 @@ do
     -- the key new data is written under.
     local function Pick(ids, legacyID, pred, arg)
         if pred then
-            if legacyID and pred(legacyID, arg) then return legacyID end
+            if legacyID and pred(legacyID, arg) then
+                return legacyID
+            end
             for i = 1, #ids do
-                if pred(ids[i], arg) then return ids[i] end
+                if pred(ids[i], arg) then
+                    return ids[i]
+                end
             end
         end
         return ids[1]
@@ -246,10 +271,14 @@ do
     --- can hold data under it: the CDM spell store). token nil = the player.
     --- nil on retail and for a class Forever does not have.
     function CludesUI.ForeverClassSpec(token, pred, arg, withLegacy)
-        if not CludesUI.IS_FOREVER then return nil end
+        if not CludesUI.IS_FOREVER then
+            return nil
+        end
         token = token or PlayerClass()
         local ids = token and FV().specs[token]
-        if not ids then return nil end
+        if not ids then
+            return nil
+        end
         return Pick(ids, withLegacy and CludesUI.FOREVER_CLASS_SPEC[token] or nil, pred, arg)
     end
 
@@ -260,20 +289,30 @@ do
     --- (data held under it), else the player's class retail specs in class
     --- order, else the class's first retail spec.
     function CludesUI.SpecFor(rawID, pred, arg)
-        if not CludesUI.IS_FOREVER or not rawID or rawID == 0 then return rawID end
+        if not CludesUI.IS_FOREVER or not rawID or rawID == 0 then
+            return rawID
+        end
         local t = FV()
         local owner = t.class[rawID]
-        if owner and CludesUI.FOREVER_CLASS_SPEC[owner] ~= rawID then return rawID end
+        if owner and CludesUI.FOREVER_CLASS_SPEC[owner] ~= rawID then
+            return rawID
+        end
         local ids = t.specs[PlayerClass() or ""]
-        if not ids then return rawID end
+        if not ids then
+            return rawID
+        end
         return Pick(ids, rawID, pred, arg)
     end
 
     --- True when specID is a spec the player counts as: retail = the live spec;
     --- Forever = any retail spec of the player's class, or its Forever spec ID.
     function CludesUI.IsPlayerSpec(specID)
-        if not specID then return false end
-        if CludesUI.IS_FOREVER then return FV().class[specID] == PlayerClass() end
+        if not specID then
+            return false
+        end
+        if CludesUI.IS_FOREVER then
+            return FV().class[specID] == PlayerClass()
+        end
         local live = CludesUI._specID
         if not live or live == 0 then
             CludesUI._RefreshSpecID()
@@ -286,17 +325,26 @@ do
     --- class's retail spec IDs in class order (shared tables, read only); the
     --- class owning a retail spec ID of ANY class or a Forever spec ID; the
     --- English spec name of a retail spec ID; class display name and icon.
-    function CludesUI.ForeverClasses() return FV().order end
-    function CludesUI.ForeverClassSpecIDs(token) return token and FV().specs[token] or nil end
-    function CludesUI.SpecClassOf(specID) return specID and FV().class[specID] or nil end
-    function CludesUI.RetailSpecName(specID) return specID and FV().specName[specID] or nil end
+    function CludesUI.ForeverClasses()
+        return FV().order
+    end
+    function CludesUI.ForeverClassSpecIDs(token)
+        return token and FV().specs[token] or nil
+    end
+    function CludesUI.SpecClassOf(specID)
+        return specID and FV().class[specID] or nil
+    end
+    function CludesUI.RetailSpecName(specID)
+        return specID and FV().specName[specID] or nil
+    end
     function CludesUI.ForeverClassName(token)
-        return (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[token])
-            or FV().name[token] or token
+        return (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[token]) or FV().name[token] or token
     end
     function CludesUI.ForeverClassIcon(token)
         local cid = FOREVER_CLASS_ID[token]
-        if not (cid and GetSpecializationInfoForClassID) then return nil end
+        if not (cid and GetSpecializationInfoForClassID) then
+            return nil
+        end
         local _, _, _, icon = GetSpecializationInfoForClassID(cid, 1)
         return icon
     end
@@ -305,18 +353,24 @@ do
     --- every retail spec of its class (a new table; the input is untouched).
     --- Retail: the input.
     function CludesUI.ForeverExpandSpecSet(set)
-        if not CludesUI.IS_FOREVER or not set then return set end
+        if not CludesUI.IS_FOREVER or not set then
+            return set
+        end
         local t, out = FV(), {}
         for id, v in pairs(set) do
             local owner = t.class[id]
-            if not (owner and CludesUI.FOREVER_CLASS_SPEC[owner] == id) then out[id] = v end
+            if not (owner and CludesUI.FOREVER_CLASS_SPEC[owner] == id) then
+                out[id] = v
+            end
         end
         for id, v in pairs(set) do
             local owner = t.class[id]
             if owner and CludesUI.FOREVER_CLASS_SPEC[owner] == id then
                 local ids = t.specs[owner]
                 for i = 1, #ids do
-                    if out[ids[i]] == nil then out[ids[i]] = v end
+                    if out[ids[i]] == nil then
+                        out[ids[i]] = v
+                    end
                 end
             end
         end
@@ -325,23 +379,27 @@ do
 
     -- Store predicates for ForeverClassSpec / SpecFor (plain functions, so no
     -- call site builds a closure).
-    function CludesUI.SpecHasEntry(id, tbl) return tbl ~= nil and tbl[id] ~= nil end
-    function CludesUI.SpecHasStringEntry(id, tbl) return tbl ~= nil and tbl[tostring(id)] ~= nil end
+    function CludesUI.SpecHasEntry(id, tbl)
+        return tbl ~= nil and tbl[id] ~= nil
+    end
+    function CludesUI.SpecHasStringEntry(id, tbl)
+        return tbl ~= nil and tbl[tostring(id)] ~= nil
+    end
 
     -- 5-column layout, sorted alphabetically left-to-right, top-to-bottom
     local NUM_COLS = 5
-    local COL_LISTS = { {1,6,11}, {2,7,12}, {3,8,13}, {4,9}, {5,10} }
+    local COL_LISTS = { { 1, 6, 11 }, { 2, 7, 12 }, { 3, 8, 13 }, { 4, 9 }, { 5, 10 } }
     -- WoW Forever: the class loop runs over no classes (it still hides the
     -- pooled rows) and one row per class is built instead, in two rows that
     -- need a shorter popup.
     local NO_CLASSES = {}
     local FOREVER_POPUP_H = 380
 
-    local specPopup  -- reusable popup frame
+    local specPopup -- reusable popup frame
 
     function CludesUI:ShowSpecAssignPopup(opts)
-        local db        = opts.db
-        local dbKey     = opts.dbKey
+        local db = opts.db
+        local dbKey = opts.dbKey
         local presetKey = opts.presetKey
         local defaultKey = opts.defaultKey
         local allPresetKeysFn = opts.allPresetKeys
@@ -349,13 +407,17 @@ do
         local onDone = opts.onDone
 
         -- Ensure assignments table exists
-        if not db[dbKey] then db[dbKey] = {} end
-        if not db[dbKey][presetKey] then db[dbKey][presetKey] = {} end
+        if not db[dbKey] then
+            db[dbKey] = {}
+        end
+        if not db[dbKey][presetKey] then
+            db[dbKey][presetKey] = {}
+        end
         local assignments = db[dbKey][presetKey]
 
         -- Build or reuse the popup
         if not specPopup then
-            local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
+            local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
             local COL_W = 165
             local COL_GAP = 12
             local CONTENT_LEFT = 41
@@ -392,7 +454,9 @@ do
             popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
 
             local pf = CludesUI._popupFrames
-            if pf then pf[#pf + 1] = { popup = popup, dimmer = dimmer } end
+            if pf then
+                pf[#pf + 1] = { popup = popup, dimmer = dimmer }
+            end
             PP.Size(popup, POPUP_W, POPUP_H)
             PP.Point(popup, "CENTER", CludesUI._mainFrame, "CENTER", 0, 0)
 
@@ -411,7 +475,10 @@ do
             title:SetTextColor(1, 1, 1, 1)
             PP.Point(title, "TOP", popup, "TOP", 0, -32)
             -- WoW Forever has no specs: its rows are classes, and so is the wording.
-            title:SetText(CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes") or CludesUI.L("Assign Preset to Specs"))
+            title:SetText(
+                CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes")
+                    or CludesUI.L("Assign Preset to Specs")
+            )
             popup._title = title
 
             -- Subtitle
@@ -441,7 +508,10 @@ do
                 if prevLink then
                     local div = popup:CreateTexture(nil, "OVERLAY", nil, 7)
                     div:SetColorTexture(1, 1, 1, 0.18)
-                    if div.SetSnapToPixelGrid then div:SetSnapToPixelGrid(false); div:SetTexelSnappingBias(0) end
+                    if div.SetSnapToPixelGrid then
+                        div:SetSnapToPixelGrid(false)
+                        div:SetTexelSnappingBias(0)
+                    end
                     PP.Point(div, "LEFT", prevLink, "RIGHT", LINK_GAP / 2, 0)
                     div:SetWidth(1)
                     div:SetHeight(12)
@@ -450,23 +520,30 @@ do
                 else
                     PP.Point(btn, "TOPLEFT", popup, "TOPLEFT", CONTENT_LEFT, LINK_Y)
                 end
-                btn:SetScript("OnEnter", function() lbl:SetTextColor(1, 1, 1, 0.80) end)
-                btn:SetScript("OnLeave", function() lbl:SetTextColor(1, 1, 1, 0.45) end)
+                btn:SetScript("OnEnter", function()
+                    lbl:SetTextColor(1, 1, 1, 0.80)
+                end)
+                btn:SetScript("OnLeave", function()
+                    lbl:SetTextColor(1, 1, 1, 0.45)
+                end)
                 prevLink = btn
                 return btn
             end
 
-            popup._checkAll      = MakeLink("Check All")
-            popup._checkTanks    = MakeLink("Check Tanks")
-            popup._checkHealers  = MakeLink("Check Healers")
-            popup._checkDPS      = MakeLink("Check DPS")
-            popup._uncheckAll    = MakeLink("Uncheck All")
+            popup._checkAll = MakeLink("Check All")
+            popup._checkTanks = MakeLink("Check Tanks")
+            popup._checkHealers = MakeLink("Check Healers")
+            popup._checkDPS = MakeLink("Check DPS")
+            popup._uncheckAll = MakeLink("Uncheck All")
             -- WoW Forever specs carry no role: the role links are hidden and
             -- Uncheck All sits right after Check All.
             if CludesUI.IS_FOREVER then
-                popup._checkTanks:Hide(); popup._checkTanks._div:Hide()
-                popup._checkHealers:Hide(); popup._checkHealers._div:Hide()
-                popup._checkDPS:Hide(); popup._checkDPS._div:Hide()
+                popup._checkTanks:Hide()
+                popup._checkTanks._div:Hide()
+                popup._checkHealers:Hide()
+                popup._checkHealers._div:Hide()
+                popup._checkDPS:Hide()
+                popup._checkDPS._div:Hide()
                 local un = popup._uncheckAll
                 un:ClearAllPoints()
                 PP.Point(un, "LEFT", popup._checkAll, "RIGHT", LINK_GAP, 0)
@@ -503,8 +580,10 @@ do
             defDDLabel:SetFont(FONT, 14, "")
             defDDLabel:SetTextColor(1, 1, 1, 0.45)
             PP.Point(defDDLabel, "BOTTOM", defDDContainer, "CENTER", 0, 7)
-            defDDLabel:SetText(CludesUI.IS_FOREVER and CludesUI.L("Default Profile (for non-assigned classes)")
-                or CludesUI.L("Default Profile (for non-assigned specs)"))
+            defDDLabel:SetText(
+                CludesUI.IS_FOREVER and CludesUI.L("Default Profile (for non-assigned classes)")
+                    or CludesUI.L("Default Profile (for non-assigned specs)")
+            )
             popup._defDDLabel = defDDLabel
 
             local defDDBtn = CreateFrame("Button", nil, defDDContainer)
@@ -581,24 +660,32 @@ do
                 end
             end)
             defDDBtn:SetScript("OnClick", function()
-                if defMenu:IsShown() then defMenu:Hide() else
-                    if popup._rebuildDefMenu then popup._rebuildDefMenu() end
+                if defMenu:IsShown() then
+                    defMenu:Hide()
+                else
+                    if popup._rebuildDefMenu then
+                        popup._rebuildDefMenu()
+                    end
                     defMenu:Show()
                     -- Controller cursor: move it into the list.
                     CludesUI.PadFocus(defMenu)
                 end
             end)
-            defDDBtn:HookScript("OnHide", function() defMenu:Hide() end)
+            defDDBtn:HookScript("OnHide", function()
+                defMenu:Hide()
+            end)
 
             defMenu:SetScript("OnShow", function(self)
                 local btnScale = defDDBtn:GetEffectiveScale()
-                local uiScale  = UIParent:GetEffectiveScale()
+                local uiScale = UIParent:GetEffectiveScale()
                 self:SetScale(btnScale / uiScale)
                 -- The outline seated before this scale: refit it.
                 popup._defMenuBrd:Fit()
                 self:SetScript("OnUpdate", function(m)
                     if not defDDBtn:IsMouseOver() and not m:IsMouseOver() then
-                        if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then m:Hide() end
+                        if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
+                            m:Hide()
+                        end
                     end
                 end)
             end)
@@ -617,7 +704,9 @@ do
             CludesUI.TrackOverlay(defMenu)
             -- Controller cursor: its cancel press clicks the dropdown button,
             -- which folds the list.
-            if CludesUI.PadCP() then defMenu.CloseButton = defDDBtn end
+            if CludesUI.PadCP() then
+                defMenu.CloseButton = defDDBtn
+            end
 
             -- Done button
             local EG = CLUDES_GREEN
@@ -669,7 +758,9 @@ do
             end)
             cancelBtn:SetScript("OnClick", function()
                 dimmer:Hide()
-                if popup._onCancel then popup._onCancel() end
+                if popup._onCancel then
+                    popup._onCancel()
+                end
             end)
             cancelBtn:Hide()
             popup._cancelBtn = cancelBtn
@@ -679,17 +770,23 @@ do
             dimmer:SetScript("OnMouseDown", function(self)
                 if not popup:IsMouseOver() then
                     self:Hide()
-                    if popup._onCancel then popup._onCancel() end
+                    if popup._onCancel then
+                        popup._onCancel()
+                    end
                 end
             end)
 
             CludesUI.PopupTakeKeys(popup, dimmer)
             popup:SetScript("OnKeyDown", function(self, key)
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
                 if key == "ESCAPE" then
                     self:SetPropagateKeyboardInput(false)
                     dimmer:Hide()
-                    if popup._onCancel then popup._onCancel() end
+                    if popup._onCancel then
+                        popup._onCancel()
+                    end
                 else
                     self:SetPropagateKeyboardInput(true)
                 end
@@ -702,7 +799,9 @@ do
                     padOnly = true,
                     onEscape = function()
                         dimmer:Hide()
-                        if popup._onCancel then popup._onCancel() end
+                        if popup._onCancel then
+                            popup._onCancel()
+                        end
                     end,
                 })
             end
@@ -712,8 +811,8 @@ do
             popup._CLASS_H = CLASS_H
             popup._CLASS_PAD_TOP = CLASS_PAD_TOP
             popup._CLASS_PAD_BOT = CLASS_PAD_BOT
-            popup._SPEC_H  = SPEC_H
-            popup._COL_W   = COL_W
+            popup._SPEC_H = SPEC_H
+            popup._COL_W = COL_W
             popup._CLASS_GAP = CLASS_GAP
             popup._dimmer = dimmer
             popup._POPUP_W = POPUP_W
@@ -725,19 +824,29 @@ do
         if opts.title then
             specPopup._title:SetText(CludesUI.L(opts.title))
         else
-            specPopup._title:SetText(CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes") or CludesUI.L("Assign Preset to Specs"))
+            specPopup._title:SetText(
+                CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes")
+                    or CludesUI.L("Assign Preset to Specs")
+            )
         end
         if opts.subtitle then
             specPopup._subtitle:SetText(CludesUI.L(opts.subtitle))
         else
             local presetName
-            if presetKey == "custom" then presetName = CludesUI.L("Custom")
-            elseif presetKey == "cludesui" then presetName = "CludesUI"
-            elseif presetKey and type(presetKey) == "string" and presetKey:sub(1, 5) == "user:" then presetName = presetKey:sub(6)
-            else presetName = presetKey or "" end
-            specPopup._subtitle:SetText(CludesUI.IS_FOREVER
-                and CludesUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
-                or CludesUI.Lf("Select which specs you want %1$s to be assigned to", presetName))
+            if presetKey == "custom" then
+                presetName = CludesUI.L("Custom")
+            elseif presetKey == "cludesui" then
+                presetName = "CludesUI"
+            elseif presetKey and type(presetKey) == "string" and presetKey:sub(1, 5) == "user:" then
+                presetName = presetKey:sub(6)
+            else
+                presetName = presetKey or ""
+            end
+            specPopup._subtitle:SetText(
+                CludesUI.IS_FOREVER
+                        and CludesUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
+                    or CludesUI.Lf("Select which specs you want %1$s to be assigned to", presetName)
+            )
         end
         -- Per-call subtitle color (default dim white). Lets a caller render a red
         -- overwrite warning in the subtitle slot. Reset every call (popup is cached).
@@ -771,12 +880,12 @@ do
         end
 
         -- Populate columns
-        local FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
+        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local CLASS_H = specPopup._CLASS_H
         local CLASS_PAD_TOP = specPopup._CLASS_PAD_TOP
         local CLASS_PAD_BOT = specPopup._CLASS_PAD_BOT
-        local SPEC_H  = specPopup._SPEC_H
-        local COL_W   = specPopup._COL_W
+        local SPEC_H = specPopup._SPEC_H
+        local COL_W = specPopup._COL_W
         local CLASS_GAP = specPopup._CLASS_GAP
         local allCheckboxes = {}
         local BOX_SZ = 18
@@ -794,10 +903,15 @@ do
                     if pKey ~= presetKey and type(specList) == "table" then
                         for sID in pairs(specList) do
                             local dName
-                            if pKey == "custom" then dName = CludesUI.L("Custom")
-                            elseif pKey == "cludesui" then dName = "CludesUI"
-                            elseif pKey:sub(1, 5) == "user:" then dName = pKey:sub(6)
-                            else dName = pKey end
+                            if pKey == "custom" then
+                                dName = CludesUI.L("Custom")
+                            elseif pKey == "cludesui" then
+                                dName = "CludesUI"
+                            elseif pKey:sub(1, 5) == "user:" then
+                                dName = pKey:sub(6)
+                            else
+                                dName = pKey
+                            end
                             lockedSpecs[sID] = dName
                         end
                     end
@@ -831,7 +945,8 @@ do
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
                 row._boxBg = boxBg
-                local boxBorder = CludesUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
+                local boxBorder =
+                    CludesUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
                 row._boxBorder = boxBorder
                 local check = box:CreateTexture(nil, "ARTWORK")
                 PP.Point(check, "TOPLEFT", box, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
@@ -878,7 +993,9 @@ do
 
         for colIdx = 1, NUM_COLS do
             local col = specPopup._columns[colIdx]
-            for _, row in ipairs(col._rows) do row:Hide() end
+            for _, row in ipairs(col._rows) do
+                row:Hide()
+            end
 
             local list = CludesUI.IS_FOREVER and NO_CLASSES or COL_LISTS[colIdx]
             local rowIdx = 0
@@ -917,7 +1034,9 @@ do
                 else
                     hdr._label:SetTextColor(1, 1, 1, 0.7)
                 end
-                hdr._label:SetText((LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[cls.class]) or cls.name)
+                hdr._label:SetText(
+                    (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[cls.class]) or cls.name
+                )
                 yOff = yOff + CLASS_H + CLASS_PAD_BOT
 
                 -- Spec checkboxes
@@ -932,7 +1051,9 @@ do
                     local locSpecName = spec.name
                     if GetSpecializationInfoByID then
                         local sn = select(2, GetSpecializationInfoByID(spec.id))
-                        if sn and sn ~= "" then locSpecName = sn end
+                        if sn and sn ~= "" then
+                            locSpecName = sn
+                        end
                     end
                     row._lbl:SetText(locSpecName)
                     row._specID = spec.id
@@ -950,25 +1071,29 @@ do
                     allCheckboxes[#allCheckboxes + 1] = row
 
                     row:SetScript("OnClick", function(self)
-                        if self._lockedOn or self._locked or self._disabled then return end
+                        if self._lockedOn or self._locked or self._disabled then
+                            return
+                        end
                         self._checked = not self._checked
                         assignments[spec.id] = self._checked or nil
                         UpdateVisual(self)
                     end)
                     row:SetScript("OnEnter", function(self)
                         if self._disabled and disabledTip then
-                            CludesUI.ShowWidgetTooltip(self._box,
-                                CludesUI.DisabledTooltip(disabledTip))
+                            CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(disabledTip))
                         elseif self._lockedOn and type(lockedOnTip) == "string" then
-                            CludesUI.ShowWidgetTooltip(self._box,
-                                CludesUI.DisabledTooltip(lockedOnTip))
+                            CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(lockedOnTip))
                         end
-                        if self._lockedOn or self._locked or self._disabled then return end
+                        if self._lockedOn or self._locked or self._disabled then
+                            return
+                        end
                         self._lbl:SetTextColor(1, 1, 1, 0.90)
                     end)
                     row:SetScript("OnLeave", function(self)
                         CludesUI.HideWidgetTooltip()
-                        if self._lockedOn or self._locked or self._disabled then return end
+                        if self._lockedOn or self._locked or self._disabled then
+                            return
+                        end
                         self._lbl:SetTextColor(1, 1, 1, 0.65)
                     end)
 
@@ -1020,9 +1145,15 @@ do
                 end
             end
         end
-        specPopup._checkTanks:SetScript("OnClick", function() CheckRole("TANK") end)
-        specPopup._checkHealers:SetScript("OnClick", function() CheckRole("HEALER") end)
-        specPopup._checkDPS:SetScript("OnClick", function() CheckRole("DAMAGER") end)
+        specPopup._checkTanks:SetScript("OnClick", function()
+            CheckRole("TANK")
+        end)
+        specPopup._checkHealers:SetScript("OnClick", function()
+            CheckRole("HEALER")
+        end)
+        specPopup._checkDPS:SetScript("OnClick", function()
+            CheckRole("DAMAGER")
+        end)
 
         -- WoW Forever: one checkbox row per class (the client has one spec per
         -- class; the stores keep retail spec IDs). A row stands for every
@@ -1044,7 +1175,11 @@ do
             -- Label in the class colour at the given alpha.
             local function Tint(row, a)
                 local c = row._fvClr
-                if c then row._lbl:SetTextColor(c.r, c.g, c.b, a) else row._lbl:SetTextColor(1, 1, 1, a) end
+                if c then
+                    row._lbl:SetTextColor(c.r, c.g, c.b, a)
+                else
+                    row._lbl:SetTextColor(1, 1, 1, a)
+                end
             end
             local function State(row)
                 local ids = row._fvIDs
@@ -1061,7 +1196,9 @@ do
                     local dis = disabledSpecs[id]
                     if dis ~= nil then
                         row._disabled = true
-                        if not row._fvDisTip and dis then row._fvDisTip = dis end
+                        if not row._fvDisTip and dis then
+                            row._fvDisTip = dis
+                        end
                     end
                 end
                 -- Owner: the first spec of the class assigned anywhere, in class
@@ -1070,9 +1207,15 @@ do
                 local free = false
                 for i = 1, #ids do
                     local id = ids[i]
-                    if assignments[id] == true then row._checked = true; break end
+                    if assignments[id] == true then
+                        row._checked = true
+                        break
+                    end
                     if lockedSpecs[id] then
-                        if not free then row._locked = true; row._fvBy = lockedSpecs[id] end
+                        if not free then
+                            row._locked = true
+                            row._fvBy = lockedSpecs[id]
+                        end
                         break
                     end
                     free = true
@@ -1082,12 +1225,16 @@ do
                 Tint(row, a)
             end
             local function SetOn(row, on)
-                if row._lockedOn or row._locked or row._disabled then return end
+                if row._lockedOn or row._locked or row._disabled then
+                    return
+                end
                 local ids = row._fvIDs
                 for i = 1, #ids do
                     local id = ids[i]
                     if on then
-                        if not lockedSpecs[id] and disabledSpecs[id] == nil then assignments[id] = true end
+                        if not lockedSpecs[id] and disabledSpecs[id] == nil then
+                            assignments[id] = true
+                        end
                     elseif not LockedOn(id) then
                         assignments[id] = nil
                     end
@@ -1111,33 +1258,45 @@ do
                 row._specID = nil
                 rows[n] = row
                 State(row)
-                row:SetScript("OnClick", function(self) SetOn(self, not self._checked) end)
+                row:SetScript("OnClick", function(self)
+                    SetOn(self, not self._checked)
+                end)
                 row:SetScript("OnEnter", function(self)
                     if self._disabled and self._fvDisTip then
-                        CludesUI.ShowWidgetTooltip(self._box,
-                            CludesUI.DisabledTooltip(self._fvDisTip))
+                        CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(self._fvDisTip))
                     elseif self._lockedOn and self._fvOnTip then
-                        CludesUI.ShowWidgetTooltip(self._box,
-                            CludesUI.DisabledTooltip(self._fvOnTip))
+                        CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(self._fvOnTip))
                     elseif self._locked and self._fvBy then
-                        CludesUI.ShowWidgetTooltip(self._box,
-                            CludesUI.Lf("Already assigned to %s", self._fvBy))
+                        CludesUI.ShowWidgetTooltip(
+                            self._box,
+                            CludesUI.Lf("Already assigned to %s", self._fvBy)
+                        )
                     end
-                    if self._lockedOn or self._locked or self._disabled then return end
+                    if self._lockedOn or self._locked or self._disabled then
+                        return
+                    end
                     Tint(self, 0.90)
                 end)
                 row:SetScript("OnLeave", function(self)
                     CludesUI.HideWidgetTooltip()
-                    if self._lockedOn or self._locked or self._disabled then return end
+                    if self._lockedOn or self._locked or self._disabled then
+                        return
+                    end
                     Tint(self, 0.65)
                 end)
             end
-            for n = #classes + 1, #rows do rows[n] = nil end
+            for n = #classes + 1, #rows do
+                rows[n] = nil
+            end
             specPopup._checkAll:SetScript("OnClick", function()
-                for i = 1, #rows do SetOn(rows[i], true) end
+                for i = 1, #rows do
+                    SetOn(rows[i], true)
+                end
             end)
             specPopup._uncheckAll:SetScript("OnClick", function()
-                for i = 1, #rows do SetOn(rows[i], false) end
+                for i = 1, #rows do
+                    SetOn(rows[i], false)
+                end
             end)
         end
 
@@ -1148,10 +1307,18 @@ do
             specPopup._defDDContainer:Show()
 
             local function DefPresetDisplayName(key)
-                if not key then return "" end
-                if key == "custom" then return CludesUI.L("Custom") end
-                if key == "cludesui" then return "CludesUI" end
-                if key:sub(1, 5) == "user:" then return key:sub(6) end
+                if not key then
+                    return ""
+                end
+                if key == "custom" then
+                    return CludesUI.L("Custom")
+                end
+                if key == "cludesui" then
+                    return "CludesUI"
+                end
+                if key:sub(1, 5) == "user:" then
+                    return key:sub(6)
+                end
                 return key
             end
 
@@ -1165,11 +1332,14 @@ do
 
             specPopup._rebuildDefMenu = function()
                 local items = specPopup._defMenuItems
-                for _, itm in ipairs(items) do itm:Hide() end
+                for _, itm in ipairs(items) do
+                    itm:Hide()
+                end
 
                 local presetList = allPresetKeysFn()
                 local mH = 4
-                local ITEM_FONT = CludesUI._font or ("Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF")
+                local ITEM_FONT = CludesUI._font
+                    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
                 for idx, entry in ipairs(presetList) do
                     local itm = items[idx]
@@ -1187,7 +1357,10 @@ do
                         hl:SetColorTexture(1, 1, 1, 1)
                         hl:SetAlpha(0)
                         itm._hl = hl
-                        itm:SetScript("OnEnter", function() lbl:SetTextColor(1, 1, 1, 1); hl:SetAlpha(0.08) end)
+                        itm:SetScript("OnEnter", function()
+                            lbl:SetTextColor(1, 1, 1, 1)
+                            hl:SetAlpha(0.08)
+                        end)
                         itm:SetScript("OnLeave", function()
                             local isSel = (itm._key == selectedDefaultKey)
                             lbl:SetTextColor(0.55, 0.60, 0.65, 1)
@@ -1245,7 +1418,9 @@ do
             end
             if defaultKey and selectedDefaultKey then
                 db[defaultKey] = selectedDefaultKey
-                if onDefaultChanged then onDefaultChanged() end
+                if onDefaultChanged then
+                    onDefaultChanged()
+                end
             end
             specPopup._dimmer:Hide()
             if opts.onConfirm then

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_FramePool.lua -- the options page frame pool
 --
@@ -101,10 +103,22 @@ local OWNED = setmetatable({}, { __mode = "k" })
 -- Frame types the pool hands out (others are created as today) and the only
 -- templates it accepts (the ones options frames use).
 local FRAME_TYPES = {
-    Frame = "Frame", Button = "Button", CheckButton = "CheckButton", EditBox = "EditBox",
-    ScrollFrame = "ScrollFrame", StatusBar = "StatusBar", Cooldown = "Cooldown", PlayerModel = "PlayerModel",
-    frame = "Frame", button = "Button", checkbutton = "CheckButton", editbox = "EditBox",
-    scrollframe = "ScrollFrame", statusbar = "StatusBar", cooldown = "Cooldown", playermodel = "PlayerModel",
+    Frame = "Frame",
+    Button = "Button",
+    CheckButton = "CheckButton",
+    EditBox = "EditBox",
+    ScrollFrame = "ScrollFrame",
+    StatusBar = "StatusBar",
+    Cooldown = "Cooldown",
+    PlayerModel = "PlayerModel",
+    frame = "Frame",
+    button = "Button",
+    checkbutton = "CheckButton",
+    editbox = "EditBox",
+    scrollframe = "ScrollFrame",
+    statusbar = "StatusBar",
+    cooldown = "Cooldown",
+    playermodel = "PlayerModel",
 }
 local TEMPLATES = { BackdropTemplate = true, CooldownFrameTemplate = true }
 
@@ -121,19 +135,35 @@ local ENGINE_UNSURE = { StatusBar = true, Cooldown = true, EditBox = true }
 local BUTTON_ROLES = {
     { get = "GetNormalTexture", make = "SetNormalTexture", sets = { "SetNormalTexture", "SetNormalAtlas" } },
     { get = "GetPushedTexture", make = "SetPushedTexture", sets = { "SetPushedTexture", "SetPushedAtlas" } },
-    { get = "GetHighlightTexture", make = "SetHighlightTexture", sets = { "SetHighlightTexture", "SetHighlightAtlas" } },
-    { get = "GetDisabledTexture", make = "SetDisabledTexture", sets = { "SetDisabledTexture", "SetDisabledAtlas" } },
+    {
+        get = "GetHighlightTexture",
+        make = "SetHighlightTexture",
+        sets = { "SetHighlightTexture", "SetHighlightAtlas" },
+    },
+    {
+        get = "GetDisabledTexture",
+        make = "SetDisabledTexture",
+        sets = { "SetDisabledTexture", "SetDisabledAtlas" },
+    },
     { get = "GetFontString", make = "SetText", sets = { "SetText", "SetFormattedText" }, text = true },
 }
 local CHECK_ROLES = {
     { get = "GetCheckedTexture", make = "SetCheckedTexture", sets = { "SetCheckedTexture" } },
-    { get = "GetDisabledCheckedTexture", make = "SetDisabledCheckedTexture", sets = { "SetDisabledCheckedTexture" } },
+    {
+        get = "GetDisabledCheckedTexture",
+        make = "SetDisabledCheckedTexture",
+        sets = { "SetDisabledCheckedTexture" },
+    },
 }
-for i = #BUTTON_ROLES, 1, -1 do tinsert(CHECK_ROLES, 1, BUTTON_ROLES[i]) end
+for i = #BUTTON_ROLES, 1, -1 do
+    tinsert(CHECK_ROLES, 1, BUTTON_ROLES[i])
+end
 local ENGINE_ROLES = {
     Button = BUTTON_ROLES,
     CheckButton = CHECK_ROLES,
-    StatusBar = { { get = "GetStatusBarTexture", make = "SetStatusBarTexture", sets = { "SetStatusBarTexture" } } },
+    StatusBar = {
+        { get = "GetStatusBarTexture", make = "SetStatusBarTexture", sets = { "SetStatusBarTexture" } },
+    },
     Cooldown = { { get = "GetCountdownFontString", live = true } },
 }
 -- The image a probe gives a texture role's setter to make the region.
@@ -145,39 +175,71 @@ local KEPT_VALUES = {
     EditBox = { { "GetHistoryLines", "SetHistoryLines" }, { "GetHighlightColor", "SetHighlightColor" } },
     StatusBar = { { "GetMinMaxValues", "SetMinMaxValues" } },
     Cooldown = {
-        { "GetDrawEdge", "SetDrawEdge" }, { "GetDrawSwipe", "SetDrawSwipe" }, { "GetDrawBling", "SetDrawBling" },
-        { "GetReverse", "SetReverse" }, { "GetHideCountdownNumbers", "SetHideCountdownNumbers" },
-        { "GetEdgeScale", "SetEdgeScale" }, { "GetRotation", "SetRotation" },
+        { "GetDrawEdge", "SetDrawEdge" },
+        { "GetDrawSwipe", "SetDrawSwipe" },
+        { "GetDrawBling", "SetDrawBling" },
+        { "GetReverse", "SetReverse" },
+        { "GetHideCountdownNumbers", "SetHideCountdownNumbers" },
+        { "GetEdgeScale", "SetEdgeScale" },
+        { "GetRotation", "SetRotation" },
         { "GetCountdownAbbrevThreshold", "SetCountdownAbbrevThreshold" },
         { "GetMinimumCountdownDuration", "SetMinimumCountdownDuration" },
         { "GetUseAuraDisplayTime", "SetUseAuraDisplayTime" },
     },
-    PlayerModel = { { "GetFacing", "SetFacing" }, { "GetPosition", "SetPosition" }, { "GetModelScale", "SetModelScale" } },
+    PlayerModel = {
+        { "GetFacing", "SetFacing" },
+        { "GetPosition", "SetPosition" },
+        { "GetModelScale", "SetModelScale" },
+    },
 }
 -- The same for an animation, whatever its type (a pair its type lacks is skipped):
 -- its timing, then each type's own values.
 local ANIM_KEPT = {
-    { "GetDuration", "SetDuration" }, { "GetStartDelay", "SetStartDelay" }, { "GetEndDelay", "SetEndDelay" },
-    { "GetOrder", "SetOrder" }, { "GetSmoothing", "SetSmoothing" },
-    { "GetFromAlpha", "SetFromAlpha" }, { "GetToAlpha", "SetToAlpha" }, { "GetOffset", "SetOffset" },
-    { "GetDegrees", "SetDegrees" }, { "GetOrigin", "SetOrigin" },
-    { "GetScaleFrom", "SetScaleFrom" }, { "GetScaleTo", "SetScaleTo" },
-    { "GetFlipBookRows", "SetFlipBookRows" }, { "GetFlipBookColumns", "SetFlipBookColumns" },
-    { "GetFlipBookFrames", "SetFlipBookFrames" }, { "GetFlipBookFrameWidth", "SetFlipBookFrameWidth" },
+    { "GetDuration", "SetDuration" },
+    { "GetStartDelay", "SetStartDelay" },
+    { "GetEndDelay", "SetEndDelay" },
+    { "GetOrder", "SetOrder" },
+    { "GetSmoothing", "SetSmoothing" },
+    { "GetFromAlpha", "SetFromAlpha" },
+    { "GetToAlpha", "SetToAlpha" },
+    { "GetOffset", "SetOffset" },
+    { "GetDegrees", "SetDegrees" },
+    { "GetOrigin", "SetOrigin" },
+    { "GetScaleFrom", "SetScaleFrom" },
+    { "GetScaleTo", "SetScaleTo" },
+    { "GetFlipBookRows", "SetFlipBookRows" },
+    { "GetFlipBookColumns", "SetFlipBookColumns" },
+    { "GetFlipBookFrames", "SetFlipBookFrames" },
+    { "GetFlipBookFrameWidth", "SetFlipBookFrameWidth" },
     { "GetFlipBookFrameHeight", "SetFlipBookFrameHeight" },
 }
 
 -- Per-object keys of the glow engines (CludesUI_Glows.lua): their presence
 -- means a glow may be registered with the shared glow driver.
-local GLOW_KEYS = { "_cuiGlowActive", "_cuiScrollData", "_cuiFlipData", "_cuiSgData", "_cuiBgData",
-    "_cuiFillData", "_cuiAcData", "_cuiAnimAnts", "_cuiSpecSig", "_cuiStealTex", "_cuiPanTex" }
+local GLOW_KEYS = {
+    "_cuiGlowActive",
+    "_cuiScrollData",
+    "_cuiFlipData",
+    "_cuiSgData",
+    "_cuiBgData",
+    "_cuiFillData",
+    "_cuiAcData",
+    "_cuiAnimAnts",
+    "_cuiSpecSig",
+    "_cuiStealTex",
+    "_cuiPanTex",
+}
 
 -- A template's own script handlers (Blizzard_SharedXML/Backdrop.xml), put back
 -- on a slot code had changed.
 local TEMPLATE_SCRIPTS = {
     BackdropTemplate = {
-        OnLoad = function(self, ...) return self:OnBackdropLoaded(...) end,
-        OnSizeChanged = function(self, ...) return self:OnBackdropSizeChanged(...) end,
+        OnLoad = function(self, ...)
+            return self:OnBackdropLoaded(...)
+        end,
+        OnSizeChanged = function(self, ...)
+            return self:OnBackdropSizeChanged(...)
+        end,
     },
 }
 
@@ -202,15 +264,22 @@ local scratch, scratchN, depth = {}, {}, 0
 local function Pack(...)
     depth = depth + 1
     local t = scratch[depth]
-    if not t then t = {}; scratch[depth] = t end
+    if not t then
+        t = {}
+        scratch[depth] = t
+    end
     local n = select("#", ...)
-    for i = 1, n do t[i] = (select(i, ...)) end
+    for i = 1, n do
+        t[i] = (select(i, ...))
+    end
     scratchN[depth] = n
     return t, n
 end
 local function Release()
     local t, n = scratch[depth], scratchN[depth]
-    for i = 1, n do t[i] = nil end
+    for i = 1, n do
+        t[i] = nil
+    end
     depth = depth - 1
 end
 
@@ -226,11 +295,15 @@ local function Graveyard()
     return graveyard
 end
 -- Harness / debugging accessor: never creates the frame.
-Pool._Graveyard = function() return graveyard end
+Pool._Graveyard = function()
+    return graveyard
+end
 
 local warned = {}
 local function DevWarn(key, msg)
-    if not devOn or warned[key] then return end
+    if not devOn or warned[key] then
+        return
+    end
     warned[key] = true
     CludesUI.PrintError("pool: " .. msg)
 end
@@ -239,7 +312,10 @@ end
 -- state is left as it is: it was lost with the build that made it.
 local function Bury(o)
     if (o.IsForbidden and o:IsForbidden()) or (o.IsProtected and o:IsProtected()) then
-        DevWarn("bury:" .. tostring(o:GetObjectType()), "a protected or forbidden object under a pool host was left in place")
+        DevWarn(
+            "bury:" .. tostring(o:GetObjectType()),
+            "a protected or forbidden object under a pool host was left in place"
+        )
         return
     end
     getmetatable(o).__index.SetParent(o, Graveyard())
@@ -257,25 +333,38 @@ end
 
 local function SafeCall(fn, o, ...)
     local ok, v = pcall(fn, o, ...)
-    if ok then return v end
+    if ok then
+        return v
+    end
     return nil
 end
 
 -- Kept values (KEPT_VALUES, ANIM_KEPT): read on a probe, compared and put back.
 local abs, unpack = math.abs, _G.unpack
 local function PackOK(ok, ...)
-    if not ok then return nil end
+    if not ok then
+        return nil
+    end
     return { n = select("#", ...), ... }
 end
 -- Two values are the same: numbers within rounding, vectors (Vector2DMixin) by value.
 local function SameVal(x, y)
-    if x == y then return true end
+    if x == y then
+        return true
+    end
     local tx, ty = type(x), type(y)
-    if tx == "number" and ty == "number" then return abs(x - y) < 0.0001 end
+    if tx == "number" and ty == "number" then
+        return abs(x - y) < 0.0001
+    end
     if tx == "table" and ty == "table" and type(x.GetXY) == "function" and type(y.GetXY) == "function" then
         local ax, ay = x:GetXY()
         local bx, by = y:GetXY()
-        if type(ax) == "number" and type(ay) == "number" and type(bx) == "number" and type(by) == "number" then
+        if
+            type(ax) == "number"
+            and type(ay) == "number"
+            and type(bx) == "number"
+            and type(by) == "number"
+        then
             return abs(ax - bx) < 0.0001 and abs(ay - by) < 0.0001
         end
     end
@@ -283,7 +372,9 @@ local function SameVal(x, y)
 end
 local function Differs(vals, ...)
     for i = 1, vals.n do
-        if not SameVal(vals[i], (select(i, ...))) then return true end
+        if not SameVal(vals[i], (select(i, ...))) then
+            return true
+        end
     end
     return false
 end
@@ -315,7 +406,9 @@ local function RestoreKept(obj, list)
             if not done or Differs(vals, k.get(obj)) then
                 ok = false
                 if refusedLog and #refusedLog < 50 then
-                    refusedLog[#refusedLog + 1] = tostring(obj:GetObjectType()) .. " " .. k.name
+                    refusedLog[#refusedLog + 1] = tostring(obj:GetObjectType())
+                        .. " "
+                        .. k.name
                         .. (done and " changed nothing" or (" refused: " .. tostring(err)))
                 end
             end
@@ -337,12 +430,17 @@ end
 -- An animation group's kept values, and per animation type its animations'
 -- (each read once from a probe: an empty group, and per type the first
 -- animation of a group of its own, as a new group's first animation is).
-local AG_KEPT = { { "GetLooping", "SetLooping" }, { "IsSetToFinalAlpha", "SetToFinalAlpha" },
-    { "GetAnimationSpeedMultiplier", "SetAnimationSpeedMultiplier" } }
+local AG_KEPT = {
+    { "GetLooping", "SetLooping" },
+    { "IsSetToFinalAlpha", "SetToFinalAlpha" },
+    { "GetAnimationSpeedMultiplier", "SetAnimationSpeedMultiplier" },
+}
 local agKept
 local ANIM_INFO = {}
 local function AGKept()
-    if agKept == nil then agKept = CaptureKept(ProbeHolder():CreateAnimationGroup(), AG_KEPT) or false end
+    if agKept == nil then
+        agKept = CaptureKept(ProbeHolder():CreateAnimationGroup(), AG_KEPT) or false
+    end
     return agKept
 end
 local function AnimKept(kind)
@@ -367,10 +465,14 @@ local function CaptureRegion(reg, p)
         c.points[i] = { pt, rel == p or rel, rp, x, y }
     end
     c.shown = reg:IsShown() and true or false
-    if reg.GetBlendMode then c.blend = reg:GetBlendMode() end
+    if reg.GetBlendMode then
+        c.blend = reg:GetBlendMode()
+    end
     if reg.GetFont then
         local path, size, flags = reg:GetFont()
-        if path then c.font = { path, size, flags } end
+        if path then
+            c.font = { path, size, flags }
+        end
         c.fontObject = reg:GetFontObject()
         c.color = { reg:GetTextColor() }
         c.shadow = { reg:GetShadowColor() }
@@ -387,7 +489,9 @@ local KIND_INFO = {}
 local function KindInfo(rec)
     local kind = rec.kind
     local info = KIND_INFO[kind]
-    if info then return info end
+    if info then
+        return info
+    end
     local p = _G.CreateFrame(rec.ftype, nil, ProbeHolder(), rec.tmpl)
     local m = getmetatable(p).__index
     info = { scripts = rec.tmpl and TEMPLATE_SCRIPTS[rec.tmpl] or nil }
@@ -407,7 +511,9 @@ local function KindInfo(rec)
         info.autoFocus = p:IsAutoFocus() and true or false
     end
     local kv = KEPT_VALUES[rec.ftype]
-    if kv then info.kept = CaptureKept(p, kv) end
+    if kv then
+        info.kept = CaptureKept(p, kv)
+    end
     -- the engine's regions of known roles are reset in place, so they are never
     -- counted among the unnamed regions a new object starts with
     local roles = ENGINE_ROLES[rec.ftype]
@@ -415,7 +521,9 @@ local function KindInfo(rec)
     if roles then
         for i = 1, #roles do
             local get = m[roles[i].get]
-            if get and SafeCall(get, p) then named = named + 1 end
+            if get and SafeCall(get, p) then
+                named = named + 1
+            end
         end
     end
     info.nRegions = select("#", p:GetRegions()) - named
@@ -426,14 +534,22 @@ local function KindInfo(rec)
             local role = roles[i]
             local get, make = m[role.get], role.make and m[role.make]
             -- the text region is measured as a dress that shows text makes it: with a font object
-            if make and role.text and m.SetNormalFontObject then pcall(m.SetNormalFontObject, p, _G.GameFontNormal) end
-            if make then pcall(make, p, role.text and " " or PROBE_ART) end
+            if make and role.text and m.SetNormalFontObject then
+                pcall(m.SetNormalFontObject, p, _G.GameFontNormal)
+            end
+            if make then
+                pcall(make, p, role.text and " " or PROBE_ART)
+            end
             local reg = get and SafeCall(get, p)
-            if reg then eng[i] = CaptureRegion(reg, p) end
+            if reg then
+                eng[i] = CaptureRegion(reg, p)
+            end
         end
         info.eng = eng
     end
-    if p:IsShown() then p:Hide() end
+    if p:IsShown() then
+        p:Hide()
+    end
     KIND_INFO[kind] = info
     return info
 end
@@ -458,7 +574,12 @@ local function ReplayOnUpdate(self)
     if owner then
         local orec = REC[owner]
         local ownerFn = CludesUI._WidgetTooltipOwner
-        if (not orec or orec.gen ~= ogen) and ownerFn and ownerFn() == owner and CludesUI.HideWidgetTooltip then
+        if
+            (not orec or orec.gen ~= ogen)
+            and ownerFn
+            and ownerFn() == owner
+            and CludesUI.HideWidgetTooltip
+        then
             CludesUI.HideWidgetTooltip(true)
         end
     end
@@ -471,7 +592,9 @@ local function ReplayOnUpdate(self)
                 exec(f, "OnEnter", false)
             else
                 local fn = f:GetScript("OnEnter")
-                if fn then pcall(fn, f, false) end
+                if fn then
+                    pcall(fn, f, false)
+                end
             end
         end
     end
@@ -481,11 +604,15 @@ local function ArmReplay()
     local foci = _G.GetMouseFoci and _G.GetMouseFoci()
     local f = foci and foci[1]
     local frec = f and REC[f]
-    if frec then replayFocus, replayFocusGen = f, frec.gen end
+    if frec then
+        replayFocus, replayFocusGen = f, frec.gen
+    end
     local ownerFn = CludesUI._WidgetTooltipOwner
     local owner = ownerFn and ownerFn()
     local orec = owner and REC[owner]
-    if orec then replayOwner, replayOwnerGen = owner, orec.gen end
+    if orec then
+        replayOwner, replayOwnerGen = owner, orec.gen
+    end
     if not replayFrame then
         replayFrame = _G.CreateFrame("Frame")
         replayFrame:Hide()
@@ -499,40 +626,60 @@ end
 --  engine regions' setters (shared functions taking self; installed only for
 --  methods the type has)
 -------------------------------------------------------------------------------
-local AcquireRegion, AcquireAG, AcquireAnim   -- defined below
+local AcquireRegion, AcquireAG, AcquireAnim -- defined below
 
 -- A slot ExemptScripts keeps through resets is set on its first dress only.
 local function ExemptSlot(self, rec, slot, what)
     if devOn and rec.exemptGen ~= rec.gen then
         local name = self.GetName and self:GetName() or "?"
-        DevWarn("exempt:" .. tostring(name) .. tostring(slot), "a later dress " .. what .. " " .. tostring(slot)
-            .. " on " .. tostring(name) .. ", whose " .. tostring(slot) .. " keeps its hooks through resets")
+        DevWarn(
+            "exempt:" .. tostring(name) .. tostring(slot),
+            "a later dress "
+                .. what
+                .. " "
+                .. tostring(slot)
+                .. " on "
+                .. tostring(name)
+                .. ", whose "
+                .. tostring(slot)
+                .. " keeps its hooks through resets"
+        )
     end
 end
 
 local function O_SetScript(self, slot, fn)
     getmetatable(self).__index.SetScript(self, slot, fn)
     local rec = REC[self]
-    if not rec then return end
+    if not rec then
+        return
+    end
     if rec.exempt and rec.exempt[slot] then
         ExemptSlot(self, rec, slot, "set")
         return
     end
     local s = rec.scripts
-    if not s then s = {}; rec.scripts = s end
+    if not s then
+        s = {}
+        rec.scripts = s
+    end
     s[slot] = true
 end
 
 local function O_HookScript(self, slot, fn, ...)
     local r = getmetatable(self).__index.HookScript(self, slot, fn, ...)
     local rec = REC[self]
-    if not rec then return r end
+    if not rec then
+        return r
+    end
     if rec.exempt and rec.exempt[slot] then
         ExemptSlot(self, rec, slot, "hooked")
         return r
     end
     local s = rec.scripts
-    if not s then s = {}; rec.scripts = s end
+    if not s then
+        s = {}
+        rec.scripts = s
+    end
     s[slot] = true
     return r
 end
@@ -542,7 +689,10 @@ local function O_SetAttribute(self, name, value)
     local rec = REC[self]
     if rec and name ~= nil then
         local a = rec.attrs
-        if not a then a = {}; rec.attrs = a end
+        if not a then
+            a = {}
+            rec.attrs = a
+        end
         a[name] = true
     end
 end
@@ -553,7 +703,9 @@ end
 local function O_SetScrollChild(self, child)
     getmetatable(self).__index.SetScrollChild(self, child)
     local crec = child and REC[child]
-    if crec then crec.scrollOwner = self end
+    if crec then
+        crec.scrollOwner = self
+    end
 end
 
 -- Creation goes to the pool only on an object the pool still manages (a
@@ -602,14 +754,18 @@ local inertTarget
 local function QuietLeftovers(ag)
     local grec = REC[ag]
     local pools = grec and grec.pools
-    if not pools then return end
+    if not pools then
+        return
+    end
     local cur = grec.cur
     for kind, list in pairs(pools) do
         for i = (cur[kind] or 0) + 1, #list do
             local a = list[i]
             local ar = REC[a]
             if ar and not ar.inert then
-                if not inertTarget then inertTarget = ProbeHolder():CreateTexture() end
+                if not inertTarget then
+                    inertTarget = ProbeHolder():CreateTexture()
+                end
                 ar.inert = true
                 a:SetTarget(inertTarget)
             end
@@ -625,28 +781,43 @@ local function O_AGRestart(self, ...)
     return getmetatable(self).__index.Restart(self, ...)
 end
 local function O_AGSetPlaying(self, playing, ...)
-    if playing then QuietLeftovers(self) end
+    if playing then
+        QuietLeftovers(self)
+    end
     return getmetatable(self).__index.SetPlaying(self, playing, ...)
 end
 
 local FRAME_OVERRIDES = {
-    CreateTexture = O_CreateTexture, CreateFontString = O_CreateFontString,
-    CreateMaskTexture = O_CreateMaskTexture, CreateLine = O_CreateLine,
+    CreateTexture = O_CreateTexture,
+    CreateFontString = O_CreateFontString,
+    CreateMaskTexture = O_CreateMaskTexture,
+    CreateLine = O_CreateLine,
     CreateAnimationGroup = O_CreateAnimationGroup,
-    SetScript = O_SetScript, HookScript = O_HookScript, SetAttribute = O_SetAttribute,
+    SetScript = O_SetScript,
+    HookScript = O_HookScript,
+    SetAttribute = O_SetAttribute,
     SetScrollChild = O_SetScrollChild,
 }
-local REGION_OVERRIDES = { CreateAnimationGroup = O_CreateAnimationGroup, SetScript = O_SetScript, HookScript = O_HookScript }
+local REGION_OVERRIDES =
+    { CreateAnimationGroup = O_CreateAnimationGroup, SetScript = O_SetScript, HookScript = O_HookScript }
 -- A texture's rotation point: SetToDefaults keeps the last one SetRotation gave
 -- it, so a texture marked here has a new texture's point put back by its reset.
 local function O_TexSetRotation(self, ...)
     local rec = REC[self]
-    if rec then rec.rotated = true end
+    if rec then
+        rec.rotated = true
+    end
     return getmetatable(self).__index.SetRotation(self, ...)
 end
 local TEX_OVERRIDES = { SetRotation = O_TexSetRotation }
-local AG_OVERRIDES = { CreateAnimation = O_CreateAnimation, SetScript = O_SetScript, HookScript = O_HookScript,
-    Play = O_AGPlay, Restart = O_AGRestart, SetPlaying = O_AGSetPlaying }
+local AG_OVERRIDES = {
+    CreateAnimation = O_CreateAnimation,
+    SetScript = O_SetScript,
+    HookScript = O_HookScript,
+    Play = O_AGPlay,
+    Restart = O_AGRestart,
+    SetPlaying = O_AGSetPlaying,
+}
 local ANIM_OVERRIDES = { SetScript = O_SetScript, HookScript = O_HookScript }
 
 -- region -> the shown state a new region of its role has: noted when a reset
@@ -661,7 +832,9 @@ local function EngineSetter(setName, getName)
         local back = reg and engHidden[reg]
         if back ~= nil then
             engHidden[reg] = nil
-            if back then reg:Show() end
+            if back then
+                reg:Show()
+            end
         end
         return r1, r2
     end
@@ -673,7 +846,9 @@ for ftype, roles in pairs(ENGINE_ROLES) do
     for i = 1, #roles do
         local sets = roles[i].sets
         if sets then
-            for j = 1, #sets do set[sets[j]] = EngineSetter(sets[j], roles[i].get) end
+            for j = 1, #sets do
+                set[sets[j]] = EngineSetter(sets[j], roles[i].get)
+            end
         end
     end
     ENGINE_OVERRIDES[ftype] = set
@@ -685,7 +860,10 @@ local function O_DevSetParent(self, parent, ...)
     local rec = REC[self]
     if rec and rec.idle and rec.cls == "pooled" then
         local site = _G.debugstack and _G.debugstack(2, 1, 0) or "?"
-        DevWarn("tripwire:" .. site, "an idle pooled object was re-parented (held by module state?) at " .. site)
+        DevWarn(
+            "tripwire:" .. site,
+            "an idle pooled object was re-parented (held by module state?) at " .. site
+        )
     end
     return getmetatable(self).__index.SetParent(self, parent, ...)
 end
@@ -693,26 +871,43 @@ end
 local function Install(obj, set)
     local m = getmetatable(obj).__index
     for name, fn in pairs(set) do
-        if rawget(m, name) ~= nil then rawset(obj, name, fn) end
+        if rawget(m, name) ~= nil then
+            rawset(obj, name, fn)
+        end
     end
 end
 
 -- A retired frame drops the pool's instance overrides: a plain frame again.
 local function StripOverrides(obj, ftype)
     for name, fn in pairs(FRAME_OVERRIDES) do
-        if rawget(obj, name) == fn then rawset(obj, name, nil) end
+        if rawget(obj, name) == fn then
+            rawset(obj, name, nil)
+        end
     end
     local eng = ENGINE_OVERRIDES[ftype]
     if eng then
         for name, fn in pairs(eng) do
-            if rawget(obj, name) == fn then rawset(obj, name, nil) end
+            if rawget(obj, name) == fn then
+                rawset(obj, name, nil)
+            end
         end
     end
-    if rawget(obj, "SetParent") == O_DevSetParent then rawset(obj, "SetParent", nil) end
+    if rawget(obj, "SetParent") == O_DevSetParent then
+        rawset(obj, "SetParent", nil)
+    end
 end
 
 local function NewFrameRec(cls, kind, ftype, tmpl, host)
-    return { cls = cls, kind = kind, ftype = ftype, tmpl = tmpl, host = host, gen = 1, idle = false, isFrame = true }
+    return {
+        cls = cls,
+        kind = kind,
+        ftype = ftype,
+        tmpl = tmpl,
+        host = host,
+        gen = 1,
+        idle = false,
+        isFrame = true,
+    }
 end
 
 local function RegisterFrame(obj, rec)
@@ -720,11 +915,17 @@ local function RegisterFrame(obj, rec)
     -- a button's pushed text offset as new, read from the button itself as it is
     -- made (a new button's offset is not one fixed value): its resets put it back
     local m = getmetatable(obj).__index
-    if m.GetPushedTextOffset then rec.pushX, rec.pushY = obj:GetPushedTextOffset() end
+    if m.GetPushedTextOffset then
+        rec.pushX, rec.pushY = obj:GetPushedTextOffset()
+    end
     Install(obj, FRAME_OVERRIDES)
     local eng = ENGINE_OVERRIDES[rec.ftype]
-    if eng then Install(obj, eng) end
-    if devOn and rec.cls == "pooled" then rawset(obj, "SetParent", O_DevSetParent) end
+    if eng then
+        Install(obj, eng)
+    end
+    if devOn and rec.cls == "pooled" then
+        rawset(obj, "SetParent", O_DevSetParent)
+    end
     return obj
 end
 
@@ -736,20 +937,28 @@ local function ForgetRegistries(obj, isFrame)
     local acc = CludesUI._accentElements
     local idx = acc and acc._idx
     local i = idx and idx[obj]
-    if i then acc[i] = INERT_ACCENT end
+    if i then
+        acc[i] = INERT_ACCENT
+    end
     if isFrame then
         local rc = CludesUI._rowCounters
-        if rc then rc[obj] = nil end
+        if rc then
+            rc[obj] = nil
+        end
         local forget = CludesUI._ForgetEscapeClose
         local rec = REC[obj]
-        if forget and not (rec and rec.exempt and (rec.exempt.OnShow or rec.exempt.OnHide)) then forget(obj) end
+        if forget and not (rec and rec.exempt and (rec.exempt.OnShow or rec.exempt.OnHide)) then
+            forget(obj)
+        end
     end
 end
 
 local function ForgetPixelSnap(obj)
     local PP = CludesUI.PP
     local f = PP and PP.ForgetPixelSnap
-    if f then f(obj) end
+    if f then
+        f(obj)
+    end
 end
 
 local function ResetScripts(obj, rec, m, base)
@@ -783,7 +992,9 @@ local function WipeKeys(obj, rec, m, base)
         if type(k) == "string" and k:byte(1) ~= 0 then
             local bv = base and base[k]
             if bv ~= nil then
-                if v ~= bv then rawset(obj, k, bv) end
+                if v ~= bv then
+                    rawset(obj, k, bv)
+                end
             elseif rawget(m, k) == nil and not (keep and keep[k]) then
                 rawset(obj, k, nil)
             end
@@ -791,14 +1002,18 @@ local function WipeKeys(obj, rec, m, base)
     end
     if base then
         for k, v in pairs(base) do
-            if rawget(obj, k) == nil then rawset(obj, k, v) end
+            if rawget(obj, k) == nil then
+                rawset(obj, k, v)
+            end
         end
     end
 end
 
 local function HasGlow(obj)
     for i = 1, #GLOW_KEYS do
-        if rawget(obj, GLOW_KEYS[i]) ~= nil then return true end
+        if rawget(obj, GLOW_KEYS[i]) ~= nil then
+            return true
+        end
     end
     return false
 end
@@ -812,13 +1027,21 @@ end
 -- The flags only an out-of-combat call may clear: propagation and pass-through
 -- (SetToDefaults clears them; read only in combat).
 local function HasPropagate(obj, m)
-    if m.GetPropagateKeyboardInput and obj:GetPropagateKeyboardInput() then return true end
-    if m.CanPropagateMouseClicks and obj:CanPropagateMouseClicks() then return true end
-    if m.CanPropagateMouseMotion and obj:CanPropagateMouseMotion() then return true end
+    if m.GetPropagateKeyboardInput and obj:GetPropagateKeyboardInput() then
+        return true
+    end
+    if m.CanPropagateMouseClicks and obj:CanPropagateMouseClicks() then
+        return true
+    end
+    if m.CanPropagateMouseMotion and obj:CanPropagateMouseMotion() then
+        return true
+    end
     local pass = m.ShouldButtonPassThrough
     if pass then
         for i = 1, #PASS_BUTTONS do
-            if pass(obj, PASS_BUTTONS[i]) then return true end
+            if pass(obj, PASS_BUTTONS[i]) then
+                return true
+            end
         end
     end
     return false
@@ -855,7 +1078,9 @@ local function Parts(o, r, moved, depth)
     if km then
         for _, k in pairs(km) do
             local kr = REC[k]
-            if kr then Visit(k, kr, false, true, depth) end
+            if kr then
+                Visit(k, kr, false, true, depth)
+            end
         end
     end
     local om = OWNED[o]
@@ -865,18 +1090,24 @@ local function Parts(o, r, moved, depth)
             for i = 1, #list do
                 local x = list[i]
                 local xr = REC[x]
-                if xr then Visit(x, xr, moved, true, depth) end
+                if xr then
+                    Visit(x, xr, moved, true, depth)
+                end
             end
         end
     end
-    if not r.isFrame then return end
+    if not r.isFrame then
+        return
+    end
     local pools = r.pools
     if pools then
         for _, list in pairs(pools) do
             for i = 1, #list do
                 local x = list[i]
                 local xr = REC[x]
-                if xr and xr.isFrame then Visit(x, xr, moved, false, depth) end
+                if xr and xr.isFrame then
+                    Visit(x, xr, moved, false, depth)
+                end
             end
         end
     end
@@ -885,14 +1116,20 @@ local function Parts(o, r, moved, depth)
         for i = 1, #att do
             local a = att[i]
             local ar = REC[a]
-            if ar and ar.host == o then Visit(a, ar, moved, false, depth) end
+            if ar and ar.host == o then
+                Visit(a, ar, moved, false, depth)
+            end
         end
     end
 end
 Visit = function(o, r, moved, listed, depth)
-    if r.fw == walkSerial or depth > 64 then return end
+    if r.fw == walkSerial or depth > 64 then
+        return
+    end
     r.fw = walkSerial
-    if moved then r.fm = walkSerial end
+    if moved then
+        r.fm = walkSerial
+    end
     if listed and o:IsShown() then
         frzN = frzN + 1
         frzList[frzN] = o
@@ -903,8 +1140,12 @@ end
 -- Whether walk `serial` found rel moved (a region moves with its frame).
 local function MovedBy(rel, serial)
     local rr = REC[rel]
-    if not rr then return false end
-    if rr.fm == serial then return true end
+    if not rr then
+        return false
+    end
+    if rr.fm == serial then
+        return true
+    end
     local hr = rr.region and rr.host and REC[rr.host]
     return hr ~= nil and hr.fm == serial
 end
@@ -917,17 +1158,27 @@ local depBudget = 0
 local function PlacedByMoved(f, serial)
     local isv = _G.issecretvalue
     local restricted = f.IsAnchoringRestricted and f:IsAnchoringRestricted()
-    if isv and isv(restricted) then return false end
-    if restricted then return false end
+    if isv and isv(restricted) then
+        return false
+    end
+    if restricted then
+        return false
+    end
     local last
     for i = 1, f:GetNumPoints() do
         local _, rel = f:GetPoint(i)
-        if isv and isv(rel) then return false end
+        if isv and isv(rel) then
+            return false
+        end
         if rel ~= nil and rel ~= last then
             last = rel
-            if MovedBy(rel, serial) then return true end
+            if MovedBy(rel, serial) then
+                return true
+            end
             depBudget = depBudget - 1
-            if depBudget <= 0 or PlacedByMoved(rel, serial) then return true end
+            if depBudget <= 0 or PlacedByMoved(rel, serial) then
+                return true
+            end
         end
     end
     return false
@@ -938,8 +1189,12 @@ local function PlacedBy(h)
     local isv = _G.issecretvalue
     for i = 1, h:GetNumPoints() do
         local _, rel = h:GetPoint(i)
-        if isv and isv(rel) then break end
-        if rel ~= nil then return rel end
+        if isv and isv(rel) then
+            break
+        end
+        if rel ~= nil then
+            return rel
+        end
     end
     return _G.UIParent
 end
@@ -950,8 +1205,12 @@ end
 local function FreezeTo(f, ref)
     local isv = _G.issecretvalue
     local l, b, w, h = f:GetRect()
-    if isv and (isv(l) or isv(b) or isv(w) or isv(h)) then return end
-    if not (l and b and w and h) then return end
+    if isv and (isv(l) or isv(b) or isv(w) or isv(h)) then
+        return
+    end
+    if not (l and b and w and h) then
+        return
+    end
     local UIParent = _G.UIParent
     if ref ~= UIParent and ref ~= f then
         local rl, rb, rw, rh = ref:GetRect()
@@ -975,29 +1234,41 @@ local function FreezeWalk(host, hrec, hostMoved)
     local serial = walkSerial
     frzN = 0
     hrec.fw = serial
-    if hostMoved then hrec.fm = serial end
+    if hostMoved then
+        hrec.fm = serial
+    end
     -- the host's own parts are dressed again by its pass, whether or not the
     -- host itself is
     Parts(host, hrec, true, 1)
-    if frzN == 0 then return end
+    if frzN == 0 then
+        return
+    end
     local ref = hostMoved and PlacedBy(host) or host
     for i = 1, frzN do
         local f = frzList[i]
         depBudget = 64
-        if f ~= ref and f:IsShown() and PlacedByMoved(f, serial) then FreezeTo(f, ref) end
+        if f ~= ref and f:IsShown() and PlacedByMoved(f, serial) then
+            FreezeTo(f, ref)
+        end
     end
 end
 
 -- Called once per pass, before its host's parts move (ResetContents). A pass
 -- that starts while one pins (a script a pin fires) leaves it to that one.
 local function FreezeUnder(host, hrec, hostMoved)
-    if walking then return end
+    if walking then
+        return
+    end
     walking = true
     local ok, err = pcall(FreezeWalk, host, hrec, hostMoved)
     walking = false
-    for i = 1, frzN do frzList[i] = nil end
+    for i = 1, frzN do
+        frzList[i] = nil
+    end
     frzN = 0
-    if not ok then _G.geterrorhandler()(err) end
+    if not ok then
+        _G.geterrorhandler()(err)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -1011,7 +1282,9 @@ local function ParkList(list)
             if r.isAG then
                 o:Stop()
             elseif o:IsShown() then
-                if not replayArmed and o:IsVisible() then ArmReplay() end
+                if not replayArmed and o:IsVisible() then
+                    ArmReplay()
+                end
                 o:Hide()
             end
             r.idle = true
@@ -1025,9 +1298,13 @@ local function ResetContents(obj, rec, info, pass)
     -- pooled objects of this host, wherever they are now: hidden, idle
     local pools = rec.pools
     if pools then
-        for _, list in pairs(pools) do ParkList(list) end
+        for _, list in pairs(pools) do
+            ParkList(list)
+        end
         local cur = rec.cur
-        for k in pairs(cur) do cur[k] = 0 end
+        for k in pairs(cur) do
+            cur[k] = 0
+        end
     end
     -- owned objects: hidden, cursors back to the start
     local om = OWNED[obj]
@@ -1047,15 +1324,23 @@ local function ResetContents(obj, rec, info, pass)
             local a = att[i]
             local ar = REC[a]
             if ar and ar.host == obj and (pass ~= PASS_BEGIN or ar.cls == "keep") then
-                if a:IsShown() then a:Hide() end
-                if ar.onReset then pcall(ar.onReset, a) end
+                if a:IsShown() then
+                    a:Hide()
+                end
+                if ar.onReset then
+                    pcall(ar.onReset, a)
+                end
             end
         end
     end
     -- the start of a pass, after what the parts' hiding closes and before any
     -- part moves: what shows over the host and hangs on its parts stays put
-    if pass then FreezeUnder(obj, rec, pass == PASS_RESET) end
-    if not rec.isFrame then return end
+    if pass then
+        FreezeUnder(obj, rec, pass == PASS_RESET)
+    end
+    if not rec.isFrame then
+        return
+    end
     -- children and regions the pool does not manage
     local buried = 0
     local skip = info and info.nChildren or 0
@@ -1064,7 +1349,7 @@ local function ResetContents(obj, rec, info, pass)
         local c = t[i]
         if REC[c] == nil then
             if skip > 0 then
-                skip = skip - 1   -- the engine's own children come first
+                skip = skip - 1 -- the engine's own children come first
             else
                 Bury(c)
                 buried = buried + 1
@@ -1084,7 +1369,10 @@ local function ResetContents(obj, rec, info, pass)
             if reg and REC[reg] == nil then
                 if not named then
                     named = rec.engRegs
-                    if not named then named = {}; rec.engRegs = named end
+                    if not named then
+                        named = {}
+                        rec.engRegs = named
+                    end
                 end
                 named[reg] = i
             end
@@ -1099,7 +1387,9 @@ local function ResetContents(obj, rec, info, pass)
                 skip = skip - 1
             elseif ENGINE_UNSURE[rec.ftype] then
                 -- maybe the engine's, unnamed: left in place, the frame is retired
-                if reg:IsShown() then reg:Hide() end
+                if reg:IsShown() then
+                    reg:Hide()
+                end
                 rec.engine = true
             else
                 Bury(reg)
@@ -1112,12 +1402,19 @@ local function ResetContents(obj, rec, info, pass)
     t, n = Pack(obj:GetAnimationGroups())
     for i = 1, n do
         local ag = t[i]
-        if REC[ag] == nil then ag:Stop() end
+        if REC[ag] == nil then
+            ag:Stop()
+        end
     end
     Release()
     if buried > 0 and devOn then
-        DevWarn("foreign:" .. tostring(rec.key or rec.kind), buried .. " foreign object(s) under "
-            .. tostring(rec.key or rec.kind) .. " (made without the pool)")
+        DevWarn(
+            "foreign:" .. tostring(rec.key or rec.kind),
+            buried
+                .. " foreign object(s) under "
+                .. tostring(rec.key or rec.kind)
+                .. " (made without the pool)"
+        )
     end
 end
 
@@ -1148,7 +1445,9 @@ local function PlaceholderFor(sf, srec)
         ph = _G.CreateFrame("Frame", nil, sf)
         ph:Hide()
         REC[ph] = { cls = "placeholder", idle = true }
-        if srec then srec.placeholder = ph end
+        if srec then
+            srec.placeholder = ph
+        end
     end
     return ph
 end
@@ -1158,7 +1457,9 @@ end
 local function ReleaseScrollChild(obj, rec)
     local sf = rec.scrollOwner
     rec.scrollOwner = nil
-    if not sf or sf:GetScrollChild() ~= obj then return end
+    if not sf or sf:GetScrollChild() ~= obj then
+        return
+    end
     getmetatable(sf).__index.SetScrollChild(sf, PlaceholderFor(sf, REC[sf]))
 end
 
@@ -1170,7 +1471,9 @@ local function PlaceAsNew(obj, reg, c)
     for j = 1, #pts do
         local p = pts[j]
         local rel = p[2]
-        if rel == true then rel = obj end
+        if rel == true then
+            rel = obj
+        end
         reg:SetPoint(p[1], rel, p[3], p[4], p[5])
     end
 end
@@ -1185,26 +1488,46 @@ end
 local function ResetEngineRegion(obj, reg, c, role)
     local isText = reg.GetFont ~= nil
     if isText and not role.live then
-        if reg.SetToDefaults then reg:SetToDefaults() end
-        if c then PlaceAsNew(obj, reg, c) end
-        if reg:GetFont() then reg:SetText("") end
-        if reg:IsShown() then reg:Hide() end
-        if c then engHidden[reg] = c.shown else engHidden[reg] = true end
+        if reg.SetToDefaults then
+            reg:SetToDefaults()
+        end
+        if c then
+            PlaceAsNew(obj, reg, c)
+        end
+        if reg:GetFont() then
+            reg:SetText("")
+        end
+        if reg:IsShown() then
+            reg:Hide()
+        end
+        if c then
+            engHidden[reg] = c.shown
+        else
+            engHidden[reg] = true
+        end
         return
     end
     if c ~= nil and (c.font ~= nil or not isText) then
-        if reg.SetToDefaults then reg:SetToDefaults() end
+        if reg.SetToDefaults then
+            reg:SetToDefaults()
+        end
         if reg.GetNumMaskTextures then
             for j = reg:GetNumMaskTextures(), 1, -1 do
                 local mask = reg:GetMaskTexture(j)
-                if mask then reg:RemoveMaskTexture(mask) end
+                if mask then
+                    reg:RemoveMaskTexture(mask)
+                end
             end
         end
         ForgetPixelSnap(reg)
         PlaceAsNew(obj, reg, c)
-        if c.blend then reg:SetBlendMode(c.blend) end
+        if c.blend then
+            reg:SetBlendMode(c.blend)
+        end
         if c.font then
-            if c.fontObject then reg:SetFontObject(c.fontObject) end
+            if c.fontObject then
+                reg:SetFontObject(c.fontObject)
+            end
             reg:SetFont(c.font[1], c.font[2], c.font[3])
             local col = c.color
             reg:SetTextColor(col[1], col[2], col[3], col[4])
@@ -1216,12 +1539,22 @@ local function ResetEngineRegion(obj, reg, c, role)
         end
     end
     if role.live then
-        if c and (reg:IsShown() and true or false) ~= c.shown then reg:SetShown(c.shown) end
+        if c and (reg:IsShown() and true or false) ~= c.shown then
+            reg:SetShown(c.shown)
+        end
         return
     end
-    if reg.SetTexture then reg:SetTexture(nil) end
-    if reg:IsShown() then reg:Hide() end
-    if c then engHidden[reg] = c.shown else engHidden[reg] = true end
+    if reg.SetTexture then
+        reg:SetTexture(nil)
+    end
+    if reg:IsShown() then
+        reg:Hide()
+    end
+    if c then
+        engHidden[reg] = c.shown
+    else
+        engHidden[reg] = true
+    end
 end
 
 local function ResetEngineRegions(obj, rec, info, named)
@@ -1233,7 +1566,9 @@ local function ResetEngineRegions(obj, rec, info, named)
         ResetEngineRegion(obj, reg, eng and eng[i], roles[i])
         if m then
             local get = m[roles[i].get]
-            if get and get(obj) ~= reg then Fixed(rec, " no " .. roles[i].get:sub(4) .. " (its frame's reset dropped it)") end
+            if get and get(obj) ~= reg then
+                Fixed(rec, " no " .. roles[i].get:sub(4) .. " (its frame's reset dropped it)")
+            end
         end
     end
 end
@@ -1252,32 +1587,48 @@ local function ResetFrame(obj, rec, parent, pass, hidden)
     rec.dirty = nil
     rec.engine = nil
     local hook = rawget(obj, "_cuiOnRecycle")
-    if hook then pcall(hook, obj) end
+    if hook then
+        pcall(hook, obj)
+    end
     if HasGlow(obj) then
         local G = CludesUI.Glows
-        if G and G.StopAllGlows then pcall(G.StopAllGlows, obj) end
+        if G and G.StopAllGlows then
+            pcall(G.StopAllGlows, obj)
+        end
     end
     -- visible descendants get OnHide with their old scripts, as when a page was dropped
     if obj:IsShown() then
-        if not replayArmed and obj:IsVisible() then ArmReplay() end
+        if not replayArmed and obj:IsVisible() then
+            ArmReplay()
+        end
         obj:Hide()
     end
-    if rec.ftype == "EditBox" and obj:HasFocus() then obj:ClearFocus() end
-    if rec.scrollOwner then ReleaseScrollChild(obj, rec) end
+    if rec.ftype == "EditBox" and obj:HasFocus() then
+        obj:ClearFocus()
+    end
+    if rec.scrollOwner then
+        ReleaseScrollChild(obj, rec)
+    end
     ResetContents(obj, rec, info, pass)
     ResetScripts(obj, rec, m, info.scripts)
     obj:UnregisterAllEvents()
     ResetAttrs(obj, rec, m)
     ForgetRegistries(obj, true)
     WipeKeys(obj, rec, m, info.keys)
-    if rec.ftype == "Cooldown" then obj:Clear() end
+    if rec.ftype == "Cooldown" then
+        obj:Clear()
+    end
     -- Click and drag registration: no getter reads either back, so the
     -- in-game reset check cannot tell whether SetToDefaults clears them.
     -- A new object's are put back first (a button answers the left
     -- button's release, nothing is registered for drag), so a reused
     -- button never answers the clicks, or starts the drags, of an earlier dress.
-    if m.RegisterForClicks then obj:RegisterForClicks("LeftButtonUp") end
-    if m.RegisterForDrag then obj:RegisterForDrag() end
+    if m.RegisterForClicks then
+        obj:RegisterForClicks("LeftButtonUp")
+    end
+    if m.RegisterForDrag then
+        obj:RegisterForDrag()
+    end
     if obj.SetToDefaults then
         obj:SetToDefaults()
     else
@@ -1285,53 +1636,83 @@ local function ResetFrame(obj, rec, parent, pass, hidden)
         obj:SetAlpha(1)
         obj:SetScale(1)
     end
-    if rec.ftype == "PlayerModel" and m.ClearModel then obj:ClearModel() end
+    if rec.ftype == "PlayerModel" and m.ClearModel then
+        obj:ClearModel()
+    end
     ForgetPixelSnap(obj)
     -- what SetToDefaults is documented to cover, checked where it is cheap
-    if obj:GetAlpha() ~= 1 then obj:SetAlpha(1); Fixed(rec, "alpha") end
-    if (obj:IsMouseEnabled() and true or false) ~= info.mouse then obj:EnableMouse(info.mouse); Fixed(rec, "mouse") end
+    if obj:GetAlpha() ~= 1 then
+        obj:SetAlpha(1)
+        Fixed(rec, "alpha")
+    end
+    if (obj:IsMouseEnabled() and true or false) ~= info.mouse then
+        obj:EnableMouse(info.mouse)
+        Fixed(rec, "mouse")
+    end
     if m.IsMouseWheelEnabled and (obj:IsMouseWheelEnabled() and true or false) ~= info.wheel then
-        obj:EnableMouseWheel(info.wheel); Fixed(rec, "wheel")
+        obj:EnableMouseWheel(info.wheel)
+        Fixed(rec, "wheel")
     end
     if m.DoesClipChildren and (obj:DoesClipChildren() and true or false) ~= info.clips then
-        obj:SetClipsChildren(info.clips); Fixed(rec, "clips")
+        obj:SetClipsChildren(info.clips)
+        Fixed(rec, "clips")
     end
     -- what SetToDefaults keeps: the keyboard flag (left as it is only in combat,
     -- where it already matches), the pushed text offset, the kind's own settings
     -- and an edit box's history
-    if KeyboardChanged(obj, m, info) and not _G.InCombatLockdown() then obj:EnableKeyboard(info.keyboard) end
+    if KeyboardChanged(obj, m, info) and not _G.InCombatLockdown() then
+        obj:EnableKeyboard(info.keyboard)
+    end
     if rec.pushX then
         local x, y = obj:GetPushedTextOffset()
-        if x ~= rec.pushX or y ~= rec.pushY then obj:SetPushedTextOffset(rec.pushX, rec.pushY) end
+        if x ~= rec.pushX or y ~= rec.pushY then
+            obj:SetPushedTextOffset(rec.pushX, rec.pushY)
+        end
     end
     -- a setting the engine will not put back retires the frame, as a region the
     -- pool cannot name does: it is never handed out again
-    if info.kept and not RestoreKept(obj, info.kept) then rec.engine = true end
-    if m.ClearHistory then obj:ClearHistory() end
+    if info.kept and not RestoreKept(obj, info.kept) then
+        rec.engine = true
+    end
+    if m.ClearHistory then
+        obj:ClearHistory()
+    end
     -- No API clears a scroll frame's scroll child (SetScrollChild takes no nil):
     -- a child of an earlier dress gives way to the frame's hidden placeholder,
     -- which positions nothing and gives the frame no scroll range.
     if rec.ftype == "ScrollFrame" then
         local child = obj:GetScrollChild()
-        if child and child ~= rec.placeholder then m.SetScrollChild(obj, PlaceholderFor(obj, rec)) end
+        if child and child ~= rec.placeholder then
+            m.SetScrollChild(obj, PlaceholderFor(obj, rec))
+        end
     end
     -- placement: the parent, its strata and the level a new child gets
-    if obj:GetParent() ~= parent then m.SetParent(obj, parent) end
+    if obj:GetParent() ~= parent then
+        m.SetParent(obj, parent)
+    end
     local strata = parent and parent:GetFrameStrata() or "MEDIUM"
-    if obj:GetFrameStrata() ~= strata then obj:SetFrameStrata(strata) end
+    if obj:GetFrameStrata() ~= strata then
+        obj:SetFrameStrata(strata)
+    end
     obj:SetFrameLevel(parent and (parent:GetFrameLevel() + 1) or 0)
     -- the engine's regions of known roles (named by ResetContents)
     local named = rec.engRegs
-    if named and next(named) then ResetEngineRegions(obj, rec, info, named) end
+    if named and next(named) then
+        ResetEngineRegions(obj, rec, info, named)
+    end
     if rec.tmpl == "CooldownFrameTemplate" then
         ApplyCooldownTemplate(obj)
-        if obj:IsShown() then obj:Hide() end
+        if obj:IsShown() then
+            obj:Hide()
+        end
     elseif rec.ftype == "EditBox" then
         -- a shown auto-focus edit box takes the keyboard: show it without, then
         -- put the new object's default back (one kept hidden is shown by its
         -- dress, which turns auto-focus off first: see Pool.Kept)
         obj:SetAutoFocus(false)
-        if not hidden then m.Show(obj) end
+        if not hidden then
+            m.Show(obj)
+        end
         obj:SetAutoFocus(info.autoFocus)
     elseif not hidden then
         -- shown as a new frame is: through the type's method, so an instance Show
@@ -1346,12 +1727,18 @@ end
 -- Returns false when a value of its own stays different (its group is retired).
 local function ResetAnim(a, r)
     local m = getmetatable(a).__index
-    if a.IsPlaying and a:IsPlaying() and a.Stop then a:Stop() end
+    if a.IsPlaying and a:IsPlaying() and a.Stop then
+        a:Stop()
+    end
     ResetScripts(a, r, m, nil)
     WipeKeys(a, r, m, nil)
-    if a.SetToDefaults then a:SetToDefaults() end
+    if a.SetToDefaults then
+        a:SetToDefaults()
+    end
     -- the target a new animation has: its group's parent
-    if a.SetTargetParent then a:SetTargetParent() end
+    if a.SetTargetParent then
+        a:SetTargetParent()
+    end
     -- what SetToDefaults keeps: its timing and its type's own values
     local kept = AnimKept(r.kind)
     local fit = not kept or RestoreKept(a, kept)
@@ -1365,7 +1752,9 @@ local function ResetAG(ag, rec)
     ag:Stop()
     ResetScripts(ag, rec, m, nil)
     WipeKeys(ag, rec, m, nil)
-    if ag.SetToDefaults then ag:SetToDefaults() end
+    if ag.SetToDefaults then
+        ag:SetToDefaults()
+    end
     -- what SetToDefaults keeps: the looping, final alpha and speed
     local kept = AGKept()
     local fit = not kept or RestoreKept(ag, kept)
@@ -1378,13 +1767,17 @@ local function ResetAG(ag, rec)
             for i = 1, #list do
                 local a = list[i]
                 local ar = REC[a]
-                if not ResetAnim(a, ar) then fit = false end
+                if not ResetAnim(a, ar) then
+                    fit = false
+                end
                 ar.idle = true
                 ar.fresh = true
             end
         end
         local cur = rec.cur
-        for k in pairs(cur) do cur[k] = 0 end
+        for k in pairs(cur) do
+            cur[k] = 0
+        end
     end
     -- a value the engine will not put back (an animation's smoothing): the group
     -- is retired by AcquireAG, never handed out again
@@ -1400,7 +1793,9 @@ local function RetireAG(ag)
     REC[ag] = nil
     ag:Stop()
     for name, fn in pairs(AG_OVERRIDES) do
-        if rawget(ag, name) == fn then rawset(ag, name, nil) end
+        if rawget(ag, name) == fn then
+            rawset(ag, name, nil)
+        end
     end
     local pools = rec and rec.pools
     if pools then
@@ -1409,7 +1804,9 @@ local function RetireAG(ag)
                 local a = list[i]
                 REC[a] = nil
                 for name, fn in pairs(ANIM_OVERRIDES) do
-                    if rawget(a, name) == fn then rawset(a, name, nil) end
+                    if rawget(a, name) == fn then
+                        rawset(a, name, nil)
+                    end
                 end
             end
         end
@@ -1418,16 +1815,22 @@ end
 
 local function ResetRegion(obj, rec, host, layer, sub)
     local m = getmetatable(obj).__index
-    if obj:IsShown() then obj:Hide() end
+    if obj:IsShown() then
+        obj:Hide()
+    end
     ResetScripts(obj, rec, m, nil)
     ForgetRegistries(obj, false)
     WipeKeys(obj, rec, m, nil)
     -- its own animation groups: stopped, handed back in order
     local pools = rec.pools
     if pools then
-        for _, list in pairs(pools) do ParkList(list) end
+        for _, list in pairs(pools) do
+            ParkList(list)
+        end
         local cur = rec.cur
-        for k in pairs(cur) do cur[k] = 0 end
+        for k in pairs(cur) do
+            cur[k] = 0
+        end
     end
     if obj.SetToDefaults then
         obj:SetToDefaults()
@@ -1436,21 +1839,29 @@ local function ResetRegion(obj, rec, host, layer, sub)
         obj:SetAlpha(1)
     end
     -- a line's thickness and a rotated texture's rotation point as new (SetToDefaults keeps both)
-    if rec.thick and obj:GetThickness() ~= rec.thick then obj:SetThickness(rec.thick) end
+    if rec.thick and obj:GetThickness() ~= rec.thick then
+        obj:SetThickness(rec.thick)
+    end
     if rec.rotated then
         rec.rotated = nil
         local r0, p0 = TexRotation()
-        if p0 then m.SetRotation(obj, r0, p0) end
+        if p0 then
+            m.SetRotation(obj, r0, p0)
+        end
     end
     if m.GetNumMaskTextures then
         for i = obj:GetNumMaskTextures(), 1, -1 do
             local mask = obj:GetMaskTexture(i)
-            if mask then obj:RemoveMaskTexture(mask) end
+            if mask then
+                obj:RemoveMaskTexture(mask)
+            end
         end
     end
     ForgetPixelSnap(obj)
     obj:SetDrawLayer(layer, sub)
-    if obj:GetParent() ~= host then m.SetParent(obj, host) end
+    if obj:GetParent() ~= host then
+        m.SetParent(obj, host)
+    end
     obj:Show()
     rec.layer, rec.sub = layer, sub
     rec.gen = rec.gen + 1
@@ -1465,12 +1876,18 @@ end
 local function Retire(obj)
     local rec = REC[obj]
     REC[obj] = nil
-    if rec then StripOverrides(obj, rec.ftype) end
-    if obj:IsShown() then obj:Hide() end
+    if rec then
+        StripOverrides(obj, rec.ftype)
+    end
+    if obj:IsShown() then
+        obj:Hide()
+    end
     Bury(obj)
     if rec and devOn then
-        DevWarn("retire:" .. tostring(rec.kind), "a " .. tostring(rec.kind)
-            .. " with a region the pool cannot name is not reused")
+        DevWarn(
+            "retire:" .. tostring(rec.kind),
+            "a " .. tostring(rec.kind) .. " with a region the pool cannot name is not reused"
+        )
     end
 end
 
@@ -1499,7 +1916,9 @@ local function TakeFrame(list, i, parent)
         local obj = list[i]
         local rec = REC[obj]
         if ResetFrame(obj, rec, parent) then
-            if not rec.engine then return obj end
+            if not rec.engine then
+                return obj
+            end
             tremove(list, i)
             Retire(obj)
         else
@@ -1561,10 +1980,21 @@ AcquireRegion = function(host, kind, method, layer, sub)
         else
             obj = getmetatable(host).__index[method](host, nil, layer, nil, sub)
         end
-        REC[obj] = { cls = "pooled", kind = kind, host = host, gen = 1, idle = false, region = true,
-            layer = nLayer, sub = nSub, thick = kind == "Line" and obj.GetThickness and obj:GetThickness() or nil }
+        REC[obj] = {
+            cls = "pooled",
+            kind = kind,
+            host = host,
+            gen = 1,
+            idle = false,
+            region = true,
+            layer = nLayer,
+            sub = nSub,
+            thick = kind == "Line" and obj.GetThickness and obj:GetThickness() or nil,
+        }
         Install(obj, REGION_OVERRIDES)
-        if kind == "Texture" then Install(obj, TEX_OVERRIDES) end
+        if kind == "Texture" then
+            Install(obj, TEX_OVERRIDES)
+        end
         list[i] = obj
     end
     hrec.cur[kind] = i
@@ -1622,7 +2052,12 @@ AcquireAnim = function(ag, atype)
     if a then
         local ar = REC[a]
         -- reset with its group, unless a play quieted it since
-        if ar.fresh and not ar.inert then ar.fresh = nil else ResetAnim(a, ar); ar.fresh = nil end
+        if ar.fresh and not ar.inert then
+            ar.fresh = nil
+        else
+            ResetAnim(a, ar)
+            ar.fresh = nil
+        end
         ar.idle = false
     else
         a = getmetatable(ag).__index.CreateAnimation(ag, atype)
@@ -1638,7 +2073,9 @@ end
 --  Public API
 -------------------------------------------------------------------------------
 local function CanonicalType(ftype)
-    if type(ftype) ~= "string" then return nil end
+    if type(ftype) ~= "string" then
+        return nil
+    end
     return FRAME_TYPES[ftype] or FRAME_TYPES[ftype:lower()]
 end
 
@@ -1647,7 +2084,9 @@ function Pool.CreateFrame(ftype, name, parent, tmpl, id)
         local prec = REC[parent]
         if prec and prec.isFrame and (tmpl == nil or TEMPLATES[tmpl]) then
             local ft = CanonicalType(ftype)
-            if ft then return AcquireFrame(parent, prec, ft, tmpl) end
+            if ft then
+                return AcquireFrame(parent, prec, ft, tmpl)
+            end
         end
     end
     return _G.CreateFrame(ftype, name, parent, tmpl, id)
@@ -1656,7 +2095,9 @@ end
 -- A new frame for Pool.Kept, hidden when asked (it has no OnShow script yet,
 -- so nothing runs).
 local function NewKept(obj, hidden)
-    if hidden and obj:IsShown() then obj:Hide() end
+    if hidden and obj:IsShown() then
+        obj:Hide()
+    end
     return obj, true
 end
 
@@ -1724,15 +2165,21 @@ function Pool.Owned(owner, label, ftype, parent, tmpl)
 end
 
 function Pool.Begin(host)
-    if CludesUI._prebuilding then return end
+    if CludesUI._prebuilding then
+        return
+    end
     local rec = REC[host]
-    if not (rec and rec.isFrame) then return end
+    if not (rec and rec.isFrame) then
+        return
+    end
     RefreshDev()
     ResetContents(host, rec, KindInfo(rec), PASS_BEGIN)
     -- the host itself is not reset: its own engine regions stay as they are
     local named = rec.engRegs
     if named then
-        for k in pairs(named) do named[k] = nil end
+        for k in pairs(named) do
+            named[k] = nil
+        end
     end
 end
 
@@ -1742,16 +2189,22 @@ end
 -- content header before its header root is dressed again). The pass then
 -- finds those objects placed by what the host is placed by and leaves them.
 function Pool.Pin(host)
-    if CludesUI._prebuilding then return end
+    if CludesUI._prebuilding then
+        return
+    end
     local rec = REC[host]
-    if rec and rec.isFrame then FreezeUnder(host, rec, true) end
+    if rec and rec.isFrame then
+        FreezeUnder(host, rec, true)
+    end
 end
 
 -- Records whenever obj is a pooled object, also during the global search's
 -- prebuild (a live pooled object a prebuild builder touches stays managed).
 function Pool.Keep(obj)
     local rec = REC[obj]
-    if not rec or rec.cls ~= "pooled" then return obj end
+    if not rec or rec.cls ~= "pooled" then
+        return obj
+    end
     local hrec = REC[rec.host]
     local list = hrec and hrec.pools and hrec.pools[rec.kind]
     if list then
@@ -1759,7 +2212,9 @@ function Pool.Keep(obj)
             if list[i] == obj then
                 tremove(list, i)
                 local c = hrec.cur[rec.kind] or 0
-                if i <= c then hrec.cur[rec.kind] = c - 1 end
+                if i <= c then
+                    hrec.cur[rec.kind] = c - 1
+                end
                 break
             end
         end
@@ -1767,7 +2222,10 @@ function Pool.Keep(obj)
     rec.cls = "keep"
     if hrec then
         local att = hrec.attach
-        if not att then att = {}; hrec.attach = att end
+        if not att then
+            att = {}
+            hrec.attach = att
+        end
         att[#att + 1] = obj
     end
     return obj
@@ -1776,11 +2234,17 @@ end
 -- Records whenever host is a pooled object, also during the global search's
 -- prebuild (a border made then on a live pooled frame must stay on it).
 function Pool.Attach(host, obj, key, onReset)
-    if obj == nil then return false end
+    if obj == nil then
+        return false
+    end
     local hrec = REC[host]
-    if not hrec then return false end
+    if not hrec then
+        return false
+    end
     local orec = REC[obj]
-    if orec and orec.cls ~= "attach" then return false end
+    if orec and orec.cls ~= "attach" then
+        return false
+    end
     if not orec then
         orec = { cls = "attach" }
         REC[obj] = orec
@@ -1788,18 +2252,29 @@ function Pool.Attach(host, obj, key, onReset)
     if orec.host ~= host then
         orec.host = host
         local att = hrec.attach
-        if not att then att = {}; hrec.attach = att end
+        if not att then
+            att = {}
+            hrec.attach = att
+        end
         -- listed once per host, however often it moves between hosts
         local listed = false
         for i = 1, #att do
-            if att[i] == obj then listed = true; break end
+            if att[i] == obj then
+                listed = true
+                break
+            end
         end
-        if not listed then att[#att + 1] = obj end
+        if not listed then
+            att[#att + 1] = obj
+        end
     end
     orec.onReset = onReset
     if key ~= nil then
         local ks = hrec.attachKeys
-        if not ks then ks = {}; hrec.attachKeys = ks end
+        if not ks then
+            ks = {}
+            hrec.attachKeys = ks
+        end
         ks[key] = true
     end
     return true
@@ -1825,14 +2300,23 @@ end
 -- again is reported in dev mode (ExemptSlot).
 function Pool.ExemptScripts(obj, ...)
     local rec = obj and REC[obj]
-    if not rec then return end
+    if not rec then
+        return
+    end
     local ex = rec.exempt
-    if not ex then ex = {}; rec.exempt = ex end
-    if rec.exemptGen == nil then rec.exemptGen = rec.gen end   -- the dress that first exempted
+    if not ex then
+        ex = {}
+        rec.exempt = ex
+    end
+    if rec.exemptGen == nil then
+        rec.exemptGen = rec.gen
+    end -- the dress that first exempted
     for i = 1, select("#", ...) do
         local slot = select(i, ...)
         ex[slot] = true
-        if rec.scripts then rec.scripts[slot] = nil end
+        if rec.scripts then
+            rec.scripts[slot] = nil
+        end
     end
 end
 
@@ -1841,7 +2325,9 @@ end
 -- outside the pool (an object kept by module state).
 local function DevIdleShown(rec, label, level)
     local pools = rec.pools
-    if not pools or level > 16 then return end
+    if not pools or level > 16 then
+        return
+    end
     for kind, list in pairs(pools) do
         for i = 1, #list do
             local o = list[i]
@@ -1849,8 +2335,14 @@ local function DevIdleShown(rec, label, level)
             if r and not r.isAG then
                 if r.idle then
                     if o:IsShown() then
-                        DevWarn("idleshown:" .. tostring(label) .. kind, "an idle " .. kind .. " shows on "
-                            .. tostring(label) .. " (kept by module state?)")
+                        DevWarn(
+                            "idleshown:" .. tostring(label) .. kind,
+                            "an idle "
+                                .. kind
+                                .. " shows on "
+                                .. tostring(label)
+                                .. " (kept by module state?)"
+                        )
                     end
                 else
                     DevIdleShown(r, label, level + 1)
@@ -1860,9 +2352,13 @@ local function DevIdleShown(rec, label, level)
     end
 end
 function Pool._DevEndPass(host, label)
-    if not devOn or host == nil then return end
+    if not devOn or host == nil then
+        return
+    end
     local rec = REC[host]
-    if rec then DevIdleShown(rec, label, 0) end
+    if rec then
+        DevIdleShown(rec, label, 0)
+    end
     -- kept frames another owner placed on this host (a section a module keeps
     -- on a page wrapper) hold pools of their own: walked too
     for _, map in pairs(KEPT) do
@@ -1879,11 +2375,14 @@ end
 -- holds by class, how many are idle, and what the graveyard holds. Never called
 -- by the suite.
 function Pool._DevCounts()
-    local c = { pooled = 0, kept = 0, owned = 0, keep = 0, attach = 0, placeholder = 0, idle = 0, graveyard = 0 }
+    local c =
+        { pooled = 0, kept = 0, owned = 0, keep = 0, attach = 0, placeholder = 0, idle = 0, graveyard = 0 }
     for _, r in pairs(REC) do
         local cls = r.cls
         c[cls] = (c[cls] or 0) + 1
-        if r.idle then c.idle = c.idle + 1 end
+        if r.idle then
+            c.idle = c.idle + 1
+        end
     end
     if graveyard then
         c.graveyard = select("#", graveyard:GetChildren()) + select("#", graveyard:GetRegions())
@@ -1902,7 +2401,9 @@ end
 -- does before handing it out again on the same host.
 function Pool._ResetForTest(obj)
     local rec = obj and REC[obj]
-    if not rec then return false end
+    if not rec then
+        return false
+    end
     if rec.region then
         ResetRegion(obj, rec, rec.host, rec.layer, rec.sub)
         return true
@@ -1950,21 +2451,29 @@ function Pool._DevVerifyReset()
     local function Fmt(v)
         if type(v) == "table" and type(v.GetXY) == "function" then
             local x, y = v:GetXY()
-            if type(x) == "number" and type(y) == "number" then return string.format("(%.3f, %.3f)", x, y) end
+            if type(x) == "number" and type(y) == "number" then
+                return string.format("(%.3f, %.3f)", x, y)
+            end
         end
         return tostring(v)
     end
     local function Say(kind, what, va, vb)
         out[#out + 1] = kind .. " " .. what .. ": new=" .. Fmt(va) .. " reset=" .. Fmt(vb)
     end
-    local function Packed(...) return { n = select("#", ...), ... } end
+    local function Packed(...)
+        return { n = select("#", ...), ... }
+    end
     -- a getter's results on both objects; ownA / ownB stand for each other
     local function Compare(kind, label, a, b, get, ga, ownA, ownB)
         local fa, fb = a[get], b[get]
-        if type(fa) ~= "function" or type(fb) ~= "function" then return end
+        if type(fa) ~= "function" or type(fb) ~= "function" then
+            return
+        end
         local ra = Packed(pcall(fa, a, unpack(ga or EMPTY)))
         local rb = Packed(pcall(fb, b, unpack(ga or EMPTY)))
-        if not ra[1] and not rb[1] then return end
+        if not ra[1] and not rb[1] then
+            return
+        end
         if ra[1] ~= rb[1] then
             Say(kind, label or get, ra[1] and "ok" or "error", rb[1] and "ok" or "error")
             return
@@ -1991,12 +2500,18 @@ function Pool._DevVerifyReset()
             return
         end
         local set = b[c[1]]
-        if type(set) ~= "function" then return end
+        if type(set) ~= "function" then
+            return
+        end
         if c.flip then
             local fg = a[c.flip]
-            if type(fg) ~= "function" then return end
+            if type(fg) ~= "function" then
+                return
+            end
             local ok, v = pcall(fg, a)
-            if ok then pcall(set, b, not v) end
+            if ok then
+                pcall(set, b, not v)
+            end
         elseif type(c.v) == "function" then
             pcall(set, b, c.v(host))
         else
@@ -2005,80 +2520,141 @@ function Pool._DevVerifyReset()
     end
     local function Check(kind, a, b, c)
         if c.key then
-            if rawget(a, c.key) ~= rawget(b, c.key) then Say(kind, "key " .. c.key, rawget(a, c.key), rawget(b, c.key)) end
+            if rawget(a, c.key) ~= rawget(b, c.key) then
+                Say(kind, "key " .. c.key, rawget(a, c.key), rawget(b, c.key))
+            end
             return
         end
         local get = c.get or c.flip
-        if get then Compare(kind, nil, a, b, get, c.ga, a, b) end
+        if get then
+            Compare(kind, nil, a, b, get, c.ga, a, b)
+        end
     end
 
     local FRAME = {
-        { "SetAlpha", v = { 0.5 }, get = "GetAlpha" }, { "SetScale", v = { 0.8 }, get = "GetScale" },
-        { "EnableMouse", flip = "IsMouseEnabled" }, { "EnableMouseWheel", flip = "IsMouseWheelEnabled" },
-        { "SetMouseClickEnabled", flip = "IsMouseClickEnabled" }, { "SetMouseMotionEnabled", flip = "IsMouseMotionEnabled" },
-        { "EnableKeyboard", flip = "IsKeyboardEnabled" }, { "SetClipsChildren", flip = "DoesClipChildren" },
+        { "SetAlpha", v = { 0.5 }, get = "GetAlpha" },
+        { "SetScale", v = { 0.8 }, get = "GetScale" },
+        { "EnableMouse", flip = "IsMouseEnabled" },
+        { "EnableMouseWheel", flip = "IsMouseWheelEnabled" },
+        { "SetMouseClickEnabled", flip = "IsMouseClickEnabled" },
+        { "SetMouseMotionEnabled", flip = "IsMouseMotionEnabled" },
+        { "EnableKeyboard", flip = "IsKeyboardEnabled" },
+        { "SetClipsChildren", flip = "DoesClipChildren" },
         { "SetClampedToScreen", flip = "IsClampedToScreen" },
         { "SetClampRectInsets", v = { 1, 2, 3, 4 }, get = "GetClampRectInsets" },
         { "SetHitRectInsets", v = { 1, 2, 3, 4 }, get = "GetHitRectInsets" },
-        { "SetMovable", flip = "IsMovable" }, { "SetResizable", flip = "IsResizable" },
-        { "SetIgnoreParentAlpha", flip = "IsIgnoringParentAlpha" }, { "SetIgnoreParentScale", flip = "IsIgnoringParentScale" },
-        { "SetID", v = { 7 }, get = "GetID" }, { "SetToplevel", flip = "IsToplevel" },
-        { "SetFrameStrata", v = { "DIALOG" }, get = "GetFrameStrata" }, { "SetFrameLevel", v = { 50 }, get = "GetFrameLevel" },
-        { "SetFixedFrameStrata", flip = "HasFixedFrameStrata" }, { "SetFixedFrameLevel", flip = "HasFixedFrameLevel" },
+        { "SetMovable", flip = "IsMovable" },
+        { "SetResizable", flip = "IsResizable" },
+        { "SetIgnoreParentAlpha", flip = "IsIgnoringParentAlpha" },
+        { "SetIgnoreParentScale", flip = "IsIgnoringParentScale" },
+        { "SetID", v = { 7 }, get = "GetID" },
+        { "SetToplevel", flip = "IsToplevel" },
+        { "SetFrameStrata", v = { "DIALOG" }, get = "GetFrameStrata" },
+        { "SetFrameLevel", v = { 50 }, get = "GetFrameLevel" },
+        { "SetFixedFrameStrata", flip = "HasFixedFrameStrata" },
+        { "SetFixedFrameLevel", flip = "HasFixedFrameLevel" },
         { "SetFlattensRenderLayers", flip = "GetFlattensRenderLayers" },
         { "SetPropagateKeyboardInput", flip = "GetPropagateKeyboardInput" },
         { "SetPropagateMouseClicks", flip = "CanPropagateMouseClicks" },
         { "SetPropagateMouseMotion", flip = "CanPropagateMouseMotion" },
-        { "SetPassThroughButtons", v = { "LeftButton" }, get = "ShouldButtonPassThrough", ga = { "LeftButton" } },
+        {
+            "SetPassThroughButtons",
+            v = { "LeftButton" },
+            get = "ShouldButtonPassThrough",
+            ga = { "LeftButton" },
+        },
         { "SetAttribute", v = { "cuiPoolCheck", 1 }, get = "GetAttribute", ga = { "cuiPoolCheck" } },
         { "Hide", get = "IsShown" },
         { "SetScript", v = { "OnEnter", NOOP }, get = "GetScript", ga = { "OnEnter" } },
         { "HookScript", v = { "OnLeave", NOOP }, get = "GetScript", ga = { "OnLeave" } },
-        { "RegisterEvent", v = { "PLAYER_TARGET_CHANGED" }, get = "IsEventRegistered", ga = { "PLAYER_TARGET_CHANGED" } },
+        {
+            "RegisterEvent",
+            v = { "PLAYER_TARGET_CHANGED" },
+            get = "IsEventRegistered",
+            ga = { "PLAYER_TARGET_CHANGED" },
+        },
         { key = "_cuiPoolCheck" },
     }
     local BUTTON = {
-        { "Disable", get = "IsEnabled" }, { "SetMotionScriptsWhileDisabled", flip = "GetMotionScriptsWhileDisabled" },
+        { "Disable", get = "IsEnabled" },
+        { "SetMotionScriptsWhileDisabled", flip = "GetMotionScriptsWhileDisabled" },
         { "SetButtonState", v = { "PUSHED", true }, get = "GetButtonState" },
         { "SetPushedTextOffset", v = { 5, -5 }, get = "GetPushedTextOffset" },
-        { "SetNormalFontObject", v = function() return _G.GameFontNormal end, get = "GetNormalFontObject" },
-        { "SetHighlightFontObject", v = function() return _G.GameFontHighlight end, get = "GetHighlightFontObject" },
-        { "SetDisabledFontObject", v = function() return _G.GameFontDisable end, get = "GetDisabledFontObject" },
+        {
+            "SetNormalFontObject",
+            v = function()
+                return _G.GameFontNormal
+            end,
+            get = "GetNormalFontObject",
+        },
+        {
+            "SetHighlightFontObject",
+            v = function()
+                return _G.GameFontHighlight
+            end,
+            get = "GetHighlightFontObject",
+        },
+        {
+            "SetDisabledFontObject",
+            v = function()
+                return _G.GameFontDisable
+            end,
+            get = "GetDisabledFontObject",
+        },
     }
     local CHECK = { { "SetChecked", flip = "GetChecked" } }
     local EDIT = {
-        { "SetMaxLetters", v = { 5 }, get = "GetMaxLetters" }, { "SetMaxBytes", v = { 9 }, get = "GetMaxBytes" },
-        { "SetNumeric", flip = "IsNumeric" }, { "SetMultiLine", flip = "IsMultiLine" },
-        { "SetTextInsets", v = { 1, 2, 3, 4 }, get = "GetTextInsets" }, { "SetAutoFocus", flip = "IsAutoFocus" },
-        { "SetJustifyH", v = { "RIGHT" }, get = "GetJustifyH" }, { "SetJustifyV", v = { "TOP" }, get = "GetJustifyV" },
-        { "SetSpacing", v = { 3 }, get = "GetSpacing" }, { "SetTextColor", v = { 1, 0, 0, 1 }, get = "GetTextColor" },
+        { "SetMaxLetters", v = { 5 }, get = "GetMaxLetters" },
+        { "SetMaxBytes", v = { 9 }, get = "GetMaxBytes" },
+        { "SetNumeric", flip = "IsNumeric" },
+        { "SetMultiLine", flip = "IsMultiLine" },
+        { "SetTextInsets", v = { 1, 2, 3, 4 }, get = "GetTextInsets" },
+        { "SetAutoFocus", flip = "IsAutoFocus" },
+        { "SetJustifyH", v = { "RIGHT" }, get = "GetJustifyH" },
+        { "SetJustifyV", v = { "TOP" }, get = "GetJustifyV" },
+        { "SetSpacing", v = { 3 }, get = "GetSpacing" },
+        { "SetTextColor", v = { 1, 0, 0, 1 }, get = "GetTextColor" },
         { "SetHighlightColor", v = { 1, 0, 0, 1 }, get = "GetHighlightColor" },
         { "SetText", v = { "abc" }, get = "GetText" },
-        { "SetCountInvisibleLetters", flip = "IsCountInvisibleLetters" }, { "Disable", get = "IsEnabled" },
+        { "SetCountInvisibleLetters", flip = "IsCountInvisibleLetters" },
+        { "Disable", get = "IsEnabled" },
     }
     local SCROLL = {
         { "SetVerticalScroll", v = { 10 }, get = "GetVerticalScroll" },
         { "SetHorizontalScroll", v = { 5 }, get = "GetHorizontalScroll" },
     }
     local BAR = {
-        { "SetMinMaxValues", v = { 0, 10 }, get = "GetMinMaxValues" }, { "SetValue", v = { 5 }, get = "GetValue" },
-        { "SetOrientation", v = { "VERTICAL" }, get = "GetOrientation" }, { "SetReverseFill", flip = "GetReverseFill" },
-        { "SetFillStyle", v = { "CENTER" }, get = "GetFillStyle" }, { "SetRotatesTexture", flip = "GetRotatesTexture" },
+        { "SetMinMaxValues", v = { 0, 10 }, get = "GetMinMaxValues" },
+        { "SetValue", v = { 5 }, get = "GetValue" },
+        { "SetOrientation", v = { "VERTICAL" }, get = "GetOrientation" },
+        { "SetReverseFill", flip = "GetReverseFill" },
+        { "SetFillStyle", v = { "CENTER" }, get = "GetFillStyle" },
+        { "SetRotatesTexture", flip = "GetRotatesTexture" },
         { "SetStatusBarDesaturated", flip = "IsStatusBarDesaturated" },
         { "SetStatusBarColor", v = { 1, 0, 0, 1 }, get = "GetStatusBarColor" },
     }
     local CD = {
-        { "SetDrawEdge", flip = "GetDrawEdge" }, { "SetDrawSwipe", flip = "GetDrawSwipe" },
-        { "SetDrawBling", flip = "GetDrawBling" }, { "SetReverse", flip = "GetReverse" },
+        { "SetDrawEdge", flip = "GetDrawEdge" },
+        { "SetDrawSwipe", flip = "GetDrawSwipe" },
+        { "SetDrawBling", flip = "GetDrawBling" },
+        { "SetReverse", flip = "GetReverse" },
         { "SetHideCountdownNumbers", flip = "GetHideCountdownNumbers" },
-        { "SetEdgeScale", v = { 2 }, get = "GetEdgeScale" }, { "SetRotation", v = { 1 }, get = "GetRotation" },
+        { "SetEdgeScale", v = { 2 }, get = "GetEdgeScale" },
+        { "SetRotation", v = { 1 }, get = "GetRotation" },
         { "SetCountdownAbbrevThreshold", v = { 5 }, get = "GetCountdownAbbrevThreshold" },
         { "SetMinimumCountdownDuration", v = { 3 }, get = "GetMinimumCountdownDuration" },
         { "SetUseAuraDisplayTime", flip = "GetUseAuraDisplayTime" },
-        { "SetCooldown", v = function() return _G.GetTime(), 30 end, get = "GetCooldownDuration" },
+        {
+            "SetCooldown",
+            v = function()
+                return _G.GetTime(), 30
+            end,
+            get = "GetCooldownDuration",
+        },
     }
     local MODEL = {
-        { "SetFacing", v = { 1 }, get = "GetFacing" }, { "SetPosition", v = { 1, 2, 3 }, get = "GetPosition" },
+        { "SetFacing", v = { 1 }, get = "GetFacing" },
+        { "SetPosition", v = { 1, 2, 3 }, get = "GetPosition" },
         { "SetModelScale", v = { 2 }, get = "GetModelScale" },
         { "SetCamDistanceScale", v = { 2 }, get = "GetCamDistanceScale" },
         { "SetPortraitZoom", v = { 0.5 }, get = "GetPortraitZoom" },
@@ -2087,61 +2663,109 @@ function Pool._DevVerifyReset()
         { "SetUnit", v = { "player" } },
     }
     local REGION = {
-        { "SetAlpha", v = { 0.5 }, get = "GetAlpha" }, { "Hide", get = "IsShown" },
-        { "SetIgnoreParentAlpha", flip = "IsIgnoringParentAlpha" }, { "SetIgnoreParentScale", flip = "IsIgnoringParentScale" },
-        { "SetDrawLayer", v = { "OVERLAY", 3 }, get = "GetDrawLayer" }, { "SetScale", v = { 0.8 }, get = "GetScale" },
+        { "SetAlpha", v = { 0.5 }, get = "GetAlpha" },
+        { "Hide", get = "IsShown" },
+        { "SetIgnoreParentAlpha", flip = "IsIgnoringParentAlpha" },
+        { "SetIgnoreParentScale", flip = "IsIgnoringParentScale" },
+        { "SetDrawLayer", v = { "OVERLAY", 3 }, get = "GetDrawLayer" },
+        { "SetScale", v = { 0.8 }, get = "GetScale" },
         { key = "_cuiPoolCheck" },
     }
     local TEX = {
-        { "SetTexture", v = { ART }, get = "GetTexture" }, { "SetVertexColor", v = { 1, 0, 0, 0.5 }, get = "GetVertexColor" },
-        { "SetTexCoord", v = { 0.1, 0.9, 0.1, 0.9 }, get = "GetTexCoord" }, { "SetDesaturated", flip = "IsDesaturated" },
-        { "SetDesaturation", v = { 0.5 }, get = "GetDesaturation" }, { "SetBlendMode", v = { "ADD" }, get = "GetBlendMode" },
-        { "SetRotation", v = { 1 }, get = "GetRotation" }, { "SetHorizTile", flip = "GetHorizTile" },
+        { "SetTexture", v = { ART }, get = "GetTexture" },
+        { "SetVertexColor", v = { 1, 0, 0, 0.5 }, get = "GetVertexColor" },
+        { "SetTexCoord", v = { 0.1, 0.9, 0.1, 0.9 }, get = "GetTexCoord" },
+        { "SetDesaturated", flip = "IsDesaturated" },
+        { "SetDesaturation", v = { 0.5 }, get = "GetDesaturation" },
+        { "SetBlendMode", v = { "ADD" }, get = "GetBlendMode" },
+        { "SetRotation", v = { 1 }, get = "GetRotation" },
+        { "SetHorizTile", flip = "GetHorizTile" },
         { "SetVertTile", flip = "GetVertTile" },
         { "SetTextureSliceMargins", v = { 1, 2, 3, 4 }, get = "GetTextureSliceMargins" },
         { "SetTextureSliceMode", v = { 1 }, get = "GetTextureSliceMode" },
         { "SetVertexOffset", v = { 1, 2, 3 }, get = "GetVertexOffset", ga = { 1 } },
-        { "AddMaskTexture", v = function(h) return h:CreateMaskTexture() end, get = "GetNumMaskTextures" },
+        {
+            "AddMaskTexture",
+            v = function(h)
+                return h:CreateMaskTexture()
+            end,
+            get = "GetNumMaskTextures",
+        },
     }
     local FS = {
-        { "SetText", v = { "x" }, get = "GetText" }, { "SetTextColor", v = { 1, 0, 0, 1 }, get = "GetTextColor" },
+        { "SetText", v = { "x" }, get = "GetText" },
+        { "SetTextColor", v = { 1, 0, 0, 1 }, get = "GetTextColor" },
         { "SetShadowColor", v = { 1, 0, 0, 1 }, get = "GetShadowColor" },
         { "SetShadowOffset", v = { 2, -2 }, get = "GetShadowOffset" },
-        { "SetJustifyH", v = { "RIGHT" }, get = "GetJustifyH" }, { "SetJustifyV", v = { "TOP" }, get = "GetJustifyV" },
-        { "SetWordWrap", flip = "CanWordWrap" }, { "SetNonSpaceWrap", flip = "CanNonSpaceWrap" },
-        { "SetMaxLines", v = { 2 }, get = "GetMaxLines" }, { "SetSpacing", v = { 3 }, get = "GetSpacing" },
-        { "SetIndentedWordWrap", flip = "GetIndentedWordWrap" }, { "SetTextScale", v = { 1.5 }, get = "GetTextScale" },
+        { "SetJustifyH", v = { "RIGHT" }, get = "GetJustifyH" },
+        { "SetJustifyV", v = { "TOP" }, get = "GetJustifyV" },
+        { "SetWordWrap", flip = "CanWordWrap" },
+        { "SetNonSpaceWrap", flip = "CanNonSpaceWrap" },
+        { "SetMaxLines", v = { 2 }, get = "GetMaxLines" },
+        { "SetSpacing", v = { 3 }, get = "GetSpacing" },
+        { "SetIndentedWordWrap", flip = "GetIndentedWordWrap" },
+        { "SetTextScale", v = { 1.5 }, get = "GetTextScale" },
     }
     local LINE = {
-        { "SetThickness", v = { 3 }, get = "GetThickness" }, { "SetColorTexture", v = { 1, 0, 0, 1 } },
+        { "SetThickness", v = { 3 }, get = "GetThickness" },
+        { "SetColorTexture", v = { 1, 0, 0, 1 } },
     }
     local AG = {
-        { "SetLooping", v = { "REPEAT" }, get = "GetLooping" }, { "SetToFinalAlpha", flip = "IsSetToFinalAlpha" },
+        { "SetLooping", v = { "REPEAT" }, get = "GetLooping" },
+        { "SetToFinalAlpha", flip = "IsSetToFinalAlpha" },
         { "SetAnimationSpeedMultiplier", v = { 2 }, get = "GetAnimationSpeedMultiplier" },
         { "SetScript", v = { "OnFinished", NOOP }, get = "GetScript", ga = { "OnFinished" } },
         { key = "_cuiPoolCheck" },
     }
     local ALPHA = {
-        { "SetDuration", v = { 1 }, get = "GetDuration" }, { "SetStartDelay", v = { 1 }, get = "GetStartDelay" },
-        { "SetEndDelay", v = { 1 }, get = "GetEndDelay" }, { "SetOrder", v = { 2 }, get = "GetOrder" },
+        { "SetDuration", v = { 1 }, get = "GetDuration" },
+        { "SetStartDelay", v = { 1 }, get = "GetStartDelay" },
+        { "SetEndDelay", v = { 1 }, get = "GetEndDelay" },
+        { "SetOrder", v = { 2 }, get = "GetOrder" },
         { "SetFromAlpha", v = { 0.2 }, get = "GetFromAlpha" },
-        { "SetToAlpha", v = { 0.7 }, get = "GetToAlpha" }, { "SetTarget", v = function(h) return h end, get = "GetTarget" },
+        { "SetToAlpha", v = { 0.7 }, get = "GetToAlpha" },
+        {
+            "SetTarget",
+            v = function(h)
+                return h
+            end,
+            get = "GetTarget",
+        },
     }
     -- an engine region's look, compared on both objects once both have it
-    local REGION_LOOK = { "IsShown", "GetDrawLayer", "GetNumPoints", "GetPoint", "GetBlendMode", "GetVertexColor",
-        "IsDesaturated", "GetTexCoord", "GetAlpha", "GetTexture", "GetAtlas", "GetText", "GetFont", "GetTextColor",
-        "GetJustifyH", "GetJustifyV" }
+    local REGION_LOOK = {
+        "IsShown",
+        "GetDrawLayer",
+        "GetNumPoints",
+        "GetPoint",
+        "GetBlendMode",
+        "GetVertexColor",
+        "IsDesaturated",
+        "GetTexCoord",
+        "GetAlpha",
+        "GetTexture",
+        "GetAtlas",
+        "GetText",
+        "GetFont",
+        "GetTextColor",
+        "GetJustifyH",
+        "GetJustifyV",
+    }
 
     local function Run(kind, list, a, b, dress)
         kinds = kinds + 1
         for _, part in ipairs(list) do
-            for _, c in ipairs(part) do Mutate(a, b, c) end
+            for _, c in ipairs(part) do
+                Mutate(a, b, c)
+            end
         end
         return function()
             dress(a)
             dress(b)
             for _, part in ipairs(list) do
-                for _, c in ipairs(part) do Check(kind, a, b, c) end
+                for _, c in ipairs(part) do
+                    Check(kind, a, b, c)
+                end
             end
         end
     end
@@ -2149,26 +2773,37 @@ function Pool._DevVerifyReset()
         o:SetSize(40, 20)
         o:ClearAllPoints()
         o:SetPoint("CENTER", host)
-        if o.SetFont and o:GetObjectType() == "EditBox" then o:SetFont(FONT, 12, "") end
+        if o.SetFont and o:GetObjectType() == "EditBox" then
+            o:SetFont(FONT, 12, "")
+        end
     end
 
     local function VerifyFrame(ftype, tmpl, list)
         local kind = tmpl and (ftype .. "|" .. tmpl) or ftype
         local a = _G.CreateFrame(ftype, nil, host, tmpl)
         local b = Pool.CreateFrame(ftype, nil, host, tmpl)
-        if not REC[b] then Say(kind, "pool", "pooled", "not pooled"); return end
+        if not REC[b] then
+            Say(kind, "pool", "pooled", "not pooled")
+            return
+        end
         local finish = Run(kind, list, a, b, DressFrame)
         local roles = ENGINE_ROLES[ftype]
         if roles then
             for _, role in ipairs(roles) do
                 if role.make and b[role.make] then
-                    if role.text then pcall(b.SetNormalFontObject, b, _G.GameFontNormal) end
+                    if role.text then
+                        pcall(b.SetNormalFontObject, b, _G.GameFontNormal)
+                    end
                     pcall(b[role.make], b, role.text and "x" or ART)
                 end
                 local reg = b[role.get] and SafeCall(b[role.get], b)
                 if reg then
-                    if reg.SetVertexColor then pcall(reg.SetVertexColor, reg, 1, 0, 0, 0.5) end
-                    if reg.SetTextColor then pcall(reg.SetTextColor, reg, 1, 0, 0, 1) end
+                    if reg.SetVertexColor then
+                        pcall(reg.SetVertexColor, reg, 1, 0, 0, 0.5)
+                    end
+                    if reg.SetTextColor then
+                        pcall(reg.SetTextColor, reg, 1, 0, 0, 1)
+                    end
                     pcall(reg.SetAlpha, reg, 0.5)
                     pcall(reg.ClearAllPoints, reg)
                 end
@@ -2195,7 +2830,9 @@ function Pool._DevVerifyReset()
                 if rb and not role.live and ra == nil and rb:IsShown() then
                     local drawn = (rb.GetTexture and (rb:GetTexture() or (rb.GetAtlas and rb:GetAtlas())))
                         or (rb.GetText and rb:GetText() ~= "" and rb:GetText())
-                    if drawn then Say(kind, role.get .. " after the reset", "none", drawn) end
+                    if drawn then
+                        Say(kind, role.get .. " after the reset", "none", drawn)
+                    end
                 end
                 if role.make and a[role.make] then
                     if role.text then
@@ -2223,7 +2860,10 @@ function Pool._DevVerifyReset()
     local function VerifyRegion(kind, method, list)
         local a = getmetatable(host).__index[method](host, nil, "ARTWORK")
         local b = host[method](host, nil, "ARTWORK")
-        if not REC[b] then Say(kind, "pool", "pooled", "not pooled"); return end
+        if not REC[b] then
+            Say(kind, "pool", "pooled", "not pooled")
+            return
+        end
         local finish = Run(kind, list, a, b, function(o)
             o:ClearAllPoints()
             if kind == "Line" then
@@ -2249,13 +2889,24 @@ function Pool._DevVerifyReset()
         local faA = fa:CreateAnimation("Alpha")
         local gb = host:CreateAnimationGroup()
         local gbA = gb:CreateAnimation("Alpha")
-        if not REC[gb] then Say("AnimationGroup", "pool", "pooled", "not pooled"); return end
+        if not REC[gb] then
+            Say("AnimationGroup", "pool", "pooled", "not pooled")
+            return
+        end
         kinds = kinds + 1
-        for _, c in ipairs(AG) do Mutate(fa, gb, c) end
-        for _, c in ipairs(ALPHA) do Mutate(faA, gbA, c) end
+        for _, c in ipairs(AG) do
+            Mutate(fa, gb, c)
+        end
+        for _, c in ipairs(ALPHA) do
+            Mutate(faA, gbA, c)
+        end
         Pool._ResetForTest(gb)
-        for _, c in ipairs(AG) do Check("AnimationGroup", fa, gb, c) end
-        for _, c in ipairs(ALPHA) do Check("Alpha", faA, gbA, c) end
+        for _, c in ipairs(AG) do
+            Check("AnimationGroup", fa, gb, c)
+        end
+        for _, c in ipairs(ALPHA) do
+            Check("Alpha", faA, gbA, c)
+        end
     end
 
     VerifyFrame("Frame", nil, { FRAME })
@@ -2269,7 +2920,11 @@ function Pool._DevVerifyReset()
     VerifyFrame("PlayerModel", nil, { FRAME, MODEL })
     VerifyRegion("Texture", "CreateTexture", { REGION, TEX })
     VerifyRegion("FontString", "CreateFontString", { REGION, FS })
-    VerifyRegion("MaskTexture", "CreateMaskTexture", { REGION, { { "SetTexture", v = { ART }, get = "GetTexture" } } })
+    VerifyRegion(
+        "MaskTexture",
+        "CreateMaskTexture",
+        { REGION, { { "SetTexture", v = { ART }, get = "GetTexture" } } }
+    )
     VerifyRegion("Line", "CreateLine", { REGION, LINE })
     VerifyAnimations()
     -- an edit box whose history lines changed: when its reset cannot put them
@@ -2303,10 +2958,21 @@ function Pool._DevVerifyReset()
     end
 
     -- what the resets could not put back (those objects are retired)
-    for i = 1, #refusedLog do CludesUI.Print("pool check note: " .. refusedLog[i]) end
+    for i = 1, #refusedLog do
+        CludesUI.Print("pool check note: " .. refusedLog[i])
+    end
     refusedLog = nil
-    for i = 1, #out do CludesUI.PrintError("pool check: " .. out[i]) end
-    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "[CludesUI]|r pool check: " .. kinds .. " kinds, "
-        .. #out .. " difference(s)" .. (#out == 0 and " -- every reset matches a new object" or ""))
+    for i = 1, #out do
+        CludesUI.PrintError("pool check: " .. out[i])
+    end
+    CludesUI.Print(
+        CludesUI.COLOR_CODES.BRAND
+            .. "[CludesUI]|r pool check: "
+            .. kinds
+            .. " kinds, "
+            .. #out
+            .. " difference(s)"
+            .. (#out == 0 and " -- every reset matches a new object" or "")
+    )
     return #out
 end

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Keybinds.lua
 --
@@ -70,7 +72,9 @@ local function UpdateKeybinds()
     -- stomps the housing hotkeys until the editor's next mode change. Rebuild
     -- resumes on editor close (housingCleared reset -> UpdateKeybinds;
     -- sigValid stays false while cleared, so that rebuild is never skipped).
-    if _bindState.housingCleared then return false end
+    if _bindState.housingCleared then
+        return false
+    end
     -- A hidden bar skipped at load must exist the moment a key lands on one of
     -- its commands (UPDATE_BINDINGS lands here): hidden bars keep live
     -- bindings, and a click-routed key has no button to route to otherwise.
@@ -80,9 +84,13 @@ local function UpdateKeybinds()
     -- Empower detection for one action slot, shared by the current-page
     -- and base-slot checks in pass 1.
     local function SlotIsPH(slot)
-        if not (slot and HasAction(slot)) then return false end
+        if not (slot and HasAction(slot)) then
+            return false
+        end
         local actionType, id, subType = GetActionInfo(slot)
-        if actionType == "flyout" then return true end
+        if actionType == "flyout" then
+            return true
+        end
         if C_Spell and C_Spell.IsPressHoldReleaseSpell then
             local spellID
             if actionType == "spell" then
@@ -90,8 +98,11 @@ local function UpdateKeybinds()
             elseif actionType == "macro" and subType == "spell" then
                 spellID = id
             end
-            if spellID and not (issecretvalue and issecretvalue(spellID))
-               and C_Spell.IsPressHoldReleaseSpell(spellID) then
+            if
+                spellID
+                and not (issecretvalue and issecretvalue(spellID))
+                and C_Spell.IsPressHoldReleaseSpell(spellID)
+            then
                 return true
             end
         end
@@ -105,13 +116,18 @@ local function UpdateKeybinds()
     -- was received. Empowers have no popup to anchor, so they're unaffected
     -- and must stay on the native command (see routing comment below).
     local function SlotIsFlyout(slot)
-        if not (slot and HasAction(slot)) then return false end
+        if not (slot and HasAction(slot)) then
+            return false
+        end
         return GetActionInfo(slot) == "flyout"
     end
     -- Pass 1: compute per-button routing signature (k1, k2, useClick, isPH)
     -- and compare against the last applied build.
     local sig = _bindState.sig
-    if not sig then sig = {}; _bindState.sig = sig end
+    if not sig then
+        sig = {}
+        _bindState.sig = sig
+    end
     local n = 0
     local changed = not _bindState.sigValid
     local anyPH = false
@@ -194,7 +210,9 @@ local function UpdateKeybinds()
                             end
                         end
                     end
-                    if isPH then anyPH = true end
+                    if isPH then
+                        anyPH = true
+                    end
                     -- isPH (empower) deliberately NOT part of the routing
                     -- decision: empower keys must ride the native command.
                     -- isFlyout IS part of it: flyouts need self to be the
@@ -203,8 +221,12 @@ local function UpdateKeybinds()
                     local useClick = barHasCustomPaging or (info.customPage ~= nil) or isFlyout
                     k1 = k1 or false
                     k2 = k2 or false
-                    if sig[n + 1] ~= k1 or sig[n + 2] ~= k2
-                       or sig[n + 3] ~= useClick or sig[n + 4] ~= isPH then
+                    if
+                        sig[n + 1] ~= k1
+                        or sig[n + 2] ~= k2
+                        or sig[n + 3] ~= useClick
+                        or sig[n + 4] ~= isPH
+                    then
                         changed = true
                     end
                     sig[n + 1], sig[n + 2], sig[n + 3], sig[n + 4] = k1, k2, useClick, isPH
@@ -213,7 +235,10 @@ local function UpdateKeybinds()
             end
         end
     end
-    if _bindState.sigN ~= n then changed = true; _bindState.sigN = n end
+    if _bindState.sigN ~= n then
+        changed = true
+        _bindState.sigN = n
+    end
     -- Tracked on every full pass (even signature-unchanged ones) so the
     -- combat-drop attr re-assert knows whether any press-and-hold slot
     -- exists at all -- non-empower classes never pay for it.
@@ -222,7 +247,9 @@ local function UpdateKeybinds()
     -- drives; their pressAndHoldAction is kept current by Blizzard's own
     -- SLOT_CHANGED and PLAYER_ENTERING_WORLD registrations, which the
     -- broadcaster quieting at the top of the file leaves untouched.
-    if not changed then return false end
+    if not changed then
+        return false
+    end
     _bindState.sigValid = true
     -- Pass 2: apply. Reads the routing decisions computed above.
     ClearOverrideBindings(_eabBindOwner)
@@ -280,7 +307,7 @@ local function UpdateKeybinds()
     end
     return true
 end
-_G._EAB_UpdateKeybinds = UpdateKeybinds
+_G._CUAB_UpdateKeybinds = UpdateKeybinds
 
 -- Re-assert pressAndHoldAction across all bars once combat drops. Combat is
 -- the ONE window where the attribute can be rewritten without pass 3 above
@@ -294,8 +321,12 @@ _G._EAB_UpdateKeybinds = UpdateKeybinds
 -- never bindings -- so the native hold-to-cast path is untouched by
 -- construction.
 ns._EABReassertEmpowerAttrs = function()
-    if InCombatLockdown() then return end
-    if not _bindState.hasPH then return end
+    if InCombatLockdown() then
+        return
+    end
+    if not _bindState.hasPH then
+        return
+    end
     for _, info in ipairs(BAR_CONFIG) do
         local frame = barFrames[info.key]
         if frame then
@@ -303,10 +334,6 @@ ns._EABReassertEmpowerAttrs = function()
         end
     end
 end
-
-
-
-
 
 -- Update useOnKeyDown on all action buttons to match the CVar.
 -- RegisterForClicks is always ("AnyDown", "AnyUp") so empower spells

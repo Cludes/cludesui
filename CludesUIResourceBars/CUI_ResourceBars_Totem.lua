@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Totem.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local UnitClass, InCombatLockdown = UnitClass, InCombatLockdown
@@ -17,7 +21,9 @@ local ERB, GetRBFont, _totemBorderOverlays = I.ERB, I.GetRBFont, I._totemBorderO
 local SetTotemBarFrame = I.SetTotemBarFrame
 
 local totemBarFrame
-I.totemBarFrameSetters[#I.totemBarFrameSetters + 1] = function(v) totemBarFrame = v end
+I.totemBarFrameSetters[#I.totemBarFrameSetters + 1] = function(v)
+    totemBarFrame = v
+end
 
 local _totemHooked = false
 local _totemOrigParent
@@ -43,23 +49,29 @@ function CludesUI.GetTotemGrowDir()
     local vertical = tb and tb.orientation == "VERTICAL"
     local dir = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
     if vertical then
-        if dir ~= "UP" and dir ~= "DOWN" and dir ~= "CENTER" then dir = "DOWN" end
+        if dir ~= "UP" and dir ~= "DOWN" and dir ~= "CENTER" then
+            dir = "DOWN"
+        end
     else
-        if dir ~= "LEFT" and dir ~= "RIGHT" and dir ~= "CENTER" then dir = "RIGHT" end
+        if dir ~= "LEFT" and dir ~= "RIGHT" and dir ~= "CENTER" then
+            dir = "RIGHT"
+        end
     end
     return dir, vertical
 end
 
 -- Cached layout state to avoid redundant work on every Update hook
 local _totemLayoutCache = {}
-local _totemActiveSet = {}  -- reusable set for O(1) cleanup lookups
+local _totemActiveSet = {} -- reusable set for O(1) cleanup lookups
 
 -- The icon cooldown's native countdown number is a C-rendered, secret-safe
 -- FontString. We restyle that FontString (font/size/color) but never read its
 -- value, giving a clean number with no "s" suffix in place of Blizzard's "Xs"
 -- Duration text (which is a protected secret value we cannot read or rewrite).
 local function GetCooldownNumberFS(cd)
-    if not (cd and cd.GetRegions) then return nil end
+    if not (cd and cd.GetRegions) then
+        return nil
+    end
     for _, region in ipairs({ cd:GetRegions() }) do
         if region.GetObjectType and region:GetObjectType() == "FontString" then
             return region
@@ -69,13 +81,19 @@ local function GetCooldownNumberFS(cd)
 end
 
 local function LayoutTotemBar()
-    if not totemBarFrame or not TotemFrame then return end
+    if not totemBarFrame or not TotemFrame then
+        return
+    end
     local tb = GetTotemSettings()
-    if not tb or not tb.enabledClasses then return end
+    if not tb or not tb.enabledClasses then
+        return
+    end
 
     local spacing = tb.spacing or 2
     local PP = CludesUI and CludesUI.PP
-    if PP and PP.Snap then spacing = PP.Snap(spacing) end
+    if PP and PP.Snap then
+        spacing = PP.Snap(spacing)
+    end
     local iconSize = tb.iconSize or 30
     local vertical = (tb.orientation == "VERTICAL")
 
@@ -92,11 +110,21 @@ local function LayoutTotemBar()
     local _growDir = CludesUI.GetTotemGrowDir()
     TotemFrame:ClearAllPoints()
     if vertical then
-        TotemFrame:SetPoint(_growDir == "UP" and "BOTTOM" or "TOP", totemBarFrame,
-            _growDir == "UP" and "BOTTOM" or "TOP", 0, 0)   -- DOWN/CENTER anchored TOP (CENTER re-anchored below)
+        TotemFrame:SetPoint(
+            _growDir == "UP" and "BOTTOM" or "TOP",
+            totemBarFrame,
+            _growDir == "UP" and "BOTTOM" or "TOP",
+            0,
+            0
+        ) -- DOWN/CENTER anchored TOP (CENTER re-anchored below)
     else
-        TotemFrame:SetPoint(_growDir == "LEFT" and "RIGHT" or "LEFT", totemBarFrame,
-            _growDir == "LEFT" and "RIGHT" or "LEFT", 0, 0)  -- RIGHT/CENTER anchored LEFT (CENTER re-anchored below)
+        TotemFrame:SetPoint(
+            _growDir == "LEFT" and "RIGHT" or "LEFT",
+            totemBarFrame,
+            _growDir == "LEFT" and "RIGHT" or "LEFT",
+            0,
+            0
+        ) -- RIGHT/CENTER anchored LEFT (CENTER re-anchored below)
     end
     TotemFrame:Show()
 
@@ -109,7 +137,10 @@ local function LayoutTotemBar()
 
     -- Collect active totem buttons (reuse table)
     local buttons = cache.buttons
-    if not buttons then buttons = {}; cache.buttons = buttons end
+    if not buttons then
+        buttons = {}
+        cache.buttons = buttons
+    end
     local count = 0
     for _, child in ipairs({ TotemFrame:GetChildren() }) do
         if child:IsShown() and child.Icon and child:GetObjectType() == "Button" then
@@ -118,7 +149,9 @@ local function LayoutTotemBar()
         end
     end
     -- Trim stale entries
-    for i = count + 1, #buttons do buttons[i] = nil end
+    for i = count + 1, #buttons do
+        buttons[i] = nil
+    end
 
     -- CENTER grow: re-anchor TotemFrame so the icon group is centred. `total` is
     -- the group's VISUAL extent (iconSize/spacing are screen units), but SetPoint
@@ -170,7 +203,9 @@ local function LayoutTotemBar()
         end
 
         -- Hide Blizzard's circular border
-        if btn.Border then btn.Border:Hide() end
+        if btn.Border then
+            btn.Border:Hide()
+        end
 
         -- Make Icon frame fill the entire button
         if btn.Icon then
@@ -193,12 +228,18 @@ local function LayoutTotemBar()
             if btn.Icon.TextureMask then
                 pcall(cd.RemoveMaskTexture, cd, btn.Icon.TextureMask)
             end
-            if cd.SetSwipeTexture then pcall(cd.SetSwipeTexture, cd, "") end
-            if cd.SetUseCircularEdge then pcall(cd.SetUseCircularEdge, cd, false) end
+            if cd.SetSwipeTexture then
+                pcall(cd.SetSwipeTexture, cd, "")
+            end
+            if cd.SetUseCircularEdge then
+                pcall(cd.SetUseCircularEdge, cd, false)
+            end
             -- Resetting the swipe texture above drops whatever darkness the old
             -- circular swipe had, so pin it explicitly for a defined, consistent
             -- look (matches the standard cooldown swipe darkness used elsewhere).
-            if cd.SetSwipeColor then pcall(cd.SetSwipeColor, cd, 0, 0, 0, 0.8) end
+            if cd.SetSwipeColor then
+                pcall(cd.SetSwipeColor, cd, 0, 0, 0, 0.8)
+            end
         end
 
         -- Apply icon zoom crop
@@ -211,7 +252,7 @@ local function LayoutTotemBar()
         -- cooldown (secret-safe, no "s" suffix); we restyle only its FontString
         -- region, so nothing reads the protected duration value.
         if btn.Duration then
-            btn.Duration:SetTextColor(0, 0, 0, 0)  -- hide the "Xs" text
+            btn.Duration:SetTextColor(0, 0, 0, 0) -- hide the "Xs" text
         end
         local cd = btn.Icon and btn.Icon.Cooldown
         if cd and cd.SetHideCountdownNumbers then
@@ -232,22 +273,38 @@ local function LayoutTotemBar()
             _totemBorderOverlays[btn] = overlay
         end
         -- "Show Behind": +3 in front of the icon, level-1 behind it.
-        overlay:SetFrameLevel(tb.borderBehind and math.max(0, btn:GetFrameLevel() - 1) or (btn:GetFrameLevel() + 3))
+        overlay:SetFrameLevel(
+            tb.borderBehind and math.max(0, btn:GetFrameLevel() - 1) or (btn:GetFrameLevel() + 3)
+        )
         overlay:ClearAllPoints()
         overlay:SetAllPoints(btn.Icon or btn)
         overlay:Show()
         local bs = tb.borderSize or 0
         local texKey = tb.borderTexture or "solid"
-        CludesUI.ApplyBorderStyle(overlay, bs,
-            tb.borderR or 0, tb.borderG or 0, tb.borderB or 0, tb.borderA or 1,
-            texKey, tb.borderTextureOffset, tb.borderTextureOffsetY,
-            tb.borderTextureShiftX, tb.borderTextureShiftY, "resourcebars", bs,
-            nil, CludesUI.BorderPx(tb.borderSizePx, bs, texKey))
+        CludesUI.ApplyBorderStyle(
+            overlay,
+            bs,
+            tb.borderR or 0,
+            tb.borderG or 0,
+            tb.borderB or 0,
+            tb.borderA or 1,
+            texKey,
+            tb.borderTextureOffset,
+            tb.borderTextureOffsetY,
+            tb.borderTextureShiftX,
+            tb.borderTextureShiftY,
+            "resourcebars",
+            bs,
+            nil,
+            CludesUI.BorderPx(tb.borderSizePx, bs, texKey)
+        )
     end
 
     -- Hide overlays for buttons no longer active (O(n) via set lookup)
     for btn, overlay in pairs(_totemBorderOverlays) do
-        if not _totemActiveSet[btn] then overlay:Hide() end
+        if not _totemActiveSet[btn] then
+            overlay:Hide()
+        end
     end
 
     local maxButtons = 5
@@ -265,7 +322,9 @@ CludesUI.LayoutTotemBar = LayoutTotemBar
 
 local function BuildTotemBar()
     local tb = GetTotemSettings()
-    if not tb then return end
+    if not tb then
+        return
+    end
 
     -- enabledClasses nil = disabled; table with class keys = enabled for those classes
     local ec = tb.enabledClasses
@@ -295,7 +354,9 @@ local function BuildTotemBar()
         totemBarFrame:SetFrameLevel(15)
         totemBarFrame:SetSize(120, 30)
         -- Re-register unlock elements so unlock mode picks up the new frame
-        if _G._ERB_RegisterUnlock then _G._ERB_RegisterUnlock() end
+        if _G._CURB_RegisterUnlock then
+            _G._CURB_RegisterUnlock()
+        end
     end
 
     -- Save original parent/strata for restore on disable
@@ -326,8 +387,13 @@ local function BuildTotemBar()
                     py = PP.SnapForES(py, es)
                 end
                 totemBarFrame:ClearAllPoints()
-                totemBarFrame:SetPoint(tb.unlockPos.point, UIParent,
-                    tb.unlockPos.relPoint or tb.unlockPos.point, px, py)
+                totemBarFrame:SetPoint(
+                    tb.unlockPos.point,
+                    UIParent,
+                    tb.unlockPos.relPoint or tb.unlockPos.point,
+                    px,
+                    py
+                )
             end
         end
     else
@@ -354,7 +420,9 @@ local function BuildTotemBar()
         _totemHooked = true
         local function OnTotemUpdate()
             local s = GetTotemSettings()
-            if s and s.enabledClasses then LayoutTotemBar() end
+            if s and s.enabledClasses then
+                LayoutTotemBar()
+            end
         end
         hooksecurefunc(TotemFrame, "Update", OnTotemUpdate)
         TotemFrame:HookScript("OnShow", OnTotemUpdate)

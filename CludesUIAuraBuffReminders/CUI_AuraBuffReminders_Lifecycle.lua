@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Lifecycle.lua
 --
@@ -10,7 +12,9 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor = math.floor
@@ -44,13 +48,21 @@ local SetCursorAnchor, SetPanelOpen = I.SetCursorAnchor, I.SetPanelOpen
 local SetInCombat, SetHuntersMarkNeeded = I.SetInCombat, I.SetHuntersMarkNeeded
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local iconAnchor
-I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v) iconAnchor = v end
+I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v)
+    iconAnchor = v
+end
 local combatAnchor
-I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v) combatAnchor = v end
+I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v)
+    combatAnchor = v
+end
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v) cursorAnchor = v end
+I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
+    cursorAnchor = v
+end
 
 local _encounterSnapshotTime = nil
 local _needGroupAura = false
@@ -81,9 +93,13 @@ end
 -- ("others missing") read group aura changes mid-fight. One predicate for the
 -- pull edge and the registration pass so the two cannot drift.
 function EABR.KeepGroupAuraInCombat()
-    if _isEvokerOwnOnRaid or EABR._trackOwnOtherAuraID ~= nil then return true end
+    if _isEvokerOwnOnRaid or EABR._trackOwnOtherAuraID ~= nil then
+        return true
+    end
     local rbSW = db and db.profile.raidBuffs and db.profile.raidBuffs.showWhen
-    if not (EABR._needsProviderCoverage and rbSW) then return false end
+    if not (EABR._needsProviderCoverage and rbSW) then
+        return false
+    end
     return rbSW.othersMissing ~= false
 end
 
@@ -114,11 +130,11 @@ function EABR:OnInitialize()
     if co and co.showIn then
         local function tierToSet(tier)
             if tier == "heroic_mythic" then
-                return { d_normal=false, r_normal=false, r_lfr=false }
+                return { d_normal = false, r_normal = false, r_lfr = false }
             elseif tier == "mythic" then
-                return { d_normal=false, d_heroic=false, r_lfr=false, r_normal=false, r_heroic=false }
+                return { d_normal = false, d_heroic = false, r_lfr = false, r_normal = false, r_heroic = false }
             end
-            return nil  -- "all" or unknown => every difficulty on
+            return nil -- "all" or unknown => every difficulty on
         end
         for k, v in pairs(co.showIn) do
             if type(v) == "string" then
@@ -148,18 +164,32 @@ function EABR:OnInitialize()
     local disp = p and p.display
     if disp then
         if disp.showUnderDurationDungeon ~= nil or disp.showUnderDurationRaid ~= nil then
-            if disp.showUnder == nil then disp.showUnder = disp.showUnderDurationRaid or 5 end
-            if disp.showUnderMPlus == nil then disp.showUnderMPlus = disp.showUnderDurationDungeon or 40 end
+            if disp.showUnder == nil then
+                disp.showUnder = disp.showUnderDurationRaid or 5
+            end
+            if disp.showUnderMPlus == nil then
+                disp.showUnderMPlus = disp.showUnderDurationDungeon or 40
+            end
             disp.showUnderDurationDungeon = nil
             disp.showUnderDurationRaid = nil
         end
-        if disp.showUnder == nil then disp.showUnder = 5 end
-        if disp.showUnderMPlus == nil then disp.showUnderMPlus = 40 end
+        if disp.showUnder == nil then
+            disp.showUnder = 5
+        end
+        if disp.showUnderMPlus == nil then
+            disp.showUnderMPlus = 40
+        end
     end
     -- Retired per-section scale keys (display scale is the one knob).
-    if rb then rb.scale = nil end
-    if au then au.scale = nil end
-    if co then co.scale = nil end
+    if rb then
+        rb.scale = nil
+    end
+    if au then
+        au.scale = nil
+    end
+    if co then
+        co.scale = nil
+    end
 
     -- Migrates the login-active profile eagerly; profiles activated later are covered by the read-path call in ResolveGlowTint.
     EnsureGlowModeMigrated(db.profile.display)
@@ -170,44 +200,44 @@ end
 -------------------------------------------------------------------------------
 function EABR:OnEnable()
     -- Expose globals for options
-    _G._EABR_AceDB = db
+    _G._CUABR_AceDB = db
 
     -- Talent reminder migration handled by CludesUIABR_TalentReminders.lua
 
-    _G._EABR_RequestRefresh = RequestRefresh
-    _G._EABR_ApplyIconBorder = EABR.ApplyIconBorder
-    _G._EABR_ApplyAllIconBorders = EABR.ApplyAllIconBorders
-    _G._EABR_HideAllIcons = HideAllIcons
-    _G._EABR_GLOW_VIEW = GLOW_VIEW
-    _G._EABR_EnsureGlowModeMigrated = EnsureGlowModeMigrated
-    _G._EABR_RegisterUnlock = RegisterUnlockElements
-    _G._EABR_ApplyUnlockPos = ApplyUnlockPos
-    _G._EABR_RAID_BUFFS = RAID_BUFFS
-    _G._EABR_AURAS = AURAS
-    _G._EABR_ROGUE_POISONS = ROGUE_POISONS
-    _G._EABR_PALADIN_RITES = PALADIN_RITES
-    _G._EABR_SHAMAN_IMBUES = SHAMAN_IMBUES
-    _G._EABR_SHAMAN_SHIELDS = SHAMAN_SHIELDS
-    _G._EABR_SPECIALS = EABR.SPECIALS
-    _G._EABR_SpecialsWhere = EABR.SpecialsWhere
-    _G._EABR_SpecialsSound = EABR.SpecialsSound
-    _G._EABR_WARLOCK_PETS = WARLOCK_PETS
-    _G._EABR_WEAPON_ENCHANT_ITEMS = WEAPON_ENCHANT_ITEMS
-    _G._EABR_Tex = Tex
-    _G._EABR_Known = Known
-    _G._EABR_ICON_SIZE = ICON_SIZE
-    _G._EABR_FLASK_ITEMS = FLASK_ITEMS
-    _G._EABR_FOOD_ITEMS = FOOD_ITEMS
-    _G._EABR_WEAPON_ENCHANT_CHOICES = WEAPON_ENCHANT_CHOICES
-    _G._EABR_FV_WEAPON_BUFFS = EABR.FV_WEAPON_BUFFS
-    _G._EABR_FvClassBuffs = EABR.FvClassBuffs
-    _G._EABR_FvClassBuffOn = EABR.FvClassBuffs and EABR.FvClassBuffOn
-    -- _EABR_TALENT_REMINDER_ZONES set by CludesUIABR_TalentReminders.lua
+    _G._CUABR_RequestRefresh = RequestRefresh
+    _G._CUABR_ApplyIconBorder = EABR.ApplyIconBorder
+    _G._CUABR_ApplyAllIconBorders = EABR.ApplyAllIconBorders
+    _G._CUABR_HideAllIcons = HideAllIcons
+    _G._CUABR_GLOW_VIEW = GLOW_VIEW
+    _G._CUABR_EnsureGlowModeMigrated = EnsureGlowModeMigrated
+    _G._CUABR_RegisterUnlock = RegisterUnlockElements
+    _G._CUABR_ApplyUnlockPos = ApplyUnlockPos
+    _G._CUABR_RAID_BUFFS = RAID_BUFFS
+    _G._CUABR_AURAS = AURAS
+    _G._CUABR_ROGUE_POISONS = ROGUE_POISONS
+    _G._CUABR_PALADIN_RITES = PALADIN_RITES
+    _G._CUABR_SHAMAN_IMBUES = SHAMAN_IMBUES
+    _G._CUABR_SHAMAN_SHIELDS = SHAMAN_SHIELDS
+    _G._CUABR_SPECIALS = EABR.SPECIALS
+    _G._CUABR_SpecialsWhere = EABR.SpecialsWhere
+    _G._CUABR_SpecialsSound = EABR.SpecialsSound
+    _G._CUABR_WARLOCK_PETS = WARLOCK_PETS
+    _G._CUABR_WEAPON_ENCHANT_ITEMS = WEAPON_ENCHANT_ITEMS
+    _G._CUABR_Tex = Tex
+    _G._CUABR_Known = Known
+    _G._CUABR_ICON_SIZE = ICON_SIZE
+    _G._CUABR_FLASK_ITEMS = FLASK_ITEMS
+    _G._CUABR_FOOD_ITEMS = FOOD_ITEMS
+    _G._CUABR_WEAPON_ENCHANT_CHOICES = WEAPON_ENCHANT_CHOICES
+    _G._CUABR_FV_WEAPON_BUFFS = EABR.FV_WEAPON_BUFFS
+    _G._CUABR_FvClassBuffs = EABR.FvClassBuffs
+    _G._CUABR_FvClassBuffOn = EABR.FvClassBuffs and EABR.FvClassBuffOn
+    -- _CUABR_TALENT_REMINDER_ZONES set by CludesUIABR_TalentReminders.lua
 
     local STRATA_VALUES = CludesUI.FRAME_STRATA_LABELS
     local STRATA_ORDER = CludesUI.FRAME_STRATA_ORDER_FULL
-    _G._EABR_STRATA_VALUES = STRATA_VALUES
-    _G._EABR_STRATA_ORDER = STRATA_ORDER
+    _G._CUABR_STRATA_VALUES = STRATA_VALUES
+    _G._CUABR_STRATA_ORDER = STRATA_ORDER
 
     SetIconAnchor(CreateFrame("Frame", "EABR_Anchor", UIParent))
     iconAnchor:SetSize(1, 1)
@@ -254,7 +284,9 @@ function EABR:OnEnable()
         end)
         cursorAnchor:SetScript("OnHide", function()
             local M = CludesUI.Mouse
-            if M then M.UnsubscribeFrame("abrCursor") end
+            if M then
+                M.UnsubscribeFrame("abrCursor")
+            end
         end)
     end
     -- Starts hidden: OnUpdate only runs while :IsShown(), saving CPU when no cursor-attached reminders are active.
@@ -267,23 +299,33 @@ function EABR:OnEnable()
         local strata = GetStrata()
         iconAnchor:SetFrameStrata(strata)
         combatAnchor:SetFrameStrata(strata)
-        for _, btn in pairs(iconPool) do btn:SetFrameStrata(strata) end
-        for _, f in pairs(combatIconPool) do f:SetFrameStrata(strata) end
-        for _, f in pairs(receiverIconPool) do f:SetFrameStrata(strata) end
+        for _, btn in pairs(iconPool) do
+            btn:SetFrameStrata(strata)
+        end
+        for _, f in pairs(combatIconPool) do
+            f:SetFrameStrata(strata)
+        end
+        for _, f in pairs(receiverIconPool) do
+            f:SetFrameStrata(strata)
+        end
         if EABR._providerCastBtn and not InCombatLockdown() then
             EABR._providerCastBtn:SetFrameStrata(strata)
         end
         EABR.ApplyAllIconBorders()
     end
-    _G._EABR_ApplyStrata = ApplyStrata
+    _G._CUABR_ApplyStrata = ApplyStrata
 
     -- Hook CUI panel show/hide
     if CludesUI then
         CludesUI:RegisterOnShow(function()
-            SetPanelOpen(true); HideAllIcons(); BeaconRefresh()
+            SetPanelOpen(true)
+            HideAllIcons()
+            BeaconRefresh()
         end)
         CludesUI:RegisterOnHide(function()
-            SetPanelOpen(false); RequestRefresh(); BeaconRefresh()
+            SetPanelOpen(false)
+            RequestRefresh()
+            BeaconRefresh()
         end)
     end
 
@@ -311,7 +353,9 @@ function EABR:OnEnable()
     EABR.ScanEatingState()
     EABR.SyncProviderCastSpell()
     RequestRefresh()
-    if not EABR.FOREVER then BeaconInit() end  -- retail Holy Paladin beacons only
+    if not EABR.FOREVER then
+        BeaconInit()
+    end -- retail Holy Paladin beacons only
     C_Timer.After(0.5, RegisterUnlockElements)
 
     -- Registers broad UNIT_AURA only when the class needs group aura tracking AND only OOC: it fires 100+/sec in a raid, but in-combat CollectRaidBuffs only checks the player's own auras (PlayerHasAuraByID), so group events are pure waste. Evoker keeps broad in combat for ownOnRaid cache updates but skips RequestRefresh on group events (handler below).
@@ -320,12 +364,15 @@ function EABR:OnEnable()
         -- whichever caller (loading screen, profile, spec override, options)
         -- runs this pass: its one group reader, Raid Buffs, has its own watch,
         -- synced by every refresh (EABR.FvSyncGroupWatch).
-        if EABR.FOREVER then return end
+        if EABR.FOREVER then
+            return
+        end
         local playerClass = GetPlayerClass()
         local moonkinOn = playerClass == "DRUID"
             and db.profile.auras.enabled.moonkin_form == true
             and db.profile.display.remindersEnabled ~= false
-            and GetSpecID() == 102 and Known(24858)
+            and GetSpecID() == 102
+            and Known(24858)
         if moonkinOn then
             mainFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
             mainFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORMS")
@@ -346,13 +393,24 @@ function EABR:OnEnable()
         EABR._trackOwnOtherAuraID = nil
         local co = db.profile.consumables
         local au = db.profile.auras
-        if playerClass == "SHAMAN" and Known(383010)
-           and co and co.enabled and co.enabled.es_ally == true
-           and (IsInGroup() or IsInRaid()) then
+        if
+            playerClass == "SHAMAN"
+            and Known(383010)
+            and co
+            and co.enabled
+            and co.enabled.es_ally == true
+            and (IsInGroup() or IsInRaid())
+        then
             EABR._trackOwnOtherAuraID = 974
-        elseif playerClass == "EVOKER" and Known(369459)
-           and au and au.enabled and au.enabled.som ~= false
-           and InRealInstancedContent() and (IsInGroup() or IsInRaid()) then
+        elseif
+            playerClass == "EVOKER"
+            and Known(369459)
+            and au
+            and au.enabled
+            and au.enabled.som ~= false
+            and InRealInstancedContent()
+            and (IsInGroup() or IsInRaid())
+        then
             EABR._trackOwnOtherAuraID = 369459
         end
         local trackID = EABR._trackOwnOtherAuraID
@@ -364,7 +422,9 @@ function EABR:OnEnable()
             EABR._ownOtherAuraTargetGUID[prevTrackID] = nil
             EABR._ownOtherAuraDuration[prevTrackID] = nil
             EABR._ownOtherAuraExpiration[prevTrackID] = nil
-            if wasKnown then RequestRefresh() end
+            if wasKnown then
+                RequestRefresh()
+            end
         end
         if trackID then
             _needGroupAura = true
@@ -379,9 +439,12 @@ function EABR:OnEnable()
             end
         end
         for _, aura in ipairs(AURAS) do
-            if aura.class == playerClass and aura.key ~= "som"
+            if
+                aura.class == playerClass
+                and aura.key ~= "som"
                 and (aura.check == "ownOnRaid" or aura.check == "ownGroupOrSelf")
-                and db.profile.auras.enabled[aura.key] ~= false then
+                and db.profile.auras.enabled[aura.key] ~= false
+            then
                 _needGroupAura = true
                 EABR._rosterRefresh = true
                 EABR._needsGroupAuraRefresh = true
@@ -408,9 +471,11 @@ function EABR:OnEnable()
         end
         -- Tracking just turned on: seed the cache (the scan is OOC-only;
         -- combat end rescans otherwise).
-        if trackID and trackID ~= prevTrackID then EABR.RescanOwnOtherAuras() end
+        if trackID and trackID ~= prevTrackID then
+            EABR.RescanOwnOtherAuras()
+        end
     end
-    _G._EABR_UpdateGroupAuraRegistration = UpdateGroupAuraRegistration
+    _G._CUABR_UpdateGroupAuraRegistration = UpdateGroupAuraRegistration
     -- Also seeds the targeted-aura cache when tracking turns on. A no-op on
     -- WoW Forever, which keeps the player-only UNIT_AURA from file scope.
     UpdateGroupAuraRegistration()
@@ -421,18 +486,24 @@ function EABR:OnEnable()
     end
 
     -- WoW Forever's Raid Buffs watch tracks its own range (EABR.FvSyncGroupWatch).
-    if EABR.FOREVER then return end
+    if EABR.FOREVER then
+        return
+    end
 
     ---------------------------------------------------------------------------
     --  Range updates: UNIT_IN_RANGE_UPDATE mirrors the raid frames' range path, so range changes retrigger group-buff evaluation without polling.
     ---------------------------------------------------------------------------
-    local _lastRangeSet = {}   -- [unitToken] = true/false (last known in-range state)
+    local _lastRangeSet = {} -- [unitToken] = true/false (last known in-range state)
 
     -- Pre-build unit token strings to avoid per-poll allocations
     local _raidTokens = {}
     local _partyTokens = {}
-    for i = 1, 40 do _raidTokens[i] = "raid" .. i end
-    for i = 1, 4 do _partyTokens[i] = "party" .. i end
+    for i = 1, 40 do
+        _raidTokens[i] = "raid" .. i
+    end
+    for i = 1, 4 do
+        _partyTokens[i] = "party" .. i
+    end
 
     local rangeFrame = CreateFrame("Frame")
     local _rangeTrackers = {}
@@ -456,11 +527,15 @@ function EABR:OnEnable()
         local changed = false
         if IsInRaid() then
             for i = 1, GetNumGroupMembers() do
-                if _checkUnit(_raidTokens[i]) then changed = true end
+                if _checkUnit(_raidTokens[i]) then
+                    changed = true
+                end
             end
         elseif IsInGroup() then
             for i = 1, GetNumSubgroupMembers() do
-                if _checkUnit(_partyTokens[i]) then changed = true end
+                if _checkUnit(_partyTokens[i]) then
+                    changed = true
+                end
             end
         end
         return changed
@@ -468,7 +543,9 @@ function EABR:OnEnable()
 
     local function _onRangeEvent(_, event, unit)
         if event == "UNIT_PHASE" then
-            if _checkAllRangeUnits() then RequestRefresh() end
+            if _checkAllRangeUnits() then
+                RequestRefresh()
+            end
         elseif unit and _checkUnit(unit) then
             RequestRefresh()
         end
@@ -481,7 +558,9 @@ function EABR:OnEnable()
     end
 
     local function _trackRangeUnit(unit)
-        if UnitIsUnit(unit, "player") then return end
+        if UnitIsUnit(unit, "player") then
+            return
+        end
         local tracker = _rangeTrackers[unit]
         if not tracker then
             tracker = CreateFrame("Frame")
@@ -496,11 +575,17 @@ function EABR:OnEnable()
         _clearRangeTrackers()
         wipe(_lastRangeSet)
         if IsInRaid() then
-            for i = 1, GetNumGroupMembers() do _trackRangeUnit(_raidTokens[i]) end
+            for i = 1, GetNumGroupMembers() do
+                _trackRangeUnit(_raidTokens[i])
+            end
         elseif IsInGroup() then
-            for i = 1, GetNumSubgroupMembers() do _trackRangeUnit(_partyTokens[i]) end
+            for i = 1, GetNumSubgroupMembers() do
+                _trackRangeUnit(_partyTokens[i])
+            end
         end
-        if _checkAllRangeUnits() then RequestRefresh() end
+        if _checkAllRangeUnits() then
+            RequestRefresh()
+        end
     end
 
     rangeFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -521,7 +606,9 @@ end
 -- cursor, so the button parks now, while moving it and its mouse is still
 -- allowed. In combat it could only fade, and would stay clickable where it sat.
 local function ParkProviderForCursor()
-    if db and CursorAttachActive(db.profile.display) then EABR.ParkProviderCastButton() end
+    if db and CursorAttachActive(db.profile.display) then
+        EABR.ParkProviderCastButton()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -530,7 +617,9 @@ end
 mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     if e == "ENCOUNTER_START" then
         SnapshotPlayerAuras()
-        if _isEvokerOwnOnRaid then SnapshotOwnOnRaidBuffs() end
+        if _isEvokerOwnOnRaid then
+            SnapshotOwnOnRaidBuffs()
+        end
         _encounterSnapshotTime = GetTime()
         -- Marks combat immediately: ENCOUNTER_START fires before InCombatLockdown() returns true but aura APIs are already restricted; without this, non-whitelisted buffs flash "missing" for ~1s.
         SetInCombat(true)
@@ -547,15 +636,21 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
         -- registration (its Raid Buffs keep their own watch) and no Hunter's
         -- Mark reminder: the whole retail pull bookkeeping is skipped.
         if not EABR.FOREVER then
-        MarkDungeonPullStarted()
-        -- Drops broad UNIT_AURA in combat unless a group reader needs it (EABR.KeepGroupAuraInCombat).
-        if _needGroupAura and not EABR.KeepGroupAuraInCombat() then _setBroad(false) end
-        -- Only flag Hunter's Mark needed if the target doesn't already have it
-        SetHuntersMarkNeeded(true)
-        if C_UnitAuras and C_UnitAuras.GetUnitAuraBySpellID
-            and UnitExists("target") and C_UnitAuras.GetUnitAuraBySpellID("target", 257284) then
-            SetHuntersMarkNeeded(false)
-        end
+            MarkDungeonPullStarted()
+            -- Drops broad UNIT_AURA in combat unless a group reader needs it (EABR.KeepGroupAuraInCombat).
+            if _needGroupAura and not EABR.KeepGroupAuraInCombat() then
+                _setBroad(false)
+            end
+            -- Only flag Hunter's Mark needed if the target doesn't already have it
+            SetHuntersMarkNeeded(true)
+            if
+                C_UnitAuras
+                and C_UnitAuras.GetUnitAuraBySpellID
+                and UnitExists("target")
+                and C_UnitAuras.GetUnitAuraBySpellID("target", 257284)
+            then
+                SetHuntersMarkNeeded(false)
+            end
         end -- not FOREVER
         -- Hide secure buttons before lockdown. ENCOUNTER_START may already have
         -- set our combat flag, so HideAllIcons guards on InCombatLockdown itself.
@@ -565,7 +660,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
         -- Must snapshot before marking combat, or the group-buff lookup treats itself as restricted and reports nothing found.
         if not _encounterSnapshotTime or (GetTime() - _encounterSnapshotTime) > 1 then
             SnapshotPlayerAuras()
-            if _isEvokerOwnOnRaid then SnapshotOwnOnRaidBuffs() end
+            if _isEvokerOwnOnRaid then
+                SnapshotOwnOnRaidBuffs()
+            end
         end
         SetInCombat(true)
         _encounterSnapshotTime = nil
@@ -580,7 +677,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     if e == "PLAYER_REGEN_ENABLED" or (e == "ENCOUNTER_END" and not InCombatLockdown()) then
         SetInCombat(false)
         -- Restore broad UNIT_AURA for OOC group buff tracking
-        if _needGroupAura then _setBroad(true) end
+        if _needGroupAura then
+            _setBroad(true)
+        end
         -- Leaving combat: clean up combat icons, do full OOC refresh with secure buttons
         SetHuntersMarkNeeded(false)
         HideCombatIcons()
@@ -634,7 +733,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
             EABR._fvSleepBag = nil
         end
         EABR.ScanEatingState()
-        if not InCombatLockdown() then EABR.SyncProviderCastSpell() end
+        if not InCombatLockdown() then
+            EABR.SyncProviderCastSpell()
+        end
         -- GetInstanceInfo() can return stale data on the first frame after a loading screen (e.g. still
         -- reporting the previous zone on delve entry), which would show a reminder that "Where to Show"
         -- disables for the new location. Skip the immediate refresh and wait for the corrected one.
@@ -645,7 +746,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     if e == "UNIT_AURA" then
         -- arg1 = unit token. Player aura changes always refresh; group member changes only matter for Evoker ownOnRaid cache updates and OOC raid buff checks (broad UNIT_AURA is only registered for classes needing group tracking).
         if arg1 == "player" then
-            if not EABR.FOREVER then EABR.UpdateEatingState(arg2) end  -- eating channel feeds the retail food reminder only
+            if not EABR.FOREVER then
+                EABR.UpdateEatingState(arg2)
+            end -- eating channel feeds the retail food reminder only
             local isEvoker = GetPlayerClass() == "EVOKER"
             if isEvoker and InCombat() and IsInGroup() then
                 for _, id in ipairs(_ownOnRaidIDs) do
@@ -685,7 +788,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     end
 
     if e == "UNIT_ENTERED_VEHICLE" or e == "UNIT_EXITED_VEHICLE" then
-        if arg1 == "player" then RequestRefresh() end
+        if arg1 == "player" then
+            RequestRefresh()
+        end
         return
     end
 
@@ -694,7 +799,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     if e == "GROUP_ROSTER_UPDATE" then
         EABR.ReevaluateOwnOtherAuraTracking()
         local rbSW = db and db.profile.raidBuffs and db.profile.raidBuffs.showWhen
-        if EABR._rosterRefresh or (rbSW and rbSW.iAmMissing == true) then RequestRefresh() end
+        if EABR._rosterRefresh or (rbSW and rbSW.iAmMissing == true) then
+            RequestRefresh()
+        end
         return
     end
 
@@ -721,8 +828,7 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     end
 
     -- Talent/spec changes affect group aura tracking and form availability.
-    if e == "PLAYER_TALENT_UPDATE" or e == "TRAIT_CONFIG_UPDATED"
-       or e == "PLAYER_SPECIALIZATION_CHANGED" then
+    if e == "PLAYER_TALENT_UPDATE" or e == "TRAIT_CONFIG_UPDATED" or e == "PLAYER_SPECIALIZATION_CHANGED" then
         EABR.ReevaluateOwnOtherAuraTracking()
     end
 
@@ -735,7 +841,9 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     if e == "LEARNED_SPELL_IN_SKILL_LINE" or (EABR.FOREVER and e == "SPELLS_CHANGED") then
         EABR._fvFamDirty = true
         EABR._fvClassPickerGroups = nil
-        if e == "LEARNED_SPELL_IN_SKILL_LINE" then EABR._fvTrackDirty = true end
+        if e == "LEARNED_SPELL_IN_SKILL_LINE" then
+            EABR._fvTrackDirty = true
+        end
     elseif e == "MINIMAP_UPDATE_TRACKING" then
         EABR._fvTrackDirty = true
     elseif e == "PLAYER_EQUIPMENT_CHANGED" and arg1 ~= 16 and arg1 ~= 17 then
@@ -752,7 +860,9 @@ end)
 local _prevBagCounts = {}
 
 local function DetectUsedItem()
-    if not db then return end
+    if not db then
+        return
+    end
     RebuildBagCounts()
     for itemID, oldCount in pairs(_prevBagCounts) do
         if (_bagCounts[itemID] or 0) < oldCount then
@@ -760,7 +870,9 @@ local function DetectUsedItem()
         end
     end
     wipe(_prevBagCounts)
-    for k, v in pairs(_bagCounts) do _prevBagCounts[k] = v end
+    for k, v in pairs(_bagCounts) do
+        _prevBagCounts[k] = v
+    end
 end
 
 -- Item-use tracking serves the consumable pickers; WoW Forever has no consumable reminders.
@@ -773,7 +885,9 @@ if not EABR.FOREVER then
             C_Timer.After(1, function()
                 RebuildBagCounts()
                 wipe(_prevBagCounts)
-                for k, v in pairs(_bagCounts) do _prevBagCounts[k] = v end
+                for k, v in pairs(_bagCounts) do
+                    _prevBagCounts[k] = v
+                end
             end)
         elseif ev == "BAG_UPDATE_DELAYED" then
             DetectUsedItem()
@@ -807,7 +921,9 @@ if EABR.FOREVER then
     -- is listened to only while a reminder that reads them can show
     -- (EABR.CollectForever; EABR.FvStandDown turns it off).
     function EABR.FvSyncTrackingEvent(want)
-        if want == (EABR._fvTrackEv or false) then return end
+        if want == (EABR._fvTrackEv or false) then
+            return
+        end
         EABR._fvTrackEv = want
         if want then
             -- Nothing was heard while it was off: the minimap is read afresh.
@@ -832,7 +948,9 @@ if EABR.FOREVER then
         end
     end
     function EABR.FvSyncWeaponEvents(want)
-        if want == (EABR._fvWeaponEv or false) then return end
+        if want == (EABR._fvWeaponEv or false) then
+            return
+        end
         EABR._fvWeaponEv = want
         if want then
             mainFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
@@ -843,7 +961,9 @@ if EABR.FOREVER then
         end
     end
     function EABR.FvSyncBagEvent(want)
-        if want == (EABR._fvBagEv or false) then return end
+        if want == (EABR._fvBagEv or false) then
+            return
+        end
         EABR._fvBagEv = want
         if want then
             InvalidateItemCountCache()
@@ -858,7 +978,9 @@ if EABR.FOREVER then
     -- (EABR.FvSleepingBagOwned).
     local sleepWatch
     function EABR.FvSyncSleepBagWatch(want)
-        if want == (EABR._fvSleepWatch or false) then return end
+        if want == (EABR._fvSleepWatch or false) then
+            return
+        end
         EABR._fvSleepWatch = want
         if want then
             if not sleepWatch then
@@ -877,36 +999,36 @@ if EABR.FOREVER then
         end
     end
 else
-mainFrame:RegisterEvent("ENCOUNTER_START")
-mainFrame:RegisterEvent("ENCOUNTER_END")
-mainFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-mainFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-mainFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-mainFrame:RegisterEvent("SPELLS_CHANGED")
-mainFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
-mainFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-mainFrame:RegisterEvent("PLAYER_LEVEL_CHANGED")
-mainFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
-mainFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
-mainFrame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
-mainFrame:RegisterEvent("CHALLENGE_MODE_START")
-mainFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-mainFrame:RegisterEvent("CHALLENGE_MODE_RESET")
-mainFrame:RegisterEvent("BAG_UPDATE_DELAYED")
-mainFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
-mainFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
-mainFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
-mainFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
-mainFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-mainFrame:RegisterEvent("PLAYER_DEAD")
-mainFrame:RegisterEvent("PLAYER_ALIVE")
-mainFrame:RegisterEvent("PLAYER_UNGHOST")
-mainFrame:RegisterEvent("BAG_UPDATE")
-mainFrame:RegisterUnitEvent("UNIT_PET", "player")
--- UNIT_PET fires on pet summon/dismiss, NOT stance changes. Pet on Passive reacts to the pet's command state via the pet action bar -- PET_BAR_UPDATE is that event; without it the reminder only re-evaluated on reload.
-mainFrame:RegisterEvent("PET_BAR_UPDATE")
+    mainFrame:RegisterEvent("ENCOUNTER_START")
+    mainFrame:RegisterEvent("ENCOUNTER_END")
+    mainFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    mainFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    mainFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    mainFrame:RegisterEvent("SPELLS_CHANGED")
+    mainFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
+    mainFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    mainFrame:RegisterEvent("PLAYER_LEVEL_CHANGED")
+    mainFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    mainFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
+    mainFrame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
+    mainFrame:RegisterEvent("CHALLENGE_MODE_START")
+    mainFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+    mainFrame:RegisterEvent("CHALLENGE_MODE_RESET")
+    mainFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+    mainFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
+    mainFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
+    mainFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+    mainFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
+    mainFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    mainFrame:RegisterEvent("PLAYER_DEAD")
+    mainFrame:RegisterEvent("PLAYER_ALIVE")
+    mainFrame:RegisterEvent("PLAYER_UNGHOST")
+    mainFrame:RegisterEvent("BAG_UPDATE")
+    mainFrame:RegisterUnitEvent("UNIT_PET", "player")
+    -- UNIT_PET fires on pet summon/dismiss, NOT stance changes. Pet on Passive reacts to the pet's command state via the pet action bar -- PET_BAR_UPDATE is that event; without it the reminder only re-evaluated on reload.
+    mainFrame:RegisterEvent("PET_BAR_UPDATE")
 end
 
 I.broken = false

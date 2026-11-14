@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end
 -- Shared opt-in shield glow. Callers own settings, event registration and visibility.
 local PP = CludesUI.PP
 local Glow = {}
@@ -6,9 +8,14 @@ CludesUI.AbsorbGlow = Glow
 
 -- Glow Line Texture art: { file, blend mode, width, width in whole pixels }.
 Glow.art = {
-    blizzard         = { "Interface\\AddOns\\CludesUI\\media\\cast_spark.tga", "ADD", 16 },
-    pixelsGlow       = { "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-glowline.tga", "ADD", 16 },
-    pixelsOvershield = { "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-overshield-line.tga", "BLEND", 2, true },
+    blizzard = { "Interface\\AddOns\\CludesUI\\media\\cast_spark.tga", "ADD", 16 },
+    pixelsGlow = { "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-glowline.tga", "ADD", 16 },
+    pixelsOvershield = {
+        "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-overshield-line.tga",
+        "BLEND",
+        2,
+        true,
+    },
 }
 function Glow.Width(art)
     return art[4] and PP.Scale(art[3]) or art[3]
@@ -60,7 +67,9 @@ end
 -- the settings pass and after a retexture (a new shield fill object).
 function Glow.Anchor(ab)
     local g = ab._glow
-    if not (g and g.ge) then return end
+    if not (g and g.ge) then
+        return
+    end
     local rev = g.rev
     local near, far = rev and "RIGHT" or "LEFT", rev and "LEFT" or "RIGHT"
     local off = rev and 1 or -1
@@ -89,7 +98,9 @@ end
 function Glow.Flip(ab, unit)
     local g = ab._glow
     local ge = g.ge
-    if ge == 3 then return end
+    if ge == 3 then
+        return
+    end
     local eh, bh = g.edgeHost, g.bfHost
     local calc = g.calc
     if not (calc and eh.SetAlphaFromBoolean) then
@@ -122,4 +133,3 @@ function Glow.Paint(ab, unit, absorbAmt, hpH)
     g.gate:SetValue(absorbAmt)
     Glow.Flip(ab, unit)
 end
-

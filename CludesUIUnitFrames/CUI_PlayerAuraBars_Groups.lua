@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Groups.lua
 --
@@ -10,7 +12,9 @@ local _, ns = ...
 local I = ns._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local BuildChain, ClassByKey, ClassEnabled = I.BuildChain, I.ClassByKey, I.ClassEnabled
@@ -24,7 +28,9 @@ local VisibleTokenClasses, DebuffCatchAllOn = I.VisibleTokenClasses, I.DebuffCat
 local ResolveSortDirection, ResolveSortMethod = I.ResolveSortDirection, I.ResolveSortMethod
 
 local AK -- CludesUI.AuraKit, resolved at first use (see SetAK)
-I.AKSetters[#I.AKSetters + 1] = function(v) AK = v end
+I.AKSetters[#I.AKSetters + 1] = function(v)
+    AK = v
+end
 
 -------------------------------------------------------------------------------
 --  Debuff Match Mode (cfg.debuffMatch: nil = Match Any, "all" = Match All)
@@ -50,34 +56,48 @@ I.AKSetters[#I.AKSetters + 1] = function(v) AK = v end
 local DebuffChainFor
 do
     local LISTED = {}
-    for i = 1, #DEBUFF_FILTER_ORDER do LISTED[DEBUFF_FILTER_ORDER[i]] = true end
+    for i = 1, #DEBUFF_FILTER_ORDER do
+        LISTED[DEBUFF_FILTER_ORDER[i]] = true
+    end
 
     -- Types of `a` also in / not in `b`, as a fresh set; nil when none are left.
     local function TypesAnd(a, b)
         local out
         for k in pairs(a) do
-            if b[k] then out = out or {}; out[k] = true end
+            if b[k] then
+                out = out or {}
+                out[k] = true
+            end
         end
         return out
     end
     local function TypesMinus(a, b)
         local out
         for k in pairs(a) do
-            if not (b and b[k]) then out = out or {}; out[k] = true end
+            if not (b and b[k]) then
+                out = out or {}
+                out[k] = true
+            end
         end
         return out
     end
 
     local function CopyPart(p)
         local t, c = {}, {}
-        for i = 1, #p.tokens do t[i] = p.tokens[i] end
-        for k, v in pairs(p.cand) do c[k] = v end
+        for i = 1, #p.tokens do
+            t[i] = p.tokens[i]
+        end
+        for k, v in pairs(p.cand) do
+            c[k] = v
+        end
         return { tokens = t, cand = c }
     end
 
     local function HasToken(p, tok)
         for i = 1, #p.tokens do
-            if p.tokens[i] == tok then return true end
+            if p.tokens[i] == tok then
+                return true
+            end
         end
         return false
     end
@@ -87,9 +107,13 @@ do
     -- a dispel type with Dispels hidden); else the part and the categories every
     -- member belongs to.
     local function MatchBase(cfg)
-        if cfg.debuffMatch ~= "all" or cfg.showAllDebuffs ~= false then return nil end
+        if cfg.debuffMatch ~= "all" or cfg.showAllDebuffs ~= false then
+            return nil
+        end
         local tokenClasses, candidateClasses = VisibleTokenClasses(), VisibleCandidateClasses()
-        if not (tokenClasses and candidateClasses) then return nil end
+        if not (tokenClasses and candidateClasses) then
+            return nil
+        end
         local neg = cfg.negClassFilters
         local tokens, cand, cats = { "HARMFUL" }, {}, {}
         local picks, nTypes, clash = 0, 0, false
@@ -101,8 +125,12 @@ do
                     picks = picks + 1
                     tokens[#tokens + 1] = class.token
                     cats[#cats + 1] = class.key
-                    if class.key == "castbyme" then playerTok = true end
-                    if class.key == "dispellable" then dispTok = true end
+                    if class.key == "castbyme" then
+                        playerTok = true
+                    end
+                    if class.key == "dispellable" then
+                        dispTok = true
+                    end
                 elseif neg and neg[class.skey] == true then
                     tokens[#tokens + 1] = class.neg or ("!" .. class.token)
                 end
@@ -124,7 +152,9 @@ do
                         for k, v in pairs(cc) do
                             -- Two picks on one field (stale data only: the setters keep
                             -- Non-Player and From Any Player exclusive) never match.
-                            if cand[k] ~= nil and cand[k] ~= v then clash = true end
+                            if cand[k] ~= nil and cand[k] ~= v then
+                                clash = true
+                            end
                             cand[k] = v
                         end
                         cats[#cats + 1] = class.key
@@ -135,17 +165,23 @@ do
                     else
                         hideBool = hideBool or {}
                         for k, v in pairs(cc) do
-                            if type(v) == "boolean" then hideBool[k] = not v end
+                            if type(v) == "boolean" then
+                                hideBool[k] = not v
+                            end
                         end
                     end
                 end
             end
         end
-        if picks < 2 then return nil end
+        if picks < 2 then
+            return nil
+        end
         -- A Show pick owns its field; the Hide lane vetoes only what is left open.
         if hideBool then
             for k, v in pairs(hideBool) do
-                if cand[k] == nil then cand[k] = v end
+                if cand[k] == nil then
+                    cand[k] = v
+                end
             end
         end
         -- Every per-type set sits inside Dispels' any-type set, so Dispels ANDed onto
@@ -153,10 +189,14 @@ do
         local typed = inc or anyType
         if typed then
             typed = TypesMinus(typed, exc)
-            if not typed then clash = true end
+            if not typed then
+                clash = true
+            end
             cand.includeDispelTypes = typed
             -- One shown type: every member carries it (with two, neither is certain).
-            if nTypes == 1 then cats[#cats + 1] = typeKey end
+            if nTypes == 1 then
+                cats[#cats + 1] = typeKey
+            end
         elseif exc then
             cand.excludeDispelTypes = exc
             -- Dispellable By You passes only debuffs of a dispellable type, so
@@ -167,8 +207,12 @@ do
         end
         -- PLAYER (Cast By You: you, your pet or vehicle) inside isFromPlayerOrPlayerPet
         -- = false (a shown Non-Player, or a hidden From Any Player) is always empty.
-        if playerTok and cand.isFromPlayerOrPlayerPet == false then clash = true end
-        if clash then return false end
+        if playerTok and cand.isFromPlayerOrPlayerPet == false then
+            clash = true
+        end
+        if clash then
+            return false
+        end
         return { tokens = tokens, cand = cand }, cats
     end
 
@@ -177,26 +221,46 @@ do
     -- p AND NOT class) parts.
     local function Relate(p, class, probe)
         if class.token then
-            if HasToken(p, class.token) then return "in" end
+            if HasToken(p, class.token) then
+                return "in"
+            end
             local negTok = class.neg or ("!" .. class.token)
-            if HasToken(p, negTok) then return nil end
-            if probe then return "split" end
+            if HasToken(p, negTok) then
+                return nil
+            end
+            if probe then
+                return "split"
+            end
             local a, b = CopyPart(p), CopyPart(p)
             a.tokens[#a.tokens + 1] = class.token
             b.tokens[#b.tokens + 1] = negTok
             return a, b
         end
         local cc = class.cand
-        if not cc then return nil end
+        if not cc then
+            return nil
+        end
         local set = cc.includeDispelTypes
         if set then
             local inc, exc = p.cand.includeDispelTypes, p.cand.excludeDispelTypes
-            if inc and not TypesMinus(inc, set) then return "in" end
+            if inc and not TypesMinus(inc, set) then
+                return "in"
+            end
             local pos
-            if inc then pos = TypesAnd(inc, set) else pos = set end
-            if pos then pos = TypesMinus(pos, exc) end
-            if not pos then return nil end
-            if probe then return "split" end
+            if inc then
+                pos = TypesAnd(inc, set)
+            else
+                pos = set
+            end
+            if pos then
+                pos = TypesMinus(pos, exc)
+            end
+            if not pos then
+                return nil
+            end
+            if probe then
+                return "split"
+            end
             local a, b = CopyPart(p), CopyPart(p)
             a.cand.includeDispelTypes = pos
             a.cand.excludeDispelTypes = nil
@@ -209,10 +273,14 @@ do
         end
         local k, v = next(cc)
         if p.cand[k] ~= nil then
-            if p.cand[k] == v then return "in" end
+            if p.cand[k] == v then
+                return "in"
+            end
             return nil
         end
-        if probe then return "split" end
+        if probe then
+            return "split"
+        end
         local a, b = CopyPart(p), CopyPart(p)
         a.cand[k] = v
         b.cand[k] = not v
@@ -221,23 +289,35 @@ do
 
     local function MatchLink(p, cats)
         local sorted = {}
-        for i = 1, #cats do sorted[i] = cats[i] end
+        for i = 1, #cats do
+            sorted[i] = cats[i]
+        end
         table.sort(sorted)
-        return { key = "and:" .. table.concat(sorted, "+"), tokens = p.tokens,
-            cand = next(p.cand) and p.cand or nil, cats = sorted }
+        return {
+            key = "and:" .. table.concat(sorted, "+"),
+            tokens = p.tokens,
+            cand = next(p.cand) and p.cand or nil,
+            cats = sorted,
+        }
     end
 
     -- nil when Match All does not apply; empty when its picks can never match; else
     -- the painted splits (block order) followed by the rest of the group.
     local function MatchAllChain(cfg)
         local rest, cats = MatchBase(cfg)
-        if rest == nil then return nil end
-        if not rest then return {} end
+        if rest == nil then
+            return nil
+        end
+        if not rest then
+            return {}
+        end
         local chain = {}
         local list = cfg.fxList
         if list then
             local inSet, seen = {}, {}
-            for i = 1, #cats do inSet[cats[i]] = true end
+            for i = 1, #cats do
+                inSet[cats[i]] = true
+            end
             for i = 1, #list do
                 local e = list[i]
                 local f = e.filters
@@ -260,17 +340,23 @@ do
                             end
                         end
                     end
-                    if hit then break end
+                    if hit then
+                        break
+                    end
                     for j = 1, #DEBUFF_FILTER_ORDER do
                         local key = DEBUFF_FILTER_ORDER[j]
                         if f[key] and not seen[key] then
                             seen[key] = true
                             local class = ClassByKey(key)
                             local a, b
-                            if class then a, b = Relate(rest, class) end
+                            if class then
+                                a, b = Relate(rest, class)
+                            end
                             if type(a) == "table" then
                                 local pc = {}
-                                for n = 1, #cats do pc[n] = cats[n] end
+                                for n = 1, #cats do
+                                    pc[n] = cats[n]
+                                end
                                 pc[#pc + 1] = key
                                 chain[#chain + 1] = MatchLink(a, pc)
                                 rest = b
@@ -287,8 +373,13 @@ do
     -- The debuff chain for a bar: Match All when it applies, else the union.
     DebuffChainFor = function(cfg)
         local chain = MatchAllChain(cfg)
-        if chain then return chain end
-        return BuildChain("HARMFUL", function(class) return ClassEnabled(class, false, cfg) or (PAB_FxSafeToForce(class) and PAB_FxWantsCategory(cfg.fxList, class.key)) end, DebuffCatchAllOn(cfg), DebuffSubtractFn(cfg))
+        if chain then
+            return chain
+        end
+        return BuildChain("HARMFUL", function(class)
+            return ClassEnabled(class, false, cfg)
+                or (PAB_FxSafeToForce(class) and PAB_FxWantsCategory(cfg.fxList, class.key))
+        end, DebuffCatchAllOn(cfg), DebuffSubtractFn(cfg))
     end
 
     -- Options-page empty warning: Match All picks that can never match together.
@@ -309,9 +400,13 @@ end
 -- key. Number-keyed sets (spell ids) fingerprint as count:sum; string-keyed sets
 -- (dispel names) join.
 local function CandFP(cf)
-    if not cf then return "-" end
+    if not cf then
+        return "-"
+    end
     local keys = {}
-    for k in pairs(cf) do keys[#keys + 1] = k end
+    for k in pairs(cf) do
+        keys[#keys + 1] = k
+    end
     table.sort(keys)
     local parts = {}
     for i = 1, #keys do
@@ -328,7 +423,9 @@ local function CandFP(cf)
                 parts[#parts + 1] = k .. "=" .. n .. ":" .. sum
             else
                 local names = {}
-                for name in pairs(v) do names[#names + 1] = tostring(name) end
+                for name in pairs(v) do
+                    names[#names + 1] = tostring(name)
+                end
                 table.sort(names)
                 parts[#parts + 1] = k .. "=" .. table.concat(names, "+")
             end
@@ -340,17 +437,27 @@ local function CandFP(cf)
 end
 
 local function MergeCandidateFilters(base, extra)
-    if not extra then return base end
-    if not base then return extra end
+    if not extra then
+        return base
+    end
+    if not base then
+        return extra
+    end
     local out = {}
-    for k, v in pairs(base) do out[k] = v end
+    for k, v in pairs(base) do
+        out[k] = v
+    end
     for k, v in pairs(extra) do
         if k == "excludeSpellIDs" and out[k] then
             -- Exclude maps UNION (never overwrite): the catch-all's subtract set
             -- and the extras' blacklist both survive.
             local m = {}
-            for id in pairs(out[k]) do m[id] = true end
-            for id in pairs(v) do m[id] = true end
+            for id in pairs(out[k]) do
+                m[id] = true
+            end
+            for id in pairs(v) do
+                m[id] = true
+            end
             out[k] = m
         else
             out[k] = v
@@ -381,18 +488,21 @@ end
 -- fingerprint-cached.
 local function EnsurePabSizedStyle(baseKey, size, shape)
     local base = AK.styles[baseKey]
-    if not base then return baseKey end
+    if not base then
+        return baseKey
+    end
     local variantKey = baseKey .. ":sz" .. tostring(size)
     local v = {}
-    for k, val in pairs(base) do v[k] = val end
+    for k, val in pairs(base) do
+        v[k] = val
+    end
     -- Snapped like BuildStyle's own width/height (same button SetSize path, so a raw
     -- value reintroduces the 1px border/icon disagreement); the variant KEY stays
     -- keyed by the raw size. Shape-expand applies the same as BuildStyle's own
     -- iconSize -- base already carries iconShape/shapeMaskPath/etc via the shallow
     -- copy above, only width/height need recomputing for this variant's own size.
     v.width = PabSnap(PabShapedSize(size, shape))
-    v.height = shape == "cropped"
-        and PabSnap(ns.PAB_CroppedHeight(size, base)) or v.width
+    v.height = shape == "cropped" and PabSnap(ns.PAB_CroppedHeight(size, base)) or v.width
     AK.styles[variantKey] = v
     AK.RestyleSoon(variantKey)
     return variantKey
@@ -406,8 +516,7 @@ local function BuildGroupLayout(cfg, gap, rowGap, size)
     rowGap = PabSnap(rowGap)
     return {
         elementWidth = size,
-        elementHeight = cfg.iconShape == "cropped"
-            and PabSnap(ns.PAB_CroppedHeight(rawSize, cfg)) or size,
+        elementHeight = cfg.iconShape == "cropped" and PabSnap(ns.PAB_CroppedHeight(rawSize, cfg)) or size,
         elementSpacing = gap,
         lineSpacing = rowGap,
         -- ZERO on purpose: the engine's flow layout advances the cursor by
@@ -421,7 +530,17 @@ local function BuildGroupLayout(cfg, gap, rowGap, size)
     }
 end
 
-local function ApplyGroupConfig(container, chain, declaredSet, styleKey, effectiveMax, gap, rowGap, cfg, extraCand)
+local function ApplyGroupConfig(
+    container,
+    chain,
+    declaredSet,
+    styleKey,
+    effectiveMax,
+    gap,
+    rowGap,
+    cfg,
+    extraCand
+)
     local sortMethod = ResolveSortMethod(cfg)
     local sortDirection = ResolveSortDirection(cfg)
     -- elementSpacing = icon-to-icon gap in a row, and it also separates two
@@ -444,14 +563,18 @@ local function ApplyGroupConfig(container, chain, declaredSet, styleKey, effecti
         -- link.key alone stays the fx CATEGORY identity (d.dmCat / PAB_FxSizeFor);
         -- a Match All link carries a category list instead (link.cats, named by its key).
         local effKey = link.key .. "|" .. table.concat(link.tokens, "")
-        if szOv then effKey = effKey .. "|sz" end
+        if szOv then
+            effKey = effKey .. "|sz"
+        end
         local linkStyleKey = szOv and EnsurePabSizedStyle(styleKey, szOv, cfg.iconShape) or styleKey
         local candidateFilters
         if link.cand then
             -- link.cand is from the shared class vocabulary -- copy it so the merges
             -- below never mutate it.
             candidateFilters = {}
-            for k, v in pairs(link.cand) do candidateFilters[k] = v end
+            for k, v in pairs(link.cand) do
+                candidateFilters[k] = v
+            end
         end
         candidateFilters = MergeCandidateFilters(candidateFilters, link.excludeCand)
         candidateFilters = MergeCandidateFilters(candidateFilters, extraCand)
@@ -474,7 +597,9 @@ local function ApplyGroupConfig(container, chain, declaredSet, styleKey, effecti
             meta.map[fp] = variant
             meta.n = meta.n + 1
         end
-        if variant > 0 then effKey = effKey .. "#" .. variant end
+        if variant > 0 then
+            effKey = effKey .. "#" .. variant
+        end
         active[effKey] = true
         if not declaredSet[effKey] then
             local catKey = link.cats or link.key
@@ -529,7 +654,9 @@ end
 -- is declared outside the chain, so it goes by name. pcall: zeroing a key this
 -- container never declared is not worth an error.
 local function RetireContainer(container, declaredSet)
-    if not container then return end
+    if not container then
+        return
+    end
     if declaredSet then
         for key in pairs(declaredSet) do
             if key:sub(1, 7) ~= "__cand|" then

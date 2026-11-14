@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_BlizzClassArt.lua
 -- "Blizzard Class Resource Art": Blizzard's own class resource frame (Holy
 -- Power, Combo Points, Chi, Soul Shards, Arcane Charges, Essence, Runes) stands
@@ -37,34 +39,34 @@ local CludesUI = _G.CludesUI
 -- Per-class frame, looked up by name when claimed (nil-guarded).
 local ART_FRAMES = {
     DEATHKNIGHT = "RuneFrame",
-    DRUID       = "DruidComboPointBarFrame",
-    EVOKER      = "EssencePlayerFrame",
-    MAGE        = "MageArcaneChargesFrame",
-    MONK        = "MonkHarmonyBarFrame",
-    PALADIN     = "PaladinPowerBarFrame",
-    ROGUE       = "RogueComboPointBarFrame",
-    WARLOCK     = "WarlockPowerFrame",
+    DRUID = "DruidComboPointBarFrame",
+    EVOKER = "EssencePlayerFrame",
+    MAGE = "MageArcaneChargesFrame",
+    MONK = "MonkHarmonyBarFrame",
+    PALADIN = "PaladinPowerBarFrame",
+    ROGUE = "RogueComboPointBarFrame",
+    WARLOCK = "WarlockPowerFrame",
 }
 -- Point resources those frames draw (Enum.PowerType values, as the main file's
 -- PT table); runes are their own resource type.
 local ART_POWERS = {
-    [4]  = true,  -- Combo Points (Rogue, any Druid in Cat Form)
-    [7]  = true,  -- Soul Shards
-    [9]  = true,  -- Holy Power
-    [12] = true,  -- Chi (Windwalker)
-    [16] = true,  -- Arcane Charges (Arcane)
-    [19] = true,  -- Essence
+    [4] = true, -- Combo Points (Rogue, any Druid in Cat Form)
+    [7] = true, -- Soul Shards
+    [9] = true, -- Holy Power
+    [12] = true, -- Chi (Windwalker)
+    [16] = true, -- Arcane Charges (Arcane)
+    [19] = true, -- Essence
 }
 
-local host          -- ours: covers the slot, holds Blizzard's frame (first claim)
-local heldBar       -- the Blizzard frame held, or nil
-local parked        -- handed back but waiting unseen in the host (see Release)
-local keyed         -- we set Blizzard's managed-layout opt-out on the held frame
-local origStrata    -- the held frame's strata before we took it
-local mouseMotion, mouseClick  -- its mouse state before we took it (restored exactly)
-local homePt = {}   -- its last point in Blizzard's layout (reused)
-local hooked = setmetatable({}, { __mode = "k" })  -- frames carrying our OnShow hook
-local lvlWatch      -- PLAYER_LEVEL_UP while a held frame waits for its level
+local host -- ours: covers the slot, holds Blizzard's frame (first claim)
+local heldBar -- the Blizzard frame held, or nil
+local parked -- handed back but waiting unseen in the host (see Release)
+local keyed -- we set Blizzard's managed-layout opt-out on the held frame
+local origStrata -- the held frame's strata before we took it
+local mouseMotion, mouseClick -- its mouse state before we took it (restored exactly)
+local homePt = {} -- its last point in Blizzard's layout (reused)
+local hooked = setmetatable({}, { __mode = "k" }) -- frames carrying our OnShow hook
+local lvlWatch -- PLAYER_LEVEL_UP while a held frame waits for its level
 
 local function UFns()
     return CludesUI._ModuleNS and CludesUI._ModuleNS["CludesUIUnitFrames"]
@@ -86,16 +88,26 @@ end
 -- form, so spec and druid form swaps never move it: Blizzard's Setup hides it
 -- wherever its resource is absent, and our own bar keeps the slot then.
 local function WantedBar(sp)
-    if not (sp and sp.blizzardClassArt) or sp.enabled == false then return nil end
-    if CludesUI.IS_FOREVER then return nil end
-    if UFOwns() then return nil end
+    if not (sp and sp.blizzardClassArt) or sp.enabled == false then
+        return nil
+    end
+    if CludesUI.IS_FOREVER then
+        return nil
+    end
+    if UFOwns() then
+        return nil
+    end
     return ClassFrame()
 end
 
 -- The current class resource (GetSecondaryResource) is one that frame draws.
 local function ResourceOK(info)
-    if not info then return false end
-    if info.type == "runes" then return true end
+    if not info then
+        return false
+    end
+    if info.type == "runes" then
+        return true
+    end
     return info.type == "points" and ART_POWERS[info.power] == true
 end
 
@@ -103,9 +115,13 @@ end
 -- Resource Display option hides the player frame's class resource, and below a
 -- frame's minimum level (Soul Shards, 10): our own bar stays up then. Reads only.
 local function Showable(bar)
-    if bar.hiddenByPersonalResourceDisplay then return false end
+    if bar.hiddenByPersonalResourceDisplay then
+        return false
+    end
     local lvl = bar.requiredShownLevel
-    if lvl and UnitLevel("player") < lvl then return false end
+    if lvl and UnitLevel("player") < lvl then
+        return false
+    end
     return true
 end
 
@@ -125,14 +141,20 @@ end
 -- Our own bar shows until then.
 local function HomePending(bar)
     local home = bar.layoutParent
-    if not (home and home:IsVisible()) then return false end
+    if not (home and home:IsVisible()) then
+        return false
+    end
     local uf = UFns()
-    if not (uf and uf.GetUnitFrameSource) or uf.frames then return false end
+    if not (uf and uf.GetUnitFrameSource) or uf.frames then
+        return false
+    end
     return uf.GetUnitFrameSource("player") ~= "blizzard"
 end
 
 local function RegenApply()
-    if _G._ERB_Apply then _G._ERB_Apply() end
+    if _G._CURB_Apply then
+        _G._CURB_Apply()
+    end
 end
 
 local function QueueRegen()
@@ -151,7 +173,9 @@ local function WatchLevel(bar)
                 local need = held and held.requiredShownLevel
                 if not need or (tonumber(newLevel) or UnitLevel("player")) >= need then
                     self:UnregisterEvent("PLAYER_LEVEL_UP")
-                    if _G._ERB_Apply then _G._ERB_Apply() end
+                    if _G._CURB_Apply then
+                        _G._CURB_Apply()
+                    end
                 end
             end)
         end
@@ -175,11 +199,19 @@ end
 -- held frame keeps its own scale (the runes' 0.95 included).
 local function ApplyHostLook(sp)
     local s = tonumber(sp and sp.blizzardClassArtScale) or 1
-    if s < 0.5 then s = 0.5 elseif s > 2 then s = 2 end
-    if host:GetScale() ~= s then host:SetScale(s) end
+    if s < 0.5 then
+        s = 0.5
+    elseif s > 2 then
+        s = 2
+    end
+    if host:GetScale() ~= s then
+        host:SetScale(s)
+    end
     local p = ns.ERB and ns.ERB.db and ns.ERB.db.profile
     local strata = (p and p.general and p.general.frameStrata) or "MEDIUM"
-    if host:GetFrameStrata() ~= strata then host:SetFrameStrata(strata) end
+    if host:GetFrameStrata() ~= strata then
+        host:SetFrameStrata(strata)
+    end
     if heldBar and heldBar:GetParent() == host and heldBar:GetFrameStrata() ~= strata then
         heldBar:SetFrameStrata(strata)
     end
@@ -200,7 +232,9 @@ local function Restore(bar, atHome)
         bar:SetMouseClickEnabled(mouseClick)
         mouseMotion, mouseClick = nil, nil
     end
-    if atHome and origStrata then bar:SetFrameStrata(origStrata) end
+    if atHome and origStrata then
+        bar:SetFrameStrata(origStrata)
+    end
     origStrata = nil
 end
 
@@ -208,8 +242,12 @@ end
 -- where we cannot follow). Never touches its parent or anchors.
 local function Forget(bar, atHome)
     Restore(bar, atHome)
-    if heldBar == bar then heldBar = nil end
-    if parked == bar then parked = nil end
+    if heldBar == bar then
+        heldBar = nil
+    end
+    if parked == bar then
+        parked = nil
+    end
     keyed = false
 end
 
@@ -219,9 +257,11 @@ end
 -- runes' and shards' leftPadding, the 6 and 7 point rogue bar's negative
 -- leftPadding), so the frame is offset by half the padding difference.
 local function ArtOffset(bar)
-    if not (bar.IsLayoutFrame and bar:IsLayoutFrame()) then return 0, 0 end
+    if not (bar.IsLayoutFrame and bar:IsLayoutFrame()) then
+        return 0, 0
+    end
     return ((bar.rightPadding or 0) - (bar.leftPadding or 0)) / 2,
-           ((bar.topPadding or 0) - (bar.bottomPadding or 0)) / 2
+        ((bar.topPadding or 0) - (bar.bottomPadding or 0)) / 2
 end
 
 -- Seat the frame on the host, centred. With Blizzard's player frame taken down
@@ -237,7 +277,9 @@ local function Seat(bar)
         bar.ignoreFramePositionManager = true
         keyed = true
     end
-    if origStrata == nil then origStrata = bar:GetFrameStrata() end
+    if origStrata == nil then
+        origStrata = bar:GetFrameStrata()
+    end
     if mouseMotion == nil then
         mouseMotion, mouseClick = bar:IsMouseMotionEnabled(), bar:IsMouseClickEnabled()
         bar:SetMouseMotionEnabled(false)
@@ -246,7 +288,9 @@ local function Seat(bar)
     bar:ClearAllPoints()
     bar:SetPoint("CENTER", host, "CENTER", ArtOffset(bar))
     bar:SetFrameStrata(host:GetFrameStrata())
-    if bar:GetParent() ~= host then bar:SetParent(host) end
+    if bar:GetParent() ~= host then
+        bar:SetParent(host)
+    end
     bar:SetFrameLevel(host:GetFrameLevel() + 2)
 end
 
@@ -278,7 +322,9 @@ local function OnBarShow(bar)
     if bar == heldBar then
         local parent = bar:GetParent()
         if parent == host then
-            if bar:GetNumPoints() == 0 and not Blocked(bar) then Seat(bar) end
+            if bar:GetNumPoints() == 0 and not Blocked(bar) then
+                Seat(bar)
+            end
         elseif parent ~= bar.layoutParent then
             Forget(bar, false)
         elseif not Blocked(bar) then
@@ -304,11 +350,17 @@ end
 -- changes its leftPadding with its max points and lays out again, so the held
 -- frame is re-centred when its offset moved. Inert (a compare) when not ours.
 local function OnBarLayout(bar)
-    if bar ~= heldBar or bar:GetParent() ~= host then return end
+    if bar ~= heldBar or bar:GetParent() ~= host then
+        return
+    end
     local dx, dy = ArtOffset(bar)
     local _, rel, _, x, y = bar:GetPoint(1)
-    if rel == host and x == dx and y == dy then return end
-    if Blocked(bar) then return end
+    if rel == host and x == dx and y == dy then
+        return
+    end
+    if Blocked(bar) then
+        return
+    end
     bar:ClearAllPoints()
     bar:SetPoint("CENTER", host, "CENTER", dx, dy)
 end
@@ -319,16 +371,25 @@ end
 -- Blizzard's own hide clears that entry, and the OnShow hook finishes then.
 local function Release()
     local bar = heldBar
-    if not bar then return end
-    if bar:GetParent() ~= host then          -- another owner took it
+    if not bar then
+        return
+    end
+    if bar:GetParent() ~= host then -- another owner took it
         Forget(bar, bar:GetParent() == bar.layoutParent)
         return
     end
-    if Blocked(bar) then return end         -- still held; retried at regen
+    if Blocked(bar) then
+        return
+    end -- still held; retried at regen
     heldBar = nil
     local home = bar.layoutParent
-    if home and not home:IsVisible() and bar:IsVisible()
-       and home.showingFrames and home.showingFrames[bar] then
+    if
+        home
+        and not home:IsVisible()
+        and bar:IsVisible()
+        and home.showingFrames
+        and home.showingFrames[bar]
+    then
         parked = bar
         host:SetAlpha(0)
         return
@@ -342,13 +403,22 @@ end
 -- is Blocked, like Seat; the regen rebuild runs it again.
 local function Relevel(slot)
     local want = slot:GetFrameLevel() + 2
-    if host:GetFrameLevel() == want then return end
+    if host:GetFrameLevel() == want then
+        return
+    end
     local bar = heldBar
     local held = bar ~= nil and bar:GetParent() == host
-    if held and Blocked(bar) then return end
-    if InCombatLockdown() and host:IsProtected() then QueueRegen(); return end
+    if held and Blocked(bar) then
+        return
+    end
+    if InCombatLockdown() and host:IsProtected() then
+        QueueRegen()
+        return
+    end
     host:SetFrameLevel(want)
-    if held then bar:SetFrameLevel(want + 2) end
+    if held then
+        bar:SetFrameLevel(want + 2)
+    end
 end
 
 local function Claim(bar, slot, sp, info)
@@ -359,18 +429,28 @@ local function Claim(bar, slot, sp, info)
     end
     ApplyHostLook(sp)
     local parent = bar:GetParent()
-    if heldBar == bar and parent == host then return end
+    if heldBar == bar and parent == host then
+        return
+    end
     -- Another owner holds it (Unit Frames between its config and its runtime,
     -- or anything else): never take it.
-    if parent ~= host and parent ~= bar.layoutParent and parent ~= PlayerFrame then return end
+    if parent ~= host and parent ~= bar.layoutParent and parent ~= PlayerFrame then
+        return
+    end
     -- Home hidden with Blizzard's player frame live: seating would loop (OnBarShow).
     local home = bar.layoutParent
-    if parent ~= host and not HomeTakenDown() and not (home and home:IsVisible()) then return end
-    if Blocked(bar) then return end
+    if parent ~= host and not HomeTakenDown() and not (home and home:IsVisible()) then
+        return
+    end
+    if Blocked(bar) then
+        return
+    end
     if not hooked[bar] then
         hooked[bar] = true
         bar:HookScript("OnShow", OnBarShow)
-        if bar.Layout then hooksecurefunc(bar, "Layout", OnBarLayout) end
+        if bar.Layout then
+            hooksecurefunc(bar, "Layout", OnBarLayout)
+        end
     end
     parked = nil
     RecordHome(bar)
@@ -379,7 +459,9 @@ local function Claim(bar, slot, sp, info)
     -- A frame handed over hidden (another owner hid it when it let go) is shown
     -- again while its resource is present; opted out, Blizzard's OnShow returns
     -- at once, so nothing of its layout runs from here.
-    if keyed and not bar:IsShown() and ResourceOK(info) and Showable(bar) then bar:Show() end
+    if keyed and not bar:IsShown() and ResourceOK(info) and Showable(bar) then
+        bar:Show()
+    end
 end
 
 -- BuildBars, every build, before the class resource block. Claims or hands back
@@ -390,36 +472,48 @@ end
 function ns.ERB_BlizzArtSync(sp, info, slot)
     local bar = WantedBar(sp)
     if bar then
-        if heldBar == bar or not HomePending(bar) then Claim(bar, slot, sp, info) end
+        if heldBar == bar or not HomePending(bar) then
+            Claim(bar, slot, sp, info)
+        end
     elseif heldBar then
         Release()
     end
     local held = heldBar ~= nil and heldBar == bar
     ns._erbArtOn = (held and ResourceOK(info) and Showable(bar)) and true or false
     ns._erbArtHost = heldBar and host or nil
-    if held or lvlWatch then WatchLevel(held and bar or nil) end
-    if host then Relevel(slot) end
+    if held or lvlWatch then
+        WatchLevel(held and bar or nil)
+    end
+    if host then
+        Relevel(slot)
+    end
 end
 
 -- The end-of-ApplyAll layering pass (ns.ERB_ClassRaise): the same re-level.
 function ns.ERB_BlizzArtLevel(slot)
-    if host and slot then Relevel(slot) end
+    if host and slot then
+        Relevel(slot)
+    end
 end
 
 -- The Scale cog: live, no rebuild.
 function ns.ERB_ApplyBlizzClassArt()
-    if not host then return end
-    ApplyHostLook(_G._ERB_ResolveSecondaryCfg and _G._ERB_ResolveSecondaryCfg())
+    if not host then
+        return
+    end
+    ApplyHostLook(_G._CURB_ResolveSecondaryCfg and _G._CURB_ResolveSecondaryCfg())
 end
 
 -- Config-only reads for Unit Frames (no module namespace needed there): does this
 -- profile want the art (nil when Unit Frames' own "Blizzard" style holds it), and
 -- is a frame held right now.
-_G._ERB_BlizzArtWanted = function()
-    local sp = _G._ERB_ResolveSecondaryCfg and _G._ERB_ResolveSecondaryCfg()
+_G._CURB_BlizzArtWanted = function()
+    local sp = _G._CURB_ResolveSecondaryCfg and _G._CURB_ResolveSecondaryCfg()
     return WantedBar(sp) ~= nil
 end
-_G._ERB_BlizzArtHeld = function() return heldBar ~= nil end
+_G._CURB_BlizzArtHeld = function()
+    return heldBar ~= nil
+end
 
 -- Options: can the toggle be turned on here? true, or false and why: "client" =
 -- WoW Forever (no such frames), "uf" = the Unit Frames "Blizzard" class resource
@@ -427,17 +521,31 @@ _G._ERB_BlizzArtHeld = function() return heldBar ~= nil end
 -- player frame's class resource, "resource" = no frame for this class, or the
 -- current class resource is one Blizzard draws as a bar or not at all.
 function ns.ERB_BlizzClassArtSupported()
-    if CludesUI.IS_FOREVER then return false, "client" end
+    if CludesUI.IS_FOREVER then
+        return false, "client"
+    end
     local bar = ClassFrame()
-    if not bar then return false, "resource" end
-    if UFOwns() then return false, "uf" end
-    if bar.hiddenByPersonalResourceDisplay then return false, "prd" end
-    local gsr = _G._ERB_GetSecondaryResource
-    if ResourceOK(gsr and gsr()) then return true end
+    if not bar then
+        return false, "resource"
+    end
+    if UFOwns() then
+        return false, "uf"
+    end
+    if bar.hiddenByPersonalResourceDisplay then
+        return false, "prd"
+    end
+    local gsr = _G._CURB_GetSecondaryResource
+    if ResourceOK(gsr and gsr()) then
+        return true
+    end
     -- Feral outside Cat Form: its combo points come back with the form.
     local _, classFile = UnitClass("player")
-    if classFile == "DRUID" and C_SpecializationInfo and C_SpecializationInfo.GetSpecialization
-       and C_SpecializationInfo.GetSpecialization() == 2 then
+    if
+        classFile == "DRUID"
+        and C_SpecializationInfo
+        and C_SpecializationInfo.GetSpecialization
+        and C_SpecializationInfo.GetSpecialization() == 2
+    then
         return true
     end
     return false, "resource"
@@ -447,9 +555,11 @@ end
 -- right now? Computed live from the settings (the toggle refreshes the page
 -- before its debounced rebuild).
 function ns.ERB_BlizzArtActiveNow()
-    local sp = _G._ERB_ResolveSecondaryCfg and _G._ERB_ResolveSecondaryCfg()
+    local sp = _G._CURB_ResolveSecondaryCfg and _G._CURB_ResolveSecondaryCfg()
     local bar = WantedBar(sp)
-    if not bar then return false end
-    local gsr = _G._ERB_GetSecondaryResource
+    if not bar then
+        return false
+    end
+    local gsr = _G._CURB_GetSecondaryResource
     return (ResourceOK(gsr and gsr()) and Showable(bar)) and true or false
 end

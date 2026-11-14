@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Init.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI = _G.CludesUI
@@ -27,17 +31,29 @@ local SetIdleFadeActive = I.SetIdleFadeActive
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local BG_R = I.BG_R
-I.bgRSetters[#I.bgRSetters + 1] = function(v) BG_R = v end
+I.bgRSetters[#I.bgRSetters + 1] = function(v)
+    BG_R = v
+end
 local BG_G = I.BG_G
-I.bgGSetters[#I.bgGSetters + 1] = function(v) BG_G = v end
+I.bgGSetters[#I.bgGSetters + 1] = function(v)
+    BG_G = v
+end
 local BG_B = I.BG_B
-I.bgBSetters[#I.bgBSetters + 1] = function(v) BG_B = v end
+I.bgBSetters[#I.bgBSetters + 1] = function(v)
+    BG_B = v
+end
 local BG_A = I.BG_A
-I.bgASetters[#I.bgASetters + 1] = function(v) BG_A = v end
+I.bgASetters[#I.bgASetters + 1] = function(v)
+    BG_A = v
+end
 local _visChatVisible = I._visChatVisible
-I.visChatVisibleSetters[#I.visChatVisibleSetters + 1] = function(v) _visChatVisible = v end
+I.visChatVisibleSetters[#I.visChatVisibleSetters + 1] = function(v)
+    _visChatVisible = v
+end
 local _idleFadeActive = I._idleFadeActive
-I.idleFadeActiveSetters[#I.idleFadeActiveSetters + 1] = function(v) _idleFadeActive = v end
+I.idleFadeActiveSetters[#I.idleFadeActiveSetters + 1] = function(v)
+    _idleFadeActive = v
+end
 
 -------------------------------------------------------------------------------
 --  Tab refresh shim: the owned strip (CludesUIChat_Tabs.lua) redraws from
@@ -45,8 +61,12 @@ I.idleFadeActiveSetters[#I.idleFadeActiveSetters + 1] = function(v) _idleFadeAct
 --  plane that its own event passes re-showed.
 -------------------------------------------------------------------------------
 local function UpdateTabColors()
-    if ECHAT.TabsSweepBlizzard then ECHAT.TabsSweepBlizzard() end
-    if ECHAT.TabsRefresh then ECHAT.TabsRefresh() end
+    if ECHAT.TabsSweepBlizzard then
+        ECHAT.TabsSweepBlizzard()
+    end
+    if ECHAT.TabsRefresh then
+        ECHAT.TabsRefresh()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -75,7 +95,9 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     for i = 1, 20 do
         local cf = _G["ChatFrame" .. i]
-        if cf then SkinChatFrame(cf) end
+        if cf then
+            SkinChatFrame(cf)
+        end
     end
     ECHAT.EngineFontProvider = GetFont
     ECHAT.EngineFontSizeProvider = GetFrameFontSize
@@ -91,10 +113,14 @@ initFrame:SetScript("OnEvent", function(self)
     if p.classColorNames == true then
         ECHAT.ApplyClassColorNames(true)
     end
-    if ECHAT.EngineIntegrateAll then ECHAT.EngineIntegrateAll() end
+    if ECHAT.EngineIntegrateAll then
+        ECHAT.EngineIntegrateAll()
+    end
     -- Owned tab strip: hides Blizzard's strip, builds ours from the same
     -- window storage, and starts mirroring selection/flash from the engine.
-    if ECHAT.TabsInit then ECHAT.TabsInit() end
+    if ECHAT.TabsInit then
+        ECHAT.TabsInit()
+    end
     -- Re-run the background pass so a saved Background Texture applies at login
     -- (the skin loop creates the bg textures with the solid color).
     ECHAT.ApplyBackground()
@@ -108,20 +134,30 @@ initFrame:SetScript("OnEvent", function(self)
     --      is applied at skin time instead.
     ---------------------------------------------------------------------------
 
-
     ---------------------------------------------------------------------------
     --  2c. Clickable URLs via message event filters
     ---------------------------------------------------------------------------
     local URL_EVENTS = {
-        "CHAT_MSG_SAY", "CHAT_MSG_YELL", "CHAT_MSG_GUILD", "CHAT_MSG_OFFICER",
-        "CHAT_MSG_PARTY", "CHAT_MSG_PARTY_LEADER", "CHAT_MSG_RAID",
-        "CHAT_MSG_RAID_LEADER", "CHAT_MSG_INSTANCE_CHAT",
-        "CHAT_MSG_INSTANCE_CHAT_LEADER", "CHAT_MSG_WHISPER",
-        "CHAT_MSG_WHISPER_INFORM", "CHAT_MSG_BN_WHISPER",
-        "CHAT_MSG_BN_WHISPER_INFORM", "CHAT_MSG_CHANNEL",
+        "CHAT_MSG_SAY",
+        "CHAT_MSG_YELL",
+        "CHAT_MSG_GUILD",
+        "CHAT_MSG_OFFICER",
+        "CHAT_MSG_PARTY",
+        "CHAT_MSG_PARTY_LEADER",
+        "CHAT_MSG_RAID",
+        "CHAT_MSG_RAID_LEADER",
+        "CHAT_MSG_INSTANCE_CHAT",
+        "CHAT_MSG_INSTANCE_CHAT_LEADER",
+        "CHAT_MSG_WHISPER",
+        "CHAT_MSG_WHISPER_INFORM",
+        "CHAT_MSG_BN_WHISPER",
+        "CHAT_MSG_BN_WHISPER_INFORM",
+        "CHAT_MSG_CHANNEL",
     }
     local function UrlFilter(self, event, msg, ...)
-        if not msg or not ContainsURL(msg) then return false end
+        if not msg or not ContainsURL(msg) then
+            return false
+        end
         return false, WrapURLs(msg), ...
     end
     for _, ev in ipairs(URL_EVENTS) do
@@ -176,7 +212,9 @@ initFrame:SetScript("OnEvent", function(self)
         end
         UpdateTabColors()
         ECHAT.ApplyTabLayout()
-        if ECHAT.ApplyInputPosition then ECHAT.ApplyInputPosition() end
+        if ECHAT.ApplyInputPosition then
+            ECHAT.ApplyInputPosition()
+        end
     end
 
     ---------------------------------------------------------------------------
@@ -208,7 +246,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- triggers below; the cost is a possible 1-frame Blizzard-styled flash.
     local _tabPassQueued = false
     local function QueueTabPass()
-        if _tabPassQueued then return end
+        if _tabPassQueued then
+            return
+        end
         _tabPassQueued = true
         C_Timer.After(0, function()
             _tabPassQueued = false
@@ -218,9 +258,15 @@ initFrame:SetScript("OnEvent", function(self)
             -- shift or the dock selection can have changed; all calls
             -- early-out on clean state, and this deferred body is our own
             -- execution.
-            if ECHAT.SyncChatFrameState then ECHAT.SyncChatFrameState() end
-            if ECHAT.PositionChatPanelsNow then ECHAT.PositionChatPanelsNow() end
-            if ECHAT.EngineUpdateCombatLogHost then ECHAT.EngineUpdateCombatLogHost() end
+            if ECHAT.SyncChatFrameState then
+                ECHAT.SyncChatFrameState()
+            end
+            if ECHAT.PositionChatPanelsNow then
+                ECHAT.PositionChatPanelsNow()
+            end
+            if ECHAT.EngineUpdateCombatLogHost then
+                ECHAT.EngineUpdateCombatLogHost()
+            end
         end)
     end
     ECHAT.QueueTabPass = QueueTabPass
@@ -229,7 +275,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- deferred handler for anything that can create a chat frame.
     local _fullPassQueued = false
     local function QueueFullPass()
-        if _fullPassQueued then return end
+        if _fullPassQueued then
+            return
+        end
         _fullPassQueued = true
         C_Timer.After(0, function()
             _fullPassQueued = false
@@ -237,12 +285,20 @@ initFrame:SetScript("OnEvent", function(self)
             -- New frames (temp whisper windows, user-created windows) join
             -- the engine here: visual children parked, bridge installed, our
             -- window built and backfilled. Idempotent for known frames.
-            if ECHAT.EngineIntegrateAll then ECHAT.EngineIntegrateAll() end
-            if ECHAT.SyncChatFrameState then ECHAT.SyncChatFrameState() end
-            if ECHAT.PositionChatPanelsNow then ECHAT.PositionChatPanelsNow() end
+            if ECHAT.EngineIntegrateAll then
+                ECHAT.EngineIntegrateAll()
+            end
+            if ECHAT.SyncChatFrameState then
+                ECHAT.SyncChatFrameState()
+            end
+            if ECHAT.PositionChatPanelsNow then
+                ECHAT.PositionChatPanelsNow()
+            end
             -- A re-skin resets the resize button's base alpha; re-assert the
             -- lock state over it.
-            if ECHAT.ApplyLockChatSize then ECHAT.ApplyLockChatSize() end
+            if ECHAT.ApplyLockChatSize then
+                ECHAT.ApplyLockChatSize()
+            end
             -- A frame integrated while the panel is fully hidden must join
             -- the passthrough set.
             RequestPassthroughSweep()
@@ -274,7 +330,9 @@ initFrame:SetScript("OnEvent", function(self)
             local generation = editModeStyleGeneration
             QueueTabPass()
             C_Timer.After(0.10, function()
-                if generation == editModeStyleGeneration then QueueTabPass() end
+                if generation == editModeStyleGeneration then
+                    QueueTabPass()
+                end
             end)
         end
         local editModeStyleFrame = CreateFrame("Frame")
@@ -287,10 +345,14 @@ initFrame:SetScript("OnEvent", function(self)
             -- dragged/resized with the mouse nowhere near our hover widgets
             -- (the Selection overlay occludes them).
             EditModeManagerFrame:HookScript("OnShow", function()
-                if ECHAT.FollowArmEditMode then ECHAT.FollowArmEditMode(true) end
+                if ECHAT.FollowArmEditMode then
+                    ECHAT.FollowArmEditMode(true)
+                end
             end)
             EditModeManagerFrame:HookScript("OnHide", function()
-                if ECHAT.FollowArmEditMode then ECHAT.FollowArmEditMode(false) end
+                if ECHAT.FollowArmEditMode then
+                    ECHAT.FollowArmEditMode(false)
+                end
                 C_Timer.After(0, QueueEditModeTabStyle)
             end)
         end
@@ -345,14 +407,26 @@ initFrame:SetScript("OnEvent", function(self)
             -- Chat position ownership begins at the first settled sight:
             -- capture Edit Mode's placement as ours if unsaved, arm the
             -- anchor guard, kill the Edit Mode selection overlay, apply.
-            if ns._CaptureChatPositionGenesis then ns._CaptureChatPositionGenesis() end
-            if ns._GenesisSettle then ns._GenesisSettle() end
-            if ns._InstallChatAnchorGuard then ns._InstallChatAnchorGuard() end
-            if ECHAT.SuppressChatEditModeSelection then ECHAT.SuppressChatEditModeSelection() end
-            if ECHAT.ApplyChatPosition then ECHAT.ApplyChatPosition() end
+            if ns._CaptureChatPositionGenesis then
+                ns._CaptureChatPositionGenesis()
+            end
+            if ns._GenesisSettle then
+                ns._GenesisSettle()
+            end
+            if ns._InstallChatAnchorGuard then
+                ns._InstallChatAnchorGuard()
+            end
+            if ECHAT.SuppressChatEditModeSelection then
+                ECHAT.SuppressChatEditModeSelection()
+            end
+            if ECHAT.ApplyChatPosition then
+                ECHAT.ApplyChatPosition()
+            end
             -- Font size follows the profile: capture on first sight,
             -- re-assert on every later login.
-            if ECHAT.SyncChatFontSize then ECHAT.SyncChatFontSize() end
+            if ECHAT.SyncChatFontSize then
+                ECHAT.SyncChatFontSize()
+            end
             -- (ApplyChatPosition self-resyncs panels+strip one tick later,
             -- and the EDIT_MODE_LAYOUTS_UPDATED watcher re-asserts if Edit
             -- Mode's late layout apply lands after this.)
@@ -366,11 +440,17 @@ initFrame:SetScript("OnEvent", function(self)
             local healAccum = 0
             healFrame:SetScript("OnUpdate", function(w, dt)
                 healAccum = healAccum + dt
-                if healAccum < 0.1 then return end
+                if healAccum < 0.1 then
+                    return
+                end
                 healAccum = 0
                 healTicks = healTicks + 1
-                if ECHAT.SyncChatFrameState then ECHAT.SyncChatFrameState() end
-                if healTicks >= 40 then w:SetScript("OnUpdate", nil) end
+                if ECHAT.SyncChatFrameState then
+                    ECHAT.SyncChatFrameState()
+                end
+                if healTicks >= 40 then
+                    w:SetScript("OnUpdate", nil)
+                end
             end)
         end)
     end
@@ -391,7 +471,9 @@ initFrame:SetScript("OnEvent", function(self)
     C_Timer.After(0.50, ApplyInitialTabLayout)
     local _tabColorTimer
     local function DeferredTabColorUpdate()
-        if _tabColorTimer then return end
+        if _tabColorTimer then
+            return
+        end
         _tabColorTimer = true
         C_Timer.After(0, function()
             _tabColorTimer = nil
@@ -400,7 +482,6 @@ initFrame:SetScript("OnEvent", function(self)
         end)
     end
     ECHAT._deferredTabColorUpdate = DeferredTabColorUpdate
-
 
     ---------------------------------------------------------------------------
     --  6. Idle fade: dims chat after N seconds of inactivity. Resets on player
@@ -412,7 +493,7 @@ initFrame:SetScript("OnEvent", function(self)
         local idleTimer = nil
         -- Hover state (UpdateHoverState below); read by OnActiveMessage.
         local _idleMouseOver = false
-        local SetMessageWake  -- with OnActiveMessage below
+        local SetMessageWake -- with OnActiveMessage below
 
         local function IsIdleApplicable()
             local cfg = ECHAT.DB()
@@ -421,13 +502,19 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function StartIdleFade()
-            if ECHAT.DB().idleFadeEnabled == false then return end
-            if _idleFadeActive then return end
+            if ECHAT.DB().idleFadeEnabled == false then
+                return
+            end
+            if _idleFadeActive then
+                return
+            end
             SetIdleFadeActive(true)
             ECHAT.SetIdleFadeAlpha(GetIdleFadeAlpha())
             -- Faded: arm the hover-reveal motion overlay.
 
-            if ECHAT.ApplyIdleFadeHoverMotion then ECHAT.ApplyIdleFadeHoverMotion() end
+            if ECHAT.ApplyIdleFadeHoverMotion then
+                ECHAT.ApplyIdleFadeHoverMotion()
+            end
         end
 
         local function CancelIdleFade()
@@ -453,14 +540,18 @@ initFrame:SetScript("OnEvent", function(self)
             local on = IsIdleApplicable() and cfg.idleFadeEnabled ~= false
             -- Chat lines wake the fade only while it can run: nothing per line otherwise.
             SetMessageWake(on)
-            if not on then return end
+            if not on then
+                return
+            end
             local delay = cfg.idleFadeDelay or 15
             idleTimer = C_Timer.NewTimer(delay, StartIdleFade)
         end
 
         -- Visibility fully hid the chat: fade now and drop the leftover delay.
         function ECHAT.StartIdleFadeNow()
-            if not IsIdleApplicable() then return end
+            if not IsIdleApplicable() then
+                return
+            end
             if idleTimer then
                 idleTimer:Cancel()
                 idleTimer = nil
@@ -475,12 +566,18 @@ initFrame:SetScript("OnEvent", function(self)
             -- line pool is parked in the engine's hidden container, and OUR
             -- message frames are hidden outright while passthrough is
             -- engaged -- a hidden frame arms nothing.)
-            if not IsIdleApplicable() then return end
+            if not IsIdleApplicable() then
+                return
+            end
             -- Hidden by visibility: lines and whispers land unseen, so they must
             -- not wake the fade (StartIdleFadeNow) and flash the chat on reveal.
-            if not _visChatVisible then return end
+            if not _visChatVisible then
+                return
+            end
             local now = GetTime()
-            if now - _lastIdleReset < 1 then return end
+            if now - _lastIdleReset < 1 then
+                return
+            end
             _lastIdleReset = now
             if _idleMouseOver then
                 CancelIdleFade()
@@ -502,9 +599,15 @@ initFrame:SetScript("OnEvent", function(self)
             OnActiveMessage()
         end)
         local function WakeOnChat(cf, event)
-            if event == nil or wakeFrame:IsShown() then return end
-            if issecretvalue and issecretvalue(event) then return end
-            if CHAT_MSG_EVENTS[event] and cf:IsShown() then wakeFrame:Show() end
+            if event == nil or wakeFrame:IsShown() then
+                return
+            end
+            if issecretvalue and issecretvalue(event) then
+                return
+            end
+            if CHAT_MSG_EVENTS[event] and cf:IsShown() then
+                wakeFrame:Show()
+            end
         end
         SetMessageWake = function(on)
             if ECHAT.EngineSetIdleObserver then
@@ -557,11 +660,7 @@ initFrame:SetScript("OnEvent", function(self)
             table.insert(WHISPER_SOUND_ORDER, 2, "mute")
 
             -- Append SharedMedia sounds
-            CludesUI.AppendSharedMediaSounds(
-                WHISPER_SOUND_PATHS,
-                WHISPER_SOUND_NAMES,
-                WHISPER_SOUND_ORDER
-            )
+            CludesUI.AppendSharedMediaSounds(WHISPER_SOUND_PATHS, WHISPER_SOUND_NAMES, WHISPER_SOUND_ORDER)
 
             -- Blizzard's whisper sound (SOUNDKIT.TELL_MESSAGE plays this one
             -- file), muted while a non-default choice is set. A mute outlives
@@ -569,11 +668,13 @@ initFrame:SetScript("OnEvent", function(self)
             -- chatTellMuted flag remembers that the mute is ours: a character
             -- on Blizzard Default unmutes only a mute we made, never another
             -- addon's. Runs at init, from the setting and from
-            -- _ECHAT_RefreshAll (profile swaps, imports, spec overrides).
+            -- _CUCHAT_RefreshAll (profile swaps, imports, spec overrides).
             local TELL_SOUND_FILE = 567421
             local _tellMuted = false
             function ECHAT.ApplyWhisperMute()
-                if not MuteSoundFile then return end
+                if not MuteSoundFile then
+                    return
+                end
                 local cfg = ECHAT.DB()
                 local key = cfg and cfg.whisperSoundKey
                 local want = key ~= nil and key ~= "none"
@@ -582,12 +683,16 @@ initFrame:SetScript("OnEvent", function(self)
                     if not _tellMuted then
                         MuteSoundFile(TELL_SOUND_FILE)
                         _tellMuted = true
-                        if db then db.chatTellMuted = true end
+                        if db then
+                            db.chatTellMuted = true
+                        end
                     end
                 elseif _tellMuted or (db and db.chatTellMuted) then
                     UnmuteSoundFile(TELL_SOUND_FILE)
                     _tellMuted = false
-                    if db then db.chatTellMuted = nil end
+                    if db then
+                        db.chatTellMuted = nil
+                    end
                 end
             end
             ECHAT.ApplyWhisperMute()
@@ -596,7 +701,9 @@ initFrame:SetScript("OnEvent", function(self)
                 if _tellMuted or (CludesUIDB and CludesUIDB.chatTellMuted) then
                     UnmuteSoundFile(TELL_SOUND_FILE)
                     _tellMuted = false
-                    if CludesUIDB then CludesUIDB.chatTellMuted = nil end
+                    if CludesUIDB then
+                        CludesUIDB.chatTellMuted = nil
+                    end
                 end
             end)
 
@@ -608,12 +715,18 @@ initFrame:SetScript("OnEvent", function(self)
                 OnActiveMessage()
                 local cfg = ECHAT.DB()
                 local key = cfg and cfg.whisperSoundKey
-                if not key or key == "none" or key == "mute" then return end
+                if not key or key == "none" or key == "mute" then
+                    return
+                end
                 local now = GetTime()
-                if now - _whisperThrottle < 5 then return end
+                if now - _whisperThrottle < 5 then
+                    return
+                end
                 _whisperThrottle = now
                 local path = WHISPER_SOUND_PATHS[key]
-                if path then PlaySoundFile(path, "Master") end
+                if path then
+                    PlaySoundFile(path, "Master")
+                end
             end)
         end
 
@@ -626,7 +739,9 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function UpdateHoverState()
             local over = (_hoverCount > 0) or (_editFocusCount > 0)
-            if not IsIdleApplicable() then return end
+            if not IsIdleApplicable() then
+                return
+            end
             if over and not _idleMouseOver then
                 _idleMouseOver = true
                 CancelIdleFade()
@@ -700,12 +815,18 @@ initFrame:SetScript("OnEvent", function(self)
         local sidebar = CFD(ChatFrame1).sidebar
         if sidebar then
             sidebar:HookScript("OnEnter", function()
-                _hoverCount = _hoverCount + 1; UpdateHoverState()
-                if ECHAT.FollowArm then ECHAT.FollowArm() end
+                _hoverCount = _hoverCount + 1
+                UpdateHoverState()
+                if ECHAT.FollowArm then
+                    ECHAT.FollowArm()
+                end
             end)
             sidebar:HookScript("OnLeave", function()
-                _hoverCount = max(0, _hoverCount - 1); UpdateHoverState()
-                if ECHAT.FollowRelease then ECHAT.FollowRelease() end
+                _hoverCount = max(0, _hoverCount - 1)
+                UpdateHoverState()
+                if ECHAT.FollowRelease then
+                    ECHAT.FollowRelease()
+                end
             end)
         end
 
@@ -722,17 +843,20 @@ initFrame:SetScript("OnEvent", function(self)
             -- handler, so the timing is unchanged and the counter still pairs
             -- exactly.
             ECHAT._RegisterEditBoxFocusGained("CUI_Chat_HoverEditFocus", function(eb)
-                if eb ~= eb1 then return end
+                if eb ~= eb1 then
+                    return
+                end
                 _editFocusCount = _editFocusCount + 1
                 UpdateHoverState()
             end)
             if EventRegistry and EventRegistry.RegisterCallback then
-                EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost",
-                    function(_, eb)
-                        if eb ~= eb1 then return end
-                        _editFocusCount = max(0, _editFocusCount - 1)
-                        UpdateHoverState()
-                    end, "CUI_Chat_HoverEditFocus")
+                EventRegistry:RegisterCallback("ChatFrame.OnEditBoxFocusLost", function(_, eb)
+                    if eb ~= eb1 then
+                        return
+                    end
+                    _editFocusCount = max(0, _editFocusCount - 1)
+                    UpdateHoverState()
+                end, "CUI_Chat_HoverEditFocus")
             end
         end
 
@@ -752,14 +876,18 @@ initFrame:SetScript("OnEvent", function(self)
     -- explicit formats pass through, "__blizzard" resolves to Blizzard's own
     -- setting, "none" (either source) disarms it.
     local function ApplyStampAll()
-        if not ECHAT.EngineSetStampAll then return end
+        if not ECHAT.EngineSetStampAll then
+            return
+        end
         local cfg = ECHAT.DB()
         local fmt = cfg.timestampFormat or "%I:%M "
         if fmt == "none" then
             fmt = nil
         elseif fmt == "__blizzard" then
             local ok, f = pcall(function()
-                return ChatFrameUtil and ChatFrameUtil.GetTimestampFormat and ChatFrameUtil.GetTimestampFormat()
+                return ChatFrameUtil
+                    and ChatFrameUtil.GetTimestampFormat
+                    and ChatFrameUtil.GetTimestampFormat()
             end)
             fmt = (ok and type(f) == "string" and f ~= "" and f ~= "none") and f or nil
         end
@@ -771,7 +899,9 @@ initFrame:SetScript("OnEvent", function(self)
         ApplyStampAll()
         local cfg = ECHAT.DB()
         local fmt = cfg.timestampFormat or "%I:%M "
-        if fmt == "__blizzard" then return end
+        if fmt == "__blizzard" then
+            return
+        end
         CludesUI.SetCVar("showTimestamps", fmt, "CludesUIChat")
     end
     ApplyTimestampCVar()
@@ -804,11 +934,15 @@ initFrame:SetScript("OnEvent", function(self)
                     ECHAT._stockSeatArmed = true
                     for i = 1, 20 do
                         local cf = _G["ChatFrame" .. i]
-                        if cf then ECHAT.SeatStockBackground(cf) end
+                        if cf then
+                            ECHAT.SeatStockBackground(cf)
+                        end
                     end
                 end
                 -- The stored window colour, re-read once settled.
-                if ECHAT.SB_SyncBackdrop then ECHAT.SB_SyncBackdrop(true) end
+                if ECHAT.SB_SyncBackdrop then
+                    ECHAT.SB_SyncBackdrop(true)
+                end
             end)
         end)
     end
@@ -819,14 +953,30 @@ initFrame:SetScript("OnEvent", function(self)
         local _cf1 = _G.ChatFrame1
         if _cfg and _cf1 then
             local _sbd = CFD(_cf1)
-            if _sbd.scrollBtn then _sbd.scrollBtn:SetShown(_cfg.showScroll ~= false) end
-            if _sbd.friendsBtn then _sbd.friendsBtn:SetShown(_cfg.showFriends ~= false) end
-            if _sbd.durabilityBtn then _sbd.durabilityBtn:SetShown(_cfg.showDurability ~= false) end
-            if _sbd.copyBtn then _sbd.copyBtn:SetShown(_cfg.showCopy ~= false) end
-            if _sbd.portalBtn then _sbd.portalBtn:SetShown(_cfg.showPortals ~= false) end
-            if _sbd.voiceBtn then _sbd.voiceBtn:SetShown(_cfg.showVoice ~= false) end
-            if _sbd.chatMenuBtn then _sbd.chatMenuBtn:SetShown(_cfg.showChatMenu ~= false) end
-            if _sbd.settingsBtn then _sbd.settingsBtn:SetShown(_cfg.showSettings ~= false) end
+            if _sbd.scrollBtn then
+                _sbd.scrollBtn:SetShown(_cfg.showScroll ~= false)
+            end
+            if _sbd.friendsBtn then
+                _sbd.friendsBtn:SetShown(_cfg.showFriends ~= false)
+            end
+            if _sbd.durabilityBtn then
+                _sbd.durabilityBtn:SetShown(_cfg.showDurability ~= false)
+            end
+            if _sbd.copyBtn then
+                _sbd.copyBtn:SetShown(_cfg.showCopy ~= false)
+            end
+            if _sbd.portalBtn then
+                _sbd.portalBtn:SetShown(_cfg.showPortals ~= false)
+            end
+            if _sbd.voiceBtn then
+                _sbd.voiceBtn:SetShown(_cfg.showVoice ~= false)
+            end
+            if _sbd.chatMenuBtn then
+                _sbd.chatMenuBtn:SetShown(_cfg.showChatMenu ~= false)
+            end
+            if _sbd.settingsBtn then
+                _sbd.settingsBtn:SetShown(_cfg.showSettings ~= false)
+            end
         end
     end
     ECHAT.ApplySidebarWidth()
@@ -844,7 +994,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- here -- its full ClearAllPoints/SetPoint layout chain is taint-risky (skipped at
     -- init too); icon visibility uses the same minimal SetShown block as init, and
     -- position/scale/free-move are covered by the Apply* calls below.
-    _G._ECHAT_RefreshAll = function()
+    _G._CUCHAT_RefreshAll = function()
         ECHAT.ApplySidebarVisibility()
         ECHAT.ApplyBorders()
         do
@@ -852,14 +1002,30 @@ initFrame:SetScript("OnEvent", function(self)
             local _cf1 = _G.ChatFrame1
             if _cfg and _cf1 then
                 local _sbd = CFD(_cf1)
-                if _sbd.scrollBtn then _sbd.scrollBtn:SetShown(_cfg.showScroll ~= false) end
-                if _sbd.friendsBtn then _sbd.friendsBtn:SetShown(_cfg.showFriends ~= false) end
-                if _sbd.durabilityBtn then _sbd.durabilityBtn:SetShown(_cfg.showDurability ~= false) end
-                if _sbd.copyBtn then _sbd.copyBtn:SetShown(_cfg.showCopy ~= false) end
-                if _sbd.portalBtn then _sbd.portalBtn:SetShown(_cfg.showPortals ~= false) end
-                if _sbd.voiceBtn then _sbd.voiceBtn:SetShown(_cfg.showVoice ~= false) end
-                if _sbd.chatMenuBtn then _sbd.chatMenuBtn:SetShown(_cfg.showChatMenu ~= false) end
-                if _sbd.settingsBtn then _sbd.settingsBtn:SetShown(_cfg.showSettings ~= false) end
+                if _sbd.scrollBtn then
+                    _sbd.scrollBtn:SetShown(_cfg.showScroll ~= false)
+                end
+                if _sbd.friendsBtn then
+                    _sbd.friendsBtn:SetShown(_cfg.showFriends ~= false)
+                end
+                if _sbd.durabilityBtn then
+                    _sbd.durabilityBtn:SetShown(_cfg.showDurability ~= false)
+                end
+                if _sbd.copyBtn then
+                    _sbd.copyBtn:SetShown(_cfg.showCopy ~= false)
+                end
+                if _sbd.portalBtn then
+                    _sbd.portalBtn:SetShown(_cfg.showPortals ~= false)
+                end
+                if _sbd.voiceBtn then
+                    _sbd.voiceBtn:SetShown(_cfg.showVoice ~= false)
+                end
+                if _sbd.chatMenuBtn then
+                    _sbd.chatMenuBtn:SetShown(_cfg.showChatMenu ~= false)
+                end
+                if _sbd.settingsBtn then
+                    _sbd.settingsBtn:SetShown(_cfg.showSettings ~= false)
+                end
             end
         end
         ECHAT.ApplySidebarWidth()
@@ -872,9 +1038,13 @@ initFrame:SetScript("OnEvent", function(self)
         ECHAT.ApplyLockChatSize()
         ECHAT.ApplyBackground()
         ECHAT.ApplyFonts()
-        if ECHAT.RefreshVisibility then ECHAT.RefreshVisibility() end
+        if ECHAT.RefreshVisibility then
+            ECHAT.RefreshVisibility()
+        end
         -- The new profile's idle fade settings (and whether chat lines wake it).
-        if ECHAT.ResetIdleTimer then ECHAT.ResetIdleTimer() end
+        if ECHAT.ResetIdleTimer then
+            ECHAT.ResetIdleTimer()
+        end
         -- The passes above can build panel chrome (borders, the tab-band
         -- extension) that did not exist when the house editor opened.
         ECHAT.ApplyPanelHost()
@@ -903,9 +1073,13 @@ initFrame:SetScript("OnEvent", function(self)
             -- Apply saved position or default to bottom-right of chat bg
             local function ApplyToastPosition()
                 local cfg = ECHAT.DB()
-                if not cfg or not cfg.toastPosition then return end
+                if not cfg or not cfg.toastPosition then
+                    return
+                end
                 local pos = cfg.toastPosition
-                if not pos.point then return end
+                if not pos.point then
+                    return
+                end
                 local px, py = pos.x or 0, pos.y or 0
                 local PPa = CUI and CUI.PP
                 if PPa and PPa.SnapForES then
@@ -930,13 +1104,21 @@ initFrame:SetScript("OnEvent", function(self)
             -- anchoring first. Same shape as the FCFDock_SelectWindow hook this module
             -- already replaced for taint reasons.
             toast:HookScript("OnShow", function()
-                if CUI._unlockActive then return end
+                if CUI._unlockActive then
+                    return
+                end
                 local cfg = ECHAT.DB()
-                if not (cfg and cfg.toastPosition) then return end
+                if not (cfg and cfg.toastPosition) then
+                    return
+                end
                 C_Timer.After(0, function()
-                    if CUI._unlockActive then return end
+                    if CUI._unlockActive then
+                        return
+                    end
                     local c = ECHAT.DB()
-                    if c and c.toastPosition then ApplyToastPosition() end
+                    if c and c.toastPosition then
+                        ApplyToastPosition()
+                    end
                 end)
             end)
 
@@ -956,7 +1138,8 @@ initFrame:SetScript("OnEvent", function(self)
                         local uCX, uCY = UIParent:GetCenter()
                         if cx and uCX then
                             cfg.toastPosition = {
-                                point = "CENTER", relPoint = "CENTER",
+                                point = "CENTER",
+                                relPoint = "CENTER",
                                 x = (cx * es - uCX * uiS) / uiS,
                                 y = (cy * es - uCY * uiS) / uiS,
                             }
@@ -971,20 +1154,26 @@ initFrame:SetScript("OnEvent", function(self)
                 local MK = CUI.MakeUnlockElement
                 CUI:RegisterUnlockElements({
                     MK({
-                        key   = "ECHAT_BNToast",
+                        key = "ECHAT_BNToast",
                         label = "BNet Toast",
                         group = "Chat",
                         order = 601,
                         noAnchorTo = true,
-                        noResize   = true,
-                        getFrame = function() return toast end,
-                        getSize  = function()
+                        noResize = true,
+                        getFrame = function()
+                            return toast
+                        end,
+                        getSize = function()
                             return toast:GetWidth(), toast:GetHeight()
                         end,
-                        isHidden = function() return false end,
+                        isHidden = function()
+                            return false
+                        end,
                         savePos = function(_, point, relPoint, x, y)
                             local cfg = ECHAT.DB()
-                            if not cfg then return end
+                            if not cfg then
+                                return
+                            end
                             cfg.toastPosition = { point = point, relPoint = relPoint or point, x = x, y = y }
                             if not CUI._unlockActive then
                                 ApplyToastPosition()
@@ -992,12 +1181,16 @@ initFrame:SetScript("OnEvent", function(self)
                         end,
                         loadPos = function()
                             local cfg = ECHAT.DB()
-                            if not cfg then return nil end
+                            if not cfg then
+                                return nil
+                            end
                             return cfg.toastPosition
                         end,
                         clearPos = function()
                             local cfg = ECHAT.DB()
-                            if not cfg then return end
+                            if not cfg then
+                                return
+                            end
                             cfg.toastPosition = nil
                         end,
                         applyPos = function()
@@ -1018,7 +1211,7 @@ initFrame:SetScript("OnEvent", function(self)
         local MK = CUI.MakeUnlockElement
         CUI:RegisterUnlockElements({
             MK({
-                key   = "ECHAT_MainChat",
+                key = "ECHAT_MainChat",
                 label = "Chat",
                 group = "Chat",
                 order = 600,
@@ -1030,23 +1223,35 @@ initFrame:SetScript("OnEvent", function(self)
                 ownsPosition = true,
                 -- Relative to Screen (the cog) names the screen point chat's
                 -- saved spot is measured from; chat keeps it, no link.
-                getScreenPoint = function() return ns.GetChatScreenPoint() end,
-                setScreenPoint = function(_, point) ns.SetChatScreenPoint(point) end,
-                getFrame = function() return _G.ChatFrame1 end,
-                getSize  = function()
+                getScreenPoint = function()
+                    return ns.GetChatScreenPoint()
+                end,
+                setScreenPoint = function(_, point)
+                    ns.SetChatScreenPoint(point)
+                end,
+                getFrame = function()
+                    return _G.ChatFrame1
+                end,
+                getSize = function()
                     local cf1 = _G.ChatFrame1
                     return cf1:GetWidth(), cf1:GetHeight()
                 end,
-                isHidden = function() return false end,
+                isHidden = function()
+                    return false
+                end,
                 -- The mover places ChatFrame1 with one anchor per drag tick /
                 -- nudge; our size rides a second corner (SetSize is banned on
                 -- the main window), so restore it after every placement.
                 onLiveMove = function()
-                    if ns._KeepMainChatSizeCorner then ns._KeepMainChatSizeCorner() end
+                    if ns._KeepMainChatSizeCorner then
+                        ns._KeepMainChatSizeCorner()
+                    end
                 end,
                 savePos = function(_, point, relPoint, x, y)
                     local cfg = ECHAT.DB()
-                    if not cfg then return end
+                    if not cfg then
+                        return
+                    end
                     cfg.chatPosition = { point = point, relPoint = relPoint or point, x = x, y = y }
                     if not CUI._unlockActive then
                         ECHAT.ApplyChatPosition()
@@ -1071,7 +1276,9 @@ initFrame:SetScript("OnEvent", function(self)
                         ns.EMChatResetStore()
                     end
                 end,
-                applyPos = function() ECHAT.ApplyChatPosition() end,
+                applyPos = function()
+                    ECHAT.ApplyChatPosition()
+                end,
             }),
         })
     end
@@ -1087,8 +1294,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- a committed Reset puts Edit Mode's default back (the commit runs
     -- before this edge).
     CUI:RegisterUnlockModeListener("CludesUIChat", function(active)
-        if ECHAT.FollowArmUnlock then ECHAT.FollowArmUnlock(active) end
-        if ECHAT.ApplyChatPosition then ECHAT.ApplyChatPosition() end
+        if ECHAT.FollowArmUnlock then
+            ECHAT.FollowArmUnlock(active)
+        end
+        if ECHAT.ApplyChatPosition then
+            ECHAT.ApplyChatPosition()
+        end
         if not active and ns._chatUnlockReset then
             ns._chatUnlockReset = nil
             ns.EMChatResetStore()
@@ -1105,15 +1316,20 @@ initFrame:SetScript("OnEvent", function(self)
     --  14. Hide Blizzard social buttons (quick join, menu, channel, voice)
     ---------------------------------------------------------------------------
     for _, frameName in ipairs({
-        "QuickJoinToastButton", "ChatFrameMenuButton", "ChatFrameChannelButton",
-        "ChatFrameToggleVoiceDeafenButton", "ChatFrameToggleVoiceMuteButton",
+        "QuickJoinToastButton",
+        "ChatFrameMenuButton",
+        "ChatFrameChannelButton",
+        "ChatFrameToggleVoiceDeafenButton",
+        "ChatFrameToggleVoiceMuteButton",
     }) do
         local f = _G[frameName]
-        if f then f:SetAlpha(0); f:EnableMouse(false) end
+        if f then
+            f:SetAlpha(0)
+            f:EnableMouse(false)
+        end
     end
     -- Chat Menu: the menu button back over its icon, mouse on while shown.
     ECHAT.SeatChatMenu()
-
 end)
 
 I.broken = false

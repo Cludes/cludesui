@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_PageParts.lua
 --  Shared page parts: unlock placeholder, max duration and sound dropdown
@@ -63,11 +65,15 @@ function CludesUI.BuildUnlockPlaceholder(opts)
     local brd = f._brd
     f:SetScript("OnEnter", function()
         label:SetTextColor(ar, ag, ab, 1)
-        if brd then brd:SetColor(ar, ag, ab, 0.85) end
+        if brd then
+            brd:SetColor(ar, ag, ab, 0.85)
+        end
     end)
     f:SetScript("OnLeave", function()
         label:SetTextColor(1, 1, 1, 0.9)
-        if brd then brd:SetColor(ar, ag, ab, 0.6) end
+        if brd then
+            brd:SetColor(ar, ag, ab, 0.6)
+        end
     end)
 
     -- Click: open unlock mode (or custom handler)
@@ -94,15 +100,21 @@ function CludesUI.MaxDurationDropdown(get, set, apply)
         custom = cur and (L("Custom") .. " (" .. tostring(cur) .. "s)") or (L("Custom") .. "..."),
     }
     return {
-        type = "dropdown", text = "Max Duration",
+        type = "dropdown",
+        text = "Max Duration",
         tooltip = "Only show debuffs whose full duration is at most this many seconds. Combines with the filters; Unlimited applies no cap.",
-        values = values, order = { "unlimited", "custom" },
-        getValue = function() return get() and "custom" or "unlimited" end,
+        values = values,
+        order = { "unlimited", "custom" },
+        getValue = function()
+            return get() and "custom" or "unlimited"
+        end,
         setValue = function(v)
             if v == "unlimited" then
                 if get() ~= nil then
                     set(nil)
-                    if apply then apply() end
+                    if apply then
+                        apply()
+                    end
                 end
                 CludesUI:RefreshPage(true)
                 return
@@ -120,12 +132,16 @@ function CludesUI.MaxDurationDropdown(get, set, apply)
                         n = math.floor(n)
                         if n ~= get() then
                             set(n)
-                            if apply then apply() end
+                            if apply then
+                                apply()
+                            end
                         end
                     end
                     CludesUI:RefreshPage(true)
                 end,
-                onCancel = function() CludesUI:RefreshPage(true) end,
+                onCancel = function()
+                    CludesUI:RefreshPage(true)
+                end,
             })
         end,
     }
@@ -138,31 +154,42 @@ end
 -- absent). A path is a sound file or a SoundKit id.
 -- Sound preview icon for every sound picker and play button. WoW Forever has no
 -- common-icon-sound atlases; its dropdown speaker stands in for both states.
-CludesUI.SOUND_ICON_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound")
-    and "common-icon-sound" or "common-dropdown-icon-sound-on"
+CludesUI.SOUND_ICON_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound") and "common-icon-sound"
+    or "common-dropdown-icon-sound-on"
 CludesUI.SOUND_ICON_PRESSED_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound-pressed")
-    and "common-icon-sound-pressed" or CludesUI.SOUND_ICON_ATLAS
+        and "common-icon-sound-pressed"
+    or CludesUI.SOUND_ICON_ATLAS
 
 function CludesUI.BuildSoundDropdownValues(paths, names, order)
     paths = paths or CludesUI._groupDeathSoundPaths or {}
     names = names or CludesUI._groupDeathSoundNames or { none = "None" }
     order = order or CludesUI._groupDeathSoundOrder or { "none" }
     local values = {}
-    for k, v in pairs(names) do values[k] = v end
+    for k, v in pairs(names) do
+        values[k] = v
+    end
     values._menuOpts = {
         itemHeight = 26,
         maxTextWidthPct = 0.8,
         searchable = true,
         iconAtlas = function(key)
-            if key == "none" or not paths[key] then return nil end
+            if key == "none" or not paths[key] then
+                return nil
+            end
             return CludesUI.SOUND_ICON_ATLAS
         end,
         iconPressedAtlas = function(key)
-            if key == "none" or not paths[key] then return nil end
+            if key == "none" or not paths[key] then
+                return nil
+            end
             return CludesUI.SOUND_ICON_PRESSED_ATLAS
         end,
-        iconOnClick = function(key) CludesUI.PlaySoundPath(paths[key]) end,
-        iconTooltip = function() return "Preview Sound" end,
+        iconOnClick = function(key)
+            CludesUI.PlaySoundPath(paths[key])
+        end,
+        iconTooltip = function()
+            return "Preview Sound"
+        end,
     }
     return values, order
 end
@@ -172,9 +199,13 @@ end
 -------------------------------------------------------------------------------
 
 -- Fresh table per call: DualRow configs must never be shared across rows.
-function CludesUI.BlankRowCfg() return { type = "label", text = "" } end
+function CludesUI.BlankRowCfg()
+    return { type = "label", text = "" }
+end
 
-function CludesUI.ModuleNS(folder) return CludesUI._ModuleNS and CludesUI._ModuleNS[folder] end
+function CludesUI.ModuleNS(folder)
+    return CludesUI._ModuleNS and CludesUI._ModuleNS[folder]
+end
 
 -- Custom link row: label on the left, an Open Settings button on the right,
 -- jumping to the module page that owns a selection-bound settings family.
@@ -194,7 +225,9 @@ function CludesUI.BuildLinkRow(parent, y, label, module, page, section, highligh
     lbl:SetAlpha(0.9)
     lbl:SetPoint("LEFT", row, "LEFT", 20, 0)
     lbl:SetText(CludesUI.L(label))
-    if opts and opts.warn then lbl:SetTextColor(0.9, 0.3, 0.3) end
+    if opts and opts.warn then
+        lbl:SetTextColor(0.9, 0.3, 0.3)
+    end
 
     local btn = CreateFrame("Button", nil, row)
     PP.Size(btn, 122, 26)
@@ -230,7 +263,7 @@ end
 -- attention now, animated only while the card shows.
 local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
     local PP = CludesUI.PanelPP
-    local L  = CludesUI.L
+    local L = CludesUI.L
     local ROW_H, ICON, DIV_GAP, DIV_H = 60, 26, 24, 40
     local TITLE_SZ, DESC_SZ, DESC_GAP = 13, 11, 4
     -- Plain items, and the boxed hero in the equal cards' values (left pad,
@@ -247,13 +280,21 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
     for i = 1, n do
         local spec = cards[i]
         local boxed = spec.hero and true or false
-        local p = { boxed = boxed,
-            padL = boxed and BOX_L or 0, gap = boxed and BOX_GAP or GAP, padR = boxed and BOX_R or 0,
-            iconA = boxed and BOX_ICON_A or ICON_A, descA = boxed and BOX_DESC_A or DESC_A }
+        local p = {
+            boxed = boxed,
+            padL = boxed and BOX_L or 0,
+            gap = boxed and BOX_GAP or GAP,
+            padR = boxed and BOX_R or 0,
+            iconA = boxed and BOX_ICON_A or ICON_A,
+            descA = boxed and BOX_DESC_A or DESC_A,
+        }
         local card = CreateFrame("Button", nil, rowFrame)
         card:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
         local icon = card:CreateTexture(nil, "ARTWORK")
-        if icon.SetSnapToPixelGrid then icon:SetSnapToPixelGrid(false); icon:SetTexelSnappingBias(0) end
+        if icon.SetSnapToPixelGrid then
+            icon:SetSnapToPixelGrid(false)
+            icon:SetTexelSnappingBias(0)
+        end
         icon:SetAlpha(p.iconA)
         local titleFs = CludesUI.MakeFont(card, TITLE_SZ, nil, 1, 1, 1, TITLE_A)
         titleFs:SetJustifyH("LEFT")
@@ -273,7 +314,9 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
             descFs:SetText(L(d))
             w = math.max(w, math.ceil(titleFs:GetStringWidth()), math.ceil(descFs:GetStringWidth()))
         end
-        if spec.sizeAlso then Measure(spec.sizeAlso[1], spec.sizeAlso[2]) end
+        if spec.sizeAlso then
+            Measure(spec.sizeAlso[1], spec.sizeAlso[2])
+        end
         Measure(spec.title, spec.desc)
         card:SetCardContent(spec.icon, spec.title, spec.desc)
         p.card, p.icon, p.titleFs, p.descFs, p.textW = card, icon, titleFs, descFs, w
@@ -293,8 +336,14 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
         totalW = totalW + parts[i].textW
     end
     PP.Size(rowFrame, totalW, blockH)
-    PP.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT",
-        CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2), y)
+    PP.Point(
+        rowFrame,
+        "TOPLEFT",
+        parent,
+        "TOPLEFT",
+        CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2),
+        y
+    )
 
     local x = 0
     for i = 1, n do
@@ -333,14 +382,19 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
             icon:SetVertexColor(ac.r, ac.g, ac.b)
             if boxed then
                 accentLine:SetColorTexture(ac.r, ac.g, ac.b, 0.6)
-                if hover then bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
-                else bg:SetColorTexture(0.062, 0.070, 0.082, 0.50) end
+                if hover then
+                    bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
+                else
+                    bg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
+                end
                 brd:SetColor(1, 1, 1, hover and (BOX_BRD_A + 0.10) or BOX_BRD_A)
             end
         end
         Paint(false)
         if not spec.accent then
-            CludesUI.RegisterWidgetRefresh(function() Paint(card:IsMouseOver()) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                Paint(card:IsMouseOver())
+            end)
         end
         -- The labels' resting alpha is their text colour's (MakeFont), so the
         -- hover moves that alpha, never the region's: a leave puts back exactly
@@ -349,7 +403,9 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
             Paint(true)
             icon:SetAlpha(boxed and (BOX_ICON_A + 0.25) or 1)
             titleFs:SetTextColor(1, 1, 1, 1)
-            if not boxed then descFs:SetTextColor(1, 1, 1, DESC_A + 0.15) end
+            if not boxed then
+                descFs:SetTextColor(1, 1, 1, DESC_A + 0.15)
+            end
         end)
         card:SetScript("OnLeave", function()
             Paint(false)
@@ -357,14 +413,16 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             descFs:SetTextColor(1, 1, 1, p.descA)
         end)
-        if spec.onClick then card:SetScript("OnClick", spec.onClick) end
+        if spec.onClick then
+            card:SetScript("OnClick", spec.onClick)
+        end
     end
     return y - blockH, built
 end
 
 function CludesUI.BuildActionCardRow(parent, y, cards, opts)
     local PP = CludesUI.PanelPP
-    local L  = CludesUI.L
+    local L = CludesUI.L
     local n = #cards
     local fullW = parent:GetWidth() - CludesUI.CONTENT_PAD * 2
     local totalW = (opts and opts.width) and math.floor(fullW * opts.width) or fullW
@@ -373,8 +431,17 @@ function CludesUI.BuildActionCardRow(parent, y, cards, opts)
     end
 
     local CARD_H, CARD_GAP = 66, 14
-    local M = { icon = 26, iconX = 24, title = 13, titleGap = 20, titleY = 2,
-                desc = 11, descGap = 4, descA = 0.35, pad = 14 }
+    local M = {
+        icon = 26,
+        iconX = 24,
+        title = 13,
+        titleGap = 20,
+        titleY = 2,
+        desc = 11,
+        descGap = 4,
+        descA = 0.35,
+        pad = 14,
+    }
     local left = CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2)
     local cardW = math.floor((totalW - CARD_GAP * (n - 1)) / n)
 
@@ -401,7 +468,10 @@ function CludesUI.BuildActionCardRow(parent, y, cards, opts)
         local icon = card:CreateTexture(nil, "ARTWORK")
         icon:SetVertexColor(ac.r, ac.g, ac.b)
         icon:SetAlpha(ICON_A)
-        if icon.SetSnapToPixelGrid then icon:SetSnapToPixelGrid(false); icon:SetTexelSnappingBias(0) end
+        if icon.SetSnapToPixelGrid then
+            icon:SetSnapToPixelGrid(false)
+            icon:SetTexelSnappingBias(0)
+        end
 
         -- Icon on the left, title and description to its right.
         local iconSz = spec.iconSize or M.icon
@@ -446,11 +516,17 @@ function CludesUI.BuildActionCardRow(parent, y, cards, opts)
             fade:SetToAlpha(0.2)
             fade:SetDuration(0.9)
             fade:SetSmoothing("IN_OUT")
-            pulse:SetScript("OnShow", function() breathe:Play() end)
-            pulse:SetScript("OnHide", function() breathe:Stop() end)
+            pulse:SetScript("OnShow", function()
+                breathe:Play()
+            end)
+            pulse:SetScript("OnHide", function()
+                breathe:Stop()
+            end)
         end
         function card:SetPulse(on)
-            if not pulse then return end
+            if not pulse then
+                return
+            end
             if on then
                 local live = spec.accent or CludesUI.CLUDES_GREEN
                 pulse._ring:SetColor(live.r, live.g, live.b, 1)
@@ -471,7 +547,9 @@ function CludesUI.BuildActionCardRow(parent, y, cards, opts)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             icon:SetAlpha(ICON_A)
         end)
-        if spec.onClick then card:SetScript("OnClick", spec.onClick) end
+        if spec.onClick then
+            card:SetScript("OnClick", spec.onClick)
+        end
         built[i] = card
     end
     return y - CARD_H, built
@@ -484,13 +562,17 @@ function CludesUI.BuildNoteRow(parent, y, text, opts)
     local banner = opts and opts.banner
     local ROW_H = banner and 40 or 34
     -- The search prebuild only indexes rows: same y advance, no frames.
-    if CludesUI._prebuilding then return y - ROW_H end
+    if CludesUI._prebuilding then
+        return y - ROW_H
+    end
     local PP = CludesUI.PanelPP
     local row = CreateFrame("Frame", nil, parent)
     PP.Size(row, parent:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
     PP.Point(row, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
     row._skipRowDivider = true
-    if banner then CludesUI.RowBg(row, parent) end
+    if banner then
+        CludesUI.RowBg(row, parent)
+    end
     local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
     lbl:SetAlpha(banner and 0.6 or 0.45)
     lbl:SetPoint("LEFT", row, "LEFT", 20, 0)
@@ -505,9 +587,9 @@ function CludesUI.BuildNoteRow(parent, y, text, opts)
 end
 
 local MC_ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
-local MC_ARROW_UP   = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
-local MC_HEADER_H   = 54
-local MC_CARD_GAP   = 14
+local MC_ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
+local MC_HEADER_H = 54
+local MC_CARD_GAP = 14
 
 -- One expandable module card (adapted from the Window Skins card). opts:
 -- enabled, expanded (session table keyed by tile.key), descW,
@@ -521,7 +603,7 @@ local MC_CARD_GAP   = 14
 function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
     local PP = CludesUI.PanelPP
     local EG = CludesUI.CLUDES_GREEN
-    local L  = CludesUI.L
+    local L = CludesUI.L
     local enabled = opts.enabled
     local expanded = enabled and opts.expanded[tile.key]
     local cardTop = y
@@ -538,24 +620,36 @@ function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
     -- The header is its own pseudo-section, so searching the module name
     -- lands on the card; each page's deep-link pre-hook expands cards first.
     local sDesc = opts.searchDesc
-    if sDesc == nil then sDesc = tile.desc or "" end
+    if sDesc == nil then
+        sDesc = tile.desc or ""
+    end
     local searchName = tile.display .. " " .. sDesc
     if not opts.noSearch then
         hdr._isSectionHeader = true
         hdr._sectionName = searchName
         local searchNameLoc = L(tile.display) .. " " .. L(sDesc)
-        if searchNameLoc ~= searchName then hdr._sectionNameLoc = searchNameLoc end
+        if searchNameLoc ~= searchName then
+            hdr._sectionNameLoc = searchNameLoc
+        end
     end
     if CludesUI._RegisterSearchEntry and not opts.noSearch then
         local titleLoc = L(tile.display)
         local descSearch = sDesc
         local descLoc = L(sDesc)
-        if descLoc ~= descSearch then descSearch = descSearch .. " " .. descLoc end
-        CludesUI._RegisterSearchEntry(tile.display,
+        if descLoc ~= descSearch then
+            descSearch = descSearch .. " " .. descLoc
+        end
+        CludesUI._RegisterSearchEntry(
+            tile.display,
             titleLoc ~= tile.display and titleLoc or nil,
             descSearch,
-            CludesUI._buildingModule, CludesUI._buildingPage,
-            searchName, nil, nil, true)
+            CludesUI._buildingModule,
+            CludesUI._buildingPage,
+            searchName,
+            nil,
+            nil,
+            true
+        )
     end
 
     -- The header hover fill sits on the card (built below), inside its corners.
@@ -587,7 +681,9 @@ function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
         PP.Point(chev, "RIGHT", hdr, "RIGHT", -16, 0)
         chev:SetTexture(expanded and MC_ARROW_UP or MC_ARROW_DOWN)
         chev:SetAlpha(0.45)
-        if expanded then chev:SetVertexColor(EG.r, EG.g, EG.b) end
+        if expanded then
+            chev:SetVertexColor(EG.r, EG.g, EG.b)
+        end
     end
 
     local dd = enabled and opts.headerDD and opts.headerDD(hdr)
@@ -598,15 +694,25 @@ function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
     local function ApplyHeaderHover()
         hbg:SetColorTexture(1, 1, 1, 0.05)
         title:SetTextColor(1, 1, 1, 1)
-        if chev then chev:SetAlpha(0.85) end
-        if brd then brd:SetColor(1, 1, 1, 0.22) end
+        if chev then
+            chev:SetAlpha(0.85)
+        end
+        if brd then
+            brd:SetColor(1, 1, 1, 0.22)
+        end
     end
     local function ClearHeaderHover()
-        if hdr:IsMouseOver() then return end
+        if hdr:IsMouseOver() then
+            return
+        end
         hbg:SetColorTexture(0, 0, 0, 0)
         title:SetTextColor(1, 1, 1, 0.9)
-        if chev then chev:SetAlpha(0.45) end
-        if brd then brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12) end
+        if chev then
+            chev:SetAlpha(0.45)
+        end
+        if brd then
+            brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12)
+        end
     end
     if enabled then
         hdr:SetScript("OnEnter", ApplyHeaderHover)
@@ -625,9 +731,14 @@ function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
         PP.Point(tag, "RIGHT", hdr, "RIGHT", -16, 0)
         tag:SetText(L("Module Disabled"))
         hdr:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(self, CludesUI.Lf("Enable %1$s to edit these settings.", L(tile.display)))
+            CludesUI.ShowWidgetTooltip(
+                self,
+                CludesUI.Lf("Enable %1$s to edit these settings.", L(tile.display))
+            )
         end)
-        hdr:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        hdr:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
     end
 
     y = y - MC_HEADER_H
@@ -667,12 +778,17 @@ function CludesUI.BuildModuleCard(parent, y, W, tile, opts)
     end
     PP.Point(strip, "TOPLEFT", hdr, "TOPLEFT", 1, -1)
     PP.Point(strip, "BOTTOMLEFT", hdr, "BOTTOMLEFT", 1, 1)
-    if strip.SetSnapToPixelGrid then strip:SetSnapToPixelGrid(false); strip:SetTexelSnappingBias(0) end
+    if strip.SetSnapToPixelGrid then
+        strip:SetSnapToPixelGrid(false)
+        strip:SetTexelSnappingBias(0)
+    end
     -- The accent parts follow a live accent change (it refreshes the shown page).
     if enabled then
         CludesUI.RegisterWidgetRefresh(function()
             strip:SetColorTexture(EG.r, EG.g, EG.b, 0.7)
-            if chev and expanded then chev:SetVertexColor(EG.r, EG.g, EG.b) end
+            if chev and expanded then
+                chev:SetVertexColor(EG.r, EG.g, EG.b)
+            end
         end)
     end
 
@@ -741,7 +857,9 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
             iconTex:SetTexture(opts.iconFn and opts.iconFn() or opts.icon)
         end
         if opts.iconFn then
-            CludesUI.RegisterWidgetRefresh(function() iconTex:SetTexture(opts.iconFn()) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                iconTex:SetTexture(opts.iconFn())
+            end)
         end
         local iconBdr = CreateFrame("Frame", nil, iconFrame)
         iconBdr:SetAllPoints()
@@ -793,12 +911,16 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
         -- Re-read on every non-force RefreshPage (a full rebuild would close
         -- an open checkbox dropdown in the detail pane).
         if opts.subtitleFn then
-            CludesUI.RegisterWidgetRefresh(function() sub:SetText(opts.subtitleFn()) end)
+            CludesUI.RegisterWidgetRefresh(function()
+                sub:SetText(opts.subtitleFn())
+            end)
         end
     end
 
     tile:SetScript("OnEnter", function()
-        if not opts.selected then bg:SetColorTexture(1, 1, 1, 0.04) end
+        if not opts.selected then
+            bg:SetColorTexture(1, 1, 1, 0.04)
+        end
         if opts.inheritedTooltip then
             CludesUI.ShowWidgetTooltip(tile, opts.inheritedTooltip)
         end
@@ -812,10 +934,14 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
     tile:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     tile:SetScript("OnClick", function(self, btn)
         if btn == "RightButton" then
-            if opts.onContext then opts.onContext(tile) end
+            if opts.onContext then
+                opts.onContext(tile)
+            end
             return
         end
-        if opts.onSelect then opts.onSelect() end
+        if opts.onSelect then
+            opts.onSelect()
+        end
     end)
 
     if opts.showToggle then
@@ -851,7 +977,9 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
             toggleKnob:SetVertexColor(0.5, 0.5, 0.5, 1)
         end
         toggleBtn:SetScript("OnClick", function()
-            if opts.onToggle then opts.onToggle(not opts.enabled) end
+            if opts.onToggle then
+                opts.onToggle(not opts.enabled)
+            end
         end)
     end
 
@@ -867,9 +995,15 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
         delTex:SetDesaturated(true)
         delTex:SetVertexColor(0.75, 0.75, 0.75)
         delBtn:SetAlpha(0.5)
-        delBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
-        delBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
-        delBtn:SetScript("OnClick", function() opts.onDelete() end)
+        delBtn:SetScript("OnEnter", function(self)
+            self:SetAlpha(0.9)
+        end)
+        delBtn:SetScript("OnLeave", function(self)
+            self:SetAlpha(0.5)
+        end)
+        delBtn:SetScript("OnClick", function()
+            opts.onDelete()
+        end)
     end
 
     -- Rename pencil beside the trash.
@@ -886,20 +1020,27 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
         local editTex = editBtn:CreateTexture(nil, "OVERLAY")
         editTex:SetAllPoints()
         if not opts.editSnap and editTex.SetSnapToPixelGrid then
-            editTex:SetSnapToPixelGrid(false); editTex:SetTexelSnappingBias(0)
+            editTex:SetSnapToPixelGrid(false)
+            editTex:SetTexelSnappingBias(0)
         end
         editTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-edit.png")
         editBtn:SetAlpha(0.5)
         local tip = opts.editTooltip
         editBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)
-            if tip then CludesUI.ShowWidgetTooltip(self, tip) end
+            if tip then
+                CludesUI.ShowWidgetTooltip(self, tip)
+            end
         end)
         editBtn:SetScript("OnLeave", function(self)
             self:SetAlpha(0.5)
-            if tip then CludesUI.HideWidgetTooltip() end
+            if tip then
+                CludesUI.HideWidgetTooltip()
+            end
         end)
-        editBtn:SetScript("OnClick", function() opts.onEdit() end)
+        editBtn:SetScript("OnClick", function()
+            opts.onEdit()
+        end)
     end
 
     local sep = tile:CreateTexture(nil, "ARTWORK")
@@ -917,7 +1058,9 @@ function CludesUI.BuildManagerTile(parentFrame, y, opts)
         dot:SetVertexColor(opts.statusDot[1], opts.statusDot[2], opts.statusDot[3], 1)
     end
 
-    if opts.dimmed then tile:SetAlpha(0.55) end
+    if opts.dimmed then
+        tile:SetAlpha(0.55)
+    end
 
     return TILE_H, tile
 end
@@ -934,7 +1077,7 @@ function CludesUI.BuildActivationOverlay(outerRoot, opts)
     ov._searchIgnore = true
     local bg = ov:CreateTexture(nil, "OVERLAY")
     bg:SetAllPoints()
-    bg:SetColorTexture(17/255, 15/255, 12/255, 0.98)
+    bg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.98)
     local title = ov:CreateFontString(nil, "OVERLAY")
     title:SetFont(fontPath, 15, "")
     title:SetPoint("CENTER", ov, "CENTER", 0, 60)
@@ -957,7 +1100,9 @@ function CludesUI.BuildActivationOverlay(outerRoot, opts)
         sub:SetTextColor(1, 1, 1, 0.45)
         sub:SetText(opts.sub)
     end
-    if not opts.buttonLabel then return ov end
+    if not opts.buttonLabel then
+        return ov
+    end
     local btn = CreateFrame("Button", nil, ov)
     btn:SetSize(240, 28)
     btn:SetPoint("TOP", sub or body, "BOTTOM", 0, -22)
@@ -968,8 +1113,12 @@ function CludesUI.BuildActivationOverlay(outerRoot, opts)
     lbl:SetPoint("CENTER")
     lbl:SetText(opts.buttonLabel)
     local eg = CludesUI.CLUDES_GREEN
-    btn:SetScript("OnEnter", function() brd:SetColor(eg.r, eg.g, eg.b, 0.9) end)
-    btn:SetScript("OnLeave", function() brd:SetColor(1, 1, 1, 0.22) end)
+    btn:SetScript("OnEnter", function()
+        brd:SetColor(eg.r, eg.g, eg.b, 0.9)
+    end)
+    btn:SetScript("OnLeave", function()
+        brd:SetColor(1, 1, 1, 0.22)
+    end)
     return ov, btn
 end
 
@@ -978,15 +1127,22 @@ function CludesUI.BuildPopupButton(parent, w, h, label, onClick)
     local btn = CreateFrame("Button", nil, parent)
     btn:SetSize(w, h)
     btn:SetFrameLevel(parent:GetFrameLevel() + 2)
-    local bg = CludesUI.SolidTex(btn, "BACKGROUND", 0, 0, 0, 0.5); bg:SetAllPoints()
+    local bg = CludesUI.SolidTex(btn, "BACKGROUND", 0, 0, 0, 0.5)
+    bg:SetAllPoints()
     local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.25, bg)
     local lbl = CludesUI.MakeFont(btn, 12, nil, 1, 1, 1)
     lbl:SetAlpha(0.6)
     lbl:SetPoint("CENTER")
     lbl:SetText(CludesUI.L(label))
     local ar, ag, ab = CludesUI.GetAccentColor()
-    btn:SetScript("OnEnter", function() lbl:SetAlpha(0.9); brd:SetColor(ar, ag, ab, 0.6) end)
-    btn:SetScript("OnLeave", function() lbl:SetAlpha(0.6); brd:SetColor(1, 1, 1, 0.25) end)
+    btn:SetScript("OnEnter", function()
+        lbl:SetAlpha(0.9)
+        brd:SetColor(ar, ag, ab, 0.6)
+    end)
+    btn:SetScript("OnLeave", function()
+        lbl:SetAlpha(0.6)
+        brd:SetColor(1, 1, 1, 0.25)
+    end)
     btn:SetScript("OnClick", onClick)
     return btn
 end
@@ -1001,17 +1157,25 @@ end
 --  RestedIndicatorCfg()            -> a fresh toggle config for a DualRow slot
 --  BuildRestedIndicatorCog(region) -> its inline cog on that slot's region
 -------------------------------------------------------------------------------
-local function RestPlayerFrame() return _G["CludesUIUnitFrames_Player"] end
+local function RestPlayerFrame()
+    return _G["CludesUIUnitFrames_Player"]
+end
 local function RestUpdate()
     local pf = RestPlayerFrame()
-    if pf and pf._restUpdate then pf._restUpdate() end
+    if pf and pf._restUpdate then
+        pf._restUpdate()
+    end
 end
 local function RestPlace()
     local pf = RestPlayerFrame()
-    if pf and pf._restPlace then pf._restPlace() end
+    if pf and pf._restPlace then
+        pf._restPlace()
+    end
 end
 local function RestSet(key, v)
-    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     CludesUIDB[key] = v
 end
 local function RestOff()
@@ -1019,54 +1183,94 @@ local function RestOff()
 end
 
 function CludesUI.RestedIndicatorCfg()
-    return { type="toggle", text="Rested Indicator",
-      tooltip="Displays a ZZZ indicator on your player frame when you are in a resting area.",
-      getValue=function()
-        if not CludesUIDB then return true end
-        return CludesUIDB.showRestedIndicator == true
-      end,
-      setValue=function(v)
-        RestSet("showRestedIndicator", v)
-        RestUpdate()
-        CludesUI:RefreshPage()
-      end }
+    return {
+        type = "toggle",
+        text = "Rested Indicator",
+        tooltip = "Displays a ZZZ indicator on your player frame when you are in a resting area.",
+        getValue = function()
+            if not CludesUIDB then
+                return true
+            end
+            return CludesUIDB.showRestedIndicator == true
+        end,
+        setValue = function(v)
+            RestSet("showRestedIndicator", v)
+            RestUpdate()
+            CludesUI:RefreshPage()
+        end,
+    }
 end
 
 -- Animated, Size, X / Y Offset; greyed while the indicator is off. Builds
 -- nothing during the search pre-build.
 function CludesUI.BuildRestedIndicatorCog(region)
-    if CludesUI._prebuilding then return end
+    if CludesUI._prebuilding then
+        return
+    end
     return CludesUI.BuildInlineCog(region, {
         title = "Rested Indicator",
         rows = {
-            { type="toggle", label="Animated",
-              tooltip="Shows the animated rest icon from Blizzard's player frame instead of the ZZZ text.",
-              get=function() return CludesUIDB and CludesUIDB.restedIndicatorAnimated == true or false end,
-              set=function(v)
-                  RestSet("restedIndicatorAnimated", v)
-                  RestUpdate()
-              end },
-            { type="slider", label="Size", min=12, max=64, step=1,
-              disabled=function() return not (CludesUIDB and CludesUIDB.restedIndicatorAnimated == true) end,
-              disabledTooltip="Animated",
-              get=function() return (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24 end,
-              set=function(v)
-                  RestSet("restedIndicatorAnimatedSize", v)
-                  RestPlace()
-              end },
-            { type="slider", label="X Offset", min=-50, max=50, step=1,
-              get=function() return (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0 end,
-              set=function(v)
-                  RestSet("restedIndicatorXOffset", v)
-                  RestPlace()
-              end },
-            { type="slider", label="Y Offset", min=-50, max=50, step=1,
-              get=function() return (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0 end,
-              set=function(v)
-                  RestSet("restedIndicatorYOffset", v)
-                  RestPlace()
-              end },
+            {
+                type = "toggle",
+                label = "Animated",
+                tooltip = "Shows the animated rest icon from Blizzard's player frame instead of the ZZZ text.",
+                get = function()
+                    return CludesUIDB and CludesUIDB.restedIndicatorAnimated == true or false
+                end,
+                set = function(v)
+                    RestSet("restedIndicatorAnimated", v)
+                    RestUpdate()
+                end,
+            },
+            {
+                type = "slider",
+                label = "Size",
+                min = 12,
+                max = 64,
+                step = 1,
+                disabled = function()
+                    return not (CludesUIDB and CludesUIDB.restedIndicatorAnimated == true)
+                end,
+                disabledTooltip = "Animated",
+                get = function()
+                    return (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24
+                end,
+                set = function(v)
+                    RestSet("restedIndicatorAnimatedSize", v)
+                    RestPlace()
+                end,
+            },
+            {
+                type = "slider",
+                label = "X Offset",
+                min = -50,
+                max = 50,
+                step = 1,
+                get = function()
+                    return (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0
+                end,
+                set = function(v)
+                    RestSet("restedIndicatorXOffset", v)
+                    RestPlace()
+                end,
+            },
+            {
+                type = "slider",
+                label = "Y Offset",
+                min = -50,
+                max = 50,
+                step = 1,
+                get = function()
+                    return (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0
+                end,
+                set = function(v)
+                    RestSet("restedIndicatorYOffset", v)
+                    RestPlace()
+                end,
+            },
         },
-        gap = 9, disabled = RestOff, disabledTooltip = "Rested Indicator",
+        gap = 9,
+        disabled = RestOff,
+        disabledTooltip = "Rested Indicator",
     })
 end

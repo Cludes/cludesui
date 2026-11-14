@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Sidebar.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI = _G.CludesUI
@@ -24,18 +28,26 @@ local ShowSidebarIconTooltip = I.ShowSidebarIconTooltip
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local BG_R = I.BG_R
-I.bgRSetters[#I.bgRSetters + 1] = function(v) BG_R = v end
+I.bgRSetters[#I.bgRSetters + 1] = function(v)
+    BG_R = v
+end
 local BG_G = I.BG_G
-I.bgGSetters[#I.bgGSetters + 1] = function(v) BG_G = v end
+I.bgGSetters[#I.bgGSetters + 1] = function(v)
+    BG_G = v
+end
 local BG_B = I.BG_B
-I.bgBSetters[#I.bgBSetters + 1] = function(v) BG_B = v end
+I.bgBSetters[#I.bgBSetters + 1] = function(v)
+    BG_B = v
+end
 
 -- Flip sidebar to left or right side of chat bg
 function ECHAT.ApplySidebarPosition()
     local cfg = ECHAT.DB()
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb or not CFD(cf1).bg then return end
+    if not sb or not CFD(cf1).bg then
+        return
+    end
     local PP = CludesUI and CludesUI.PP
     local onePx = (PP and PP.mult) or 1
     -- Separate Sidebar: detach from the panel by the configured gap; it keeps
@@ -81,10 +93,14 @@ function ECHAT.ApplyIconColor()
     local cfg = ECHAT.DB()
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb then return end
+    if not sb then
+        return
+    end
     -- Stock kits keep their own art and states; the tooltips ride the hooks
     -- the buttons got at creation.
-    if ECHAT.SB_KIT then return end
+    if ECHAT.SB_KIT then
+        return
+    end
     local r, g, b
     if cfg.iconUseAccent and CludesUI.GetAccentColor then
         r, g, b = CludesUI.GetAccentColor()
@@ -95,15 +111,30 @@ function ECHAT.ApplyIconColor()
     local ICON_HOVER_ALPHA = 0.9
     local d = CFD(cf1)
     local ICON_LABELS = {
-        friendsBtn = "Friends", guildBtn = "Guild", durabilityBtn = "Durability", copyBtn = "Copy Chat",
-        portalBtn = "M+ Portals", voiceBtn = "Voice/Channels", chatMenuBtn = "Chat Menu", settingsBtn = "Settings",
+        friendsBtn = "Friends",
+        guildBtn = "Guild",
+        durabilityBtn = "Durability",
+        copyBtn = "Copy Chat",
+        portalBtn = "M+ Portals",
+        voiceBtn = "Voice/Channels",
+        chatMenuBtn = "Chat Menu",
+        settingsBtn = "Settings",
         scrollBtn = "Scroll to Bottom",
     }
     local fc = d.friendsCount
     local gc = d.guildCount
     local dp = d.durabilityPct
-    for _, key in ipairs({ "friendsBtn", "guildBtn", "durabilityBtn", "copyBtn", "portalBtn", "voiceBtn", "chatMenuBtn",
-        "settingsBtn", "scrollBtn" }) do
+    for _, key in ipairs({
+        "friendsBtn",
+        "guildBtn",
+        "durabilityBtn",
+        "copyBtn",
+        "portalBtn",
+        "voiceBtn",
+        "chatMenuBtn",
+        "settingsBtn",
+        "scrollBtn",
+    }) do
         local btn = CFD(cf1)[key]
         if btn and btn._icon then
             btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -113,7 +144,9 @@ function ECHAT.ApplyIconColor()
                 btn:SetScript("OnEnter", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
                     fc:SetTextColor(r, g, b, 0.9)
-                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, label) end
+                    if not self._freeMoveJustDragged then
+                        ShowSidebarIconTooltip(self, label)
+                    end
                 end)
                 btn:SetScript("OnLeave", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -125,7 +158,9 @@ function ECHAT.ApplyIconColor()
                 btn:SetScript("OnEnter", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
                     gc:SetTextColor(r, g, b, 0.9)
-                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, label) end
+                    if not self._freeMoveJustDragged then
+                        ShowSidebarIconTooltip(self, label)
+                    end
                 end)
                 btn:SetScript("OnLeave", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -137,7 +172,9 @@ function ECHAT.ApplyIconColor()
                 btn:SetScript("OnEnter", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
                     dp:SetTextColor(r, g, b, 0.9)
-                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, label) end
+                    if not self._freeMoveJustDragged then
+                        ShowSidebarIconTooltip(self, label)
+                    end
                 end)
                 btn:SetScript("OnLeave", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -147,7 +184,9 @@ function ECHAT.ApplyIconColor()
             else
                 btn:SetScript("OnEnter", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
-                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, label) end
+                    if not self._freeMoveJustDragged then
+                        ShowSidebarIconTooltip(self, label)
+                    end
                 end)
                 btn:SetScript("OnLeave", function(self)
                     btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -163,7 +202,9 @@ function ECHAT.ApplySidebarBackground()
     local cfg = ECHAT.DB()
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb then return end
+    if not sb then
+        return
+    end
     -- Stock styles: no sidebar backdrop (icons over Blizzard's own art).
     local show = not cfg.hideSidebarBg and not ns.ChatStock()
     local sbBg = sb:GetRegions()
@@ -177,10 +218,14 @@ function ECHAT.ApplySidebarBackground()
     local bd = CFD(cf1).sbBackdrop
     if bd then
         bd:SetShown(not cfg.hideSidebarBg)
-        if not cfg.hideSidebarBg and ECHAT.SB_SyncBackdrop then ECHAT.SB_SyncBackdrop(true) end
+        if not cfg.hideSidebarBg and ECHAT.SB_SyncBackdrop then
+            ECHAT.SB_SyncBackdrop(true)
+        end
     end
     -- Hide the sidebar extension too when the sidebar background is hidden.
-    if ECHAT.ApplyExtendedBackground then ECHAT.ApplyExtendedBackground() end
+    if ECHAT.ApplyExtendedBackground then
+        ECHAT.ApplyExtendedBackground()
+    end
 end
 
 -- Scale sidebar icon buttons and friends count text
@@ -189,9 +234,14 @@ function ECHAT.ApplySidebarIconScale()
     local scale = cfg.sidebarIconScale or 1.0
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb then return end
+    if not sb then
+        return
+    end
     -- Stock kits size from their own art (a memo no-op at login and refresh).
-    if ECHAT.SB_KIT then ECHAT.SB_ApplyScale(CFD(cf1), scale); return end
+    if ECHAT.SB_KIT then
+        ECHAT.SB_ApplyScale(CFD(cf1), scale)
+        return
+    end
 
     local BASE_FRIEND = 26
     local BASE_ICON = 22
@@ -200,7 +250,15 @@ function ECHAT.ApplySidebarIconScale()
     -- _freeMoveH mirrors each icon's height from these constants so
     -- TopYFromSidebarTop never calls GetHeight() -- a geometry resolve that
     -- can taint the Edit-Mode ChatFrame1. Our own frames, so writing is safe.
-    for _, key in ipairs({ "durabilityBtn", "copyBtn", "portalBtn", "voiceBtn", "chatMenuBtn", "settingsBtn", "scrollBtn" }) do
+    for _, key in ipairs({
+        "durabilityBtn",
+        "copyBtn",
+        "portalBtn",
+        "voiceBtn",
+        "chatMenuBtn",
+        "settingsBtn",
+        "scrollBtn",
+    }) do
         local btn = CFD(cf1)[key]
         if btn then
             btn:SetSize(BASE_ICON * scale, BASE_ICON * scale)
@@ -236,15 +294,21 @@ local _freeMoveIconHooked = {}
 
 local function GetIconOffset(key)
     local cfg = ECHAT.DB()
-    if not cfg.freeMoveIcons or not cfg.iconPositions then return 0, 0 end
+    if not cfg.freeMoveIcons or not cfg.iconPositions then
+        return 0, 0
+    end
     local pos = cfg.iconPositions[key]
-    if not pos then return 0, 0 end
+    if not pos then
+        return 0, 0
+    end
     return pos.x or 0, pos.y or 0
 end
 
 local function SaveIconOffset(key, x, y)
     local cfg = ECHAT.DB()
-    if not cfg.iconPositions then cfg.iconPositions = {} end
+    if not cfg.iconPositions then
+        cfg.iconPositions = {}
+    end
     cfg.iconPositions[key] = { x = x, y = y }
 end
 
@@ -257,9 +321,13 @@ end
 -- HistoryKeeper/FCFManager whisper errors, only when geometry was still unresolved at
 -- walk time, e.g. login timing). The pre-stored _freeMoveH avoids the resolve entirely.
 local function TopYFromSidebarTop(frame, sb, depth)
-    if frame == sb or (depth or 0) > 12 then return 0 end
+    if frame == sb or (depth or 0) > 12 then
+        return 0
+    end
     local point, relTo, relPoint, _, dy = frame:GetPoint(1)
-    if not point or not relTo then return 0 end
+    if not point or not relTo then
+        return 0
+    end
     local relTopY = TopYFromSidebarTop(relTo, sb, (depth or 0) + 1)
     local relH = (relTo ~= sb) and (relTo._freeMoveH or 0) or 0
     local relEdgeY = relTopY
@@ -269,8 +337,12 @@ local function TopYFromSidebarTop(frame, sb, depth)
         relEdgeY = relTopY - relH / 2
     end
     local edgeY = relEdgeY + (dy or 0)
-    if point:find("TOP") then return edgeY end
-    if point:find("BOTTOM") then return edgeY + (frame._freeMoveH or 0) end
+    if point:find("TOP") then
+        return edgeY
+    end
+    if point:find("BOTTOM") then
+        return edgeY + (frame._freeMoveH or 0)
+    end
     return edgeY + (frame._freeMoveH or 0) / 2
 end
 
@@ -282,9 +354,13 @@ local function CaptureNatural(btn, sb)
     -- the build-time ones; the pass that first shows it captures from the
     -- real layout. The CludesUI look captures as it always has (saved
     -- offsets are relative to that baseline).
-    if btn._freeMoveNat or (ECHAT.SB_KIT and not btn:IsShown()) then return end
+    if btn._freeMoveNat or (ECHAT.SB_KIT and not btn:IsShown()) then
+        return
+    end
     local point = btn:GetPoint(1)
-    if not point then return end
+    if not point then
+        return
+    end
     if point:find("BOTTOM") then
         local _, _, _, _, dy = btn:GetPoint(1)
         btn._freeMoveNat = { edge = "BOTTOM", y = dy or 0 }
@@ -296,20 +372,28 @@ end
 -- Re-anchor an icon DIRECTLY to its sidebar edge at natural + saved offset, so
 -- each icon moves independently (no chain, no compounding).
 local function ApplyIconOffset(btn, sb)
-    if not btn or not sb or not btn:IsShown() then return end
+    if not btn or not sb or not btn:IsShown() then
+        return
+    end
     local nat = btn._freeMoveNat
-    if not nat then return end
+    if not nat then
+        return
+    end
     local ox, oy = GetIconOffset(btn._freeMoveKey)
     btn:ClearAllPoints()
     btn:SetPoint(nat.edge, sb, nat.edge, ox, nat.y + oy)
 end
 
 local function EnableIconFreeMove(btn)
-    if not btn or _freeMoveIconHooked[btn] then return end
+    if not btn or _freeMoveIconHooked[btn] then
+        return
+    end
     _freeMoveIconHooked[btn] = true
 
     local key = btn._freeMoveKey
-    if not key then return end
+    if not key then
+        return
+    end
 
     btn:SetMovable(true)
     btn:SetClampedToScreen(true)
@@ -317,7 +401,9 @@ local function EnableIconFreeMove(btn)
     local origClick = btn:GetScript("OnClick")
     if origClick then
         btn:SetScript("OnClick", function(self, ...)
-            if self._freeMoveJustDragged then return end
+            if self._freeMoveJustDragged then
+                return
+            end
             origClick(self, ...)
         end)
     end
@@ -330,11 +416,15 @@ local function EnableIconFreeMove(btn)
     local function FreeMoveOnUpdate(self)
         if not IsMouseButtonDown("LeftButton") then
             self:SetScript("OnUpdate", nil)
-            C_Timer.After(0, function() self._freeMoveJustDragged = nil end)
+            C_Timer.After(0, function()
+                self._freeMoveJustDragged = nil
+            end)
             return
         end
         local nat = self._freeMoveNat
-        if not nat then return end
+        if not nat then
+            return
+        end
         local es = self:GetEffectiveScale()
         local cx, cy = GetCursorPosition()
         local nx = baseOX + (cx / es - startX)
@@ -345,9 +435,13 @@ local function EnableIconFreeMove(btn)
     end
 
     btn:HookScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" or not IsShiftKeyDown() then return end
+        if button ~= "LeftButton" or not IsShiftKeyDown() then
+            return
+        end
         local cfg = ECHAT.DB()
-        if not cfg.freeMoveIcons or not self._freeMoveNat then return end
+        if not cfg.freeMoveIcons or not self._freeMoveNat then
+            return
+        end
         self._freeMoveJustDragged = true
         local es = self:GetEffectiveScale()
         startX, startY = GetCursorPosition()
@@ -358,7 +452,9 @@ local function EnableIconFreeMove(btn)
 
     btn:HookScript("OnMouseUp", function(self)
         self:SetScript("OnUpdate", nil)
-        C_Timer.After(0, function() self._freeMoveJustDragged = nil end)
+        C_Timer.After(0, function()
+            self._freeMoveJustDragged = nil
+        end)
     end)
 end
 
@@ -366,7 +462,9 @@ function ECHAT.ApplyIconFreeMove()
     local cfg = ECHAT.DB()
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb then return end
+    if not sb then
+        return
+    end
 
     -- Free move is opt-in: OFF does NOTHING here -- no anchor-chain capture, no
     -- drag-hook install, no offsets. This gate is required: CaptureNatural walks the
@@ -374,18 +472,20 @@ function ECHAT.ApplyIconFreeMove()
     -- login, that walk resolves up through and TAINTS the Edit-Mode ChatFrame1. Turning
     -- the toggle on re-runs ApplySidebarIcons -> ApplyIconFreeMove, installing hooks
     -- immediately; untouched icons keep their natural chain layout.
-    if not cfg.freeMoveIcons then return end
+    if not cfg.freeMoveIcons then
+        return
+    end
 
     local btns = {
-        { ref = "friendsBtn",    key = "friends" },
-        { ref = "guildBtn",      key = "guild" },
+        { ref = "friendsBtn", key = "friends" },
+        { ref = "guildBtn", key = "guild" },
         { ref = "durabilityBtn", key = "durability" },
-        { ref = "copyBtn",       key = "copy" },
-        { ref = "portalBtn",     key = "portals" },
-        { ref = "voiceBtn",      key = "voice" },
-        { ref = "chatMenuBtn",   key = "chatmenu" },
-        { ref = "settingsBtn",   key = "settings" },
-        { ref = "scrollBtn",     key = "scroll" },
+        { ref = "copyBtn", key = "copy" },
+        { ref = "portalBtn", key = "portals" },
+        { ref = "voiceBtn", key = "voice" },
+        { ref = "chatMenuBtn", key = "chatmenu" },
+        { ref = "settingsBtn", key = "settings" },
+        { ref = "scrollBtn", key = "scroll" },
     }
 
     -- PHASE 1 -- capture every icon's natural anchor (GetPoint data + stored heights,
@@ -397,7 +497,9 @@ function ECHAT.ApplyIconFreeMove()
         local btn = CFD(cf1)[info.ref]
         -- The chat-anchored scroll button is outside the sidebar chain; free
         -- move must not capture or re-anchor it.
-        if info.ref == "scrollBtn" and cfg.scrollButtonOnChat then btn = nil end
+        if info.ref == "scrollBtn" and cfg.scrollButtonOnChat then
+            btn = nil
+        end
         if btn then
             btn._freeMoveKey = info.key
             CaptureNatural(btn, sb)
@@ -409,8 +511,12 @@ function ECHAT.ApplyIconFreeMove()
     -- offset, so icons move independently.
     for _, info in ipairs(btns) do
         local btn = CFD(cf1)[info.ref]
-        if info.ref == "scrollBtn" and cfg.scrollButtonOnChat then btn = nil end
-        if btn then ApplyIconOffset(btn, sb) end
+        if info.ref == "scrollBtn" and cfg.scrollButtonOnChat then
+            btn = nil
+        end
+        if btn then
+            ApplyIconOffset(btn, sb)
+        end
     end
 end
 
@@ -418,11 +524,16 @@ end
 local _portalFlyout
 
 function ECHAT.TogglePortalFlyout(anchorBtn)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     if not _portalFlyout then
         _portalFlyout = CUI.CreatePortalFlyout({
             -- unitEvents: the cast events it watches only ever matter for the player.
-            name = "CUIChat", bg = { BG_R, BG_G, BG_B }, labelFont = GetFont(), unitEvents = true,
+            name = "CUIChat",
+            bg = { BG_R, BG_G, BG_B },
+            labelFont = GetFont(),
+            unitEvents = true,
             labelFlags = (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG",
         })
     end
@@ -488,9 +599,15 @@ local INPUT_TOP_DROP = 5
 -- callback: clicking away from an emptied box fires it before Blizzard
 -- deactivates the box, and the rule already says it closes.
 local function BoxUp(box)
-    if not box:IsShown() then return false end
-    if GetCVar("chatStyle") ~= "im" then return true end
-    if box:HasFocus() then return true end
+    if not box:IsShown() then
+        return false
+    end
+    if GetCVar("chatStyle") ~= "im" then
+        return true
+    end
+    if box:HasFocus() then
+        return true
+    end
     return box == ChatFrameUtil.GetActiveWindow() and not box:ShouldDeactivateChatOnEditFocusLost()
 end
 
@@ -498,20 +615,30 @@ local function DockedEditBoxShown()
     for i = 1, 10 do
         local owner = _G["ChatFrame" .. i]
         local box = owner and _G["ChatFrame" .. i .. "EditBox"]
-        if box and owner.isDocked and BoxUp(box) then return true end
+        if box and owner.isDocked and BoxUp(box) then
+            return true
+        end
     end
     return false
 end
 
 function ECHAT.InputTopStripActive(cf)
-    if not ECHAT.InputOnTop(ECHAT.DB()) then return false end
+    if not ECHAT.InputOnTop(ECHAT.DB()) then
+        return false
+    end
     local name = cf:GetName()
     local eb = name and _G[name .. "EditBox"]
-    if not eb then return false end
+    if not eb then
+        return false
+    end
     local idx = tonumber(name:match("ChatFrame(%d+)"))
-    if not (idx and idx <= 10) then return true end
+    if not (idx and idx <= 10) then
+        return true
+    end
     -- Own box up ("im" style, and any undocked window).
-    if BoxUp(eb) then return true end
+    if BoxUp(eb) then
+        return true
+    end
     return (cf.isDocked and cf:IsShown() and DockedEditBoxShown()) and true or false
 end
 
@@ -521,7 +648,9 @@ end
 function ECHAT.RefreshInputTopStrips()
     for i = 1, 20 do
         local cf = _G["ChatFrame" .. i]
-        if cf and CFD(cf).bg then ECHAT.ApplyInputTopStrip(cf) end
+        if cf and CFD(cf).bg then
+            ECHAT.ApplyInputTopStrip(cf)
+        end
     end
 end
 
@@ -531,7 +660,9 @@ end
 -- across a message once the strip is released, so it follows the same state.
 function ECHAT.ApplyInputTopStrip(cf)
     local d = CFD(cf)
-    if not d.bg then return end
+    if not d.bg then
+        return
+    end
     local cfg = ECHAT.DB()
     local active = ECHAT.InputTopStripActive(cf)
     -- The strip reaches INPUT_TOP_DROP further than the box is tall, since the
@@ -563,7 +694,9 @@ function ECHAT.ApplyInputTopStrip(cf)
             ed.mouseOff = nil
         end
     end
-    if changed and ECHAT.EngineLayoutWindow then ECHAT.EngineLayoutWindow(cf) end
+    if changed and ECHAT.EngineLayoutWindow then
+        ECHAT.EngineLayoutWindow(cf)
+    end
 end
 
 -- Flip edit box between bottom (default) and top of chat panel
@@ -588,7 +721,9 @@ function ECHAT.ApplyInputPosition()
         local cf = _G["ChatFrame" .. i]
         if cf and CFD(cf).bg then
             local name = cf:GetName()
-            if not name then break end
+            if not name then
+                break
+            end
             local eb = _G[name .. "EditBox"]
             local bg = CFD(cf).bg
             local div = CFD(cf).inputDiv
@@ -596,89 +731,107 @@ function ECHAT.ApplyInputPosition()
             if fv then
                 ECHAT.FV_SeatInput(cf, eb, inputHeight)
                 ECHAT.ApplyInputTopStrip(cf)
-                if ECHAT.PositionChatPanel then ECHAT.PositionChatPanel(cf) end
+                if ECHAT.PositionChatPanel then
+                    ECHAT.PositionChatPanel(cf)
+                end
             elseif stock then
                 CFD(cf)._bgIns = { l = -stockX, r = stockX, t = 7, b = -10 }
                 ECHAT.ApplyInputTopStrip(cf)
-                if ECHAT.PositionChatPanel then ECHAT.PositionChatPanel(cf) end
+                if ECHAT.PositionChatPanel then
+                    ECHAT.PositionChatPanel(cf)
+                end
             else
-            if eb then
-                eb:ClearAllPoints()
-                if onTop then
-                    -- Below the tab band, INSIDE the panel: the input
-                    -- overlays the top strip of the text area (the space
-                    -- above the frame is the tab band's home, and tab
-                    -- geometry is Blizzard's -- never moved for us). Our
-                    -- message frame hands the strip back via _smfTopExtra;
-                    -- line alignment with Blizzard's invisible text is
-                    -- unaffected because chat renders bottom-up from a
-                    -- shared bottom edge, and the input covers the
-                    -- hit-zones of the lines it hides.
-                    eb:SetPoint("TOPLEFT", cf, "TOPLEFT", -10, -INPUT_TOP_DROP)
-                    eb:SetPoint("TOPRIGHT", cf, "TOPRIGHT", 5, -INPUT_TOP_DROP)
-                    local bgLvl = CFD(cf).bg:GetFrameLevel() or 1
-                    if eb:GetFrameLevel() < bgLvl + 5 then
-                        eb:SetFrameLevel(bgLvl + 5)
+                if eb then
+                    eb:ClearAllPoints()
+                    if onTop then
+                        -- Below the tab band, INSIDE the panel: the input
+                        -- overlays the top strip of the text area (the space
+                        -- above the frame is the tab band's home, and tab
+                        -- geometry is Blizzard's -- never moved for us). Our
+                        -- message frame hands the strip back via _smfTopExtra;
+                        -- line alignment with Blizzard's invisible text is
+                        -- unaffected because chat renders bottom-up from a
+                        -- shared bottom edge, and the input covers the
+                        -- hit-zones of the lines it hides.
+                        eb:SetPoint("TOPLEFT", cf, "TOPLEFT", -10, -INPUT_TOP_DROP)
+                        eb:SetPoint("TOPRIGHT", cf, "TOPRIGHT", 5, -INPUT_TOP_DROP)
+                        local bgLvl = CFD(cf).bg:GetFrameLevel() or 1
+                        if eb:GetFrameLevel() < bgLvl + 5 then
+                            eb:SetFrameLevel(bgLvl + 5)
+                        end
+                    else
+                        eb:SetPoint("TOPLEFT", cf, "BOTTOMLEFT", -10, -8)
+                        eb:SetPoint("TOPRIGHT", cf, "BOTTOMRIGHT", 5, -8)
                     end
-                else
-                    eb:SetPoint("TOPLEFT", cf, "BOTTOMLEFT", -10, -8)
-                    eb:SetPoint("TOPRIGHT", cf, "BOTTOMRIGHT", 5, -8)
+                    eb:SetHeight(inputHeight)
                 end
-                eb:SetHeight(inputHeight)
-            end
 
-            if div then
-                div:ClearAllPoints()
-                if onTop then
-                    -- Flush with the box's LOWER edge, which starts
-                    -- INPUT_TOP_DROP down from cf's top and runs inputHeight
-                    -- tall -- miss the drop and the line cuts through the box.
-                    local divY = -(inputHeight + INPUT_TOP_DROP)
-                    div:SetPoint("TOPLEFT", cf, "TOPLEFT", -10, divY)
-                    div:SetPoint("TOPRIGHT", cf, "TOPRIGHT", 10, divY)
-                else
-                    div:SetPoint("BOTTOMLEFT", cf, "BOTTOMLEFT", -10, -8)
-                    div:SetPoint("BOTTOMRIGHT", cf, "BOTTOMRIGHT", 10, -8)
+                if div then
+                    div:ClearAllPoints()
+                    if onTop then
+                        -- Flush with the box's LOWER edge, which starts
+                        -- INPUT_TOP_DROP down from cf's top and runs inputHeight
+                        -- tall -- miss the drop and the line cuts through the box.
+                        local divY = -(inputHeight + INPUT_TOP_DROP)
+                        div:SetPoint("TOPLEFT", cf, "TOPLEFT", -10, divY)
+                        div:SetPoint("TOPRIGHT", cf, "TOPRIGHT", 10, divY)
+                    else
+                        div:SetPoint("BOTTOMLEFT", cf, "BOTTOMLEFT", -10, -8)
+                        div:SetPoint("BOTTOMRIGHT", cf, "BOTTOMRIGHT", 10, -8)
+                    end
                 end
-            end
 
-            if bg then
-                -- The panel is placed NUMERICALLY, never anchored to cf (see
-                -- PositionChatPanel): record the insets this input layout wants
-                -- and let the positioner apply them against the chat frame's
-                -- rect. Anchoring here would put our frame back into
-                -- Blizzard's rect chain -- the whole bug. Only the vertical
-                -- edge may expand; horizontal geometry stays independent.
-                local d = CFD(cf)
-                d._bgIns = {
-                    l = -10,
-                    r = 10,
-                    t = 3,
-                    b = onTop and -6 or (eb and -(12 + inputHeight) or -6),
-                }
-                -- Input-on-top: the panel keeps its normal rect; only OUR
-                -- message frame's text area shrinks under the overlaid input,
-                -- and only while that input is actually up (see
-                -- ECHAT.ApplyInputTopStrip). EngineLayoutWindows at the tail
-                -- of this function relayouts every window either way.
-                ECHAT.ApplyInputTopStrip(cf)
-                if ECHAT.PositionChatPanel then ECHAT.PositionChatPanel(cf) end
-            end
+                if bg then
+                    -- The panel is placed NUMERICALLY, never anchored to cf (see
+                    -- PositionChatPanel): record the insets this input layout wants
+                    -- and let the positioner apply them against the chat frame's
+                    -- rect. Anchoring here would put our frame back into
+                    -- Blizzard's rect chain -- the whole bug. Only the vertical
+                    -- edge may expand; horizontal geometry stays independent.
+                    local d = CFD(cf)
+                    d._bgIns = {
+                        l = -10,
+                        r = 10,
+                        t = 3,
+                        b = onTop and -6 or (eb and -(12 + inputHeight) or -6),
+                    }
+                    -- Input-on-top: the panel keeps its normal rect; only OUR
+                    -- message frame's text area shrinks under the overlaid input,
+                    -- and only while that input is actually up (see
+                    -- ECHAT.ApplyInputTopStrip). EngineLayoutWindows at the tail
+                    -- of this function relayouts every window either way.
+                    ECHAT.ApplyInputTopStrip(cf)
+                    if ECHAT.PositionChatPanel then
+                        ECHAT.PositionChatPanel(cf)
+                    end
+                end
             end -- not stock
-
         end
     end
     -- Our message frames derive their text area from the recorded insets.
-    if ECHAT.EngineLayoutWindows then ECHAT.EngineLayoutWindows() end
+    if ECHAT.EngineLayoutWindows then
+        ECHAT.EngineLayoutWindows()
+    end
 end
 
 function ECHAT.ApplySidebarWidth()
     local cf1 = _G.ChatFrame1
     local sidebar = cf1 and CFD(cf1).sidebar
-    if not sidebar then return end
-    sidebar:SetWidth(min(100, max(30, ECHAT.DB().sidebarWidth
-        or (ECHAT.SidebarWidthDefault and ECHAT.SidebarWidthDefault() or 40))))
-    if ECHAT.ApplySidebarPosition then ECHAT.ApplySidebarPosition() end
+    if not sidebar then
+        return
+    end
+    sidebar:SetWidth(
+        min(
+            100,
+            max(
+                30,
+                ECHAT.DB().sidebarWidth or (ECHAT.SidebarWidthDefault and ECHAT.SidebarWidthDefault() or 40)
+            )
+        )
+    )
+    if ECHAT.ApplySidebarPosition then
+        ECHAT.ApplySidebarPosition()
+    end
 end
 
 I.broken = false

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Init.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local pairs, ipairs, type = pairs, ipairs, type
@@ -23,7 +27,9 @@ local RefreshThreatCache, SetProfile = I.RefreshThreatCache, I.SetProfile
 local SetRawSetTex = I.SetRawSetTex
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v) p = v end
+I.profileSetters[#I.profileSetters + 1] = function(v)
+    p = v
+end
 
 -------------------------------------------------------------------------------
 --  SPEC PRESET LOGIN HANDLER
@@ -35,60 +41,83 @@ do
     -- True when any preset's assigned spec list holds spec id (the store
     -- test for the WoW Forever spec pick below).
     ns.NP_PresetHoldsSpec = function(id, specMap)
-        if not specMap then return false end
+        if not specMap then
+            return false
+        end
         for _, specList in pairs(specMap) do
-            if specList[id] then return true end
+            if specList[id] then
+                return true
+            end
         end
         return false
     end
 
     local function ApplySpecPresetFromDB()
-        if not p then return end
+        if not p then
+            return
+        end
 
         local specIndex = GetSpecialization and GetSpecialization() or 0
-        local specID = specIndex and specIndex > 0
-                       and GetSpecializationInfo(specIndex) or nil
+        local specID = specIndex and specIndex > 0 and GetSpecializationInfo(specIndex) or nil
         -- WoW Forever: the class counts as each of its retail specs; the first
         -- one in class order that a preset is assigned to picks the preset.
         if CludesUI.IS_FOREVER then
             specID = CludesUI.ForeverClassSpec(nil, ns.NP_PresetHoldsSpec, p._specAssignments)
         end
-        if not specID then return end
+        if not specID then
+            return
+        end
 
-        local K_ASSIGN  = "_specAssignments"
-        local K_ACTIVE  = "_activePreset"
+        local K_ASSIGN = "_specAssignments"
+        local K_ACTIVE = "_activePreset"
         local K_DEFAULT = "_specDefaultPreset"
         local K_PRESETS = "_presets"
-        local K_SNAP    = "_builtinSnapshot"
-        local K_CUSTOM  = "_customPreset"
+        local K_SNAP = "_builtinSnapshot"
+        local K_CUSTOM = "_customPreset"
 
         local specMap = p[K_ASSIGN]
-        if not specMap then return end
+        if not specMap then
+            return
+        end
 
         -- Check if any spec assignment exists at all
         local hasAny = false
         for _, specList in pairs(specMap) do
-            if next(specList) then hasAny = true; break end
+            if next(specList) then
+                hasAny = true
+                break
+            end
         end
-        if not hasAny then return end
+        if not hasAny then
+            return
+        end
 
         -- Find which preset owns this specID
         local targetKey
         for presetKey, specList in pairs(specMap) do
-            if specList[specID] then targetKey = presetKey; break end
+            if specList[specID] then
+                targetKey = presetKey
+                break
+            end
         end
         -- Fall back to default preset if no direct match
         if not targetKey and p[K_DEFAULT] then
             targetKey = p[K_DEFAULT]
         end
-        if not targetKey then return end
+        if not targetKey then
+            return
+        end
 
         local currentActive = p[K_ACTIVE] or "cludesui"
-        if currentActive == targetKey then return end  -- already correct
+        if currentActive == targetKey then
+            return
+        end -- already correct
 
         -- Apply the snapshot for targetKey
-        local presetKeys = ns._displayPresetKeys  -- set below
-        if not presetKeys then return end
+        local presetKeys = ns._displayPresetKeys -- set below
+        if not presetKeys then
+            return
+        end
 
         if targetKey == "cludesui" then
             for _, key in ipairs(presetKeys) do
@@ -137,14 +166,37 @@ do
     -- Preset keys for the login handler (set once, never changes). Split into two
     -- tables and concatenated to stay under Lua 5.1's per-function constant limit.
     ns._displayPresetKeys = {
-        "showBorder", "borderSize", "borderColor", "castBorderSize", "castBorderColor", "targetGlowStyle", "showTargetArrows",
-        "showClassPower", "classPowerPos", "classPowerYOffset", "classPowerXOffset", "classPowerScale",
-        "classPowerClassColors", "classPowerCustomColor", "classPowerGap",
-        "classPowerShape", "classPowerBorder", "classPowerBorderColor", "classPowerBorderSize",
-        "textSlotTop", "textSlotRight", "textSlotLeft", "textSlotCenter",
-        "textSlotBottomLeft", "textSlotBottomRight", "textSlotTopLeft", "textSlotTopRight",
+        "showBorder",
+        "borderSize",
+        "borderColor",
+        "castBorderSize",
+        "castBorderColor",
+        "targetGlowStyle",
+        "showTargetArrows",
+        "showClassPower",
+        "classPowerPos",
+        "classPowerYOffset",
+        "classPowerXOffset",
+        "classPowerScale",
+        "classPowerClassColors",
+        "classPowerCustomColor",
+        "classPowerGap",
+        "classPowerShape",
+        "classPowerBorder",
+        "classPowerBorderColor",
+        "classPowerBorderSize",
+        "textSlotTop",
+        "textSlotRight",
+        "textSlotLeft",
+        "textSlotCenter",
+        "textSlotBottomLeft",
+        "textSlotBottomRight",
+        "textSlotTopLeft",
+        "textSlotTopRight",
         "nameYOffset",
-        "healthBarHeight", "healthBarWidth", "castBarHeight",
+        "healthBarHeight",
+        "healthBarWidth",
+        "castBarHeight",
     }
     ns._appendDisplayPresetKeys(ns._displayPresetKeys)
 
@@ -152,23 +204,30 @@ do
     local specLoginFrame = CreateFrame("Frame")
     specLoginFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     specLoginFrame:SetScript("OnEvent", function(_, event, unit)
-        if unit ~= "player" then return end
+        if unit ~= "player" then
+            return
+        end
         -- Re-read the profile reference: a spec swap may have changed the active
         -- profile, and _C() color lookups would read the old spec's stale data.
         SetProfile(ENP.db.profile)
         RefreshThreatCache()
         -- If the framework handler is registered, let it handle this
-        if CludesUI and CludesUI._specSwitchRegistry
-           and #CludesUI._specSwitchRegistry > 0 then
+        if CludesUI and CludesUI._specSwitchRegistry and #CludesUI._specSwitchRegistry > 0 then
             return
         end
         ApplySpecPresetFromDB()
-        if ns.RefreshAllSettings then ns.RefreshAllSettings() end
+        if ns.RefreshAllSettings then
+            ns.RefreshAllSettings()
+        end
     end)
 
     -- Expose for calling from OnEnable (login time)
     ns._ApplySpecPresetFromDB = ApplySpecPresetFromDB
-    _G._ENP_RefreshAllSettings = function() if ns.RefreshAllSettings then ns.RefreshAllSettings() end end
+    _G._CUNP_RefreshAllSettings = function()
+        if ns.RefreshAllSettings then
+            ns.RefreshAllSettings()
+        end
+    end
 end
 
 local npAddon = ENP
@@ -178,8 +237,12 @@ function npAddon:OnInitialize()
     ns.db = ENP.db
     -- Non-Target Opacity: derive the cached value at login (no plates exist yet,
     -- so the apply loop no-ops; SetUnit fades new plates as they spawn).
-    if ns.NT_RefreshSetting then ns.NT_RefreshSetting() end
-    if ns.NP_RefreshTypeScaleSetting then ns.NP_RefreshTypeScaleSetting() end
+    if ns.NT_RefreshSetting then
+        ns.NT_RefreshSetting()
+    end
+    if ns.NP_RefreshTypeScaleSetting then
+        ns.NP_RefreshTypeScaleSetting()
+    end
     -- Append SharedMedia textures to runtime tables so SM texture keys resolve at runtime
     CludesUI.AppendSharedMediaTextures(
         ns.healthBarTextureNames,
@@ -211,7 +274,9 @@ function npAddon:OnEnable()
             local keys = ns._npClassicCastKeys
             for i = 1, #keys do
                 local k = keys[i]
-                if cui[k] == nil then cui[k] = p[k] end
+                if cui[k] == nil then
+                    cui[k] = p[k]
+                end
             end
         elseif CludesUI.BankEuiStyleSlot then
             CludesUI.BankEuiStyleSlot(p, ns._npStyleSlotKeys)
@@ -225,21 +290,35 @@ function npAddon:OnEnable()
     if ns.NP_Forever() then
         if not (p.foreverLevelSlotSeeded and p.foreverRareSeeded) then
             local s = p._foreverStyleSlots
-            if type(s) ~= "table" then s = {}; p._foreverStyleSlots = s end
+            if type(s) ~= "table" then
+                s = {}
+                p._foreverStyleSlots = s
+            end
             local cui = s.cui
-            if type(cui) ~= "table" then cui = {}; s.cui = cui end
-            if not p.foreverLevelSlotSeeded then cui.textSlotLeft = p.textSlotLeft end
-            if not p.foreverRareSeeded then cui.classificationHideRare = p.classificationHideRare end
+            if type(cui) ~= "table" then
+                cui = {}
+                s.cui = cui
+            end
+            if not p.foreverLevelSlotSeeded then
+                cui.textSlotLeft = p.textSlotLeft
+            end
+            if not p.foreverRareSeeded then
+                cui.classificationHideRare = p.classificationHideRare
+            end
             ns.NP_SeedForever(p)
         end
         ns.NP_ForeverWatchLevels()
     end
-    SetRawSetTex((PP and PP.RawSetTexture) or function(t, v) t:SetTexture(v) end)
+    SetRawSetTex((PP and PP.RawSetTexture) or function(t, v)
+        t:SetTexture(v)
+    end)
     SetupAuraCVars()
     ns.ApplyKeptNameplateCVars()
     ApplyClassPowerSetting()
     -- Apply spec-assigned preset on login (before UI is opened)
-    if ns._ApplySpecPresetFromDB then ns._ApplySpecPresetFromDB() end
+    if ns._ApplySpecPresetFromDB then
+        ns._ApplySpecPresetFromDB()
+    end
     -- Text Coloring slot (with Target of Target and the bottom slots), Threat %
     -- and Show Threat Colors flags for the first plates, after the seeds and the
     -- spec preset above rewrote the slots (RefreshAllSettings keeps them after).
@@ -247,11 +326,17 @@ function npAddon:OnEnable()
     ns.NP_RefreshThreatPctFlag()
     ns.NP_RefreshThreatColorFlag()
     -- PreSeedSpecProfile / the spec preset above may have changed the type scales.
-    if ns.NP_RefreshTypeScaleSetting then ns.NP_RefreshTypeScaleSetting() end
-    if ns.RangeText_Apply then ns.RangeText_Apply() end
+    if ns.NP_RefreshTypeScaleSetting then
+        ns.NP_RefreshTypeScaleSetting()
+    end
+    if ns.RangeText_Apply then
+        ns.RangeText_Apply()
+    end
     -- Debuff coloring last: it reads the final profile, and Color Border reads
     -- the plate style, which latches for the session on its first read.
-    if ns.DebuffColors_Refresh then ns.DebuffColors_Refresh() end
+    if ns.DebuffColors_Refresh then
+        ns.DebuffColors_Refresh()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -319,7 +404,9 @@ do
     function RT.Tick()
         local plate = ns._cachedTargetPlate
         if not plate or not plate.unit or not plate:IsShown() then
-            if RT.plate then RT.Detach() end
+            if RT.plate then
+                RT.Detach()
+            end
             return
         end
         if plate ~= RT.plate then
@@ -364,12 +451,17 @@ do
         local customCutoff = p and p.outOfRangeMode == "custom" and p.outOfRangeCustomRange
         local cutoff = CludesUI.Range_GetAttackCutoff(customCutoff)
         local q = RT.fadeQ
-        if not q then q = {}; RT.fadeQ = q end
+        if not q then
+            q = {}
+            RT.fadeQ = q
+        end
         if not RT.fadeIdx or RT.fadeIdx > #q then
             -- New cycle: snapshot the live plate set (reused table, one wipe
             -- per cycle). Plates that detach mid-cycle are re-checked below.
             wipe(q)
-            for _, plate in pairs(ns.plates) do q[#q + 1] = plate end
+            for _, plate in pairs(ns.plates) do
+                q[#q + 1] = plate
+            end
             RT.fadeIdx = 1
         end
         local budget = 8
@@ -401,7 +493,9 @@ do
     function RT.ResetFade()
         -- Drop the round-robin cursor and its plate snapshot too: a disable
         -- mid-cycle must not pin recycled plates in the reused queue.
-        if RT.fadeQ then wipe(RT.fadeQ) end
+        if RT.fadeQ then
+            wipe(RT.fadeQ)
+        end
         RT.fadeIdx = nil
         for _, plate in pairs(ns.plates) do
             if plate._oorCurAlpha then
@@ -421,10 +515,15 @@ do
 
     ns.RangeText_Apply = function()
         local alpha = tonumber(p and p.outOfRangeAlpha) or defaults.outOfRangeAlpha
-        if alpha < 0 then alpha = 0 elseif alpha > 100 then alpha = 100 end
+        if alpha < 0 then
+            alpha = 0
+        elseif alpha > 100 then
+            alpha = 100
+        end
         ns._oorAlpha = alpha / 100
         local textEnabled = p and p.rangeTextEnabled
-        ns._oorFadeEnabled = ((p and p.outOfRangeMode) or defaults.outOfRangeMode) ~= "disabled" and ns._oorAlpha < 1
+        ns._oorFadeEnabled = ((p and p.outOfRangeMode) or defaults.outOfRangeMode) ~= "disabled"
+            and ns._oorAlpha < 1
         local fadeEnabled = ns._oorFadeEnabled
         if textEnabled or fadeEnabled then
             if not RT.drv then
@@ -432,10 +531,16 @@ do
                 RT.drv:Hide()
                 RT.drv:SetScript("OnUpdate", function(_, dt)
                     RT.acc = RT.acc + dt
-                    if RT.acc < 0.2 then return end
+                    if RT.acc < 0.2 then
+                        return
+                    end
                     RT.acc = 0
-                    if p and p.rangeTextEnabled then RT.Tick() end
-                    if ns._oorFadeEnabled then RT.FadeTick() end
+                    if p and p.rangeTextEnabled then
+                        RT.Tick()
+                    end
+                    if ns._oorFadeEnabled then
+                        RT.FadeTick()
+                    end
                 end)
             end
             -- Ladder builds and invalidation live in the shared range engine.
@@ -443,12 +548,17 @@ do
             RT.drv:Show()
         else
             CludesUI.Range_SetActive("npRange", false)
-            if RT.drv then RT.drv:Hide() end
+            if RT.drv then
+                RT.drv:Hide()
+            end
         end
-        if not textEnabled then RT.Detach() end
-        if not fadeEnabled then RT.ResetFade() end
+        if not textEnabled then
+            RT.Detach()
+        end
+        if not fadeEnabled then
+            RT.ResetFade()
+        end
     end
-
 end
 
 -------------------------------------------------------------------------------
@@ -513,29 +623,46 @@ ns._keptCVarNames = { "nameplateMotionSpeed", "nameplateTopInset" }
 -- Equal as numbers: the client keeps its own number format.
 ns.KeptCVarSame = function(a, b)
     local x, y = tonumber(a), tonumber(b)
-    if x and y then return math.abs(x - y) < 1e-6 end
+    if x and y then
+        return math.abs(x - y) < 1e-6
+    end
     return a == b
 end
 
 -- The sliders' write: sets the CVar, then keeps what the client holds.
 ns.KeepNameplateCVar = function(name, value)
-    if not CludesUI.SetCVar(name, value, "CludesUINameplates") then return end
+    if not CludesUI.SetCVar(name, value, "CludesUINameplates") then
+        return
+    end
     local cur = tonumber(GetCVar(name))
-    if not (cur and CludesUIDB) then return end
+    if not (cur and CludesUIDB) then
+        return
+    end
     local kept = CludesUIDB.nameplateKeptCVars
-    if type(kept) ~= "table" then kept = nil end
+    if type(kept) ~= "table" then
+        kept = nil
+    end
     if ns.KeptCVarSame(cur, C_CVar.GetCVarDefault(name)) then
-        if kept then kept[name] = nil end
-        if not (kept and next(kept)) then CludesUIDB.nameplateKeptCVars = nil end
+        if kept then
+            kept[name] = nil
+        end
+        if not (kept and next(kept)) then
+            CludesUIDB.nameplateKeptCVars = nil
+        end
     else
-        if not kept then kept = {}; CludesUIDB.nameplateKeptCVars = kept end
+        if not kept then
+            kept = {}
+            CludesUIDB.nameplateKeptCVars = kept
+        end
         kept[name] = cur
     end
 end
 
 ns.ApplyKeptNameplateCVars = function()
     local kept = CludesUIDB and CludesUIDB.nameplateKeptCVars
-    if type(kept) ~= "table" then return end
+    if type(kept) ~= "table" then
+        return
+    end
     if InCombatLockdown() then
         ns.CombatQueue.Defer("NPKeptCVars", ns.ApplyKeptNameplateCVars)
         return
@@ -549,6 +676,5 @@ ns.ApplyKeptNameplateCVars = function()
         end
     end
 end
-
 
 I.broken = false

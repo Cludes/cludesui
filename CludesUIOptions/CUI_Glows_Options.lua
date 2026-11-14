@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Glows_Options.lua -- Global Settings > Glows. A glow template (style,
 --  color, Pixel Glow parameters) applied once to every active custom glow,
@@ -49,26 +51,39 @@ end
 
 local _templateDesc
 local function TemplateDesc()
-    if _templateDesc then return _templateDesc end
+    if _templateDesc then
+        return _templateDesc
+    end
     -- Shape Glow is left out: almost no site can show it (it needs an icon shape).
     _templateDesc = {
-        host = "icon", noNone = true, excludes = { [4] = true },
+        host = "icon",
+        noNone = true,
+        excludes = { [4] = true },
         caps = { mode = true, params = true, bg = true },
         get = function(f)
             local t = Template()
-            if f == "style" then return t.style or 1
-            elseif f == "mode" then return t.mode or "default"
-            elseif f == "color" then return t.r, t.g, t.b
-            elseif f == "lines" then return t.lines
-            elseif f == "thickness" then return t.thickness
-            elseif f == "speed" then return t.speed
-            elseif f == "bg" then return t.bg == true
-            elseif f == "bgColor" then return t.bgR, t.bgG, t.bgB
+            if f == "style" then
+                return t.style or 1
+            elseif f == "mode" then
+                return t.mode or "default"
+            elseif f == "color" then
+                return t.r, t.g, t.b
+            elseif f == "lines" then
+                return t.lines
+            elseif f == "thickness" then
+                return t.thickness
+            elseif f == "speed" then
+                return t.speed
+            elseif f == "bg" then
+                return t.bg == true
+            elseif f == "bgColor" then
+                return t.bgR, t.bgG, t.bgB
             end
         end,
         set = function(f, a, b, c)
             local t = TemplateW()
-            if f == "style" then t.style = a
+            if f == "style" then
+                t.style = a
             elseif f == "mode" then
                 t.mode = a
                 -- Custom without a picked color would apply nothing visible: seed gold.
@@ -76,12 +91,18 @@ local function TemplateDesc()
                     local d = CludesUI.Glows.DEFAULT_COLOR
                     t.r, t.g, t.b = d.r, d.g, d.b
                 end
-            elseif f == "color" then t.r, t.g, t.b = a, b, c
-            elseif f == "lines" then t.lines = a
-            elseif f == "thickness" then t.thickness = a
-            elseif f == "speed" then t.speed = a
-            elseif f == "bg" then t.bg = a and true or nil
-            elseif f == "bgColor" then t.bgR, t.bgG, t.bgB = a, b, c
+            elseif f == "color" then
+                t.r, t.g, t.b = a, b, c
+            elseif f == "lines" then
+                t.lines = a
+            elseif f == "thickness" then
+                t.thickness = a
+            elseif f == "speed" then
+                t.speed = a
+            elseif f == "bg" then
+                t.bg = a and true or nil
+            elseif f == "bgColor" then
+                t.bgR, t.bgG, t.bgB = a, b, c
             end
         end,
     }
@@ -100,12 +121,24 @@ local function CollectSites()
     for _, entry in ipairs(GO.sites) do
         if entry.list then
             for _, item in ipairs(entry.list() or {}) do
-                out[#out + 1] = { module = entry.module, label = item.label, sub = item.sub or entry.sub,
-                                  desc = item.desc, entry = entry, nav = item.nav or entry }
+                out[#out + 1] = {
+                    module = entry.module,
+                    label = item.label,
+                    sub = item.sub or entry.sub,
+                    desc = item.desc,
+                    entry = entry,
+                    nav = item.nav or entry,
+                }
             end
         elseif entry.desc then
-            out[#out + 1] = { module = entry.module, label = entry.label, sub = entry.sub,
-                              desc = entry.desc, entry = entry, nav = entry }
+            out[#out + 1] = {
+                module = entry.module,
+                label = entry.label,
+                sub = entry.sub,
+                desc = entry.desc,
+                entry = entry,
+                nav = entry,
+            }
         end
     end
     return out
@@ -115,21 +148,45 @@ end
 -- at page build while the module is loaded, and only when no entry holds the
 -- id yet (a module's own registration wins).
 local ENTRY_GLOW_INFOS = {
-    { id = "rf_bm_icon_glows", label = "Buff Manager Icon Glows",
-      module = "CludesUIRaidFrames", page = "Buff Manager",
-      info = { glyph = "icon",
-        tooltip = "Icon Glow is set per indicator on the Buff Manager page. The template never changes it.",
-        text = function() return CludesUI.L("Set per indicator") end } },
-    { id = "rf_dm_glows", label = "Debuff Manager Glows",
-      module = "CludesUIRaidFrames", page = "Debuff Manager",
-      info = { glyph = "icon",
-        tooltip = "Icon Effects glows are set per filter and Frame Glow per tile on the Debuff Manager page. The template never changes them.",
-        text = function() return CludesUI.L("Set per filter and tile") end } },
-    { id = "pab_icon_glows", label = "Player Aura Bars Icon Glows",
-      module = "CludesUIUnitFrames", page = "Player Aura Bars",
-      info = { glyph = "icon",
-        tooltip = "Icon Effects glows are set per filter on each bar of the Player Aura Bars page. The template never changes them.",
-        text = function() return CludesUI.L("Set per filter") end } },
+    {
+        id = "rf_bm_icon_glows",
+        label = "Buff Manager Icon Glows",
+        module = "CludesUIRaidFrames",
+        page = "Buff Manager",
+        info = {
+            glyph = "icon",
+            tooltip = "Icon Glow is set per indicator on the Buff Manager page. The template never changes it.",
+            text = function()
+                return CludesUI.L("Set per indicator")
+            end,
+        },
+    },
+    {
+        id = "rf_dm_glows",
+        label = "Debuff Manager Glows",
+        module = "CludesUIRaidFrames",
+        page = "Debuff Manager",
+        info = {
+            glyph = "icon",
+            tooltip = "Icon Effects glows are set per filter and Frame Glow per tile on the Debuff Manager page. The template never changes them.",
+            text = function()
+                return CludesUI.L("Set per filter and tile")
+            end,
+        },
+    },
+    {
+        id = "pab_icon_glows",
+        label = "Player Aura Bars Icon Glows",
+        module = "CludesUIUnitFrames",
+        page = "Player Aura Bars",
+        info = {
+            glyph = "icon",
+            tooltip = "Icon Effects glows are set per filter on each bar of the Player Aura Bars page. The template never changes them.",
+            text = function()
+                return CludesUI.L("Set per filter")
+            end,
+        },
+    },
 }
 
 local function EnsureEntryGlowInfos()
@@ -137,9 +194,14 @@ local function EnsureEntryGlowInfos()
         if CludesUI.ModuleNS(e.module) then
             local have = false
             for i = 1, #GO.sites do
-                if GO.sites[i].id == e.id then have = true; break end
+                if GO.sites[i].id == e.id then
+                    have = true
+                    break
+                end
             end
-            if not have then GO.RegisterSite(e) end
+            if not have then
+                GO.RegisterSite(e)
+            end
         end
     end
 end
@@ -151,8 +213,13 @@ local function CollectInfos()
     local out = {}
     for _, entry in ipairs(GO.sites) do
         if entry.info then
-            out[#out + 1] = { module = entry.module, label = entry.label, sub = entry.sub,
-                              info = entry.info, nav = entry }
+            out[#out + 1] = {
+                module = entry.module,
+                label = entry.label,
+                sub = entry.sub,
+                info = entry.info,
+                nav = entry,
+            }
         end
     end
     return out
@@ -185,13 +252,21 @@ local GREEN_CODE = CludesUI.HexColor(ST_GREEN[1], ST_GREEN[2], ST_GREEN[3])
 -- and whether it matches (one MatchesTemplate per evaluation).
 local function SiteStatus(site, t)
     local desc = site.desc
-    if Blocked(site) then return ST_GREY, CludesUI.L("Blizzard"), CludesUI.L("Blizzard Style"), false end
+    if Blocked(site) then
+        return ST_GREY, CludesUI.L("Blizzard"), CludesUI.L("Blizzard Style"), false
+    end
     if desc.paramsOnly then
-        return ST_GREY, CludesUI.L("Per icon"),
-            CludesUI.L("The Pixel Glow settings this bar's per-icon glows use. The template never changes them."), false
+        return ST_GREY,
+            CludesUI.L("Per icon"),
+            CludesUI.L(
+                "The Pixel Glow settings this bar's per-icon glows use. The template never changes them."
+            ),
+            false
     end
     if not GO.IsCustomGlow(desc) then
-        if GO.IsOff(desc) then return ST_GREY, CludesUI.L("Off"), CludesUI.L("Off"), false end
+        if GO.IsOff(desc) then
+            return ST_GREY, CludesUI.L("Off"), CludesUI.L("Off"), false
+        end
         return ST_GREY, CludesUI.L("Not custom"), CludesUI.L("Not a custom glow"), false
     end
     if GO.MatchesTemplate(desc, t) then
@@ -199,8 +274,10 @@ local function SiteStatus(site, t)
     end
     local idx, converted = GO.Resolve(desc, t.style or 1)
     if converted then
-        return ST_AMBER, CludesUI.L("Differs"), CludesUI.Lf("Differs (template shows as %s)",
-            CludesUI.L(CludesUI.Glows.STYLES[idx].name)), false
+        return ST_AMBER,
+            CludesUI.L("Differs"),
+            CludesUI.Lf("Differs (template shows as %s)", CludesUI.L(CludesUI.Glows.STYLES[idx].name)),
+            false
     end
     return ST_AMBER, CludesUI.L("Differs"), CludesUI.L("Differs from template"), false
 end
@@ -209,7 +286,9 @@ end
 -- (off glows and extras included); otherwise active custom glows that differ.
 local function Eligible(site, t, anyState)
     if anyState then
-        if not CanTake(site) then return false end
+        if not CanTake(site) then
+            return false
+        end
     elseif not IsActive(site) then
         return false
     end
@@ -219,7 +298,9 @@ end
 -- One pass's refreshes: each distinct module refresh once (CDM bars share one
 -- rebuild), the touched modules' cached pages dropped, this page rebuilt.
 local function Settle(touched, refresh)
-    for fn in pairs(refresh) do fn() end
+    for fn in pairs(refresh) do
+        fn()
+    end
     for module in pairs(touched) do
         CludesUI:InvalidateModulePageCache(module)
     end
@@ -242,8 +323,11 @@ local function ApplyRun(sites, t, anyState, first, confirmed)
             if v ~= nil and desc.confirm and i ~= confirmed then
                 local inCall, passed = true, false
                 desc.confirm(v, function()
-                    if inCall then passed = true
-                    else ApplyRun(sites, t, anyState, i, i) end
+                    if inCall then
+                        passed = true
+                    else
+                        ApplyRun(sites, t, anyState, i, i)
+                    end
                 end)
                 inCall = false
                 if not passed then
@@ -252,7 +336,9 @@ local function ApplyRun(sites, t, anyState, first, confirmed)
                 end
             end
             if GO.ApplyTemplate(desc, t, anyState) then
-                if desc.onChange then refresh[desc.onChange] = true end
+                if desc.onChange then
+                    refresh[desc.onChange] = true
+                end
                 touched[site.module] = true
             end
         end
@@ -265,10 +351,14 @@ end
 local function ApplyTo(sites, t, anyState)
     local ordered = {}
     for _, site in ipairs(sites) do
-        if not site.desc.confirm then ordered[#ordered + 1] = site end
+        if not site.desc.confirm then
+            ordered[#ordered + 1] = site
+        end
     end
     for _, site in ipairs(sites) do
-        if site.desc.confirm then ordered[#ordered + 1] = site end
+        if site.desc.confirm then
+            ordered[#ordered + 1] = site
+        end
     end
     ApplyRun(ordered, t, anyState, 1)
 end
@@ -280,8 +370,12 @@ local function PreviewCounts(sites, t, anyState)
         if Eligible(site, t, anyState) then
             n = n + 1
             local _, c = GO.TemplateValue(site.desc, t)
-            if c then conv = conv + 1 end
-            if not GO.IsCustomGlow(site.desc) then turnOn = turnOn + 1 end
+            if c then
+                conv = conv + 1
+            end
+            if not GO.IsCustomGlow(site.desc) then
+                turnOn = turnOn + 1
+            end
         end
     end
     return n, conv, turnOn
@@ -294,25 +388,35 @@ local function ConfirmApply(sites, anyState)
     if n == 0 then
         CludesUI:ShowInfoPopup({
             title = CludesUI.L("Apply Glow Template"),
-            content = anyState and CludesUI.L("Nothing to change: every glow here already matches the template.")
-                or CludesUI.L("Nothing to change: no active custom glow differs from the template."),
+            content = anyState and CludesUI.L(
+                "Nothing to change: every glow here already matches the template."
+            ) or CludesUI.L("Nothing to change: no active custom glow differs from the template."),
         })
         return
     end
     local msg = anyState and CludesUI.Lf("Apply the template to %d glow(s)?", n)
         or CludesUI.Lf("Apply the template to the %d active custom glow(s) listed here?", n)
     if turnOn > 0 then
-        msg = msg .. "\n\n" .. CludesUI.Lf("%d of them are off or use a Blizzard style and switch to the template glow.", turnOn)
+        msg = msg
+            .. "\n\n"
+            .. CludesUI.Lf(
+                "%d of them are off or use a Blizzard style and switch to the template glow.",
+                turnOn
+            )
     end
     if conv > 0 then
-        msg = msg .. "\n\n" .. CludesUI.Lf("%d of them can't show the chosen style and use the closest one.", conv)
+        msg = msg
+            .. "\n\n"
+            .. CludesUI.Lf("%d of them can't show the chosen style and use the closest one.", conv)
     end
     CludesUI:ShowConfirmPopup({
-        title       = CludesUI.L("Apply Glow Template"),
-        message     = msg,
+        title = CludesUI.L("Apply Glow Template"),
+        message = msg,
         confirmText = CludesUI.L("Apply"),
-        cancelText  = CludesUI.L("Cancel"),
-        onConfirm   = function() ApplyTo(sites, t, anyState) end,
+        cancelText = CludesUI.L("Cancel"),
+        onConfirm = function()
+            ApplyTo(sites, t, anyState)
+        end,
     })
 end
 
@@ -328,7 +432,9 @@ local function UnindexedDualRow(W, parent, y, left, right)
     CludesUI._searchIndexSuppress = true
     local ok, row, h = pcall(W.DualRow, W, parent, y, left, right)
     CludesUI._searchIndexSuppress = prev
-    if not ok then error(row, 0) end
+    if not ok then
+        error(row, 0)
+    end
     return row, h
 end
 
@@ -336,7 +442,9 @@ end
 local DOT_MASK = "Interface\\AddOns\\CludesUI\\media\\portraits\\circle_mask.tga"
 local function StatusDot(rgn, color)
     local lbl = rgn._label
-    if not lbl then return end
+    if not lbl then
+        return
+    end
     local PP = CludesUI.PanelPP
     local p, rel, rp, x, y = lbl:GetPoint(1)
     local dot = CreateFrame("Frame", nil, rgn)
@@ -366,14 +474,22 @@ local function ApplyBlockedTip(site, t, matches)
     end
     if not CanTake(site) then
         -- A style-only lock names its own reason (its colors stay editable).
-        if not Blocked(site) and not (desc.disabled and desc.disabled())
-            and desc.styleDisabled and desc.styleDisabled() then
+        if
+            not Blocked(site)
+            and not (desc.disabled and desc.disabled())
+            and desc.styleDisabled
+            and desc.styleDisabled()
+        then
             return CludesUI.L(desc.styleDisabledTooltip)
         end
         return CludesUI.L("This glow is locked on its settings page.")
     end
-    if matches == nil then matches = GO.MatchesTemplate(site.desc, t) end
-    if matches then return CludesUI.L("Already matches the template.") end
+    if matches == nil then
+        matches = GO.MatchesTemplate(site.desc, t)
+    end
+    if matches then
+        return CludesUI.L("Already matches the template.")
+    end
     return nil
 end
 
@@ -419,7 +535,9 @@ end
 -- three buttons with the middle one glowing.
 local function InfoGlyph(rgn, kind)
     local lbl = rgn._label
-    if not (lbl and kind) then return end
+    if not (lbl and kind) then
+        return
+    end
     local PP = CludesUI.PanelPP
     local EG = CludesUI.CLUDES_GREEN
     local p, rel, rp, x, y = lbl:GetPoint(1)
@@ -443,7 +561,11 @@ local function InfoGlyph(rgn, kind)
         local prev
         for i = 1, 3 do
             local b = Button(10, i == 2)
-            if prev then PP.Point(b, "LEFT", prev, "RIGHT", 1, 0) else PP.Point(b, "LEFT", holder, "LEFT", 0, 0) end
+            if prev then
+                PP.Point(b, "LEFT", prev, "RIGHT", 1, 0)
+            else
+                PP.Point(b, "LEFT", holder, "LEFT", 0, 0)
+            end
             prev = b
         end
     else
@@ -458,16 +580,28 @@ end
 -- count is written after the build: a count is no search result.
 local function InfoRow(parent, y, W, item)
     local info = item.info
-    local row, h = W:DualRow(parent, y, { type = "label", text = item.label, tooltip = info.tooltip },
-        CludesUI.BlankRowCfg())
+    local row, h = W:DualRow(
+        parent,
+        y,
+        { type = "label", text = item.label, tooltip = info.tooltip },
+        CludesUI.BlankRowCfg()
+    )
     if not CludesUI._prebuilding then
         local rrgn = row._rightRegion
-        if info.text and rrgn._label then rrgn._label:SetText(info.text()) end
+        if info.text and rrgn._label then
+            rrgn._label:SetText(info.text())
+        end
         InfoGlyph(row._leftRegion, info.glyph)
         local nav, module = item.nav, item.module
         if nav and nav.page then
             CludesUI.BuildInlineButton(rrgn, CludesUI.L("Go to Settings"), function()
-                CludesUI:NavigateToElementSettings(module, nav.page, nav.section, nav.preSelect, nav.highlight)
+                CludesUI:NavigateToElementSettings(
+                    module,
+                    nav.page,
+                    nav.section,
+                    nav.preSelect,
+                    nav.highlight
+                )
             end)
         end
     end
@@ -491,7 +625,9 @@ local function SiteRow(parent, y, W, site)
     local row, h = W:DualRow(parent, y, left, statusCfg)
     if not CludesUI._prebuilding then
         local rrgn = row._rightRegion
-        if rrgn._label then rrgn._label:SetText(short) end
+        if rrgn._label then
+            rrgn._label:SetText(short)
+        end
         local dotTex = StatusDot(rrgn, color)
         local lrgn = row._leftRegion
         if desc.paramsOnly then
@@ -501,29 +637,51 @@ local function SiteRow(parent, y, W, site)
             PP.Size(anchor, 1, 1)
             PP.Point(anchor, "RIGHT", lrgn, "RIGHT", -20, 0)
             lrgn._lastInline = anchor
-            CludesUI.BuildInlineCog(lrgn, { title = "Pixel Glow Settings", rows = GO.CogRows(desc), captureRegion = lrgn })
+            CludesUI.BuildInlineCog(
+                lrgn,
+                { title = "Pixel Glow Settings", rows = GO.CogRows(desc), captureRegion = lrgn }
+            )
         else
             GO.AttachInline(lrgn, desc)
         end
         local nav, module = site.nav, site.module
         if nav and nav.page then
             CludesUI.BuildInlineButton(rrgn, CludesUI.L("Open Settings"), function()
-                CludesUI:NavigateToElementSettings(module, nav.page, nav.section, nav.preSelect, nav.highlight)
+                CludesUI:NavigateToElementSettings(
+                    module,
+                    nav.page,
+                    nav.section,
+                    nav.preSelect,
+                    nav.highlight
+                )
             end, { width = 104 })
         end
-        CludesUI.BuildInlineButton(rrgn, CludesUI.L("Apply Template"), function() ConfirmApply({ site }, true) end, {
+        CludesUI.BuildInlineButton(rrgn, CludesUI.L("Apply Template"), function()
+            ConfirmApply({ site }, true)
+        end, {
             width = 110,
-            disabled = function() return ApplyBlockedTip(site, Template()) ~= nil end,
-            disabledTooltip = function() return ApplyBlockedTip(site, Template()) end,
+            disabled = function()
+                return ApplyBlockedTip(site, Template()) ~= nil
+            end,
+            disabledTooltip = function()
+                return ApplyBlockedTip(site, Template())
+            end,
             rawTooltip = true,
         })
         -- Row edits only refresh widgets (no rebuild): keep the status current.
         CludesUI.RegisterWidgetRefresh(function()
             local c, s, l = SiteStatus(site, Template())
             local lbl = rrgn._label
-            if lbl then lbl:SetText(s); lbl:SetTextColor(c[1], c[2], c[3], 1) end
-            if dotTex then dotTex:SetColorTexture(c[1], c[2], c[3], 1) end
-            if rrgn._cfg then rrgn._cfg.tooltip = l end
+            if lbl then
+                lbl:SetText(s)
+                lbl:SetTextColor(c[1], c[2], c[3], 1)
+            end
+            if dotTex then
+                dotTex:SetColorTexture(c[1], c[2], c[3], 1)
+            end
+            if rrgn._cfg then
+                rrgn._cfg.tooltip = l
+            end
         end)
     end
     return y - h
@@ -540,10 +698,14 @@ local function CardSummary(list, t)
     for _, site in ipairs(list) do
         if IsActive(site) then
             active = active + 1
-            if not GO.MatchesTemplate(site.desc, t) then differ = differ + 1 end
+            if not GO.MatchesTemplate(site.desc, t) then
+                differ = differ + 1
+            end
         end
     end
-    if active == 0 then return CludesUI.L("No active glows"), active end
+    if active == 0 then
+        return CludesUI.L("No active glows"), active
+    end
     local tail
     if differ > 0 then
         tail = AMBER_CODE .. CludesUI.Lf("%d differ from template", differ) .. "|r"
@@ -557,7 +719,9 @@ end
 local function ModuleBlocked(tile)
     local t = Template()
     for _, site in ipairs(tile.sites) do
-        if not ApplyBlockedTip(site, t) then return false end
+        if not ApplyBlockedTip(site, t) then
+            return false
+        end
     end
     return true
 end
@@ -572,46 +736,77 @@ local function BuildCardContent(parent, y, W, tile)
     local row, h
     if hasSites then
         local inactive = #tile.sites - tile.active
-        local left = { type = "toggle", text = CludesUI.Lf("Hide Inactive Glows (%d)", inactive),
-            getValue = function() return _glHideInactive[key] == true end,
+        local left = {
+            type = "toggle",
+            text = CludesUI.Lf("Hide Inactive Glows (%d)", inactive),
+            getValue = function()
+                return _glHideInactive[key] == true
+            end,
             setValue = function(v)
                 _glHideInactive[key] = v or nil
                 CludesUI:RefreshPage(true)
             end,
-            disabled = function() return inactive == 0 end,
-            disabledTooltip = CludesUI.L("Every glow in this module is active."), rawTooltip = true }
-        row, h = UnindexedDualRow(W, parent, y, left, CludesUI.BlankRowCfg());  y = y - h
+            disabled = function()
+                return inactive == 0
+            end,
+            disabledTooltip = CludesUI.L("Every glow in this module is active."),
+            rawTooltip = true,
+        }
+        row, h = UnindexedDualRow(W, parent, y, left, CludesUI.BlankRowCfg())
+        y = y - h
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineButton(row._rightRegion, CludesUI.L("Apply Template to This Module"),
-                function() ConfirmApply(tile.sites, true) end, {
+            CludesUI.BuildInlineButton(
+                row._rightRegion,
+                CludesUI.L("Apply Template to This Module"),
+                function()
+                    ConfirmApply(tile.sites, true)
+                end,
+                {
                     width = 220,
-                    disabled = function() return ModuleBlocked(tile) end,
-                    disabledTooltip = CludesUI.L("Every glow in this module already matches the template or is locked on its settings page."),
+                    disabled = function()
+                        return ModuleBlocked(tile)
+                    end,
+                    disabledTooltip = CludesUI.L(
+                        "Every glow in this module already matches the template or is locked on its settings page."
+                    ),
                     rawTooltip = true,
-                })
+                }
+            )
         end
         y = CardDivider(parent, y)
     end
     local lastSub
     -- Info entries lead the card (above any group) and never hide.
     for _, item in ipairs(tile.infos) do
-        if item.sub and item.sub ~= lastSub then y = SubHeader(parent, y, item.sub) end
+        if item.sub and item.sub ~= lastSub then
+            y = SubHeader(parent, y, item.sub)
+        end
         lastSub = item.sub
         y = InfoRow(parent, y, W, item)
     end
     local shown = 0
     for _, site in ipairs(tile.sites) do
         if showAll or IsActive(site) then
-            if site.sub and site.sub ~= lastSub then y = SubHeader(parent, y, site.sub) end
+            if site.sub and site.sub ~= lastSub then
+                y = SubHeader(parent, y, site.sub)
+            end
             lastSub = site.sub
             y = SiteRow(parent, y, W, site)
             shown = shown + 1
         end
     end
     if hasSites and shown == 0 then
-        row, h = UnindexedDualRow(W, parent, y,
-            { type = "label", text = CludesUI.L("No active glows. Turn off Hide Inactive Glows to edit the others.") },
-            CludesUI.BlankRowCfg());  y = y - h
+        row, h = UnindexedDualRow(
+            W,
+            parent,
+            y,
+            {
+                type = "label",
+                text = CludesUI.L("No active glows. Turn off Hide Inactive Glows to edit the others."),
+            },
+            CludesUI.BlankRowCfg()
+        )
+        y = y - h
     end
     return y
 end
@@ -621,12 +816,18 @@ local function BuildTileList(sites, infos)
     local t = Template()
     for _, site in ipairs(sites) do
         local list = byModule[site.module]
-        if not list then list = {}; byModule[site.module] = list end
+        if not list then
+            list = {}
+            byModule[site.module] = list
+        end
         list[#list + 1] = site
     end
     for _, item in ipairs(infos) do
         local list = infosByModule[item.module]
-        if not list then list = {}; infosByModule[item.module] = list end
+        if not list then
+            list = {}
+            infosByModule[item.module] = list
+        end
         list[#list + 1] = item
     end
     for _, entry in ipairs(CludesUI.ADDON_ROSTER) do
@@ -641,9 +842,13 @@ local function BuildTileList(sites, infos)
                 summary, active = CludesUI.L("Glows set per entry, which the template never changes"), 0
             end
             tiles[#tiles + 1] = {
-                key = entry.folder, folder = entry.folder, display = entry.display,
-                desc = summary, active = active,
-                sites = list, infos = infoList or {},
+                key = entry.folder,
+                folder = entry.folder,
+                display = entry.display,
+                desc = summary,
+                active = active,
+                sites = list,
+                infos = infoList or {},
                 buildContent = BuildCardContent,
             }
         end
@@ -655,7 +860,8 @@ local function BuildGlowCard(parent, y, W, tile)
     y = CludesUI.BuildModuleCard(parent, y, W, tile, {
         -- Sites register only from loaded modules' option files.
         enabled = true,
-        expanded = _glExpanded, descW = 560,
+        expanded = _glExpanded,
+        descW = 560,
         -- The summary is live (counts): search indexes a fixed word instead.
         searchDesc = "Glows",
         glyph = function(hdr, enabled)
@@ -680,14 +886,18 @@ local function BuildGlowCard(parent, y, W, tile)
         CludesUI.RegisterWidgetRefresh(function()
             local summary, active = CardSummary(tile.sites, Template())
             if summary ~= tile.desc and active == tile.active then
-                if tile._descFS then tile._descFS:SetText(summary) end
+                if tile._descFS then
+                    tile._descFS:SetText(summary)
+                end
                 tile.desc = summary
             end
             if (summary ~= tile.desc or active ~= tile.active) and not _glRebuildQueued then
                 _glRebuildQueued = true
                 C_Timer.After(0, function()
                     _glRebuildQueued = false
-                    if CludesUI:GetActivePage() == PAGE_GLOWS then CludesUI:RefreshPage(true) end
+                    if CludesUI:GetActivePage() == PAGE_GLOWS then
+                        CludesUI:RefreshPage(true)
+                    end
                 end)
             end
         end)
@@ -714,17 +924,25 @@ function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
     PP.Point(intro, "TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
-    intro:SetText(CludesUI.L("Set a glow once. Apply to All changes the active custom glows listed below.") .. "\n"
-        .. CludesUI.L("Module and row buttons also replace off glows, Blizzard Default, Blizzard Border and Solid Border.") .. "\n"
-        .. CludesUI.L("Glows set per icon, indicator or filter keep their own settings."))
+    intro:SetText(
+        CludesUI.L("Set a glow once. Apply to All changes the active custom glows listed below.")
+            .. "\n"
+            .. CludesUI.L(
+                "Module and row buttons also replace off glows, Blizzard Default, Blizzard Border and Solid Border."
+            )
+            .. "\n"
+            .. CludesUI.L("Glows set per icon, indicator or filter keep their own settings.")
+    )
     y = y - 66
 
     -- Template
-    _, h = W:SectionHeader(parent, "GLOW TEMPLATE", y);  y = y - h
+    _, h = W:SectionHeader(parent, "GLOW TEMPLATE", y)
+    y = y - h
     local tpl = TemplateDesc()
     local sites = CollectSites()
     local tplRow
-    tplRow, h = W:DualRow(parent, y, GO.DropdownSpec(tpl, "Glow Style"), CludesUI.BlankRowCfg());  y = y - h
+    tplRow, h = W:DualRow(parent, y, GO.DropdownSpec(tpl, "Glow Style"), CludesUI.BlankRowCfg())
+    y = y - h
     if not CludesUI._prebuilding then
         local lrgn = tplRow._leftRegion
         GO.AttachInline(lrgn, tpl)
@@ -733,14 +951,17 @@ function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
             pv:SetFrameLevel(lrgn:GetFrameLevel() + 5)
             lrgn._lastInline = pv
         end
-        CludesUI.BuildInlineButton(tplRow._rightRegion, CludesUI.L("Apply to All Active Glows"),
-            function() ConfirmApply(sites) end, { width = 190 })
+        CludesUI.BuildInlineButton(tplRow._rightRegion, CludesUI.L("Apply to All Active Glows"), function()
+            ConfirmApply(sites)
+        end, { width = 190 })
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     -- Module cards
-    _, h = W:SectionHeader(parent, "MODULE GLOWS", y);  y = y - h
+    _, h = W:SectionHeader(parent, "MODULE GLOWS", y)
+    y = y - h
     for _, tile in ipairs(BuildTileList(sites, CollectInfos())) do
         y = BuildGlowCard(parent, y, W, tile)
     end
@@ -764,10 +985,18 @@ do
             local changed = false
             for _, entry in ipairs(GO.sites) do
                 local k = entry.module
-                if k and not _glExpanded[k] then _glExpanded[k] = true; changed = true end
+                if k and not _glExpanded[k] then
+                    _glExpanded[k] = true
+                    changed = true
+                end
             end
-            if next(_glHideInactive) then wipe(_glHideInactive); changed = true end
-            if changed then CludesUI:InvalidatePageCache() end
+            if next(_glHideInactive) then
+                wipe(_glHideInactive)
+                changed = true
+            end
+            if changed then
+                CludesUI:InvalidatePageCache()
+            end
         end
         return origNav(self, moduleName, pageName, sectionName, preSelectFn, highlightText)
     end

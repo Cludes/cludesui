@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Links.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local addonName, ns = ...
 local I = ns._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI = _G.CludesUI
@@ -23,13 +27,15 @@ local GetFont = I.GetFont
 --  Chat text helpers
 -------------------------------------------------------------------------------
 local function StripUIEscapes(text)
-    if not text then return "" end
-    text = text:gsub("|H.-|h(.-)|h", "%1")   -- hyperlinks -> display text
-    text = text:gsub("|T.-|t", "")            -- textures
-    text = text:gsub("|A.-|a", "")            -- atlas
-    text = text:gsub("|K.-|k", "")            -- secret value placeholders
-    text = text:gsub("|n", "\n")              -- newlines
-    text = text:gsub("||", "|")               -- escaped pipes
+    if not text then
+        return ""
+    end
+    text = text:gsub("|H.-|h(.-)|h", "%1") -- hyperlinks -> display text
+    text = text:gsub("|T.-|t", "") -- textures
+    text = text:gsub("|A.-|a", "") -- atlas
+    text = text:gsub("|K.-|k", "") -- secret value placeholders
+    text = text:gsub("|n", "\n") -- newlines
+    text = text:gsub("||", "|") -- escaped pipes
     -- Keep |cXXXXXXXX and |r color codes so the copy popup preserves colors
     return text
 end
@@ -39,26 +45,39 @@ end
 -- Blizzard-rendered) and any window the engine has not integrated fall back
 -- to the Blizzard buffer read. Secret lines are skipped either way.
 local function ReadActiveChatText()
-    local selected = GENERAL_CHAT_DOCK and FCFDock_GetSelectedWindow
+    local selected = GENERAL_CHAT_DOCK
+        and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     local cf = selected or ChatFrame1
-    if not cf then return "" end
+    if not cf then
+        return ""
+    end
     local raw = {}
     local usedEngine = false
-    if ECHAT.EngineGetMessageLines and ns._chatWins and ns._chatWins[cf]
-        and not (ns._clHosted and cf == _G.ChatFrame2) then
+    if
+        ECHAT.EngineGetMessageLines
+        and ns._chatWins
+        and ns._chatWins[cf]
+        and not (ns._clHosted and cf == _G.ChatFrame2)
+    then
         ECHAT.EngineGetMessageLines(cf, raw)
         usedEngine = true
     end
     if not usedEngine then
-        if not cf.GetNumMessages then return "" end
+        if not cf.GetNumMessages then
+            return ""
+        end
         local n = cf:GetNumMessages()
         for i = 1, n do
             local ok, text = pcall(cf.GetMessageInfo, cf, i)
-            if ok then raw[#raw + 1] = text end
+            if ok then
+                raw[#raw + 1] = text
+            end
         end
     end
-    if #raw == 0 then return "(No chat history)" end
+    if #raw == 0 then
+        return "(No chat history)"
+    end
     local lines = {}
     for i = 1, #raw do
         local text = raw[i]
@@ -71,8 +90,6 @@ local function ReadActiveChatText()
     end
     return table.concat(lines, "\n")
 end
-
-
 
 -------------------------------------------------------------------------------
 --  Copy popup (used by sidebar copy-chat button)
@@ -144,9 +161,15 @@ local function ShowCopyPopup(text)
         local _sbDragOffsetY = 0
 
         local function UpdateThumb()
-            if not scrollBox then thumb:Hide(); return end
+            if not scrollBox then
+                thumb:Hide()
+                return
+            end
             local ext = scrollBox:GetVisibleExtentPercentage()
-            if not ext or ext >= 1 then thumb:Hide(); return end
+            if not ext or ext >= 1 then
+                thumb:Hide()
+                return
+            end
             thumb:Show()
             local trackH = track:GetHeight()
             local thumbH = max(20, trackH * ext)
@@ -161,9 +184,13 @@ local function ShowCopyPopup(text)
             local ext = scrollBox:GetVisibleExtentPercentage() or 1
             local thumbH = max(20, trackH * ext)
             local maxTravel = trackH - thumbH
-            if maxTravel <= 0 then return end
+            if maxTravel <= 0 then
+                return
+            end
             local trackTop = track:GetTop()
-            if not trackTop then return end
+            if not trackTop then
+                return
+            end
             local scale = track:GetEffectiveScale()
             local localY = trackTop - (cursorY / scale) - _sbDragOffsetY
             local pct = max(0, min(1, localY / maxTravel))
@@ -171,11 +198,15 @@ local function ShowCopyPopup(text)
         end
 
         track:SetScript("OnMouseDown", function(self, button)
-            if button ~= "LeftButton" then return end
+            if button ~= "LeftButton" then
+                return
+            end
             local _, cursorY = GetCursorPosition()
             local scale = self:GetEffectiveScale()
             local trackTop = self:GetTop()
-            if not trackTop then return end
+            if not trackTop then
+                return
+            end
             local thumbTop = thumb:GetTop()
             local thumbBot = thumb:GetBottom()
             if thumbTop and thumbBot then
@@ -191,7 +222,9 @@ local function ShowCopyPopup(text)
             _sbDragging = true
             SetScrollFromY(cursorY)
         end)
-        track:SetScript("OnMouseUp", function() _sbDragging = false end)
+        track:SetScript("OnMouseUp", function()
+            _sbDragging = false
+        end)
 
         -- Polls only while the popup is open (hidden frame otherwise)
         local pollFrame = CreateFrame("Frame")
@@ -204,12 +237,20 @@ local function ShowCopyPopup(text)
             end
             local ext = scrollBox:GetVisibleExtentPercentage() or 1
             local pct = scrollBox:GetScrollPercentage() or 0
-            if ext == _lastExt and pct == _lastPct then return end
+            if ext == _lastExt and pct == _lastPct then
+                return
+            end
             _lastExt, _lastPct = ext, pct
             UpdateThumb()
         end)
-        dimmer:HookScript("OnShow", function() _lastPct, _lastExt = -1, -1; pollFrame:Show() end)
-        dimmer:HookScript("OnHide", function() _sbDragging = false; pollFrame:Hide() end)
+        dimmer:HookScript("OnShow", function()
+            _lastPct, _lastExt = -1, -1
+            pollFrame:Show()
+        end)
+        dimmer:HookScript("OnHide", function()
+            _sbDragging = false
+            pollFrame:Hide()
+        end)
 
         popup._textBox = textBox
         popup._editBox = editBox
@@ -218,11 +259,14 @@ local function ShowCopyPopup(text)
         closeBtn:SetSize(90, 24)
         closeBtn:SetPoint("BOTTOM", popup, "BOTTOM", 0, 14)
         closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-        CUI.MakeStyledButton(closeBtn, "Close", 10,
-            CUI.RB_COLOURS, function() dimmer:Hide() end)
+        CUI.MakeStyledButton(closeBtn, "Close", 10, CUI.RB_COLOURS, function()
+            dimmer:Hide()
+        end)
 
         dimmer:SetScript("OnMouseDown", function()
-            if not popup:IsMouseOver() then dimmer:Hide() end
+            if not popup:IsMouseOver() then
+                dimmer:Hide()
+            end
         end)
 
         -- SetPropagateKeyboardInput is blocked in combat on every frame (a pcall
@@ -231,7 +275,9 @@ local function ShowCopyPopup(text)
         -- box still closes it on Escape).
         CUI.PopupTakeKeys(popup, dimmer)
         popup:SetScript("OnKeyDown", function(self, key)
-            if InCombatLockdown() then return end
+            if InCombatLockdown() then
+                return
+            end
             if key == "ESCAPE" then
                 self:SetPropagateKeyboardInput(false)
                 dimmer:Hide()
@@ -274,7 +320,9 @@ local URL_PATTERNS = {
 -- Literal pre-check so the regex pass is skipped entirely for messages with no
 -- URL-like substring (the overwhelming majority).
 local function ContainsURL(text)
-    if not text then return false end
+    if not text then
+        return false
+    end
     return text:find("://", 1, true) or text:find("www.", 1, true)
 end
 
@@ -290,7 +338,9 @@ local function _GetUrlSubstitution()
 end
 
 local function WrapURLs(text)
-    if not text then return text end
+    if not text then
+        return text
+    end
     local sub = _GetUrlSubstitution()
     for _, p in ipairs(URL_PATTERNS) do
         text = text:gsub(p, sub)
@@ -301,8 +351,12 @@ end
 local urlBackdrop, urlPopup
 
 local function HideUrlPopup()
-    if urlPopup then urlPopup:Hide() end
-    if urlBackdrop then urlBackdrop:Hide() end
+    if urlPopup then
+        urlPopup:Hide()
+    end
+    if urlBackdrop then
+        urlBackdrop:Hide()
+    end
 end
 
 local function ShowUrlPopup(url)
@@ -317,7 +371,9 @@ local function ShowUrlPopup(url)
         local fadeIn = urlBackdrop:CreateAnimationGroup()
         fadeIn:SetToFinalAlpha(true)
         local a = fadeIn:CreateAnimation("Alpha")
-        a:SetFromAlpha(0); a:SetToAlpha(1); a:SetDuration(0.2)
+        a:SetFromAlpha(0)
+        a:SetToAlpha(1)
+        a:SetDuration(0.2)
         urlBackdrop._fadeIn = fadeIn
         urlBackdrop:RegisterForClicks("AnyUp")
         urlBackdrop:SetScript("OnClick", HideUrlPopup)
@@ -331,7 +387,9 @@ local function ShowUrlPopup(url)
         local popFade = urlPopup:CreateAnimationGroup()
         popFade:SetToFinalAlpha(true)
         local pa = popFade:CreateAnimation("Alpha")
-        pa:SetFromAlpha(0); pa:SetToAlpha(1); pa:SetDuration(0.2)
+        pa:SetFromAlpha(0)
+        pa:SetToAlpha(1)
+        pa:SetDuration(0.2)
         urlPopup._fadeIn = popFade
 
         local bg = urlPopup:CreateTexture(nil, "BACKGROUND")
@@ -355,18 +413,27 @@ local function ShowUrlPopup(url)
         eb:SetJustifyH("CENTER")
         local ebBg = eb:CreateTexture(nil, "BACKGROUND")
         ebBg:SetColorTexture(0.098, 0.108, 0.120, 1)
-        ebBg:SetPoint("TOPLEFT", -6, 4); ebBg:SetPoint("BOTTOMRIGHT", 6, -4)
+        ebBg:SetPoint("TOPLEFT", -6, 4)
+        ebBg:SetPoint("BOTTOMRIGHT", 6, -4)
         if PP and PP.CreateBorder then
             PP.CreateBorder(eb, 1, 1, 1, 0.02, 1, "OVERLAY", 7)
         end
-        eb:SetScript("OnEscapePressed", function(self) self:ClearFocus(); HideUrlPopup() end)
+        eb:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+            HideUrlPopup()
+        end)
         eb:SetScript("OnKeyDown", function(self, key)
             if key == "C" and IsControlKeyDown() then
                 C_Timer.After(0.05, HideUrlPopup)
             end
         end)
-        eb:SetScript("OnMouseUp", function(self) self:HighlightText() end)
-        urlPopup:SetScript("OnMouseDown", function() urlPopup._eb:SetFocus(); urlPopup._eb:HighlightText() end)
+        eb:SetScript("OnMouseUp", function(self)
+            self:HighlightText()
+        end)
+        urlPopup:SetScript("OnMouseDown", function()
+            urlPopup._eb:SetFocus()
+            urlPopup._eb:HighlightText()
+        end)
         urlPopup._eb = eb
     end
     urlPopup._eb:SetText(url)
@@ -376,27 +443,45 @@ local function ShowUrlPopup(url)
     urlPopup:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cx / scale, cy / scale + 10)
     ECHAT.HostPopup(urlBackdrop)
     ECHAT.HostPopup(urlPopup)
-    urlBackdrop:SetAlpha(0); urlBackdrop:Show(); urlBackdrop._fadeIn:Play()
-    urlPopup:SetAlpha(0); urlPopup:Show(); urlPopup._fadeIn:Play()
-    urlPopup._eb:SetFocus(); urlPopup._eb:HighlightText()
+    urlBackdrop:SetAlpha(0)
+    urlBackdrop:Show()
+    urlBackdrop._fadeIn:Play()
+    urlPopup:SetAlpha(0)
+    urlPopup:Show()
+    urlPopup._fadeIn:Play()
+    urlPopup._eb:SetFocus()
+    urlPopup._eb:HighlightText()
 end
 
 -------------------------------------------------------------------------------
 --  Hyperlink tooltip on hover + click-to-toggle item detail popup
 -------------------------------------------------------------------------------
 local TOOLTIP_LINK_TYPES = {
-    achievement = true, apower = true, currency = true, enchant = true,
-    glyph = true, instancelock = true, item = true, keystone = true,
-    quest = true, spell = true, talent = true, unit = true,
+    achievement = true,
+    apower = true,
+    currency = true,
+    enchant = true,
+    glyph = true,
+    instancelock = true,
+    item = true,
+    keystone = true,
+    quest = true,
+    spell = true,
+    talent = true,
+    unit = true,
 }
 
 local _hyperlinkEntered = nil
 
 local function OnHyperlinkEnter(self, hyperlink)
     -- Secret link (lockdown line): match would error; no tooltip either way.
-    if _G.issecretvalue and _G.issecretvalue(hyperlink) then return end
+    if _G.issecretvalue and _G.issecretvalue(hyperlink) then
+        return
+    end
     local cfg = ECHAT.DB()
-    if cfg.hideTooltipOnHover then return end
+    if cfg.hideTooltipOnHover then
+        return
+    end
     local linkType = hyperlink:match("^([^:]+)")
     if TOOLTIP_LINK_TYPES[linkType] then
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
@@ -421,10 +506,16 @@ end
 -- placeholder; this post-hook runs after the handler and queues the same
 -- deferred rebuild the CAUTIONARY_CHAT_MESSAGE mirror uses.
 hooksecurefunc("SetItemRef", function(link)
-    if not link then return end
-    if _G.issecretvalue and _G.issecretvalue(link) then return end
+    if not link then
+        return
+    end
+    if _G.issecretvalue and _G.issecretvalue(link) then
+        return
+    end
     if link:find("^censoredmessage") then
-        if ECHAT.EngineQueueRebuildAll then ECHAT.EngineQueueRebuildAll() end
+        if ECHAT.EngineQueueRebuildAll then
+            ECHAT.EngineQueueRebuildAll()
+        end
         return
     end
     local url = link:match("^" .. addonName .. "url:(.+)$")

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Plate.lua
 --
@@ -10,7 +12,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local pairs, type = pairs, type
@@ -35,12 +39,16 @@ local NotifyCastEnded, GetClassPowerTopPush = I.NotifyCastEnded, I.GetClassPower
 local HideClassPowerOnPlate = I.HideClassPowerOnPlate
 
 local p
-I.profileSetters[#I.profileSetters + 1] = function(v) p = v end
+I.profileSetters[#I.profileSetters + 1] = function(v)
+    p = v
+end
 
 -- Pre-hook SetTexture for pooled aura-slot icons (snap-disabled at creation, so
 -- the pixel-snap hook is pure overhead). Upgraded to PP.RawSetTexture in
 -- OnEnable; starts as a plain wrapper so it is never nil.
-local RawSetTex = function(t, v) t:SetTexture(v) end
+local RawSetTex = function(t, v)
+    t:SetTexture(v)
+end
 
 local hookedUFs = {}
 local hookedHighlights = {}
@@ -52,25 +60,36 @@ local storedParents = {}
 -- order, plus .held while HideBlizzardFrame owns the frame. Wiped and reused by the reclaim.
 ns._npParked = setmetatable({}, { __mode = "k" })
 local function MoveToOffscreen(element, unit)
-    if not element then return end
+    if not element then
+        return
+    end
     -- PERF: skip SetParent if already offscreen (saves ~14 calls per plate respawn)
-    if element:GetParent() == npOffscreenParent then return end
+    if element:GetParent() == npOffscreenParent then
+        return
+    end
     if not storedParents[element] then
         storedParents[element] = element:GetParent()
     end
     element:SetParent(npOffscreenParent)
 end
 local function HideBlizzardFrame(nameplate, unit)
-    if not nameplate then return end
+    if not nameplate then
+        return
+    end
     local uf = nameplate.UnitFrame
-    if not uf then return end
+    if not uf then
+        return
+    end
     -- Suppress unconditionally: if we are called, an CUI plate is taking over this nameplate.
     -- NEVER gate on UnitCanAttack -- it can return false on the first frame (unit not fully
     -- registered), skipping the whole block and leaving Blizzard's UnitFrame visible as a
     -- giant black box.
     uf:SetAlpha(0)
     local rec = ns._npParked[uf]
-    if not rec then rec = {}; ns._npParked[uf] = rec end
+    if not rec then
+        rec = {}
+        ns._npParked[uf] = rec
+    end
     rec.held = true
     -- The AurasFrame rides offscreen with the other children (WidgetContainer is the one child
     -- kept live, below): our containers own plate auras and these lists are taint-locked and
@@ -91,9 +110,14 @@ local function HideBlizzardFrame(nameplate, unit)
     -- re-acquire finds its children already parked, so the record never grows.
     for i = uf:GetNumChildren(), 1, -1 do
         local child = (select(i, uf:GetChildren()))
-        if child and child ~= uf.WidgetContainer and child ~= uf.AurasFrame
-        and child ~= uf.SoftTargetFrame
-           and not child:IsForbidden() and not child:IsProtected() then
+        if
+            child
+            and child ~= uf.WidgetContainer
+            and child ~= uf.AurasFrame
+            and child ~= uf.SoftTargetFrame
+            and not child:IsForbidden()
+            and not child:IsProtected()
+        then
             if not storedParents[child] then
                 storedParents[child] = uf
                 rec[#rec + 1] = child
@@ -147,12 +171,18 @@ local function HideBlizzardFrame(nameplate, unit)
             hooksecurefunc(icon, "Show", function(self)
                 local owner = hookedSoftTargetIcons[self]
                 local ufUnit = owner and owner.unit
-                if not ufUnit then return end
+                if not ufUnit then
+                    return
+                end
                 -- Hide only for attackable enemies. NPCs and non-attackable
                 -- objects, even hostile ones, keep the icon.
                 local canAttack = UnitCanAttack("player", ufUnit)
-                if issecretvalue and issecretvalue(canAttack) then return end
-                if canAttack then self:Hide() end
+                if issecretvalue and issecretvalue(canAttack) then
+                    return
+                end
+                if canAttack then
+                    self:Hide()
+                end
             end)
         end
     end
@@ -160,11 +190,15 @@ local function HideBlizzardFrame(nameplate, unit)
         hookedUFs[uf] = true
         local locked = false
         hooksecurefunc(uf, "SetAlpha", function(self)
-            if locked then return end
+            if locked then
+                return
+            end
             -- Force alpha 0 only while an CUI plate owns this nameplate. On recycle to a
             -- friendly unit the plate is released and ns.plates[unit] is nil, so the hook no-ops.
             local ufUnit = self.unit or (self.GetUnit and self:GetUnit())
-            if not ufUnit or not ns.plates[ufUnit] then return end
+            if not ufUnit or not ns.plates[ufUnit] then
+                return
+            end
             locked = true
             self:SetAlpha(0)
             locked = false
@@ -174,7 +208,9 @@ local function HideBlizzardFrame(nameplate, unit)
         hookedHighlights[uf.selectionHighlight] = true
         hooksecurefunc(uf.selectionHighlight, "Show", function(self)
             local parent = self:GetParent()
-            if parent == npOffscreenParent then return end
+            if parent == npOffscreenParent then
+                return
+            end
             if parent then
                 local ufUnit = parent.unit or (parent.GetUnit and parent:GetUnit())
                 if ufUnit and UnitExists(ufUnit) and UnitCanAttack("player", ufUnit) then
@@ -186,7 +222,9 @@ local function HideBlizzardFrame(nameplate, unit)
         hooksecurefunc(uf.selectionHighlight, "SetShown", function(self, shown)
             if shown then
                 local parent = self:GetParent()
-                if parent == npOffscreenParent then return end
+                if parent == npOffscreenParent then
+                    return
+                end
                 if parent then
                     local ufUnit = parent.unit or (parent.GetUnit and parent:GetUnit())
                     if ufUnit and UnitExists(ufUnit) and UnitCanAttack("player", ufUnit) then
@@ -204,13 +242,17 @@ end
 -- re-park in place. Zero cost for a frame no enemy ever held: one lookup.
 function ns.NP_ReclaimBlizzardFrame(uf)
     local rec = uf and ns._npParked[uf]
-    if not (rec and rec.held) or uf:IsForbidden() then return end
+    if not (rec and rec.held) or uf:IsForbidden() then
+        return
+    end
     -- Reverse park order, so the children return to uf in their original order.
     for i = #rec, 1, -1 do
         local child = rec[i]
         if storedParents[child] == uf then
             storedParents[child] = nil
-            if child:GetParent() == npOffscreenParent then child:SetParent(uf) end
+            if child:GetParent() == npOffscreenParent then
+                child:SetParent(uf)
+            end
         end
     end
     wipe(rec)
@@ -219,12 +261,18 @@ function ns.NP_ReclaimBlizzardFrame(uf)
     local auraParent = auras and storedParents[auras]
     if auraParent then
         storedParents[auras] = nil
-        if auras:GetParent() == npOffscreenParent then auras:SetParent(auraParent) end
+        if auras:GetParent() == npOffscreenParent then
+            auras:SetParent(auraParent)
+        end
     end
     -- The kept-live frames still sit on the base of the enemy that last held this frame.
     local wc, stf = uf.WidgetContainer, uf.SoftTargetFrame
-    if wc and wc:GetParent() ~= uf then wc:SetParent(uf) end
-    if stf and stf:GetParent() ~= uf then stf:SetParent(uf) end
+    if wc and wc:GetParent() ~= uf then
+        wc:SetParent(uf)
+    end
+    if stf and stf:GetParent() ~= uf then
+        stf:SetParent(uf)
+    end
 end
 -- Blizzard's behind-camera arrow (the rotated offscreen icon under a plate whose unit is
 -- behind the camera; retail and WoW Forever) stays hidden on every plate, friendly ones
@@ -233,10 +281,14 @@ end
 -- written on Blizzard's frame). A client without the arrow has nothing to hide.
 local hiddenBehindCam = setmetatable({}, { __mode = "k" })
 function ns.NP_HideBehindCameraIcon(uf)
-    if not uf or hiddenBehindCam[uf] or uf:IsForbidden() then return end
+    if not uf or hiddenBehindCam[uf] or uf:IsForbidden() then
+        return
+    end
     hiddenBehindCam[uf] = true
     local icon = uf.behindCameraIcon
-    if icon then icon:SetAlpha(0) end
+    if icon then
+        icon:SetAlpha(0)
+    end
 end
 ns.HideBlizzardFrame = HideBlizzardFrame
 local castFallbackFrame = CreateFrame("Frame")
@@ -258,7 +310,9 @@ castFallbackFrame:SetScript("OnUpdate", function(self, elapsed)
                 -- Keep spell name + target current in fallback mode.
                 if doText and plate.UpdateCastText then
                     local castName = UnitCastingInfo(plate.unit)
-                    if type(castName) == "nil" then castName = UnitChannelInfo(plate.unit) end
+                    if type(castName) == "nil" then
+                        castName = UnitChannelInfo(plate.unit)
+                    end
                     plate:UpdateCastText(castName)
                 end
             else
@@ -294,11 +348,15 @@ function ns.GetCastTextAnchor(side, pushed, reserve, isTimer)
         return "CENTER", 0, "CENTER"
     elseif side == "left" then
         local base = isTimer and 3 or 5
-        if pushed then base = base + reserve end
+        if pushed then
+            base = base + reserve
+        end
         return "LEFT", base, "LEFT"
     else -- "right"
         local base = -3
-        if pushed then base = base - reserve end
+        if pushed then
+            base = base - reserve
+        end
         return "RIGHT", base, "RIGHT"
     end
 end
@@ -337,7 +395,9 @@ function NameplateFrame:UpdateCastText(spellName)
     local db = p or defaults
     local combine = db.castCombineNameTarget == true
     local useClassColor = defaults.castTargetClassColor
-    if db.castTargetClassColor ~= nil then useClassColor = db.castTargetClassColor end
+    if db.castTargetClassColor ~= nil then
+        useClassColor = db.castTargetClassColor
+    end
 
     local targetColor
     if useClassColor then
@@ -374,9 +434,12 @@ function NameplateFrame:UpdateCastText(spellName)
     elseif combine and hasTarget then
         -- 12.1 class RGB may be SECRET: use it as the FontString's base color,
         -- then override only the spell prefix with a clean profile-color escape.
-        local nameHex = string.format("ff%02x%02x%02x",
-            math.floor(nameColor.r * 255 + 0.5), math.floor(nameColor.g * 255 + 0.5),
-            math.floor(nameColor.b * 255 + 0.5))
+        local nameHex = string.format(
+            "ff%02x%02x%02x",
+            math.floor(nameColor.r * 255 + 0.5),
+            math.floor(nameColor.g * 255 + 0.5),
+            math.floor(nameColor.b * 255 + 0.5)
+        )
         self.castName:SetFormattedText("|c" .. nameHex .. "%s - |r%s", spellName, spellTarget)
     else
         self.castName:SetText(spellName)
@@ -394,8 +457,9 @@ function NameplateFrame:UpdateCastText(spellName)
         self.castName:SetWidth(castW * nameWidth / 100)
     end
     self.castName:SetShown((db.castNameSide or defaults.castNameSide) ~= "none")
-    self.castTarget:SetShown(not combine and hasTarget
-        and (db.castTargetSide or defaults.castTargetSide) ~= "none")
+    self.castTarget:SetShown(
+        not combine and hasTarget and (db.castTargetSide or defaults.castTargetSide) ~= "none"
+    )
 end
 
 -- Appearance generation: bumped by RefreshAllSettings so plates re-apply static appearance on
@@ -445,7 +509,9 @@ function NameplateFrame:ApplyAppearance()
     -- Same for the Text Coloring slot memo: the static slot colours written here and
     -- in ApplyHealthTextAppearance below replace what it last painted.
     if self._scMemo then
-        for _, e in pairs(self._scMemo) do e[1] = nil end
+        for _, e in pairs(self._scMemo) do
+            e[1] = nil
+        end
     end
     self:RefreshNamePosition()
     -- Cast text sizes, colors, and offsets
@@ -465,22 +531,30 @@ function NameplateFrame:ApplyAppearance()
     SetFSFont(self.castTimer, ctmSz, GetNPOutline())
     self.castTimer:SetTextColor(ctmC.r, ctmC.g, ctmC.b, 1)
     local showTimer = defaults.showCastTimer
-    if p and p.showCastTimer ~= nil then showTimer = p.showCastTimer end
+    if p and p.showCastTimer ~= nil then
+        showTimer = p.showCastTimer
+    end
     self._showCastTimer = showTimer
-    local nameSide   = (p and p.castNameSide)   or defaults.castNameSide
+    local nameSide = (p and p.castNameSide) or defaults.castNameSide
     local targetSide = (p and p.castTargetSide) or defaults.castTargetSide
-    local timerSide  = (p and p.castTimerSide)  or defaults.castTimerSide
+    local timerSide = (p and p.castTimerSide) or defaults.castTimerSide
     local combineNameTarget = p and p.castCombineNameTarget == true
     local castW = self.cast:GetWidth()
     local timerW = ctmSz * 2.2
     -- Per-element truncation: width as a % of the cast bar, plus a wrap toggle.
     local cnWPct = (p and p.castNameWidthPct) or defaults.castNameWidthPct
-    if combineNameTarget then cnWPct = (p and p.castCombinedWidthPct) or defaults.castCombinedWidthPct end
+    if combineNameTarget then
+        cnWPct = (p and p.castCombinedWidthPct) or defaults.castCombinedWidthPct
+    end
     local ctWPct = (p and p.castTargetWidthPct) or defaults.castTargetWidthPct
     local cnWrap = defaults.castNameWrap
-    if p and p.castNameWrap ~= nil then cnWrap = p.castNameWrap end
+    if p and p.castNameWrap ~= nil then
+        cnWrap = p.castNameWrap
+    end
     local ctWrap = defaults.castTargetWrap
-    if p and p.castTargetWrap ~= nil then ctWrap = p.castTargetWrap end
+    if p and p.castTargetWrap ~= nil then
+        ctWrap = p.castTargetWrap
+    end
     self.castName:SetWordWrap(cnWrap)
     self.castName:SetMaxLines(cnWrap and 2 or 1)
     self.castTarget:SetWordWrap(ctWrap)
@@ -488,14 +562,16 @@ function NameplateFrame:ApplyAppearance()
     self.castTarget:SetMaxLines(ctWrap and 2 or 1)
     if castW and castW > 0 then
         if nameSide ~= "none" then
-            local pt, xb, jh = ns.GetCastTextAnchor(nameSide, showTimer and timerSide == nameSide, timerW, false)
+            local pt, xb, jh =
+                ns.GetCastTextAnchor(nameSide, showTimer and timerSide == nameSide, timerW, false)
             self.castName:SetWidth(castW * cnWPct / 100)
             self.castName:SetJustifyH(jh)
             self.castName:ClearAllPoints()
             self.castName:SetPoint(pt, self.cast, pt, xb + cnOX, cnOY)
         end
         if targetSide ~= "none" then
-            local pt, xb, jh = ns.GetCastTextAnchor(targetSide, showTimer and timerSide == targetSide, timerW, false)
+            local pt, xb, jh =
+                ns.GetCastTextAnchor(targetSide, showTimer and timerSide == targetSide, timerW, false)
             self.castTarget:SetWidth(castW * ctWPct / 100)
             self.castTarget:SetJustifyH(jh)
             self.castTarget:ClearAllPoints()
@@ -528,10 +604,16 @@ function NameplateFrame:ApplyAppearance()
     ns.ApplyAbsorbStyle(self)
     self:ApplyBorder()
     self:ApplyBorderColor()
-    if self.ApplyCastBorder then self:ApplyCastBorder() end
-    if self.ApplyCastBorderColor then self:ApplyCastBorderColor() end
+    if self.ApplyCastBorder then
+        self:ApplyCastBorder()
+    end
+    if self.ApplyCastBorderColor then
+        self:ApplyCastBorderColor()
+    end
     self:ApplyHealthTextAppearance()
-    if ns.RefreshCastOverlay then ns.RefreshCastOverlay(self) end
+    if ns.RefreshCastOverlay then
+        ns.RefreshCastOverlay(self)
+    end
     -- Re-sync the cast-bar wrap LAST, after normal borders and cast-overlay lift are
     -- re-applied: for a wrapped plate this re-hides the borders ApplyBorder/ApplyCastBorder
     -- just re-showed (no double border). Pure no-op unless enabled or wrapped.
@@ -555,8 +637,14 @@ function NameplateFrame:PlaceSlotText(fs, slot, txOff, tyOff)
         local drop = (self.cast:IsShown() and self._castDrop) or 0
         PP.Point(fs, slot.anchor, self.health, slot.point, slot.xOff + txOff, drop - 2 + tyOff)
     elseif slot.top then
-        PP.Point(fs, slot.anchor, self.health, slot.point, slot.xOff + txOff,
-            4 + GetNameYOffset() + GetClassPowerTopPush(self) + tyOff)
+        PP.Point(
+            fs,
+            slot.anchor,
+            self.health,
+            slot.point,
+            slot.xOff + txOff,
+            4 + GetNameYOffset() + GetClassPowerTopPush(self) + tyOff
+        )
     elseif slot.anchor == "CENTER" then
         fs:SetPoint("CENTER", self.health, "CENTER", txOff, tyOff)
     else
@@ -618,32 +706,57 @@ end
 -- else keeps the slot colour.
 function NameplateFrame:UpdateToT()
     local fs, unit, slotKey = self.totText, self.unit, ns._npToTSlot
-    if not (fs and unit and slotKey) then return end
+    if not (fs and unit and slotKey) then
+        return
+    end
     local tu = ns._npToTUnits[unit]
-    if not tu then tu = unit .. "target"; ns._npToTUnits[unit] = tu end
+    if not tu then
+        tu = unit .. "target"
+        ns._npToTUnits[unit] = tu
+    end
     -- No target: a space, so the text keeps its line (top auras and the range
     -- text anchor to it).
-    if not UnitExists(tu) then fs:SetText(" "); return end
+    if not UnitExists(tu) then
+        fs:SetText(" ")
+        return
+    end
     -- WoW Forever joins the surname; then the slot's Name Format.
     local name = ns.NP_FormatName(CludesUI.WithSurname(UnitName(tu)), slotKey, tu)
     fs:SetText(name)
-    if not ns._npToTClass then return end
+    if not ns._npToTClass then
+        return
+    end
     local tok
-    if UnitIsPlayer(tu) then tok = UnitClassBase(tu) end
+    if UnitIsPlayer(tu) then
+        tok = UnitClassBase(tu)
+    end
     if type(tok) ~= "nil" then
         if issecretvalue(tok) then
             -- Same order as the slot painter: the restricted-unit palette, then Blizzard's.
             local ok, r, g, b = CludesUI.GetClassColorForRestrictedUnit(tu, tok)
-            if ok then fs:SetTextColor(r, g, b, 1); return end
+            if ok then
+                fs:SetTextColor(r, g, b, 1)
+                return
+            end
             local c = C_ClassColor.GetClassColor(tok)
-            if c then fs:SetTextColor(c:GetRGB()); return end
+            if c then
+                fs:SetTextColor(c:GetRGB())
+                return
+            end
         else
             local c = CludesUI.GetClassColor(tok)
-            if c then fs:SetTextColor(c.r, c.g, c.b, 1); return end
+            if c then
+                fs:SetTextColor(c.r, c.g, c.b, 1)
+                return
+            end
         end
     end
     local c = (p and p[ns._npToTColorKey]) or defaults[ns._npToTColorKey]
-    if c then fs:SetTextColor(c.r, c.g, c.b, 1) else fs:SetTextColor(1, 1, 1, 1) end
+    if c then
+        fs:SetTextColor(c.r, c.g, c.b, 1)
+    else
+        fs:SetTextColor(1, 1, 1, 1)
+    end
 end
 function NameplateFrame:UNIT_TARGET()
     self:RefreshTargetTexts(true)
@@ -667,17 +780,25 @@ ns._npTgtFlush:SetScript("OnUpdate", function(self)
             plate:RefreshTargetTexts(true, what)
         end
     end
-    if next(dirty) == nil then self:Hide() end
+    if next(dirty) == nil then
+        self:Hide()
+    end
 end)
 function NameplateFrame:RefreshTargetTexts(force, what)
-    if not self.unit then return end
+    if not self.unit then
+        return
+    end
     local now = GetTime()
     if not force and now - (self._tgtT or 0) < 0.2 then
         local dirty = ns._npTgtDirty
         local cur = dirty[self]
-        if cur ~= "tgt" then dirty[self] = what or "tgt" end
+        if cur ~= "tgt" then
+            dirty[self] = what or "tgt"
+        end
         -- A new mark wakes the flusher; it stays shown while any mark waits.
-        if not cur then ns._npTgtFlush:Show() end
+        if not cur then
+            ns._npTgtFlush:Show()
+        end
         return
     end
     self._tgtT = now
@@ -721,7 +842,14 @@ function NameplateFrame:AddCustomText(ca, slotKey, slot)
         fs:SetJustifyH(slot.justify or slot.anchor)
     else
         fs:ClearAllPoints()
-        PP.Point(fs, "BOTTOM", self.health, "TOP", txOff, 4 + GetNameYOffset() + GetClassPowerTopPush(self) + tyOff)
+        PP.Point(
+            fs,
+            "BOTTOM",
+            self.health,
+            "TOP",
+            txOff,
+            4 + GetNameYOffset() + GetClassPowerTopPush(self) + tyOff
+        )
         fs:SetJustifyH("CENTER")
     end
     fs:SetTextColor(sr, sg, sb, 1)
@@ -731,12 +859,18 @@ function NameplateFrame:AddCustomText(ca, slotKey, slot)
     -- is boxed only below 100% (the health loop).
     local corner = slot and slot.corner
     local w = 0
-    if not slot then self._cuTopName = (c and c.has.name) and true or nil end
+    if not slot then
+        self._cuTopName = (c and c.has.name) and true or nil
+    end
     if not corner then
         local wpct = (p and p[slotKey .. "WidthPct"]) or 100
         if c and c.has.name then
-            w = math.max((slot and ns.NP_BarRestWidth(slotKey)
-                or ns.NP_TopNameWidth(self, GetHealthBarWidth())) * wpct / 100, 20)
+            w = math.max(
+                (slot and ns.NP_BarRestWidth(slotKey) or ns.NP_TopNameWidth(self, GetHealthBarWidth()))
+                    * wpct
+                    / 100,
+                20
+            )
         elseif wpct < 100 then
             w = GetHealthBarWidth() * wpct / 100
         end
@@ -745,46 +879,66 @@ function NameplateFrame:AddCustomText(ca, slotKey, slot)
     local wrap = (not corner and p and p[slotKey .. "Wrap"]) and true or false
     fs:SetWordWrap(wrap)
     fs:SetMaxLines(wrap and 2 or 1)
-    if w > 0 then ns.ReflowFontString(fs) end
+    if w > 0 then
+        ns.ReflowFontString(fs)
+    end
     fs:Show()
     if not c then
         fs:SetText("")
         return
     end
     local cu = ca._cu
-    if not cu then cu = {}; ca._cu = cu end
+    if not cu then
+        cu = {}
+        ca._cu = cu
+    end
     local n = ca._cuN + 1
     local e = cu[n]
-    if not e then e = {}; cu[n] = e end
+    if not e then
+        e = {}
+        cu[n] = e
+    end
     e.fs, e.slot, e.c = fs, slotKey, c
     e.tick = (c.reads.hp or c.reads.abs) and true or false
     e.tgt = c.reads.tgt and true or false
     -- The health tick's target refresh skips what its own tick paint just wrote.
     e.tgtOnly = e.tgt and not e.tick
     ca._cuN = n
-    if e.tick then ca._cuTick = true end
+    if e.tick then
+        ca._cuTick = true
+    end
 end
 -- Repaints the plate's custom texts: all of them (what nil), or those whose entry
 -- flag what is set ("tick": reads health or absorbs; "tgt": reads [target];
 -- "tgtOnly": reads [target] but not health or absorbs).
 function NameplateFrame:PaintCustomTexts(what)
     local ca, unit = self._cachedHealthSlots, self.unit
-    if not (ca and unit) then return end
+    if not (ca and unit) then
+        return
+    end
     local cu = ca._cu
     for i = 1, ca._cuN or 0 do
         local e = cu[i]
-        if not what or e[what] then ns.NP_PaintCustom(e.fs, e.c, unit, e.slot) end
+        if not what or e[what] then
+            ns.NP_PaintCustom(e.fs, e.c, unit, e.slot)
+        end
     end
 end
 
 function NameplateFrame:ApplyHealthTextAppearance()
     self.hpText:Hide()
     self.hpNumber:Hide()
-    if self.levelText then self.levelText:Hide() end
-    if self.totText then self.totText:Hide() end
+    if self.levelText then
+        self.levelText:Hide()
+    end
+    if self.totText then
+        self.totText:Hide()
+    end
     for i = 1, #ns.textSlotKeys do
         local fs = self[ns.NP_CustomFSKey[ns.textSlotKeys[i]]]
-        if fs then fs:Hide() end
+        if fs then
+            fs:Hide()
+        end
     end
     -- Slot assignments may change element kinds: drop the value memo so the
     -- next UpdateHealthValues rewrites every slot's content.
@@ -815,7 +969,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
             fs:SetTextColor(sr, sg, sb, 1)
             fs:Show()
             ci = ci + 1
-            if not ca[ci] then ca[ci] = {} end
+            if not ca[ci] then
+                ca[ci] = {}
+            end
             ca[ci].element = element
             ca[ci].fs = fs
             ca[ci].slotKey = slot.key
@@ -829,7 +985,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
             fs:SetTextColor(sr, sg, sb, 1)
             fs:Show()
             ci = ci + 1
-            if not ca[ci] then ca[ci] = {} end
+            if not ca[ci] then
+                ca[ci] = {}
+            end
             ca[ci].element = element
             ca[ci].fs = fs
             ca[ci].slotKey = slot.key
@@ -843,7 +1001,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
             fs:SetTextColor(sr, sg, sb, 1)
             fs:Show()
             ci = ci + 1
-            if not ca[ci] then ca[ci] = {} end
+            if not ca[ci] then
+                ca[ci] = {}
+            end
             ca[ci].element = element
             ca[ci].fs = fs
             ca[ci].slotKey = slot.key
@@ -860,7 +1020,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
             self:PlaceSlotText(fs, slot, txOff, tyOff)
             fs:SetJustifyH(slot.justify or slot.anchor)
             fs:SetTextColor(sr, sg, sb, 1)
-            if isLevel and self.unit then fs:SetText(ns.GetUnitLevelText(self.unit)) end
+            if isLevel and self.unit then
+                fs:SetText(ns.GetUnitLevelText(self.unit))
+            end
             -- The corner slots never truncate: no Width % or Wrap there.
             local lwpct = (not slot.corner and p and p[slot.key .. "WidthPct"]) or 100
             fs:SetWidth(lwpct < 100 and (GetHealthBarWidth() * lwpct / 100) or 0)
@@ -875,8 +1037,12 @@ function NameplateFrame:ApplyHealthTextAppearance()
 
     -- Top slot health text
     local topElement = GetTextSlot("textSlotTop")
-    if topElement == "healthPercent" or topElement == "healthPercentNoSign" or topElement == "healthNumber"
-       or IsComboHealthText(topElement) then
+    if
+        topElement == "healthPercent"
+        or topElement == "healthPercentNoSign"
+        or topElement == "healthNumber"
+        or IsComboHealthText(topElement)
+    then
         local nameYOff = GetNameYOffset()
         local cpPush = GetClassPowerTopPush(self)
         local txOff, tyOff = GetTextSlotOffsets("textSlotTop")
@@ -896,7 +1062,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
         fs:SetTextColor(tr, tg, tb, 1)
         fs:Show()
         ci = ci + 1
-        if not ca[ci] then ca[ci] = {} end
+        if not ca[ci] then
+            ca[ci] = {}
+        end
         ca[ci].element = topElement
         ca[ci].fs = fs
         ca[ci].slotKey = "textSlotTop"
@@ -917,7 +1085,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
         PP.Point(fs, "BOTTOM", self.health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
         fs:SetJustifyH("CENTER")
         fs:SetTextColor(tr, tg, tb, 1)
-        if isLevel and self.unit then fs:SetText(ns.GetUnitLevelText(self.unit)) end
+        if isLevel and self.unit then
+            fs:SetText(ns.GetUnitLevelText(self.unit))
+        end
         local lwpct = (p and p.textSlotTopWidthPct) or 100
         fs:SetWidth(lwpct < 100 and (GetHealthBarWidth() * lwpct / 100) or 0)
         local lwrap = (p and p.textSlotTopWrap) and true or false
@@ -935,11 +1105,12 @@ function NameplateFrame:ApplyHealthTextAppearance()
     for i = 1, ci do
         local e = ca[i]
         local el = e.element
-        if el == "healthPercent" or el == "healthPercentNoSign"
-           or IsComboHealthText(el) then
+        if el == "healthPercent" or el == "healthPercentNoSign" or IsComboHealthText(el) then
             local dec = (p and e.slotKey and p[e.slotKey .. "PctDecimal"]) and true or false
             e.pctDecimal = dec
-            if dec then anyDec = true end
+            if dec then
+                anyDec = true
+            end
         else
             e.pctDecimal = false
         end
@@ -953,7 +1124,9 @@ function NameplateFrame:ApplyHealthTextAppearance()
         local wpct = (not e.corner and p and e.slotKey and p[e.slotKey .. "WidthPct"]) or 100
         e.fs:SetWidth(wpct < 100 and (barW * wpct / 100) or 0)
         local wrap = false
-        if not e.corner and p and e.slotKey and p[e.slotKey .. "Wrap"] ~= nil then wrap = p[e.slotKey .. "Wrap"] end
+        if not e.corner and p and e.slotKey and p[e.slotKey .. "Wrap"] ~= nil then
+            wrap = p[e.slotKey .. "Wrap"]
+        end
         e.fs:SetWordWrap(wrap)
         e.fs:SetMaxLines(wrap and 2 or 1)
     end
@@ -972,7 +1145,9 @@ function NameplateFrame:SetUnit(unit, nameplate)
     -- Recycled/fresh plate: forget any prior eased scale so the first ApplyScale snaps instead of growing in from a stale one.
     self._curScale = nil
     ns._scaleAnim[self] = nil
-    if ns._hitboxOverlayShown or self.hitboxOverlay then ns._ApplyHitboxOverlay(self) end
+    if ns._hitboxOverlayShown or self.hitboxOverlay then
+        ns._ApplyHitboxOverlay(self)
+    end
     -- Apply static appearance only when stale (settings changed or fresh pool plate).
     if self._appearanceGen ~= ns._npAppearanceGen then
         self:ApplyAppearance()
@@ -989,13 +1164,23 @@ function NameplateFrame:SetUnit(unit, nameplate)
     -- Target of Target text: its event only while a slot shows it.
     self:SyncToT(unit)
     -- Attach a pooled aura-container bundle for this unit.
-    if ns.NPC_AttachPlate then ns.NPC_AttachPlate(self, unit) end
-    if ns.DebuffColors_Attach then ns.DebuffColors_Attach(self, unit) end
+    if ns.NPC_AttachPlate then
+        ns.NPC_AttachPlate(self, unit)
+    end
+    if ns.DebuffColors_Attach then
+        ns.DebuffColors_Attach(self, unit)
+    end
     -- Non-Target and Out of Combat Opacity (zero cost while off: numeric compares).
-    if ns._oocAlpha < 1 then self:RegisterUnitEvent("UNIT_FLAGS", unit) end
-    if ns._ntAlpha < 1 or ns._oocAlpha < 1 then ns.NT_Apply(self) end
+    if ns._oocAlpha < 1 then
+        self:RegisterUnitEvent("UNIT_FLAGS", unit)
+    end
+    if ns._ntAlpha < 1 or ns._oocAlpha < 1 then
+        ns.NT_Apply(self)
+    end
     -- Minor / Non-Elite Enemy Scale: the type base for the spawn pass's ApplyScale.
-    if ns._typeScaleOn then self:UpdateTypeScale() end
+    if ns._typeScaleOn then
+        self:UpdateTypeScale()
+    end
     -- Execute glow is per-spawn state, not appearance: ApplyAppearance is generation-cached
     -- (skipped on recycled plates) and the threshold watcher only reaches plates active at flip
     -- time, so a plate pooled during a no-execute window would return glowless. Re-assert.
@@ -1007,7 +1192,9 @@ function NameplateFrame:SetUnit(unit, nameplate)
     self._castDirtyFull = true
     if not self._deferredSetupCB then
         self._deferredSetupCB = function()
-            if not self.unit then return end
+            if not self.unit then
+                return
+            end
             local np = self.nameplate
             -- Stacking bounds
             if np and np.SetStackingBoundsFrame then
@@ -1045,7 +1232,9 @@ function NameplateFrame:SetUnit(unit, nameplate)
             end
             -- Cast target color
             local useClassColor = defaults.castTargetClassColor
-            if p and p.castTargetClassColor ~= nil then useClassColor = p.castTargetClassColor end
+            if p and p.castTargetClassColor ~= nil then
+                useClassColor = p.castTargetClassColor
+            end
             if useClassColor then
                 local appliedCTC = false
                 local classToken
@@ -1075,9 +1264,13 @@ function NameplateFrame:SetUnit(unit, nameplate)
             end
             self:UpdateName()
             self:UpdateClassification()
-            if not (p and p.classificationIncludeFaction) then self:UpdateFaction() end
+            if not (p and p.classificationIncludeFaction) then
+                self:UpdateFaction()
+            end
             self:UpdateRaidIcon()
-            if p and p.nameRaidMarkerEnabled == true then self:RefreshNamePosition(true) end
+            if p and p.nameRaidMarkerEnabled == true then
+                self:RefreshNamePosition(true)
+            end
             self:ApplyTarget()
             self:ApplyMouseover()
             self:UpdateCast()
@@ -1097,13 +1290,19 @@ function NameplateFrame:ClearUnit()
     -- until its first paint.
     if self._classicLevel then
         self._classicLevel:SetText("")
-        if self._classicSkull then self._classicSkull:Hide() end
+        if self._classicSkull then
+            self._classicSkull:Hide()
+        end
     end
     -- WoW Forever: the level box waits for the next unit's level.
-    if self._fvLevelBox then self._fvLevelBox:Hide() end
+    if self._fvLevelBox then
+        self._fvLevelBox:Hide()
+    end
 
     -- Color Casting Enemies: the next unit starts with no casts seen.
-    if self._castSeen ~= nil then ns.NP_ResetCastKind(self) end
+    if self._castSeen ~= nil then
+        ns.NP_ResetCastKind(self)
+    end
 
     if self.isCasting then
         self.isCasting = false
@@ -1111,7 +1310,10 @@ function NameplateFrame:ClearUnit()
             self._castFallback = nil
             _fallbackPlates[self] = nil
             I.fallbackCastCount = I.fallbackCastCount - 1
-            if I.fallbackCastCount <= 0 then I.fallbackCastCount = 0; castFallbackFrame:Hide() end
+            if I.fallbackCastCount <= 0 then
+                I.fallbackCastCount = 0
+                castFallbackFrame:Hide()
+            end
         end
         NotifyCastEnded(self)
     end
@@ -1130,11 +1332,17 @@ function NameplateFrame:ClearUnit()
     local ca = self._cachedHealthSlots
     local cu = ca and ca._cu
     if cu then
-        for i = 1, ca._cuN or 0 do cu[i].fs:SetText("") end
+        for i = 1, ca._cuN or 0 do
+            cu[i].fs:SetText("")
+        end
     end
     -- Release this plate's aura-container bundle back to the pool.
-    if ns.NPC_DetachPlate then ns.NPC_DetachPlate(self) end
-    if ns.DebuffColors_Detach then ns.DebuffColors_Detach(self) end
+    if ns.NPC_DetachPlate then
+        ns.NPC_DetachPlate(self)
+    end
+    if ns.DebuffColors_Detach then
+        ns.DebuffColors_Detach(self)
+    end
     self.unit = nil
     self.nameplate = nil
     self._absorbHidden = nil
@@ -1153,7 +1361,9 @@ function NameplateFrame:ClearUnit()
     self._hpTxtPct, self._hpTxtCur, self._hpTxtMax = nil, nil, nil
     self._ovFocShown, self._ovTgtShown = nil, nil
     self._focusLetterShown = nil
-    if self._tptShown then self.threatPctText:Hide() end
+    if self._tptShown then
+        self.threatPctText:Hide()
+    end
     self._tptShown = nil
     self._kickIsChannel = nil
     self._castIsChannel = nil
@@ -1184,18 +1394,36 @@ function NameplateFrame:ClearUnit()
         self._interruptTimer = nil
     end
     self._interrupted = nil
-    if self.glow then self.glow:Hide() end
-    if self.targetHighlight then self.targetHighlight:Hide() end
+    if self.glow then
+        self.glow:Hide()
+    end
+    if self.targetHighlight then
+        self.targetHighlight:Hide()
+    end
     ns.HideHoverEffect(self)
-    if self.nameRaidFrame then self.nameRaidFrame:Hide() end
+    if self.nameRaidFrame then
+        self.nameRaidFrame:Hide()
+    end
     self.raidFrame:Hide()
     self.classFrame:Hide()
-    if self.factionFrame then self.factionFrame:Hide() end
-    if self.questTextFrame then self.questTextFrame:Hide() end
-    if self.questTextTypeIcon then self.questTextTypeIcon:Hide() end
-    if self.focusLetter then self.focusLetter:Hide() end
-    if self.leftArrow then self.leftArrow:Hide() end
-    if self.rightArrow then self.rightArrow:Hide() end
+    if self.factionFrame then
+        self.factionFrame:Hide()
+    end
+    if self.questTextFrame then
+        self.questTextFrame:Hide()
+    end
+    if self.questTextTypeIcon then
+        self.questTextTypeIcon:Hide()
+    end
+    if self.focusLetter then
+        self.focusLetter:Hide()
+    end
+    if self.leftArrow then
+        self.leftArrow:Hide()
+    end
+    if self.rightArrow then
+        self.rightArrow:Hide()
+    end
     HideClassPowerOnPlate(self)
     self._absCurClip:Hide()
     self._absMissClip:Hide()
@@ -1216,5 +1444,7 @@ end
 
 I._fallbackPlates, I.castFallbackFrame = _fallbackPlates, castFallbackFrame
 I.NameplateFrame = NameplateFrame
-I.SetRawSetTex = function(f) RawSetTex = f end
+I.SetRawSetTex = function(f)
+    RawSetTex = f
+end
 I.broken = false

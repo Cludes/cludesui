@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Shared dot art and passive connection endpoints. Nothing is built until used.
 local _, ns = ...
 ns = ns.__cuiCoreNS or ns
@@ -7,7 +9,7 @@ ns.PointVisuals = visuals
 local DOT_FILL = "Interface\\AddOns\\CludesUI\\media\\basics\\point_anchor_fill.tga"
 local DOT_BORDER = "Interface\\AddOns\\CludesUI\\media\\basics\\point_anchor_border.tga"
 visuals.idleSize, visuals.hoverSize = 8, 12
-local defaults = { point = {1, 1, 1, 1}, border = {0, 0, 0, 1}, line = {1, 0.2, 0.2, 1} }
+local defaults = { point = { 1, 1, 1, 1 }, border = { 0, 0, 0, 1 }, line = { 1, 0.2, 0.2, 1 } }
 local dots
 
 function CludesUI.GetPointAnchorColor(kind)
@@ -25,18 +27,24 @@ function visuals.ColorDot(art, alpha)
 end
 
 function CludesUI.SetPointAnchorColor(kind, r, g, b, a)
-    if not defaults[kind] then return end
+    if not defaults[kind] then
+        return
+    end
     CludesUIDB.unlockPointColors = CludesUIDB.unlockPointColors or {}
-    CludesUIDB.unlockPointColors[kind] = {r, g, b, a}
+    CludesUIDB.unlockPointColors[kind] = { r, g, b, a }
     if dots and kind ~= "line" then
-        for i = 1, #dots do visuals.ColorDot(dots[i], dots[i].colorAlpha) end
+        for i = 1, #dots do
+            visuals.ColorDot(dots[i], dots[i].colorAlpha)
+        end
     end
 end
 
 function visuals.SizeDot(art, size)
     local pp = CludesUI.PP
     local px = pp.perfect / art:GetEffectiveScale()
-    if art.dotSize == size and art.pixelSize == px then return end
+    if art.dotSize == size and art.pixelSize == px then
+        return
+    end
     art.dotSize, art.pixelSize = size, px
     art:SetSize(size, size)
     -- Matched cells prefilter both edges at their displayed pixel size.
@@ -72,10 +80,16 @@ end
 
 function visuals.RaiseAboveMover(frame, mover)
     local level = mover:GetFrameLevel()
-    if mover._raisedLevel then level = math.max(level, mover._raisedLevel + 100) end
-    if mover._cogBtn then level = math.max(level, mover._cogBtn:GetFrameLevel()) end
+    if mover._raisedLevel then
+        level = math.max(level, mover._raisedLevel + 100)
+    end
+    if mover._cogBtn then
+        level = math.max(level, mover._cogBtn:GetFrameLevel())
+    end
     level = level + 30
-    if frame:GetFrameLevel() == level then return end
+    if frame:GetFrameLevel() == level then
+        return
+    end
     -- Fixed frames ignore SetFrameLevel until their level is unlocked.
     frame:SetFixedFrameLevel(false)
     frame:SetFrameLevel(level)
@@ -89,7 +103,9 @@ local function ShowPoint(index, mover, point, alpha)
         marker = visuals.CreateDot(mover)
         markers[index] = marker
     end
-    if marker:GetParent() ~= mover then marker:SetParent(mover) end
+    if marker:GetParent() ~= mover then
+        marker:SetParent(mover)
+    end
     visuals.RaiseAboveMover(marker, mover)
     if marker.point ~= point or marker.mover ~= mover then
         marker:ClearAllPoints()
@@ -110,6 +126,10 @@ function visuals.Connection(index, source, sourcePoint, target, targetPoint, alp
 end
 
 function visuals.TrimConnections(count)
-    if not markers then return end
-    for i = count * 2 + 1, #markers do markers[i]:Hide() end
+    if not markers then
+        return
+    end
+    for i = count * 2 + 1, #markers do
+        markers[i]:Hide()
+    end
 end

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_Where.lua
 --  Where to Show (Mythic+ Tools): the content bucket and combat state that
@@ -28,16 +30,27 @@ ns.NAMEPLATE_TOKENS, ns.NAMEPLATE_UNITS = NAMEPLATE_TOKENS, NAMEPLATE_UNITS
 -- Every location bucket Bucket() can answer. A feature's filter offers all of
 -- them or a subset (NewKeySet).
 MTWhere.LOCATION_KEYS = {
-    "open_world", "raid_mythic", "raid_heroic", "raid_normal_lfr",
-    "dungeon_mythic", "dungeon_nonmythic", "timewalking", "delve", "lair",
-    "scenario", "arena", "battleground",
+    "open_world",
+    "raid_mythic",
+    "raid_heroic",
+    "raid_normal_lfr",
+    "dungeon_mythic",
+    "dungeon_nonmythic",
+    "timewalking",
+    "delve",
+    "lair",
+    "scenario",
+    "arena",
+    "battleground",
 }
 
 -- A feature's location keys: the list its filter walks plus a lookup set.
 -- Built once per feature at file load.
 function MTWhere.NewKeySet(list)
     local set = {}
-    for i = 1, #list do set[list[i]] = true end
+    for i = 1, #list do
+        set[list[i]] = true
+    end
     return { list = list, set = set }
 end
 
@@ -45,7 +58,11 @@ end
 --  Content bucket
 --------------------------------------------------------------------------------
 local function Bucket()
-    if C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive() then
+    if
+        C_ChallengeMode
+        and C_ChallengeMode.IsChallengeModeActive
+        and C_ChallengeMode.IsChallengeModeActive()
+    then
         return "dungeon_mythic"
     end
     -- Housing plots report as "scenario"; they belong to the open world.
@@ -57,26 +74,45 @@ local function Bucket()
     -- Lairs carry the World Tier flag instead of a difficulty id the branches
     -- below know; the instance gate keeps the flag from ever reclassifying
     -- the open world, whatever else it may be set on.
-    if hasWorldTier == true and iType ~= "none" then return "lair" end
+    if hasWorldTier == true and iType ~= "none" then
+        return "lair"
+    end
     if iType == "party" then
-        if diffID == 23 or diffID == 8 then return "dungeon_mythic" end
-        if diffID == 2 or diffID == 1 or diffID == 205 then return "dungeon_nonmythic" end
-        if diffID == 24 then return "timewalking" end
+        if diffID == 23 or diffID == 8 then
+            return "dungeon_mythic"
+        end
+        if diffID == 2 or diffID == 1 or diffID == 205 then
+            return "dungeon_nonmythic"
+        end
+        if diffID == 24 then
+            return "timewalking"
+        end
     elseif iType == "raid" then
-        if diffID == 16 or diffID == 233 then return "raid_mythic" end
-        if diffID == 15 or diffID == 6 then return "raid_heroic" end
-        if diffID == 14 or diffID == 3 or diffID == 4 or diffID == 5
-            or diffID == 17 or diffID == 7 then return "raid_normal_lfr" end
-        if diffID == 33 then return "timewalking" end
+        if diffID == 16 or diffID == 233 then
+            return "raid_mythic"
+        end
+        if diffID == 15 or diffID == 6 then
+            return "raid_heroic"
+        end
+        if diffID == 14 or diffID == 3 or diffID == 4 or diffID == 5 or diffID == 17 or diffID == 7 then
+            return "raid_normal_lfr"
+        end
+        if diffID == 33 then
+            return "timewalking"
+        end
     elseif iType == "scenario" then
-        if diffID == 208 then return "delve" end
+        if diffID == 208 then
+            return "delve"
+        end
         return "scenario"
     elseif iType == "arena" then
         return "arena"
     elseif iType == "pvp" then
         return "battleground"
     end
-    if IsInInstance and not IsInInstance() then return "open_world" end
+    if IsInInstance and not IsInInstance() then
+        return "open_world"
+    end
     return nil -- unmapped content -- always shows, matching AuraBuffReminders
 end
 MTWhere.Bucket = Bucket
@@ -92,12 +128,18 @@ MTWhere.Bucket = Bucket
 local inCombat = false
 
 local function ReadCombatFlag()
-    if not InCombatLockdown then return false end
+    if not InCombatLockdown then
+        return false
+    end
     local ok, v = pcall(InCombatLockdown)
-    if not ok then return false end
+    if not ok then
+        return false
+    end
     if issecretvalue then
         local sok, secret = pcall(issecretvalue, v)
-        if sok and secret then return false end
+        if sok and secret then
+            return false
+        end
     end
     return v and true or false
 end
@@ -113,20 +155,31 @@ end
 --  set does not offer, never hide.
 --------------------------------------------------------------------------------
 function MTWhere.Shows(whereToShow, keySet)
-    if not whereToShow or not next(whereToShow) then return true end
-    local wantIn  = whereToShow.in_combat == true
+    if not whereToShow or not next(whereToShow) then
+        return true
+    end
+    local wantIn = whereToShow.in_combat == true
     local wantOut = whereToShow.out_of_combat == true
     if wantIn ~= wantOut then
-        if inCombat ~= wantIn then return false end
+        if inCombat ~= wantIn then
+            return false
+        end
     end
     local keys = keySet.list
     local anyLoc = false
     for i = 1, #keys do
-        if whereToShow[keys[i]] == true then anyLoc = true; break end
+        if whereToShow[keys[i]] == true then
+            anyLoc = true
+            break
+        end
     end
-    if not anyLoc then return true end
+    if not anyLoc then
+        return true
+    end
     local bucket = Bucket()
-    if not bucket or not keySet.set[bucket] then return true end
+    if not bucket or not keySet.set[bucket] then
+        return true
+    end
     return whereToShow[bucket] == true
 end
 
@@ -136,14 +189,19 @@ end
 --  combat flag first, then calls every subscriber with the event name.
 --------------------------------------------------------------------------------
 local WHERE_EVENTS = {
-    "PLAYER_ENTERING_WORLD", "CHALLENGE_MODE_START", "CHALLENGE_MODE_COMPLETED",
-    "CHALLENGE_MODE_RESET", "PLAYER_DIFFICULTY_CHANGED",
-    "ZONE_CHANGED_NEW_AREA", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
+    "PLAYER_ENTERING_WORLD",
+    "CHALLENGE_MODE_START",
+    "CHALLENGE_MODE_COMPLETED",
+    "CHALLENGE_MODE_RESET",
+    "PLAYER_DIFFICULTY_CHANGED",
+    "ZONE_CHANGED_NEW_AREA",
+    "PLAYER_REGEN_DISABLED",
+    "PLAYER_REGEN_ENABLED",
 }
 
-local subFns   = {}  -- [i] = subscriber fn
-local subKeys  = {}  -- [i] = key of subFns[i]
-local subIndex = {}  -- key -> i
+local subFns = {} -- [i] = subscriber fn
+local subKeys = {} -- [i] = key of subFns[i]
+local subIndex = {} -- key -> i
 
 -- Backward walk: a subscriber that unsubscribes itself from inside its
 -- callback swaps the last entry, already called, into its own slot. Each
@@ -153,7 +211,9 @@ local securecallfunction = securecallfunction
 local function Dispatch(event)
     for i = #subFns, 1, -1 do
         local fn = subFns[i]
-        if fn then securecallfunction(fn, event) end
+        if fn then
+            securecallfunction(fn, event)
+        end
     end
 end
 
@@ -169,7 +229,7 @@ local function Recheck()
     Dispatch("RECHECK")
 end
 
-local whereEvt  -- the watcher frame; built on the first subscribe
+local whereEvt -- the watcher frame; built on the first subscribe
 
 local function OnWhereEvent(_, event)
     if event == "PLAYER_REGEN_DISABLED" then
@@ -209,18 +269,24 @@ function MTWhere.Subscribe(key, fn)
             whereEvt:SetScript("OnEvent", OnWhereEvent)
         end
         inCombat = ReadCombatFlag()
-        for j = 1, #WHERE_EVENTS do whereEvt:RegisterEvent(WHERE_EVENTS[j]) end
+        for j = 1, #WHERE_EVENTS do
+            whereEvt:RegisterEvent(WHERE_EVENTS[j])
+        end
     end
 end
 
 -- The last subscriber leaving unregisters the watcher.
 function MTWhere.Unsubscribe(key)
     local i = subIndex[key]
-    if not i then return end
+    if not i then
+        return
+    end
     local n = #subFns
     subFns[i], subKeys[i] = subFns[n], subKeys[n]
     subIndex[subKeys[i]] = i
     subFns[n], subKeys[n] = nil, nil
     subIndex[key] = nil
-    if n == 1 then whereEvt:UnregisterAllEvents() end
+    if n == 1 then
+        whereEvt:UnregisterAllEvents()
+    end
 end

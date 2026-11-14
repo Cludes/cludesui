@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverFormBar.lua  (WoW Forever only, druids only)
 --
@@ -26,9 +28,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "DRUID" then return end
+if playerClass ~= "DRUID" then
+    return
+end
 
 local MANA = (Enum and Enum.PowerType and Enum.PowerType.Mana) or 0
 local WHITE = "Interface\\Buttons\\WHITE8X8"
@@ -49,26 +55,36 @@ local Secret = CludesUI.IsSecret
 -- The bar while it shows, else nil: the bottom-anchored player auras reserve
 -- the space it takes under the frame (CUI_UnitFrames_AuraContainers.lua).
 function ns.UF_ForeverFormBarShown()
-    if S.shown then return S.bar end
+    if S.shown then
+        return S.bar
+    end
 end
 
 -- One re-anchor of the player auras on the next frame (a no-op unless they
 -- are bottom-anchored).
 local function Reanchor()
-    if CludesUI.UF_RequestResourceReanchor then CludesUI.UF_RequestResourceReanchor() end
+    if CludesUI.UF_RequestResourceReanchor then
+        CludesUI.UF_RequestResourceReanchor()
+    end
 end
 
 -- The form text's own setting; unset follows the power bar's.
 local function FormVal(s, key, base, def)
     local v = s[key]
-    if v == nil then v = s[base] end
-    if v == nil then v = def end
+    if v == nil then
+        v = s[base]
+    end
+    if v == nil then
+        v = def
+    end
     return v
 end
 
 local function Paint()
     local bar, pt = S.bar, S.pt
-    if not (bar and pt) then return end
+    if not (bar and pt) then
+        return
+    end
     bar:SetMinMaxValues(0, UnitPowerMax("player", pt))
     bar:SetValue(UnitPower("player", pt))
     local mode = S.text
@@ -79,8 +95,11 @@ local function Paint()
     elseif mode == "curmax" then
         bar.text:SetFormattedText("%d / %d", UnitPower("player", pt), UnitPowerMax("player", pt))
     elseif mode == "both" then
-        bar.text:SetFormattedText(S.fmtBoth, UnitPower("player", pt),
-            UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100))
+        bar.text:SetFormattedText(
+            S.fmtBoth,
+            UnitPower("player", pt),
+            UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100)
+        )
     end
 end
 
@@ -89,14 +108,20 @@ local function Color()
     local s, bar = S.settings, S.bar
     local info = S.token and CludesUI.GetPowerColor(S.token)
     local r, g, b = 1, 1, 1
-    if info then r, g, b = info.r, info.g, info.b end
+    if info then
+        r, g, b = info.r, info.g, info.b
+    end
     local op = s.powerBarOpacity or 100
-    if op <= 1.0 then op = op * 100 end
+    if op <= 1.0 then
+        op = op * 100
+    end
     bar:SetStatusBarColor(r, g, b, op / 100)
     -- Form Text Color: power-coloured takes the form's colour, else custom or
     -- white. Neither set follows the power bar's Text Color.
     local pc, tc = s.foreverFormTextPowerColor, s.foreverFormTextColor
-    if pc == nil and tc == nil then pc, tc = s.powerPercentTextPowerColor, s.powerTextColor end
+    if pc == nil and tc == nil then
+        pc, tc = s.powerPercentTextPowerColor, s.powerTextColor
+    end
     if pc then
         bar.text:SetTextColor(r, g, b)
     elseif tc then
@@ -112,13 +137,15 @@ local function Color()
         if c then
             bar.bg:SetColorTexture(c.r, c.g, c.b, 1)
         else
-            bar.bg:SetColorTexture(17/255, 17/255, 17/255, 1)
+            bar.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
         end
     end
 end
 
 local function SetLive(on)
-    if S.live == on then return end
+    if S.live == on then
+        return
+    end
     S.live = on
     if on then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
@@ -134,10 +161,14 @@ end
 -- shown bar may have moved.
 local function Sync(laidOut)
     local bar = S.bar
-    if not bar then return end
+    if not bar then
+        return
+    end
     local pt, token = UnitPowerType("player")
     if Secret(pt) or Secret(token) then
-        if laidOut and S.shown then Reanchor() end
+        if laidOut and S.shown then
+            Reanchor()
+        end
         return
     end
     local show = S.on and pt ~= MANA
@@ -195,8 +226,10 @@ local function StyleText(s)
         fs:Hide()
         return
     end
-    S.text = (fmt == "curpp" or fmt == "smart") and "cur" or (fmt == "curmaxpp" and "curmax")
-        or (fmt == "both" and "both") or "pct"
+    S.text = (fmt == "curpp" or fmt == "smart") and "cur"
+        or (fmt == "curmaxpp" and "curmax")
+        or (fmt == "both" and "both")
+        or "pct"
     local sign = (FormVal(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
     S.fmtPct, S.fmtBoth = "%d" .. sign, "%d | %d" .. sign
     CludesUI.ApplyModuleFont(fs, nil, FormVal(s, "foreverFormTextSize", "powerPercentSize", 9), "unitFrames")
@@ -272,21 +305,28 @@ end
 -- frame: the player frame; power: its power bar; s: the player settings.
 function ns.UF_ForeverFormBar(frame, power, s)
     local ov = s and s.powerTypeOverride
-    S.on = (power and ov and ov.foreverDruid and s.foreverFormBar
-        and ns.UF_PowerBarDraws(s)) and true or false
+    S.on = (power and ov and ov.foreverDruid and s.foreverFormBar and ns.UF_PowerBarDraws(s))
+            and true
+        or false
     if not S.on then
         evf:UnregisterAllEvents()
         S.live = false
-        if S.bar then S.bar:Hide() end
+        if S.bar then
+            S.bar:Hide()
+        end
         if S.shown then
             S.shown = false
             Reanchor()
         end
         return
     end
-    if not S.bar then Build(frame) end
+    if not S.bar then
+        Build(frame)
+    end
     local bar = S.bar
-    if bar:GetParent() ~= frame then bar:SetParent(frame) end
+    if bar:GetParent() ~= frame then
+        bar:SetParent(frame)
+    end
     -- The power bar's strata (a detached one can sit higher) and a level over it.
     bar:SetFrameStrata(power:GetFrameStrata())
     bar:SetFrameLevel(power:GetFrameLevel() + 1)
@@ -302,7 +342,9 @@ end
 -- The form bar's own options re-apply only this bar: a full frame reload per
 -- slider step visibly rebuilds the player frame.
 function ns.UF_ForeverFormBarRelayout()
-    if not (S.on and S.bar) then return end
+    if not (S.on and S.bar) then
+        return
+    end
     Layout(S.frame, S.power, S.settings)
     StyleText(S.settings)
     Sync(true)

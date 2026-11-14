@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Sort.lua
 --
@@ -9,29 +11,35 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local ipairs       = ipairs
-local wipe         = wipe
-local type         = type
-local tostring     = tostring
-local UnitName              = UnitName
-local UnitClass             = UnitClass
-local UnitExists            = UnitExists
-local UnitIsUnit            = UnitIsUnit
-local IsInRaid              = IsInRaid
-local IsInGroup             = IsInGroup
-local InCombatLockdown      = InCombatLockdown
-local GetNumGroupMembers    = GetNumGroupMembers
-local issecretvalue         = issecretvalue
+local ipairs = ipairs
+local wipe = wipe
+local type = type
+local tostring = tostring
+local UnitName = UnitName
+local UnitClass = UnitClass
+local UnitExists = UnitExists
+local UnitIsUnit = UnitIsUnit
+local IsInRaid = IsInRaid
+local IsInGroup = IsInGroup
+local InCombatLockdown = InCombatLockdown
+local GetNumGroupMembers = GetNumGroupMembers
+local issecretvalue = issecretvalue
 
 local separatedHdrs = I.separatedHdrs
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local containerFrame
-I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v) containerFrame = v end
+I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v)
+    containerFrame = v
+end
 
 -------------------------------------------------------------------------------
 --  Show Self First (raid, OOC only): the player's subgroup header sorts via a
@@ -43,7 +51,9 @@ I.containerFrameSetters[#I.containerFrameSetters + 1] = function(v) containerFra
 -------------------------------------------------------------------------------
 -- Player's raid subgroup (1-8). Party/solo collapses to group 1.
 function ns._GetPlayerSubgroup()
-    if not IsInRaid() then return 1 end
+    if not IsInRaid() then
+        return 1
+    end
     local n = GetNumGroupMembers()
     for i = 1, n do
         if UnitIsUnit("raid" .. i, "player") then
@@ -74,9 +84,18 @@ end
 -- roster holds a placeholder to its native path.
 function ns._FinishNameList(members, noToken)
     local names = ns._nlBuf
-    if names then wipe(names) else names = {}; ns._nlBuf = names end
-    for i = 1, #members do names[i] = members[i].name end
-    if not noToken then names[#names + 1] = UNKNOWNOBJECT end
+    if names then
+        wipe(names)
+    else
+        names = {}
+        ns._nlBuf = names
+    end
+    for i = 1, #members do
+        names[i] = members[i].name
+    end
+    if not noToken then
+        names[#names + 1] = UNKNOWNOBJECT
+    end
     return table.concat(names, ",")
 end
 
@@ -86,20 +105,30 @@ end
 -- it returns; each builder writes every field its comparator reads.
 function ns._NLRec(i)
     local pool = ns._nlPool
-    if not pool then pool = {}; ns._nlPool = pool end
+    if not pool then
+        pool = {}
+        ns._nlPool = pool
+    end
     local m = pool[i]
-    if not m then m = {}; pool[i] = m end
+    if not m then
+        m = {}
+        pool[i] = m
+    end
     return m
 end
 
 function ns._NLGroups()
     local groups, bad = ns._nlGroups, ns._nlBad
     if groups then
-        for g = 1, 8 do wipe(groups[g]) end
+        for g = 1, 8 do
+            wipe(groups[g])
+        end
         wipe(bad)
     else
         groups, bad = {}, {}
-        for g = 1, 8 do groups[g] = {} end
+        for g = 1, 8 do
+            groups[g] = {}
+        end
         ns._nlGroups, ns._nlBad = groups, bad
     end
     return groups, bad
@@ -110,11 +139,15 @@ end
 -- so nothing can vanish. Others follow the active sort: role order (ROLE mode, via
 -- CludesUI.UnitEffectiveRole) else raid index. selfLast orders the player LAST instead.
 function ns._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLast)
-    if not IsInRaid() or not playerGroup then return nil end
+    if not IsInRaid() or not playerGroup then
+        return nil
+    end
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do pri[r] = p end
+        for p, r in ipairs(roleOrder) do
+            pri[r] = p
+        end
     end
     local members = {}
     local n = GetNumGroupMembers()
@@ -122,12 +155,16 @@ function ns._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLast
         local name, _, subgroup = GetRaidRosterInfo(i)
         -- A nil name = roster not populated at all; the subgroup is not
         -- trustworthy either. Bail (see ns._FinishNameList).
-        if not name then return nil end
+        if not name then
+            return nil
+        end
         if subgroup == playerGroup then
             if name ~= UNKNOWNOBJECT then
                 local unit = "raid" .. i
                 local rp = 99
-                if pri then rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99 end
+                if pri then
+                    rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99
+                end
                 members[#members + 1] = {
                     name = name,
                     isPlayer = UnitIsUnit(unit, "player"),
@@ -139,12 +176,18 @@ function ns._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLast
             return nil
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, function(a, b)
         -- Player to the top (self-first) or bottom (self-last). Exactly one of
         -- a/b is the player inside this branch, so the XOR with selfLast flips it.
-        if a.isPlayer ~= b.isPlayer then return a.isPlayer ~= selfLast end
-        if sortByRole and a.rolePri ~= b.rolePri then return a.rolePri < b.rolePri end
+        if a.isPlayer ~= b.isPlayer then
+            return a.isPlayer ~= selfLast
+        end
+        if sortByRole and a.rolePri ~= b.rolePri then
+            return a.rolePri < b.rolePri
+        end
         return a.index < b.index
     end)
     return ns._FinishNameList(members)
@@ -156,7 +199,9 @@ end
 -- excluded. Also populates ns._classNameByToken (token -> localized name) for
 -- the options list. Cached on ns.
 function ns._GetDefaultClassOrder()
-    if ns._defaultClassOrderCache then return ns._defaultClassOrderCache end
+    if ns._defaultClassOrderCache then
+        return ns._defaultClassOrderCache
+    end
     local list, names = {}, {}
     local n = (GetNumClasses and GetNumClasses()) or 0
     for i = 1, n do
@@ -166,9 +211,13 @@ function ns._GetDefaultClassOrder()
             names[info.classFile] = info.className or info.classFile
         end
     end
-    table.sort(list, function(a, b) return (names[a] or a) < (names[b] or b) end)
+    table.sort(list, function(a, b)
+        return (names[a] or a) < (names[b] or b)
+    end)
     ns._classNameByToken = names
-    if #list > 0 then ns._defaultClassOrderCache = list end
+    if #list > 0 then
+        ns._defaultClassOrderCache = list
+    end
     return list
 end
 
@@ -178,27 +227,41 @@ end
 -- Blizzard's GetGroupRosterInfo produces for party units, so the secure header
 -- matches them. nameList is only honored when groupFilter is cleared.
 function ns._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, classOrder)
-    if not IsInGroup() then return nil end
+    if not IsInGroup() then
+        return nil
+    end
     classOrder = classOrder or ns._GetDefaultClassOrder()
     local classPri = {}
-    for i, c in ipairs(classOrder) do classPri[c] = i end
+    for i, c in ipairs(classOrder) do
+        classPri[c] = i
+    end
     local rolePri
     if sortByRole then
         rolePri = {}
-        for i, r in ipairs(roleOrder) do rolePri[r] = i end
+        for i, r in ipairs(roleOrder) do
+            rolePri[r] = i
+        end
     end
     local members = {}
     local units = {}
-    if includePlayer then units[#units + 1] = "player" end
-    for i = 1, 4 do units[#units + 1] = "party" .. i end
+    if includePlayer then
+        units[#units + 1] = "player"
+    end
+    for i = 1, 4 do
+        units[#units + 1] = "party" .. i
+    end
     for _, unit in ipairs(units) do
         if UnitExists(unit) then
             local name, server = UnitName(unit)
-            if not name then return nil end
+            if not name then
+                return nil
+            end
             -- Every unit here is in the header's set: a placeholder name is
             -- covered by the trailing token (see ns._FinishNameList).
             if name ~= UNKNOWNOBJECT then
-                if server and server ~= "" then name = name .. "-" .. server end
+                if server and server ~= "" then
+                    name = name .. "-" .. server
+                end
                 local _, classToken = UnitClass(unit)
                 members[#members + 1] = {
                     name = name,
@@ -208,10 +271,16 @@ function ns._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, class
             end
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, function(a, b)
-        if sortByRole and a.rolePri ~= b.rolePri then return a.rolePri < b.rolePri end
-        if a.classPri ~= b.classPri then return a.classPri < b.classPri end
+        if sortByRole and a.rolePri ~= b.rolePri then
+            return a.rolePri < b.rolePri
+        end
+        if a.classPri ~= b.classPri then
+            return a.classPri < b.classPri
+        end
         return a.name < b.name
     end)
     return ns._FinishNameList(members)
@@ -224,17 +293,23 @@ end
 -- from GetRaidRosterInfo (what the header matches against). Placeholder
 -- names follow the ns._FinishNameList rules (a hidden self is out of set).
 function ns._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, roleOrder, onlyGroup)
-    if not IsInRaid() then return nil end
+    if not IsInRaid() then
+        return nil
+    end
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do pri[r] = p end
+        for p, r in ipairs(roleOrder) do
+            pri[r] = p
+        end
     end
     local members = {}
     local n = GetNumGroupMembers()
     for i = 1, n do
         local name, _, subgroup = GetRaidRosterInfo(i)
-        if not name then return nil end
+        if not name then
+            return nil
+        end
         -- Small Raid mode: members outside the kept subgroup are simply not
         -- listed (the header hides them); the player included.
         if not (onlyGroup and subgroup ~= onlyGroup) then
@@ -243,7 +318,9 @@ function ns._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, roleO
             if not (hideSelf and isPlayer) then
                 if name ~= UNKNOWNOBJECT then
                     local rp = 99
-                    if pri then rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99 end
+                    if pri then
+                        rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99
+                    end
                     members[#members + 1] = {
                         name = name,
                         isPlayer = isPlayer,
@@ -259,14 +336,18 @@ function ns._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, roleO
             return nil
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, function(a, b)
         -- Player to top (self-first) or bottom (self-last); exactly one of a/b
         -- is the player in this branch, so the XOR with selfLast flips it.
         if (selfFirst or selfLast) and a.isPlayer ~= b.isPlayer then
             return a.isPlayer ~= selfLast
         end
-        if sortByRole and a.rolePri ~= b.rolePri then return a.rolePri < b.rolePri end
+        if sortByRole and a.rolePri ~= b.rolePri then
+            return a.rolePri < b.rolePri
+        end
         return a.index < b.index
     end)
     return ns._FinishNameList(members)
@@ -279,22 +360,30 @@ end
 -- follow the ns._FinishNameList rules (hidden groups are out of set); the
 -- caller falls back to the engine path on a bail.
 function ns._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGroups)
-    if not IsInRaid() then return nil end
+    if not IsInRaid() then
+        return nil
+    end
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do pri[r] = p end
+        for p, r in ipairs(roleOrder) do
+            pri[r] = p
+        end
     end
     local members = {}
     local n = GetNumGroupMembers()
     for i = 1, n do
         local name, _, subgroup = GetRaidRosterInfo(i)
-        if not name then return nil end
+        if not name then
+            return nil
+        end
         if not visibleGroups or visibleGroups[subgroup] ~= false then
             if name ~= UNKNOWNOBJECT then
                 local unit = "raid" .. i
                 local rp = 99
-                if pri then rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99 end
+                if pri then
+                    rp = pri[CludesUI.UnitEffectiveRole(unit)] or 99
+                end
                 members[#members + 1] = {
                     name = name,
                     isPlayer = UnitIsUnit(unit, "player"),
@@ -306,12 +395,18 @@ function ns._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGro
             return nil
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, function(a, b)
         -- Player to top (self-first) or bottom (self-last); exactly one of a/b
         -- is the player in this branch, so the XOR with selfLast flips it.
-        if a.isPlayer ~= b.isPlayer then return a.isPlayer ~= selfLast end
-        if sortByRole and a.rolePri ~= b.rolePri then return a.rolePri < b.rolePri end
+        if a.isPlayer ~= b.isPlayer then
+            return a.isPlayer ~= selfLast
+        end
+        if sortByRole and a.rolePri ~= b.rolePri then
+            return a.rolePri < b.rolePri
+        end
         return a.index < b.index
     end)
     return ns._FinishNameList(members)
@@ -335,21 +430,52 @@ end
 function ns._RCLess(a, b)
     -- Exactly one of a/b is the player here, so the XOR with the Self Last
     -- flag sends them to the top (Self First) or the bottom (Self Last).
-    if a.isPlayer ~= b.isPlayer then return a.isPlayer ~= ns._rcSelfLast end
-    if a.rolePri ~= b.rolePri then return a.rolePri < b.rolePri end
-    if a.classPri ~= b.classPri then return a.classPri < b.classPri end
+    if a.isPlayer ~= b.isPlayer then
+        return a.isPlayer ~= ns._rcSelfLast
+    end
+    if a.rolePri ~= b.rolePri then
+        return a.rolePri < b.rolePri
+    end
+    if a.classPri ~= b.classPri then
+        return a.classPri < b.classPri
+    end
     return a.name < b.name
 end
 
-function ns._BuildRaidClassLists(merged, visibleGroups, sortByRole, roleOrder, classOrder, selfFirst, selfLast, onlyGroup)
-    if not IsInRaid() then return nil end
+function ns._BuildRaidClassLists(
+    merged,
+    visibleGroups,
+    sortByRole,
+    roleOrder,
+    classOrder,
+    selfFirst,
+    selfLast,
+    onlyGroup
+)
+    if not IsInRaid() then
+        return nil
+    end
     local classPri = ns._rcClassPri
-    if classPri then wipe(classPri) else classPri = {}; ns._rcClassPri = classPri end
-    for i, c in ipairs(classOrder or ns._GetDefaultClassOrder()) do classPri[c] = i end
+    if classPri then
+        wipe(classPri)
+    else
+        classPri = {}
+        ns._rcClassPri = classPri
+    end
+    for i, c in ipairs(classOrder or ns._GetDefaultClassOrder()) do
+        classPri[c] = i
+    end
     local rolePri = ns._rcRolePri
-    if rolePri then wipe(rolePri) else rolePri = {}; ns._rcRolePri = rolePri end
+    if rolePri then
+        wipe(rolePri)
+    else
+        rolePri = {}
+        ns._rcRolePri = rolePri
+    end
     if sortByRole then
-        for i, r in ipairs(roleOrder) do rolePri[r] = i end
+        for i, r in ipairs(roleOrder) do
+            rolePri[r] = i
+        end
     end
     ns._rcSelfLast = selfLast == true
     local pin = (selfFirst or selfLast) and true or false
@@ -359,14 +485,18 @@ function ns._BuildRaidClassLists(merged, visibleGroups, sortByRole, roleOrder, c
     local n = GetNumGroupMembers()
     for i = 1, n do
         local name, _, subgroup, _, _, classToken = GetRaidRosterInfo(i)
-        if not name or not subgroup then return nil end
+        if not name or not subgroup then
+            return nil
+        end
         local skip = (merged and visibleGroups and visibleGroups[subgroup] == false)
             or (onlyGroup ~= nil and subgroup ~= onlyGroup)
         if name == UNKNOWNOBJECT then
             if merged or onlyGroup then
                 -- One header carrying the token: a placeholder in its set
                 -- rides it, one outside would be pulled in.
-                if skip then return nil end
+                if skip then
+                    return nil
+                end
             elseif not skip then
                 bad[subgroup] = true
             end
@@ -384,18 +514,27 @@ function ns._BuildRaidClassLists(merged, visibleGroups, sortByRole, roleOrder, c
     end
     if merged then
         local list = groups[1]
-        if #list == 0 then return nil end
+        if #list == 0 then
+            return nil
+        end
         table.sort(list, ns._RCLess)
         return ns._FinishNameList(list)
     end
     if onlyGroup then
         local list = groups[onlyGroup]
-        if not list or #list == 0 then return nil end
+        if not list or #list == 0 then
+            return nil
+        end
         table.sort(list, ns._RCLess)
         return ns._FinishNameList(list)
     end
     local out = ns._rcOut
-    if out then wipe(out) else out = {}; ns._rcOut = out end
+    if out then
+        wipe(out)
+    else
+        out = {}
+        ns._rcOut = out
+    end
     for g = 1, 8 do
         local list = groups[g]
         if #list > 0 and not bad[g] then
@@ -419,7 +558,9 @@ end
 function ns._FrameSortApi()
     local api = _G.FrameSortApi
     api = api and api.v3
-    if api and api.Sorting and api.Sorting.GetFriendlyUnits then return api end
+    if api and api.Sorting and api.Sorting.GetFriendlyUnits then
+        return api
+    end
     return nil
 end
 
@@ -437,19 +578,34 @@ end
 -- would otherwise read the previous roster's order.
 function ns._FrameSortRanks(fresh)
     local api = ns._FrameSortApi()
-    if not api then return nil end
-    if fresh and api.Caching and api.Caching.Invalidate then api.Caching:Invalidate() end
+    if not api then
+        return nil
+    end
+    if fresh and api.Caching and api.Caching.Invalidate then
+        api.Caching:Invalidate()
+    end
     local units = api.Sorting:GetFriendlyUnits()
-    if type(units) ~= "table" then return nil end
+    if type(units) ~= "table" then
+        return nil
+    end
     local ok = ns._fsTokenOK
     if not ok then
         ok = { player = true }
-        for i = 1, 4 do ok["party" .. i] = true end
-        for i = 1, 40 do ok["raid" .. i] = true end
+        for i = 1, 4 do
+            ok["party" .. i] = true
+        end
+        for i = 1, 40 do
+            ok["raid" .. i] = true
+        end
         ns._fsTokenOK = ok
     end
     local rank = ns._fsRank
-    if rank then wipe(rank) else rank = {}; ns._fsRank = rank end
+    if rank then
+        wipe(rank)
+    else
+        rank = {}
+        ns._fsRank = rank
+    end
     local n = 0
     for i = 1, #units do
         local tok = units[i]
@@ -458,12 +614,16 @@ function ns._FrameSortRanks(fresh)
             rank[tok] = n
         end
     end
-    if n == 0 then return nil end
+    if n == 0 then
+        return nil
+    end
     return rank
 end
 
 function ns._FsMemberLess(a, b)
-    if a.rank ~= b.rank then return a.rank < b.rank end
+    if a.rank ~= b.rank then
+        return a.rank < b.rank
+    end
     return a.index < b.index
 end
 
@@ -471,7 +631,9 @@ function ns._FsRaidTok()
     local tok = ns._raidTok
     if not tok then
         tok = {}
-        for i = 1, 40 do tok[i] = "raid" .. i end
+        for i = 1, 40 do
+            tok[i] = "raid" .. i
+        end
         ns._raidTok = tok
     end
     return tok
@@ -484,18 +646,24 @@ end
 -- a placeholder in a hidden group bails, one in a visible group rides the
 -- token. Names come from GetRaidRosterInfo (what the header matches against).
 function ns._BuildFrameSortRaidLists(rank, merged, visibleGroups)
-    if not IsInRaid() then return nil end
+    if not IsInRaid() then
+        return nil
+    end
     local tok = ns._FsRaidTok()
     local groups, bad = ns._NLGroups()
     local used = 0
     local n = GetNumGroupMembers()
     for i = 1, n do
         local name, _, subgroup = GetRaidRosterInfo(i)
-        if not name or not subgroup then return nil end
+        if not name or not subgroup then
+            return nil
+        end
         local hidden = merged and visibleGroups and visibleGroups[subgroup] == false
         if name == UNKNOWNOBJECT then
             if merged then
-                if hidden then return nil end
+                if hidden then
+                    return nil
+                end
             else
                 bad[subgroup] = true
             end
@@ -509,12 +677,19 @@ function ns._BuildFrameSortRaidLists(rank, merged, visibleGroups)
     end
     if merged then
         local list = groups[1]
-        if #list == 0 then return nil end
+        if #list == 0 then
+            return nil
+        end
         table.sort(list, ns._FsMemberLess)
         return ns._FinishNameList(list)
     end
     local out = ns._fsGroupLists
-    if out then wipe(out) else out = {}; ns._fsGroupLists = out end
+    if out then
+        wipe(out)
+    else
+        out = {}
+        ns._fsGroupLists = out
+    end
     for g = 1, 8 do
         local list = groups[g]
         if #list > 0 and not bad[g] then
@@ -529,23 +704,31 @@ end
 -- ns._BuildPartyClassNameList. Names can be secret in restricted content:
 -- a secret or missing name bails to the native path.
 function ns._BuildFrameSortPartyNameList(rank, includePlayer)
-    if not IsInGroup() then return nil end
+    if not IsInGroup() then
+        return nil
+    end
     local members = {}
     for i = includePlayer and 0 or 1, 4 do
         local unit = (i == 0) and "player" or ("party" .. i)
         if UnitExists(unit) then
             local name, server = UnitName(unit)
-            if (issecretvalue and (issecretvalue(name) or issecretvalue(server)))
-                or type(name) ~= "string" then
+            if
+                (issecretvalue and (issecretvalue(name) or issecretvalue(server)))
+                or type(name) ~= "string"
+            then
                 return nil
             end
             if name ~= UNKNOWNOBJECT then
-                if server and server ~= "" then name = name .. "-" .. server end
+                if server and server ~= "" then
+                    name = name .. "-" .. server
+                end
                 members[#members + 1] = { name = name, rank = rank[unit] or 99, index = i }
             end
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, ns._FsMemberLess)
     return ns._FinishNameList(members)
 end
@@ -553,13 +736,17 @@ end
 -- Party header bound to raid units (arena, Small Raid): the arena builder's
 -- membership rules (Hide Self, one kept subgroup) in FrameSort's order.
 function ns._BuildFrameSortRaidPartyNameList(rank, hideSelf, onlyGroup)
-    if not IsInRaid() then return nil end
+    if not IsInRaid() then
+        return nil
+    end
     local tok = ns._FsRaidTok()
     local members = {}
     local n = GetNumGroupMembers()
     for i = 1, n do
         local name, _, subgroup = GetRaidRosterInfo(i)
-        if not name then return nil end
+        if not name then
+            return nil
+        end
         if not (onlyGroup and subgroup ~= onlyGroup) then
             local unit = tok[i]
             if not (hideSelf and UnitIsUnit(unit, "player")) then
@@ -574,7 +761,9 @@ function ns._BuildFrameSortRaidPartyNameList(rank, hideSelf, onlyGroup)
             return nil
         end
     end
-    if #members == 0 then return nil end
+    if #members == 0 then
+        return nil
+    end
     table.sort(members, ns._FsMemberLess)
     return ns._FinishNameList(members)
 end
@@ -594,11 +783,17 @@ function ns._FrameSortApply()
         ns._rosterDirtyInCombat = true
         return false
     end
-    if not ns._FrameSortApi() then return false end
+    if not ns._FrameSortApi() then
+        return false
+    end
     ns._fsChanged = false
     ns._fsFromProvider = true
-    if ns._raidFramesVisible and ns._ApplySortToHeaders then ns._ApplySortToHeaders() end
-    if ns._partyFramesVisible and ns._LayoutPartyFrames then ns._LayoutPartyFrames() end
+    if ns._raidFramesVisible and ns._ApplySortToHeaders then
+        ns._ApplySortToHeaders()
+    end
+    if ns._partyFramesVisible and ns._LayoutPartyFrames then
+        ns._LayoutPartyFrames()
+    end
     ns._fsFromProvider = nil
     return ns._fsChanged == true
 end
@@ -609,12 +804,18 @@ end
 -- Name is spliced into a secure attribute key and Enabled is written as an
 -- attribute value, so both return plain values only.
 function ns._FrameSortRegister()
-    if ns._fsRegistered then return end
+    if ns._fsRegistered then
+        return
+    end
     local api = ns._FrameSortApi()
-    if not (api and api.Sorting.RegisterFrameProvider) then return end
+    if not (api and api.Sorting.RegisterFrameProvider) then
+        return
+    end
     local none = {}
     local provider = {
-        Name = function() return "CludesUI" end,
+        Name = function()
+            return "CludesUI"
+        end,
         Enabled = function()
             local p = db and db.profile
             return p ~= nil and (p.sortMode == "FRAMESORT" or (p.partySortMode or p.sortMode) == "FRAMESORT")
@@ -623,14 +824,20 @@ function ns._FrameSortRegister()
             return ns._raidFramesVisible == true or ns._partyFramesVisible == true
         end,
         IsSelfManaged = true,
-        Containers = function() return none end,
+        Containers = function()
+            return none
+        end,
         Init = function() end,
-        Sort = function() return ns._FrameSortApply() end,
+        Sort = function()
+            return ns._FrameSortApply()
+        end,
     }
     if api.Sorting:RegisterFrameProvider(provider) then
         ns._fsRegistered = true
         if api.Options and api.Options.RegisterConfigurationChangedCallback then
-            api.Options:RegisterConfigurationChangedCallback(function() ns._FrameSortApply() end)
+            api.Options:RegisterConfigurationChangedCallback(function()
+                ns._FrameSortApply()
+            end)
         end
     end
 end
@@ -642,7 +849,9 @@ end
 --  Hide/Show runs only when an attribute actually changed.
 -------------------------------------------------------------------------------
 local function ApplySortToHeaders()
-    if not containerFrame or InCombatLockdown() then return end
+    if not containerFrame or InCombatLockdown() then
+        return
+    end
     local s = db.profile
     local sortByRole = s.sortMode == "ROLE"
     local roleOrder = s.roleOrder or { "TANK", "HEALER", "DAMAGER" }
@@ -693,13 +902,17 @@ local function ApplySortToHeaders()
             -- hid (a hidden or empty group, the idle flat header) stays hidden
             -- and reads it when LayoutGroups shows it.
             local shown = hdr:IsShown()
-            if shown then hdr:Hide() end
+            if shown then
+                hdr:Hide()
+            end
             hdr:SetAttribute("groupFilter", gf)
             hdr:SetAttribute("groupBy", gb)
             hdr:SetAttribute("sortMethod", sm)
             hdr:SetAttribute("groupingOrder", go)
             hdr:SetAttribute("nameList", nl)
-            if shown then hdr:Show() end
+            if shown then
+                hdr:Show()
+            end
         end
     end
 
@@ -718,8 +931,15 @@ local function ApplySortToHeaders()
             mergedList = ns._BuildFrameSortRaidLists(fsRank, true, ns._VisibleGroups())
         end
         if not mergedList and (classLists or (classNative and selfOn)) then
-            mergedList = ns._BuildRaidClassLists(true, ns._VisibleGroups(), sortByRole, roleOrder,
-                s.classOrder, s.showSelfFirst, selfLast)
+            mergedList = ns._BuildRaidClassLists(
+                true,
+                ns._VisibleGroups(),
+                sortByRole,
+                roleOrder,
+                s.classOrder,
+                s.showSelfFirst,
+                selfLast
+            )
         end
         if not mergedList and selfOn then
             mergedList = ns._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, ns._VisibleGroups())
@@ -727,34 +947,55 @@ local function ApplySortToHeaders()
         if mergedList then
             applySortTo(ns._flatHeader, nil, "NAMELIST", "", mergedList, nil)
         else
-            applySortTo(ns._flatHeader, baseGroupBy, baseSortMethod, baseGroupingOrder, nil,
-                ns._flatGfStr or ns._flatHeader:GetAttribute("groupFilter"))
+            applySortTo(
+                ns._flatHeader,
+                baseGroupBy,
+                baseSortMethod,
+                baseGroupingOrder,
+                nil,
+                ns._flatGfStr or ns._flatHeader:GetAttribute("groupFilter")
+            )
         end
     else
         local groupLists
         if fsRank then
             groupLists = ns._BuildFrameSortRaidLists(fsRank, false)
         elseif classLists then
-            groupLists = ns._BuildRaidClassLists(false, nil, true, roleOrder,
-                s.classOrder, s.showSelfFirst, selfLast)
+            groupLists =
+                ns._BuildRaidClassLists(false, nil, true, roleOrder, s.classOrder, s.showSelfFirst, selfLast)
         end
         -- Self Position: the player's group takes a player-pinned nameList
         -- (Class Order under Group + Class) whenever no per-group list covers
         -- it -- also the fallback while a list builder waits on names.
         local playerGroup = selfOn and ns._GetPlayerSubgroup() or nil
-        if playerGroup and groupLists and groupLists[playerGroup] then playerGroup = nil end
+        if playerGroup and groupLists and groupLists[playerGroup] then
+            playerGroup = nil
+        end
         local selfNameList
         if playerGroup then
             if classOn then
-                selfNameList = ns._BuildRaidClassLists(false, nil, sortByRole, roleOrder,
-                    s.classOrder, s.showSelfFirst, selfLast, playerGroup)
+                selfNameList = ns._BuildRaidClassLists(
+                    false,
+                    nil,
+                    sortByRole,
+                    roleOrder,
+                    s.classOrder,
+                    s.showSelfFirst,
+                    selfLast,
+                    playerGroup
+                )
             end
-            selfNameList = selfNameList or ns._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLast)
-            if not selfNameList then playerGroup = nil end
+            selfNameList = selfNameList
+                or ns._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLast)
+            if not selfNameList then
+                playerGroup = nil
+            end
         end
         for group = 1, 8 do
             local hdr = separatedHdrs[group]
-            if not hdr then break end
+            if not hdr then
+                break
+            end
             local groupList = groupLists and groupLists[group]
             if groupList then
                 applySortTo(hdr, nil, "NAMELIST", "", groupList, nil)

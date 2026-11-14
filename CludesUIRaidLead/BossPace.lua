@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BossPace.lua -- Raid Lead: Boss Pace.
 --
@@ -19,22 +21,26 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 
 local GREEN = CreateColor(0.38, 0.82, 0.45, 1)
-local RED   = CreateColor(0.93, 0.33, 0.25, 1)
-local TICK  = 0.25
+local RED = CreateColor(0.93, 0.33, 0.25, 1)
+local TICK = 0.25
 
 function ns.PaceSettings()
     local p = ns.RaidLeadDB()
     p.pace = p.pace or {}
     local s = p.pace
-    if s.enabled == nil then s.enabled = true end
-    s.targets = s.targets or {}       -- { { boss = "name", seconds = 300 }, ... }
+    if s.enabled == nil then
+        s.enabled = true
+    end
+    s.targets = s.targets or {} -- { { boss = "name", seconds = 300 }, ... }
     return s
 end
 
 --- "m:ss" or "s" to seconds.
 function ns.ParseDuration(text)
     local m, sec = (text or ""):match("^%s*(%d+):(%d%d)%s*$")
-    if m then return tonumber(m) * 60 + tonumber(sec) end
+    if m then
+        return tonumber(m) * 60 + tonumber(sec)
+    end
     local only = (text or ""):match("^%s*(%d+)%s*$")
     return only and tonumber(only) or nil
 end
@@ -47,15 +53,19 @@ end
 local function TargetFor(bossName)
     local key = (bossName or ""):lower()
     for _, t in ipairs(ns.PaceSettings().targets) do
-        if (t.boss or ""):lower() == key then return t.seconds end
+        if (t.boss or ""):lower() == key then
+            return t.seconds
+        end
     end
 end
 
 local bar, marker, label, curve
-local fight              -- { start, target, name }
+local fight -- { start, target, name }
 
 local function Build()
-    if bar then return end
+    if bar then
+        return
+    end
     bar = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
     bar:SetSize(260, 22)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -73,7 +83,9 @@ local function Build()
 end
 
 function ns.ApplyPacePosition()
-    if not bar or InCombatLockdown() then return end
+    if not bar or InCombatLockdown() then
+        return
+    end
     local p = ns.PaceSettings().pos
     bar:ClearAllPoints()
     if p then
@@ -84,7 +96,9 @@ function ns.ApplyPacePosition()
 end
 
 local function Update()
-    if not fight then return end
+    if not fight then
+        return
+    end
     local elapsed = GetTime() - fight.start
     local expected = math.max(0, 100 - elapsed / fight.target * 100)
     -- Red below the expected percent, green from it upward: two points a
@@ -99,29 +113,46 @@ local function Update()
     if unit then
         bar:SetValue(UnitHealthPercent(unit, true, CurveConstants and CurveConstants.ScaleTo100) or 0)
         local colour = UnitHealthPercent(unit, true, curve)
-        if colour and colour.GetRGB then bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB()) end
+        if colour and colour.GetRGB then
+            bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
+        end
     end
     marker:ClearAllPoints()
     marker:SetPoint("CENTER", bar, "LEFT", bar:GetWidth() * expected / 100, 0)
-    label:SetText(("%s  |cff9aa6b2pace %d%%  %s / %s|r"):format(fight.name, math.floor(expected + 0.5),
-        ns.FormatDuration(elapsed), ns.FormatDuration(fight.target)))
+    label:SetText(
+        ("%s  |cff9aa6b2pace %d%%  %s / %s|r"):format(
+            fight.name,
+            math.floor(expected + 0.5),
+            ns.FormatDuration(elapsed),
+            ns.FormatDuration(fight.target)
+        )
+    )
 end
 
 local ticker
 
 local function Stop()
     fight = nil
-    if ticker then ticker:Cancel(); ticker = nil end
-    if bar then bar:Hide() end
+    if ticker then
+        ticker:Cancel()
+        ticker = nil
+    end
+    if bar then
+        bar:Hide()
+    end
 end
 
 --- Starts the bar for a boss with a target kill time, as at a pull.
 function ns.StartPace(name, seconds)
     Build()
-    if not (bar and seconds and seconds > 0) then return end
+    if not (bar and seconds and seconds > 0) then
+        return
+    end
     fight = { start = GetTime(), target = seconds, name = name }
     bar:Show()
-    if ticker then ticker:Cancel() end
+    if ticker then
+        ticker:Cancel()
+    end
     ticker = C_Timer.NewTicker(TICK, Update)
     Update()
 end
@@ -132,30 +163,54 @@ ev:RegisterEvent("ENCOUNTER_END")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
 ev:SetScript("OnEvent", function(_, event, _, encounterName)
-    if event == "ENCOUNTER_END" then return Stop() end
+    if event == "ENCOUNTER_END" then
+        return Stop()
+    end
     if event == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
+            return
+        end
         Build()
         registered = true
         CludesUI:RegisterUnlockElements({
             CludesUI.MakeUnlockElement({
-                key = "RLEAD_Pace", label = "Boss Pace", group = "Raid Lead", order = 662,
-                noAnchorTarget = true, noResize = true,
-                isHidden = function() return not ns.PaceSettings().enabled end,
-                getFrame = function() return bar end,
-                getSize = function() return 260, 22 end,
+                key = "RLEAD_Pace",
+                label = "Boss Pace",
+                group = "Raid Lead",
+                order = 662,
+                noAnchorTarget = true,
+                noResize = true,
+                isHidden = function()
+                    return not ns.PaceSettings().enabled
+                end,
+                getFrame = function()
+                    return bar
+                end,
+                getSize = function()
+                    return 260, 22
+                end,
                 savePos = function(_, point, relPoint, x, y)
                     ns.PaceSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
                 end,
-                loadPos = function() return ns.PaceSettings().pos end,
-                clearPos = function() ns.PaceSettings().pos = nil end,
+                loadPos = function()
+                    return ns.PaceSettings().pos
+                end,
+                clearPos = function()
+                    ns.PaceSettings().pos = nil
+                end,
                 applyPos = ns.ApplyPacePosition,
             }),
         }, "CludesUIRaidLead")
         return
     end
-    if not ns.PaceSettings().enabled then return end
-    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then return end
+    if not ns.PaceSettings().enabled then
+        return
+    end
+    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
+        return
+    end
     local target = TargetFor(encounterName)
-    if target then ns.StartPace(encounterName, target) end
+    if target then
+        ns.StartPace(encounterName, target)
+    end
 end)

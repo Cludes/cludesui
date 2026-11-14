@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIAuraBuffReminders.lua
 --  Raid Buffs, Auras, and Consumables reminders: clickable SecureActionButton icons
@@ -6,8 +8,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 local ADDON_NAME = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI._Pool and CludesUI.RAID_PREP_IDS) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[ADDON_NAME] = select(2, ...)  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI._Pool
+        and CludesUI.RAID_PREP_IDS
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
+CludesUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
 
 local EABR = CludesUI.Lite.NewAddon("CludesUIAuraBuffReminders")
 
@@ -39,25 +52,87 @@ EABR.FOOD_BUFFS = { 18192, 18194, 22730, 25661, 18125, 18141 }
 -- the reminder; the icon and the click follow the line last seen up (its
 -- strongest rank this character knows), else the strongest line known.
 EABR.MAGE_ARMORS = {
-    { 168, 7300, 7301 },            -- Frost Armor 1-3
-    { 7302, 7320, 10219, 10220 },   -- Ice Armor 1-4
-    { 6117, 22782, 22783 },         -- Mage Armor 1-3
+    { 168, 7300, 7301 }, -- Frost Armor 1-3
+    { 7302, 7320, 10219, 10220 }, -- Ice Armor 1-4
+    { 6117, 22782, 22783 }, -- Mage Armor 1-3
 }
 if EABR.FOREVER then
     EABR.FV_WEAPON_BUFFS = {
-        { key = "instant", name = "Instant Poison", imbue = true, class = "ROGUE", items = { 6947, 6949, 6950, 8926, 8927, 8928 } },
-        { key = "deadly", name = "Deadly Poison", imbue = true, class = "ROGUE", items = { 2892, 2893, 8984, 8985, 20844 } },
-        { key = "crippling", name = "Crippling Poison", imbue = true, class = "ROGUE", items = { 3775, 3776 } },
-        { key = "mindnumbing", name = "Mind-numbing Poison", imbue = true, class = "ROGUE", items = { 5237, 6951, 9186 } },
-        { key = "wound", name = "Wound Poison", imbue = true, class = "ROGUE", items = { 10918, 10920, 10921, 10922 } },
+        {
+            key = "instant",
+            name = "Instant Poison",
+            imbue = true,
+            class = "ROGUE",
+            items = { 6947, 6949, 6950, 8926, 8927, 8928 },
+        },
+        {
+            key = "deadly",
+            name = "Deadly Poison",
+            imbue = true,
+            class = "ROGUE",
+            items = { 2892, 2893, 8984, 8985, 20844 },
+        },
+        {
+            key = "crippling",
+            name = "Crippling Poison",
+            imbue = true,
+            class = "ROGUE",
+            items = { 3775, 3776 },
+        },
+        {
+            key = "mindnumbing",
+            name = "Mind-numbing Poison",
+            imbue = true,
+            class = "ROGUE",
+            items = { 5237, 6951, 9186 },
+        },
+        {
+            key = "wound",
+            name = "Wound Poison",
+            imbue = true,
+            class = "ROGUE",
+            items = { 10918, 10920, 10921, 10922 },
+        },
         { key = "windfury", imbue = true, class = "SHAMAN", spells = { 8232, 8235, 10486, 16362 } },
-        { key = "flametongue", imbue = true, class = "SHAMAN", spells = { 8024, 8027, 8030, 16339, 16341, 16342 } },
+        {
+            key = "flametongue",
+            imbue = true,
+            class = "SHAMAN",
+            spells = { 8024, 8027, 8030, 16339, 16341, 16342 },
+        },
         { key = "frostbrand", imbue = true, class = "SHAMAN", spells = { 8033, 8038, 10456, 16355, 16356 } },
-        { key = "rockbiter", imbue = true, class = "SHAMAN", spells = { 8017, 8018, 8019, 10399, 16314, 16315, 16316 } },
-        { key = "firestone", name = "Firestone", imbue = true, class = "WARLOCK", items = { 1254, 13699, 13700, 13701 } },
-        { key = "spellstone", name = "Spellstone", imbue = true, class = "WARLOCK", items = { 5522, 13602, 13603 } },
-        { key = "sharpening", name = "Sharpening Stone", weapon = "BLADED", items = { 2862, 287978, 2863, 2871, 7964, 12404 } },
-        { key = "weightstone", name = "Weightstone", weapon = "BLUNT", items = { 3239, 3240, 3241, 7965, 12643 } },
+        {
+            key = "rockbiter",
+            imbue = true,
+            class = "SHAMAN",
+            spells = { 8017, 8018, 8019, 10399, 16314, 16315, 16316 },
+        },
+        {
+            key = "firestone",
+            name = "Firestone",
+            imbue = true,
+            class = "WARLOCK",
+            items = { 1254, 13699, 13700, 13701 },
+        },
+        {
+            key = "spellstone",
+            name = "Spellstone",
+            imbue = true,
+            class = "WARLOCK",
+            items = { 5522, 13602, 13603 },
+        },
+        {
+            key = "sharpening",
+            name = "Sharpening Stone",
+            weapon = "BLADED",
+            items = { 2862, 287978, 2863, 2871, 7964, 12404 },
+        },
+        {
+            key = "weightstone",
+            name = "Weightstone",
+            weapon = "BLUNT",
+            items = { 3239, 3240, 3241, 7965, 12643 },
+        },
         { key = "elemental", name = "Elemental Sharpening Stone", items = { 18262, 287980 } },
         { key = "wizardoil", name = "Wizard Oil", items = { 20744, 20746, 287979, 20750, 20749 } },
         { key = "manaoil", name = "Mana Oil", items = { 20745, 20747, 20748 } },
@@ -73,35 +148,61 @@ if EABR.FOREVER then
     -- reminder's label would read wrong there.
     function EABR.FvClassBuffs()
         local t = EABR._fvClassBuffs
-        if t then return t end
+        if t then
+            return t
+        end
         t = {
             DRUID = {
                 { key = "thorns", lines = { { 467, 782, 1075, 8914, 9756, 9910 } } },
             },
             HUNTER = {
-                { key = "aspect", label = CludesUI.L("Aspect"), on = true, own = true, lines = {
-                    { 34074, 415423 }, { 469145 },
-                    { 13159 }, { 5118 }, { 13163 },
-                    { 13161, 1299445, 1299446, 1299447 },
-                    { 20043, 20190 },
-                    { 13165, 14318, 14319, 14320, 14321, 14322, 25296 },
-                } },
+                {
+                    key = "aspect",
+                    label = CludesUI.L("Aspect"),
+                    on = true,
+                    own = true,
+                    lines = {
+                        { 34074, 415423 },
+                        { 469145 },
+                        { 13159 },
+                        { 5118 },
+                        { 13163 },
+                        { 13161, 1299445, 1299446, 1299447 },
+                        { 20043, 20190 },
+                        { 13165, 14318, 14319, 14320, 14321, 14322, 25296 },
+                    },
+                },
                 { key = "trueshot", on = true, lines = { { 1299346, 1299348, 19506, 20905, 20906 } } },
             },
             PALADIN = {
-                { key = "blessing", label = CludesUI.L("Blessing"), menu = CludesUI.L("Blessings"), on = true, ownMemory = true, lines = {
-                    { 19742, 19850, 19852, 19853, 19854, 25290 },
-                    { 20217 },
-                    { 19740, 19834, 19835, 19836, 19837, 19838, 25291 },
-                }, also = { { 25894, 25918 }, { 25898 }, { 25782, 25916 } } },
-                { key = "paladinaura", label = CludesUI.L("Aura"), menu = CludesUI.L("Important Auras"), on = true, own = true, lines = {
-                    { 19891, 19899, 19900 },
-                    { 19888, 19897, 19898 },
-                    { 19876, 19895, 19896 },
-                    { 19746 },
-                    { 7294, 10298, 10299, 10300, 10301 },
-                    { 465, 10290, 643, 10291, 1032, 10292, 10293 },
-                } },
+                {
+                    key = "blessing",
+                    label = CludesUI.L("Blessing"),
+                    menu = CludesUI.L("Blessings"),
+                    on = true,
+                    ownMemory = true,
+                    lines = {
+                        { 19742, 19850, 19852, 19853, 19854, 25290 },
+                        { 20217 },
+                        { 19740, 19834, 19835, 19836, 19837, 19838, 25291 },
+                    },
+                    also = { { 25894, 25918 }, { 25898 }, { 25782, 25916 } },
+                },
+                {
+                    key = "paladinaura",
+                    label = CludesUI.L("Aura"),
+                    menu = CludesUI.L("Important Auras"),
+                    on = true,
+                    own = true,
+                    lines = {
+                        { 19891, 19899, 19900 },
+                        { 19888, 19897, 19898 },
+                        { 19876, 19895, 19896 },
+                        { 19746 },
+                        { 7294, 10298, 10299, 10300, 10301 },
+                        { 465, 10290, 643, 10291, 1032, 10292, 10293 },
+                    },
+                },
                 { key = "rfury", lines = { { 25780 } } },
             },
             PRIEST = {
@@ -109,13 +210,23 @@ if EABR.FOREVER then
                 { key = "shadowform", lines = { { 15473 } } },
             },
             SHAMAN = {
-                { key = "shield", label = CludesUI.L("Shield"), on = true, lines = {
-                    { 324, 325, 905, 945, 8134, 10431, 10432 },
-                    { 408510 },
-                } },
+                {
+                    key = "shield",
+                    label = CludesUI.L("Shield"),
+                    on = true,
+                    lines = {
+                        { 324, 325, 905, 945, 8134, 10431, 10432 },
+                        { 408510 },
+                    },
+                },
             },
             WARLOCK = {
-                { key = "demonarmor", label = CludesUI.L("Armor"), on = true, lines = { { 687, 696, 706, 1086, 11733, 11734, 11735 } } },
+                {
+                    key = "demonarmor",
+                    label = CludesUI.L("Armor"),
+                    on = true,
+                    lines = { { 687, 696, 706, 1086, 11733, 11734, 11735 } },
+                },
             },
         }
         EABR._fvClassBuffs = t
@@ -123,38 +234,51 @@ if EABR.FOREVER then
     end
 end
 
-local _B = {}  -- beacon state table, populated later
+local _B = {} -- beacon state table, populated later
 -- The two spellbook checks Blizzard's IsPlayerSpell / IsSpellKnown wrap, called
 -- directly: those globals exist only while the loadDeprecationFallbacks CVar is on.
 local Known = function(id)
-    return id and (C_SpellBook.IsSpellKnown(id)
-        or C_SpellBook.IsSpellInSpellBook(id, Enum.SpellBookSpellBank.Player, false))
+    return id
+        and (
+            C_SpellBook.IsSpellKnown(id)
+            or C_SpellBook.IsSpellInSpellBook(id, Enum.SpellBookSpellBank.Player, false)
+        )
 end
 local _eabrInCombat = false
-local InCombat = function() return _eabrInCombat or (InCombatLockdown and InCombatLockdown()) end
+local InCombat = function()
+    return _eabrInCombat or (InCombatLockdown and InCombatLockdown())
+end
 -- Whether important buffs ride the cursor right now: Attach Important Buffs to
 -- Cursor, and with its Only on Cursor in Combat option only while in combat.
 -- p = the profile's display table. Every combat edge refreshes the reminders,
 -- so their placement follows the moment combat starts or ends.
 local CursorAttachActive = function(p)
-    if not (p and p.cursorAttach) then return false end
+    if not (p and p.cursorAttach) then
+        return false
+    end
     return not p.cursorAttachCombatOnly or InCombat()
 end
-local isSecret = issecretvalue or function() return false end
-local AURA_SCAN_LIMIT = 255  -- Midnight supports more than the legacy 40 buff limit
-local DEFAULT_GLOW_COLOR = {r=1, g=0.776, b=0.376}
-local DEFAULT_TEXT_COLOR = {r=1, g=1, b=1}
+local isSecret = issecretvalue or function()
+    return false
+end
+local AURA_SCAN_LIMIT = 255 -- Midnight supports more than the legacy 40 buff limit
+local DEFAULT_GLOW_COLOR = { r = 1, g = 0.776, b = 0.376 }
+local DEFAULT_TEXT_COLOR = { r = 1, g = 1, b = 1 }
 
 -- Per-profile fixups; runs at the read path since profile swaps skip OnInitialize. (1) Scale outside
 -- [0.5, 3.0] (UI range) is corruption -> reset to 1.0, every call. (2) glowColorMode: one-time migration
 -- per profile, never alters the stored color.
 local function EnsureGlowModeMigrated(p)
-    if not p then return end
+    if not p then
+        return
+    end
     local s = p.scale
     if type(s) == "number" and (s < 0.5 or s > 3.0) then
         p.scale = 1.0
     end
-    if p.glowColorMode then return end
+    if p.glowColorMode then
+        return
+    end
     local c = p.glowColor
     if c and not (c.r == 1 and c.g == 0.776 and c.b == 0.376) then
         p.glowColorMode = "custom"
@@ -164,49 +288,65 @@ local function EnsureGlowModeMigrated(p)
 end
 
 local function ResolveGlowTint(p)
-    if not p then return nil end
+    if not p then
+        return nil
+    end
     EnsureGlowModeMigrated(p)
     if p.glowColorMode == "class" then
         local cc = CludesUI.GetClassColor(CludesUI._playerClass)
         return cc.r, cc.g, cc.b
     end
-    if p.glowColorMode ~= "custom" then return nil end
+    if p.glowColorMode ~= "custom" then
+        return nil
+    end
     local c = p.glowColor
-    if not c then return nil end
+    if not c then
+        return nil
+    end
     return c.r or 1, c.g or 0.776, c.b or 0.376
 end
 
 local TEXT_ANCHOR_POINTS = {
-    BOTTOM = { "TOP",    "BOTTOM" },
-    TOP    = { "BOTTOM", "TOP"    },
+    BOTTOM = { "TOP", "BOTTOM" },
+    TOP = { "BOTTOM", "TOP" },
     CENTER = { "CENTER", "CENTER" },
-    LEFT   = { "RIGHT",  "LEFT"   },
-    RIGHT  = { "LEFT",   "RIGHT"  },
+    LEFT = { "RIGHT", "LEFT" },
+    RIGHT = { "LEFT", "RIGHT" },
 }
 -- Shared read-only with the options preview via _G._EABR_* (main loads first).
-_G._EABR_TEXT_ANCHORS = TEXT_ANCHOR_POINTS
+_G._CUABR_TEXT_ANCHORS = TEXT_ANCHOR_POINTS
 local function GetTextAnchorPoints(p)
     local m = TEXT_ANCHOR_POINTS[(p and p.textAnchor) or "BOTTOM"] or TEXT_ANCHOR_POINTS.BOTTOM
     return m[1], m[2]
 end
 
-
-local db  -- set in EABR:OnInitialize()
+local db -- set in EABR:OnInitialize()
 -- Flask state snapshotted before PvP restriction activates (aura API locked in PvP).
-
 
 local texCache = {}
 local function Tex(id)
-    local c = texCache[id]; if c then return c end
+    local c = texCache[id]
+    if c then
+        return c
+    end
     local t = C_Spell.GetSpellTexture(id)
-    if t then texCache[id] = t end; return t
+    if t then
+        texCache[id] = t
+    end
+    return t
 end
 
 local spellNameCache = {}
 local function SpellName(id)
-    local c = spellNameCache[id]; if c then return c end
+    local c = spellNameCache[id]
+    if c then
+        return c
+    end
     local n = C_Spell.GetSpellName(id)
-    if n then spellNameCache[id] = n end; return n
+    if n then
+        spellNameCache[id] = n
+    end
+    return n
 end
 
 local _cachedPlayerClass
@@ -219,8 +359,13 @@ local function GetPlayerClass()
 end
 
 local function GetSpecID()
-    if not GetSpecialization then return nil end  -- legacy global, not registered on WoW Forever
-    local s = GetSpecialization(); if not s then return nil end
+    if not GetSpecialization then
+        return nil
+    end -- legacy global, not registered on WoW Forever
+    local s = GetSpecialization()
+    if not s then
+        return nil
+    end
     return GetSpecializationInfo(s)
 end
 
@@ -230,7 +375,9 @@ end
 local function ResolveFontPath(fontName)
     if fontName and fontName ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local path = CludesUI.ResolveFontName(fontName)
-        if path and path ~= "" then return path end
+        if path and path ~= "" then
+            return path
+        end
     end
     if CludesUI and CludesUI.GetFontPath then
         return CludesUI.GetFontPath("auraBuff")
@@ -239,8 +386,12 @@ local function ResolveFontPath(fontName)
 end
 local _cachedOutline
 local function SetABRFont(fs, font, size)
-    if not (fs and fs.SetFont) then return end
-    if not _cachedOutline then _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff") end
+    if not (fs and fs.SetFont) then
+        return
+    end
+    if not _cachedOutline then
+        _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff")
+    end
     CludesUI.PrimeFontShadow(fs, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
     fs:SetFont(font, size, _cachedOutline)
 end
@@ -249,27 +400,29 @@ end
 --  ShortLabel shorten buff/aura names for icon text display
 -------------------------------------------------------------------------------
 local LABEL_OVERRIDES = {
-    ["Battle Stance"]           = "Stance",
-    ["Defensive Stance"]        = "Stance",
-    ["Berserker Stance"]        = "Stance",
-    ["Devotion Aura"]           = "Aura",
-    ["Power Word: Fortitude"]   = "Fortitude",
-    ["Arcane Intellect"]        = "Intellect",
-    ["Divine Spirit"]           = "Spirit",
-    ["Battle Shout"]            = "Shout",
-    ["Hunter's Mark"]           = "Mark",
-    ["Earth Shield (Ally)"]     = "Ally",
+    ["Battle Stance"] = "Stance",
+    ["Defensive Stance"] = "Stance",
+    ["Berserker Stance"] = "Stance",
+    ["Devotion Aura"] = "Aura",
+    ["Power Word: Fortitude"] = "Fortitude",
+    ["Arcane Intellect"] = "Intellect",
+    ["Divine Spirit"] = "Spirit",
+    ["Battle Shout"] = "Shout",
+    ["Hunter's Mark"] = "Mark",
+    ["Earth Shield (Ally)"] = "Ally",
 }
 local LABEL_CLASS_OVERRIDES = {
-    ROGUE  = "Poison",
-    SHAMAN_IMBUE  = "Weapon",
+    ROGUE = "Poison",
+    SHAMAN_IMBUE = "Weapon",
     SHAMAN_SHIELD = "Shield",
 }
 local function ShortLabel(name, classOverride)
     if classOverride and LABEL_CLASS_OVERRIDES[classOverride] then
         return CludesUI.L(LABEL_CLASS_OVERRIDES[classOverride])
     end
-    if LABEL_OVERRIDES[name] then return LABEL_OVERRIDES[name] end
+    if LABEL_OVERRIDES[name] then
+        return LABEL_OVERRIDES[name]
+    end
     return name:match("^(%S+)") or name
 end
 
@@ -298,7 +451,9 @@ local function CacheInstanceInfo()
     _cachedDiffID = tonumber(diffID) or 0
     EABR._cachedDiffID = _cachedDiffID
     EABR._cachedWorldTier = hasWorldTier == true
-    if EABR.FOREVER then return end  -- the instance check only serves the pre-key threshold window
+    if EABR.FOREVER then
+        return
+    end -- the instance check only serves the pre-key threshold window
     -- The instance ID, never a map lookup: this runs on every refresh, and the
     -- game client itself crashes inside C_Map.GetBestMapForUnit in places
     -- (Murder Row on 12.1.5, whatever addon or Blizzard frame asks).
@@ -319,16 +474,21 @@ local function InRealInstancedContent()
         return false
     end
     -- Housing plots report as "scenario"; they belong to the open world.
-    if _cachedIType == "scenario" and C_Housing and C_Housing.IsInsideHouseOrPlot
-        and C_Housing.IsInsideHouseOrPlot() then
+    if
+        _cachedIType == "scenario"
+        and C_Housing
+        and C_Housing.IsInsideHouseOrPlot
+        and C_Housing.IsInsideHouseOrPlot()
+    then
         return false
     end
 
-    if _cachedIType == "party"
-    or _cachedIType == "raid"
-    or _cachedIType == "scenario"
-    or _cachedIType == "arena"
-    or _cachedIType == "pvp"
+    if
+        _cachedIType == "party"
+        or _cachedIType == "raid"
+        or _cachedIType == "scenario"
+        or _cachedIType == "arena"
+        or _cachedIType == "pvp"
     then
         return true
     end
@@ -337,8 +497,12 @@ local function InRealInstancedContent()
 end
 
 local function InMythicPlusKey()
-    if EABR.FOREVER then return false end  -- no keystones on WoW Forever
-    return C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()
+    if EABR.FOREVER then
+        return false
+    end -- no keystones on WoW Forever
+    return C_ChallengeMode
+        and C_ChallengeMode.IsChallengeModeActive
+        and C_ChallengeMode.IsChallengeModeActive()
 end
 
 -- Mythic raid diff IDs: 16 fixed-20p (PrimaryRaidMythic), 233 flex (RaidMythicFlexible). Add future IDs here so every gate below stays correct.
@@ -349,7 +513,9 @@ end
 -- Mythic 0 dungeon (difficulty 23). A keyed M+ run is not M0.
 -- Hung on EABR.
 function EABR.InMythicZeroDungeon()
-    if InMythicPlusKey() then return false end
+    if InMythicPlusKey() then
+        return false
+    end
     return _cachedIType == "party" and _cachedDiffID == 23
 end
 
@@ -358,7 +524,9 @@ end
 -- inserted and started) this goes false; that run is governed by
 -- ShowUnderThresholdApplies() instead (thresholds ignored, buff-gone only).
 local function InPreKeyDungeon()
-    if InMythicPlusKey() then return false end
+    if InMythicPlusKey() then
+        return false
+    end
     return _cachedIType == "party" and _cachedDiffID == 8
 end
 
@@ -373,25 +541,51 @@ end
 -------------------------------------------------------------------------------
 -- Fine-grained instanced difficulty category, or nil outside mapped content.
 function EABR.CurrentDifficultyCat()
-    if InMythicPlusKey() then return "d_mplus" end
+    if InMythicPlusKey() then
+        return "d_mplus"
+    end
     local it, d = _cachedIType, _cachedDiffID
     if it == "party" then
-        if d == 23 or d == 8 then return "d_mythic" end
-        if d == 2 then return "d_heroic" end
-        if d == 1 then return "d_normal" end
-        if d == 24 then return "d_timewalking" end
-        if d == 205 then return "d_follower" end
+        if d == 23 or d == 8 then
+            return "d_mythic"
+        end
+        if d == 2 then
+            return "d_heroic"
+        end
+        if d == 1 then
+            return "d_normal"
+        end
+        if d == 24 then
+            return "d_timewalking"
+        end
+        if d == 205 then
+            return "d_follower"
+        end
     elseif it == "raid" then
-        if IsMythicRaidDiff(d) then return "r_mythic" end
-        if d == 15 or d == 6 then return "r_heroic" end
-        if d == 14 or d == 3 or d == 4 or d == 5 then return "r_normal" end
-        if d == 17 or d == 7 then return "r_lfr" end
-        if d == 33 then return "d_timewalking" end
+        if IsMythicRaidDiff(d) then
+            return "r_mythic"
+        end
+        if d == 15 or d == 6 then
+            return "r_heroic"
+        end
+        if d == 14 or d == 3 or d == 4 or d == 5 then
+            return "r_normal"
+        end
+        if d == 17 or d == 7 then
+            return "r_lfr"
+        end
+        if d == 33 then
+            return "d_timewalking"
+        end
         -- WoW Forever raids report the legacy 40- and 20-player ids; they feed
         -- the Forever section's "Raids" bucket. Retail leaves them unmapped.
-        if EABR.FOREVER and (d == 9 or d == 148) then return "r_normal" end
+        if EABR.FOREVER and (d == 9 or d == 148) then
+            return "r_normal"
+        end
     elseif it == "scenario" then
-        if d == 208 then return "s_delve" end
+        if d == 208 then
+            return "s_delve"
+        end
     end
     return nil
 end
@@ -405,27 +599,53 @@ function EABR.CurrentWhereBucket(inInstance)
     -- Lairs carry the World Tier flag instead of a difficulty id the allowlist
     -- knows; the instance gate keeps the flag from ever reclassifying the
     -- open world, whatever else it may be set on.
-    if inInstance and EABR._cachedWorldTier then return "lair" end
+    if inInstance and EABR._cachedWorldTier then
+        return "lair"
+    end
     local cat = EABR.CurrentDifficultyCat()
-    if cat == "d_mplus" or cat == "d_mythic" then return "dungeon_mythic" end
-    if cat == "d_heroic" or cat == "d_normal" or cat == "d_follower" then return "dungeon_nonmythic" end
-    if cat == "d_timewalking" then return "timewalking" end
-    if cat == "r_mythic" then return "raid_mythic" end
-    if cat == "r_heroic" then return "raid_heroic" end
-    if cat == "r_normal" or cat == "r_lfr" then return "raid_normal_lfr" end
-    if cat == "s_delve" then return "delve" end
-    if not inInstance then return "open_world" end
-    if _cachedIType == "scenario" then return "scenario" end
+    if cat == "d_mplus" or cat == "d_mythic" then
+        return "dungeon_mythic"
+    end
+    if cat == "d_heroic" or cat == "d_normal" or cat == "d_follower" then
+        return "dungeon_nonmythic"
+    end
+    if cat == "d_timewalking" then
+        return "timewalking"
+    end
+    if cat == "r_mythic" then
+        return "raid_mythic"
+    end
+    if cat == "r_heroic" then
+        return "raid_heroic"
+    end
+    if cat == "r_normal" or cat == "r_lfr" then
+        return "raid_normal_lfr"
+    end
+    if cat == "s_delve" then
+        return "delve"
+    end
+    if not inInstance then
+        return "open_world"
+    end
+    if _cachedIType == "scenario" then
+        return "scenario"
+    end
     return nil
 end
 
 -- Per-section gate. "In Combat" is an orthogonal state gate layered on top of
 -- the location buckets.
 function EABR.SectionShows(whereToShow, inInstance)
-    if whereToShow and whereToShow.in_combat == false and InCombat() then return false end
+    if whereToShow and whereToShow.in_combat == false and InCombat() then
+        return false
+    end
     local bucket = EABR.CurrentWhereBucket(inInstance)
-    if not bucket then return true end
-    if not whereToShow then return true end
+    if not bucket then
+        return true
+    end
+    if not whereToShow then
+        return true
+    end
     return whereToShow[bucket] ~= false
 end
 
@@ -434,21 +654,25 @@ end
 -- is not set yet reads the old shared specials value, so a profile from
 -- before the split behaves as it did until the section is edited.
 EABR.SPECIALS = {
-    ROGUE   = { where = "rogueWhereToShow",   sound = "rogueSound" },
+    ROGUE = { where = "rogueWhereToShow", sound = "rogueSound" },
     PALADIN = { where = "paladinWhereToShow", sound = "paladinSound" },
-    SHAMAN  = { where = "shamanWhereToShow",  sound = "shamanSound" },
-    PET     = { where = "petWhereToShow" },
+    SHAMAN = { where = "shamanWhereToShow", sound = "shamanSound" },
+    PET = { where = "petWhereToShow" },
 }
 function EABR.SpecialsWhere(co, field)
     local t = field and co[field]
-    if type(t) == "table" then return t end
+    if type(t) == "table" then
+        return t
+    end
     return co.specialsWhereToShow
 end
 -- A section set to no sound stores "none" (not nil), so it never reads
 -- through to the shared value; HandleAppearSounds skips "none".
 function EABR.SpecialsSound(co, field)
     local snd = field and co[field]
-    if snd == nil then snd = co.specialsSound end
+    if snd == nil then
+        snd = co.specialsSound
+    end
     return snd
 end
 
@@ -461,7 +685,9 @@ end
 -- Global Display thresholds. "Show Below Pre-Key" is the Mythic 0 / keystone
 -- lobby value so flasks and food are topped up before the key starts.
 function EABR.GetShowUnderMinutes()
-    if not (db and db.profile) then return 0 end
+    if not (db and db.profile) then
+        return 0
+    end
     local disp = db.profile.display or {}
     if (EABR.InMythicZeroDungeon() or InPreKeyDungeon()) and _dungeonPrePull then
         return disp.showUnderMPlus or 40
@@ -472,13 +698,19 @@ end
 -- Thresholds apply everywhere except combat and active Mythic+ keys (there a
 -- reminder means the buff is fully gone).
 function EABR.ShowUnderThresholdApplies()
-    if InCombat() or InMythicPlusKey() then return false end
+    if InCombat() or InMythicPlusKey() then
+        return false
+    end
     return true
 end
 
 function EABR.IsUnderDuration(duration, expirationTime, sectionKey)
-    if not (db and db.profile and duration and expirationTime and sectionKey) then return false end
-    if not EABR.ShowUnderThresholdApplies() then return false end
+    if not (db and db.profile and duration and expirationTime and sectionKey) then
+        return false
+    end
+    if not EABR.ShowUnderThresholdApplies() then
+        return false
+    end
     local thresholdSeconds = EABR.GetShowUnderMinutes() * 60
     if thresholdSeconds > 0 and duration >= thresholdSeconds then
         local now = GetTime()
@@ -486,7 +718,10 @@ function EABR.IsUnderDuration(duration, expirationTime, sectionKey)
             return true
         end
         local refreshAt = expirationTime - thresholdSeconds
-        if refreshAt > now and (not EABR._nextDurationRefreshTime or refreshAt < EABR._nextDurationRefreshTime) then
+        if
+            refreshAt > now
+            and (not EABR._nextDurationRefreshTime or refreshAt < EABR._nextDurationRefreshTime)
+        then
             EABR._nextDurationRefreshTime = refreshAt
         end
     end
@@ -500,53 +735,115 @@ end
 -------------------------------------------------------------------------------
 local NON_SECRET_SPELL_IDS = {
     -- Preservation Evoker
-    [355941]=true, [363502]=true, [364343]=true, [366155]=true,
-    [367364]=true, [373267]=true, [376788]=true,
+    [355941] = true,
+    [363502] = true,
+    [364343] = true,
+    [366155] = true,
+    [367364] = true,
+    [373267] = true,
+    [376788] = true,
     -- Augmentation Evoker. Blistering Scales (360827) is still secret under
     -- keystone restrictions (ShouldSpellAuraBeSecret), so a miss there is not
     -- authoritative; check EABR.IsRuntimeNonSecret before trusting one.
-    [360827]=true, [395152]=true, [410089]=true, [410263]=true,
-    [410686]=true, [413984]=true,
+    [360827] = true,
+    [395152] = true,
+    [410089] = true,
+    [410263] = true,
+    [410686] = true,
+    [413984] = true,
     -- Resto Druid
-    [774]=true, [8936]=true, [33763]=true, [48438]=true, [155777]=true,
+    [774] = true,
+    [8936] = true,
+    [33763] = true,
+    [48438] = true,
+    [155777] = true,
     -- Disc Priest
-    [17]=true, [194384]=true, [1253593]=true,
+    [17] = true,
+    [194384] = true,
+    [1253593] = true,
     -- Holy Priest
-    [139]=true, [41635]=true, [77489]=true,
+    [139] = true,
+    [41635] = true,
+    [77489] = true,
     -- Mistweaver Monk
-    [115175]=true, [119611]=true, [124682]=true, [450769]=true,
+    [115175] = true,
+    [119611] = true,
+    [124682] = true,
+    [450769] = true,
     -- Restoration Shaman
-    [974]=true, [383648]=true, [61295]=true,
+    [974] = true,
+    [383648] = true,
+    [61295] = true,
     -- Holy Paladin
-    [53563]=true, [156322]=true, [156910]=true, [1244893]=true,
+    [53563] = true,
+    [156322] = true,
+    [156910] = true,
+    [1244893] = true,
     -- Long-term Raid Buffs
-    [1126]=true, [1459]=true, [6673]=true, [21562]=true, [369459]=true,
-    [462854]=true, [474754]=true,
+    [1126] = true,
+    [1459] = true,
+    [6673] = true,
+    [21562] = true,
+    [369459] = true,
+    [462854] = true,
+    [474754] = true,
     -- Alternate buff IDs (talent variants that provide the same effect)
-    [432661]=true, [432778]=true,
+    [432661] = true,
+    [432778] = true,
     -- Devotion Aura (465) is ContextuallySecret in Midnight 12.0; not whitelisted.
     -- Blessing of the Bronze Auras
-    [381732]=true, [381741]=true, [381746]=true, [381748]=true,
-    [381749]=true, [381750]=true, [381751]=true, [381752]=true,
-    [381753]=true, [381754]=true, [381756]=true, [381757]=true,
-    [381758]=true,
+    [381732] = true,
+    [381741] = true,
+    [381746] = true,
+    [381748] = true,
+    [381749] = true,
+    [381750] = true,
+    [381751] = true,
+    [381752] = true,
+    [381753] = true,
+    [381754] = true,
+    [381756] = true,
+    [381757] = true,
+    [381758] = true,
     -- Long-term Self Buffs (Paladin Rites)
-    [433568]=true, [433583]=true,
+    [433568] = true,
+    [433583] = true,
     -- Rogue Poisons
-    [2823]=true, [8679]=true, [3408]=true, [5761]=true,
-    [315584]=true, [381637]=true, [381664]=true,
+    [2823] = true,
+    [8679] = true,
+    [3408] = true,
+    [5761] = true,
+    [315584] = true,
+    [381637] = true,
+    [381664] = true,
     -- Shaman Imbuements
-    [319773]=true, [319778]=true, [382021]=true, [382022]=true,
-    [457496]=true, [457481]=true, [462757]=true, [462742]=true,
+    [319773] = true,
+    [319778] = true,
+    [382021] = true,
+    [382022] = true,
+    [457496] = true,
+    [457481] = true,
+    [462757] = true,
+    [462742] = true,
     -- Resource-like Auras
-    [205473]=true, [260286]=true,
+    [205473] = true,
+    [260286] = true,
     -- Cooldowns
-    [8690]=true, [20608]=true,
+    [8690] = true,
+    [20608] = true,
     -- Midnight Flasks (PvE and PvP variants; non-secret in 12.0)
-    [1235110]=true, [1235108]=true, [1235111]=true, [1235057]=true, [1239355]=true,
-    [1235113]=true, [1235114]=true, [1235115]=true, [1235116]=true,
+    [1235110] = true,
+    [1235108] = true,
+    [1235111] = true,
+    [1235057] = true,
+    [1239355] = true,
+    [1235113] = true,
+    [1235114] = true,
+    [1235115] = true,
+    [1235116] = true,
     -- Partnered Trinket (Emerald Coach's Whistle)
-    [383798]=true, [389581]=true,
+    [383798] = true,
+    [389581] = true,
 }
 
 -- Main-chunk locals the CUI_AuraBuffReminders_*.lua files re-import by name.
@@ -557,27 +854,58 @@ local NON_SECRET_SPELL_IDS = {
 -- fails leaves it set, and the files behind it return at their first lines.
 local ns = select(2, ...)
 CludesUI.NewInternals(ns, "_abrInternals", {
-    _B = _B, AURA_SCAN_LIMIT = AURA_SCAN_LIMIT, CacheInstanceInfo = CacheInstanceInfo,
-    CursorAttachActive = CursorAttachActive, DEFAULT_TEXT_COLOR = DEFAULT_TEXT_COLOR, EABR = EABR,
-    EnsureGlowModeMigrated = EnsureGlowModeMigrated, GetPlayerClass = GetPlayerClass,
-    GetSpecID = GetSpecID, GetTextAnchorPoints = GetTextAnchorPoints, InCombat = InCombat,
-    InMythicPlusKey = InMythicPlusKey, InPvPInstance = InPvPInstance,
-    InRealInstancedContent = InRealInstancedContent, isSecret = isSecret, Known = Known,
+    _B = _B,
+    AURA_SCAN_LIMIT = AURA_SCAN_LIMIT,
+    CacheInstanceInfo = CacheInstanceInfo,
+    CursorAttachActive = CursorAttachActive,
+    DEFAULT_TEXT_COLOR = DEFAULT_TEXT_COLOR,
+    EABR = EABR,
+    EnsureGlowModeMigrated = EnsureGlowModeMigrated,
+    GetPlayerClass = GetPlayerClass,
+    GetSpecID = GetSpecID,
+    GetTextAnchorPoints = GetTextAnchorPoints,
+    InCombat = InCombat,
+    InMythicPlusKey = InMythicPlusKey,
+    InPvPInstance = InPvPInstance,
+    InRealInstancedContent = InRealInstancedContent,
+    isSecret = isSecret,
+    Known = Known,
     MarkDungeonPullStarted = MarkDungeonPullStarted,
-    NON_SECRET_SPELL_IDS = NON_SECRET_SPELL_IDS, ResolveFontPath = ResolveFontPath,
-    ResolveGlowTint = ResolveGlowTint, SetABRFont = SetABRFont, ShortLabel = ShortLabel,
-    SpellName = SpellName, Tex = Tex, texCache = texCache,
-    dbSetters = { function(v) db = v end },
-    inCombatSetters = { function(v) _eabrInCombat = v end },
-    outlineSetters = { function(v) _cachedOutline = v end },
+    NON_SECRET_SPELL_IDS = NON_SECRET_SPELL_IDS,
+    ResolveFontPath = ResolveFontPath,
+    ResolveGlowTint = ResolveGlowTint,
+    SetABRFont = SetABRFont,
+    ShortLabel = ShortLabel,
+    SpellName = SpellName,
+    Tex = Tex,
+    texCache = texCache,
+    dbSetters = {
+        function(v)
+            db = v
+        end,
+    },
+    inCombatSetters = {
+        function(v)
+            _eabrInCombat = v
+        end,
+    },
+    outlineSetters = {
+        function(v)
+            _cachedOutline = v
+        end,
+    },
     huntersMarkSetters = {},
     panelOpenSetters = {},
     iconAnchorSetters = {},
     combatAnchorSetters = {},
     cursorAnchorSetters = {},
 }, {
-    SetDB = "dbSetters", SetInCombat = "inCombatSetters", SetCachedOutline = "outlineSetters",
-    SetHuntersMarkNeeded = "huntersMarkSetters", SetPanelOpen = "panelOpenSetters",
-    SetIconAnchor = "iconAnchorSetters", SetCombatAnchor = "combatAnchorSetters",
+    SetDB = "dbSetters",
+    SetInCombat = "inCombatSetters",
+    SetCachedOutline = "outlineSetters",
+    SetHuntersMarkNeeded = "huntersMarkSetters",
+    SetPanelOpen = "panelOpenSetters",
+    SetIconAnchor = "iconAnchorSetters",
+    SetCombatAnchor = "combatAnchorSetters",
     SetCursorAnchor = "cursorAnchorSetters",
 })

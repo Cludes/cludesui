@@ -1,7 +1,11 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local addon, ns = ...
 
-if not ns then return end
+if not ns then
+    return
+end
 
 -- Casts In Front of Nameplates (castOverlayEnabled, default off).
 --
@@ -44,7 +48,9 @@ local function GetLift(plate)
         lift:SetIgnoreParentScale(true)
         lift:SetSize(1, 1)
         lift:EnableMouse(false)
-        if lift.EnableMouseMotion then lift:EnableMouseMotion(false) end
+        if lift.EnableMouseMotion then
+            lift:EnableMouseMotion(false)
+        end
         plate._castLift = lift
     end
     return lift
@@ -58,7 +64,9 @@ end
 -- via the appearance generation counter.
 function ns.RefreshCastOverlay(plate)
     local cast = plate and plate.cast
-    if not cast then return end
+    if not cast then
+        return
+    end
     if Enabled() then
         local lift = GetLift(plate)
         if cast:GetParent() ~= lift then
@@ -69,11 +77,15 @@ function ns.RefreshCastOverlay(plate)
             -- cast border (a strata-inheriting child of the cast bar) rides up to
             -- HIGH with the lift -- leaving MEDIUM text behind it. Lift the text to
             -- the same strata; its level 900 keeps it above the border there.
-            if plate.castTextFrame then plate.castTextFrame:SetFrameStrata(LIFT_STRATA) end
+            if plate.castTextFrame then
+                plate.castTextFrame:SetFrameStrata(LIFT_STRATA)
+            end
             plate._castOverlayLifted = true
             -- The strata change just reset the custom spell icon border's (a cast bar
             -- child, when it exists): re-seat it above the icon.
-            if plate._castIconBorder or cast._iconSeam then ns.ApplyCastIconBorder(plate) end
+            if plate._castIconBorder or cast._iconSeam then
+                ns.ApplyCastIconBorder(plate)
+            end
         end
         local s = plate:GetEffectiveScale()
         if plate._castLiftScale ~= s then
@@ -83,9 +95,13 @@ function ns.RefreshCastOverlay(plate)
     elseif plate._castOverlayLifted then
         cast:SetParent(plate)
         cast:SetFrameStrata(plate:GetFrameStrata())
-        if plate.castTextFrame then plate.castTextFrame:SetFrameStrata("MEDIUM") end
+        if plate.castTextFrame then
+            plate.castTextFrame:SetFrameStrata("MEDIUM")
+        end
         plate._castOverlayLifted = nil
         plate._castLiftScale = nil
-        if plate._castIconBorder or cast._iconSeam then ns.ApplyCastIconBorder(plate) end
+        if plate._castIconBorder or cast._iconSeam then
+            ns.ApplyCastIconBorder(plate)
+        end
     end
 end

@@ -1,8 +1,37 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization) or GetSpecialization
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
+    or GetSpecialization
 local addonName, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.HideFrame and CludesUI._Pool and CludesUI.AbsorbGlow and CludesUI.SetCraftBatch and CludesUI.FitCastName and CludesUI.CleanCastName and CludesUI.AbbreviateValue and CludesUI.IsZeroValue and CludesUI.UnitNameFormat and CludesUI.OwnSurnameHidden and CludesUI.PadGamepadUI and CludesUI.SetEditModeChildInert and CludesUI.ApplyModuleFontFamily and CludesUI.PadModeOn and CludesUI.UIScaledAlpha and CludesUI.OnUIAlphaChanged) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Blizzard frame suppression hides through the parent's HideFrame, the player absorb glow line is the parent's AbsorbGlow, the player cast bar's Full Craft Time is the parent's SetCraftBatch, Show Full Spell Name is the parent's FitCastName, the cast name drops the quest-object " - No Text" through its CleanCastName, and the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, and the Name Format asks its UnitNameFormat, the [name:last] and [target:last] tags its OwnSurnameHidden, and the WoW Forever gamepad target menu keeps Blizzard's TargetFrame live through its PadGamepadUI and SetEditModeChildInert, and the frame texts take their font family through its ApplyModuleFontFamily, and the gamepad cast bar hide follows its PadModeOn, and the 3D portraits follow a faded UI through its UIScaledAlpha and OnUIAlphaChanged)
-CludesUI._ModuleNS[addonName] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.HideFrame
+        and CludesUI._Pool
+        and CludesUI.AbsorbGlow
+        and CludesUI.SetCraftBatch
+        and CludesUI.FitCastName
+        and CludesUI.CleanCastName
+        and CludesUI.AbbreviateValue
+        and CludesUI.IsZeroValue
+        and CludesUI.UnitNameFormat
+        and CludesUI.OwnSurnameHidden
+        and CludesUI.PadGamepadUI
+        and CludesUI.SetEditModeChildInert
+        and CludesUI.ApplyModuleFontFamily
+        and CludesUI.PadModeOn
+        and CludesUI.UIScaledAlpha
+        and CludesUI.OnUIAlphaChanged
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Blizzard frame suppression hides through the parent's HideFrame, the player absorb glow line is the parent's AbsorbGlow, the player cast bar's Full Craft Time is the parent's SetCraftBatch, Show Full Spell Name is the parent's FitCastName, the cast name drops the quest-object " - No Text" through its CleanCastName, and the health texts format through the parent's AbbreviateValue, the [absorb:abr] tags blank at zero through its IsZeroValue, and the Name Format asks its UnitNameFormat, the [name:last] and [target:last] tags its OwnSurnameHidden, and the WoW Forever gamepad target menu keeps Blizzard's TargetFrame live through its PadGamepadUI and SetEditModeChildInert, and the frame texts take their font family through its ApplyModuleFontFamily, and the gamepad cast bar hide follows its PadModeOn, and the 3D portraits follow a faded UI through its UIScaledAlpha and OnUIAlphaChanged)
+CludesUI._ModuleNS[addonName] = ns -- LOD options files read this module ns via the registry
 
 local math_floor, math_ceil, math_max, math_min, math_abs =
     math.floor, math.ceil, math.max, math.min, math.abs
@@ -31,7 +60,7 @@ do
     local hiddenParent = CreateFrame("Frame", nil, UIParent)
     hiddenParent:Hide()
     local pendingParent, looseFrames, hookedFrames = {}, {}, {}
-    local homeParent = {}   -- frame -> the parent it is kept in, when not hiddenParent
+    local homeParent = {} -- frame -> the parent it is kept in, when not hiddenParent
     local bossHandled = false
 
     -- Combat fallback: protected frames can't reparent in lockdown; park here, sweep at regen (mirrors stock lib).
@@ -41,17 +70,23 @@ do
             ns.CombatQueue.Defer("HiddenParentSweep", SweepLooseFrames)
             return
         end
-        for f in pairs(looseFrames) do f:SetParent(homeParent[f] or hiddenParent) end
+        for f in pairs(looseFrames) do
+            f:SetParent(homeParent[f] or hiddenParent)
+        end
         wipe(looseFrames)
     end
 
     local function ApplyHiddenParent(frame)
         pendingParent[frame] = nil
         local home = homeParent[frame] or hiddenParent
-        if frame:GetParent() == home then return end
+        if frame:GetParent() == home then
+            return
+        end
         if EditModeManagerFrame and EditModeManagerFrame:IsShown() then
             pendingParent[frame] = true
-            C_Timer.After(0.25, function() ApplyHiddenParent(frame) end)
+            C_Timer.After(0.25, function()
+                ApplyHiddenParent(frame)
+            end)
         elseif InCombatLockdown() and frame:IsProtected() then
             looseFrames[frame] = true
             ns.CombatQueue.Defer("HiddenParentSweep", SweepLooseFrames)
@@ -61,15 +96,23 @@ do
     end
 
     local function Unreg(child)
-        if child then child:UnregisterAllEvents() end
+        if child then
+            child:UnregisterAllEvents()
+        end
     end
 
     -- keepShown: the frame stays shown in its home parent (homeParent[frame]).
     local function HandleFrame(frame, doNotReparent, keepShown)
-        if type(frame) == "string" then frame = _G[frame] end
-        if not frame then return end
+        if type(frame) == "string" then
+            frame = _G[frame]
+        end
+        if not frame then
+            return
+        end
         frame:UnregisterAllEvents()
-        if not keepShown then CludesUI.HideFrame(frame) end
+        if not keepShown then
+            CludesUI.HideFrame(frame)
+        end
         if not doNotReparent then
             frame:SetParent(homeParent[frame] or hiddenParent)
             if not hookedFrames[frame] then
@@ -77,14 +120,22 @@ do
                 hooksecurefunc(frame, "SetParent", function(self, parent)
                     if parent ~= (homeParent[self] or hiddenParent) and not pendingParent[self] then
                         pendingParent[self] = true
-                        C_Timer.After(0, function() ApplyHiddenParent(self) end)
+                        C_Timer.After(0, function()
+                            ApplyHiddenParent(self)
+                        end)
                     end
                 end)
             end
         end
-        if keepShown then frame:Show() end
-        Unreg(frame.healthBar or frame.healthbar or frame.HealthBar
-            or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar))
+        if keepShown then
+            frame:Show()
+        end
+        Unreg(
+            frame.healthBar
+                or frame.healthbar
+                or frame.HealthBar
+                or (frame.HealthBarsContainer and frame.HealthBarsContainer.healthBar)
+        )
         Unreg(frame.manabar or frame.ManaBar)
         Unreg(frame.castBar or frame.spellbar or frame.CastingBarFrame)
         Unreg(frame.powerBarAlt or frame.PowerBarAlt)
@@ -105,8 +156,10 @@ do
     -- reparent (Edit-Mode-managed; risks the same taint the timers avoid). Globals may be
     -- absent on some clients; Unreg nil-guards each.
     local ALT_POWER_BARS = {
-        "AlternatePowerBar", "MonkStaggerBar",
-        "EvokerEbonMightBar", "DemonHunterSoulFragmentsBar",
+        "AlternatePowerBar",
+        "MonkStaggerBar",
+        "EvokerEbonMightBar",
+        "DemonHunterSoulFragmentsBar",
     }
     local function DisableAltPowerBars()
         for i = 1, #ALT_POWER_BARS do
@@ -136,16 +189,24 @@ do
         tf:EnableMouse(false)
         local main = tf.TargetFrameContent and tf.TargetFrameContent.TargetFrameContentMain
         local bars = main and main.HealthBarsContainer
-        if bars and bars.HealthBar then bars.HealthBar:EnableMouseMotion(false) end
-        if main and main.ManaBar then main.ManaBar:EnableMouseMotion(false) end
+        if bars and bars.HealthBar then
+            bars.HealthBar:EnableMouseMotion(false)
+        end
+        if main and main.ManaBar then
+            main.ManaBar:EnableMouseMotion(false)
+        end
         local auras = tf.GetAuraContainer and tf:GetAuraContainer()
-        if auras then auras:Hide() end
+        if auras then
+            auras:Hide()
+        end
         CludesUI.SetEditModeChildInert(tf.Selection, true)
         ns.UF_TargetMenuOwner = true
     end
 
     function ns.UF_HideBlizzard(unit)
-        if not unit then return end
+        if not unit then
+            return
+        end
         if unit == "player" then
             HandleFrame(PlayerFrame)
             DisableAltPowerBars()
@@ -180,7 +241,6 @@ end
 -- Per-addon border texture defaults (size key = borderSize 0-4)
 CludesUI.RegisterBorderDefaults("unitframes", CludesUI.BORDER_DEFAULTS_FRAMES)
 
-
 -- Portrait UNIT_MODEL_CHANGED on eventless frames (TargetTarget) triggers UnitIsUnit,
 -- which returns secret booleans in protected instances; we unregister that event after
 -- oUF sets up eventless frames instead of patching the global. See PostCreateTargetTarget.
@@ -210,8 +270,14 @@ local defaults = {
             debuffIconZoom = 0.055,
             buffBorderSize = 1,
             debuffBorderSize = 1,
-            buffBorderR = 0, buffBorderG = 0, buffBorderB = 0, buffBorderA = 1,
-            debuffBorderR = 0, debuffBorderG = 0, debuffBorderB = 0, debuffBorderA = 1,
+            buffBorderR = 0,
+            buffBorderG = 0,
+            buffBorderB = 0,
+            buffBorderA = 1,
+            debuffBorderR = 0,
+            debuffBorderG = 0,
+            debuffBorderB = 0,
+            debuffBorderA = 1,
             dispelColorMagic = { r = 0.349, g = 0.475, b = 1.0 },
             dispelColorCurse = { r = 0.636, g = 0.0, b = 0.64 },
             dispelColorDisease = { r = 0.671, g = 0.384, b = 0.098 },
@@ -250,17 +316,17 @@ local defaults = {
         -- Player Threat (Non-Tank): additive "Shadow" border on the PLAYER frame while
         -- pulling/holding aggro, instanced content only; global, default off (zero cost
         -- until enabled). Colors mirror the nameplate non-tank threat defaults (has/near aggro).
-        playerThreatBorderEnabled  = false,
-        playerThreatHasAggroColor  = { r = 1.00, g = 0.50, b = 0.00 },
+        playerThreatBorderEnabled = false,
+        playerThreatHasAggroColor = { r = 1.00, g = 0.50, b = 0.00 },
         playerThreatNearAggroColor = { r = 0.81, g = 0.72, b = 0.19 },
         -- Threat % text on the target and focus frames (WoW Forever only).
-        threatPctEnabled  = false,
-        threatPctFocus    = false,
+        threatPctEnabled = false,
+        threatPctFocus = false,
         threatPctPosition = "CENTER",
         threatPctColorByThreat = true,
-        threatPctSize     = 12,
-        threatPctXOffset  = 0,
-        threatPctYOffset  = 0,
+        threatPctSize = 12,
+        threatPctXOffset = 0,
+        threatPctYOffset = 0,
         -- Custom enemy reaction colors (empty = use Blizzard FACTION_BAR_COLORS).
         -- Keys: hostile (reactions 1-3), neutral (4), friendly (5-8), tapped.
         enemyColors = {},
@@ -286,7 +352,7 @@ local defaults = {
             powerClassColored = false,
             powerBgPowerColored = false,
             powerPercentTextPowerColor = false,
-            manaRegenSpark = false,  -- WoW Forever: mana regen spark while the bar shows mana; manaRegenSparkMode "ticks" = Regen Ticks, nil = 5-Second Rule
+            manaRegenSpark = false, -- WoW Forever: mana regen spark while the bar shows mana; manaRegenSparkMode "ticks" = Regen Ticks, nil = 5-Second Rule
             healthClassColored = true,
             customBgColor = { r = 0.067, g = 0.067, b = 0.067 },
             bgClassColored = false,
@@ -300,7 +366,10 @@ local defaults = {
             buffOffsetY = 0,
             auraBorderTexture = "solid",
             auraBorderSize = 1,
-            auraBorderR = 0, auraBorderG = 0, auraBorderB = 0, auraBorderA = 1,
+            auraBorderR = 0,
+            auraBorderG = 0,
+            auraBorderB = 0,
+            auraBorderA = 1,
             auraBorderBehind = false,
             auraBorderBehindUnitFrame = false,
             -- Textured Dispel Ring: the dispel ring drawn in the aura border's art.
@@ -320,7 +389,7 @@ local defaults = {
             namePosition = "left",
             healthTextPosition = "right",
             leftTextContent = "name",
-            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both",  -- WoW Forever: Health % (retail: Health # | %)
+            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
             leftTextSize = 12,
             leftTextX = 0,
             leftTextY = 0,
@@ -404,12 +473,12 @@ local defaults = {
             showPlayerAbsorb = "none",
             absorbCleanAlpha = 30,
             -- Absorb Bar / Heal Absorb Bar: separate strips (see Raid Frames)
-            absorbBarPosition     = "none",
-            absorbBarHeight       = 4,
-            absorbBarColor        = { r = 1, g = 1, b = 1 },
+            absorbBarPosition = "none",
+            absorbBarHeight = 4,
+            absorbBarColor = { r = 1, g = 1, b = 1 },
             healAbsorbBarPosition = "none",
-            healAbsorbBarHeight   = 4,
-            healAbsorbBarColor    = { r = 200/255, g = 29/255, b = 29/255 },
+            healAbsorbBarHeight = 4,
+            healAbsorbBarColor = { r = 200 / 255, g = 29 / 255, b = 29 / 255 },
             -- Blizzard Glow Line (opt-in) and its art: "blizzard" | "pixelsGlow" | "pixelsOvershield".
             absorbGlowLine = false,
             absorbGlowLineTexture = "blizzard",
@@ -420,7 +489,7 @@ local defaults = {
             showPlayerCastIcon = true,
             playerCastbarIconInWidth = true,
             castReverseFill = false,
-            castFillOpacity = 100,  -- 0-100; below 100 the world shows through the fill
+            castFillOpacity = 100, -- 0-100; below 100 the world shows through the fill
             castbarHideWhenInactive = true,
             lockCastbarToFrame = true,
             playerCastbarX = 0,
@@ -431,7 +500,7 @@ local defaults = {
             castSpellNameColor = { r = 1, g = 1, b = 1 },
             castDurationSize = 10,
             castDurationColor = { r = 1, g = 1, b = 1 },
-            castFullCraftTime = false,  -- Duration counts down the whole repeat-craft batch
+            castFullCraftTime = false, -- Duration counts down the whole repeat-craft batch
             castSpellNameX = 0,
             castSpellNameY = 0,
             castSpellTargetSize = 11,
@@ -485,7 +554,7 @@ local defaults = {
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
-            borderPowerSeam = false,  -- Border Options cog "Power Bar Seam" (opt-in)
+            borderPowerSeam = false, -- Border Options cog "Power Bar Seam" (opt-in)
             highlightColor = { r = 1, g = 1, b = 1 },
             textSize = 12,
             combatIndicatorStyle = "class",
@@ -500,8 +569,8 @@ local defaults = {
             showSolo = true,
             barVisibility = "always",
             showWhenHealthMissing = false,
-            oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
-            oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
+            oocFadeEnabled = false, -- "Fade Out of Combat" toggle (off by default)
+            oocAlpha = 0.5, -- whole-frame alpha while out of combat
             visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
@@ -517,7 +586,7 @@ local defaults = {
             leaderIndicatorPosition = "topleft",
             leaderIndicatorX = 0,
             leaderIndicatorY = 0,
-            leaderIndicatorStyle = "blizzard",  -- "blizzard" | "pixels"
+            leaderIndicatorStyle = "blizzard", -- "blizzard" | "pixels"
             factionIndicatorMode = "off",
             factionIndicatorStyle = "pvp",
             factionIndicatorPvP = "only",
@@ -565,9 +634,9 @@ local defaults = {
             showCastbar = true,
             showCastIcon = true,
             castbarIconInWidth = true,
-            castCombineNameTarget = false,  -- render "Spell Name - Target" as one string in the target slot
+            castCombineNameTarget = false, -- render "Spell Name - Target" as one string in the target slot
             castReverseFill = false,
-            castFillOpacity = 100,  -- 0-100; below 100 the world shows through the fill
+            castFillOpacity = 100, -- 0-100; below 100 the world shows through the fill
             castbarHideWhenInactive = true,
             castSpellNameSize = 11,
             castSpellNameColor = { r = 1, g = 1, b = 1 },
@@ -619,7 +688,10 @@ local defaults = {
             buffOffsetY = 0,
             auraBorderTexture = "solid",
             auraBorderSize = 1,
-            auraBorderR = 0, auraBorderG = 0, auraBorderB = 0, auraBorderA = 1,
+            auraBorderR = 0,
+            auraBorderG = 0,
+            auraBorderB = 0,
+            auraBorderA = 1,
             auraBorderBehind = false,
             auraBorderBehindUnitFrame = false,
             -- Textured Dispel Ring: the dispel ring drawn in the aura border's art.
@@ -635,7 +707,7 @@ local defaults = {
             healthTextPosition = "right",
             -- WoW Forever shows level and name on the left (retail: name only).
             leftTextContent = (CludesUI.IS_FOREVER == true) and "levelname" or "name",
-            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both",  -- WoW Forever: Health % (retail: Health # | %)
+            rightTextContent = (CludesUI.IS_FOREVER == true) and "perhp" or "both", -- WoW Forever: Health % (retail: Health # | %)
             leftTextSize = 12,
             leftTextX = 0,
             leftTextY = 0,
@@ -720,7 +792,7 @@ local defaults = {
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
-            borderPowerSeam = false,  -- Border Options cog "Power Bar Seam" (opt-in)
+            borderPowerSeam = false, -- Border Options cog "Power Bar Seam" (opt-in)
             highlightColor = { r = 1, g = 1, b = 1 },
             textSize = 12,
             showInRaid = true,
@@ -728,8 +800,8 @@ local defaults = {
             showSolo = true,
             barVisibility = "always",
             showWhenHealthMissing = false,
-            oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
-            oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
+            oocFadeEnabled = false, -- "Fade Out of Combat" toggle (off by default)
+            oocAlpha = 0.5, -- whole-frame alpha while out of combat
             visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
@@ -745,14 +817,14 @@ local defaults = {
             leaderIndicatorPosition = "topleft",
             leaderIndicatorX = 0,
             leaderIndicatorY = 0,
-            leaderIndicatorStyle = "blizzard",  -- "blizzard" | "pixels"
+            leaderIndicatorStyle = "blizzard", -- "blizzard" | "pixels"
             eliteIndicatorEnabled = false,
             eliteIndicatorSize = 16,
             eliteIndicatorPosition = "topleft",
             eliteIndicatorX = 0,
             eliteIndicatorY = 0,
-            eliteIndicatorShowInInstances = (CludesUI.IS_FOREVER == true) and true or false,  -- WoW Forever: on
-            eliteIndicatorStyle = "badge",  -- "badge" | "pixelsDragon"
+            eliteIndicatorShowInInstances = (CludesUI.IS_FOREVER == true) and true or false, -- WoW Forever: on
+            eliteIndicatorStyle = "badge", -- "badge" | "pixelsDragon"
             -- A saved "wingless" style and these five keys read as the Portrait
             -- Dragon (ns.UF_DragonSettings) until a setter pins them over.
             eliteIndicatorWinglessClassColor = false,
@@ -807,12 +879,12 @@ local defaults = {
             showPlayerAbsorb = "none",
             absorbCleanAlpha = 30,
             -- Absorb Bar / Heal Absorb Bar: separate strips (see Raid Frames)
-            absorbBarPosition     = "none",
-            absorbBarHeight       = 4,
-            absorbBarColor        = { r = 1, g = 1, b = 1 },
+            absorbBarPosition = "none",
+            absorbBarHeight = 4,
+            absorbBarColor = { r = 1, g = 1, b = 1 },
             healAbsorbBarPosition = "none",
-            healAbsorbBarHeight   = 4,
-            healAbsorbBarColor    = { r = 200/255, g = 29/255, b = 29/255 },
+            healAbsorbBarHeight = 4,
+            healAbsorbBarColor = { r = 200 / 255, g = 29 / 255, b = 29 / 255 },
             -- Blizzard Glow Line (opt-in) and its art: "blizzard" | "pixelsGlow" | "pixelsOvershield".
             absorbGlowLine = false,
             absorbGlowLineTexture = "blizzard",
@@ -843,16 +915,25 @@ local defaults = {
             textSize = 12,
             leftTextContent = "name",
             leftTextClassColor = false,
-            leftTextColorR = 1, leftTextColorG = 1, leftTextColorB = 1,
-            leftTextX = 0, leftTextY = 0,
+            leftTextColorR = 1,
+            leftTextColorG = 1,
+            leftTextColorB = 1,
+            leftTextX = 0,
+            leftTextY = 0,
             rightTextContent = "none",
             rightTextClassColor = false,
-            rightTextColorR = 1, rightTextColorG = 1, rightTextColorB = 1,
-            rightTextX = 0, rightTextY = 0,
+            rightTextColorR = 1,
+            rightTextColorG = 1,
+            rightTextColorB = 1,
+            rightTextX = 0,
+            rightTextY = 0,
             centerTextContent = "none",
             centerTextClassColor = false,
-            centerTextColorR = 1, centerTextColorG = 1, centerTextColorB = 1,
-            centerTextX = 0, centerTextY = 0,
+            centerTextColorR = 1,
+            centerTextColorG = 1,
+            centerTextColorB = 1,
+            centerTextX = 0,
+            centerTextY = 0,
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
@@ -879,16 +960,25 @@ local defaults = {
             textSize = 12,
             leftTextContent = "name",
             leftTextClassColor = false,
-            leftTextColorR = 1, leftTextColorG = 1, leftTextColorB = 1,
-            leftTextX = 0, leftTextY = 0,
+            leftTextColorR = 1,
+            leftTextColorG = 1,
+            leftTextColorB = 1,
+            leftTextX = 0,
+            leftTextY = 0,
             rightTextContent = "none",
             rightTextClassColor = false,
-            rightTextColorR = 1, rightTextColorG = 1, rightTextColorB = 1,
-            rightTextX = 0, rightTextY = 0,
+            rightTextColorR = 1,
+            rightTextColorG = 1,
+            rightTextColorB = 1,
+            rightTextX = 0,
+            rightTextY = 0,
             centerTextContent = "none",
             centerTextClassColor = false,
-            centerTextColorR = 1, centerTextColorG = 1, centerTextColorB = 1,
-            centerTextX = 0, centerTextY = 0,
+            centerTextColorR = 1,
+            centerTextColorG = 1,
+            centerTextColorB = 1,
+            centerTextX = 0,
+            centerTextY = 0,
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
@@ -912,16 +1002,25 @@ local defaults = {
             textSize = 12,
             leftTextContent = "name",
             leftTextClassColor = false,
-            leftTextColorR = 1, leftTextColorG = 1, leftTextColorB = 1,
-            leftTextX = 0, leftTextY = 0,
+            leftTextColorR = 1,
+            leftTextColorG = 1,
+            leftTextColorB = 1,
+            leftTextX = 0,
+            leftTextY = 0,
             rightTextContent = "none",
             rightTextClassColor = false,
-            rightTextColorR = 1, rightTextColorG = 1, rightTextColorB = 1,
-            rightTextX = 0, rightTextY = 0,
+            rightTextColorR = 1,
+            rightTextColorG = 1,
+            rightTextColorB = 1,
+            rightTextX = 0,
+            rightTextY = 0,
             centerTextContent = "none",
             centerTextClassColor = false,
-            centerTextColorR = 1, centerTextColorG = 1, centerTextColorB = 1,
-            centerTextX = 0, centerTextY = 0,
+            centerTextColorR = 1,
+            centerTextColorG = 1,
+            centerTextColorB = 1,
+            centerTextX = 0,
+            centerTextY = 0,
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
@@ -1005,9 +1104,9 @@ local defaults = {
             showCastbar = true,
             showCastIcon = true,
             castbarIconInWidth = true,
-            castCombineNameTarget = false,  -- render "Spell Name - Target" as one string in the target slot
+            castCombineNameTarget = false, -- render "Spell Name - Target" as one string in the target slot
             castReverseFill = false,
-            castFillOpacity = 100,  -- 0-100; below 100 the world shows through the fill
+            castFillOpacity = 100, -- 0-100; below 100 the world shows through the fill
             castbarHideWhenInactive = true,
             castSpellNameSize = 11,
             castSpellNameColor = { r = 1, g = 1, b = 1 },
@@ -1133,12 +1232,12 @@ local defaults = {
             showPlayerAbsorb = "none",
             absorbCleanAlpha = 30,
             -- Absorb Bar / Heal Absorb Bar: separate strips (see Raid Frames)
-            absorbBarPosition     = "none",
-            absorbBarHeight       = 4,
-            absorbBarColor        = { r = 1, g = 1, b = 1 },
+            absorbBarPosition = "none",
+            absorbBarHeight = 4,
+            absorbBarColor = { r = 1, g = 1, b = 1 },
             healAbsorbBarPosition = "none",
-            healAbsorbBarHeight   = 4,
-            healAbsorbBarColor    = { r = 200/255, g = 29/255, b = 29/255 },
+            healAbsorbBarHeight = 4,
+            healAbsorbBarColor = { r = 200 / 255, g = 29 / 255, b = 29 / 255 },
             -- Blizzard Glow Line (opt-in) and its art: "blizzard" | "pixelsGlow" | "pixelsOvershield".
             absorbGlowLine = false,
             absorbGlowLineTexture = "blizzard",
@@ -1155,7 +1254,10 @@ local defaults = {
             buffOffsetY = 0,
             auraBorderTexture = "solid",
             auraBorderSize = 1,
-            auraBorderR = 0, auraBorderG = 0, auraBorderB = 0, auraBorderA = 1,
+            auraBorderR = 0,
+            auraBorderG = 0,
+            auraBorderB = 0,
+            auraBorderA = 1,
             auraBorderBehind = false,
             auraBorderBehindUnitFrame = false,
             auraBorderDispelTextured = false,
@@ -1166,15 +1268,15 @@ local defaults = {
             borderSize = 1,
             borderColor = { r = 0, g = 0, b = 0 },
             borderTexture = "solid",
-            borderPowerSeam = false,  -- Border Options cog "Power Bar Seam" (opt-in)
+            borderPowerSeam = false, -- Border Options cog "Power Bar Seam" (opt-in)
             highlightColor = { r = 1, g = 1, b = 1 },
             showInRaid = true,
             showInParty = true,
             showSolo = true,
             barVisibility = "always",
             showWhenHealthMissing = false,
-            oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
-            oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
+            oocFadeEnabled = false, -- "Fade Out of Combat" toggle (off by default)
+            oocAlpha = 0.5, -- whole-frame alpha while out of combat
             visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
@@ -1272,19 +1374,22 @@ local defaults = {
             debuffOffsetY = 0,
             buffShowCooldownText = false,
             buffCooldownTextSize = 10,
-            buffCooldownTextColor = {r=1, g=1, b=1},
-            buffStackTextColor = {r=1, g=1, b=1},
+            buffCooldownTextColor = { r = 1, g = 1, b = 1 },
+            buffStackTextColor = { r = 1, g = 1, b = 1 },
             debuffShowCooldownText = false,
             debuffCooldownTextSize = 10,
-            debuffCooldownTextColor = {r=1, g=1, b=1},
-            debuffStackTextColor = {r=1, g=1, b=1},
+            debuffCooldownTextColor = { r = 1, g = 1, b = 1 },
+            debuffStackTextColor = { r = 1, g = 1, b = 1 },
             simpleDebuffShowCooldownText = false,
             simpleDebuffCooldownTextSize = 14,
-            simpleDebuffs = "left",  -- "none"/"left"/"right": simple display forces that-side anchor + frame-height-matched debuff size (legacy boolean true=left / false=none honored at read time)
-            simpleBuffs = "none",  -- "none"/"left"/"right": simple BUFF display (mirrors simpleDebuffs but defaults off)
+            simpleDebuffs = "left", -- "none"/"left"/"right": simple display forces that-side anchor + frame-height-matched debuff size (legacy boolean true=left / false=none honored at read time)
+            simpleBuffs = "none", -- "none"/"left"/"right": simple BUFF display (mirrors simpleDebuffs but defaults off)
             auraBorderTexture = "solid",
             auraBorderSize = 1,
-            auraBorderR = 0, auraBorderG = 0, auraBorderB = 0, auraBorderA = 1,
+            auraBorderR = 0,
+            auraBorderG = 0,
+            auraBorderB = 0,
+            auraBorderA = 1,
             auraBorderBehind = false,
             auraBorderBehindUnitFrame = false,
             simpleBuffShowCooldownText = false,
@@ -1297,21 +1402,33 @@ local defaults = {
             extraTextContent = "none",
             extraTextSize = 12,
             extraTextClassColor = false,
-            extraTextColorR = 1, extraTextColorG = 1, extraTextColorB = 1,
-            extraTextX = 0, extraTextY = 0,
+            extraTextColorR = 1,
+            extraTextColorG = 1,
+            extraTextColorB = 1,
+            extraTextX = 0,
+            extraTextY = 0,
             extraTextAlign = "left",
             leftTextContent = "name",
             leftTextClassColor = false,
-            leftTextColorR = 1, leftTextColorG = 1, leftTextColorB = 1,
-            leftTextX = 0, leftTextY = 0,
+            leftTextColorR = 1,
+            leftTextColorG = 1,
+            leftTextColorB = 1,
+            leftTextX = 0,
+            leftTextY = 0,
             rightTextContent = "perhp",
             rightTextClassColor = false,
-            rightTextColorR = 1, rightTextColorG = 1, rightTextColorB = 1,
-            rightTextX = 0, rightTextY = 0,
+            rightTextColorR = 1,
+            rightTextColorG = 1,
+            rightTextColorB = 1,
+            rightTextX = 0,
+            rightTextY = 0,
             centerTextContent = "none",
             centerTextClassColor = false,
-            centerTextColorR = 1, centerTextColorG = 1, centerTextColorB = 1,
-            centerTextX = 0, centerTextY = 0,
+            centerTextColorR = 1,
+            centerTextColorG = 1,
+            centerTextColorB = 1,
+            centerTextX = 0,
+            centerTextY = 0,
             -- Boss Frames DISPLAY "Border Style": "Inherit (Main Frames)" (false)
             -- wears the mini frame donor's border, as always; any other pick sets
             -- true and the border keys below paint every boss frame
@@ -1370,25 +1487,25 @@ local defaults = {
         bossSpacing = 80,
 
         -- Player dispel overlay (player frame only; keys mirror Raid Frames)
-        dispelOverlay        = "none",   -- "none", "fill", "full", "gradient", "gradient_sharp", "gradient_reverse"
+        dispelOverlay = "none", -- "none", "fill", "full", "gradient", "gradient_sharp", "gradient_reverse"
         dispelOverlayOpacity = 100,
-        dispelOverlayByMe    = false,    -- only debuffs the player can dispel (engine filter token)
-        dispelCustomBorder   = false,    -- Color Custom Borders: the frame border copied in the dispel type color
-        showDispelIcons      = false,    -- Type Icon Position: the type's icon on a health bar corner
-        dispelIconPosition   = "right",
-        dispelIconSize       = 16,
-        dispelIconGrowth     = "none",   -- "none" stacks the type icons; up/down/left/right flows them
-        dispelIconOffsetX    = 0,
-        dispelIconOffsetY    = 0,
-        dispelColorMagic   = { r = 0.349, g = 0.475, b = 1.0 },
-        dispelColorCurse   = { r = 0.636, g = 0.0,   b = 0.64 },
+        dispelOverlayByMe = false, -- only debuffs the player can dispel (engine filter token)
+        dispelCustomBorder = false, -- Color Custom Borders: the frame border copied in the dispel type color
+        showDispelIcons = false, -- Type Icon Position: the type's icon on a health bar corner
+        dispelIconPosition = "right",
+        dispelIconSize = 16,
+        dispelIconGrowth = "none", -- "none" stacks the type icons; up/down/left/right flows them
+        dispelIconOffsetX = 0,
+        dispelIconOffsetY = 0,
+        dispelColorMagic = { r = 0.349, g = 0.475, b = 1.0 },
+        dispelColorCurse = { r = 0.636, g = 0.0, b = 0.64 },
         dispelColorDisease = { r = 0.671, g = 0.384, b = 0.098 },
-        dispelColorPoison  = { r = 0.0,   g = 0.706, b = 0.286 },
-        dispelColorBleed   = { r = 0.75,  g = 0.15,  b = 0.15 },
-    }
+        dispelColorPoison = { r = 0.0, g = 0.706, b = 0.286 },
+        dispelColorBleed = { r = 0.75, g = 0.15, b = 0.15 },
+    },
 }
 local frames = {}
-local SpecHasClassPower  -- forward declaration; defined after CLASS_POWER_TYPES
+local SpecHasClassPower -- forward declaration; defined after CLASS_POWER_TYPES
 
 local CASTBAR_COLOR = { r = 0.114, g = 0.655, b = 0.514 }
 local function GetCastbarColor()
@@ -1420,12 +1537,12 @@ local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
 -- locally or locale clients could never use a custom font here.
 local cachedFontPath = (CludesUI.GetFontPath("unitFrames"))
     or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-local cachedFontPaths = {}  -- per-unit font cache
+local cachedFontPaths = {} -- per-unit font cache
 local function ResolveFontPath(unitKey)
     local gPath = CludesUI.GetFontPath("unitFrames")
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     cachedFontPath = gPath
-    for _, uKey in ipairs({"player", "target", "focus", "boss", "pet", "targettarget", "focustarget"}) do
+    for _, uKey in ipairs({ "player", "target", "focus", "boss", "pet", "targettarget", "focustarget" }) do
         cachedFontPaths[uKey] = gPath
     end
 end
@@ -1443,7 +1560,7 @@ end
 -- string's face for good, so every font write to these strings goes through
 -- here (or ApplyModuleFontFamily).
 local function SetFSFont(fs, size, flags)
-  CludesUI.ApplyModuleFontFamily(fs, GetSelectedFont(), size or 12, "unitFrames", flags)
+    CludesUI.ApplyModuleFontFamily(fs, GetSelectedFont(), size or 12, "unitFrames", flags)
 end
 
 -- Shared cast-bar text anchoring (mirrors the nameplate cast text system). Three
@@ -1460,11 +1577,15 @@ function ns.GetCastTextAnchor(side, pushed, reserve, isTimer)
         return "CENTER", 0, "CENTER"
     elseif side == "left" then
         local base = isTimer and 3 or 5
-        if pushed then base = base + reserve end
+        if pushed then
+            base = base + reserve
+        end
         return "LEFT", base, "LEFT"
     else -- "right"
         local base = -3
-        if pushed then base = base - reserve end
+        if pushed then
+            base = base - reserve
+        end
         return "RIGHT", base, "RIGHT"
     end
 end
@@ -1473,7 +1594,9 @@ end
 -- re-setting the text forces it (must be a real change -- identical text is deduped).
 -- GetText may return a secret (cast name/target); SetText accepts secrets untouched.
 function ns.ReflowFontString(fs)
-    if not fs then return end
+    if not fs then
+        return
+    end
     local t = fs:GetText()
     fs:SetText("")
     fs:SetText(t or "")
@@ -1482,37 +1605,52 @@ end
 -- Disable WoW's automatic pixel snapping on a texture (prevents sub-pixel jitter)
 local function UnsnapTex(tex)
     local PP = CludesUI and CludesUI.PP
-    if PP then PP.DisablePixelSnap(tex)
-    elseif tex.SetSnapToPixelGrid then tex:SetSnapToPixelGrid(false); tex:SetTexelSnappingBias(0) end
+    if PP then
+        PP.DisablePixelSnap(tex)
+    elseif tex.SetSnapToPixelGrid then
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+    end
 end
 
 -- Health bar texture overlay lookup
-local healthBarTextures, healthBarTextureNames, healthBarTextureOrder =
-    CludesUI.BuildBarTextureTables(true)
+local healthBarTextures, healthBarTextureNames, healthBarTextureOrder = CludesUI.BuildBarTextureTables(true)
 ns.healthBarTextures = healthBarTextures
 ns.healthBarTextureOrder = healthBarTextureOrder
 ns.healthBarTextureNames = healthBarTextureNames
 
 -- Map a unit ID ("player", "boss1", "targettarget", ...) to its db.profile key.
 local function UnitToSettingsKey(unit)
-    if not unit then return nil end
-    if unit:match("^boss%d$") then return "boss" end
-    if unit == "pet" then return "pet" end
-    if db.profile[unit] then return unit end
+    if not unit then
+        return nil
+    end
+    if unit:match("^boss%d$") then
+        return "boss"
+    end
+    if unit == "pet" then
+        return "pet"
+    end
+    if db.profile[unit] then
+        return unit
+    end
     return nil
 end
 
 local function ApplyHealthBarTexture(health, unitKey, texKeyOverride)
-    if not health then return end
+    if not health then
+        return
+    end
     local texKey = texKeyOverride
     if not texKey then
         local s = unitKey and db.profile[unitKey]
         texKey = (s and s.healthBarTexture) or db.profile.healthBarTexture or "none"
     end
-    local path   = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
+    local path = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     health:SetStatusBarTexture(path)
     local hFill = health:GetStatusBarTexture()
-    if hFill then UnsnapTex(hFill) end
+    if hFill then
+        UnsnapTex(hFill)
+    end
     -- The swap replaced the fill object; re-derive rotation for the bar's axis.
     ns.ApplyFillRotation(health)
 
@@ -1530,14 +1668,18 @@ local function ApplyHealthBarTexture(health, unitKey, texKeyOverride)
             power:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         end
         local pFill = power:GetStatusBarTexture()
-        if pFill then UnsnapTex(pFill) end
+        if pFill then
+            UnsnapTex(pFill)
+        end
     end
     -- Textured Background (does nothing for a frame that never turned it on).
     ns.UF_TexBgApply(health, unitKey, texKey, power)
     -- Blizzard Style: the swaps above replaced the fill objects, so the stock
     -- masks are seated again on the new fills. The textures themselves stay
     -- the user's choice, so every colour renders exactly as picked.
-    if frame and frame.Health == health and ns.UF_Blizz() then ns.UF_ApplyBlizzBarArt(frame) end
+    if frame and frame.Health == health and ns.UF_Blizz() then
+        ns.UF_ApplyBlizzBarArt(frame)
+    end
 end
 
 -- Resolve a unit's effective health bar texture KEY. Main frames use their own key
@@ -1546,10 +1688,14 @@ end
 -- non-nil/non-"inherit". Shared by the live frames and the options preview to match.
 ns.ResolveHealthBarTextureKey = function(ownSettings, donorSettings)
     local own = ownSettings and ownSettings.healthBarTexture
-    if own and own ~= "inherit" then return own end
+    if own and own ~= "inherit" then
+        return own
+    end
     if donorSettings then
         local d = donorSettings.healthBarTexture
-        if d and d ~= "inherit" then return d end
+        if d and d ~= "inherit" then
+            return d
+        end
     end
     return db.profile.healthBarTexture or "none"
 end
@@ -1565,13 +1711,15 @@ end
 --  read: the class background can be secret.
 -------------------------------------------------------------------------------
 do
-    local TexM  -- the stock methods, captured from the first background swapped
+    local TexM -- the stock methods, captured from the first background swapped
     local MINI = { targettarget = true, focustarget = true, pet = true, boss = true }
 
     -- A mini frame follows its donor while its Bar Texture is Inherit.
     function ns.UF_TexBgOn(unitKey)
         local s = unitKey and db.profile[unitKey]
-        if not s then return false end
+        if not s then
+            return false
+        end
         local own = s.healthBarTexture
         if MINI[unitKey] and (own == nil or own == "inherit") then
             local d = ns.GetMiniDonorSettings(unitKey)
@@ -1582,7 +1730,9 @@ do
 
     -- Unset per-frame choices keep the profile's existing Dark Mode setting.
     function ns.UF_DarkThemeOn(s)
-        if s and s.darkTheme ~= nil then return s.darkTheme end
+        if s and s.darkTheme ~= nil then
+            return s.darkTheme
+        end
         return (db and db.profile and db.profile.darkTheme) or false
     end
 
@@ -1598,23 +1748,34 @@ do
     -- The health and power backgrounds' texture paths (nil = flat), shared with the
     -- options preview: health while its fill is opaque, power while its fill is 100.
     function ns.UF_TexBgPaths(unitKey, s, texKey)
-        local path = s and ns.UF_TexBgOn(unitKey)
+        local path = s
+            and ns.UF_TexBgOn(unitKey)
             and CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
-        if not path then return nil, nil end
+        if not path then
+            return nil, nil
+        end
         return ns.UF_HealthOpaque(s) and path or nil, ((s.powerBarOpacity or 100) >= 100) and path or nil
     end
 
     -- The cast bar background's path (nil = flat): never over Blizzard's cast art.
     function ns.UF_TexBgCastPath(s, texKey, blizz)
         local p = db.profile
-        if blizz or not (s and p.castTextureBg) then return nil end
+        if blizz or not (s and p.castTextureBg) then
+            return nil
+        end
         local own = p.castBarTexture
-        if own and own ~= "inherit" then texKey = own end
-        if texKey == "blizzard" or (s.castFillOpacity or 100) < 100 then return nil end
+        if own and own ~= "inherit" then
+            texKey = own
+        end
+        if texKey == "blizzard" or (s.castFillOpacity or 100) < 100 then
+            return nil
+        end
         return CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
     end
 
-    local function PaintTinted(self, r, g, b, a) self:SetVertexColor(r, g, b, a) end
+    local function PaintTinted(self, r, g, b, a)
+        self:SetVertexColor(r, g, b, a)
+    end
     local function PaintHealth(self, r, g, b, a)
         TexM.SetColorTexture(self, r, g, b, a)
         self._cuiBgTex:SetVertexColor(r, g, b, a)
@@ -1669,19 +1830,26 @@ do
             layer:SetTexture(path)
             layer._cuiPath = path
         end
-        if vertical then layer:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1) else layer:SetTexCoord(0, 1, 0, 1) end
+        if vertical then
+            layer:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
+        else
+            layer:SetTexCoord(0, 1, 0, 1)
+        end
         layer:Show()
         return layer
     end
 
     local function SetHealthLayer(health, s, path)
         local bg = health.bg
-        if not bg then return end
+        if not bg then
+            return
+        end
         if path then
             TexM = TexM or { SetColorTexture = bg.SetColorTexture, SetAlpha = bg.SetAlpha }
             local fill = health:GetStatusBarTexture()
             local tiled = fill and (fill:GetHorizTile() or fill:GetVertTile())
-            local layer = ns.UF_TexBgLayer(health, path, s.healthVerticalFill and not ns.UF_Blizz() and not tiled)
+            local layer =
+                ns.UF_TexBgLayer(health, path, s.healthVerticalFill and not ns.UF_Blizz() and not tiled)
             bg._cuiBgTex = layer
             bg.SetColorTexture, bg.SetAlpha = PaintHealth, AlphaHealth
             layer:SetAlpha(bg:GetAlpha())
@@ -1694,19 +1862,25 @@ do
     -- From ApplyHealthBarTexture (health and power share the frame's texture) and
     -- the Dark Mode refresher below (Dark Mode Fill decides the health rule there).
     function ns.UF_TexBgApply(health, unitKey, texKey, power)
-        if not ns.UF_TexBgOn(unitKey) and not health._cuiTexBgSeen then return end
+        if not ns.UF_TexBgOn(unitKey) and not health._cuiTexBgSeen then
+            return
+        end
         health._cuiTexBgSeen, health._cuiTexBgUnit, health._cuiTexBgKey = true, unitKey, texKey
         local s = db.profile[unitKey]
         local hPath, pPath = ns.UF_TexBgPaths(unitKey, s, texKey)
         SetHealthLayer(health, s, hPath)
-        if power and power.bg then ns.UF_TexBgTint(power.bg, pPath) end
+        if power and power.bg then
+            ns.UF_TexBgTint(power.bg, pPath)
+        end
     end
 
     -- From ns.ApplyCastBarTexture, before it applies the fill.
     function ns.UF_TexBgCast(castbar, texKey)
         local host = castbar:GetParent()
         local bg = host and host._bgTex
-        if not bg or (not db.profile.castTextureBg and not bg._cuiTexPath) then return end
+        if not bg or (not db.profile.castTextureBg and not bg._cuiTexPath) then
+            return
+        end
         local owner = castbar.__owner
         local key = owner and UnitToSettingsKey(owner._cuiUnit)
         local s = key and db.profile[key]
@@ -1723,7 +1897,9 @@ end
 -- over the fill bounds (base fill + cast tint + shielded tint, all WHITE8X8 by
 -- default), so apply to each. On ns to avoid the Lua 200-local cap.
 ns.ApplyCastBarTexture = function(castbar, texKey)
-    if not castbar then return end
+    if not castbar then
+        return
+    end
     ns.UF_TexBgCast(castbar, texKey)
     -- Blizzard Style: the stock cast fill art stays (set by the post-pass).
     if castbar._blizzCast then
@@ -1733,7 +1909,9 @@ ns.ApplyCastBarTexture = function(castbar, texKey)
     -- A cast bar texture of its own (the Textures page row) overrides the
     -- health bar's; "inherit" follows the health bar as before.
     local own = db.profile.castBarTexture
-    if own and own ~= "inherit" then texKey = own end
+    if own and own ~= "inherit" then
+        texKey = own
+    end
     if texKey == "blizzard" then
         -- The "Blizzard" fill: the vanilla cast bar's own texture (the same
         -- entry the Resource Bars cast bar offers), tinted by the bar's
@@ -1745,17 +1923,22 @@ ns.ApplyCastBarTexture = function(castbar, texKey)
             fill:SetHorizTile(false)
             UnsnapTex(fill)
         end
-        if castbar.castTintLayer then castbar.castTintLayer:SetAtlas("UI-CastingBar-Fill", true) end
+        if castbar.castTintLayer then
+            castbar.castTintLayer:SetAtlas("UI-CastingBar-Fill", true)
+        end
         return
     end
-    local path = CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
+    local path =
+        CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
     castbar:SetStatusBarTexture(path)
     local fill = castbar:GetStatusBarTexture()
     if fill then
         fill:SetHorizTile(false)
         UnsnapTex(fill)
     end
-    if castbar.castTintLayer then castbar.castTintLayer:SetTexture(path) end
+    if castbar.castTintLayer then
+        castbar.castTintLayer:SetTexture(path)
+    end
     -- The shield tint keeps its creation WHITE8X8: 12.1 renders the loose
     -- statusbar art BLANK on plain overlay textures (negative synthetic
     -- fileID, healthy alpha/rect/shown readbacks -- measured in-game
@@ -1825,17 +2008,25 @@ end
 --  Health Bar Opacity -- controls the overall alpha of the health bar fill
 -------------------------------------------------------------------------------
 local function ApplyHealthBarAlpha(health, unitKey)
-    if not health then return end
+    if not health then
+        return
+    end
     local s = unitKey and db.profile[unitKey]
     local opacity = s and (s.healthBarOpacity or 90) or 90
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
-    if opacity <= 1.0 then opacity = opacity * 100 end
+    if opacity <= 1.0 then
+        opacity = opacity * 100
+    end
     local fillA = opacity / 100
     local fillTex = health:GetStatusBarTexture()
     -- With a gradient active the opacity is baked into the gradient endpoints,
     -- so region alpha must stay 1 to avoid double-dimming.
-    if fillTex then fillTex:SetAlpha((s and s.gradientEnabled) and 1 or fillA) end
-    if health.bg then health.bg:SetAlpha((s and (s.customBgAlpha or 100) or 100) / 100) end
+    if fillTex then
+        fillTex:SetAlpha((s and s.gradientEnabled) and 1 or fillA)
+    end
+    if health.bg then
+        health.bg:SetAlpha((s and (s.customBgAlpha or 100) or 100) / 100)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -1848,7 +2039,9 @@ end
 ns.AnchorPowerBg = function(power, opacity)
     local bg = power and power.bg
     local tex = power and power.GetStatusBarTexture and power:GetStatusBarTexture()
-    if not bg or not tex then return end
+    if not bg or not tex then
+        return
+    end
     if (opacity or 100) >= 100 then
         if power._bgOpAnchored then
             power._bgOpAnchored = nil
@@ -1870,16 +2063,24 @@ ns.AnchorPowerBg = function(power, opacity)
 end
 
 local function ApplyPowerBarAlpha(power, unitKey)
-    if not power then return end
+    if not power then
+        return
+    end
     local s = unitKey and db.profile[unitKey]
     local opacity = s and (s.powerBarOpacity or 100) or 100
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
-    if opacity <= 1.0 then opacity = opacity * 100 end
+    if opacity <= 1.0 then
+        opacity = opacity * 100
+    end
     local fillA = opacity / 100
     local fillTex = power:GetStatusBarTexture()
     -- Gradient bakes opacity into its endpoints, so keep region alpha at 1 then.
-    if fillTex then fillTex:SetAlpha((s and s.powerGradientEnabled) and 1 or fillA) end
-    if power.bg then power.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100) end
+    if fillTex then
+        fillTex:SetAlpha((s and s.powerGradientEnabled) and 1 or fillA)
+    end
+    if power.bg then
+        power.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100)
+    end
     -- Below 100 the bg retreats to the empty portion so the translucent fill
     -- shows the world (matches the health/cast bar Fill Opacity model).
     ns.AnchorPowerBg(power, opacity)
@@ -1890,7 +2091,7 @@ end
 -------------------------------------------------------------------------------
 -- Fallback bg colour (#111) when no class/custom colour source exists. Dark Mode
 -- fill/bg come from the global per-profile palette via GetDarkModeFill()/GetDarkModeBg().
-local DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B = 0x11/255, 0x11/255, 0x11/255  -- #111111
+local DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B = 0x11 / 255, 0x11 / 255, 0x11 / 255 -- #111111
 
 -- Anchor the health bg to cover ONLY the empty (missing-health) portion so reduced
 -- fill opacity never reveals the bg behind the filled section. The empty side flips
@@ -1900,7 +2101,9 @@ local DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B = 0x11/255, 0x11/255, 0x11/255
 local function AnchorHealthBg(health)
     local bg = health and health.bg
     local tex = health and health.GetStatusBarTexture and health:GetStatusBarTexture()
-    if not bg or not tex then return end
+    if not bg or not tex then
+        return
+    end
     local reversed = health.GetReverseFill and health:GetReverseFill()
     -- Vertical fill empties at the TOP (BOTTOM when reversed); read the axis off
     -- the bar itself so this needs no settings lookup.
@@ -1934,7 +2137,9 @@ local function AnchorHealthBg(health)
 end
 
 local function ClassColorSourceUnit(unitKey, unit)
-    if unitKey == "pet" then return "player" end
+    if unitKey == "pet" then
+        return "player"
+    end
     return unit or unitKey
 end
 
@@ -1965,14 +2170,16 @@ do
     -- Stop defaults, shared with the options page's swatch fallbacks. Same
     -- values the Raid Frames module uses.
     local DEF100 = { r = 0, g = 1, b = 0 }
-    local DEF50  = { r = 0xEC/255, g = 0xEC/255, b = 0x32/255 }
-    local DEF0   = { r = 0xE3/255, g = 0x30/255, b = 0x30/255 }
+    local DEF50 = { r = 0xEC / 255, g = 0xEC / 255, b = 0x32 / 255 }
+    local DEF0 = { r = 0xE3 / 255, g = 0x30 / 255, b = 0x30 / 255 }
     ns.UF_DYN_DEF100, ns.UF_DYN_DEF50, ns.UF_DYN_DEF0 = DEF100, DEF50, DEF0
 
     -- Classic: red (dead) -> yellow (mid) -> green (full). One curve, forever.
     local classicCurve
     local function GetClassicCurve()
-        if classicCurve then return classicCurve end
+        if classicCurve then
+            return classicCurve
+        end
         local curve = C_CurveUtil.CreateColorCurve()
         curve:SetType(Enum.LuaCurveType.Linear)
         curve:AddPoint(0, CreateColor(1, 0, 0, 1))
@@ -1991,20 +2198,30 @@ do
     local dynCurve
     local d0r, d0g, d0b, d50r, d50g, d50b, d100r, d100g, d100b
     local function GetDynamicCurve(s)
-        local c0   = s.dynamicColor0   or DEF0
-        local c50  = s.dynamicColor50  or DEF50
+        local c0 = s.dynamicColor0 or DEF0
+        local c50 = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
-        if not (dynCurve
-            and d0r   == c0.r   and d0g   == c0.g   and d0b   == c0.b
-            and d50r  == c50.r  and d50g  == c50.g  and d50b  == c50.b
-            and d100r == c100.r and d100g == c100.g and d100b == c100.b) then
+        if
+            not (
+                dynCurve
+                and d0r == c0.r
+                and d0g == c0.g
+                and d0b == c0.b
+                and d50r == c50.r
+                and d50g == c50.g
+                and d50b == c50.b
+                and d100r == c100.r
+                and d100g == c100.g
+                and d100b == c100.b
+            )
+        then
             dynCurve = C_CurveUtil.CreateColorCurve()
             dynCurve:SetType(Enum.LuaCurveType.Linear)
-            dynCurve:AddPoint(0,   CreateColor(c0.r,   c0.g,   c0.b,   1))
-            dynCurve:AddPoint(0.5, CreateColor(c50.r,  c50.g,  c50.b,  1))
-            dynCurve:AddPoint(1,   CreateColor(c100.r, c100.g, c100.b, 1))
-            d0r, d0g, d0b       = c0.r, c0.g, c0.b
-            d50r, d50g, d50b    = c50.r, c50.g, c50.b
+            dynCurve:AddPoint(0, CreateColor(c0.r, c0.g, c0.b, 1))
+            dynCurve:AddPoint(0.5, CreateColor(c50.r, c50.g, c50.b, 1))
+            dynCurve:AddPoint(1, CreateColor(c100.r, c100.g, c100.b, 1))
+            d0r, d0g, d0b = c0.r, c0.g, c0.b
+            d50r, d50g, d50b = c50.r, c50.g, c50.b
             d100r, d100g, d100b = c100.r, c100.g, c100.b
         end
         return dynCurve
@@ -2015,15 +2232,23 @@ do
     -- the reactive palette (fully reactive by 40%). Cached per class token; the
     -- fingerprint names every input, so a Custom Class Colors edit rebuilds too.
     local GRAY = { r = 0.5, g = 0.5, b = 0.5 }
-    local reactiveCurves = {}   -- classToken -> { curve, r, g, b } (class color used)
+    local reactiveCurves = {} -- classToken -> { curve, r, g, b } (class color used)
     local r0r, r0g, r0b, r50r, r50g, r50b
     local function GetClassReactiveCurve(s, classToken)
-        local c0  = s.dynamicColor0  or DEF0
+        local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
-        if not (r0r == c0.r and r0g == c0.g and r0b == c0.b
-            and r50r == c50.r and r50g == c50.g and r50b == c50.b) then
+        if
+            not (
+                r0r == c0.r
+                and r0g == c0.g
+                and r0b == c0.b
+                and r50r == c50.r
+                and r50g == c50.g
+                and r50b == c50.b
+            )
+        then
             wipe(reactiveCurves)
-            r0r, r0g, r0b    = c0.r, c0.g, c0.b
+            r0r, r0g, r0b = c0.r, c0.g, c0.b
             r50r, r50g, r50b = c50.r, c50.g, c50.b
         end
         local cc = CludesUI.GetClassColor(classToken) or GRAY
@@ -2034,13 +2259,18 @@ do
             -- Front-loaded class return: fully reactive at 40% health, and the
             -- 0.75 stop already carries 75% class weight so identity snaps back
             -- quickly (40->75% climbs 0->75% class, 75->100% eases in the rest).
-            curve:AddPoint(0,    CreateColor(c0.r,  c0.g,  c0.b,  1))
-            curve:AddPoint(0.4,  CreateColor(c50.r, c50.g, c50.b, 1))
-            curve:AddPoint(0.75, CreateColor(
-                c50.r + (cc.r - c50.r) * 0.75,
-                c50.g + (cc.g - c50.g) * 0.75,
-                c50.b + (cc.b - c50.b) * 0.75, 1))
-            curve:AddPoint(1,    CreateColor(cc.r,  cc.g,  cc.b,  1))
+            curve:AddPoint(0, CreateColor(c0.r, c0.g, c0.b, 1))
+            curve:AddPoint(0.4, CreateColor(c50.r, c50.g, c50.b, 1))
+            curve:AddPoint(
+                0.75,
+                CreateColor(
+                    c50.r + (cc.r - c50.r) * 0.75,
+                    c50.g + (cc.g - c50.g) * 0.75,
+                    c50.b + (cc.b - c50.b) * 0.75,
+                    1
+                )
+            )
+            curve:AddPoint(1, CreateColor(cc.r, cc.g, cc.b, 1))
             e = { curve = curve, r = cc.r, g = cc.g, b = cc.b }
             reactiveCurves[classToken] = e
         end
@@ -2063,8 +2293,12 @@ do
     -- strictly better here, and only differs on focus/ToT-style units.)
     function ns.UF_DynamicHealthColor(unit, s)
         local mode = s and s.healthColorMode
-        if not mode or mode == "none" or not unit then return false end
-        if not (C_CurveUtil and UnitHealthPercent) then return false end
+        if not mode or mode == "none" or not unit then
+            return false
+        end
+        if not (C_CurveUtil and UnitHealthPercent) then
+            return false
+        end
         local curve
         if mode == "classic" then
             curve = GetClassicCurve()
@@ -2072,13 +2306,17 @@ do
             curve = GetDynamicCurve(s)
         elseif mode == "classReactive" then
             local _, classToken = UnitClass(unit)
-            if not classToken or issecretvalue(classToken) then return false end
+            if not classToken or issecretvalue(classToken) then
+                return false
+            end
             curve = GetClassReactiveCurve(s, classToken)
         else
             return false
         end
         local color = UnitHealthPercent(unit, true, curve)
-        if not (color and color.GetRGB) then return false end
+        if not (color and color.GetRGB) then
+            return false
+        end
         local r, g, b = color:GetRGB()
         return true, r, g, b, issecretvalue(r)
     end
@@ -2087,19 +2325,15 @@ do
     -- known fake (0-1) rather than a secret. These MUST match the curves above
     -- or the designer teaches a color the live bar never shows.
     function ns.UF_ResolveDynamicColor(s, pct01)
-        local c0   = s.dynamicColor0   or DEF0
-        local c50  = s.dynamicColor50  or DEF50
+        local c0 = s.dynamicColor0 or DEF0
+        local c50 = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
         if pct01 >= 0.5 then
             local t = (pct01 - 0.5) * 2
-            return c50.r + (c100.r - c50.r) * t,
-                   c50.g + (c100.g - c50.g) * t,
-                   c50.b + (c100.b - c50.b) * t
+            return c50.r + (c100.r - c50.r) * t, c50.g + (c100.g - c50.g) * t, c50.b + (c100.b - c50.b) * t
         end
         local t = pct01 * 2
-        return c0.r + (c50.r - c0.r) * t,
-               c0.g + (c50.g - c0.g) * t,
-               c0.b + (c50.b - c0.b) * t
+        return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t
     end
 
     function ns.UF_ResolveClassicColor(pct01)
@@ -2112,7 +2346,7 @@ do
 
     function ns.UF_ResolveClassReactiveColor(s, classToken, pct01)
         local cc = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
-        local c0  = s.dynamicColor0  or DEF0
+        local c0 = s.dynamicColor0 or DEF0
         local c50 = s.dynamicColor50 or DEF50
         if pct01 >= 0.4 then
             local w
@@ -2121,21 +2355,19 @@ do
             else
                 w = (pct01 - 0.4) / 0.35 * 0.75
             end
-            return c50.r + (cc.r - c50.r) * w,
-                   c50.g + (cc.g - c50.g) * w,
-                   c50.b + (cc.b - c50.b) * w
+            return c50.r + (cc.r - c50.r) * w, c50.g + (cc.g - c50.g) * w, c50.b + (cc.b - c50.b) * w
         end
         local t = pct01 / 0.4
-        return c0.r + (c50.r - c0.r) * t,
-               c0.g + (c50.g - c0.g) * t,
-               c0.b + (c50.b - c0.b) * t
+        return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t
     end
 
     -- One entry point for every preview surface: resolves whichever dynamic mode
     -- `s` is on at a FAKE percent, or nil when the unit is on a flat fill.
     function ns.UF_PreviewDynamicColor(s, pct01)
         local mode = s and s.healthColorMode
-        if not mode or mode == "none" then return nil end
+        if not mode or mode == "none" then
+            return nil
+        end
         if mode == "classic" then
             return ns.UF_ResolveClassicColor(pct01)
         elseif mode == "customDynamic" then
@@ -2163,7 +2395,9 @@ local SECRET_CLASS_COLOR = CreateColor(1, 1, 1, 1)
 -- creation. colorSelection is not carried over (needs oUF-private unitSelectionType;
 -- no CUI health element enables it).
 local function UF_SecretSafeHealthColor(self, event, unit)
-    if not unit or self._cuiUnit ~= unit then return end
+    if not unit or self._cuiUnit ~= unit then
+        return
+    end
     local element = self.Health
 
     local color
@@ -2173,9 +2407,11 @@ local function UF_SecretSafeHealthColor(self, event, unit)
         color = self.colors.tapped
     elseif element.colorThreat and not UnitPlayerControlled(unit) and UnitThreatSituation("player", unit) then
         color = self.colors.threat[UnitThreatSituation("player", unit)]
-    elseif (element.colorClass and (UnitIsPlayer(unit) or UnitInPartyIsAI(unit)))
+    elseif
+        (element.colorClass and (UnitIsPlayer(unit) or UnitInPartyIsAI(unit)))
         or (element.colorClassNPC and not (UnitIsPlayer(unit) or UnitInPartyIsAI(unit)))
-        or (element.colorClassPet and UnitPlayerControlled(unit) and not UnitIsPlayer(unit)) then
+        or (element.colorClassPet and UnitPlayerControlled(unit) and not UnitIsPlayer(unit))
+    then
         local _, class = UnitClass(unit)
         if issecretvalue(class) then
             -- 12.1 (68914): UnitClass is SecretWhenUnitIdentityRestricted (focus/focus-target/ToT):
@@ -2226,10 +2462,12 @@ end
 -- passed by every caller that has it; Health elements never get `__owner`
 -- (only aura elements do), so there is no fallback to recover it from.
 local function ApplyDarkTheme(health, unit)
-    if not health then return end
+    if not health then
+        return
+    end
     -- TEMPORARY (see UF_SecretSafeHealthColor). Idempotent: this function
     -- re-runs on settings changes and re-assigning is harmless.
-        health.UpdateColor = UF_SecretSafeHealthColor
+    health.UpdateColor = UF_SecretSafeHealthColor
     local isDark = ns.UF_DarkThemeOn(health._cuiUnitKey and db.profile[health._cuiUnitKey])
     if isDark then
         health.colorClass = false
@@ -2242,7 +2480,9 @@ local function ApplyDarkTheme(health, unit)
         local dbr, dbg, dbb, dba = CludesUI.GetDarkModeBg()
         health:SetStatusBarColor(dfr, dfg, dfb)
         local darkFillTex = health:GetStatusBarTexture()
-        if darkFillTex then darkFillTex:SetAlpha(dfa) end
+        if darkFillTex then
+            darkFillTex:SetAlpha(dfa)
+        end
         if health.bg then
             AnchorHealthBg(health)
             -- Background opacity rides the texture alpha; region alpha stays 1 so
@@ -2276,11 +2516,13 @@ local function ApplyDarkTheme(health, unit)
                 health.colorDisconnected = false
                 local _, ct = UnitClass("player")
                 local cc = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
-                if cc then health:SetStatusBarColor(cc.r, cc.g, cc.b) end
+                if cc then
+                    health:SetStatusBarColor(cc.r, cc.g, cc.b)
+                end
             end
         end
         local customFill = unitSettings and unitSettings.customFillColor
-        local customBg   = unitSettings and unitSettings.customBgColor
+        local customBg = unitSettings and unitSettings.customBgColor
         if customFill then
             -- Custom fill overrides class coloring; skipped when class color is on.
             if not (unitSettings and unitSettings.healthClassColored) then
@@ -2298,7 +2540,7 @@ local function ApplyDarkTheme(health, unit)
             local uKey = self._cuiUnitKey
             local uSettings = uKey and db.profile[uKey]
             local cFill = uSettings and uSettings.customFillColor
-            local cBg   = uSettings and uSettings.customBgColor
+            local cBg = uSettings and uSettings.customBgColor
             local classColored = uSettings and uSettings.healthClassColored
             local bgClassColored = uSettings and uSettings.bgClassColored
             -- Base fill color (custom, or oUF's class/reaction color); gradient
@@ -2322,7 +2564,10 @@ local function ApplyDarkTheme(health, unit)
             elseif classColored and uKey == "pet" then
                 local _, ct = UnitClass("player")
                 local cc = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
-                if cc then bR, bG, bB = cc.r, cc.g, cc.b; haveBase = true end
+                if cc then
+                    bR, bG, bB = cc.r, cc.g, cc.b
+                    haveBase = true
+                end
             elseif color and color.GetRGB then
                 bR, bG, bB = color:GetRGB()
                 haveBase = true
@@ -2336,10 +2581,21 @@ local function ApplyDarkTheme(health, unit)
                 -- A gradient overrides region alpha, so Bar Opacity is baked into
                 -- the gradient endpoint alphas instead of SetAlpha.
                 local ga = uSettings.healthBarOpacity or 90
-                if ga > 1.0 then ga = ga / 100 end
-                ApplyBarGradient(self:GetStatusBarTexture(), uSettings.gradientDir or "HORIZONTAL",
-                    bR, bG, bB, ga,
-                    gc and gc.r or 0.20, gc and gc.g or 0.20, gc and gc.b or 0.80, ga)
+                if ga > 1.0 then
+                    ga = ga / 100
+                end
+                ApplyBarGradient(
+                    self:GetStatusBarTexture(),
+                    uSettings.gradientDir or "HORIZONTAL",
+                    bR,
+                    bG,
+                    bB,
+                    ga,
+                    gc and gc.r or 0.20,
+                    gc and gc.g or 0.20,
+                    gc and gc.b or 0.80,
+                    ga
+                )
             elseif haveDyn then
                 -- Must be written explicitly: the health element painted the flat
                 -- class/reaction color a moment ago, and unlike the pet/custom
@@ -2388,7 +2644,8 @@ local function ApplyDarkTheme(health, unit)
             local bgClassColored = unitSettings and unitSettings.bgClassColored
             local bgClassOk, bgClassR, bgClassG, bgClassB
             if bgClassColored then
-                local classUnit = ClassColorSourceUnit(unitKey, unitKey or (health.__owner and health.__owner._cuiUnit))
+                local classUnit =
+                    ClassColorSourceUnit(unitKey, unitKey or (health.__owner and health.__owner._cuiUnit))
                 bgClassOk, bgClassR, bgClassG, bgClassB = ns.ResolveBgClassColor(classUnit)
             end
             if bgClassOk then
@@ -2417,7 +2674,9 @@ local function ApplyDarkTheme(health, unit)
         -- health event, so one extra call here is free. A nil `color` just means
         -- the class/reaction tier contributes nothing, which is right at setup --
         -- the element has not resolved one yet.
-        if health.PostUpdateColor then health:PostUpdateColor(unit, nil) end
+        if health.PostUpdateColor then
+            health:PostUpdateColor(unit, nil)
+        end
     end
 end
 ns.ApplyDarkTheme = ApplyDarkTheme
@@ -2432,7 +2691,9 @@ if CludesUI.RegisterDarkModeRefresh then
             if h then
                 -- Textured Background: Dark Mode Fill decides the health layer; the
                 -- dark repaint after it tints the layer.
-                if h._cuiTexBgSeen then ns.UF_TexBgApply(h, h._cuiTexBgUnit, h._cuiTexBgKey, obj.Power) end
+                if h._cuiTexBgSeen then
+                    ns.UF_TexBgApply(h, h._cuiTexBgUnit, h._cuiTexBgKey, obj.Power)
+                end
                 ApplyDarkTheme(h, obj._cuiUnit)
             end
         end
@@ -2451,9 +2712,17 @@ local optionsCategoryID
 -- read live on every call: a profile switch, import or reset (or a layer
 -- paint) can replace db.profile or its unit tables between frame reloads.
 local unitSettingsKey = {
-    player = "player", target = "target", targettarget = "targettarget",
-    pet = "pet", focus = "focus", focustarget = "focustarget",
-    boss1 = "boss", boss2 = "boss", boss3 = "boss", boss4 = "boss", boss5 = "boss",
+    player = "player",
+    target = "target",
+    targettarget = "targettarget",
+    pet = "pet",
+    focus = "focus",
+    focustarget = "focustarget",
+    boss1 = "boss",
+    boss2 = "boss",
+    boss3 = "boss",
+    boss4 = "boss",
+    boss5 = "boss",
 }
 local function GetSettingsForUnit(unit)
     local p = db.profile
@@ -2474,7 +2743,9 @@ end
 --- "never" alone resolves it here instead of off the stored scalar. On ns for the
 --- 200-locals cap.
 function ns.VisEffective(s)
-    if not s then return nil end
+    if not s then
+        return nil
+    end
     return (CludesUI.VisOverrideValue(s)) or s.barVisibility
 end
 
@@ -2487,13 +2758,19 @@ function ns.VisUnitDisabled(profile, unitKey)
 end
 
 function ns.GetUnitFrameSource(unit)
-    if not db or not db.profile then return "cui" end
-    if ns.VisUnitDisabled(db.profile, unit) then return "hidden" end
+    if not db or not db.profile then
+        return "cui"
+    end
+    if ns.VisUnitDisabled(db.profile, unit) then
+        return "hidden"
+    end
     local fs = db.profile.frameSource and db.profile.frameSource[unit]
     if fs == "blizzard" then
         -- Visibility "never" over Blizzard's frame: we spawn nothing of our own to
         -- hide, so suppressing Blizzard's is the only way to honor it.
-        if ns.VisEffective(db.profile[unit]) == "never" then return "hidden" end
+        if ns.VisEffective(db.profile[unit]) == "never" then
+            return "hidden"
+        end
         -- ToT/focus-target have no standalone Blizzard frame (native one is a child
         -- of TargetFrame/FocusFrame, lives only while that parent does), so
         -- "blizzard" is honored for them ONLY when the parent is itself on
@@ -2516,12 +2793,18 @@ end
 --- it answers before InitializeFrames and while a change waits to apply.
 --- On ns for the 200-locals cap.
 function ns.UF_OwnsBlizzClassPower()
-    if CludesUI.IS_FOREVER == true then return false end
+    if CludesUI.IS_FOREVER == true then
+        return false
+    end
     -- Held right now (runtime), even while the config says otherwise: a style or
     -- source change not applied yet (combat, a pending reload) keeps it ours.
-    if ns._ufBlizzCPHeld then return true end
+    if ns._ufBlizzCPHeld then
+        return true
+    end
     local p = db and db.profile
-    if not (p and p.player and p.player.classPowerStyle == "blizzard") then return false end
+    if not (p and p.player and p.player.classPowerStyle == "blizzard") then
+        return false
+    end
     return ns.GetUnitFrameSource("player") == "cui"
 end
 
@@ -2531,7 +2814,9 @@ end
 -- permanently disables the Blizzard frame, and secure frames can't be created or
 -- torn down in combat -- so callers should also prompt a reload.
 function ns.SetUnitFrameSource(unit, source)
-    if not db or not db.profile then return end
+    if not db or not db.profile then
+        return
+    end
     db.profile.frameSource = db.profile.frameSource or {}
     db.profile.frameSource[unit] = source
     db.profile.enabledFrames[unit] = (source ~= "hidden")
@@ -2541,29 +2826,32 @@ end
 --  Custom Class Power Display (Bars / Circles styles)
 -------------------------------------------------------------------------------
 local CLASS_POWER_TYPES = {
-    ROGUE       = Enum.PowerType.ComboPoints,
-    DRUID       = { [103] = Enum.PowerType.ComboPoints,     -- Feral
-                    [104] = Enum.PowerType.ComboPoints,     -- Guardian (cat form)
-                    [105] = Enum.PowerType.ComboPoints },   -- Restoration (cat form)
-    MAGE        = {
+    ROGUE = Enum.PowerType.ComboPoints,
+    DRUID = {
+        [103] = Enum.PowerType.ComboPoints, -- Feral
+        [104] = Enum.PowerType.ComboPoints, -- Guardian (cat form)
+        [105] = Enum.PowerType.ComboPoints,
+    }, -- Restoration (cat form)
+    MAGE = {
         [62] = { Enum.PowerType.ArcaneCharges, 4 }, -- Arcane
-        [64] = { "ICICLES", 5 },                    -- Frost: aura-based pip stacks
+        [64] = { "ICICLES", 5 }, -- Frost: aura-based pip stacks
     },
-    WARLOCK     = Enum.PowerType.SoulShards,
-    PALADIN     = Enum.PowerType.HolyPower,
-    MONK        = {
-        [269] = { Enum.PowerType.Chi, 5 },        -- Windwalker
-        [268] = { "BREWMASTER_STAGGER", 1, "bar" },  -- Brewmaster: single bar
+    WARLOCK = Enum.PowerType.SoulShards,
+    PALADIN = Enum.PowerType.HolyPower,
+    MONK = {
+        [269] = { Enum.PowerType.Chi, 5 }, -- Windwalker
+        [268] = { "BREWMASTER_STAGGER", 1, "bar" }, -- Brewmaster: single bar
     },
-    EVOKER      = Enum.PowerType.Essence,
+    EVOKER = Enum.PowerType.Essence,
     DEATHKNIGHT = Enum.PowerType.Runes,
     -- Spec-specific custom resources (resolved at creation time)
-    DEMONHUNTER = { [581] = { "SOUL_FRAGMENTS_VENGEANCE", 6 },
-                    [1480] = { "SOUL_FRAGMENTS_DEVOURER", 50, "bar" } },
-    SHAMAN      = { [263] = { "MAELSTROM_WEAPON", 10 } },
-    HUNTER      = { [255] = { "TIP_OF_THE_SPEAR", 3 } },
-    WARRIOR     = { [72]  = { "WHIRLWIND_STACKS", 4 },
-                    [71]  = { "SWEEPING_STRIKES", 18 } },  -- 12.1 cap: 12 + 6 Broad Strokes
+    DEMONHUNTER = {
+        [581] = { "SOUL_FRAGMENTS_VENGEANCE", 6 },
+        [1480] = { "SOUL_FRAGMENTS_DEVOURER", 50, "bar" },
+    },
+    SHAMAN = { [263] = { "MAELSTROM_WEAPON", 10 } },
+    HUNTER = { [255] = { "TIP_OF_THE_SPEAR", 3 } },
+    WARRIOR = { [72] = { "WHIRLWIND_STACKS", 4 }, [71] = { "SWEEPING_STRIKES", 18 } }, -- 12.1 cap: 12 + 6 Broad Strokes
 }
 
 -- Vanilla content has no specializations, so every spec-keyed entry above fails to
@@ -2576,7 +2864,9 @@ local FOREVER_CLASS_POWER = {
 }
 
 local function ClassPowerEntry(playerClass)
-    if CludesUI.IS_FOREVER == true then return FOREVER_CLASS_POWER[playerClass] end
+    if CludesUI.IS_FOREVER == true then
+        return FOREVER_CLASS_POWER[playerClass]
+    end
     return CLASS_POWER_TYPES[playerClass]
 end
 
@@ -2586,7 +2876,9 @@ local function DruidNeedsCatForm(playerClass, powerType)
     if playerClass ~= "DRUID" or powerType ~= Enum.PowerType.ComboPoints then
         return false
     end
-    if CludesUI.IS_FOREVER == true then return true end
+    if CludesUI.IS_FOREVER == true then
+        return true
+    end
     local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
     local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
     return specID == 104 or specID == 105
@@ -2602,9 +2894,15 @@ end
 SpecHasClassPower = function()
     local _, playerClass = UnitClass("player")
     local entry = ClassPowerEntry(playerClass)
-    if not entry then return false end
-    if type(entry) ~= "table" then return true end
-    if entry[1] ~= nil then return true end
+    if not entry then
+        return false
+    end
+    if type(entry) ~= "table" then
+        return true
+    end
+    if entry[1] ~= nil then
+        return true
+    end
     local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
     local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
     return specID and entry[specID] ~= nil
@@ -2615,17 +2913,34 @@ end
 -- this file first; CludesUF:OnInitialize (CUI_UnitFrames_Lifecycle.lua)
 -- assigns its own db, then calls SetDB.
 CludesUI.NewInternals(ns, "_internals", {
-    frames = frames, GetSettingsForUnit = GetSettingsForUnit, UnsnapTex = UnsnapTex,
-    unitSettingsKey = unitSettingsKey, UnitToSettingsKey = UnitToSettingsKey,
-    ResolveFontPath = ResolveFontPath, ApplyDarkTheme = ApplyDarkTheme,
-    defaults = defaults, healthBarTextures = healthBarTextures,
-    healthBarTextureNames = healthBarTextureNames, healthBarTextureOrder = healthBarTextureOrder,
-    GetSelectedFont = GetSelectedFont, SetFSFont = SetFSFont,
-    AbbreviateNumbers = AbbreviateNumbers, GetCastbarColor = GetCastbarColor,
-    ClassPowerEntry = ClassPowerEntry, DruidNeedsCatForm = DruidNeedsCatForm, InCatForm = InCatForm,
-    ApplyBarGradient = ApplyBarGradient, ApplyHealthBarTexture = ApplyHealthBarTexture,
-    ApplyHealthBarAlpha = ApplyHealthBarAlpha, ApplyPowerBarAlpha = ApplyPowerBarAlpha,
-    SpecHasClassPower = SpecHasClassPower, UF_SecretSafeHealthColor = UF_SecretSafeHealthColor,
+    frames = frames,
+    GetSettingsForUnit = GetSettingsForUnit,
+    UnsnapTex = UnsnapTex,
+    unitSettingsKey = unitSettingsKey,
+    UnitToSettingsKey = UnitToSettingsKey,
+    ResolveFontPath = ResolveFontPath,
+    ApplyDarkTheme = ApplyDarkTheme,
+    defaults = defaults,
+    healthBarTextures = healthBarTextures,
+    healthBarTextureNames = healthBarTextureNames,
+    healthBarTextureOrder = healthBarTextureOrder,
+    GetSelectedFont = GetSelectedFont,
+    SetFSFont = SetFSFont,
+    AbbreviateNumbers = AbbreviateNumbers,
+    GetCastbarColor = GetCastbarColor,
+    ClassPowerEntry = ClassPowerEntry,
+    DruidNeedsCatForm = DruidNeedsCatForm,
+    InCatForm = InCatForm,
+    ApplyBarGradient = ApplyBarGradient,
+    ApplyHealthBarTexture = ApplyHealthBarTexture,
+    ApplyHealthBarAlpha = ApplyHealthBarAlpha,
+    ApplyPowerBarAlpha = ApplyPowerBarAlpha,
+    SpecHasClassPower = SpecHasClassPower,
+    UF_SecretSafeHealthColor = UF_SecretSafeHealthColor,
     ClassColorSourceUnit = ClassColorSourceUnit,
-    dbSetters = { function(v) db = v end },
+    dbSetters = {
+        function(v)
+            db = v
+        end,
+    },
 }, { SetDB = "dbSetters" })

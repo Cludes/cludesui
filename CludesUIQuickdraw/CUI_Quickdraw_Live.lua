@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Live.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetCursorPosition = GetCursorPosition
@@ -22,11 +26,17 @@ local secureButtons, SetLiveView = I.secureButtons, I.SetLiveView
 local SetScrollCatcher = I.SetScrollCatcher
 
 local liveView
-I.liveViewSetters[#I.liveViewSetters + 1] = function(v) liveView = v end
+I.liveViewSetters[#I.liveViewSetters + 1] = function(v)
+    liveView = v
+end
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v) scrollCatcher = v end
+I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
+    scrollCatcher = v
+end
 local cancelButton
-I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v) cancelButton = v end
+I.cancelButtonSetters[#I.cancelButtonSetters + 1] = function(v)
+    cancelButton = v
+end
 
 local secureHeader
 local openedAt = 0
@@ -35,7 +45,9 @@ local openedAt = 0
 --  The live palette
 -------------------------------------------------------------------------------
 local function CreateLiveView()
-    if liveView then return liveView end
+    if liveView then
+        return liveView
+    end
     SetLiveView(ns.CreatePaletteView(UIParent, { frame = liveFrame, live = true }))
     local f = liveView:GetFrame()
     f:SetFrameStrata(LIVE_STRATA)
@@ -58,8 +70,7 @@ end
 -- presses the secure activation path depends on.
 local function EnsureSecureHeader()
     if not secureHeader then
-        secureHeader = CreateFrame("Frame", "CUIQuickdrawSecureHeader",
-            UIParent, "SecureHandlerBaseTemplate")
+        secureHeader = CreateFrame("Frame", "CUIQuickdrawSecureHeader", UIParent, "SecureHandlerBaseTemplate")
     end
     return secureHeader
 end
@@ -140,9 +151,10 @@ local SNIPPET_WHEEL = [==[
 ]==]
 
 local function EnsureScrollCatcher()
-    if scrollCatcher then return scrollCatcher end
-    local f = CreateFrame("Frame", "CUIQuickdrawScrollCatcher", UIParent,
-        "SecureHandlerBaseTemplate")
+    if scrollCatcher then
+        return scrollCatcher
+    end
+    local f = CreateFrame("Frame", "CUIQuickdrawScrollCatcher", UIParent, "SecureHandlerBaseTemplate")
     f:SetAllPoints(UIParent)
     f:SetFrameStrata(LIVE_STRATA)
     f:SetFrameLevel(1)
@@ -171,11 +183,17 @@ local function FlickAlpha()
     -- PARKED AT 0/0: the slam-open (AdvanceSlam) is the arc's reveal now and
     -- has to be visible from the press itself; raise the pair to bring the
     -- flick hold back on top of it.
-    if liveView:IsFan() then return 1 end
+    if liveView:IsFan() then
+        return 1
+    end
     local delay, fade = 0, 0
     local t = GetTime() - openedAt
-    if t <= delay then return 0 end
-    if fade <= 0 or t >= delay + fade then return 1 end
+    if t <= delay then
+        return 0
+    end
+    if fade <= 0 or t >= delay + fade then
+        return 1
+    end
     return (t - delay) / fade
 end
 
@@ -188,7 +206,9 @@ local paletteAlpha = nil
 
 local function UpdatePaletteAlpha()
     local a = FlickAlpha()
-    if a == paletteAlpha then return end
+    if a == paletteAlpha then
+        return
+    end
     paletteAlpha = a
     liveView:GetFrame():SetAlpha(a)
 end
@@ -251,8 +271,12 @@ end
 -- (a doorway), and combat starting and ending. The frame is made the first
 -- time such a menu opens; ns.Open and ns.Close, every close's path, sync it.
 local mountWatch
-local MOUNT_WATCH_EVENTS = { "MOUNT_JOURNAL_USABILITY_CHANGED", "MINIMAP_UPDATE_ZOOM",
-                             "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
+local MOUNT_WATCH_EVENTS = {
+    "MOUNT_JOURNAL_USABILITY_CHANGED",
+    "MINIMAP_UPDATE_ZOOM",
+    "PLAYER_REGEN_DISABLED",
+    "PLAYER_REGEN_ENABLED",
+}
 local function SyncMountWatch(on)
     if on and not mountWatch then
         mountWatch = CreateFrame("Frame")
@@ -262,7 +286,9 @@ local function SyncMountWatch(on)
             end
         end)
     end
-    if not mountWatch then return end
+    if not mountWatch then
+        return
+    end
     for i = 1, #MOUNT_WATCH_EVENTS do
         if on then
             mountWatch:RegisterEvent(MOUNT_WATCH_EVENTS[i])
@@ -285,7 +311,9 @@ local function PositionPalette(forceFixed)
     palette:ClearAllPoints()
     if forceFixed or p.centerMode == "SCREEN" then
         local s = p.scale or 1
-        if s == 0 then s = 1 end
+        if s == 0 then
+            s = 1
+        end
         palette:SetPoint("CENTER", UIParent, "CENTER", (p.posX or 0) / s, (p.posY or 0) / s)
     else
         local es = palette:GetEffectiveScale()
@@ -296,7 +324,9 @@ end
 
 function ns.Open(paletteIndex)
     local p = P()
-    if not p or not p.enabled then return end
+    if not p or not p.enabled then
+        return
+    end
 
     CreateLiveView()
     liveView:Layout(paletteIndex)
@@ -333,8 +363,7 @@ function ns.Open(paletteIndex)
         local pOpen = liveView:P()
         local hoverOnly = (pOpen and pOpen.fanMouseSelect) ~= false
         local pinned = pOpen and pOpen.centerMode == "SCREEN"
-        local paintFirst = liveView:ShownCount() > 0
-            and not (hoverOnly and pinned)
+        local paintFirst = liveView:ShownCount() > 0 and not (hoverOnly and pinned)
         liveView:SetSelection(paintFirst and 1 or nil)
     else
         -- Through the same pass every later frame goes through, so the ring is
@@ -382,7 +411,9 @@ end
 local ReleaseSecureState
 
 function ns.Close()
-    if not liveView then return end
+    if not liveView then
+        return
+    end
     local palette = liveView:GetFrame()
     if not palette:IsShown() then
         ReleaseEscape()
@@ -406,5 +437,7 @@ end
 
 I.CreateLiveView, I.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
 I.EnsureSecureHeader, I.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
-I.SetReleaseSecureState = function(f) ReleaseSecureState = f end
+I.SetReleaseSecureState = function(f)
+    ReleaseSecureState = f
+end
 I.broken = false

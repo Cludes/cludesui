@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Disposal.lua
 --
@@ -66,7 +68,8 @@ do
     -- The tick set "full" mode adds and removes: what the vehicle/override
     -- bar and ExtraActionButton1 need painted. NEVER the two seeding events.
     local _abefEvents = {
-        "ACTIONBAR_UPDATE_COOLDOWN", "ACTIONBAR_UPDATE_STATE",
+        "ACTIONBAR_UPDATE_COOLDOWN",
+        "ACTIONBAR_UPDATE_STATE",
         "ACTIONBAR_UPDATE_USABLE",
         -- Spell-typed extra-action buttons (delve abilities) carry no action
         -- slot, so their cooldown fires SPELL_UPDATE_COOLDOWN not this event.
@@ -74,8 +77,10 @@ do
         "UPDATE_SHAPESHIFT_FORM",
     }
     local _aaefEvents = {
-        "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP",
-        "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_FAILED",
+        "UNIT_SPELLCAST_START",
+        "UNIT_SPELLCAST_STOP",
+        "UNIT_SPELLCAST_SUCCEEDED",
+        "UNIT_SPELLCAST_FAILED",
         "UNIT_SPELLCAST_INTERRUPTED",
     }
     -- The rest of what ActionBarButtonEventsFrame registers in its own OnLoad.
@@ -94,8 +99,12 @@ do
     -- broadcaster's frames list at creation (GetOrCreateButton), so the
     -- untainted loop only ever reaches Blizzard-owned entries.
     local _abefQuiet = {
-        "UPDATE_BINDINGS", "GAME_PAD_ACTIVE_CHANGED", "PET_BAR_UPDATE",
-        "UNIT_FLAGS", "UNIT_AURA", "PLAYER_MOUNT_DISPLAY_CHANGED",
+        "UPDATE_BINDINGS",
+        "GAME_PAD_ACTIVE_CHANGED",
+        "PET_BAR_UPDATE",
+        "UNIT_FLAGS",
+        "UNIT_AURA",
+        "PLAYER_MOUNT_DISPLAY_CHANGED",
     }
     -- WoW Forever puts two of Blizzard's own bars on ActionBarButtonEventsFrame,
     -- and both are on screen there: the shaman Call Totem Bar
@@ -112,8 +121,7 @@ do
     local function KeepBlizzBroadcasters()
         if _keepBlizz == nil then
             local _, cls = UnitClass("player")
-            _keepBlizz = CludesUI.IS_FOREVER == true
-                and (cls == "SHAMAN" or CludesUI.PadGamepadUI())
+            _keepBlizz = CludesUI.IS_FOREVER == true and (cls == "SHAMAN" or CludesUI.PadGamepadUI())
         end
         return _keepBlizz
     end
@@ -125,11 +133,17 @@ do
     ns.QuietBroadcasters = function()
         local abef = ActionBarButtonEventsFrame
         if abef and not KeepBlizzBroadcasters() then
-            for _, ev in ipairs(_abefQuiet) do abef:UnregisterEvent(ev) end
-            for _, ev in ipairs(_abefEvents) do abef:UnregisterEvent(ev) end
+            for _, ev in ipairs(_abefQuiet) do
+                abef:UnregisterEvent(ev)
+            end
+            for _, ev in ipairs(_abefEvents) do
+                abef:UnregisterEvent(ev)
+            end
         end
         local aaef = ActionBarActionEventsFrame
-        if aaef then aaef:UnregisterAllEvents() end
+        if aaef then
+            aaef:UnregisterAllEvents()
+        end
     end
     -- Retail quiets at file load, before any button exists. WoW Forever waits
     -- for login, where the interface style it decides on is settled, and from
@@ -139,18 +153,22 @@ do
         local loginFrame = ns.TakeShell()
         local styleAsked = false
         local function StyleCheck()
-            if styleAsked or not CludesUI.PadGamepadUI() then return end
+            if styleAsked or not CludesUI.PadGamepadUI() then
+                return
+            end
             styleAsked = true
             loginFrame:UnregisterAllEvents()
             -- The Gamepad style's D-pad cannot reach the popup, so chat says it too.
             -- A confirm, not RequestReload: an event cannot reload, its click can.
-            CludesUI.PrintError(CludesUI.L("The interface style changed. Type /reload so the action bars match it."))
+            CludesUI.PrintError(
+                CludesUI.L("The interface style changed. Type /reload so the action bars match it.")
+            )
             CludesUI:ShowConfirmPopup({
-                title       = CludesUI.L("Reload Required"),
-                message     = CludesUI.L("The interface style changed. Reload so the action bars match it."),
+                title = CludesUI.L("Reload Required"),
+                message = CludesUI.L("The interface style changed. Reload so the action bars match it."),
                 confirmText = CludesUI.L("Reload Now"),
-                cancelText  = CludesUI.L("Later"),
-                reload      = true,
+                cancelText = CludesUI.L("Later"),
+                reload = true,
             })
         end
         loginFrame:RegisterEvent("PLAYER_LOGIN")
@@ -158,8 +176,14 @@ do
             if event == "PLAYER_LOGIN" then
                 self:UnregisterEvent("PLAYER_LOGIN")
                 ns.QuietBroadcasters()
-                if not KeepBlizzBroadcasters() and not (C_EventUtils and C_EventUtils.IsEventValid
-                    and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION")) then
+                if
+                    not KeepBlizzBroadcasters()
+                    and not (
+                        C_EventUtils
+                        and C_EventUtils.IsEventValid
+                        and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION")
+                    )
+                then
                     self:RegisterEvent("INPUT_DEVICE_INTERFACE_TRANSITION")
                 end
                 return
@@ -188,7 +212,9 @@ do
     -- tick rate. No tick set there at all; the vehicle/extra buttons keep the
     -- two seeding events plus our dispatcher's direct paints.
     local function CooldownsSecret()
-        if not (C_Secrets and C_Secrets.ShouldCooldownsBeSecret) then return false end
+        if not (C_Secrets and C_Secrets.ShouldCooldownsBeSecret) then
+            return false
+        end
         local ok, secret = pcall(C_Secrets.ShouldCooldownsBeSecret)
         return (ok and secret) and true or false
     end
@@ -206,7 +232,9 @@ do
         if want == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then
             want = "off"
         end
-        if want == _broadcasterMode then return end
+        if want == _broadcasterMode then
+            return
+        end
         _broadcasterMode = want
         -- Drop to the quiet state first (the two seeding registrations survive
         -- it), then add the tick set.
@@ -230,7 +258,7 @@ do
     -- it, and the mode check above would early-out forever. Any direct
     -- quieting must come back through here.
     ns.ResyncBroadcaster = function()
-        _broadcasterMode = nil   -- the caller has just quieted the frames; never early-out
+        _broadcasterMode = nil -- the caller has just quieted the frames; never early-out
         ApplyBroadcaster()
     end
     -- Recompute from ground truth on a broad event set rather than tracking
@@ -270,8 +298,13 @@ do
         -- On vehicle/override entry, force-paint OverrideActionBar cooldowns:
         -- the broadcaster only catches the NEXT change, so an already-running
         -- cooldown needs an initial paint.
-        if (event == "UNIT_ENTERED_VEHICLE" or event == "UPDATE_VEHICLE_ACTIONBAR"
-            or event == "UPDATE_OVERRIDE_ACTIONBAR") and not (unit and unit ~= "player") then
+        if
+            (
+                event == "UNIT_ENTERED_VEHICLE"
+                or event == "UPDATE_VEHICLE_ACTIONBAR"
+                or event == "UPDATE_OVERRIDE_ACTIONBAR"
+            ) and not (unit and unit ~= "player")
+        then
             C_Timer.After(0, function()
                 for i = 1, 6 do
                     local btn = _G["OverrideActionBarButton" .. i]
@@ -311,13 +344,23 @@ do
     -- ours clicks them -- CUI's paging arrows drive their own secure buttons.
     local function KillPagerMouse(bar)
         local pager = bar and bar.ActionBarPageNumber
-        if not pager then return end
+        if not pager then
+            return
+        end
         local function killOne(f)
-            if not f or type(f.IsMouseEnabled) ~= "function" then return end
-            if not f:IsMouseEnabled() then return end -- no-op after first pass
+            if not f or type(f.IsMouseEnabled) ~= "function" then
+                return
+            end
+            if not f:IsMouseEnabled() then
+                return
+            end -- no-op after first pass
             f:EnableMouse(false)
-            if f.EnableMouseClicks then f:EnableMouseClicks(false) end
-            if f.EnableMouseMotion then f:EnableMouseMotion(false) end
+            if f.EnableMouseClicks then
+                f:EnableMouseClicks(false)
+            end
+            if f.EnableMouseMotion then
+                f:EnableMouseMotion(false)
+            end
         end
         killOne(pager)
         killOne(pager.UpButton)
@@ -372,12 +415,19 @@ do
                 -- combat (mount/dismount), and at alpha 0 / level 50 it would
                 -- invisibly intercept clicks above our EABButtons.
                 frame:EnableMouse(false)
-                if frame.EnableMouseClicks then frame:EnableMouseClicks(false) end
-                if frame.EnableMouseMotion then frame:EnableMouseMotion(false) end
+                if frame.EnableMouseClicks then
+                    frame:EnableMouseClicks(false)
+                end
+                if frame.EnableMouseMotion then
+                    frame:EnableMouseMotion(false)
+                end
                 -- EnableMouse(false) on a parent does NOT disable children, so
                 -- the pager's invisible arrows would still eat clicks.
                 KillPagerMouse(frame)
-                if frame.Selection then frame.Selection:Hide(); frame.Selection:SetAlpha(0) end -- Edit Mode selection/mover
+                if frame.Selection then
+                    frame.Selection:Hide()
+                    frame.Selection:SetAlpha(0)
+                end -- Edit Mode selection/mover
                 local caps = frame.EndCaps
                 if caps then
                     caps:Hide() -- artwork (gryphons/endcaps/border)
@@ -386,10 +436,18 @@ do
                     -- (the overlay ignores the bar's alpha). Silence both overlays like
                     -- the bar's own; Edit Mode's Show never resets alpha or mouse.
                     local l, r = caps.LeftEndCap, caps.RightEndCap
-                    if l and l.Selection then l.Selection:SetAlpha(0); l.Selection:EnableMouse(false) end
-                    if r and r.Selection then r.Selection:SetAlpha(0); r.Selection:EnableMouse(false) end
+                    if l and l.Selection then
+                        l.Selection:SetAlpha(0)
+                        l.Selection:EnableMouse(false)
+                    end
+                    if r and r.Selection then
+                        r.Selection:SetAlpha(0)
+                        r.Selection:EnableMouse(false)
+                    end
                 end
-                if frame.BorderArt then frame.BorderArt:Hide() end
+                if frame.BorderArt then
+                    frame.BorderArt:Hide()
+                end
                 frame:SetAlpha(0)
             else
                 -- No Hide()/HideBase() here: reparenting to hiddenParent (kept

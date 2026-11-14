@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookCustomBuffs.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
@@ -47,36 +51,56 @@ local _presetGainSoundAt = {}
 local _presetLossSoundAt = {}
 local PRESET_GAIN_SOUND_GAP = 0.3
 local function PlayPresetBuffGainSound(sd, barKey, sid, now)
-    if not ns._cdmAnyBuffSound then return end
+    if not ns._cdmAnyBuffSound then
+        return
+    end
     -- Loading screen / login settle: cast/edge timers restart across a zone/login,
     -- which would false-fire the gain sound. Drop while suppressed.
-    if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then return end
+    if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then
+        return
+    end
     -- Family store direct hit + bar-tier fallback (no frame: id from assignedSpells).
     local ss = ResolveSpellSettings(nil, sid, sd, barKey)
     local key = ss and ss.buffActiveSoundKey
-    if not key or key == "none" then return end
+    if not key or key == "none" then
+        return
+    end
     local last = _presetGainSoundAt[sid]
-    if last and (now - last) < PRESET_GAIN_SOUND_GAP then return end
+    if last and (now - last) < PRESET_GAIN_SOUND_GAP then
+        return
+    end
     _presetGainSoundAt[sid] = now
     local paths = ns.FOCUSKICK_SOUND_PATHS
     local path = paths and paths[key]
-    if path then PlaySoundFile(path, "Master") end
+    if path then
+        PlaySoundFile(path, "Master")
+    end
 end
 -- Loss counterpart to PlayPresetBuffGainSound for self-timed preset/custom buffs
 -- (no real aura-removed alert): fired when the displayed timer runs out. Separate
 -- throttle table so gain/loss never suppress each other.
 local function PlayPresetBuffLossSound(sd, sid, now)
-    if not ns._cdmAnyBuffSound then return end
-    if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then return end
+    if not ns._cdmAnyBuffSound then
+        return
+    end
+    if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then
+        return
+    end
     local ss = sd and sd.spellSettings and sd.spellSettings[sid]
     local key = ss and ss.buffLostSoundKey
-    if not key or key == "none" then return end
+    if not key or key == "none" then
+        return
+    end
     local last = _presetLossSoundAt[sid]
-    if last and (now - last) < PRESET_GAIN_SOUND_GAP then return end
+    if last and (now - last) < PRESET_GAIN_SOUND_GAP then
+        return
+    end
     _presetLossSoundAt[sid] = now
     local paths = ns.FOCUSKICK_SOUND_PATHS
     local path = paths and paths[key]
-    if path then PlaySoundFile(path, "Master") end
+    if path then
+        PlaySoundFile(path, "Master")
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -96,26 +120,50 @@ end
 -- Appearance fingerprint: the settings a restyle can carry. Geometry the engine
 -- flow owns (size, shape, spacing, growth, ids) rebuilds instead, in _AC.Build.
 function _AC.StyleSig(bd)
-    if not bd then return "" end
+    if not bd then
+        return ""
+    end
     return table.concat({
-        bd.iconShape or "none", bd.iconZoom or 0.08,
-        bd.borderSize or 1, bd.borderR or 0, bd.borderG or 0, bd.borderB or 0,
-        bd.borderA or 1, bd.borderTexture or "solid", bd.borderThickness or "thin",
+        bd.iconShape or "none",
+        bd.iconZoom or 0.08,
+        bd.borderSize or 1,
+        bd.borderR or 0,
+        bd.borderG or 0,
+        bd.borderB or 0,
+        bd.borderA or 1,
+        bd.borderTexture or "solid",
+        bd.borderThickness or "thin",
         bd.borderSizePx or "",
-        bd.borderClassColor and 1 or 0, bd.borderBehind and 1 or 0,
-        bd.borderTextureOffset or 0, bd.borderTextureOffsetY or 0,
-        bd.borderTextureShiftX or 0, bd.borderTextureShiftY or 0,
-        bd.bgR or 0.08, bd.bgG or 0.08, bd.bgB or 0.08, bd.bgA or 0.6,
-        bd.swipeAlpha or 0.7, bd.onlyShowNumbers and 1 or 0,
-        ns.CdmDurationTextOn(bd) and 1 or 0, bd.cooldownFontSize or 12,
+        bd.borderClassColor and 1 or 0,
+        bd.borderBehind and 1 or 0,
+        bd.borderTextureOffset or 0,
+        bd.borderTextureOffsetY or 0,
+        bd.borderTextureShiftX or 0,
+        bd.borderTextureShiftY or 0,
+        bd.bgR or 0.08,
+        bd.bgG or 0.08,
+        bd.bgB or 0.08,
+        bd.bgA or 0.6,
+        bd.swipeAlpha or 0.7,
+        bd.onlyShowNumbers and 1 or 0,
+        ns.CdmDurationTextOn(bd) and 1 or 0,
+        bd.cooldownFontSize or 12,
         bd.cooldownTextPosition or "center",
-        bd.cooldownTextR or 1, bd.cooldownTextG or 1, bd.cooldownTextB or 1,
-        bd.cooldownTextX or 0, bd.cooldownTextY or 0,
-        bd.showChargeStackText ~= false and 1 or 0, bd.stackCountSize or 11,
-        bd.stackCountR or 1, bd.stackCountG or 1, bd.stackCountB or 1,
-        bd.stackCountX or 0, bd.stackCountY or 0,
+        bd.cooldownTextR or 1,
+        bd.cooldownTextG or 1,
+        bd.cooldownTextB or 1,
+        bd.cooldownTextX or 0,
+        bd.cooldownTextY or 0,
+        bd.showChargeStackText ~= false and 1 or 0,
+        bd.stackCountSize or 11,
+        bd.stackCountR or 1,
+        bd.stackCountG or 1,
+        bd.stackCountB or 1,
+        bd.stackCountX or 0,
+        bd.stackCountY or 0,
         bd.stackCountPosition or "bottomright",
-        bd.showTooltip and 1 or 0, bd.barStrata or "MEDIUM",
+        bd.showTooltip and 1 or 0,
+        bd.barStrata or "MEDIUM",
         (bd.anchorTo == "mouse") and 1 or 0,
     }, "|")
 end
@@ -126,10 +174,11 @@ end
 -- read one higher beside it. Floor every unit to match. Built once (immutable,
 -- shared by every bar); nil leaves AuraKit's formatter in place.
 function _AC.DurationFormatter()
-    if _AC.durFmtTried then return _AC.durFmt end
+    if _AC.durFmtTried then
+        return _AC.durFmt
+    end
     _AC.durFmtTried = true
-    if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter
-        and Enum.NumericRuleFormatRounding) then
+    if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding) then
         return nil
     end
     local Down = Enum.NumericRuleFormatRounding.Down
@@ -138,12 +187,14 @@ function _AC.DurationFormatter()
     -- so none of the "just above the boundary" offsets the up-rounding
     -- formatters need apply here.
     local ok = pcall(f.SetBreakpoints, f, {
-        { threshold = 0,     format = "%d",  step = 1, rounding = Down },
-        { threshold = 60,    format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
-        { threshold = 3600,  format = "%dh", step = 1, rounding = Down, components = { { div = 3600 } } },
+        { threshold = 0, format = "%d", step = 1, rounding = Down },
+        { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
+        { threshold = 3600, format = "%dh", step = 1, rounding = Down, components = { { div = 3600 } } },
         { threshold = 86400, format = "%dd", step = 1, rounding = Down, components = { { div = 86400 } } },
     })
-    if not ok then return nil end
+    if not ok then
+        return nil
+    end
     _AC.durFmt = f
     return f
 end
@@ -153,7 +204,9 @@ end
 -- instead, and lands a pixel short of the icon sitting next to this one.
 function _AC.SnapPx(v)
     local onePx = CludesUI.PP and CludesUI.PP.mult
-    if not onePx or onePx <= 0 then return v end
+    if not onePx or onePx <= 0 then
+        return v
+    end
     return math.floor(v / onePx + 0.5) * onePx
 end
 
@@ -178,14 +231,19 @@ function _AC.BuildStyle(bd, fixedIcon)
     -- the art with the viewer mask, Classic WoW UI keeps it square.
     local blizz = ns.CdmBlizzIcons()
     local classic = ns.CdmClassicIcons()
-    if blizz then zoom = 0; shape = "none" end
+    if blizz then
+        zoom = 0
+        shape = "none"
+    end
     local customShape = (shape ~= "none" and shape ~= "cropped")
     local onlyNumbers = (bd and bd.onlyShowNumbers) and true or false
     local brdSize = (bd and bd.borderSize) or 1
     local brdR, brdG, brdB = (bd and bd.borderR) or 0, (bd and bd.borderG) or 0, (bd and bd.borderB) or 0
     if bd and bd.borderClassColor then
         local cc = _playerClass and RAID_CLASS_COLORS[_playerClass]
-        if cc then brdR, brdG, brdB = cc.r, cc.g, cc.b end
+        if cc then
+            brdR, brdG, brdB = cc.r, cc.g, cc.b
+        end
     end
     local brdA = (bd and bd.borderA) or 1
     local cdFont = (CludesUI.GetFontPath("cdm"))
@@ -212,12 +270,19 @@ function _AC.BuildStyle(bd, fixedIcon)
     if brdSize > 0 and not customShape and not onlyNumbers and not blizz then
         local brdTex = (bd and bd.borderTexture) or "solid"
         border = {
-            brdR, brdG, brdB, brdA, size = brdSize,
+            brdR,
+            brdG,
+            brdB,
+            brdA,
+            size = brdSize,
             texture = brdTex,
             behind = (bd and bd.borderBehind) or nil,
-            offsetX = bd and bd.borderTextureOffset, offsetY = bd and bd.borderTextureOffsetY,
-            shiftX = bd and bd.borderTextureShiftX, shiftY = bd and bd.borderTextureShiftY,
-            addonKey = "cdm", sizeKey = (bd and bd.borderThickness) or "thin",
+            offsetX = bd and bd.borderTextureOffset,
+            offsetY = bd and bd.borderTextureOffsetY,
+            shiftX = bd and bd.borderTextureShiftX,
+            shiftY = bd and bd.borderTextureShiftY,
+            addonKey = "cdm",
+            sizeKey = (bd and bd.borderThickness) or "thin",
             -- Exact size (borderSizePx); nil = the legacy step, as the bar's own icons.
             edgePx = CludesUI.BorderPx(bd and bd.borderSizePx, brdSize, brdTex),
         }
@@ -225,9 +290,9 @@ function _AC.BuildStyle(bd, fixedIcon)
 
     return {
         width = SZ,
-        height = (shape == "cropped")
-            and _AC.SnapPx(math.floor(rawSZ * ns.CdmCropFactor(bd) + 0.5)) or SZ,
-        iconCrop = true, iconZoom = zoom,
+        height = (shape == "cropped") and _AC.SnapPx(math.floor(rawSZ * ns.CdmCropFactor(bd) + 0.5)) or SZ,
+        iconCrop = true,
+        iconZoom = zoom,
         texCoord = texCoord,
         cooldownReverse = true,
         hideSwipe = onlyNumbers or nil,
@@ -243,25 +308,39 @@ function _AC.BuildStyle(bd, fixedIcon)
         border = border,
         applyExtra = _AC.ApplyExtra,
         cdm = {
-            font = cdFont, size = SZ, zoom = zoom,
+            font = cdFont,
+            size = SZ,
+            zoom = zoom,
             fixedIcon = fixedIcon,
-            blizz = blizz or nil, classic = classic or nil,
-            shape = shape, customShape = customShape,
-            brdSize = brdSize, brdR = brdR, brdG = brdG, brdB = brdB, brdA = brdA,
+            blizz = blizz or nil,
+            classic = classic or nil,
+            shape = shape,
+            customShape = customShape,
+            brdSize = brdSize,
+            brdR = brdR,
+            brdG = brdG,
+            brdB = brdB,
+            brdA = brdA,
             onlyNumbers = onlyNumbers,
-            bgR = (bd and bd.bgR) or 0.08, bgG = (bd and bd.bgG) or 0.08,
-            bgB = (bd and bd.bgB) or 0.08, bgA = (bd and bd.bgA) or 0.6,
+            bgR = (bd and bd.bgR) or 0.08,
+            bgG = (bd and bd.bgG) or 0.08,
+            bgB = (bd and bd.bgB) or 0.08,
+            bgA = (bd and bd.bgA) or 0.6,
             swipeAlpha = (bd and bd.swipeAlpha) or 0.7,
             durSize = (bd and bd.cooldownFontSize) or 12,
             durPos = (bd and bd.cooldownTextPosition) or "center",
-            durX = (bd and bd.cooldownTextX) or 0, durY = (bd and bd.cooldownTextY) or 0,
-            durR = (bd and bd.cooldownTextR) or 1, durG = (bd and bd.cooldownTextG) or 1,
+            durX = (bd and bd.cooldownTextX) or 0,
+            durY = (bd and bd.cooldownTextY) or 0,
+            durR = (bd and bd.cooldownTextR) or 1,
+            durG = (bd and bd.cooldownTextG) or 1,
             durB = (bd and bd.cooldownTextB) or 1,
             stackOn = (bd and bd.showChargeStackText) ~= false,
             stackSize = (bd and bd.stackCountSize) or 11,
             stackPos = (bd and bd.stackCountPosition) or "bottomright",
-            stackX = (bd and bd.stackCountX) or 0, stackY = (bd and bd.stackCountY) or 0,
-            stackR = (bd and bd.stackCountR) or 1, stackG = (bd and bd.stackCountG) or 1,
+            stackX = (bd and bd.stackCountX) or 0,
+            stackY = (bd and bd.stackCountY) or 0,
+            stackR = (bd and bd.stackCountR) or 1,
+            stackG = (bd and bd.stackCountG) or 1,
             stackB = (bd and bd.stackCountB) or 1,
         },
     }
@@ -322,15 +401,21 @@ function _AC.InitExtra(button, d)
     end
     -- AuraKit runs applyExtra BEFORE this creation hook, so the pass that draws
     -- these regions has to run once more now that they exist.
-    if style then _AC.ApplyExtra(button, d, style) end
+    if style then
+        _AC.ApplyExtra(button, d, style)
+    end
 end
 
 -- Re-seat a mask reference. AddMaskTexture is additive, so the drop always
 -- runs first or a re-apply stacks the same mask twice.
 function _AC.SetMask(region, mask, want)
-    if not region then return end
+    if not region then
+        return
+    end
     pcall(region.RemoveMaskTexture, region, mask)
-    if want then pcall(region.AddMaskTexture, region, mask) end
+    if want then
+        pcall(region.AddMaskTexture, region, mask)
+    end
 end
 
 -- Background, custom shape and text, on our own regions. Anchors use
@@ -339,7 +424,9 @@ end
 -- auras are secret, which is exactly when a settings change must still land.
 function _AC.ApplyExtra(button, d, style)
     local c = style.cdm
-    if not c then return end
+    if not c then
+        return
+    end
     local PP = CludesUI.PP
 
     -- Only Show Numbers strips the art down to the countdown. Shown-state as
@@ -394,15 +481,16 @@ function _AC.ApplyExtra(button, d, style)
             d.cdmBg:Show()
         end
     end
-    if d.cooldown then d.cooldown:SetSwipeColor(0, 0, 0, c.swipeAlpha) end
+    if d.cooldown then
+        d.cooldown:SetSwipeColor(0, 0, 0, c.swipeAlpha)
+    end
 
     -- Custom shape: mask on icon/background/swipe plus the shape's own ring,
     -- mirroring ApplyShapeToCDMIcon so both renderers land on the same geometry.
     local SH = ns.CDM_SHAPES
     local mask, ring = d.cdmMask, d.cdmRing
     local maskPath = (c.customShape and SH and not c.onlyNumbers) and SH.masks[c.shape] or nil
-    local shapeKey = maskPath
-        and (c.shape .. "|" .. c.zoom .. "|" .. c.brdSize .. "|" .. c.size) or ""
+    local shapeKey = maskPath and (c.shape .. "|" .. c.zoom .. "|" .. c.brdSize .. "|" .. c.size) or ""
     if d.cdmShapeKey ~= shapeKey and mask then
         if maskPath then
             mask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -411,9 +499,12 @@ function _AC.ApplyExtra(button, d, style)
             _AC.SetMask(d.cdmFixedIcon, mask, true)
             _AC.SetMask(d.cdmBg, mask, true)
             _AC.SetMask(d.cooldown, mask, true)
-            local exp = SH.iconExpand + (SH.iconExpandOffsets[c.shape] or 0)
+            local exp = SH.iconExpand
+                + (SH.iconExpandOffsets[c.shape] or 0)
                 + ((c.zoom - (SH.zoomDefaults[c.shape] or 0.06)) * 200)
-            if exp < 0 then exp = 0 end
+            if exp < 0 then
+                exp = 0
+            end
             local half = exp / 2
             if d.icon then
                 d.icon:ClearAllPoints()
@@ -430,8 +521,11 @@ function _AC.ApplyExtra(button, d, style)
             if d.cooldown then
                 pcall(d.cooldown.SetSwipeTexture, d.cooldown, maskPath)
                 if d.cooldown.SetUseCircularEdge then
-                    pcall(d.cooldown.SetUseCircularEdge, d.cooldown,
-                        c.shape ~= "square" and c.shape ~= "csquare")
+                    pcall(
+                        d.cooldown.SetUseCircularEdge,
+                        d.cooldown,
+                        c.shape ~= "square" and c.shape ~= "csquare"
+                    )
                 end
                 if d.cooldown.SetEdgeScale then
                     pcall(d.cooldown.SetEdgeScale, d.cooldown, SH.edgeScales[c.shape] or 0.60)
@@ -442,14 +536,20 @@ function _AC.ApplyExtra(button, d, style)
             _AC.SetMask(d.cdmFixedIcon, mask)
             _AC.SetMask(d.cdmBg, mask)
             _AC.SetMask(d.cooldown, mask)
-            mask:SetTexture(nil); mask:ClearAllPoints()
-            mask:SetSize(0.001, 0.001); mask:Hide()
+            mask:SetTexture(nil)
+            mask:ClearAllPoints()
+            mask:SetSize(0.001, 0.001)
+            mask:Hide()
             if d.icon then
                 d.icon:ClearAllPoints()
                 d.icon:SetAllPoints(d.borderHost)
             end
             if d.cooldown then
-                pcall(d.cooldown.SetSwipeTexture, d.cooldown, "Interface\\AddOns\\CludesUI\\media\\white-square.png")
+                pcall(
+                    d.cooldown.SetSwipeTexture,
+                    d.cooldown,
+                    "Interface\\AddOns\\CludesUI\\media\\white-square.png"
+                )
                 if d.cooldown.SetUseCircularEdge then
                     pcall(d.cooldown.SetUseCircularEdge, d.cooldown, false)
                 end
@@ -478,7 +578,9 @@ function _AC.ApplyExtra(button, d, style)
     -- d.borderHost like the shape geometry above (button-relative points are
     -- denied under secrecy). Geometry is memoized on the button size.
     if c.blizz and d.cdmBlizzOverlay then
-        if d.cdmBg then d.cdmBg:Hide() end
+        if d.cdmBg then
+            d.cdmBg:Hide()
+        end
         local bKey = "blizz|" .. c.size
         if d.cdmBlizzKey ~= bKey then
             d.cdmBlizzKey = bKey
@@ -489,9 +591,25 @@ function _AC.ApplyExtra(button, d, style)
                 _AC.SetMask(d.icon, d.cdmBlizzMask, true)
                 _AC.SetMask(d.cdmFixedIcon, d.cdmBlizzMask, true)
                 ov:ClearAllPoints()
-                PP.Point(ov, "TOPLEFT", d.borderHost, "TOPLEFT", -c.size * ns.CDM_BLIZZ_RING_X, c.size * ns.CDM_BLIZZ_RING_Y)
-                PP.Point(ov, "BOTTOMRIGHT", d.borderHost, "BOTTOMRIGHT", c.size * ns.CDM_BLIZZ_RING_X, -c.size * ns.CDM_BLIZZ_RING_Y)
-                if d.cooldown then pcall(d.cooldown.SetSwipeTexture, d.cooldown, ns.CDM_BLIZZ_SWIPE) end
+                PP.Point(
+                    ov,
+                    "TOPLEFT",
+                    d.borderHost,
+                    "TOPLEFT",
+                    -c.size * ns.CDM_BLIZZ_RING_X,
+                    c.size * ns.CDM_BLIZZ_RING_Y
+                )
+                PP.Point(
+                    ov,
+                    "BOTTOMRIGHT",
+                    d.borderHost,
+                    "BOTTOMRIGHT",
+                    c.size * ns.CDM_BLIZZ_RING_X,
+                    -c.size * ns.CDM_BLIZZ_RING_Y
+                )
+                if d.cooldown then
+                    pcall(d.cooldown.SetSwipeTexture, d.cooldown, ns.CDM_BLIZZ_SWIPE)
+                end
             end
         end
         d.cdmBlizzOverlay:SetShown(artOn)
@@ -534,11 +652,14 @@ end
 -- Add every id form the live aura can carry (typed + override + base) to map.
 function _AC.AddSpellForms(map, sid)
     map[sid] = true
-    local ovr = C_SpellBook and C_SpellBook.FindSpellOverrideByID
-        and C_SpellBook.FindSpellOverrideByID(sid)
-    if ovr and ovr > 0 then map[ovr] = true end
+    local ovr = C_SpellBook and C_SpellBook.FindSpellOverrideByID and C_SpellBook.FindSpellOverrideByID(sid)
+    if ovr and ovr > 0 then
+        map[ovr] = true
+    end
     local base = C_Spell and C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(sid)
-    if base and base > 0 then map[base] = true end
+    if base and base > 0 then
+        map[base] = true
+    end
     return map
 end
 
@@ -552,16 +673,22 @@ end
 -- (AK.ReleaseContainer), so re-picking an icon must not cost one.
 function _AC.SyncFixedIcons(rec, bd, cis)
     local styles = rec.ciStyles
-    if not (styles and cis) then return end
+    if not (styles and cis) then
+        return
+    end
     local AK = CludesUI.AuraKit
-    if not (AK and AK.styles) then return end
+    if not (AK and AK.styles) then
+        return
+    end
     for sid, ci in pairs(cis) do
         local key = _AC.FixedIconStyleKey(bd.key, sid)
         local cur = styles[key]
         if cur and cur ~= ci then
             styles[key] = ci
             AK.styles[key] = _AC.BuildStyle(bd, ci)
-            if AK.RestyleSoon then AK.RestyleSoon(key) end
+            if AK.RestyleSoon then
+                AK.RestyleSoon(key)
+            end
         end
     end
 end
@@ -572,12 +699,16 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
     local barFrame = cdmBarFrames[barKey]
     -- Bar not built yet (login race): bail WITHOUT stamping the signature;
     -- the next tracking sync re-queues the build.
-    if not (AK and AK.CreateContainerShell and AK.AddGroupToContainer and barFrame) then return end
+    if not (AK and AK.CreateContainerShell and AK.AddGroupToContainer and barFrame) then
+        return
+    end
     local styleKey = "cdm:aurabuff:" .. barKey
     AK.styles[styleKey] = _AC.BuildStyle(bd)
     rec.styleSig = _AC.StyleSig(bd)
     -- Retire the previous generation properly (the holder is reused).
-    if rec.container and AK.ReleaseContainer then AK.ReleaseContainer(rec.container) end
+    if rec.container and AK.ReleaseContainer then
+        AK.ReleaseContainer(rec.container)
+    end
     local holder = rec.holder
     if not holder then
         holder = CreateFrame("Frame", nil, UIParent)
@@ -601,7 +732,9 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
         if ci then
             local forms = _AC.AddSpellForms({}, sid)
             claimed = claimed or {}
-            for id in pairs(forms) do claimed[id] = true end
+            for id in pairs(forms) do
+                claimed[id] = true
+            end
             ciGroups = ciGroups or {}
             ciGroups[#ciGroups + 1] = { sid = sid, ci = ci, forms = forms }
         else
@@ -610,7 +743,9 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
         end
     end
     if claimed then
-        for id in pairs(claimed) do includeMap[id] = nil end
+        for id in pairs(claimed) do
+            includeMap[id] = nil
+        end
     end
     local vertical = (bd and bd.verticalOrientation) and true or false
     local gap = (bd and bd.spacing) or 2
@@ -628,7 +763,9 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
     local container = AK.CreateContainerShell(holder, { point = { pt } })
     rec.pt = pt
     rec.curPt = pt
-    if AK.SetContainerAxis then AK.SetContainerAxis(container, vertical) end
+    if AK.SetContainerAxis then
+        AK.SetContainerAxis(container, vertical)
+    end
     -- Group keys in flow order. The shared group is skipped when nothing is left
     -- in its map: an EMPTY includeSpellIDs would not narrow the HELPFUL filter.
     local groupKeys = {}
@@ -676,7 +813,9 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
     -- and AuraKit skips a key with no style, so nothing restyles them again.
     if rec.ciStyles then
         for oldKey in pairs(rec.ciStyles) do
-            if not (ciStyles and ciStyles[oldKey]) then AK.styles[oldKey] = nil end
+            if not (ciStyles and ciStyles[oldKey]) then
+                AK.styles[oldKey] = nil
+            end
         end
     end
     rec.ciStyles = ciStyles
@@ -689,9 +828,12 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
         local st = AK.styles[styleKey]
         local gapPx = _AC.SnapPx(gap)
         local layout = {
-            elementWidth = st and st.width, elementHeight = st and st.height,
-            elementSpacing = gapPx, lineSpacing = gapPx,
-            groupSpacing = gapPx, groupLineSpacing = gapPx,
+            elementWidth = st and st.width,
+            elementHeight = st and st.height,
+            elementSpacing = gapPx,
+            lineSpacing = gapPx,
+            groupSpacing = gapPx,
+            groupLineSpacing = gapPx,
         }
         for i = 1, #groupKeys do
             container:SetAuraGroupLayout(groupKeys[i], layout)
@@ -706,7 +848,9 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
     -- after any bar move/resize/visibility change.
     if rec.hookedBar ~= barFrame then
         rec.hookedBar = barFrame
-        local function poke() _AC.MarkSync(barKey) end
+        local function poke()
+            _AC.MarkSync(barKey)
+        end
         hooksecurefunc(barFrame, "SetPoint", poke)
         barFrame:HookScript("OnSizeChanged", poke)
         barFrame:HookScript("OnShow", poke)
@@ -715,11 +859,14 @@ function _AC.Build(rec, barKey, bd, sids, sig, cis)
     _AC.Anchor(barKey, rec)
 end
 
-
 local function UpdateCustomBuffBars()
-    if not ECME then return end
+    if not ECME then
+        return
+    end
     local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then return end
+    if not p or not p.cdmBars or not p.cdmBars.bars then
+        return
+    end
     local LayoutCDMBar = ns.LayoutCDMBar
     local RefreshCDMIconAppearance = ns.RefreshCDMIconAppearance
     local cdmPageOpen = ns._cdmBarsPageOpen or false
@@ -733,7 +880,10 @@ local function UpdateCustomBuffBars()
                 local sd = ns.GetBarSpellData(barKey)
                 local spellList = sd and sd.assignedSpells or {}
                 local icons = cdmBarIcons[barKey]
-                if not icons then icons = {}; cdmBarIcons[barKey] = icons end
+                if not icons then
+                    icons = {}
+                    cdmBarIcons[barKey] = icons
+                end
                 local count = 0
 
                 for _, sid in ipairs(spellList) do
@@ -759,48 +909,61 @@ local function UpdateCustomBuffBars()
                                 timer = nil
                             end
 
-                            local isActive = timer and duration > 0
-                                and (now - timer.start) < timer.duration
+                            local isActive = timer and duration > 0 and (now - timer.start) < timer.duration
 
                             if isActive or cdmPageOpen then
                                 local fkey = barKey .. ":custombuff:" .. sid
                                 local f = _presetFrames[fkey]
                                 if not f then
                                     f = CreateFrame("Frame", nil, UIParent)
-                                    f:SetSize(36, 36); f:Hide()
+                                    f:SetSize(36, 36)
+                                    f:Hide()
                                     f:EnableMouse(false)
                                     local tex = f:CreateTexture(nil, "ARTWORK")
-                                    tex:SetAllPoints(); ns.CdmOwnIconCrop(tex)
-                                    f.Icon = tex; f._tex = tex
+                                    tex:SetAllPoints()
+                                    ns.CdmOwnIconCrop(tex)
+                                    f.Icon = tex
+                                    f._tex = tex
                                     local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-                                    cd:SetAllPoints(); cd:SetDrawEdge(false); cd:SetDrawBling(false)
+                                    cd:SetAllPoints()
+                                    cd:SetDrawEdge(false)
+                                    cd:SetDrawBling(false)
                                     cd:SetHideCountdownNumbers(not ns.CdmDurationTextOn(barData))
                                     cd:SetReverse(true)
-                                    f.Cooldown = cd; f._cooldown = cd
+                                    f.Cooldown = cd
+                                    f._cooldown = cd
                                     f._isCustomSpellFrame = true
                                     f._isCustomBuffFrame = true
-                                    f.cooldownID = nil; f.cooldownInfo = nil
+                                    f.cooldownID = nil
+                                    f.cooldownInfo = nil
                                     f.layoutIndex = 99999
                                     _presetFrames[fkey] = f
                                     cd:HookScript("OnCooldownDone", function()
                                         C_Timer.After(0, QueueCustomBuffUpdate)
                                     end)
-                                    local iconSID = ns.LustPresetIconSpellID
-                                        and ns.LustPresetIconSpellID(sid) or sid
-                                    local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(iconSID)
-                                    if spInfo and spInfo.iconID and f._tex then f._tex:SetTexture(spInfo.iconID) end
+                                    local iconSID = ns.LustPresetIconSpellID and ns.LustPresetIconSpellID(sid)
+                                        or sid
+                                    local spInfo = C_Spell
+                                        and C_Spell.GetSpellInfo
+                                        and C_Spell.GetSpellInfo(iconSID)
+                                    if spInfo and spInfo.iconID and f._tex then
+                                        f._tex:SetTexture(spInfo.iconID)
+                                    end
                                 end
                                 if isActive and timer then
                                     f._cooldown:SetCooldown(timer.start, timer.duration)
                                 else
                                     f._cooldown:Clear()
                                 end
-                                DecorateFrame(f, barData); f:Show()
+                                DecorateFrame(f, barData)
+                                f:Show()
                                 -- A frame (re)shown while its bar is visibility-hidden must not
                                 -- come back at its last alpha: only listed icons get the hide
                                 -- pass, and this one may have been unlisted (inactive) then.
-                                f:SetAlpha(container._visHidden and 0
-                                    or ((ns.EffectiveBarAlpha and ns.EffectiveBarAlpha(barData)) or 1))
+                                f:SetAlpha(
+                                    container._visHidden and 0
+                                        or ((ns.EffectiveBarAlpha and ns.EffectiveBarAlpha(barData)) or 1)
+                                )
                                 f:EnableMouse(false)
                                 if f.Cooldown and f.Cooldown.SetDrawSwipe then
                                     -- Only Show Numbers hides the swipe with the icon art.
@@ -811,7 +974,9 @@ local function UpdateCustomBuffBars()
                             else
                                 local fkey = barKey .. ":custombuff:" .. sid
                                 local f = _presetFrames[fkey]
-                                if f then f:Hide() end
+                                if f then
+                                    f:Hide()
+                                end
                                 if timer and not isActive then
                                     _customAuraTimers[timerKey] = nil
                                 end
@@ -821,19 +986,29 @@ local function UpdateCustomBuffBars()
                 end
 
                 for i = count + 1, #icons do
-                    if icons[i] then icons[i]:Hide() end
+                    if icons[i] then
+                        icons[i]:Hide()
+                    end
                     icons[i] = nil
                 end
 
                 -- Custom aura bars are display-only, never clickable
                 container:EnableMouse(false)
-                if container.EnableMouseClicks then container:EnableMouseClicks(false) end
-                if container.EnableMouseMotion then pcall(container.EnableMouseMotion, container, false) end
+                if container.EnableMouseClicks then
+                    container:EnableMouseClicks(false)
+                end
+                if container.EnableMouseMotion then
+                    pcall(container.EnableMouseMotion, container, false)
+                end
 
                 local prevCount = container._prevVisibleCount or 0
                 if count ~= prevCount then
-                    if RefreshCDMIconAppearance then RefreshCDMIconAppearance(barKey) end
-                    if LayoutCDMBar then LayoutCDMBar(barKey) end
+                    if RefreshCDMIconAppearance then
+                        RefreshCDMIconAppearance(barKey)
+                    end
+                    if LayoutCDMBar then
+                        LayoutCDMBar(barKey)
+                    end
                 end
                 container._prevVisibleCount = count
             end
@@ -857,7 +1032,8 @@ local function UpdateCustomBuffBars()
                         local tkey = barData.key .. ":" .. sid
                         if _pendingCastIDs[sid] then
                             _customAuraTimers[tkey] = {
-                                start = now, duration = durs[sid],
+                                start = now,
+                                duration = durs[sid],
                             }
                             needBuffReanchor = true
                             PlayPresetBuffGainSound(sd, barData.key, sid, now)
@@ -875,7 +1051,9 @@ local function UpdateCustomBuffBars()
             end
         end
     end
-    if needBuffReanchor and ns.QueueReanchor then ns.QueueReanchor() end
+    if needBuffReanchor and ns.QueueReanchor then
+        ns.QueueReanchor()
+    end
 
     wipe(_pendingCastIDs)
 end
@@ -900,8 +1078,12 @@ function ns.UpdateCustomBuffAuraTracking()
                     local durs = sd.spellDurations
                     local sids
                     for _, sid in ipairs(list) do
-                        if type(sid) == "number" and sid > 0 and tags[sid]
-                           and (not durs or (durs[sid] or 0) <= 0) then
+                        if
+                            type(sid) == "number"
+                            and sid > 0
+                            and tags[sid]
+                            and (not durs or (durs[sid] or 0) <= 0)
+                        then
                             sids = sids or {}
                             sids[#sids + 1] = sid
                         end
@@ -930,18 +1112,26 @@ function ns.UpdateCustomBuffAuraTracking()
                         -- engine flow owns. Everything else is appearance and
                         -- rides ns.RefreshAuraCustomStyle without a rebuild.
                         local sig = table.concat(sids, ":")
-                            .. "|" .. tostring(bd.iconSize or 36)
-                            .. "|" .. tostring(bd.iconShape or "none")
-                            .. "|" .. tostring(bd.growDirection or "CENTER")
-                            .. "|" .. (bd.verticalOrientation and 1 or 0)
-                            .. "|" .. tostring(bd.spacing or 2)
-                            -- Adjust Crop changes the button height the flow lays out, so it
-                            -- is geometry. Appended only while cropped: every other bar keeps
-                            -- its exact signature.
+                            .. "|"
+                            .. tostring(bd.iconSize or 36)
+                            .. "|"
+                            .. tostring(bd.iconShape or "none")
+                            .. "|"
+                            .. tostring(bd.growDirection or "CENTER")
+                            .. "|"
+                            .. (bd.verticalOrientation and 1 or 0)
+                            .. "|"
+                            .. tostring(bd.spacing or 2)
+                            -- Adjust Crop changes the button height the flow lays out, so it
+                            -- is geometry. Appended only while cropped: every other bar keeps
+                            -- its exact signature.
                             .. ((bd.iconShape == "cropped") and ("|crop" .. ns.CdmCropPercent(bd)) or "")
                             .. (ciSig or "")
                         local rec = _AC.bars[bd.key]
-                        if not rec then rec = {}; _AC.bars[bd.key] = rec end
+                        if not rec then
+                            rec = {}
+                            _AC.bars[bd.key] = rec
+                        end
                         rec.bdRef = bd
                         if rec.sig ~= sig and not rec.queued then
                             local AK = CludesUI.AuraKit
@@ -978,7 +1168,9 @@ function ns.UpdateCustomBuffAuraTracking()
         if not seen[barKey] and rec.sids then
             -- Bar lost its aura customs: hide the holder, release the
             -- engine container, forget the build.
-            if rec.holder then rec.holder:Hide() end
+            if rec.holder then
+                rec.holder:Hide()
+            end
             local AK = CludesUI.AuraKit
             if rec.container and AK and AK.ReleaseContainer then
                 AK.ReleaseContainer(rec.container)
@@ -988,7 +1180,9 @@ function ns.UpdateCustomBuffAuraTracking()
             rec.sids = nil
             rec.styleSig = nil
             if rec.ciStyles and AK and AK.styles then
-                for oldKey in pairs(rec.ciStyles) do AK.styles[oldKey] = nil end
+                for oldKey in pairs(rec.ciStyles) do
+                    AK.styles[oldKey] = nil
+                end
             end
             rec.ciStyles = nil
         end
@@ -1002,23 +1196,37 @@ end
 -- style reads has changed.
 function ns.RefreshAuraCustomStyle(barKey)
     local rec = barKey and _AC.bars[barKey]
-    if not (rec and rec.container) then return end
+    if not (rec and rec.container) then
+        return
+    end
     local bd = barDataByKey[barKey]
-    if not bd then return end
+    if not bd then
+        return
+    end
     rec.bdRef = bd
     local sig = _AC.StyleSig(bd)
-    if rec.styleSig == sig then return end
+    if rec.styleSig == sig then
+        return
+    end
     local AK = CludesUI.AuraKit
-    if not (AK and AK.styles) then return end
-    if rec.holder then rec.holder:SetFrameStrata(bd.barStrata or "MEDIUM") end
+    if not (AK and AK.styles) then
+        return
+    end
+    if rec.holder then
+        rec.holder:SetFrameStrata(bd.barStrata or "MEDIUM")
+    end
     local styleKey = "cdm:aurabuff:" .. barKey
     AK.styles[styleKey] = _AC.BuildStyle(bd)
-    if AK.RestyleSoon then AK.RestyleSoon(styleKey) end
+    if AK.RestyleSoon then
+        AK.RestyleSoon(styleKey)
+    end
     -- Custom Icon groups carry the same appearance under their own style keys.
     if rec.ciStyles then
         for ciStyleKey, ci in pairs(rec.ciStyles) do
             AK.styles[ciStyleKey] = _AC.BuildStyle(bd, ci)
-            if AK.RestyleSoon then AK.RestyleSoon(ciStyleKey) end
+            if AK.RestyleSoon then
+                AK.RestyleSoon(ciStyleKey)
+            end
         end
     end
     -- Stamped only once the style is actually installed: recording a style that

@@ -3,7 +3,9 @@
 -- and otherwise falls back on what was seen the last time you grouped.
 
 local _, ns = ...
-if ns.standalone then return end
+if ns.standalone then
+    return
+end
 local DAY = ns.DAY
 
 local Share = {}
@@ -18,149 +20,160 @@ local asked, answered = {}, {}
 
 -- "Name-Realm", the form addon whispers and the stores use.
 function Share.Key(name)
-	if not name or name == "" then
-		return nil
-	end
-	return name:find("-", 1, true) and name or (name .. "-" .. GetNormalizedRealmName())
+    if not name or name == "" then
+        return nil
+    end
+    return name:find("-", 1, true) and name or (name .. "-" .. GetNormalizedRealmName())
 end
 
 -- One message: score, class, scored runs this season, then each dungeon's
 -- best as "map,level,score,timed,day" (day of the season it was set).
 function Share.Encode(score, class, count, bests)
-	local parts = {}
-	for _, b in ipairs(bests) do
-		parts[#parts + 1] = ("%d,%d,%d,%d,%s"):format(b.map, b.level, math.floor(b.score + 0.5), b.timed and 1 or 0, b.day and tostring(b.day) or "")
-	end
-	return ("K1|%d|%s|%d|%s"):format(math.floor(score + 0.5), class or "", count or 0, table.concat(parts, ";"))
+    local parts = {}
+    for _, b in ipairs(bests) do
+        parts[#parts + 1] = ("%d,%d,%d,%d,%s"):format(
+            b.map,
+            b.level,
+            math.floor(b.score + 0.5),
+            b.timed and 1 or 0,
+            b.day and tostring(b.day) or ""
+        )
+    end
+    return ("K1|%d|%s|%d|%s"):format(
+        math.floor(score + 0.5),
+        class or "",
+        count or 0,
+        table.concat(parts, ";")
+    )
 end
 
 -- A reply from another player is untrusted: anything out of shape or out of
 -- range is dropped rather than shown.
 function Share.Decode(text)
-	local score, class, count, list = text:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
-	score, count = tonumber(score), tonumber(count)
-	if not score or score > 9999 or not count then
-		return nil
-	end
-	local runs = {}
-	for entry in list:gmatch("[^;]+") do
-		local map, level, s, timed, day = entry:match("^(%d+),(%d+),(%d+),([01]),(%d*)$")
-		map, level, s, day = tonumber(map), tonumber(level), tonumber(s), tonumber(day)
-		if map and level and level >= 2 and level <= 99 and s and s <= 999 and (not day or day <= 400) then
-			runs[#runs + 1] = { map = map, level = level, score = s, timed = timed == "1", day = day }
-		end
-		if #runs >= MAX_RUNS then
-			break
-		end
-	end
-	return { score = score, class = class ~= "" and class or nil, count = count, runs = runs }
+    local score, class, count, list = text:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
+    score, count = tonumber(score), tonumber(count)
+    if not score or score > 9999 or not count then
+        return nil
+    end
+    local runs = {}
+    for entry in list:gmatch("[^;]+") do
+        local map, level, s, timed, day = entry:match("^(%d+),(%d+),(%d+),([01]),(%d*)$")
+        map, level, s, day = tonumber(map), tonumber(level), tonumber(s), tonumber(day)
+        if map and level and level >= 2 and level <= 99 and s and s <= 999 and (not day or day <= 400) then
+            runs[#runs + 1] = { map = map, level = level, score = s, timed = timed == "1", day = day }
+        end
+        if #runs >= MAX_RUNS then
+            break
+        end
+    end
+    return { score = score, class = class ~= "" and class or nil, count = count, runs = runs }
 end
 
 -- Your current character's keys, for a guildmate who asked.
 local function MyKeys()
-	local ctx = ns.Context({ subject = "current" })
-	if ctx.error then
-		return nil
-	end
-	local startsAt = ctx.region.startsAt
-	-- The day each dungeon's best was set: its last step in your history.
-	local when = {}
-	for _, p in ipairs(ctx.history.points) do
-		if p.map then
-			when[p.map] = math.max(0, math.floor((p.t - startsAt) / DAY))
-		end
-	end
-	local bests = {}
-	for _, r in ipairs(ctx.myRuns) do
-		if (r.mapScore or 0) > 0 then
-			bests[#bests + 1] = {
-				map = r.challengeModeID,
-				level = r.bestRunLevel,
-				score = r.mapScore,
-				timed = r.finishedSuccess,
-				day = when[r.challengeModeID],
-			}
-		end
-	end
-	local _, class = UnitClass("player")
-	return Share.Encode(ctx.history.actual, class, ctx.history.runs, bests)
+    local ctx = ns.Context({ subject = "current" })
+    if ctx.error then
+        return nil
+    end
+    local startsAt = ctx.region.startsAt
+    -- The day each dungeon's best was set: its last step in your history.
+    local when = {}
+    for _, p in ipairs(ctx.history.points) do
+        if p.map then
+            when[p.map] = math.max(0, math.floor((p.t - startsAt) / DAY))
+        end
+    end
+    local bests = {}
+    for _, r in ipairs(ctx.myRuns) do
+        if (r.mapScore or 0) > 0 then
+            bests[#bests + 1] = {
+                map = r.challengeModeID,
+                level = r.bestRunLevel,
+                score = r.mapScore,
+                timed = r.finishedSuccess,
+                day = when[r.challengeModeID],
+            }
+        end
+    end
+    local _, class = UnitClass("player")
+    return Share.Encode(ctx.history.actual, class, ctx.history.runs, bests)
 end
 
 -- Ask a player's TitleLine for their keys. Not during a chat lockdown, when
 -- addon messages are restricted.
 function Share.Ask(key)
-	if C_ChatInfo.InChatMessagingLockdown() then
-		return false
-	end
-	asked[key] = time()
-	C_ChatInfo.SendAddonMessage(PREFIX, "Q1", "WHISPER", key)
-	return true
+    if C_ChatInfo.InChatMessagingLockdown() then
+        return false
+    end
+    asked[key] = time()
+    C_ChatInfo.SendAddonMessage(PREFIX, "Q1", "WHISPER", key)
+    return true
 end
 
 -- "asking" while an ask is fresh, "silent" once it has gone unanswered.
 function Share.AskState(key)
-	local at = asked[key]
-	if not at then
-		return nil
-	end
-	return time() - at < ASK_WAIT and "asking" or "silent"
+    local at = asked[key]
+    if not at then
+        return nil
+    end
+    return time() - at < ASK_WAIT and "asking" or "silent"
 end
 
 function Share.OnMessage(prefix, text, channel, sender)
-	if prefix ~= PREFIX or channel ~= "WHISPER" then
-		return
-	end
-	sender = Share.Key(sender)
-	if not sender then
-		return
-	end
-	if text == "Q1" then
-		local now = time()
-		if (answered[sender] or 0) + REPLY_GAP > now or C_ChatInfo.InChatMessagingLockdown() then
-			return
-		end
-		answered[sender] = now
-		local reply = MyKeys()
-		if reply then
-			C_ChatInfo.SendAddonMessage(PREFIX, reply, "WHISPER", sender)
-		end
-	elseif asked[sender] then
-		-- Only answers to an ask are taken; anything unsolicited is ignored.
-		local data = Share.Decode(text)
-		if data then
-			asked[sender] = nil
-			data.at, data.season = time(), ns.Data.season.slug
-			CludesUITitleLineDB.shared[sender] = data
-			if ns.Views and ns.Views.OnShared then
-				ns.Views.OnShared(sender)
-			end
-		end
-	end
+    if prefix ~= PREFIX or channel ~= "WHISPER" then
+        return
+    end
+    sender = Share.Key(sender)
+    if not sender then
+        return
+    end
+    if text == "Q1" then
+        local now = time()
+        if (answered[sender] or 0) + REPLY_GAP > now or C_ChatInfo.InChatMessagingLockdown() then
+            return
+        end
+        answered[sender] = now
+        local reply = MyKeys()
+        if reply then
+            C_ChatInfo.SendAddonMessage(PREFIX, reply, "WHISPER", sender)
+        end
+    elseif asked[sender] then
+        -- Only answers to an ask are taken; anything unsolicited is ignored.
+        local data = Share.Decode(text)
+        if data then
+            asked[sender] = nil
+            data.at, data.season = time(), ns.Data.season.slug
+            CludesUITitleLineDB.shared[sender] = data
+            if ns.Views and ns.Views.OnShared then
+                ns.Views.OnShared(sender)
+            end
+        end
+    end
 end
 
 -- What there is on a player this season: their own TitleLine's answer, else
 -- what was seen when you last grouped, else nothing.
 function Share.Keys(key)
-	local slug = ns.Data.season.slug
-	local s = CludesUITitleLineDB.shared[key]
-	if s and s.season == slug then
-		return s, "shared"
-	end
-	local seen = CludesUITitleLineDB.seen[key]
-	if seen and seen.season == slug and seen.runs and #seen.runs > 0 then
-		local runs = {}
-		for _, r in ipairs(seen.runs) do
-			runs[#runs + 1] = { map = r[1], level = r[2], score = r[3], timed = r[4] }
-		end
-		local last = seen.pts[#seen.pts]
-		return { score = last and last[2] or 0, class = seen.class, runs = runs, at = seen.runsAt }, "grouped"
-	end
-	return nil
+    local slug = ns.Data.season.slug
+    local s = CludesUITitleLineDB.shared[key]
+    if s and s.season == slug then
+        return s, "shared"
+    end
+    local seen = CludesUITitleLineDB.seen[key]
+    if seen and seen.season == slug and seen.runs and #seen.runs > 0 then
+        local runs = {}
+        for _, r in ipairs(seen.runs) do
+            runs[#runs + 1] = { map = r[1], level = r[2], score = r[3], timed = r[4] }
+        end
+        local last = seen.pts[#seen.pts]
+        return { score = last and last[2] or 0, class = seen.class, runs = runs, at = seen.runsAt }, "grouped"
+    end
+    return nil
 end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("CHAT_MSG_ADDON")
 events:SetScript("OnEvent", function(_, _, ...)
-	Share.OnMessage(...)
+    Share.OnMessage(...)
 end)
 C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)

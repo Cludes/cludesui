@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Character Sheet Socket Panel
 --
@@ -24,40 +26,40 @@ local ADDON_NAME, ns = ...
 -- Probe-and-fallback API locals. On Midnight/PTR some socket-session calls are
 -- namespaced under C_ItemSocketInfo and some remain bare globals; resolve each
 -- once here so a missing API simply yields nil (the panel stays empty).
-local CIS              = _G.C_ItemSocketInfo
-local GetNumSockets    = (CIS and CIS.GetNumSockets)     or _G.GetNumSockets
-local ClickSocketBtn   = (CIS and CIS.ClickSocketButton) or _G.ClickSocketButton
-local AcceptSocketsFn  = (CIS and CIS.AcceptSockets)   or _G.AcceptSockets
-local CloseSocketFn    = (CIS and CIS.CloseSocketInfo) or _G.CloseSocketInfo
-local SocketInvItem    = (CIS and CIS.SocketInventoryItem) or _G.SocketInventoryItem
+local CIS = _G.C_ItemSocketInfo
+local GetNumSockets = (CIS and CIS.GetNumSockets) or _G.GetNumSockets
+local ClickSocketBtn = (CIS and CIS.ClickSocketButton) or _G.ClickSocketButton
+local AcceptSocketsFn = (CIS and CIS.AcceptSockets) or _G.AcceptSockets
+local CloseSocketFn = (CIS and CIS.CloseSocketInfo) or _G.CloseSocketInfo
+local SocketInvItem = (CIS and CIS.SocketInventoryItem) or _G.SocketInventoryItem
 local GetNewSocketInfoFn = (CIS and CIS.GetNewSocketInfo) or _G.GetNewSocketInfo
 local GetItemNumSockets = C_Item and C_Item.GetItemNumSockets
-local GetItemGemFn     = C_Item and C_Item.GetItemGem
-local GetItemStatsFn   = C_Item and C_Item.GetItemStats
-local GetInfoInstant   = C_Item and C_Item.GetItemInfoInstant
-local GetIconByID      = C_Item and C_Item.GetItemIconByID
-local GetItemCountFn   = C_Item.GetItemCount
-local CClear           = _G.ClearCursor
-local CHasItem         = _G.CursorHasItem
+local GetItemGemFn = C_Item and C_Item.GetItemGem
+local GetItemStatsFn = C_Item and C_Item.GetItemStats
+local GetInfoInstant = C_Item and C_Item.GetItemInfoInstant
+local GetIconByID = C_Item and C_Item.GetItemIconByID
+local GetItemCountFn = C_Item.GetItemCount
+local CClear = _G.ClearCursor
+local CHasItem = _G.CursorHasItem
 
 -- Constants. SIZE, PAD, PAGE_BUTTON_W, EDGE_X, ICON_Y, FLY_PAD and
 -- FLY_BOTTOM hold the CludesUI look's layout; the bootstrap swaps in the
 -- stock plate's values once, at login, when the latched sheet style is
 -- Blizzard or Classic (STOCK), before anything is built.
-local SIZE       = 28
-local PAD        = 4
+local SIZE = 28
+local PAD = 4
 local MAX_SOCKET_ICONS = 6
 local PAGE_BUTTON_W = 12
-local EDGE_X     = 0    -- padding between the panel's edges and its first/last icon
-local ICON_Y     = 0    -- vertical offset of the icon row inside the panel
-local FLY_PAD    = 4    -- flyout row inset (left, right, top)
-local FLY_BOTTOM = 4    -- flyout space below the last row
-local MIN_W      = 0    -- narrowest panel (the stock plate's two tab end caps)
-local STOCK      = false
-local ROW_H      = 20   -- gem flyout row height
-local FLYOUT_W   = 240
-local MAX_FLYOUT_ROWS = 12   -- flyout caps here; extra gems scroll with the wheel
-local GEM_CLASS  = (Enum and Enum.ItemClass and Enum.ItemClass.Gem) or 3
+local EDGE_X = 0 -- padding between the panel's edges and its first/last icon
+local ICON_Y = 0 -- vertical offset of the icon row inside the panel
+local FLY_PAD = 4 -- flyout row inset (left, right, top)
+local FLY_BOTTOM = 4 -- flyout space below the last row
+local MIN_W = 0 -- narrowest panel (the stock plate's two tab end caps)
+local STOCK = false
+local ROW_H = 20 -- gem flyout row height
+local FLYOUT_W = 240
+local MAX_FLYOUT_ROWS = 12 -- flyout caps here; extra gems scroll with the wheel
+local GEM_CLASS = (Enum and Enum.ItemClass and Enum.ItemClass.Gem) or 3
 local EMPTY_SOCKET_TEX = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismatic"
 
 -- Character-sheet order: left column, right column, then weapons.
@@ -65,28 +67,28 @@ local EMPTY_SOCKET_TEX = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Prismati
 local SLOTS = { 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 16, 17 }
 
 -- State (all plain Lua tables / our own frames -- nothing lives on Blizzard frames)
-local sockets   = {}      -- ordered list of { slot, socketIndex, gemLink, emptyName }
-local iconPool  = {}      -- pooled socket icon buttons
-local gemCache  = {}      -- deduped bag gems: { itemID, link, tex }
-local relevantItems = {}  -- itemID -> true for equipped socketed items + their gems
-local gemRows   = {}      -- pooled flyout rows
-local pending   = nil     -- in-flight socket action
-local panel               -- the panel frame
-local seasonPanel         -- optional vault / Midnight folio shortcuts
-local flyout              -- the gem flyout frame
-local catcher             -- full-screen click-catcher behind the flyout
-local evtFrame            -- our event frame
-local built    = false
+local sockets = {} -- ordered list of { slot, socketIndex, gemLink, emptyName }
+local iconPool = {} -- pooled socket icon buttons
+local gemCache = {} -- deduped bag gems: { itemID, link, tex }
+local relevantItems = {} -- itemID -> true for equipped socketed items + their gems
+local gemRows = {} -- pooled flyout rows
+local pending = nil -- in-flight socket action
+local panel -- the panel frame
+local seasonPanel -- optional vault / Midnight folio shortcuts
+local flyout -- the gem flyout frame
+local catcher -- full-screen click-catcher behind the flyout
+local evtFrame -- our event frame
+local built = false
 local shownEvents = false
 local gemDirty = true
 local pendingGemLoads = {} -- itemID -> true: bag gems whose data load we requested
 local socketLoadRequested = {} -- gem itemID -> true: equipped-gem data loads we requested
-local activeIcon = nil    -- icon whose flyout is currently open
+local activeIcon = nil -- icon whose flyout is currently open
 local socketPage = 0
 local prevPage, nextPage
-local flyoutScroll = 0    -- top gem index offset when the gem list overflows MAX_FLYOUT_ROWS
+local flyoutScroll = 0 -- top gem index offset when the gem list overflows MAX_FLYOUT_ROWS
 local flyoutHoverMode = false -- flyout opened by hovering an empty socket (auto-closes on leave)
-local ourSession = false  -- a socketing session WE opened is (or may still be) live
+local ourSession = false -- a socketing session WE opened is (or may still be) live
 
 --------------------------------------------------------------------------------
 --  Helpers
@@ -95,14 +97,16 @@ local ourSession = false  -- a socketing session WE opened is (or may still be) 
 -- Rarity -> border color (local copy; do not reach into CharacterSheet.lua).
 local function GemBorderColor(rarity)
     if (rarity or 0) >= 3 then
-        return 1.00, 0.82, 0.00, 1   -- gold
+        return 1.00, 0.82, 0.00, 1 -- gold
     end
-    return 0.75, 0.75, 0.75, 1        -- silver
+    return 0.75, 0.75, 0.75, 1 -- silver
 end
 
 -- Build a short "+16 Versatility & +7 Critical Strike" summary for a gem.
 local function GetGemStatText(gemLink)
-    if not gemLink then return "" end
+    if not gemLink then
+        return ""
+    end
     local parts
     if GetItemStatsFn then
         local stats = GetItemStatsFn(gemLink)
@@ -110,8 +114,7 @@ local function GetGemStatText(gemLink)
             -- Stat keys are global-string tokens ("ITEM_MOD_HASTE_RATING_SHORT",
             -- "ITEM_MOD_VERSATILITY", ...); _G[key] is the localized stat name.
             for key, val in pairs(stats) do
-                if type(key) == "string" and type(val) == "number" and val > 0
-                    and key:find("^ITEM_MOD_") then
+                if type(key) == "string" and type(val) == "number" and val > 0 and key:find("^ITEM_MOD_") then
                     local name = _G[key]
                     if type(name) == "string" and name ~= "" then
                         parts = parts or {}
@@ -128,7 +131,9 @@ local function GetGemStatText(gemLink)
     -- Fallback: the gem's own name.
     if C_Item and C_Item.GetItemInfo then
         local nm = C_Item.GetItemInfo(gemLink)
-        if nm then return nm end
+        if nm then
+            return nm
+        end
     end
     return "Gem"
 end
@@ -160,9 +165,17 @@ end
 
 -- Scan bags for socketable gems (lazy; only when a flyout opens with dirty cache).
 local function ScanBagGems()
-    for i = #gemCache, 1, -1 do gemCache[i] = nil end
-    if not (C_Container and C_Container.GetContainerNumSlots
-        and C_Container.GetContainerItemInfo and GetInfoInstant) then
+    for i = #gemCache, 1, -1 do
+        gemCache[i] = nil
+    end
+    if
+        not (
+            C_Container
+            and C_Container.GetContainerNumSlots
+            and C_Container.GetContainerItemInfo
+            and GetInfoInstant
+        )
+    then
         gemDirty = false
         return
     end
@@ -184,7 +197,9 @@ local function ScanBagGems()
                 local _, _, _, _, tex, classID = GetInfoInstant(itemID)
                 if classID == GEM_CLASS then
                     seen[itemID] = true
-                    local link = (C_Container.GetContainerItemLink and C_Container.GetContainerItemLink(bag, slot)) or nil
+                    local link = (
+                        C_Container.GetContainerItemLink and C_Container.GetContainerItemLink(bag, slot)
+                    ) or nil
                     if not link then
                         -- Data not loaded yet: request it; the row upgrades
                         -- (stat label + tooltip link) when ITEM_DATA_LOAD_RESULT
@@ -196,8 +211,8 @@ local function ScanBagGems()
                     end
                     gemCache[#gemCache + 1] = {
                         itemID = itemID,
-                        link   = link,
-                        tex    = tex,
+                        link = link,
+                        tex = tex,
                     }
                 end
             end
@@ -219,9 +234,13 @@ end
 -- the sanctioned insecure-to-secure channel, so this taints nothing.
 local socketWindowSeated = false
 local function SeatSocketWindow()
-    if socketWindowSeated then return true end
+    if socketWindowSeated then
+        return true
+    end
     local f = _G.ItemSocketingFrame
-    if not (f and _G.SetUIPanelAttribute) then return false end
+    if not (f and _G.SetUIPanelAttribute) then
+        return false
+    end
     socketWindowSeated = true
     _G.SetUIPanelAttribute(f, "pushable", 3)
     return true
@@ -245,10 +264,10 @@ local function SafeCloseSession()
     end
 end
 
-local RebuildSockets   -- forward declaration
+local RebuildSockets -- forward declaration
 local LayoutSockets
-local CloseFlyout      -- forward declaration
-local OpenFlyout       -- forward declaration
+local CloseFlyout -- forward declaration
+local OpenFlyout -- forward declaration
 local MaybeCloseHoverFlyout -- forward declaration
 
 -- Triggered from a gem-row OnClick (a genuine hardware event).
@@ -259,7 +278,9 @@ local function DoSocket(targetSlot, socketIndex, gemItemID)
         end
         return
     end
-    if CHasItem and CHasItem() then return end            -- don't hijack a held item
+    if CHasItem and CHasItem() then
+        return
+    end -- don't hijack a held item
     if ItemSocketingFrame and ItemSocketingFrame:IsShown() then
         if pending then
             -- Our previous action is still completing (waiting for its result);
@@ -275,12 +296,14 @@ local function DoSocket(targetSlot, socketIndex, gemItemID)
             -- mid-flight. The flyout stays open; the next gem click goes through.
             SafeCloseSession()
         end
-        return   -- manual session: never hijack
+        return -- manual session: never hijack
     end
-    if not SocketInvItem then return end
+    if not SocketInvItem then
+        return
+    end
     pending = { slot = targetSlot, socketIndex = socketIndex, gemItemID = gemItemID, acted = false }
     ourSession = true
-    SocketInvItem(targetSlot)   -- opens the LoD session; we act inside SOCKET_INFO_UPDATE
+    SocketInvItem(targetSlot) -- opens the LoD session; we act inside SOCKET_INFO_UPDATE
     CloseFlyout()
 end
 
@@ -289,18 +312,24 @@ end
 -- Apply button); an accept issued before that does nothing. Updates after the
 -- accept (the refresh that follows the result) change nothing here.
 local function AcceptPlacedGem()
-    if not pending or pending.accepted then return end
+    if not pending or pending.accepted then
+        return
+    end
     local name = GetNewSocketInfoFn and GetNewSocketInfoFn(pending.socketIndex)
     if name then
         pending.accepted = true
-        if AcceptSocketsFn then AcceptSocketsFn() end
+        if AcceptSocketsFn then
+            AcceptSocketsFn()
+        end
     end
 end
 
 -- Runs inside SOCKET_INFO_UPDATE: places the gem once the session is ready,
 -- then accepts once the placement is reported.
 local function OnSocketInfoUpdate()
-    if not pending then return end
+    if not pending then
+        return
+    end
     if pending.acted then
         AcceptPlacedGem()
         return
@@ -322,8 +351,12 @@ local function OnSocketInfoUpdate()
     if C_Container and C_Container.PickupContainerItem then
         C_Container.PickupContainerItem(bag, slot)
     end
-    if ClickSocketBtn then ClickSocketBtn(pending.socketIndex) end
-    if CClear then CClear() end
+    if ClickSocketBtn then
+        ClickSocketBtn(pending.socketIndex)
+    end
+    if CClear then
+        CClear()
+    end
     -- The placement may already be reported (an update fired inside the
     -- click); otherwise the next SOCKET_INFO_UPDATE accepts it. Confirmation
     -- dialogs (binding, refunds) stay Blizzard's: the window is open for them.
@@ -348,7 +381,9 @@ local function PaintStatLetters(btn, gemLink)
     end
     local fs = btn.statLetters
     if text == "" then
-        if fs then fs:SetText("") end
+        if fs then
+            fs:SetText("")
+        end
         return
     end
     if not fs then
@@ -365,17 +400,25 @@ end
 local function PaintFilledIcon(btn, gemLink)
     local icon = btn.icon
     -- Clear atlas / color-texture mode before applying a fileID.
-    if icon.SetAtlas then icon:SetAtlas(nil) end
+    if icon.SetAtlas then
+        icon:SetAtlas(nil)
+    end
     icon:SetColorTexture(0, 0, 0, 0)
     icon:SetTexture(nil)
-    if icon.SetVertexColor then icon:SetVertexColor(1, 1, 1, 1) end
+    if icon.SetVertexColor then
+        icon:SetVertexColor(1, 1, 1, 1)
+    end
 
     local tex
-    if GetInfoInstant then tex = select(5, GetInfoInstant(gemLink)) end
+    if GetInfoInstant then
+        tex = select(5, GetInfoInstant(gemLink))
+    end
     if (not tex) and GetIconByID then
         -- GetItemIconByID wants a numeric itemID, not a link.
         local iid = tonumber(gemLink:match("item:(%d+)"))
-        if iid then tex = GetIconByID(iid) end
+        if iid then
+            tex = GetIconByID(iid)
+        end
     end
     icon:SetTexture(tex)
     btn:SetAlpha(1)
@@ -385,14 +428,19 @@ local function PaintFilledIcon(btn, gemLink)
     local known = false
     if C_Item and C_Item.GetItemInfo then
         local _, _, r = C_Item.GetItemInfo(gemLink)
-        if r then rarity = r; known = true end
+        if r then
+            rarity = r
+            known = true
+        end
     end
     if STOCK then
         -- Blizzard's item-button rule: a quality-tinted frame, none for a
         -- quality the color manager has no color for, and none until the
         -- gem's data has loaded (the load result repaints it).
         local qb = btn.qualityBorder
-        local c = known and ColorManager and ColorManager.GetColorDataForBagItemQuality
+        local c = known
+            and ColorManager
+            and ColorManager.GetColorDataForBagItemQuality
             and ColorManager.GetColorDataForBagItemQuality(rarity)
         if qb then
             if c then
@@ -409,14 +457,20 @@ end
 
 local function PaintEmptyIcon(btn)
     local icon = btn.icon
-    if icon.SetAtlas then icon:SetAtlas(nil) end
+    if icon.SetAtlas then
+        icon:SetAtlas(nil)
+    end
     icon:SetColorTexture(0, 0, 0, 0)
     icon:SetTexture(nil)
-    if icon.SetVertexColor then icon:SetVertexColor(1, 1, 1, 1) end
+    if icon.SetVertexColor then
+        icon:SetVertexColor(1, 1, 1, 1)
+    end
     icon:SetTexture(EMPTY_SOCKET_TEX)
     if STOCK then
         btn:SetAlpha(1)
-        if btn.qualityBorder then btn.qualityBorder:Hide() end
+        if btn.qualityBorder then
+            btn.qualityBorder:Hide()
+        end
         return
     end
     btn:SetAlpha(0.85)
@@ -436,13 +490,26 @@ end
 --  Blizzard slot button is only ever read (GetID, size, level) and used as
 --  an anchor target -- never written to, reparented, or hooked.
 --------------------------------------------------------------------------------
-local slotGlow          -- our lazy wrapper frame
-local slotButtons       -- lazy [invSlotID] = Blizzard slot button
+local slotGlow -- our lazy wrapper frame
+local slotButtons -- lazy [invSlotID] = Blizzard slot button
 
 local SLOT_BUTTON_NAMES = {
-    "Head", "Neck", "Shoulder", "Chest", "Waist", "Legs", "Feet", "Wrist",
-    "Hands", "Finger0", "Finger1", "Trinket0", "Trinket1", "Back",
-    "MainHand", "SecondaryHand",
+    "Head",
+    "Neck",
+    "Shoulder",
+    "Chest",
+    "Waist",
+    "Legs",
+    "Feet",
+    "Wrist",
+    "Hands",
+    "Finger0",
+    "Finger1",
+    "Trinket0",
+    "Trinket1",
+    "Back",
+    "MainHand",
+    "SecondaryHand",
 }
 
 local function SlotButtonFor(slotID)
@@ -451,24 +518,34 @@ local function SlotButtonFor(slotID)
         for _, n in ipairs(SLOT_BUTTON_NAMES) do
             local b = _G["Character" .. n .. "Slot"]
             -- Keyed by the button's own inventory ID, never a hardcoded pairing.
-            if b and b.GetID then slotButtons[b:GetID()] = b end
+            if b and b.GetID then
+                slotButtons[b:GetID()] = b
+            end
         end
     end
     return slotButtons[slotID]
 end
 
 local function StopSlotGlow()
-    if not slotGlow then return end
+    if not slotGlow then
+        return
+    end
     local G = CludesUI and CludesUI.Glows
-    if G and G.StopGlow then G.StopGlow(slotGlow) end
+    if G and G.StopGlow then
+        G.StopGlow(slotGlow)
+    end
     slotGlow:Hide()
 end
 
 local function StartSlotGlow(slotID)
     local G = CludesUI and CludesUI.Glows
-    if not (G and G.StartGlow) then return end
+    if not (G and G.StartGlow) then
+        return
+    end
     local slotBtn = SlotButtonFor(slotID)
-    if not slotBtn then return end
+    if not slotBtn then
+        return
+    end
     if not slotGlow then
         slotGlow = CreateFrame("Frame", nil, CharacterFrame)
     end
@@ -478,8 +555,12 @@ local function StartSlotGlow(slotID)
     slotGlow:SetFrameLevel(slotBtn:GetFrameLevel() + 5)
     slotGlow:Show()
     local w, h = slotBtn:GetWidth(), slotBtn:GetHeight()
-    if not w or w < 1 then w = 37 end
-    if not h or h < 1 then h = w end
+    if not w or w < 1 then
+        w = 37
+    end
+    if not h or h < 1 then
+        h = w
+    end
     -- Style 6 = Modern WoW Glow (proc-loop FlipBook).
     G.StartGlow(slotGlow, 6, w, 1, 1, 1, nil, h)
 end
@@ -524,12 +605,16 @@ end
 
 local function AcquireIcon(i)
     local btn = iconPool[i]
-    if btn then return btn end
+    if btn then
+        return btn
+    end
     btn = CreatePanelIcon(panel)
 
     btn:SetScript("OnEnter", function(self)
         local rec = self.cuiSock
-        if not rec then return end
+        if not rec then
+            return
+        end
         -- Slot locator glow first: independent of tooltip suppression.
         StartSlotGlow(rec.slot)
         -- Hover-to-suggest: an EMPTY socket opens the gem flyout on hover so a
@@ -543,8 +628,11 @@ local function AcquireIcon(i)
                 OpenFlyout(self, rec.slot, rec.socketIndex, true)
             end
         end
-        if CludesUI and CludesUI._tooltipSuppressedByMode
-            and CludesUI._tooltipSuppressedByMode(GameTooltip) then
+        if
+            CludesUI
+            and CludesUI._tooltipSuppressedByMode
+            and CludesUI._tooltipSuppressedByMode(GameTooltip)
+        then
             return
         end
         if rec.gemLink then
@@ -554,10 +642,12 @@ local function AcquireIcon(i)
             GameTooltip:Show()
         else
             -- Empty socket: plain-text hint uses the CUI widget tooltip.
-            CludesUI.ShowWidgetTooltip(self,
+            CludesUI.ShowWidgetTooltip(
+                self,
                 CludesUI.L(rec.emptyName or "Empty Socket")
                     .. CludesUI.L("\nPick a gem from the list to socket it."),
-                { anchor = "right" })
+                { anchor = "right" }
+            )
         end
     end)
     btn:SetScript("OnLeave", function()
@@ -568,7 +658,9 @@ local function AcquireIcon(i)
     end)
     btn:SetScript("OnClick", function(self)
         local rec = self.cuiSock
-        if not rec then return end
+        if not rec then
+            return
+        end
         if InCombatLockdown() then
             if UIErrorsFrame then
                 UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT or "Can't do that in combat.", 1, 0.1, 0.1)
@@ -581,7 +673,9 @@ local function AcquireIcon(i)
         if activeIcon == self and flyout and flyout:IsShown() then
             if flyoutHoverMode then
                 flyoutHoverMode = false
-                if catcher then catcher:Show() end
+                if catcher then
+                    catcher:Show()
+                end
                 return
             end
             CloseFlyout()
@@ -600,13 +694,19 @@ end
 
 -- Best-effort empty-socket type name for an equipped item (cosmetic tooltip line).
 local function ItemEmptySocketName(link)
-    if not GetItemStatsFn then return nil end
+    if not GetItemStatsFn then
+        return nil
+    end
     local stats = GetItemStatsFn(link)
-    if not stats then return nil end
+    if not stats then
+        return nil
+    end
     local found
     for key in pairs(stats) do
         if type(key) == "string" and key:find("EMPTY_SOCKET") then
-            if found then return nil end   -- more than one type -> ambiguous
+            if found then
+                return nil
+            end -- more than one type -> ambiguous
             found = key
         end
     end
@@ -624,15 +724,23 @@ end
 -- from that position onward, and a second value would become tonumber's base.
 local function GemIDFromLink(link, idx)
     local itemString = link:match("item:([%-%d:]+)")
-    if not itemString then return nil end
+    if not itemString then
+        return nil
+    end
     local gid = tonumber((select(idx + 2, strsplit(":", itemString))))
-    if gid and gid > 0 then return gid end
+    if gid and gid > 0 then
+        return gid
+    end
     return nil
 end
 
 RebuildSockets = function()
-    for i = #sockets, 1, -1 do sockets[i] = nil end
-    for k in pairs(relevantItems) do relevantItems[k] = nil end
+    for i = #sockets, 1, -1 do
+        sockets[i] = nil
+    end
+    for k in pairs(relevantItems) do
+        relevantItems[k] = nil
+    end
 
     if GetItemNumSockets and GetItemGemFn then
         for _, slot in ipairs(SLOTS) do
@@ -645,7 +753,9 @@ RebuildSockets = function()
                     -- (rarity/stats) can trigger a targeted refresh.
                     if GetInfoInstant then
                         local iid = GetInfoInstant(link)
-                        if iid then relevantItems[iid] = true end
+                        if iid then
+                            relevantItems[iid] = true
+                        end
                     end
                     for idx = 1, num do
                         local _, gemLink = GetItemGemFn(link, idx)
@@ -660,8 +770,11 @@ RebuildSockets = function()
                             local gid = GemIDFromLink(link, idx)
                             if gid then
                                 gemLink = "item:" .. gid
-                                if not socketLoadRequested[gid]
-                                    and C_Item and C_Item.RequestLoadItemDataByID then
+                                if
+                                    not socketLoadRequested[gid]
+                                    and C_Item
+                                    and C_Item.RequestLoadItemDataByID
+                                then
                                     socketLoadRequested[gid] = true
                                     C_Item.RequestLoadItemDataByID(gid)
                                 end
@@ -669,7 +782,9 @@ RebuildSockets = function()
                         end
                         if gemLink and GetInfoInstant then
                             local giid = GetInfoInstant(gemLink)
-                            if giid then relevantItems[giid] = true end
+                            if giid then
+                                relevantItems[giid] = true
+                            end
                         end
                         sockets[#sockets + 1] = {
                             slot = slot,
@@ -689,7 +804,9 @@ end
 local function ChangeSocketPage(delta)
     local last = math.max(0, math.ceil(#sockets / (MAX_SOCKET_ICONS - 1)) - 1)
     local page = math.max(0, math.min(last, socketPage + delta))
-    if page == socketPage then return end
+    if page == socketPage then
+        return
+    end
     CloseFlyout()
     StopSlotGlow()
     GameTooltip:Hide()
@@ -715,22 +832,33 @@ local function BuildPageButton(text, delta, tip)
         label:SetAllPoints(btn)
         label:SetText(text)
     end
-    btn:SetScript("OnClick", function() ChangeSocketPage(delta) end)
+    btn:SetScript("OnClick", function()
+        ChangeSocketPage(delta)
+    end)
     btn:SetScript("OnEnter", function(self)
         CludesUI.ShowWidgetTooltip(self, tip)
     end)
-    btn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+    btn:SetScript("OnLeave", function()
+        CludesUI.HideWidgetTooltip()
+    end)
     return btn
 end
 
 LayoutSockets = function()
-    if not panel then return end
+    if not panel then
+        return
+    end
 
     panel:ClearAllPoints()
     if seasonPanel and seasonPanel:IsShown() then
         local gap = STOCK and 12 or PAD -- stock tab art overhangs both plates
-        panel:SetPoint(STOCK and "TOPRIGHT" or "BOTTOMRIGHT", seasonPanel,
-            STOCK and "TOPLEFT" or "BOTTOMLEFT", -gap, 0)
+        panel:SetPoint(
+            STOCK and "TOPRIGHT" or "BOTTOMRIGHT",
+            seasonPanel,
+            STOCK and "TOPLEFT" or "BOTTOMLEFT",
+            -gap,
+            0
+        )
     elseif STOCK then
         panel:SetPoint("TOPRIGHT", CharacterFrame, "BOTTOMRIGHT", -15, 2)
     else
@@ -753,10 +881,20 @@ LayoutSockets = function()
         local keep = false
         for i = 1, visible do
             local rec = sockets[first + i]
-            if activeIcon == iconPool[i] and old and old.slot == rec.slot
-                and old.socketIndex == rec.socketIndex then keep = true; break end
+            if
+                activeIcon == iconPool[i]
+                and old
+                and old.slot == rec.slot
+                and old.socketIndex == rec.socketIndex
+            then
+                keep = true
+                break
+            end
         end
-        if not keep then CloseFlyout(); StopSlotGlow() end
+        if not keep then
+            CloseFlyout()
+            StopSlotGlow()
+        end
     end
     if paged and not prevPage then
         prevPage = BuildPageButton("<", -1, CludesUI.L("Previous sockets"))
@@ -792,8 +930,10 @@ LayoutSockets = function()
     -- Arrows (one each side when paged) + icons + edge padding. On the
     -- CludesUI look the two arrows fill exactly one icon slot, so this is
     -- the original six-slot width. A plate kept wider by MIN_W centres the row.
-    local contentW = 2 * EDGE_X + (paged and 2 * (PAGE_BUTTON_W + PAD) or 0)
-        + (paged and perPage or visible) * (SIZE + PAD) - PAD
+    local contentW = 2 * EDGE_X
+        + (paged and 2 * (PAGE_BUTTON_W + PAD) or 0)
+        + (paged and perPage or visible) * (SIZE + PAD)
+        - PAD
     local panelW = math.max(MIN_W, contentW)
     local shift = (panelW - contentW) / 2
 
@@ -808,8 +948,13 @@ LayoutSockets = function()
         end
         PaintStatLetters(btn, rec.gemLink)
         btn:ClearAllPoints()
-        btn:SetPoint("LEFT", panel, "LEFT",
-            shift + EDGE_X + (paged and (PAGE_BUTTON_W + PAD) or 0) + (i - 1) * (SIZE + PAD), ICON_Y)
+        btn:SetPoint(
+            "LEFT",
+            panel,
+            "LEFT",
+            shift + EDGE_X + (paged and (PAGE_BUTTON_W + PAD) or 0) + (i - 1) * (SIZE + PAD),
+            ICON_Y
+        )
         btn:Show()
     end
 
@@ -826,7 +971,9 @@ end
 
 local function AcquireGemRow(i)
     local row = gemRows[i]
-    if row then return row end
+    if row then
+        return row
+    end
 
     row = CreateFrame("Button", nil, flyout)
     row:SetHeight(ROW_H)
@@ -861,9 +1008,14 @@ local function AcquireGemRow(i)
     end
 
     row:SetScript("OnEnter", function(self)
-        if not self.gemLink then return end
-        if CludesUI and CludesUI._tooltipSuppressedByMode
-            and CludesUI._tooltipSuppressedByMode(GameTooltip) then
+        if not self.gemLink then
+            return
+        end
+        if
+            CludesUI
+            and CludesUI._tooltipSuppressedByMode
+            and CludesUI._tooltipSuppressedByMode(GameTooltip)
+        then
             return
         end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -875,7 +1027,9 @@ local function AcquireGemRow(i)
         MaybeCloseHoverFlyout()
     end)
     row:SetScript("OnClick", function(self)
-        if not self.gemItemID then return end
+        if not self.gemItemID then
+            return
+        end
         DoSocket(flyout.targetSlot, flyout.targetSocketIndex, self.gemItemID)
     end)
 
@@ -884,7 +1038,9 @@ local function AcquireGemRow(i)
 end
 
 local function PopulateFlyout()
-    if gemDirty then ScanBagGems() end
+    if gemDirty then
+        ScanBagGems()
+    end
 
     for _, row in ipairs(gemRows) do
         row:Hide()
@@ -913,10 +1069,16 @@ local function PopulateFlyout()
         -- Render at most MAX_FLYOUT_ROWS at a time; the wheel scrolls the window
         -- so a large gem inventory never produces an off-screen, unreachable list.
         local visible = n
-        if visible > MAX_FLYOUT_ROWS then visible = MAX_FLYOUT_ROWS end
+        if visible > MAX_FLYOUT_ROWS then
+            visible = MAX_FLYOUT_ROWS
+        end
         local maxScroll = n - visible
-        if flyoutScroll < 0 then flyoutScroll = 0 end
-        if flyoutScroll > maxScroll then flyoutScroll = maxScroll end
+        if flyoutScroll < 0 then
+            flyoutScroll = 0
+        end
+        if flyoutScroll > maxScroll then
+            flyoutScroll = maxScroll
+        end
         for vis = 1, visible do
             local g = gemCache[flyoutScroll + vis]
             local row = AcquireGemRow(vis)
@@ -941,7 +1103,9 @@ local function PopulateFlyout()
 end
 
 local function BuildFlyout()
-    if flyout then return end
+    if flyout then
+        return
+    end
 
     -- Full-screen click-catcher (our frame), just below the flyout strata.
     catcher = CreateFrame("Button", nil, UIParent)
@@ -950,7 +1114,9 @@ local function BuildFlyout()
     catcher:EnableMouse(true)
     catcher:RegisterForClicks("AnyUp")
     catcher:Hide()
-    catcher:SetScript("OnClick", function() CloseFlyout() end)
+    catcher:SetScript("OnClick", function()
+        CloseFlyout()
+    end)
 
     flyout = CreateFrame("Frame", "CUI_CharSheet_SocketFlyout", UIParent)
     flyout:SetWidth(FLYOUT_W)
@@ -976,12 +1142,16 @@ local function BuildFlyout()
     -- Mouse-enabled so the hover-opened flyout can watch its own OnLeave; also
     -- keeps clicks on the menu background from falling through to the sheet.
     flyout:EnableMouse(true)
-    flyout:SetScript("OnLeave", function() MaybeCloseHoverFlyout() end)
+    flyout:SetScript("OnLeave", function()
+        MaybeCloseHoverFlyout()
+    end)
 
     flyout:EnableMouseWheel(true)
     flyout:SetScript("OnMouseWheel", function(self, delta)
-        if #gemCache <= MAX_FLYOUT_ROWS then return end
-        flyoutScroll = flyoutScroll - delta   -- wheel down (-1) advances the window
+        if #gemCache <= MAX_FLYOUT_ROWS then
+            return
+        end
+        flyoutScroll = flyoutScroll - delta -- wheel down (-1) advances the window
         PopulateFlyout()
     end)
 
@@ -990,7 +1160,9 @@ local function BuildFlyout()
     flyout:SetScript("OnKeyDown", function(self, key)
         -- SetPropagateKeyboardInput is protected in combat; the flyout is
         -- already being closed by PLAYER_REGEN_DISABLED at that point.
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         if key == "ESCAPE" then
             self:SetPropagateKeyboardInput(false)
             CloseFlyout()
@@ -1036,31 +1208,49 @@ OpenFlyout = function(iconBtn, targetSlot, targetSocketIndex, hoverMode)
     -- Hover mode has no click-catcher: the flyout dismisses itself when the
     -- cursor leaves it, and a stray hover must never eat an unrelated click.
     -- A click on the socket icon pins it sticky, which shows the catcher.
-    if not flyoutHoverMode then catcher:Show() end
+    if not flyoutHoverMode then
+        catcher:Show()
+    end
     flyout:Show()
 
     -- Watch for combat while the flyout is open.
-    if evtFrame then evtFrame:RegisterEvent("PLAYER_REGEN_DISABLED") end
+    if evtFrame then
+        evtFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    end
 end
 
 CloseFlyout = function()
-    if flyout then flyout:Hide() end
-    if catcher then catcher:Hide() end
+    if flyout then
+        flyout:Hide()
+    end
+    if catcher then
+        catcher:Hide()
+    end
     activeIcon = nil
     flyoutHoverMode = false
-    if evtFrame then evtFrame:UnregisterEvent("PLAYER_REGEN_DISABLED") end
+    if evtFrame then
+        evtFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+    end
 end
 
 -- Hover-opened flyouts dismiss when the cursor is over neither the flyout nor
 -- the socket icon that opened it. Called from the OnLeave of every surface
 -- involved (icon, flyout body, gem rows) -- purely event-driven, no polling.
 MaybeCloseHoverFlyout = function()
-    if not flyoutHoverMode then return end
-    if not (flyout and flyout:IsShown()) then return end
+    if not flyoutHoverMode then
+        return
+    end
+    if not (flyout and flyout:IsShown()) then
+        return
+    end
     -- The margin bridges the 4px anchor gap between icon and flyout so the
     -- cursor can travel across it without this check closing the menu.
-    if flyout:IsMouseOver(8, -8, -8, 8) then return end
-    if activeIcon and activeIcon:IsMouseOver() then return end
+    if flyout:IsMouseOver(8, -8, -8, 8) then
+        return
+    end
+    if activeIcon and activeIcon:IsMouseOver() then
+        return
+    end
     CloseFlyout()
 end
 
@@ -1088,7 +1278,9 @@ local SHOWN_EVENTS = {
 }
 
 local function RegisterShownEvents()
-    if shownEvents or not evtFrame then return end
+    if shownEvents or not evtFrame then
+        return
+    end
     shownEvents = true
     for _, ev in ipairs(SHOWN_EVENTS) do
         if EventValid(ev) then
@@ -1098,7 +1290,9 @@ local function RegisterShownEvents()
 end
 
 local function UnregisterShownEvents()
-    if not (shownEvents and evtFrame) then return end
+    if not (shownEvents and evtFrame) then
+        return
+    end
     shownEvents = false
     for _, ev in ipairs(SHOWN_EVENTS) do
         pcall(evtFrame.UnregisterEvent, evtFrame, ev)
@@ -1127,7 +1321,9 @@ local function OnEvent(self, event, arg1)
         local ours = pending ~= nil
         pending = nil
         gemDirty = true
-        if ours then SafeCloseSession() end
+        if ours then
+            SafeCloseSession()
+        end
     elseif event == "SOCKET_INFO_CLOSE" then
         pending = nil
         ourSession = false
@@ -1138,7 +1334,9 @@ local function OnEvent(self, event, arg1)
         -- The socketed gem just left the bags; refresh the equipped row too,
         -- as the guaranteed fallback if ITEM_CHANGED is ever unavailable.
         RebuildSockets()
-        if flyout and flyout:IsShown() then PopulateFlyout() end
+        if flyout and flyout:IsShown() then
+            PopulateFlyout()
+        end
     elseif event == "ITEM_DATA_LOAD_RESULT" then
         -- A bag gem we listed before its data was cached: rescan so its link
         -- and stat label fill in (kept separate from relevantItems, which
@@ -1146,7 +1344,9 @@ local function OnEvent(self, event, arg1)
         if arg1 and pendingGemLoads[arg1] then
             pendingGemLoads[arg1] = nil
             gemDirty = true
-            if flyout and flyout:IsShown() then PopulateFlyout() end
+            if flyout and flyout:IsShown() then
+                PopulateFlyout()
+            end
         end
         -- This event is a global broadcast that fires for EVERY item whose data
         -- finishes loading anywhere in the UI. Only refresh when the loaded item
@@ -1231,13 +1431,15 @@ end
 local function IsMidnightSeason()
     -- The display season can belong to a different expansion than the client
     -- or the player's account. Unknown season data must not expose the folio.
-    return C_SeasonInfo and C_SeasonInfo.GetCurrentDisplaySeasonExpansion
+    return C_SeasonInfo
+        and C_SeasonInfo.GetCurrentDisplaySeasonExpansion
         and LE_EXPANSION_MIDNIGHT ~= nil
         and C_SeasonInfo.GetCurrentDisplaySeasonExpansion() == LE_EXPANSION_MIDNIGHT
 end
 
 local function FolioUnlocked()
-    return C_PlayerInfo and C_PlayerInfo.IsExpansionLandingPageUnlockedForPlayer
+    return C_PlayerInfo
+        and C_PlayerInfo.IsExpansionLandingPageUnlockedForPlayer
         and C_PlayerInfo.IsExpansionLandingPageUnlockedForPlayer(LE_EXPANSION_MIDNIGHT)
 end
 
@@ -1249,7 +1451,9 @@ local function OpenSeasonShortcut(self)
         return
     end
     if self.isFolio then
-        if not IsMidnightSeason() or not FolioUnlocked() then return end
+        if not IsMidnightSeason() or not FolioUnlocked() then
+            return
+        end
         -- Blizzard's own landing button toggles only once the overlay is applied.
         local page = _G.ExpansionLandingPage
         if page and ToggleExpansionLandingPage and page:IsOverlayApplied() then
@@ -1307,7 +1511,9 @@ local function OnSeasonEvent()
     RefreshSeasonPanel()
     local shown = seasonPanel and seasonPanel:IsShown() or false
     if shown ~= wasShown or (shown and seasonPanel:GetWidth() ~= oldWidth) then
-        if panel and panel:IsShown() then LayoutSockets() end
+        if panel and panel:IsShown() then
+            LayoutSockets()
+        end
         if not STOCK and CludesUI._updateCharSheetDurability then
             CludesUI._updateCharSheetDurability()
         end
@@ -1315,7 +1521,9 @@ local function OnSeasonEvent()
 end
 
 local function SeasonWatch(on)
-    if on == (seasonWatch and seasonWatch.on or false) then return end
+    if on == (seasonWatch and seasonWatch.on or false) then
+        return
+    end
     if not seasonWatch then
         seasonWatch = CreateFrame("Frame")
         seasonWatch:SetScript("OnEvent", OnSeasonEvent)
@@ -1331,23 +1539,39 @@ end
 
 RefreshSeasonPanel = function()
     local db = CludesUIDB
-    local on = (db and db.charSheetSeasonPanel ~= false
+    local on = (
+        db
+        and db.charSheetSeasonPanel ~= false
         and db.themedCharacterSheet ~= false
         and not CludesUI.BlizzWindowSkinsKilled()
-        and PaperDollFrame and PaperDollFrame:IsVisible()) and true or false
+        and PaperDollFrame
+        and PaperDollFrame:IsVisible()
+    )
+            and true
+        or false
     SeasonWatch(on)
     -- The vault is its own opt-in (Great Vault Shortcut, in the Season Panel
     -- cog); the folio shows in a Midnight season. Nothing to offer = no plate.
     local vault = on and db.charSheetSeasonVault == true
     local folio = on and IsMidnightSeason() and true or false
     if not (vault or folio) then
-        if seasonWatch then seasonWatch:UnregisterEvent("QUEST_LOG_UPDATE") end
-        if seasonPanel then seasonPanel:Hide() end
+        if seasonWatch then
+            seasonWatch:UnregisterEvent("QUEST_LOG_UPDATE")
+        end
+        if seasonPanel then
+            seasonPanel:Hide()
+        end
         return
     end
-    if not seasonPanel then seasonPanel = CreatePanelFrame("CUI_CharSheet_SeasonPanel") end
-    if vault and not seasonPanel.vault then seasonPanel.vault = CreateSeasonIcon(false) end
-    if folio and not seasonPanel.folio then seasonPanel.folio = CreateSeasonIcon(true) end
+    if not seasonPanel then
+        seasonPanel = CreatePanelFrame("CUI_CharSheet_SeasonPanel")
+    end
+    if vault and not seasonPanel.vault then
+        seasonPanel.vault = CreateSeasonIcon(false)
+    end
+    if folio and not seasonPanel.folio then
+        seasonPanel.folio = CreateSeasonIcon(true)
+    end
     local unlocked = folio and FolioUnlocked() and true or false
     -- The unlock quest is the one live change left once season data is in, and
     -- it never reverts: watch the quest log only while a locked folio shows.
@@ -1356,8 +1580,11 @@ RefreshSeasonPanel = function()
     else
         seasonWatch:UnregisterEvent("QUEST_LOG_UPDATE")
     end
-    if vault ~= seasonPanel.lastVault or folio ~= seasonPanel.lastFolio
-        or unlocked ~= seasonPanel.lastUnlocked then
+    if
+        vault ~= seasonPanel.lastVault
+        or folio ~= seasonPanel.lastFolio
+        or unlocked ~= seasonPanel.lastUnlocked
+    then
         seasonPanel.lastVault, seasonPanel.lastFolio, seasonPanel.lastUnlocked = vault, folio, unlocked
         local n = (vault and 1 or 0) + (folio and 1 or 0)
         local contentW = 2 * EDGE_X + n * SIZE + (n - 1) * PAD
@@ -1386,7 +1613,9 @@ RefreshSeasonPanel = function()
 end
 
 local function BuildPanel()
-    if built then return end
+    if built then
+        return
+    end
     panel = CreatePanelFrame("CUI_CharSheet_SocketPanel")
 
     if not evtFrame then
@@ -1405,23 +1634,33 @@ end
 
 local function OnPaperDollShow()
     RefreshSeasonPanel()
-    if CludesUIDB and (CludesUIDB.themedCharacterSheet == false or CludesUI.BlizzWindowSkinsKilled()) then return end
+    if CludesUIDB and (CludesUIDB.themedCharacterSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+        return
+    end
     if CludesUIDB and CludesUIDB.charSheetSocketPanel == false then
-        if panel then panel:Hide() end
+        if panel then
+            panel:Hide()
+        end
         if not STOCK and CludesUI._updateCharSheetDurability then
             CludesUI._updateCharSheetDurability()
         end
         return
     end
-    if not built then BuildPanel() end
-    if not panel then return end
+    if not built then
+        BuildPanel()
+    end
+    if not panel then
+        return
+    end
     RegisterShownEvents()
     -- Events were unregistered while the sheet was closed, so any bag change
     -- in between (mail, loot, trade) never marked the gem list dirty.
     gemDirty = true
     -- Fresh open: allow one new data-load request per equipped gem, so a
     -- load that failed last time gets retried.
-    for k in pairs(socketLoadRequested) do socketLoadRequested[k] = nil end
+    for k in pairs(socketLoadRequested) do
+        socketLoadRequested[k] = nil
+    end
     RebuildSockets()
 end
 
@@ -1431,25 +1670,37 @@ local function OnHideAll()
     StopSlotGlow()
     CloseFlyout()
     UnregisterShownEvents()
-    if panel then panel:Hide() end
-    if seasonPanel then seasonPanel:Hide() end
+    if panel then
+        panel:Hide()
+    end
+    if seasonPanel then
+        seasonPanel:Hide()
+    end
     SeasonWatch(false)
 end
 
 -- Live apply from the options toggle (no reload).
 local function RefreshFromOptions()
     RefreshSeasonPanel()
-    if not (PaperDollFrame and PaperDollFrame:IsVisible()) then return end
-    if CludesUIDB and (CludesUIDB.themedCharacterSheet == false or CludesUI.BlizzWindowSkinsKilled()) then return end
+    if not (PaperDollFrame and PaperDollFrame:IsVisible()) then
+        return
+    end
+    if CludesUIDB and (CludesUIDB.themedCharacterSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
+        return
+    end
     if CludesUIDB and CludesUIDB.charSheetSocketPanel == false then
         CloseFlyout()
         UnregisterShownEvents()
-        if panel then panel:Hide() end
+        if panel then
+            panel:Hide()
+        end
         if not STOCK and CludesUI._updateCharSheetDurability then
             CludesUI._updateCharSheetDurability()
         end
     else
-        if not built then BuildPanel() end
+        if not built then
+            BuildPanel()
+        end
         if panel then
             RegisterShownEvents()
             RebuildSockets()
@@ -1466,7 +1717,9 @@ boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function()
     -- WoW Forever: part of the character sheet makeover, which stands down
     -- there (CludesUIBlizzardSkin_CharacterSheetForever.lua owns the sheet).
-    if CludesUI and CludesUI.IS_FOREVER then return end
+    if CludesUI and CludesUI.IS_FOREVER then
+        return
+    end
     -- The character sheet's Blizz Default (latched for the session): the
     -- strip hangs below Blizzard's sheet as a tab-art plate. Layout values
     -- switch here, before the lazy build reads them.

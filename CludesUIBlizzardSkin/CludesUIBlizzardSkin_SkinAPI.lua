@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_SkinAPI.lua
 --  Public skinning API for third-party addons. Devs call
@@ -26,7 +28,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, ns = ...
 local CUI = CludesUI
 local WSkin = ns.WSkin
-if not (CUI and WSkin) then return end
+if not (CUI and WSkin) then
+    return
+end
 
 -------------------------------------------------------------------------------
 --  Gating: master switch + per-addon switches, account-global, nil = on.
@@ -47,22 +51,40 @@ end
 --  taint-safe, so re-calls from the dev's own refresh hooks are near-free.
 -------------------------------------------------------------------------------
 local base = {}
-base.apiVersion = 4   -- 2: SetTabSelection, 3: EditBox opts, 4: ItemButton
+base.apiVersion = 4 -- 2: SetTabSelection, 3: EditBox opts, 4: ItemButton
 
 local PASS = {
     -- Containers / chrome
-    "Panel", "Inset", "FadeRegions", "FadeNineSlice",
+    "Panel",
+    "Inset",
+    "FadeRegions",
+    "FadeNineSlice",
     -- Widgets
-    "Button", "WhiteButtonLabel", "StateButtonLabel", "EditBox", "Checkbox", "Dropdown",
-    "ScrollBar", "Tab", "SetTabSelection", "CloseButton", "PageButton", "SquareIcon",
-    "ItemButton", "SortHeaderBar",
+    "Button",
+    "WhiteButtonLabel",
+    "StateButtonLabel",
+    "EditBox",
+    "Checkbox",
+    "Dropdown",
+    "ScrollBar",
+    "Tab",
+    "SetTabSelection",
+    "CloseButton",
+    "PageButton",
+    "SquareIcon",
+    "ItemButton",
+    "SortHeaderBar",
     -- Text / bars
-    "Font", "White", "ApplyBarFill",
+    "Font",
+    "White",
+    "ApplyBarFill",
 }
 for _, fname in ipairs(PASS) do
     base[fname] = function(...)
         local fn = WSkin[fname]
-        if fn then return fn(...) end
+        if fn then
+            return fn(...)
+        end
     end
 end
 
@@ -81,14 +103,18 @@ end
 -- House panel fill (r, g, b, a) for custom elements that should match.
 function base.GetPanelColor()
     local T = WSkin.Theme
-    if not T.bgR then WSkin.ResolveTheme() end
+    if not T.bgR then
+        WSkin.ResolveTheme()
+    end
     return T.bgR, T.bgG, T.bgB, T.bgA
 end
 
 -- The user's UI font: path, outline flag ("" when none).
 function base.GetFont()
     local T = WSkin.Theme
-    if not T.fontPath then WSkin.ResolveTheme() end
+    if not T.fontPath then
+        WSkin.ResolveTheme()
+    end
     return T.fontPath, T.fontFlag
 end
 
@@ -96,7 +122,9 @@ end
 -- backdrop color, window styles). Shell/primitive visuals refresh on their
 -- own; this is only for custom elements colored via the getters above.
 function base.OnLooksChanged(fn)
-    if type(fn) == "function" then WSkin.OnLooksChanged(fn) end
+    if type(fn) == "function" then
+        WSkin.OnLooksChanged(fn)
+    end
 end
 
 -- Per-addon facade: Shell is curried with the addon's virtual winKey so the
@@ -123,10 +151,16 @@ local _fired = {}
 local _loginDone = false
 
 local function Dispatch(entry)
-    if _fired[entry.name] then return end
-    if not (MasterOn() and AddonOn(entry.name)) then return end
+    if _fired[entry.name] then
+        return
+    end
+    if not (MasterOn() and AddonOn(entry.name)) then
+        return
+    end
     _fired[entry.name] = true
-    if not WSkin.Theme.fontPath then WSkin.ResolveTheme() end
+    if not WSkin.Theme.fontPath then
+        WSkin.ResolveTheme()
+    end
     local ok, err = pcall(entry.apply, MakeFacade(entry.name))
     if not ok and err then
         -- Surface through the normal error pipeline without stopping the
@@ -138,7 +172,9 @@ end
 -- Called by the parent stub for registrations arriving after login (LoD
 -- third-party addons); pre-login entries wait in the queue for the boot.
 CUI._DispatchSkinRegistration = function(entry)
-    if _loginDone then Dispatch(entry) end
+    if _loginDone then
+        Dispatch(entry)
+    end
 end
 
 -- Options page support: registered names + whether each ran this session.
@@ -155,7 +191,9 @@ end
 -- any now-eligible unfired entries live (skins install fine at any time;
 -- only REMOVING them needs the reload). Returns true if anything fired.
 function ns.TryDispatchThirdPartySkins()
-    if not _loginDone then return false end
+    if not _loginDone then
+        return false
+    end
     local fired = false
     local reg = CUI._skinRegistry or {}
     for i = 1, #reg do
@@ -174,5 +212,7 @@ boot:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
     _loginDone = true
     local reg = CUI._skinRegistry or {}
-    for i = 1, #reg do Dispatch(reg[i]) end
+    for i = 1, #reg do
+        Dispatch(reg[i])
+    end
 end)

@@ -1,15 +1,21 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Auto Deposit/Withdraw: on bank open, moves gold to or from the warband bank
 -- so the character carries the set amount. The settings are account-wide
 -- (CludesUIDB.bagAutoGold / .bagAutoGoldAmount / .bagAutoGoldChat), so a
 -- shared profile never moves anyone's gold. Off: nothing registered.
 local CUI = CludesUI
 local ns = select(2, ...)
-if CUI.IS_FOREVER then return end  -- no warband bank there
+if CUI.IS_FOREVER then
+    return
+end -- no warband bank there
 
 local COPPER_PER_GOLD = 10000
 local _emptyP = {}
-local function Acct() return _G.CludesUIDB or _emptyP end
+local function Acct()
+    return _G.CludesUIDB or _emptyP
+end
 
 local AutoGold = {}
 ns.AutoGold = AutoGold
@@ -20,23 +26,35 @@ function AutoGold.Target()
     return type(g) == "number" and g >= 0 and g or nil
 end
 
-function AutoGold.Enabled() return Acct().bagAutoGold == true end
-function AutoGold.ChatEnabled() return Acct().bagAutoGoldChat == true end
+function AutoGold.Enabled()
+    return Acct().bagAutoGold == true
+end
+function AutoGold.ChatEnabled()
+    return Acct().bagAutoGoldChat == true
+end
 
 -- An options write: key is bagAutoGold, bagAutoGoldAmount or bagAutoGoldChat.
 function AutoGold.Set(key, value)
-    if not _G.CludesUIDB then return end
+    if not _G.CludesUIDB then
+        return
+    end
     _G.CludesUIDB[key] = value
     AutoGold.Sync()
 end
 
 -- Opt-in chat line; CludesUI.Print stays quiet where chat output could taint.
-local function Announce(text) CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text) end
-local function Coins(copper) return C_CurrencyInfo.GetCoinTextureString(copper) end
+local function Announce(text)
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
+end
+local function Coins(copper)
+    return C_CurrencyInfo.GetCoinTextureString(copper)
+end
 
 local function Balance()
     local target = AutoGold.Target()
-    if not target then return end
+    if not target then
+        return
+    end
     local bankType = Enum.BankType.Account
     local diff = GetMoney() - target * COPPER_PER_GOLD
     if diff > 0 then
@@ -65,9 +83,15 @@ local listening = false
 -- Listens for the bank only while the toggle is on and an amount is set.
 function AutoGold.Sync()
     local on = AutoGold.Enabled() and AutoGold.Target() ~= nil
-    if on == listening then return end
+    if on == listening then
+        return
+    end
     listening = on
-    if on then ev:RegisterEvent("BANKFRAME_OPENED") else ev:UnregisterEvent("BANKFRAME_OPENED") end
+    if on then
+        ev:RegisterEvent("BANKFRAME_OPENED")
+    else
+        ev:UnregisterEvent("BANKFRAME_OPENED")
+    end
 end
 
 local boot = CreateFrame("Frame")

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ActionBars_Options\XPBarPage_Options.lua
 --  Action Bars options: the XP Bar page (BuildXPBarPage), in CORE, CORE TEXT
@@ -14,7 +16,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  ns._ABO_OptEnv (filled by CUI_ActionBars_Options.lua).
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUIActionBars"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
@@ -25,44 +29,46 @@ local XP = "XPBar"
 
 -- The profession skill-bar flipbooks Fill Style can offer (atlas, label).
 local FLIP_CANDS = {
-    { "Skillbar_Fill_Flipbook_Alchemy",        "Alchemy" },
-    { "Skillbar_Fill_Flipbook_Blacksmithing",  "Blacksmithing" },
-    { "Skillbar_Fill_Flipbook_Enchanting",     "Enchanting" },
-    { "Skillbar_Fill_Flipbook_Engineering",    "Engineering" },
-    { "Skillbar_Fill_Flipbook_Herbalism",      "Herbalism" },
-    { "Skillbar_Fill_Flipbook_Inscription",    "Inscription" },
-    { "Skillbar_Fill_Flipbook_Jewelcrafting",  "Jewelcrafting" },
+    { "Skillbar_Fill_Flipbook_Alchemy", "Alchemy" },
+    { "Skillbar_Fill_Flipbook_Blacksmithing", "Blacksmithing" },
+    { "Skillbar_Fill_Flipbook_Enchanting", "Enchanting" },
+    { "Skillbar_Fill_Flipbook_Engineering", "Engineering" },
+    { "Skillbar_Fill_Flipbook_Herbalism", "Herbalism" },
+    { "Skillbar_Fill_Flipbook_Inscription", "Inscription" },
+    { "Skillbar_Fill_Flipbook_Jewelcrafting", "Jewelcrafting" },
     { "Skillbar_Fill_Flipbook_Leatherworking", "Leatherworking" },
-    { "Skillbar_Fill_Flipbook_Mining",         "Mining" },
-    { "Skillbar_Fill_Flipbook_Skinning",       "Skinning" },
-    { "Skillbar_Fill_Flipbook_Tailoring",      "Tailoring" },
-    { "Skillbar_Fill_Flipbook_Cooking",        "Cooking" },
-    { "Skillbar_Fill_Flipbook_Fishing",        "Fishing" },
+    { "Skillbar_Fill_Flipbook_Mining", "Mining" },
+    { "Skillbar_Fill_Flipbook_Skinning", "Skinning" },
+    { "Skillbar_Fill_Flipbook_Tailoring", "Tailoring" },
+    { "Skillbar_Fill_Flipbook_Cooking", "Cooking" },
+    { "Skillbar_Fill_Flipbook_Fishing", "Fishing" },
 }
 
 -- What a text can show (the bar reads a text's value through ns.XPTextItems):
 -- the top items combine, " - " between them in the order dragged; a bottom
 -- item shows on its own.
 local TOP_ITEMS = {
-    { key = "pct",       label = "Current %" },
-    { key = "cur",       label = "Current" },
-    { key = "curMax",    label = "Current / Max" },
+    { key = "pct", label = "Current %" },
+    { key = "cur", label = "Current" },
+    { key = "curMax", label = "Current / Max" },
     { key = "curMaxRem", label = "Current / Max (Remaining)" },
-    { key = "restVal",   label = "Rested" },
-    { key = "restPct",   label = "Rested %" },
-    { key = "questVal",  label = "Completed Quests" },
-    { key = "questPct",  label = "Completed Quests %" },
-    { key = "level",     label = "Level" },
+    { key = "restVal", label = "Rested" },
+    { key = "restPct", label = "Rested %" },
+    { key = "questVal", label = "Completed Quests" },
+    { key = "questPct", label = "Completed Quests %" },
+    { key = "level", label = "Level" },
 }
 local SOLO_ITEMS = {
-    { key = "xpPerHour",   label = "XP per Hour" },
-    { key = "levelingIn",  label = "Leveling In" },
-    { key = "timeLevel",   label = "Time This Level" },
+    { key = "xpPerHour", label = "XP per Hour" },
+    { key = "levelingIn", label = "Leveling In" },
+    { key = "timeLevel", label = "Time This Level" },
     { key = "timeSession", label = "Time This Session" },
 }
 local ITEM_LABEL = {}
 for _, list in ipairs({ TOP_ITEMS, SOLO_ITEMS }) do
-    for _, it in ipairs(list) do ITEM_LABEL[it.key] = it.label end
+    for _, it in ipairs(list) do
+        ITEM_LABEL[it.key] = it.label
+    end
 end
 -- Show Rested adds the rested XP after the first of these in a text.
 local RESTED_ITEM = { pct = true, cur = true, curMax = true }
@@ -95,13 +101,13 @@ local addedKey
 local PV_MAX = 125000
 local PV_CUR, PV_RESTED = PV_MAX * 0.62, PV_MAX * 0.2
 local PV_QDONE, PV_QINC = PV_MAX * 0.05, PV_MAX * 0.1
-local PV_PAD = 15     -- header margin above and below the drawn bar and texts
-local PV_BAR_H = 120  -- the tallest bar drawn (a vertical bar shrinks to it)
-local PV_MAX_H = 200  -- the tallest bar and texts drawn together
+local PV_PAD = 15 -- header margin above and below the drawn bar and texts
+local PV_BAR_H = 120 -- the tallest bar drawn (a vertical bar shrinks to it)
+local PV_MAX_H = 200 -- the tallest bar and texts drawn together
 -- frame, hdrW, h; pageWanted: the page on screen was built with a preview;
 -- retry: a repaint queued for a rect not resolved yet
 local pv = {}
-local XPPreviewRepaint  -- forward: the queued retry calls it
+local XPPreviewRepaint -- forward: the queued retry calls it
 
 -- As the page's Never gating (K.BarIsNever, after GetVisibilityKey
 -- normalizes legacy settings) and the live bar's XPBarCanShow switches.
@@ -109,7 +115,9 @@ local function XPPreviewWanted()
     local env = ns._ABO_OptEnv
     local p = env.EAB.db.profile
     local s = p.bars[XP]
-    if not s or p.useBlizzardDataBars or s.enabled == false then return false end
+    if not s or p.useBlizzardDataBars or s.enabled == false then
+        return false
+    end
     return env.GetVisibilityKey(s) ~= "never" and not s.alwaysHidden
 end
 
@@ -117,12 +125,18 @@ end
 -- Background box when that shows (it encloses the text), folded into the
 -- running maxima.
 local function XPPreviewReach(fs, bg, l, r, t, b, oL, oR, oT, oB)
-    if not (fs:IsShown() and (fs:GetText() or "") ~= "") then return oL, oR, oT, oB end
+    if not (fs:IsShown() and (fs:GetText() or "") ~= "") then
+        return oL, oR, oT, oB
+    end
     local rgn = (bg and bg:IsShown()) and bg or fs
     local rl = rgn:GetLeft()
-    if not rl then return oL, oR, oT, oB end
-    return math.max(oL, l - rl), math.max(oR, rgn:GetRight() - r),
-        math.max(oT, rgn:GetTop() - t), math.max(oB, b - rgn:GetBottom())
+    if not rl then
+        return oL, oR, oT, oB
+    end
+    return math.max(oL, l - rl),
+        math.max(oR, rgn:GetRight() - r),
+        math.max(oT, rgn:GetTop() - t),
+        math.max(oB, b - rgn:GetBottom())
 end
 
 -- How far the shown texts reach past the bar's left, right, top and bottom
@@ -131,7 +145,9 @@ end
 -- is left out. nil while the frame's rect is not resolved yet.
 local function XPPreviewOverhang(f)
     local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
-    if not l then return nil end
+    if not l then
+        return nil
+    end
     local oL, oR, oT, oB = 0, 0, 0, 0
     if not f._textRotated then
         oL, oR, oT, oB = XPPreviewReach(f._text, f._textBg, l, r, t, b, oL, oR, oT, oB)
@@ -170,8 +186,12 @@ end
 -- The scale factor that fits the bar (w x h) and an overhang (frame units)
 -- into availW across, PV_BAR_H for the bar and PV_MAX_H with its texts.
 local function XPPreviewFit(availW, w, h, scale, oL, oR, oT, oB)
-    return math.min(1, availW / ((w + oL + oR) * scale), PV_BAR_H / (h * scale),
-        PV_MAX_H / ((h + oT + oB) * scale))
+    return math.min(
+        1,
+        availW / ((w + oL + oR) * scale),
+        PV_BAR_H / (h * scale),
+        PV_MAX_H / ((h + oT + oB) * scale)
+    )
 end
 
 local function XPPreviewPaint(noRetry)
@@ -182,7 +202,9 @@ local function XPPreviewPaint(noRetry)
     local scale = UIParent:GetEffectiveScale() / parent:GetEffectiveScale()
     -- The header's width now (a resized panel), else the one it was built at.
     local hdrW = parent:GetWidth()
-    if not hdrW or hdrW <= 0 then hdrW = pv.hdrW end
+    if not hdrW or hdrW <= 0 then
+        hdrW = pv.hdrW
+    end
     local availW = hdrW - CludesUI.CONTENT_PAD * 2
     -- Started from the last paint's overhang, so an unchanged layout styles
     -- once; a different one is styled again at its own scale, so its 1px
@@ -218,7 +240,9 @@ end
 -- header comes back at its cached height). noRetry: the queued measurement.
 XPPreviewRepaint = function(valueOnly, force, noRetry)
     local f = pv.frame
-    if not (f and f:IsVisible()) then return end
+    if not (f and f:IsVisible()) then
+        return
+    end
     if valueOnly then
         ns.PaintXPFill(f, ns._ABO_OptEnv.EAB.db.profile.bars[XP], PV_CUR, PV_MAX, PV_RESTED)
         return
@@ -279,8 +303,12 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     local W = CludesUI.Widgets
     local K = ns.ABO_DataBarKit(parent)
     local BLIZZ_DIS_TIP, _blizzDis = K.BLIZZ_DIS_TIP, K.BlizzDis
-    local function S() return EAB.db.profile.bars[XP] end
-    local function Vertical() return S().orientation == "VERTICAL" end
+    local function S()
+        return EAB.db.profile.bars[XP]
+    end
+    local function Vertical()
+        return S().orientation == "VERTICAL"
+    end
     -- Row chrome (frames: never on the search pre-build's absorber rows).
     local chrome = not CludesUI._prebuilding
     local y = yOffset
@@ -289,7 +317,9 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- The preview header while the bar is ours and not Never (a style or
     -- Never flip rebuilds the page); no bar selector.
     local hb = ns.ABO_XPHeaderBuilder()
-    if not CludesUI._prebuilding then pv.pageWanted = hb ~= nil end
+    if not CludesUI._prebuilding then
+        pv.pageWanted = hb ~= nil
+    end
     if hb then
         CludesUI:SetContentHeader(hb)
     else
@@ -300,10 +330,14 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     --  CORE
     -------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "CORE", y);  y = y - h
+    hdr, h = W:SectionHeader(parent, "CORE", y)
+    y = y - h
     -- The Move in Unlock Mode button on the bar's first section: greyed while
     -- Blizzard's bars are in use, since our bar (and its mover) is not built then.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "XPBar", disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true })
+    CludesUI.BuildSectionUnlockJump(
+        hdr,
+        { key = "XPBar", disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
+    )
 
     -- XP Bar Style: the CludesUI bar, plain, in the profession frame art or
     -- in WoW Forever's border (Forever: the chat and Damage Meters border,
@@ -322,25 +356,38 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     styleValues._menuOpts = {
         onItemHover = function(key, item)
             if key == "default" and item then
-                CludesUI.ShowWidgetTooltip(item, "Blizz Default also switches the reputation bars to Blizzard's.")
+                CludesUI.ShowWidgetTooltip(
+                    item,
+                    "Blizz Default also switches the reputation bars to Blizzard's."
+                )
             end
         end,
         onItemLeave = function(key)
-            if key == "default" then CludesUI.HideWidgetTooltip() end
+            if key == "default" then
+                CludesUI.HideWidgetTooltip()
+            end
         end,
     }
     -- XP Bar Style | Visibility (its cog: Click Through); a Never flip
     -- rebuilds the page.
     local visOpts = K.VisOpts(XP, "Visibility", _blizzDis, BLIZZ_DIS_TIP, true)
-    visOpts.leftCfg = { type="dropdown", text="XP Bar Style", values=styleValues, order=styleOrder,
-          -- A frame art this client lacks shows as the CludesUI bar it draws.
-          getValue=function()
-              local v = CludesUI._GetXPBarStyle()
-              return styleValues[v] and v or "cui"
-          end,
-          setValue=function(v) K.AfterSwitch(CludesUI._SetXPBarStyle(v)) end }
+    visOpts.leftCfg = {
+        type = "dropdown",
+        text = "XP Bar Style",
+        values = styleValues,
+        order = styleOrder,
+        -- A frame art this client lacks shows as the CludesUI bar it draws.
+        getValue = function()
+            local v = CludesUI._GetXPBarStyle()
+            return styleValues[v] and v or "cui"
+        end,
+        setValue = function(v)
+            K.AfterSwitch(CludesUI._SetXPBarStyle(v))
+        end,
+    }
     local visRow
-    visRow, h = CludesUI.BuildVisibilityRow(W, parent, y, visOpts);  y = y - h
+    visRow, h = CludesUI.BuildVisibilityRow(W, parent, y, visOpts)
+    y = y - h
     if chrome then
         local rgn = visRow._rightRegion
         CludesUI.BuildInlineCog(rgn, {
@@ -350,61 +397,91 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         })
     end
     -- Rows below are hidden while visibility is Never (a Never flip rebuilds).
-    if K.BarIsNever(XP) then return math.abs(y) end
+    if K.BarIsNever(XP) then
+        return math.abs(y)
+    end
 
     y = K.SizeRow(y, XP)
 
     -- Show Dividers (its 5% and 10% colours inline; its settings row below
     -- exists only while it is on) | Orientation (its cog: Vertical Text).
     local divRowTop
-    divRowTop, h = W:DualRow(parent, y,
-        { type="toggle", text="Show Dividers",
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=function() return S().showDividers end,
-          setValue=CludesUI.SectionToggleSetValue(function(v)
-              S().showDividers = v
-              ns.ApplyDataBarLayout(XP)
-          end) },
-        K.OrientCfg({ XP }));  y = y - h
+    divRowTop, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Show Dividers",
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function()
+            return S().showDividers
+        end,
+        setValue = CludesUI.SectionToggleSetValue(function(v)
+            S().showDividers = v
+            ns.ApplyDataBarLayout(XP)
+        end),
+    }, K.OrientCfg({ XP }))
+    y = y - h
     K.OrientCog(divRowTop._rightRegion, { XP }, true)
     if chrome then
         -- The 5% Ticks swatch also greys while 5% Line Style is None (its
         -- tooltip then names every lock, the row's included).
         CludesUI.BuildInlineSwatches(divRowTop._leftRegion, {
-            { tooltip = "5% Ticks", hasAlpha = true,
-              disabled = function() return S().divider5Style == "none" end,
-              disabledTooltip = function()
-                  if _blizzDis() then return BLIZZ_DIS_TIP end
-                  if not S().showDividers then return "Show Dividers" end
-                  return "This option requires a 5% Line Style other than None"
-              end,
-              rawTooltip = _blizzDis,
-              getValue = function()
-                  local c = S().tick5Color
-                  if c then return c.r or 220/255, c.g or 167/255, c.b or 127/255, c.a or 0.9 end
-                  return 220/255, 167/255, 127/255, 0.9
-              end,
-              setValue = function(r, g, b, a)
-                  S().tick5Color = { r = r, g = g, b = b, a = a or 0.9 }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-            { tooltip = "10% Lines", hasAlpha = true,
-              getValue = function()
-                  local c = S().tick10Color
-                  if c then return c.r or 1, c.g or 1, c.b or 1, c.a or 0.9 end
-                  return 1, 1, 1, 0.9
-              end,
-              setValue = function(r, g, b, a)
-                  S().tick10Color = { r = r, g = g, b = b, a = a or 0.9 }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-        }, { size = 20,
-            disabled = function() return _blizzDis() or not S().showDividers end,
+            {
+                tooltip = "5% Ticks",
+                hasAlpha = true,
+                disabled = function()
+                    return S().divider5Style == "none"
+                end,
+                disabledTooltip = function()
+                    if _blizzDis() then
+                        return BLIZZ_DIS_TIP
+                    end
+                    if not S().showDividers then
+                        return "Show Dividers"
+                    end
+                    return "This option requires a 5% Line Style other than None"
+                end,
+                rawTooltip = _blizzDis,
+                getValue = function()
+                    local c = S().tick5Color
+                    if c then
+                        return c.r or 220 / 255, c.g or 167 / 255, c.b or 127 / 255, c.a or 0.9
+                    end
+                    return 220 / 255, 167 / 255, 127 / 255, 0.9
+                end,
+                setValue = function(r, g, b, a)
+                    S().tick5Color = { r = r, g = g, b = b, a = a or 0.9 }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+            {
+                tooltip = "10% Lines",
+                hasAlpha = true,
+                getValue = function()
+                    local c = S().tick10Color
+                    if c then
+                        return c.r or 1, c.g or 1, c.b or 1, c.a or 0.9
+                    end
+                    return 1, 1, 1, 0.9
+                end,
+                setValue = function(r, g, b, a)
+                    S().tick10Color = { r = r, g = g, b = b, a = a or 0.9 }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+        }, {
+            size = 20,
+            disabled = function()
+                return _blizzDis() or not S().showDividers
+            end,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDis() then
+                    return BLIZZ_DIS_TIP
+                end
                 return "Show Dividers"
             end,
-            rawTooltip = _blizzDis })
+            rawTooltip = _blizzDis,
+        })
     end
 
     -- 5% Line Style (its cog: Show Ticks Over Fill Bar, the inverse of the
@@ -413,91 +490,146 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- Dividers is on.
     if S().showDividers then
         local divRow
-        divRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="5% Line Style",
-              values={ dashed="Dashed", dotted="Dotted", solid="Solid", none="None" },
-              order={ "none", "dashed", "dotted", "solid" },
-              disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-              getValue=function() return S().divider5Style or "dashed" end,
-              setValue=function(v)
-                  S().divider5Style = v
-                  ns.ApplyDataBarLayout(XP)
-                  CludesUI:RefreshPage()
-              end },
-            { type="toggle", text="Divider Text",
-              disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-              getValue=function() return S().showDividerText end,
-              setValue=function(v)
-                  S().showDividerText = v
-                  ns.ApplyDataBarLayout(XP)
-                  CludesUI:RefreshPage()
-              end });  y = y - h
+        divRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "5% Line Style",
+            values = { dashed = "Dashed", dotted = "Dotted", solid = "Solid", none = "None" },
+            order = { "none", "dashed", "dotted", "solid" },
+            disabled = _blizzDis,
+            disabledTooltip = BLIZZ_DIS_TIP,
+            rawTooltip = true,
+            getValue = function()
+                return S().divider5Style or "dashed"
+            end,
+            setValue = function(v)
+                S().divider5Style = v
+                ns.ApplyDataBarLayout(XP)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "toggle",
+            text = "Divider Text",
+            disabled = _blizzDis,
+            disabledTooltip = BLIZZ_DIS_TIP,
+            rawTooltip = true,
+            getValue = function()
+                return S().showDividerText
+            end,
+            setValue = function(v)
+                S().showDividerText = v
+                ns.ApplyDataBarLayout(XP)
+                CludesUI:RefreshPage()
+            end,
+        })
+        y = y - h
         if chrome then
             local lRgn, rRgn = divRow._leftRegion, divRow._rightRegion
             CludesUI.BuildInlineCog(lRgn, {
                 title = "Ticks",
                 anchorTo = lRgn._control,
                 captureRegion = lRgn,
-                disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true,
+                disabled = _blizzDis,
+                disabledTooltip = BLIZZ_DIS_TIP,
+                rawTooltip = true,
                 rows = {
-                    { type="toggle", label="Show Ticks Over Fill Bar",
-                      get=function() return not S().smartTicks end,
-                      set=function(v)
-                          S().smartTicks = not v
-                          ns.ApplyDataBarLayout(XP)
-                      end },
+                    {
+                        type = "toggle",
+                        label = "Show Ticks Over Fill Bar",
+                        get = function()
+                            return not S().smartTicks
+                        end,
+                        set = function(v)
+                            S().smartTicks = not v
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
                 },
             })
             CludesUI.BuildInlineCog(rRgn, {
                 title = "Divider Text",
                 anchorTo = rRgn._control,
                 captureRegion = rRgn,
-                disabled = function() return _blizzDis() or not S().showDividerText end,
+                disabled = function()
+                    return _blizzDis() or not S().showDividerText
+                end,
                 disabledTooltip = function()
-                    if _blizzDis() then return BLIZZ_DIS_TIP end
+                    if _blizzDis() then
+                        return BLIZZ_DIS_TIP
+                    end
                     return "Divider Text"
                 end,
                 rawTooltip = _blizzDis,
                 rows = {
-                    { type="colorpicker", label="Text Color",
-                      get=function()
-                          local c = S().dividerTextColor
-                          if c then return c.r or 1, c.g or 1, c.b or 1 end
-                          return 1, 1, 1
-                      end,
-                      set=function(r, g, b)
-                          S().dividerTextColor = { r = r, g = g, b = b }
-                          ns.ApplyDataBarLayout(XP)
-                      end },
-                    { type="slider", label="Text Size", min=6, max=18, step=1,
-                      get=function() return S().dividerTextSize or 8 end,
-                      set=function(v)
-                          S().dividerTextSize = v
-                          ns.ApplyDataBarLayout(XP)
-                      end },
-                    { type="slider", label="X Offset", min=-50, max=50, step=1,
-                      get=function() return S().dividerTextOffX or 0 end,
-                      set=function(v)
-                          S().dividerTextOffX = v
-                          ns.ApplyDataBarLayout(XP)
-                      end },
-                    { type="slider", label="Y Offset", min=-50, max=50, step=1,
-                      get=function() return S().dividerTextOffY or 0 end,
-                      set=function(v)
-                          S().dividerTextOffY = v
-                          ns.ApplyDataBarLayout(XP)
-                      end },
+                    {
+                        type = "colorpicker",
+                        label = "Text Color",
+                        get = function()
+                            local c = S().dividerTextColor
+                            if c then
+                                return c.r or 1, c.g or 1, c.b or 1
+                            end
+                            return 1, 1, 1
+                        end,
+                        set = function(r, g, b)
+                            S().dividerTextColor = { r = r, g = g, b = b }
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 18,
+                        step = 1,
+                        get = function()
+                            return S().dividerTextSize or 8
+                        end,
+                        set = function(v)
+                            S().dividerTextSize = v
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return S().dividerTextOffX or 0
+                        end,
+                        set = function(v)
+                            S().dividerTextOffX = v
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return S().dividerTextOffY or 0
+                        end,
+                        set = function(v)
+                            S().dividerTextOffY = v
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
                 },
             })
         end
     end
 
-    _, h = W:Spacer(parent, y, 12);  y = y - h
+    _, h = W:Spacer(parent, y, 12)
+    y = y - h
 
     -------------------------------------------------------------------
     --  CORE TEXT POSITIONS
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "CORE TEXT POSITIONS", y);  y = y - h
+    _, h = W:SectionHeader(parent, "CORE TEXT POSITIONS", y)
+    y = y - h
 
     -- The bar's texts, one slot each: only the ones that show something, two
     -- to a row, then Add Text Slot, which asks where the new text goes. Up to
@@ -516,21 +648,27 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     local MOVE_TIP = "Choose this text's slot position."
     local TEXTS_PER_POS = 3
     local POSITIONS = {
-        { stem = "Center",      label = "Center Text",       name = "Center" },
-        { stem = "Left",        label = "Left Text",         name = "Left" },
-        { stem = "Right",       label = "Right Text",        name = "Right" },
-        { stem = "TopLeft",     label = "Top Left Text",     name = "Top Left" },
-        { stem = "TopRight",    label = "Top Right Text",    name = "Top Right" },
-        { stem = "BottomLeft",  label = "Bottom Left Text",  name = "Bottom Left" },
+        { stem = "Center", label = "Center Text", name = "Center" },
+        { stem = "Left", label = "Left Text", name = "Left" },
+        { stem = "Right", label = "Right Text", name = "Right" },
+        { stem = "TopLeft", label = "Top Left Text", name = "Top Left" },
+        { stem = "TopRight", label = "Top Right Text", name = "Top Right" },
+        { stem = "BottomLeft", label = "Bottom Left Text", name = "Bottom Left" },
         { stem = "BottomRight", label = "Bottom Right Text", name = "Bottom Right" },
     }
-    local function SlotKey(stem, i) return "textSlot" .. stem .. (i > 1 and i or "") end
+    local function SlotKey(stem, i)
+        return "textSlot" .. stem .. (i > 1 and i or "")
+    end
     -- Center's first text: the bar text itself.
-    local function IsBarText(stem, i) return stem == "Center" and i == 1 end
+    local function IsBarText(stem, i)
+        return stem == "Center" and i == 1
+    end
     -- A text's saved value (the bar text: unset reads as the old Default).
     local function SlotRaw(stem, i)
         local v = S()[SlotKey(stem, i)]
-        if v == nil and IsBarText(stem, i) then return "classic" end
+        if v == nil and IsBarText(stem, i) then
+            return "classic"
+        end
         return v
     end
     -- Its items (into out) and their kind: "top", "solo" or nil for nothing,
@@ -546,10 +684,14 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         return kind, legacy, render
     end
     local scratch = {}
-    local function Shows(stem, i) return SlotItems(stem, i, scratch) ~= nil end
+    local function Shows(stem, i)
+        return SlotItems(stem, i, scratch) ~= nil
+    end
     local function FreeIndex(stem)
         for i = 1, TEXTS_PER_POS do
-            if not Shows(stem, i) then return i end
+            if not Shows(stem, i) then
+                return i
+            end
         end
     end
     -- Takes a text off: its value, Show Rested and its own size and offsets
@@ -570,13 +712,19 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- Moves a text to the first free place at another position: its value and
     -- Show Rested, with its size and offsets unless either end is the bar text.
     local function MoveSlot(stem, i, toStem)
-        if toStem == stem then return end
+        if toStem == stem then
+            return
+        end
         local j = FreeIndex(toStem)
-        if not j then return end
+        if not j then
+            return
+        end
         local s, from, to = S(), SlotKey(stem, i), SlotKey(toStem, j)
         local v = SlotRaw(stem, i)
         -- The bar text shows a value it does not know as Default: so it moves.
-        if not ns.XPTextItems(v, s, scratch) then v = "classic" end
+        if not ns.XPTextItems(v, s, scratch) then
+            v = "classic"
+        end
         local rested = s[from .. "Rested"]
         local carry = not IsBarText(stem, i)
         local size, ox, oy = s[from .. "Size"], s[from .. "XOffset"], s[from .. "YOffset"]
@@ -595,9 +743,13 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- Rested on. The rebuild is immediate, so the new row reports the write.
     local function AddAt(stem)
         local idx = FreeIndex(stem)
-        if not idx then return end
+        if not idx then
+            return
+        end
         local s, key = S(), SlotKey(stem, idx)
-        if not IsBarText(stem, idx) then ClearSlot(stem, idx) end
+        if not IsBarText(stem, idx) then
+            ClearSlot(stem, idx)
+        end
         s[key] = "pct"
         s[key .. "Rested"] = true
         addedKey = key
@@ -607,9 +759,13 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- Room for another text: any free place, or on a vertical bar the bar
     -- text's own place (the only text a vertical bar draws).
     local function AddRoom()
-        if Vertical() then return not Shows("Center", 1) end
+        if Vertical() then
+            return not Shows("Center", 1)
+        end
         for _, p in ipairs(POSITIONS) do
-            if FreeIndex(p.stem) then return true end
+            if FreeIndex(p.stem) then
+                return true
+            end
         end
         return false
     end
@@ -635,23 +791,33 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         return _blizzDis() or (not IsBarText(e.pos.stem, e.i) and Vertical())
     end
     local function SlotLockTip()
-        if _blizzDis() then return BLIZZ_DIS_TIP end
+        if _blizzDis() then
+            return BLIZZ_DIS_TIP
+        end
         return "Horizontal Orientation"
     end
     -- A value's name: its items' names, " - " between them (nil for nothing).
     local labelScratch = {}
     local function ValueLabel(v)
-        if not ns.XPTextItems(v, S(), labelScratch) then return nil end
+        if not ns.XPTextItems(v, S(), labelScratch) then
+            return nil
+        end
         local names = {}
-        for n = 1, #labelScratch do names[n] = CludesUI.L(ITEM_LABEL[labelScratch[n]]) end
+        for n = 1, #labelScratch do
+            names[n] = CludesUI.L(ITEM_LABEL[labelScratch[n]])
+        end
         return table.concat(names, " - ")
     end
     -- The row's own dropdown, hidden under the checkbox list: Spec Overrides
     -- read and write the text's value through it. One entry per item; any
     -- other value is named by its items.
-    local PH_VALUES = setmetatable({ none = "Remove" }, { __index = function(_, k)
-        if type(k) == "string" and k:sub(1, 1) ~= "_" then return ValueLabel(k) end
-    end })
+    local PH_VALUES = setmetatable({ none = "Remove" }, {
+        __index = function(_, k)
+            if type(k) == "string" and k:sub(1, 1) ~= "_" then
+                return ValueLabel(k)
+            end
+        end,
+    })
     local PH_ORDER = { "none" }
     for _, list in ipairs({ TOP_ITEMS, SOLO_ITEMS }) do
         PH_ORDER[#PH_ORDER + 1] = "---"
@@ -662,13 +828,24 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     end
     local function EntryCfg(e)
         local stem, i = e.pos.stem, e.i
-        return { type="dropdown", text=EntryLabel(e), values=PH_VALUES, order=PH_ORDER,
-              disabled=function() return EntryLocked(e) end, disabledTooltip=SlotLockTip, rawTooltip=_blizzDis,
-              getValue=function() return SlotRaw(stem, i) or "none" end,
-              setValue=function(v)
-                  S()[SlotKey(stem, i)] = v
-                  ns.ApplyDataBarLayout(XP)
-              end }
+        return {
+            type = "dropdown",
+            text = EntryLabel(e),
+            values = PH_VALUES,
+            order = PH_ORDER,
+            disabled = function()
+                return EntryLocked(e)
+            end,
+            disabledTooltip = SlotLockTip,
+            rawTooltip = _blizzDis,
+            getValue = function()
+                return SlotRaw(stem, i) or "none"
+            end,
+            setValue = function(v)
+                S()[SlotKey(stem, i)] = v
+                ns.ApplyDataBarLayout(XP)
+            end,
+        }
     end
 
     -- Saves a text's new value; the old Default text keeps its rested part
@@ -679,10 +856,14 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         local snap = rgn and CludesUI._SOAttribution(rgn)
         local s, key = S(), SlotKey(stem, i)
         local _, legacy = SlotItems(stem, i, scratch)
-        if legacy and s[key .. "Rested"] == nil then s[key .. "Rested"] = true end
+        if legacy and s[key .. "Rested"] == nil then
+            s[key .. "Rested"] = true
+        end
         s[key] = v
         ns.ApplyDataBarLayout(XP)
-        if rgn then CludesUI._NotifySettingWrite(rgn, snap) end
+        if rgn then
+            CludesUI._NotifySettingWrite(rgn, snap)
+        end
     end
 
     -- Show Rested: the rested XP after the text's first Current %, Current or
@@ -690,29 +871,38 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     local function RestedRow(stem, i)
         local key = SlotKey(stem, i) .. "Rested"
         local function Eligible()
-            if SlotItems(stem, i, scratch) ~= "top" then return false end
+            if SlotItems(stem, i, scratch) ~= "top" then
+                return false
+            end
             for n = 1, #scratch do
-                if RESTED_ITEM[scratch[n]] then return true end
+                if RESTED_ITEM[scratch[n]] then
+                    return true
+                end
             end
             return false
         end
-        return { type="toggle", label="Show Rested",
-              disabled=function() return not Eligible() end,
-              disabledTooltip="This option requires Current %, Current or Current / Max",
-              get=function()
-                  local _, legacy = SlotItems(stem, i, scratch)
-                  return ns.XPTextRested(S(), key, legacy)
-              end,
-              set=function(v)
-                  -- An old value the bar still draws as it was (the old Default
-                  -- aside, whose rested part follows this) becomes its items.
-                  local _, _, render = SlotItems(stem, i, scratch)
-                  if render and render ~= "classic" then
-                      S()[SlotKey(stem, i)] = table.concat(scratch, ",")
-                  end
-                  S()[key] = v and true or false
-                  ns.ApplyDataBarLayout(XP)
-              end }
+        return {
+            type = "toggle",
+            label = "Show Rested",
+            disabled = function()
+                return not Eligible()
+            end,
+            disabledTooltip = "This option requires Current %, Current or Current / Max",
+            get = function()
+                local _, legacy = SlotItems(stem, i, scratch)
+                return ns.XPTextRested(S(), key, legacy)
+            end,
+            set = function(v)
+                -- An old value the bar still draws as it was (the old Default
+                -- aside, whose rested part follows this) becomes its items.
+                local _, _, render = SlotItems(stem, i, scratch)
+                if render and render ~= "classic" then
+                    S()[SlotKey(stem, i)] = table.concat(scratch, ",")
+                end
+                S()[key] = v and true or false
+                ns.ApplyDataBarLayout(XP)
+            end,
+        }
     end
 
     -- The text's items: a checkbox list over its value (the top items, in the
@@ -726,11 +916,17 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         local own = {}
         local emptied
         local rows = {}
-        for n, it in ipairs(TOP_ITEMS) do rows[n] = { key = it.key, label = it.label } end
+        for n, it in ipairs(TOP_ITEMS) do
+            rows[n] = { key = it.key, label = it.label }
+        end
         local function Checked(k)
-            if SlotItems(stem, i, own) ~= "top" then return false end
+            if SlotItems(stem, i, own) ~= "top" then
+                return false
+            end
             for n = 1, #own do
-                if own[n] == k then return true end
+                if own[n] == k then
+                    return true
+                end
             end
             return false
         end
@@ -738,12 +934,18 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         local function WriteChecked(order, k, on)
             local set = {}
             if SlotItems(stem, i, own) == "top" then
-                for n = 1, #own do set[own[n]] = true end
+                for n = 1, #own do
+                    set[own[n]] = true
+                end
             end
-            if k then set[k] = on or nil end
+            if k then
+                set[k] = on or nil
+            end
             local out = {}
             for n = 1, #order do
-                if set[order[n]] then out[#out + 1] = order[n] end
+                if set[order[n]] then
+                    out[#out + 1] = order[n]
+                end
             end
             emptied = (#out == 0)
             WriteSlot(stem, i, emptied and "none" or table.concat(out, ","), rgn)
@@ -751,10 +953,18 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         end
         local ctrl = rgn._control
         local ddW = ctrl and ctrl:GetWidth() or 0
-        if ddW < 50 then ddW = 210 end
-        local cbDD, cbRefresh = CludesUI.BuildReorderCBDropdown(rgn, ddW, rgn:GetFrameLevel() + 2, rows,
+        if ddW < 50 then
+            ddW = 210
+        end
+        local cbDD, cbRefresh = CludesUI.BuildReorderCBDropdown(
+            rgn,
+            ddW,
+            rgn:GetFrameLevel() + 2,
+            rows,
             Checked,
-            function(k, v, order) WriteChecked(order, k, v) end,
+            function(k, v, order)
+                WriteChecked(order, k, v)
+            end,
             {
                 hint = "Drag to Reorder",
                 head = { { key = "none", label = "Remove" } },
@@ -776,13 +986,19 @@ local function BuildXPBarPage(pageName, parent, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 openOrder = function()
-                    if SlotItems(stem, i, own) ~= "top" then return nil end
+                    if SlotItems(stem, i, own) ~= "top" then
+                        return nil
+                    end
                     local keys = {}
-                    for n = 1, #own do keys[n] = own[n] end
+                    for n = 1, #own do
+                        keys[n] = own[n]
+                    end
                     return keys
                 end,
                 setOrder = function(order)
-                    if SlotItems(stem, i, own) == "top" then WriteChecked(order) end
+                    if SlotItems(stem, i, own) == "top" then
+                        WriteChecked(order)
+                    end
                 end,
                 onClose = function()
                     if emptied and not Shows(stem, i) then
@@ -794,26 +1010,38 @@ local function BuildXPBarPage(pageName, parent, yOffset)
                         Rebuild()
                     end
                 end,
-                summaryLabel = function() return ValueLabel(SlotRaw(stem, i)) or CludesUI.L("None") end,
-            })
+                summaryLabel = function()
+                    return ValueLabel(SlotRaw(stem, i)) or CludesUI.L("None")
+                end,
+            }
+        )
         local p1, rel, p2, ax, ay
         if ctrl then
             p1, rel, p2, ax, ay = ctrl:GetPoint(1)
             ctrl:Hide()
         end
-        if p1 then cbDD:SetPoint(p1, rel, p2, ax, ay)
-        else CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0) end
+        if p1 then
+            cbDD:SetPoint(p1, rel, p2, ax, ay)
+        else
+            CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
+        end
         rgn._control = cbDD
         rgn._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
         -- What the text shows, on the list while it is closed (the name above
         -- it is the position button, with its own tooltip).
         cbDD:HookScript("OnEnter", function(self)
-            if self._ddMenu and self._ddMenu:IsShown() then return end
+            if self._ddMenu and self._ddMenu:IsShown() then
+                return
+            end
             CludesUI.ShowWidgetTooltip(self, SLOT_TIP)
         end)
-        cbDD:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-        cbDD:HookScript("OnClick", function() CludesUI.HideWidgetTooltip() end)
+        cbDD:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        cbDD:HookScript("OnClick", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
         local function SyncLock()
@@ -830,31 +1058,57 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         local key = SlotKey(stem, i)
         local sizeKey, xKey, yKey = key .. "Size", key .. "XOffset", key .. "YOffset"
         local rows = {
-            { type="slider", label="Size", min=6, max=24, step=1,
-              get=function() return S()[sizeKey] or S().textSize or 9 end,
-              set=function(v)
-                  S()[sizeKey] = v
-                  ns.ApplyDataBarLayout(XP)
-              end },
-            { type="slider", label="X Offset", min=-150, max=150, step=1,
-              get=function() return S()[xKey] or 0 end,
-              set=function(v)
-                  S()[xKey] = v
-                  ns.ApplyDataBarLayout(XP)
-              end },
-            { type="slider", label="Y Offset", min=-150, max=150, step=1,
-              get=function() return S()[yKey] or 0 end,
-              set=function(v)
-                  S()[yKey] = v
-                  ns.ApplyDataBarLayout(XP)
-              end },
+            {
+                type = "slider",
+                label = "Size",
+                min = 6,
+                max = 24,
+                step = 1,
+                get = function()
+                    return S()[sizeKey] or S().textSize or 9
+                end,
+                set = function(v)
+                    S()[sizeKey] = v
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+            {
+                type = "slider",
+                label = "X Offset",
+                min = -150,
+                max = 150,
+                step = 1,
+                get = function()
+                    return S()[xKey] or 0
+                end,
+                set = function(v)
+                    S()[xKey] = v
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+            {
+                type = "slider",
+                label = "Y Offset",
+                min = -150,
+                max = 150,
+                step = 1,
+                get = function()
+                    return S()[yKey] or 0
+                end,
+                set = function(v)
+                    S()[yKey] = v
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
         }
         rows[#rows + 1] = RestedRow(stem, i)
         CludesUI.BuildInlineCog(rgn, {
             title = EntryLabel(e),
             anchorTo = rgn._control,
             captureRegion = rgn,
-            disabled = function() return EntryLocked(e) end,
+            disabled = function()
+                return EntryLocked(e)
+            end,
             disabledTooltip = SlotLockTip,
             rawTooltip = _blizzDis,
             rows = rows,
@@ -872,7 +1126,9 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     end
     local function ChevronHoverColor()
         local ac = CludesUI.CLUDES_GREEN
-        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then return 0.72, 0.72, 0.72 end
+        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then
+            return 0.72, 0.72, 0.72
+        end
         return ac.r, ac.g, ac.b
     end
     local NO_PAINT = { SetColor = function() end, SetColorTexture = function() end }
@@ -906,10 +1162,14 @@ local function BuildXPBarPage(pageName, parent, yOffset)
                 return
             end
             Lit(true)
-            if not (menu and menu:IsShown()) then CludesUI.ShowWidgetTooltip(btn, MOVE_TIP) end
+            if not (menu and menu:IsShown()) then
+                CludesUI.ShowWidgetTooltip(btn, MOVE_TIP)
+            end
         end
         local function OnLeave()
-            if not (menu and menu:IsShown()) then Lit(false) end
+            if not (menu and menu:IsShown()) then
+                Lit(false)
+            end
             CludesUI.HideWidgetTooltip()
         end
         btn:SetScript("OnEnter", OnEnter)
@@ -919,34 +1179,77 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         local proxyLbl = CludesUI.MakeFont(btn, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local function EnsureMenu()
-            if menu then return menu end
+            if menu then
+                return menu
+            end
             local refresh
-            menu, _, refresh = CludesUI.BuildDropdownMenu(btn, 170, POS_ORDER, POS_VALUES,
-                function() return e.pos.stem end,
-                function(v) MoveSlot(e.pos.stem, e.i, v) end,
-                proxyLbl, "regular",
+            menu, _, refresh = CludesUI.BuildDropdownMenu(
+                btn,
+                170,
+                POS_ORDER,
+                POS_VALUES,
+                function()
+                    return e.pos.stem
+                end,
                 function(v)
-                    if v == e.pos.stem then return nil end
-                    if v ~= "Center" and Vertical() then return CludesUI.DisabledTooltip("Horizontal Orientation") end
-                    if not FreeIndex(v) then return true end
-                end)
+                    MoveSlot(e.pos.stem, e.i, v)
+                end,
+                proxyLbl,
+                "regular",
+                function(v)
+                    if v == e.pos.stem then
+                        return nil
+                    end
+                    if v ~= "Center" and Vertical() then
+                        return CludesUI.DisabledTooltip("Horizontal Orientation")
+                    end
+                    if not FreeIndex(v) then
+                        return true
+                    end
+                end
+            )
             -- The standard open/close behaviour (scale, click-away, scroll-away);
             -- the button keeps its own look and clicks.
-            CludesUI.WireDropdownScripts(btn, proxyLbl, NO_PAINT, NO_PAINT, menu, refresh, CludesUI.RD_DD_COLOURS, true)
+            CludesUI.WireDropdownScripts(
+                btn,
+                proxyLbl,
+                NO_PAINT,
+                NO_PAINT,
+                menu,
+                refresh,
+                CludesUI.RD_DD_COLOURS,
+                true
+            )
             btn:HookScript("OnEnter", OnEnter)
             btn:HookScript("OnLeave", OnLeave)
-            menu:HookScript("OnShow", function() Lit(true) end)
-            menu:HookScript("OnHide", function() Lit(btn:IsMouseOver()) end)
+            menu:HookScript("OnShow", function()
+                Lit(true)
+            end)
+            menu:HookScript("OnHide", function()
+                Lit(btn:IsMouseOver())
+            end)
             return menu
         end
         btn:SetScript("OnClick", function()
-            if EntryLocked(e) then return end
+            if EntryLocked(e) then
+                return
+            end
             CludesUI.HideWidgetTooltip()
             local m = EnsureMenu()
-            if m:IsShown() then m:Hide() else m:Show() end
+            if m:IsShown() then
+                m:Hide()
+            else
+                m:Show()
+            end
         end)
-        btn:HookScript("OnHide", function() if menu then menu:Hide() end end)
-        local function SyncLock() arrow:SetShown(not EntryLocked(e)) end
+        btn:HookScript("OnHide", function()
+            if menu then
+                menu:Hide()
+            end
+        end)
+        local function SyncLock()
+            arrow:SetShown(not EntryLocked(e))
+        end
         CludesUI.RegisterWidgetRefresh(SyncLock)
         SyncLock()
     end
@@ -956,7 +1259,7 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- and on a vertical bar every position but the bar text's own): the
     -- player picks where the new text goes.
     local ADD_W = 220
-    local addOpen   -- the button's click, once its row is built
+    local addOpen -- the button's click, once its row is built
     local function AddPicker(rgn)
         local btn = rgn._control
         -- Its own hover look, kept past the menu wiring (which takes the scripts).
@@ -965,53 +1268,120 @@ local function BuildXPBarPage(pageName, parent, yOffset)
         proxyLbl:Hide()
         local menu
         local function EnsureMenu()
-            if menu then return menu end
+            if menu then
+                return menu
+            end
             local refresh
-            menu, _, refresh = CludesUI.BuildDropdownMenu(btn, ADD_W, POS_ORDER, POS_VALUES,
-                function() return nil end,
-                function(v) AddAt(v) end,
-                proxyLbl, "regular",
+            menu, _, refresh = CludesUI.BuildDropdownMenu(
+                btn,
+                ADD_W,
+                POS_ORDER,
+                POS_VALUES,
+                function()
+                    return nil
+                end,
+                function(v)
+                    AddAt(v)
+                end,
+                proxyLbl,
+                "regular",
                 function(v)
                     if Vertical() then
-                        if v ~= "Center" then return CludesUI.DisabledTooltip("Horizontal Orientation") end
-                        if Shows("Center", 1) then return true end
+                        if v ~= "Center" then
+                            return CludesUI.DisabledTooltip("Horizontal Orientation")
+                        end
+                        if Shows("Center", 1) then
+                            return true
+                        end
                         return nil
                     end
-                    if not FreeIndex(v) then return true end
-                end)
-            CludesUI.WireDropdownScripts(btn, proxyLbl, NO_PAINT, NO_PAINT, menu, refresh, CludesUI.RD_DD_COLOURS, true)
+                    if not FreeIndex(v) then
+                        return true
+                    end
+                end
+            )
+            CludesUI.WireDropdownScripts(
+                btn,
+                proxyLbl,
+                NO_PAINT,
+                NO_PAINT,
+                menu,
+                refresh,
+                CludesUI.RD_DD_COLOURS,
+                true
+            )
             btn:HookScript("OnEnter", enter)
-            btn:HookScript("OnLeave", function(self) if not menu:IsShown() then leave(self) end end)
-            menu:HookScript("OnHide", function() if not btn:IsMouseOver() then leave(btn) end end)
+            btn:HookScript("OnLeave", function(self)
+                if not menu:IsShown() then
+                    leave(self)
+                end
+            end)
+            menu:HookScript("OnHide", function()
+                if not btn:IsMouseOver() then
+                    leave(btn)
+                end
+            end)
             return menu
         end
         addOpen = function()
             local m = EnsureMenu()
-            if m:IsShown() then m:Hide() else m:Show() end
+            if m:IsShown() then
+                m:Hide()
+            else
+                m:Show()
+            end
         end
-        btn:HookScript("OnHide", function() if menu then menu:Hide() end end)
+        btn:HookScript("OnHide", function()
+            if menu then
+                menu:Hide()
+            end
+        end)
     end
 
     -- The texts two to a row, Add Text Slot in the slot after the last.
-    local addCfg = { type="button", text="+ Add Text Slot", width=ADD_W,
-          onClick=function() if addOpen then addOpen() end end,
-          disabled=function() return _blizzDis() or not AddRoom() end,
-          disabledTooltip=function()
-              if _blizzDis() then return BLIZZ_DIS_TIP end
-              if Vertical() then return "Horizontal Orientation" end
-              return "Every text position is full."
-          end,
-          rawTooltip=function() return _blizzDis() or not Vertical() end }
+    local addCfg = {
+        type = "button",
+        text = "+ Add Text Slot",
+        width = ADD_W,
+        onClick = function()
+            if addOpen then
+                addOpen()
+            end
+        end,
+        disabled = function()
+            return _blizzDis() or not AddRoom()
+        end,
+        disabledTooltip = function()
+            if _blizzDis() then
+                return BLIZZ_DIS_TIP
+            end
+            if Vertical() then
+                return "Horizontal Orientation"
+            end
+            return "Every text position is full."
+        end,
+        rawTooltip = function()
+            return _blizzDis() or not Vertical()
+        end,
+    }
     local cells = {}
-    for k = 1, #entries do cells[k] = entries[k] end
+    for k = 1, #entries do
+        cells[k] = entries[k]
+    end
     cells[#cells + 1] = addCfg
     local function CellCfg(c)
-        if c == nil then return CludesUI.BlankRowCfg() end
-        if c == addCfg then return addCfg end
+        if c == nil then
+            return CludesUI.BlankRowCfg()
+        end
+        if c == addCfg then
+            return addCfg
+        end
         return EntryCfg(c)
     end
     local function CellChrome(rgn, c)
-        if not chrome or c == nil then return end
+        if not chrome or c == nil then
+            return
+        end
         if c == addCfg then
             AddPicker(rgn)
             return
@@ -1034,50 +1404,71 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     for k = 1, #cells, 2 do
         local l, r = cells[k], cells[k + 1]
         local row
-        row, h = W:DualRow(parent, y, CellCfg(l), CellCfg(r));  y = y - h
+        row, h = W:DualRow(parent, y, CellCfg(l), CellCfg(r))
+        y = y - h
         CellChrome(row._leftRegion, l)
         CellChrome(row._rightRegion, r)
     end
 
-    _, h = W:Spacer(parent, y, 12);  y = y - h
+    _, h = W:Spacer(parent, y, 12)
+    y = y - h
 
     -------------------------------------------------------------------
     --  DISPLAY
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "DISPLAY", y);  y = y - h
+    _, h = W:SectionHeader(parent, "DISPLAY", y)
+    y = y - h
 
     -- Text Size (the bar text's, and every other text's until its own is
     -- set) | Text Background (its colour and opacity inline): a box behind
     -- every text shown.
     local textBgRow
-    textBgRow, h = W:DualRow(parent, y, K.TextSizeCfg(XP),
-        { type="toggle", text="Text Background",
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=function() return S().showTextBg end,
-          setValue=function(v)
-              S().showTextBg = v
-              ns.ApplyDataBarLayout(XP)
-              CludesUI:RefreshPage()
-          end });  y = y - h
+    textBgRow, h = W:DualRow(parent, y, K.TextSizeCfg(XP), {
+        type = "toggle",
+        text = "Text Background",
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function()
+            return S().showTextBg
+        end,
+        setValue = function(v)
+            S().showTextBg = v
+            ns.ApplyDataBarLayout(XP)
+            CludesUI:RefreshPage()
+        end,
+    })
+    y = y - h
     if chrome then
         CludesUI.BuildInlineSwatches(textBgRow._rightRegion, {
-            { tooltip = "Background Color", hasAlpha = true,
-              getValue = function()
-                  local c = S().textBgColor
-                  if c then return c.r or 0.06, c.g or 0.06, c.b or 0.08, c.a or 0.9 end
-                  return 0.06, 0.06, 0.08, 0.9
-              end,
-              setValue = function(r, g, b, a)
-                  S().textBgColor = { r = r, g = g, b = b, a = a or 0.9 }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-        }, { size = 20,
-            disabled = function() return _blizzDis() or not S().showTextBg end,
+            {
+                tooltip = "Background Color",
+                hasAlpha = true,
+                getValue = function()
+                    local c = S().textBgColor
+                    if c then
+                        return c.r or 0.06, c.g or 0.06, c.b or 0.08, c.a or 0.9
+                    end
+                    return 0.06, 0.06, 0.08, 0.9
+                end,
+                setValue = function(r, g, b, a)
+                    S().textBgColor = { r = r, g = g, b = b, a = a or 0.9 }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+        }, {
+            size = 20,
+            disabled = function()
+                return _blizzDis() or not S().showTextBg
+            end,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDis() then
+                    return BLIZZ_DIS_TIP
+                end
                 return "Text Background"
             end,
-            rawTooltip = _blizzDis })
+            rawTooltip = _blizzDis,
+        })
     end
 
     -- Border Style | Border Size, no Custom Border toggle: the plain line
@@ -1099,8 +1490,11 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     if not Vertical() then
         for _, c in ipairs(FLIP_CANDS) do
             if C_Texture.GetAtlasInfo(c[1]) then
-                if #fillOrder == 3 then fillOrder[4] = "---" end
-                fillVals[c[1]] = c[2]; fillOrder[#fillOrder + 1] = c[1]
+                if #fillOrder == 3 then
+                    fillOrder[4] = "---"
+                end
+                fillVals[c[1]] = c[2]
+                fillOrder[#fillOrder + 1] = c[1]
             end
         end
     end
@@ -1108,101 +1502,161 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     local GRAD_DIR = { gradH = "HORIZONTAL", gradV = "VERTICAL" }
     local function FillKey()
         local f = S().fvFill
-        if f and fillVals[f] then return f end
+        if f and fillVals[f] then
+            return f
+        end
         return GRAD_KEY[S().fillGradient] or "custom"
     end
     local function FillKind()
         local k = FillKey()
-        if k == "custom" then return "custom" end
+        if k == "custom" then
+            return "custom"
+        end
         return GRAD_DIR[k] and "gradient" or "flip"
     end
-    local function Custom() return FillKind() == "custom" end
+    local function Custom()
+        return FillKind() == "custom"
+    end
     -- Rested Color: the rested XP shown ahead of the fill (dark blue at half
     -- opacity until set).
     local fillRow
-    fillRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Fill Style", values=fillVals, order=fillOrder,
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=FillKey,
-          setValue=function(v)
-              local was = FillKind()
-              local s = S()
-              s.fillGradient = GRAD_DIR[v]
-              s.fvFill = (v ~= "custom" and not GRAD_DIR[v]) and v or nil
-              ns.ApplyDataBarLayout(XP)
-              -- Another kind needs its own inline control: rebuild.
-              if FillKind() ~= was then CludesUI:RefreshPage(true) else CludesUI:RefreshPage() end
-          end },
-        { type="colorpicker", text="Rested Color", hasAlpha=true,
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=function()
-              local c = S().restedColor
-              if c then return c.r or 0.15, c.g or 0.30, c.b or 0.60, c.a or 0.5 end
-              return 0.15, 0.30, 0.60, 0.5
-          end,
-          setValue=function(r, g, b, a)
-              S().restedColor = { r = r, g = g, b = b, a = a or 0.5 }
-              ns.ApplyDataBarLayout(XP)
-          end });  y = y - h
+    fillRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Fill Style",
+        values = fillVals,
+        order = fillOrder,
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = FillKey,
+        setValue = function(v)
+            local was = FillKind()
+            local s = S()
+            s.fillGradient = GRAD_DIR[v]
+            s.fvFill = (v ~= "custom" and not GRAD_DIR[v]) and v or nil
+            ns.ApplyDataBarLayout(XP)
+            -- Another kind needs its own inline control: rebuild.
+            if FillKind() ~= was then
+                CludesUI:RefreshPage(true)
+            else
+                CludesUI:RefreshPage()
+            end
+        end,
+    }, {
+        type = "colorpicker",
+        text = "Rested Color",
+        hasAlpha = true,
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function()
+            local c = S().restedColor
+            if c then
+                return c.r or 0.15, c.g or 0.30, c.b or 0.60, c.a or 0.5
+            end
+            return 0.15, 0.30, 0.60, 0.5
+        end,
+        setValue = function(r, g, b, a)
+            S().restedColor = { r = r, g = g, b = b, a = a or 0.5 }
+            ns.ApplyDataBarLayout(XP)
+        end,
+    })
+    y = y - h
     if chrome then
         local rgn = fillRow._leftRegion
         if Custom() then
-            CludesUI.BuildInlineSwatches(rgn, K.ColorSwatches(XP),
-                { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true })
+            CludesUI.BuildInlineSwatches(
+                rgn,
+                K.ColorSwatches(XP),
+                { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
+            )
         elseif FillKind() == "gradient" then
             CludesUI.BuildInlineSwatches(rgn, {
-                { tooltip = "Gradient Start Color", hasAlpha = true,
-                  getValue = function()
-                      local _, r, g, b, a = ns.XPBarGradient(S())
-                      return r, g, b, a
-                  end,
-                  setValue = function(r, g, b, a)
-                      S().fillGradStart = { r = r, g = g, b = b, a = a or 1 }
-                      ns.ApplyDataBarLayout(XP)
-                  end },
-                { tooltip = "Gradient End Color", hasAlpha = true,
-                  getValue = function()
-                      local _, _, _, _, _, r, g, b, a = ns.XPBarGradient(S())
-                      return r, g, b, a
-                  end,
-                  setValue = function(r, g, b, a)
-                      S().fillGradEnd = { r = r, g = g, b = b, a = a or 1 }
-                      ns.ApplyDataBarLayout(XP)
-                  end },
-            }, { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true })
+                {
+                    tooltip = "Gradient Start Color",
+                    hasAlpha = true,
+                    getValue = function()
+                        local _, r, g, b, a = ns.XPBarGradient(S())
+                        return r, g, b, a
+                    end,
+                    setValue = function(r, g, b, a)
+                        S().fillGradStart = { r = r, g = g, b = b, a = a or 1 }
+                        ns.ApplyDataBarLayout(XP)
+                    end,
+                },
+                {
+                    tooltip = "Gradient End Color",
+                    hasAlpha = true,
+                    getValue = function()
+                        local _, _, _, _, _, r, g, b, a = ns.XPBarGradient(S())
+                        return r, g, b, a
+                    end,
+                    setValue = function(r, g, b, a)
+                        S().fillGradEnd = { r = r, g = g, b = b, a = a or 1 }
+                        ns.ApplyDataBarLayout(XP)
+                    end,
+                },
+            }, {
+                size = 20,
+                disabled = _blizzDis,
+                disabledTooltip = BLIZZ_DIS_TIP,
+                rawTooltip = true,
+            })
         else
             CludesUI.BuildInlineCog(rgn, {
                 title = "Fill Animation",
                 anchorTo = rgn._control,
                 captureRegion = rgn,
-                disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true,
+                disabled = _blizzDis,
+                disabledTooltip = BLIZZ_DIS_TIP,
+                rawTooltip = true,
                 rows = {
-                    { type="toggle", label="Animate on XP Gain",
-                      tooltip="Plays the animation once each time you gain XP.",
-                      get=function() return S().fvFillSmart ~= false and not S().fvFillAnim end,
-                      set=function(on)
-                          if on then
-                              S().fvFillSmart = nil; S().fvFillAnim = nil
-                          else
-                              S().fvFillSmart = false
-                          end
-                          ns.ApplyDataBarLayout(XP)
-                      end },
-                    { type="toggle", label="Loop Animation",
-                      tooltip="Plays the animation continuously.",
-                      get=function() return S().fvFillAnim == true end,
-                      set=function(on)
-                          if on then
-                              S().fvFillAnim = true; S().fvFillSmart = false
-                          else
-                              S().fvFillAnim = nil
-                          end
-                          ns.ApplyDataBarLayout(XP)
-                      end },
-                    { type="toggle", label="Stretch to Bar",
-                      tooltip="Stretches the animation across the whole bar.",
-                      get=function() return S().fvFillStretch end,
-                      set=function(on) S().fvFillStretch = on or nil; ns.ApplyDataBarLayout(XP) end },
+                    {
+                        type = "toggle",
+                        label = "Animate on XP Gain",
+                        tooltip = "Plays the animation once each time you gain XP.",
+                        get = function()
+                            return S().fvFillSmart ~= false and not S().fvFillAnim
+                        end,
+                        set = function(on)
+                            if on then
+                                S().fvFillSmart = nil
+                                S().fvFillAnim = nil
+                            else
+                                S().fvFillSmart = false
+                            end
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Loop Animation",
+                        tooltip = "Plays the animation continuously.",
+                        get = function()
+                            return S().fvFillAnim == true
+                        end,
+                        set = function(on)
+                            if on then
+                                S().fvFillAnim = true
+                                S().fvFillSmart = false
+                            else
+                                S().fvFillAnim = nil
+                            end
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Stretch to Bar",
+                        tooltip = "Stretches the animation across the whole bar.",
+                        get = function()
+                            return S().fvFillStretch
+                        end,
+                        set = function(on)
+                            S().fvFillStretch = on or nil
+                            ns.ApplyDataBarLayout(XP)
+                        end,
+                    },
                 },
             })
         end
@@ -1212,119 +1666,179 @@ local function BuildXPBarPage(pageName, parent, yOffset)
     -- its colour inline, locked at 0%; both fall back to the style's own
     -- background until set, ns.XPBarBackground) | Bar Texture.
     local bgRow
-    bgRow, h = W:DualRow(parent, y,
-        { type="slider", text="Background", min=0, max=100, step=1,
-          tooltipOnControl="Background Opacity",
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=function()
-              local _, _, _, op = ns.XPBarBackground(S())
-              return op
-          end,
-          setValue=function(v)
-              local _, _, _, was = ns.XPBarBackground(S())
-              S().barBgOpacity = v
-              ns.ApplyDataBarLayout(XP)
-              -- The colour swatch locks at 0%: refresh only on that edge.
-              if (was <= 0) ~= (v <= 0) then CludesUI:RefreshPage() end
-          end },
-        K.TexCfg(XP));  y = y - h
+    bgRow, h = W:DualRow(parent, y, {
+        type = "slider",
+        text = "Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        tooltipOnControl = "Background Opacity",
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function()
+            local _, _, _, op = ns.XPBarBackground(S())
+            return op
+        end,
+        setValue = function(v)
+            local _, _, _, was = ns.XPBarBackground(S())
+            S().barBgOpacity = v
+            ns.ApplyDataBarLayout(XP)
+            -- The colour swatch locks at 0%: refresh only on that edge.
+            if (was <= 0) ~= (v <= 0) then
+                CludesUI:RefreshPage()
+            end
+        end,
+    }, K.TexCfg(XP))
+    y = y - h
     if chrome then
         CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
-            { tooltip = "Background Color",
-              getValue = function()
-                  local r, g, b = ns.XPBarBackground(S())
-                  return r, g, b
-              end,
-              setValue = function(r, g, b)
-                  S().barBgColor = { r = r, g = g, b = b }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-        }, { size = 20,
+            {
+                tooltip = "Background Color",
+                getValue = function()
+                    local r, g, b = ns.XPBarBackground(S())
+                    return r, g, b
+                end,
+                setValue = function(r, g, b)
+                    S().barBgColor = { r = r, g = g, b = b }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+        }, {
+            size = 20,
             disabled = function()
-                if _blizzDis() then return true end
+                if _blizzDis() then
+                    return true
+                end
                 local _, _, _, op = ns.XPBarBackground(S())
                 return op <= 0
             end,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDis() then
+                    return BLIZZ_DIS_TIP
+                end
                 return "This option requires Background above 0%"
             end,
-            rawTooltip = _blizzDis })
+            rawTooltip = _blizzDis,
+        })
     end
 
     -- Quest XP Overlay: the completed / incomplete colours as inline swatches
     -- (green / gold at 60% until set, ns.XPQuestColor), the filters in its cog.
     local questRow
-    questRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Quest XP Overlay",
-          tooltip="Shows the XP from quests in your quest log ahead of the fill.",
-          disabled=_blizzDis, disabledTooltip=BLIZZ_DIS_TIP, rawTooltip=true,
-          getValue=function() return S().questOverlay end,
-          setValue=function(v)
-              S().questOverlay = v
-              ns.ApplyDataBarLayout(XP)
-              CludesUI:RefreshPage()
-          end },
-        CludesUI.BlankRowCfg());  y = y - h
+    questRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Quest XP Overlay",
+        tooltip = "Shows the XP from quests in your quest log ahead of the fill.",
+        disabled = _blizzDis,
+        disabledTooltip = BLIZZ_DIS_TIP,
+        rawTooltip = true,
+        getValue = function()
+            return S().questOverlay
+        end,
+        setValue = function(v)
+            S().questOverlay = v
+            ns.ApplyDataBarLayout(XP)
+            CludesUI:RefreshPage()
+        end,
+    }, CludesUI.BlankRowCfg())
+    y = y - h
     if chrome then
         local rgn = questRow._leftRegion
-        local function overlayOff() return _blizzDis() or not S().questOverlay end
+        local function overlayOff()
+            return _blizzDis() or not S().questOverlay
+        end
         CludesUI.BuildInlineCog(rgn, {
             title = "Quest XP Overlay",
             captureRegion = rgn,
             disabled = overlayOff,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDis() then
+                    return BLIZZ_DIS_TIP
+                end
                 return "Quest XP Overlay"
             end,
             rawTooltip = _blizzDis,
             rows = {
-                { type="toggle", label="Completed Quests Only",
-                  tooltip="Only counts quests that are ready to turn in.",
-                  get=function() return S().questOverlayCompleted end,
-                  set=function(v)
-                      S().questOverlayCompleted = v or nil
-                      ns.ApplyDataBarLayout(XP)
-                      CludesUI:RefreshPage()
-                  end },
-                { type="toggle", label="Current Zone Only",
-                  tooltip="Only counts quests in your current zone.",
-                  get=function() return S().questOverlayZone end,
-                  set=function(v)
-                      S().questOverlayZone = v or nil
-                      ns.ApplyDataBarLayout(XP)
-                  end },
+                {
+                    type = "toggle",
+                    label = "Completed Quests Only",
+                    tooltip = "Only counts quests that are ready to turn in.",
+                    get = function()
+                        return S().questOverlayCompleted
+                    end,
+                    set = function(v)
+                        S().questOverlayCompleted = v or nil
+                        ns.ApplyDataBarLayout(XP)
+                        CludesUI:RefreshPage()
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Current Zone Only",
+                    tooltip = "Only counts quests in your current zone.",
+                    get = function()
+                        return S().questOverlayZone
+                    end,
+                    set = function(v)
+                        S().questOverlayZone = v or nil
+                        ns.ApplyDataBarLayout(XP)
+                    end,
+                },
             },
         })
         CludesUI.BuildInlineSwatches(rgn, {
-            { tooltip = "Completed Color", hasAlpha = true,
-              getValue = function() return ns.XPQuestColor(S(), true) end,
-              setValue = function(r, g, b, a)
-                  S().questOverlayDoneColor = { r = r, g = g, b = b, a = a or 0.6 }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-            { tooltip = "Incomplete Color", hasAlpha = true,
-              disabled = function() return S().questOverlayCompleted end,
-              disabledTooltip = function()
-                  if _blizzDis() then return BLIZZ_DIS_TIP end
-                  if not S().questOverlay then return "Quest XP Overlay" end
-                  return "Completed Quests Only"
-              end,
-              requireState = function()
-                  if S().questOverlay and not _blizzDis() then return "disabled" end
-              end,
-              rawTooltip = _blizzDis,
-              getValue = function() return ns.XPQuestColor(S(), false) end,
-              setValue = function(r, g, b, a)
-                  S().questOverlayColor = { r = r, g = g, b = b, a = a or 0.6 }
-                  ns.ApplyDataBarLayout(XP)
-              end },
-        }, { size = 20, disabled = overlayOff,
+            {
+                tooltip = "Completed Color",
+                hasAlpha = true,
+                getValue = function()
+                    return ns.XPQuestColor(S(), true)
+                end,
+                setValue = function(r, g, b, a)
+                    S().questOverlayDoneColor = { r = r, g = g, b = b, a = a or 0.6 }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+            {
+                tooltip = "Incomplete Color",
+                hasAlpha = true,
+                disabled = function()
+                    return S().questOverlayCompleted
+                end,
+                disabledTooltip = function()
+                    if _blizzDis() then
+                        return BLIZZ_DIS_TIP
+                    end
+                    if not S().questOverlay then
+                        return "Quest XP Overlay"
+                    end
+                    return "Completed Quests Only"
+                end,
+                requireState = function()
+                    if S().questOverlay and not _blizzDis() then
+                        return "disabled"
+                    end
+                end,
+                rawTooltip = _blizzDis,
+                getValue = function()
+                    return ns.XPQuestColor(S(), false)
+                end,
+                setValue = function(r, g, b, a)
+                    S().questOverlayColor = { r = r, g = g, b = b, a = a or 0.6 }
+                    ns.ApplyDataBarLayout(XP)
+                end,
+            },
+        }, {
+            size = 20,
+            disabled = overlayOff,
             disabledTooltip = function()
-                if _blizzDis() then return BLIZZ_DIS_TIP end
+                if _blizzDis() then
+                    return BLIZZ_DIS_TIP
+                end
                 return "Quest XP Overlay"
             end,
-            rawTooltip = _blizzDis })
+            rawTooltip = _blizzDis,
+        })
     end
 
     return math.abs(y)

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_TextTags.lua
 --  Custom text templates ("[hp:abr] | [hp:pct]%"): shared tag schema, parser,
@@ -25,9 +27,9 @@ CludesUI.TextTags = TextTags
 --  "roster" (group membership). width: estimated pixels. sample: preview value.
 -------------------------------------------------------------------------------
 TextTags.UNIT = {
-    mods = { "max", "abr", "pct", "first", "last", "abbr" },  -- order of the modifiers inside a key
+    mods = { "max", "abr", "pct", "first", "last", "abbr" }, -- order of the modifiers inside a key
     modAliases = { percent = "pct" },
-    tags = {  -- order of the help text
+    tags = { -- order of the help text
         { tag = "hp", aliases = { "health" }, keys = { "hp", "hp:abr", "hp:max", "hp:max:abr", "hp:pct" } },
         { tag = "pp", aliases = { "power" }, keys = { "pp", "pp:abr", "pp:max", "pp:max:abr", "pp:pct" } },
         { tag = "absorb", keys = { "absorb", "absorb:abr" } },
@@ -38,39 +40,43 @@ TextTags.UNIT = {
         { tag = "group", keys = { "group" } },
     },
     keys = {
-        ["hp"]             = { reads = "hp", width = 45, sample = "132456" },
-        ["hp:abr"]         = { reads = "hp", width = 38, sample = "132 K" },
-        ["hp:max"]         = { reads = "hp", width = 45, sample = "150000" },
-        ["hp:max:abr"]     = { reads = "hp", width = 38, sample = "150 K" },
-        ["hp:pct"]         = { reads = "hp", width = 30, sample = "88" },
-        ["pp"]             = { reads = "pp", width = 45, sample = "31250" },
-        ["pp:abr"]         = { reads = "pp", width = 38, sample = "31 K" },
-        ["pp:max"]         = { reads = "pp", width = 45, sample = "50000" },
-        ["pp:max:abr"]     = { reads = "pp", width = 38, sample = "50 K" },
-        ["pp:pct"]         = { reads = "pp", width = 30, sample = "62" },
-        ["absorb"]         = { reads = "abs", width = 45, sample = "12345" },
-        ["absorb:abr"]     = { reads = "abs", width = 38, sample = "12 K" },
-        ["healabsorb"]     = { reads = "habs", width = 45, sample = "4200" },
+        ["hp"] = { reads = "hp", width = 45, sample = "132456" },
+        ["hp:abr"] = { reads = "hp", width = 38, sample = "132 K" },
+        ["hp:max"] = { reads = "hp", width = 45, sample = "150000" },
+        ["hp:max:abr"] = { reads = "hp", width = 38, sample = "150 K" },
+        ["hp:pct"] = { reads = "hp", width = 30, sample = "88" },
+        ["pp"] = { reads = "pp", width = 45, sample = "31250" },
+        ["pp:abr"] = { reads = "pp", width = 38, sample = "31 K" },
+        ["pp:max"] = { reads = "pp", width = 45, sample = "50000" },
+        ["pp:max:abr"] = { reads = "pp", width = 38, sample = "50 K" },
+        ["pp:pct"] = { reads = "pp", width = 30, sample = "62" },
+        ["absorb"] = { reads = "abs", width = 45, sample = "12345" },
+        ["absorb:abr"] = { reads = "abs", width = 38, sample = "12 K" },
+        ["healabsorb"] = { reads = "habs", width = 45, sample = "4200" },
         ["healabsorb:abr"] = { reads = "habs", width = 38, sample = "4 K" },
-        ["name"]           = { reads = "id", width = 80, sample = "Thrall" },
-        ["name:first"]     = { reads = "id", width = 48, sample = "Thrall" },
-        ["name:last"]      = { reads = "id", width = 64, sample = "Stormrage" },
-        ["name:abbr"]      = { reads = "id", width = 72, sample = "I. Stormrage" },
-        ["target"]         = { reads = "tgt", width = 80, sample = "Jaina" },
-        ["target:first"]   = { reads = "tgt", width = 48, sample = "Jaina" },
-        ["target:last"]    = { reads = "tgt", width = 72, sample = "Proudmoore" },
-        ["target:abbr"]    = { reads = "tgt", width = 72, sample = "J. Proudmoore" },
-        ["level"]          = { reads = "id", width = 24, sample = "80" },
-        ["group"]          = { reads = "roster", width = 10, sample = "3" },
+        ["name"] = { reads = "id", width = 80, sample = "Thrall" },
+        ["name:first"] = { reads = "id", width = 48, sample = "Thrall" },
+        ["name:last"] = { reads = "id", width = 64, sample = "Stormrage" },
+        ["name:abbr"] = { reads = "id", width = 72, sample = "I. Stormrage" },
+        ["target"] = { reads = "tgt", width = 80, sample = "Jaina" },
+        ["target:first"] = { reads = "tgt", width = 48, sample = "Jaina" },
+        ["target:last"] = { reads = "tgt", width = 72, sample = "Proudmoore" },
+        ["target:abbr"] = { reads = "tgt", width = 72, sample = "J. Proudmoore" },
+        ["level"] = { reads = "id", width = 24, sample = "80" },
+        ["group"] = { reads = "roster", width = 10, sample = "3" },
     },
     -- Built on demand: the active locale is resolved only at ADDON_LOADED.
     descs = function()
         return {
             tags = {
-                hp = CludesUI.L("Health"), pp = CludesUI.L("Power"),
-                absorb = CludesUI.L("Absorb shield"), healabsorb = CludesUI.L("Heal absorb"),
-                name = CludesUI.L("Unit name"), target = CludesUI.L("Name of the unit's target"),
-                level = CludesUI.L("Unit level"), group = CludesUI.L("Raid group number"),
+                hp = CludesUI.L("Health"),
+                pp = CludesUI.L("Power"),
+                absorb = CludesUI.L("Absorb shield"),
+                healabsorb = CludesUI.L("Heal absorb"),
+                name = CludesUI.L("Unit name"),
+                target = CludesUI.L("Name of the unit's target"),
+                level = CludesUI.L("Unit level"),
+                group = CludesUI.L("Raid group number"),
             },
             mods = {
                 abr = CludesUI.L("Abbreviated (132 K)"),
@@ -82,21 +88,30 @@ TextTags.UNIT = {
             },
             -- Short, for the suggestion list.
             keys = {
-                ["hp"] = CludesUI.L("Current health"), ["hp:abr"] = CludesUI.L("Current, abbreviated"),
-                ["hp:max"] = CludesUI.L("Maximum health"), ["hp:max:abr"] = CludesUI.L("Maximum, abbreviated"),
+                ["hp"] = CludesUI.L("Current health"),
+                ["hp:abr"] = CludesUI.L("Current, abbreviated"),
+                ["hp:max"] = CludesUI.L("Maximum health"),
+                ["hp:max:abr"] = CludesUI.L("Maximum, abbreviated"),
                 ["hp:pct"] = CludesUI.L("Health percent"),
-                ["pp"] = CludesUI.L("Current power"), ["pp:abr"] = CludesUI.L("Current, abbreviated"),
-                ["pp:max"] = CludesUI.L("Maximum power"), ["pp:max:abr"] = CludesUI.L("Maximum, abbreviated"),
+                ["pp"] = CludesUI.L("Current power"),
+                ["pp:abr"] = CludesUI.L("Current, abbreviated"),
+                ["pp:max"] = CludesUI.L("Maximum power"),
+                ["pp:max:abr"] = CludesUI.L("Maximum, abbreviated"),
                 ["pp:pct"] = CludesUI.L("Power percent"),
-                ["absorb"] = CludesUI.L("Absorb shield"), ["absorb:abr"] = CludesUI.L("Absorb, abbreviated"),
-                ["healabsorb"] = CludesUI.L("Heal absorb"), ["healabsorb:abr"] = CludesUI.L("Heal absorb, abbreviated"),
+                ["absorb"] = CludesUI.L("Absorb shield"),
+                ["absorb:abr"] = CludesUI.L("Absorb, abbreviated"),
+                ["healabsorb"] = CludesUI.L("Heal absorb"),
+                ["healabsorb:abr"] = CludesUI.L("Heal absorb, abbreviated"),
                 ["name"] = CludesUI.L("Unit name"),
-                ["name:first"] = CludesUI.L("First name"), ["name:last"] = CludesUI.L("Last name"),
+                ["name:first"] = CludesUI.L("First name"),
+                ["name:last"] = CludesUI.L("Last name"),
                 ["name:abbr"] = CludesUI.L("Abbreviated"),
                 ["target"] = CludesUI.L("Target's name"),
-                ["target:first"] = CludesUI.L("Target, first name"), ["target:last"] = CludesUI.L("Target, last name"),
+                ["target:first"] = CludesUI.L("Target, first name"),
+                ["target:last"] = CludesUI.L("Target, last name"),
                 ["target:abbr"] = CludesUI.L("Target, abbreviated"),
-                ["level"] = CludesUI.L("Unit level"), ["group"] = CludesUI.L("Raid group"),
+                ["level"] = CludesUI.L("Unit level"),
+                ["group"] = CludesUI.L("Raid group"),
             },
         }
     end,
@@ -109,9 +124,12 @@ TextTags.UNIT = {
 --  A key the module leaves out is unknown to that catalog.
 -------------------------------------------------------------------------------
 function TextTags.Bind(schema, map)
-    local cat = { schema = schema, map = {}, keys = {}, tags = {}, names = {}, mods = {}, cache = {}, count = 0 }
+    local cat =
+        { schema = schema, map = {}, keys = {}, tags = {}, names = {}, mods = {}, cache = {}, count = 0 }
     for key, v in pairs(map) do
-        if not schema.keys[key] then error("TextTags.Bind: unknown key " .. tostring(key), 2) end
+        if not schema.keys[key] then
+            error("TextTags.Bind: unknown key " .. tostring(key), 2)
+        end
         cat.map[key] = v
     end
     for i = 1, #schema.tags do
@@ -127,13 +145,19 @@ function TextTags.Bind(schema, map)
             cat.tags[#cat.tags + 1] = { tag = def.tag, aliases = def.aliases, keys = bound }
             cat.names[def.tag] = def.tag
             if def.aliases then
-                for a = 1, #def.aliases do cat.names[def.aliases[a]] = def.tag end
+                for a = 1, #def.aliases do
+                    cat.names[def.aliases[a]] = def.tag
+                end
             end
         end
     end
-    for i = 1, #schema.mods do cat.mods[schema.mods[i]] = schema.mods[i] end
+    for i = 1, #schema.mods do
+        cat.mods[schema.mods[i]] = schema.mods[i]
+    end
     if schema.modAliases then
-        for alias, mod in pairs(schema.modAliases) do cat.mods[alias] = mod end
+        for alias, mod in pairs(schema.modAliases) do
+            cat.mods[alias] = mod
+        end
     end
     return cat
 end
@@ -152,21 +176,33 @@ local function ResolveKey(cat, inner)
     inner = slower(inner)
     local s, e = sfind(inner, ":", 1, true)
     local tag = cat.names[s and ssub(inner, 1, s - 1) or inner]
-    if not tag then return nil end
-    if not s then return cat.map[tag] ~= nil and tag or nil end
-    for k in pairs(modSeen) do modSeen[k] = nil end
+    if not tag then
+        return nil
+    end
+    if not s then
+        return cat.map[tag] ~= nil and tag or nil
+    end
+    for k in pairs(modSeen) do
+        modSeen[k] = nil
+    end
     local pos = e + 1
     while true do
         local ns = sfind(inner, ":", pos, true)
         local mod = cat.mods[ssub(inner, pos, (ns or 0) - 1)]
-        if not mod or modSeen[mod] then return nil end
+        if not mod or modSeen[mod] then
+            return nil
+        end
         modSeen[mod] = true
-        if not ns then break end
+        if not ns then
+            break
+        end
         pos = ns + 1
     end
     local order, key = cat.schema.mods, tag
     for i = 1, #order do
-        if modSeen[order[i]] then key = key .. ":" .. order[i] end
+        if modSeen[order[i]] then
+            key = key .. ":" .. order[i]
+        end
     end
     return cat.map[key] ~= nil and key or nil
 end
@@ -182,9 +218,13 @@ local strlen = strlenutf8 or string.len
 --- Cached and shared by every reader (read-only); transient (the popup's
 --- per-keystroke preview) reads the cache but never fills it.
 function TextTags.Parse(cat, template, transient)
-    if type(template) ~= "string" or template == "" then return nil end
+    if type(template) ~= "string" or template == "" then
+        return nil
+    end
     local hit = cat.cache[template]
-    if hit then return hit end
+    if hit then
+        return hit
+    end
     local fmt, literal, keys, has, reads, unknown, seen = {}, {}, {}, {}, {}, {}, {}
     local pos = 1
     while true do
@@ -208,15 +248,25 @@ function TextTags.Parse(cat, template, transient)
             has[key] = true
             reads[cat.schema.keys[key].reads] = true
         end
-        if not s then break end
+        if not s then
+            break
+        end
         pos = e + 1
     end
     hit = {
-        fmt = tconcat(fmt), keys = keys, has = has, reads = reads,
-        literalChars = strlen(tconcat(literal)), unknown = unknown,
+        fmt = tconcat(fmt),
+        keys = keys,
+        has = has,
+        reads = reads,
+        literalChars = strlen(tconcat(literal)),
+        unknown = unknown,
     }
-    if transient then return hit end
-    if cat.count >= 64 then cat.cache, cat.count = {}, 0 end
+    if transient then
+        return hit
+    end
+    if cat.count >= 64 then
+        cat.cache, cat.count = {}, 0
+    end
     cat.cache[template] = hit
     cat.count = cat.count + 1
     return hit
@@ -242,7 +292,9 @@ local DIM, MOD, UNKNOWN = CludesUI.COLOR_CODES.DIM, "|cffffd27a", "|cffffa633"
 --- "|cffffa633"), when given, colours the unknown tags left as text.
 function TextTags.Preview(cat, parsed, mark)
     local keys, defs = parsed.keys, cat.schema.keys
-    for i = 1, #keys do scratch[i] = defs[keys[i]].sample end
+    for i = 1, #keys do
+        scratch[i] = defs[keys[i]].sample
+    end
     local out = sformat(parsed.fmt, unpack(scratch, 1, #keys))
     if mark then
         local unknown = parsed.unknown
@@ -282,19 +334,24 @@ function TextTags.HelpText(cat, opts)
     local lines = {
         head .. CludesUI.L("Syntax") .. "|r",
         DIM .. CludesUI.L("Tags in [brackets], add modifiers with a colon, in any order.") .. "|r",
-        "", head .. CludesUI.L("Tags") .. "|r",
+        "",
+        head .. CludesUI.L("Tags") .. "|r",
     }
     local used = {}
     for i = 1, #cat.tags do
         local t, mods = cat.tags[i], {}
         for k = 1, #t.keys do
             for m = 1, #order do
-                if sfind(t.keys[k] .. ":", ":" .. order[m] .. ":", 1, true) then mods[order[m]] = true end
+                if sfind(t.keys[k] .. ":", ":" .. order[m] .. ":", 1, true) then
+                    mods[order[m]] = true
+                end
             end
         end
         local names, list = { "[" .. t.tag .. "]" }, {}
         if t.aliases then
-            for a = 1, #t.aliases do names[#names + 1] = "[" .. t.aliases[a] .. "]" end
+            for a = 1, #t.aliases do
+                names[#names + 1] = "[" .. t.aliases[a] .. "]"
+            end
         end
         for m = 1, #order do
             if mods[order[m]] then
@@ -303,8 +360,11 @@ function TextTags.HelpText(cat, opts)
             end
         end
         local desc = tagDescs[t.tag]
-        if desc and tagNotes[t.tag] then desc = desc .. " (" .. tagNotes[t.tag] .. ")" end
-        lines[#lines + 1] = tconcat(names, orWord) .. (desc and ("  " .. DIM .. desc .. "|r") or "")
+        if desc and tagNotes[t.tag] then
+            desc = desc .. " (" .. tagNotes[t.tag] .. ")"
+        end
+        lines[#lines + 1] = tconcat(names, orWord)
+            .. (desc and ("  " .. DIM .. desc .. "|r") or "")
             .. (#list > 0 and ("  " .. MOD .. tconcat(list, " ") .. "|r") or "")
     end
     local modAliases = cat.schema.modAliases or {}
@@ -319,7 +379,9 @@ function TextTags.HelpText(cat, opts)
             end
             local line = MOD .. mod .. "|r"
             for alias, target in pairs(modAliases) do
-                if target == mod then line = line .. orWord .. MOD .. alias .. "|r" end
+                if target == mod then
+                    line = line .. orWord .. MOD .. alias .. "|r"
+                end
             end
             lines[#lines + 1] = line .. (modDescs[mod] and ("  " .. DIM .. modDescs[mod] .. "|r") or "")
         end
@@ -335,7 +397,8 @@ function TextTags.HelpText(cat, opts)
             end
             shown = shown + 1
             -- Modifiers in their legend colour; "|" doubled before any colour escape is added.
-            local shownText = sgsub(sgsub(examples[i], "|", "||"), "%[(%w+)(:[%w:]+)%]", "[%1" .. MOD .. "%2|r]")
+            local shownText =
+                sgsub(sgsub(examples[i], "|", "||"), "%[(%w+)(:[%w:]+)%]", "[%1" .. MOD .. "%2|r]")
             lines[#lines + 1] = shownText .. "  " .. DIM .. "=  " .. TextTags.Preview(cat, parsed) .. "|r"
         end
     end
@@ -351,12 +414,18 @@ end
 --- variants inserts without "]" (its variants are listed next), unless it is
 --- already typed in full.
 function TextTags.Complete(cat, text, cursor)
-    if type(text) ~= "string" then return nil end
+    if type(text) ~= "string" then
+        return nil
+    end
     local before = ssub(text, 1, cursor)
     local open = before:match(".*()%[")
-    if not open then return nil end
+    if not open then
+        return nil
+    end
     local partial = slower(ssub(before, open + 1))
-    if not partial:match("^[%w:]*$") then return nil end
+    if not partial:match("^[%w:]*$") then
+        return nil
+    end
     local colon = sfind(partial, ":", 1, true)
     -- The partial as a key (aliases resolved, any modifier order), to tell
     -- "already typed in full".
@@ -369,9 +438,14 @@ function TextTags.Complete(cat, text, cursor)
         local pos = colon + 1
         while true do
             local nx = sfind(partial, ":", pos, true)
-            if not nx then last = ssub(partial, pos); break end
+            if not nx then
+                last = ssub(partial, pos)
+                break
+            end
             local m = cat.mods[ssub(partial, pos, nx - 1)]
-            if not m or done[m] then return nil end
+            if not m or done[m] then
+                return nil
+            end
             done[m] = true
             pos = nx + 1
         end
@@ -380,14 +454,20 @@ function TextTags.Complete(cat, text, cursor)
     -- or alias starts with last.
     local function Fits(key)
         local mods = {}
-        for m in key:gmatch(":(%w+)") do mods[m] = true end
+        for m in key:gmatch(":(%w+)") do
+            mods[m] = true
+        end
         for m in pairs(done) do
-            if not mods[m] then return false end
+            if not mods[m] then
+                return false
+            end
         end
         for m in pairs(mods) do
             if not done[m] then
                 for name, canon in pairs(cat.mods) do
-                    if canon == m and ssub(name, 1, #last) == last then return true end
+                    if canon == m and ssub(name, 1, #last) == last then
+                        return true
+                    end
                 end
             end
         end
@@ -396,41 +476,61 @@ function TextTags.Complete(cat, text, cursor)
     local descs = Descs(cat).keys or {}
     local items, seen, defs = {}, {}, cat.schema.keys
     local function Add(key)
-        if seen[key] then return end
+        if seen[key] then
+            return
+        end
         seen[key] = true
         local open = false
         if key ~= typed then
             for k = 1, #cat.keys do
-                if ssub(cat.keys[k], 1, #key + 1) == key .. ":" then open = true; break end
+                if ssub(cat.keys[k], 1, #key + 1) == key .. ":" then
+                    open = true
+                    break
+                end
             end
         end
         local label = sgsub(key, "^(%w+)(:.+)$", "%1" .. MOD .. "%2|r")
-        items[#items + 1] = { text = open and key or (key .. "]"), label = label, desc = descs[key], detail = defs[key].sample }
+        items[#items + 1] = {
+            text = open and key or (key .. "]"),
+            label = label,
+            desc = descs[key],
+            detail = defs[key].sample,
+        }
     end
     for i = 1, #cat.tags do
         local t = cat.tags[i]
         local names = { t.tag }
         if t.aliases then
-            for a = 1, #t.aliases do names[#names + 1] = t.aliases[a] end
+            for a = 1, #t.aliases do
+                names[#names + 1] = t.aliases[a]
+            end
         end
         for n = 1, #names do
             local name = names[n]
             if colon then
                 if ssub(partial, 1, colon - 1) == name then
                     for k = 1, #t.keys do
-                        if Fits(t.keys[k]) then Add(t.keys[k]) end
+                        if Fits(t.keys[k]) then
+                            Add(t.keys[k])
+                        end
                     end
                 end
             elseif partial == name then
-                for k = 1, #t.keys do Add(t.keys[k]) end
+                for k = 1, #t.keys do
+                    Add(t.keys[k])
+                end
             elseif ssub(name, 1, #partial) == partial then
                 Add(t.keys[1])
             end
         end
     end
-    if #items == 0 then return nil end
+    if #items == 0 then
+        return nil
+    end
     local to = cursor
-    if ssub(text, cursor + 1, cursor + 1) == "]" then to = cursor + 1 end
+    if ssub(text, cursor + 1, cursor + 1) == "]" then
+        to = cursor + 1
+    end
     return items, open + 1, to
 end
 
@@ -443,17 +543,27 @@ function TextTags.PopupOpts(cat, opts, helpOpts)
     opts.preview = function(text)
         -- The edit box doubles a typed "|"; templates are stored with single ones.
         local parsed = TextTags.Parse(cat, type(text) == "string" and sgsub(text, "||", "|") or text, true)
-        if not parsed then return nil, nil end
+        if not parsed then
+            return nil, nil
+        end
         local hint
         if #parsed.unknown > 0 then
-            hint = CludesUI.Lf("Unknown tags, shown as typed: %s", (sgsub(tconcat(parsed.unknown, ", "), "|", "||")))
+            hint = CludesUI.Lf(
+                "Unknown tags, shown as typed: %s",
+                (sgsub(tconcat(parsed.unknown, ", "), "|", "||"))
+            )
         end
         return TextTags.Preview(cat, parsed, UNKNOWN), hint
     end
     opts.previewLabel = CludesUI.L("Preview")
-    opts.complete = function(text, cursor) return TextTags.Complete(cat, text, cursor) end
-    opts.infoTooltip = function() return TextTags.HelpText(cat, helpOpts) end
-    opts.infoTooltipOpts = { width = 360, justify = "LEFT", anchorPoint = "TOPRIGHT", anchorTo = "TOPLEFT", anchorX = -8 }
+    opts.complete = function(text, cursor)
+        return TextTags.Complete(cat, text, cursor)
+    end
+    opts.infoTooltip = function()
+        return TextTags.HelpText(cat, helpOpts)
+    end
+    opts.infoTooltipOpts =
+        { width = 360, justify = "LEFT", anchorPoint = "TOPRIGHT", anchorTo = "TOPLEFT", anchorX = -8 }
     return opts
 end
 
@@ -473,12 +583,17 @@ TextTags.EDIT_ICON = EDIT_ICON
 function TextTags.EditPopup(o, warning)
     local cur = o.get()
     -- The edit box holds a typed "|" doubled.
-    if type(cur) == "string" then cur = sgsub(cur, "|", "||") else cur = nil end
+    if type(cur) == "string" then
+        cur = sgsub(cur, "|", "||")
+    else
+        cur = nil
+    end
     -- 120 letters for new input; a longer stored template (import) keeps its length.
     local maxLen = math.max(120, cur and strlenutf8(cur) or 0)
     local popupOpts = {
         title = CludesUI.L("Custom Text"),
-        message = CludesUI.L("Tags in [brackets] show live values, other text stays as typed.") .. "\n"
+        message = CludesUI.L("Tags in [brackets] show live values, other text stays as typed.")
+            .. "\n"
             .. CludesUI.L("Type [ for suggestions, the (i) lists every tag."),
         messageSize = 10,
         previewColor = o.color,
@@ -494,7 +609,9 @@ function TextTags.EditPopup(o, warning)
                 return
             end
             o.set(txt)
-            if o.onSave then o.onSave() end
+            if o.onSave then
+                o.onSave()
+            end
         end,
     }
     TextTags.PopupOpts(o.cat, popupOpts, o.tagNotes and { tagNotes = o.tagNotes } or nil)
@@ -509,26 +626,46 @@ end
 --- is built.
 function TextTags.MenuValues(values, edit, o)
     local v = CopyTable(values)
-    if edit then v.custom = { text = (o and o.text) or "Custom", action = edit } end
+    if edit then
+        v.custom = { text = (o and o.text) or "Custom", action = edit }
+    end
     local mo = v._menuOpts or {}
     v._menuOpts = mo
     local icon, iconColor, labelColor = mo.icon, mo.iconColor, mo.labelColor
     local selected, removeKey = o and o.selected, o and o.removeKey
     mo.icon = function(key)
-        if key == "custom" then return EDIT_ICON end
-        if key == removeKey then return CLOSE_ICON end
-        if icon then return icon(key) end
+        if key == "custom" then
+            return EDIT_ICON
+        end
+        if key == removeKey then
+            return CLOSE_ICON
+        end
+        if icon then
+            return icon(key)
+        end
     end
-    mo.iconSize = mo.iconSize or function() return 12 end
+    mo.iconSize = mo.iconSize or function()
+        return 12
+    end
     mo.iconClearScroll = true
     mo.iconColor = function(key)
-        if key == "custom" then return 1, 1, 1, (not selected or selected()) and 1 or 0.75 end
-        if key == removeKey then return 1, 0.35, 0.35, 0.75 end
-        if iconColor then return iconColor(key) end
+        if key == "custom" then
+            return 1, 1, 1, (not selected or selected()) and 1 or 0.75
+        end
+        if key == removeKey then
+            return 1, 0.35, 0.35, 0.75
+        end
+        if iconColor then
+            return iconColor(key)
+        end
     end
     mo.labelColor = function(key)
-        if key == removeKey then return 1, 0.35, 0.35, 0.8 end
-        if labelColor then return labelColor(key) end
+        if key == removeKey then
+            return 1, 0.35, 0.35, 0.8
+        end
+        if labelColor then
+            return labelColor(key)
+        end
     end
     return v
 end
@@ -537,8 +674,13 @@ end
 --- reads and restores it as label .. " Custom Format" (get() / set(v); nil clears).
 function TextTags.AddFormatAccessor(rgn, label, get, set)
     CludesUI.AddCaptureAccessor(rgn, {
-        type = "input", text = label .. " Custom Format",
-        getValue = function() return get() or "" end,
-        setValue = function(v) set((v ~= "" and v) or nil) end,
+        type = "input",
+        text = label .. " Custom Format",
+        getValue = function()
+            return get() or ""
+        end,
+        setValue = function(v)
+            set((v ~= "" and v) or nil)
+        end,
     })
 end

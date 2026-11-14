@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Vehicle.lua
 --
@@ -42,8 +44,7 @@ do
             -- Only the UNIT_ events carry a unit; PLAYER_ENTERING_WORLD's first
             -- arg is isInitialLogin, so testing it as a unit skipped the whole
             -- pass on a fresh login.
-            if (event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE")
-                and unit ~= "player" then
+            if (event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and unit ~= "player" then
                 return
             end
             if event ~= "PLAYER_REGEN_ENABLED" then
@@ -58,7 +59,9 @@ do
                 -- Nothing lost by deferring: the protected call couldn't have
                 -- succeeded in combat either way, and PLAYER_REGEN_ENABLED re-applies
                 -- the state on lockdown end.
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
             end
             local show = (CanExitVehicle and CanExitVehicle()) or false
             -- A redundant SetShown on a frame already in that state still trips
@@ -90,11 +93,17 @@ end
 -- Snapshot where MicroMenu lives while it is still home, so the reclaim has a
 -- real anchor to restore instead of guessing one.
 function EAB:CacheMicroMenuHome()
-    if self._eabMicroHome then return end
-    if not (MicroMenu and MicroMenu.GetPoint) then return end
+    if self._eabMicroHome then
+        return
+    end
+    if not (MicroMenu and MicroMenu.GetPoint) then
+        return
+    end
     -- Never snapshot while docked: a /reload inside a vehicle or pet battle
     -- would record the DOCKED anchor as "home" in the write-once cache.
-    if self:MicroMenuDockedIn(OverrideActionBar) or self:MicroMenuDockedIn(PetBattleFrame) then return end
+    if self:MicroMenuDockedIn(OverrideActionBar) or self:MicroMenuDockedIn(PetBattleFrame) then
+        return
+    end
     local p, rel, relP, x, y = MicroMenu:GetPoint(1)
     if p then
         self._eabMicroHome = { p, rel, relP, x or 0, y or 0 }
@@ -104,11 +113,15 @@ end
 -- Blizzard docks MicroMenu several levels deep, so a one-level parent test
 -- misses it. Walk the chain.
 function EAB:MicroMenuDockedIn(root)
-    if not (MicroMenu and root) then return false end
+    if not (MicroMenu and root) then
+        return false
+    end
     local p = MicroMenu.GetParent and MicroMenu:GetParent()
     local guard = 0
     while p and guard < 8 do
-        if p == root then return true end
+        if p == root then
+            return true
+        end
         p = p.GetParent and p:GetParent()
         guard = guard + 1
     end
@@ -123,10 +136,16 @@ end
 -- current game state, which mid-vehicle/mid-battle resolves back into the
 -- docked frame (no-op).
 function EAB:ReclaimMicroMenu()
-    if InCombatLockdown() then return end
-    if not (MicroMenu and MicroMenuContainer) then return end
+    if InCombatLockdown() then
+        return
+    end
+    if not (MicroMenu and MicroMenuContainer) then
+        return
+    end
     self:CacheMicroMenuHome()
-    if not (self:MicroMenuDockedIn(OverrideActionBar) or self:MicroMenuDockedIn(PetBattleFrame)) then return end
+    if not (self:MicroMenuDockedIn(OverrideActionBar) or self:MicroMenuDockedIn(PetBattleFrame)) then
+        return
+    end
     MicroMenu:SetParent(MicroMenuContainer)
     local h = self._eabMicroHome
     if h then
@@ -166,7 +185,9 @@ end
 
 function EAB:ApplyVehicleBarVisibility()
     local bar = OverrideActionBar
-    if not bar then return end
+    if not bar then
+        return
+    end
     local hide = self.db and self.db.profile and self.db.profile.hideBlizzardVehicleBar
     if hide then
         self:ReclaimMicroMenu()
@@ -194,7 +215,9 @@ function EAB:UpdateVehicleBarWatch()
     local on = self.db and self.db.profile and self.db.profile.hideBlizzardVehicleBar
     local f = self._eabVehWatch
     if not on then
-        if f then f:UnregisterAllEvents() end
+        if f then
+            f:UnregisterAllEvents()
+        end
         self:ApplyVehicleBarVisibility()
         return
     end
@@ -212,10 +235,13 @@ function EAB:UpdateVehicleBarWatch()
     if not self._eabVehShowHooked and OverrideActionBar then
         self._eabVehShowHooked = true
         OverrideActionBar:HookScript("OnShow", function()
-            if not (EAB.db and EAB.db.profile
-                    and EAB.db.profile.hideBlizzardVehicleBar) then return end
+            if not (EAB.db and EAB.db.profile and EAB.db.profile.hideBlizzardVehicleBar) then
+                return
+            end
             EAB:ApplyVehicleBarVisibility()
-            C_Timer_After(0, function() EAB:ApplyVehicleBarVisibility() end)
+            C_Timer_After(0, function()
+                EAB:ApplyVehicleBarVisibility()
+            end)
         end)
     end
     self:ApplyVehicleBarVisibility()
@@ -236,10 +262,14 @@ do
     local function FixVehicleHighlights()
         _vehHighlightPending = false
         local mainFrame = barFrames and barFrames["MainBar"]
-        if not mainFrame then return end
+        if not mainFrame then
+            return
+        end
         local page = tonumber(mainFrame:GetAttribute("actionpage")) or 1
         local buttons = barButtons and barButtons["MainBar"]
-        if not buttons then return end
+        if not buttons then
+            return
+        end
 
         -- Only apply the alpha-0 fallback on vehicle/override/bonus pages
         -- (page > 6). On normal pages (1-6), just restore alpha to 1 so
@@ -255,25 +285,33 @@ do
                         -- SetChecked might be protected during combat; pcall.
                         -- Also hide CheckedTexture as a visual fallback.
                         pcall(btn.SetChecked, btn, false)
-                        if ct then ct:SetAlpha(0) end
+                        if ct then
+                            ct:SetAlpha(0)
+                        end
                     else
                         -- Slot has an action; restore alpha so Blizzard's
                         -- UpdateState manages checked visuals (honors the
                         -- Show Highlight on Spell Cast setting).
-                        if ct then ct:SetAlpha(EAB:GetCheckedAlpha("MainBar")) end
+                        if ct then
+                            ct:SetAlpha(EAB:GetCheckedAlpha("MainBar"))
+                        end
                     end
                 else
                     -- Normal page: restore alpha on all buttons so checked
                     -- state renders correctly when spells are dragged in
                     -- (honors the Show Highlight on Spell Cast setting).
-                    if ct then ct:SetAlpha(EAB:GetCheckedAlpha("MainBar")) end
+                    if ct then
+                        ct:SetAlpha(EAB:GetCheckedAlpha("MainBar"))
+                    end
                 end
             end
         end
     end
 
     local function QueueVehicleHighlightFix()
-        if _vehHighlightPending then return end
+        if _vehHighlightPending then
+            return
+        end
         _vehHighlightPending = true
         C_Timer_After(0, FixVehicleHighlights)
     end
@@ -285,7 +323,6 @@ do
     vehHighlightFrame:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
     vehHighlightFrame:SetScript("OnEvent", QueueVehicleHighlightFix)
 end
-
 
 -------------------------------------------------------------------------------
 --  Housing Editor Keybind Clearing: when the house editor is active, clear
@@ -299,7 +336,9 @@ if IsHouseEditorActive then
     _housingEventFrame:SetScript("OnEvent", function()
         if IsHouseEditorActive() then
             -- House editor opened: clear ALL override bindings so housing hotkeys work
-            if _bindState.housingCleared then return end
+            if _bindState.housingCleared then
+                return
+            end
             _bindState.housingCleared = true
             if not InCombatLockdown() then
                 ClearOverrideBindings(_eabBindOwner)
@@ -312,7 +351,9 @@ if IsHouseEditorActive then
             -- unconditionally -- UpdateKeybinds defers itself in combat, and a
             -- combat guard here would drop the restore with nothing to re-arm
             -- it, leaving every override binding cleared until reload.
-            if not _bindState.housingCleared then return end
+            if not _bindState.housingCleared then
+                return
+            end
             _bindState.housingCleared = false
             UpdateKeybinds()
         end
@@ -327,7 +368,9 @@ end
 -- storm a bag sort produces (its old 0.1s throttle here could not, because
 -- every HIDEGRID in the storm reset _gridState.shown and re-armed it).
 local function OnGridChange()
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     _gridState.shown = true
 
     -- Propagate showgrid to the controller so the secure environment
@@ -353,10 +396,18 @@ local function OnGridChange()
         if buttons then
             local s = EAB.db.profile.bars[info.key]
             local numIcons = s and (s.overrideNumIcons or s.numIcons) or info.count
-            if not numIcons or numIcons < 1 then numIcons = info.count end
-            if numIcons > info.count then numIcons = info.count end
-            if info.isStance then numIcons = GetNumShapeshiftForms() or info.count end
-            if numIcons < 1 then numIcons = 1 end
+            if not numIcons or numIcons < 1 then
+                numIcons = info.count
+            end
+            if numIcons > info.count then
+                numIcons = info.count
+            end
+            if info.isStance then
+                numIcons = GetNumShapeshiftForms() or info.count
+            end
+            if numIcons < 1 then
+                numIcons = 1
+            end
             for i = 1, numIcons do
                 local btn = buttons[i]
                 if btn then
@@ -366,7 +417,9 @@ local function OnGridChange()
                         btn:SetAttributeNoHandler("statehidden", nil)
                     end
                     local gfd = EFD(btn)
-                    if gfd.slotBG then gfd.slotBG:Show() end
+                    if gfd.slotBG then
+                        gfd.slotBG:Show()
+                    end
                     -- Show borders during drag
                     if gfd.borders and not (gfd.shapeMask and gfd.shapeMask:IsShown()) then
                         gfd.borders:Show()
@@ -403,7 +456,9 @@ end
 -- writes there, and PLAYER_REGEN_ENABLED's ApplyAll re-runs it clean.
 function EAB._RestoreDragNeverBars()
     local forced = _gridState._dragNeverForced
-    if not forced then return end
+    if not forced then
+        return
+    end
     _gridState._dragNeverForced = nil
     if EAB._visOverride then
         for key in pairs(forced) do
@@ -434,8 +489,7 @@ end
 -- resync = drop everything planted first and re-evaluate (options toggle
 -- flips while the panel is already open).
 function EAB._UpdateSpellbookNeverBars(resync)
-    local open = (PlayerSpellsFrame and PlayerSpellsFrame:IsShown())
-        or (MacroFrame and MacroFrame:IsShown())
+    local open = (PlayerSpellsFrame and PlayerSpellsFrame:IsShown()) or (MacroFrame and MacroFrame:IsShown())
     if resync == true or not open then
         local forced = _gridState._sbNeverForced
         if forced then
@@ -460,7 +514,9 @@ function EAB._UpdateSpellbookNeverBars(resync)
                 end
             end
         end
-        if not open then return end
+        if not open then
+            return
+        end
     end
     if InCombatLockdown() then
         -- The panel may close before combat ends: the queued pass reads it again.
@@ -469,11 +525,15 @@ function EAB._UpdateSpellbookNeverBars(resync)
         local forced
         for _, info in ipairs(BAR_CONFIG) do
             local s = EAB.db.profile.bars[info.key]
-            if s and s.spellbookShow and s.enabled ~= false
-               and ((CludesUI.VisOverrideValue(s) or s.barVisibility or "always") ~= "always"
-                    or EAB.VisibilityCompat.IsNever(s)
-                    or (EAB._padHide and s.gamepadHideBar == true))
-               and not (EAB._visOverride and EAB._visOverride[info.key]) then
+            if
+                s
+                and s.spellbookShow
+                and s.enabled ~= false
+                and ((CludesUI.VisOverrideValue(s) or s.barVisibility or "always") ~= "always" or EAB.VisibilityCompat.IsNever(
+                    s
+                ) or (EAB._padHide and s.gamepadHideBar == true))
+                and not (EAB._visOverride and EAB._visOverride[info.key])
+            then
                 EAB._visOverride = EAB._visOverride or {}
                 EAB._visOverride[info.key] = "always"
                 forced = forced or {}
@@ -497,8 +557,7 @@ function EAB._UpdateSpellbookNeverBars(resync)
                 -- a raw SetAlpha leaves the resting "out" memo in place,
                 -- so the close-path FadeOut treats the bar as already
                 -- faded and skips it (bar stuck visible until a hover).
-                EAB_VTABLE.Hover.FadeInOne(info.key,
-                    EAB_VTABLE.Hover.GetState(info.key, frame))
+                EAB_VTABLE.Hover.FadeInOne(info.key, EAB_VTABLE.Hover.GetState(info.key, frame))
                 mo = mo or {}
                 mo[info.key] = true
             end
@@ -516,9 +575,13 @@ do
         EAB._UpdateSpellbookNeverBars()
     end
     local function TryHook(name)
-        if hooked[name] then return true end
+        if hooked[name] then
+            return true
+        end
         local f = _G[name]
-        if not f then return false end
+        if not f then
+            return false
+        end
         hooked[name] = true
         f:HookScript("OnShow", OnPanelToggle)
         f:HookScript("OnHide", OnPanelToggle)
@@ -530,11 +593,15 @@ do
         if event == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
             local a, b = TryHook("PlayerSpellsFrame"), TryHook("MacroFrame")
-            if not (a and b) then self:RegisterEvent("ADDON_LOADED") end
+            if not (a and b) then
+                self:RegisterEvent("ADDON_LOADED")
+            end
         else
             local name = (addon == "Blizzard_PlayerSpells" and "PlayerSpellsFrame")
                 or (addon == "Blizzard_MacroUI" and "MacroFrame")
-            if not name then return end
+            if not name then
+                return
+            end
             TryHook(name)
             if hooked.PlayerSpellsFrame and hooked.MacroFrame then
                 self:UnregisterEvent("ADDON_LOADED")

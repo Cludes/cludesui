@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Tooltips.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local EBS, GetCustomTooltipScale = I.EBS, I.GetCustomTooltipScale
@@ -16,7 +20,9 @@ local EBS, GetCustomTooltipScale = I.EBS, I.GetCustomTooltipScale
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local MO_Evaluate
-I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v) MO_Evaluate = v end
+I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v)
+    MO_Evaluate = v
+end
 
 -------------------------------------------------------------------------------
 --  Friends Online indicator: guild, BNet favorites and BNet/character friends on
@@ -38,7 +44,15 @@ local function GatherOnlineFriends()
                 local short = name:match("^([^%-]+)") or name
                 if short ~= myName then
                     -- Fix "Name-Realm-Realm" to "Name-Realm"
-                    guild[#guild + 1] = { name = short, full = CludesUI.BuildFullName(name) or name, class = classFile, zone = zone or "", level = level, note = publicNote, kind = "guild" }
+                    guild[#guild + 1] = {
+                        name = short,
+                        full = CludesUI.BuildFullName(name) or name,
+                        class = classFile,
+                        zone = zone or "",
+                        level = level,
+                        note = publicNote,
+                        kind = "guild",
+                    }
                 end
             end
         end
@@ -54,7 +68,9 @@ local function GatherOnlineFriends()
                 local classFile = gameInfo.className and gameInfo.className:upper():gsub(" ", "")
                 if gameInfo.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
                     local ci = C_CreatureInfo.GetClassInfo(gameInfo.classID)
-                    if ci and ci.classFile then classFile = ci.classFile end
+                    if ci and ci.classFile then
+                        classFile = ci.classFile
+                    end
                 end
                 local zone = gameInfo.areaName or ""
                 -- Fix "Name-Realm-Realm" to "Name-Realm"
@@ -75,7 +91,9 @@ local function GatherOnlineFriends()
                     note = acct.note,
                     kind = "bnet",
                 }
-                if charName then seenBNet[charName] = true end
+                if charName then
+                    seenBNet[charName] = true
+                end
                 if acct.isFavorite then
                     favorites[#favorites + 1] = entry
                 else
@@ -107,19 +125,29 @@ local function GatherOnlineFriends()
 
     -- Guild members are removed from the friends lists to avoid duplicates.
     local guildSet = {}
-    for _, g in ipairs(guild) do guildSet[g.name] = true end
+    for _, g in ipairs(guild) do
+        guildSet[g.name] = true
+    end
     for i = #friends, 1, -1 do
-        if guildSet[friends[i].name] then table.remove(friends, i) end
+        if guildSet[friends[i].name] then
+            table.remove(friends, i)
+        end
     end
     for i = #favorites, 1, -1 do
-        if guildSet[favorites[i].name] then table.remove(favorites, i) end
+        if guildSet[favorites[i].name] then
+            table.remove(favorites, i)
+        end
     end
 
     -- Sort by zone (empty zones last), then name -- groups same-location together
     local function byZone(a, b)
         local az, bz = a.zone or "", b.zone or ""
-        if (az == "") ~= (bz == "") then return az ~= "" end
-        if az ~= bz then return az < bz end
+        if (az == "") ~= (bz == "") then
+            return az ~= ""
+        end
+        if az ~= bz then
+            return az < bz
+        end
         return (a.name or "") < (b.name or "")
     end
     -- Friends/favorites sort A-Z by battle tag (fall back to name); guild stays grouped by zone
@@ -142,458 +170,546 @@ local function FTT_FONT()
 end
 local ShowFriendsTooltip, HideFriendsTooltip
 do
-local _friendsTT
-local _friendsTTRows = {}
-local _friendsTTHeaders = {}
-local _friendsTTDividers = {}
-local FTT_PAD     = 8
-local FTT_ROW_H   = 14
-local FTT_HDR_H   = 16
-local FTT_GAP     = 2
-local FTT_DIV_PAD = 5   -- padding above and below the divider line
-local FTT_NOTE_H  = 12  -- height of the optional note line under a row
-local FTT_NOTE_INDENT = 8
-local FTT_NOTE_MAX_W  = 260  -- longer notes truncate instead of widening the tooltip
+    local _friendsTT
+    local _friendsTTRows = {}
+    local _friendsTTHeaders = {}
+    local _friendsTTDividers = {}
+    local FTT_PAD = 8
+    local FTT_ROW_H = 14
+    local FTT_HDR_H = 16
+    local FTT_GAP = 2
+    local FTT_DIV_PAD = 5 -- padding above and below the divider line
+    local FTT_NOTE_H = 12 -- height of the optional note line under a row
+    local FTT_NOTE_INDENT = 8
+    local FTT_NOTE_MAX_W = 260 -- longer notes truncate instead of widening the tooltip
 
--- The name and note lines show other players' writing: a font family (no
--- outline, no shadow), so Cyrillic, Korean and Chinese letters draw in the
--- client's own faces. Every font write to those two strings goes through here.
-local function FTTNameFont(fs, size)
-    CludesUI.SetFontFamily(fs, FTT_FONT(), size, "", false)
-end
-
--- Hover-stable hide: small grace period so cursor can travel from button to tooltip
-local _fttHideToken = 0
-local _fttMenuOpen = false
-local function CancelFTTHide()
-    _fttHideToken = _fttHideToken + 1
-end
-local function ScheduleFTTHide()
-    _fttHideToken = _fttHideToken + 1
-    if _fttMenuOpen then return end
-    local mine = _fttHideToken
-    C_Timer.After(0.15, function()
-        if mine ~= _fttHideToken then return end
-        if _fttMenuOpen then return end
-        if _friendsTT then _friendsTT:Hide() end
-    end)
-end
-
--- Protected content = anywhere chat/whisper secret values can taint Blizzard's chat
--- code: a Mythic+ run (entire run), raid combat, rated/instanced PvP. That is exactly
--- CludesUI.InProtectedInstance(), the canonical CUI guard for taint-sensitive ops.
--- Whispering is suppressed entirely there; invites stay allowed.
-local function FTTInProtectedContent()
-    return CludesUI.InProtectedInstance() or false
-end
-
--- Open a whisper. BNet friends go via their Battle.net account (reaches any character/
--- faction/realm), everyone else by character name. An explicit chat frame skips
--- ChatFrame_SendTell's FCF_OpenTemporaryWindow path (SetTellTarget/windowList/
--- MessageEventHandler taint cascade); a "/w" macro can't open the editbox, only send.
-local function FTTOpenWhisper(charName, bnetName)
-    -- Suppress whispers in protected content, and while /cuidev is on (it forces the
-    -- same secret-value environment as a real Mythic+). InProtectedInstance() itself
-    -- reports true in dev mode; the separate branch exists only for the clearer message.
-    local blocked
-    if CludesUI.IsDevModeActive() then
-        blocked = "This action is protected while dev mode (/cuidev) is on."
-    elseif FTTInProtectedContent() then
-        blocked = "This action is protected in Mythic+ and raid combat."
+    -- The name and note lines show other players' writing: a font family (no
+    -- outline, no shadow), so Cyrillic, Korean and Chinese letters draw in the
+    -- client's own faces. Every font write to those two strings goes through here.
+    local function FTTNameFont(fs, size)
+        CludesUI.SetFontFamily(fs, FTT_FONT(), size, "", false)
     end
-    if blocked then
-        if UIErrorsFrame then UIErrorsFrame:AddMessage(blocked, 1.0, 0.3, 0.3, 1.0) end
-        return
-    end
-    if bnetName and bnetName ~= "" then
-        local sendBN = (ChatFrameUtil and ChatFrameUtil.SendBNetTell) or ChatFrame_SendBNetTell
-        if sendBN then sendBN(bnetName, DEFAULT_CHAT_FRAME); return end
-    end
-    if charName and charName ~= "" then
-        local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
-        -- Fix "Name-Realm-Realm" to "Name-Realm"
-        local target = CludesUI.BuildFullName(charName) or charName
-        if sendTell then sendTell(target, DEFAULT_CHAT_FRAME) end
-    end
-end
 
--- Reusable right-click menu: plain buttons. Whisper -> FTTOpenWhisper (frame-scoped,
--- no FCF taint); Invite -> C_PartyInfo.InviteUnit (taint-safe, opens no chat window).
-local _fttMenu
-local function GetFTTMenu()
-    if _fttMenu then return _fttMenu end
-    local PAD, RH, MW = 4, 18, 96
-    local m = CreateFrame("Frame", nil, UIParent)
-    m:SetFrameStrata("TOOLTIP")
-    m:SetFrameLevel(500)
-    m:SetClampedToScreen(true)
-    m:EnableMouse(true)
-    m:SetSize(MW, PAD * 2 + RH * 2)
-    m:Hide()
-    local bg = m:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-    CludesUI.MakeBorder(m, 1, 1, 1, 0.15, CludesUI.PanelPP)
-
-    local function MakeItem(text, yOff, onClick)
-        local b = CreateFrame("Button", nil, m)
-        b:RegisterForClicks("AnyUp")
-        b:SetPoint("TOPLEFT", m, "TOPLEFT", PAD, yOff)
-        b:SetPoint("TOPRIGHT", m, "TOPRIGHT", -PAD, yOff)
-        b:SetHeight(RH)
-        local hl = b:CreateTexture(nil, "BACKGROUND")
-        hl:SetAllPoints(); hl:SetColorTexture(1, 1, 1, 0.10); hl:Hide()
-        b:SetScript("OnEnter", function() hl:Show() end)
-        b:SetScript("OnLeave", function() hl:Hide() end)
-        b:SetScript("OnClick", function()
-            onClick(m._target, m._bnet)
-            m:Hide()
+    -- Hover-stable hide: small grace period so cursor can travel from button to tooltip
+    local _fttHideToken = 0
+    local _fttMenuOpen = false
+    local function CancelFTTHide()
+        _fttHideToken = _fttHideToken + 1
+    end
+    local function ScheduleFTTHide()
+        _fttHideToken = _fttHideToken + 1
+        if _fttMenuOpen then
+            return
+        end
+        local mine = _fttHideToken
+        C_Timer.After(0.15, function()
+            if mine ~= _fttHideToken then
+                return
+            end
+            if _fttMenuOpen then
+                return
+            end
+            if _friendsTT then
+                _friendsTT:Hide()
+            end
         end)
-        local fs = b:CreateFontString(nil, "OVERLAY")
-        fs:SetFont(FTT_FONT(), 11, "")
-        fs:SetJustifyH("LEFT")
-        fs:SetPoint("LEFT", b, "LEFT", 6, 0)
-        fs:SetText(text)
     end
 
-    -- Whisper(charName, bnetName); Invite always uses the character name.
-    MakeItem(CludesUI.L("Whisper"), -PAD, FTTOpenWhisper)
-    MakeItem(CludesUI.L("Invite"), -PAD - RH, function(target)
-        if target and target ~= "" and C_PartyInfo and C_PartyInfo.InviteUnit then
-            C_PartyInfo.InviteUnit(CludesUI.BuildFullName(target) or target)
+    -- Protected content = anywhere chat/whisper secret values can taint Blizzard's chat
+    -- code: a Mythic+ run (entire run), raid combat, rated/instanced PvP. That is exactly
+    -- CludesUI.InProtectedInstance(), the canonical CUI guard for taint-sensitive ops.
+    -- Whispering is suppressed entirely there; invites stay allowed.
+    local function FTTInProtectedContent()
+        return CludesUI.InProtectedInstance() or false
+    end
+
+    -- Open a whisper. BNet friends go via their Battle.net account (reaches any character/
+    -- faction/realm), everyone else by character name. An explicit chat frame skips
+    -- ChatFrame_SendTell's FCF_OpenTemporaryWindow path (SetTellTarget/windowList/
+    -- MessageEventHandler taint cascade); a "/w" macro can't open the editbox, only send.
+    local function FTTOpenWhisper(charName, bnetName)
+        -- Suppress whispers in protected content, and while /cuidev is on (it forces the
+        -- same secret-value environment as a real Mythic+). InProtectedInstance() itself
+        -- reports true in dev mode; the separate branch exists only for the clearer message.
+        local blocked
+        if CludesUI.IsDevModeActive() then
+            blocked = "This action is protected while dev mode (/cuidev) is on."
+        elseif FTTInProtectedContent() then
+            blocked = "This action is protected in Mythic+ and raid combat."
         end
-    end)
+        if blocked then
+            if UIErrorsFrame then
+                UIErrorsFrame:AddMessage(blocked, 1.0, 0.3, 0.3, 1.0)
+            end
+            return
+        end
+        if bnetName and bnetName ~= "" then
+            local sendBN = (ChatFrameUtil and ChatFrameUtil.SendBNetTell) or ChatFrame_SendBNetTell
+            if sendBN then
+                sendBN(bnetName, DEFAULT_CHAT_FRAME)
+                return
+            end
+        end
+        if charName and charName ~= "" then
+            local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
+            -- Fix "Name-Realm-Realm" to "Name-Realm"
+            local target = CludesUI.BuildFullName(charName) or charName
+            if sendTell then
+                sendTell(target, DEFAULT_CHAT_FRAME)
+            end
+        end
+    end
 
-    m:SetScript("OnLeave", function(self)
-        if not self:IsMouseOver() then self:Hide() end
-    end)
-    m:SetScript("OnHide", function()
-        _fttMenuOpen = false
-        ScheduleFTTHide()
-    end)
-    _fttMenu = m
-    return m
-end
+    -- Reusable right-click menu: plain buttons. Whisper -> FTTOpenWhisper (frame-scoped,
+    -- no FCF taint); Invite -> C_PartyInfo.InviteUnit (taint-safe, opens no chat window).
+    local _fttMenu
+    local function GetFTTMenu()
+        if _fttMenu then
+            return _fttMenu
+        end
+        local PAD, RH, MW = 4, 18, 96
+        local m = CreateFrame("Frame", nil, UIParent)
+        m:SetFrameStrata("TOOLTIP")
+        m:SetFrameLevel(500)
+        m:SetClampedToScreen(true)
+        m:EnableMouse(true)
+        m:SetSize(MW, PAD * 2 + RH * 2)
+        m:Hide()
+        local bg = m:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
+        CludesUI.MakeBorder(m, 1, 1, 1, 0.15, CludesUI.PanelPP)
 
-local function FTTShowRowMenu(rowBtn)
-    local target = rowBtn and rowBtn._fttTarget
-    local bnet = rowBtn and rowBtn._fttBnet
-    if (not target or target == "") and (not bnet or bnet == "") then return end
-    local m = GetFTTMenu()
-    m._target = target
-    m._bnet = bnet
-    _fttMenuOpen = true
-    CancelFTTHide()
-    m:ClearAllPoints()
-    m:SetPoint("TOPLEFT", rowBtn, "TOPRIGHT", 0, 0)
-    m:Show()
-end
+        local function MakeItem(text, yOff, onClick)
+            local b = CreateFrame("Button", nil, m)
+            b:RegisterForClicks("AnyUp")
+            b:SetPoint("TOPLEFT", m, "TOPLEFT", PAD, yOff)
+            b:SetPoint("TOPRIGHT", m, "TOPRIGHT", -PAD, yOff)
+            b:SetHeight(RH)
+            local hl = b:CreateTexture(nil, "BACKGROUND")
+            hl:SetAllPoints()
+            hl:SetColorTexture(1, 1, 1, 0.10)
+            hl:Hide()
+            b:SetScript("OnEnter", function()
+                hl:Show()
+            end)
+            b:SetScript("OnLeave", function()
+                hl:Hide()
+            end)
+            b:SetScript("OnClick", function()
+                onClick(m._target, m._bnet)
+                m:Hide()
+            end)
+            local fs = b:CreateFontString(nil, "OVERLAY")
+            fs:SetFont(FTT_FONT(), 11, "")
+            fs:SetJustifyH("LEFT")
+            fs:SetPoint("LEFT", b, "LEFT", 6, 0)
+            fs:SetText(text)
+        end
 
-local function GetFriendsTT()
-    if _friendsTT then return _friendsTT end
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("TOOLTIP")
-    f:SetFrameLevel(200)
-    f:SetClampedToScreen(true)
-    f:EnableMouse(true)
-    f:SetScript("OnEnter", CancelFTTHide)
-    f:SetScript("OnLeave", ScheduleFTTHide)
-    f:HookScript("OnHide", function() if _fttMenu then _fttMenu:Hide() end end)
-    f:Hide()
-    local bg = f:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.067, 0.067, 0.067, 0.92)
-    CludesUI.MakeBorder(f, 1, 1, 1, 0.15, CludesUI.PanelPP)
-    -- Hovering this tooltip counts as hovering the extra-button stack (crossing onto it
-    -- must not hide them); MO_OverAny reads it via EBS since this local is do-block
-    -- scoped. The OnHide hook is required or nothing re-runs the fade-out on close.
-    EBS._friendsTT = f
-    f:HookScript("OnShow", function() if MO_Evaluate then MO_Evaluate() end end)
-    f:HookScript("OnHide", function() if MO_Evaluate then MO_Evaluate() end end)
-    _friendsTT = f
-    return f
-end
+        -- Whisper(charName, bnetName); Invite always uses the character name.
+        MakeItem(CludesUI.L("Whisper"), -PAD, FTTOpenWhisper)
+        MakeItem(CludesUI.L("Invite"), -PAD - RH, function(target)
+            if target and target ~= "" and C_PartyInfo and C_PartyInfo.InviteUnit then
+                C_PartyInfo.InviteUnit(CludesUI.BuildFullName(target) or target)
+            end
+        end)
 
-local function EnsureFTTRow(idx)
-    if _friendsTTRows[idx] then return _friendsTTRows[idx] end
-    local tt = GetFriendsTT()
-    local btn = CreateFrame("Button", nil, tt)
-    btn:EnableMouse(true)
-    btn:RegisterForClicks("AnyUp")
-    btn:SetHeight(FTT_ROW_H)
-    local hl = btn:CreateTexture(nil, "BACKGROUND")
-    hl:SetAllPoints()
-    hl:SetColorTexture(1, 1, 1, 0.08)
-    hl:Hide()
-    btn._hl = hl
-    btn:SetScript("OnEnter", function(self)
+        m:SetScript("OnLeave", function(self)
+            if not self:IsMouseOver() then
+                self:Hide()
+            end
+        end)
+        m:SetScript("OnHide", function()
+            _fttMenuOpen = false
+            ScheduleFTTHide()
+        end)
+        _fttMenu = m
+        return m
+    end
+
+    local function FTTShowRowMenu(rowBtn)
+        local target = rowBtn and rowBtn._fttTarget
+        local bnet = rowBtn and rowBtn._fttBnet
+        if (not target or target == "") and (not bnet or bnet == "") then
+            return
+        end
+        local m = GetFTTMenu()
+        m._target = target
+        m._bnet = bnet
+        _fttMenuOpen = true
         CancelFTTHide()
-        if self._entry then self._hl:Show() end
-    end)
-    btn:SetScript("OnLeave", function(self)
-        self._hl:Hide()
-        ScheduleFTTHide()
-    end)
-    -- Left-click whispers (frame-scoped, no FCF taint); right-click opens the menu.
-    btn:SetScript("OnClick", function(self, mouseButton)
-        if not self._entry then return end
-        if mouseButton == "RightButton" then
-            FTTShowRowMenu(self)
-        elseif mouseButton == "LeftButton" then
-            FTTOpenWhisper(self._fttTarget, self._fttBnet)
+        m:ClearAllPoints()
+        m:SetPoint("TOPLEFT", rowBtn, "TOPRIGHT", 0, 0)
+        m:Show()
+    end
+
+    local function GetFriendsTT()
+        if _friendsTT then
+            return _friendsTT
+        end
+        local f = CreateFrame("Frame", nil, UIParent)
+        f:SetFrameStrata("TOOLTIP")
+        f:SetFrameLevel(200)
+        f:SetClampedToScreen(true)
+        f:EnableMouse(true)
+        f:SetScript("OnEnter", CancelFTTHide)
+        f:SetScript("OnLeave", ScheduleFTTHide)
+        f:HookScript("OnHide", function()
+            if _fttMenu then
+                _fttMenu:Hide()
+            end
+        end)
+        f:Hide()
+        local bg = f:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.067, 0.067, 0.067, 0.92)
+        CludesUI.MakeBorder(f, 1, 1, 1, 0.15, CludesUI.PanelPP)
+        -- Hovering this tooltip counts as hovering the extra-button stack (crossing onto it
+        -- must not hide them); MO_OverAny reads it via EBS since this local is do-block
+        -- scoped. The OnHide hook is required or nothing re-runs the fade-out on close.
+        EBS._friendsTT = f
+        f:HookScript("OnShow", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
+        f:HookScript("OnHide", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
+        _friendsTT = f
+        return f
+    end
+
+    local function EnsureFTTRow(idx)
+        if _friendsTTRows[idx] then
+            return _friendsTTRows[idx]
+        end
+        local tt = GetFriendsTT()
+        local btn = CreateFrame("Button", nil, tt)
+        btn:EnableMouse(true)
+        btn:RegisterForClicks("AnyUp")
+        btn:SetHeight(FTT_ROW_H)
+        local hl = btn:CreateTexture(nil, "BACKGROUND")
+        hl:SetAllPoints()
+        hl:SetColorTexture(1, 1, 1, 0.08)
+        hl:Hide()
+        btn._hl = hl
+        btn:SetScript("OnEnter", function(self)
             CancelFTTHide()
-            if _friendsTT then _friendsTT:Hide() end
+            if self._entry then
+                self._hl:Show()
+            end
+        end)
+        btn:SetScript("OnLeave", function(self)
+            self._hl:Hide()
+            ScheduleFTTHide()
+        end)
+        -- Left-click whispers (frame-scoped, no FCF taint); right-click opens the menu.
+        btn:SetScript("OnClick", function(self, mouseButton)
+            if not self._entry then
+                return
+            end
+            if mouseButton == "RightButton" then
+                FTTShowRowMenu(self)
+            elseif mouseButton == "LeftButton" then
+                FTTOpenWhisper(self._fttTarget, self._fttBnet)
+                CancelFTTHide()
+                if _friendsTT then
+                    _friendsTT:Hide()
+                end
+            end
+        end)
+        -- Name/zone are centred on the first line (not the button), so a note row can grow
+        -- the button downward without moving them.
+        local nameFS = btn:CreateFontString(nil, "OVERLAY")
+        FTTNameFont(nameFS, 10)
+        nameFS:SetJustifyH("LEFT")
+        nameFS:SetPoint("LEFT", btn, "TOPLEFT", 0, -FTT_ROW_H / 2)
+        local zoneFS = btn:CreateFontString(nil, "OVERLAY")
+        zoneFS:SetFont(FTT_FONT(), 10, "")
+        zoneFS:SetJustifyH("RIGHT")
+        zoneFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H / 2)
+        -- Optional second line: guild/friend note, indented, truncated to the row width.
+        -- One line only: a line break inside a note would overlap the rows around it.
+        local noteFS = btn:CreateFontString(nil, "OVERLAY")
+        FTTNameFont(noteFS, 9)
+        noteFS:SetJustifyH("LEFT")
+        noteFS:SetWordWrap(false)
+        noteFS:SetMaxLines(1)
+        noteFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
+        noteFS:SetPoint("LEFT", btn, "TOPLEFT", FTT_NOTE_INDENT, -FTT_ROW_H - FTT_NOTE_H / 2)
+        noteFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H - FTT_NOTE_H / 2)
+        noteFS:Hide()
+        _friendsTTRows[idx] = { button = btn, name = nameFS, zone = zoneFS, note = noteFS }
+        return _friendsTTRows[idx]
+    end
+
+    -- Row targets (read by its OnClick and the menu): target = character name (invite + character whisper), bnet = Battle.net account (preferred for whisper).
+    local function FTTSetRowTarget(btn, target, bnet)
+        btn._fttTarget = target
+        btn._fttBnet = bnet
+    end
+
+    local function EnsureFTTHeader(idx)
+        if _friendsTTHeaders[idx] then
+            return _friendsTTHeaders[idx]
         end
-    end)
-    -- Name/zone are centred on the first line (not the button), so a note row can grow
-    -- the button downward without moving them.
-    local nameFS = btn:CreateFontString(nil, "OVERLAY")
-    FTTNameFont(nameFS, 10)
-    nameFS:SetJustifyH("LEFT")
-    nameFS:SetPoint("LEFT", btn, "TOPLEFT", 0, -FTT_ROW_H / 2)
-    local zoneFS = btn:CreateFontString(nil, "OVERLAY")
-    zoneFS:SetFont(FTT_FONT(), 10, "")
-    zoneFS:SetJustifyH("RIGHT")
-    zoneFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H / 2)
-    -- Optional second line: guild/friend note, indented, truncated to the row width.
-    -- One line only: a line break inside a note would overlap the rows around it.
-    local noteFS = btn:CreateFontString(nil, "OVERLAY")
-    FTTNameFont(noteFS, 9)
-    noteFS:SetJustifyH("LEFT")
-    noteFS:SetWordWrap(false)
-    noteFS:SetMaxLines(1)
-    noteFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
-    noteFS:SetPoint("LEFT", btn, "TOPLEFT", FTT_NOTE_INDENT, -FTT_ROW_H - FTT_NOTE_H / 2)
-    noteFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H - FTT_NOTE_H / 2)
-    noteFS:Hide()
-    _friendsTTRows[idx] = { button = btn, name = nameFS, zone = zoneFS, note = noteFS }
-    return _friendsTTRows[idx]
-end
-
--- Row targets (read by its OnClick and the menu): target = character name (invite + character whisper), bnet = Battle.net account (preferred for whisper).
-local function FTTSetRowTarget(btn, target, bnet)
-    btn._fttTarget = target
-    btn._fttBnet = bnet
-end
-
-local function EnsureFTTHeader(idx)
-    if _friendsTTHeaders[idx] then return _friendsTTHeaders[idx] end
-    local tt = GetFriendsTT()
-    local fs = tt:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(FTT_FONT(), 12, "")
-    fs:SetJustifyH("CENTER")
-    fs:SetTextColor(1, 1, 1, 0.9)
-    _friendsTTHeaders[idx] = fs
-    return fs
-end
-
-local function EnsureFTTDivider(idx)
-    if _friendsTTDividers[idx] then return _friendsTTDividers[idx] end
-    local tt = GetFriendsTT()
-    local tex = tt:CreateTexture(nil, "ARTWORK")
-    tex:SetColorTexture(1, 1, 1, 0.12)
-    local PP = CludesUI.PP
-    if PP and PP.Snap then
-        tex:SetHeight(PP.Snap(1))
-    else
-        tex:SetHeight(1)
-    end
-    _friendsTTDividers[idx] = tex
-    return tex
-end
-
-function ShowFriendsTooltip(anchor)
-    CancelFTTHide()
-    local guild, favorites, friends = GatherOnlineFriends()
-    local tt = GetFriendsTT()
-    -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
-    tt:SetScale(GetCustomTooltipScale())
-    local total = #guild + #favorites + #friends
-
-    local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    local maxRows = mp and tonumber(mp.friendsMaxRows) or 0
-    if maxRows and maxRows < 0 then maxRows = 0 end
-    -- Hard cap 30 rows per section, even at 0 ("no cap") or stale over-max values -- big guilds otherwise build enormous tooltips. Overflow gets "...and N more".
-    if maxRows == 0 or maxRows > 30 then maxRows = 30 end
-    local showNotes = mp and mp.friendsShowNotes
-
-    local font = FTT_FONT()
-    for i = 1, #_friendsTTRows do
-        FTTNameFont(_friendsTTRows[i].name, 10)
-        _friendsTTRows[i].zone:SetFont(font, 10, "")
-    end
-    for i = 1, #_friendsTTHeaders do
-        _friendsTTHeaders[i]:SetFont(font, 12, "")
+        local tt = GetFriendsTT()
+        local fs = tt:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(FTT_FONT(), 12, "")
+        fs:SetJustifyH("CENTER")
+        fs:SetTextColor(1, 1, 1, 0.9)
+        _friendsTTHeaders[idx] = fs
+        return fs
     end
 
-    -- Hide pooled elements and clear stale entry refs.
-    for i = 1, #_friendsTTRows do
-        local r = _friendsTTRows[i]
-        r.name:Hide()
-        r.zone:Hide()
-        r.note:Hide()
-        if r.button then
-            r.button:Hide()
-            r.button:SetHeight(FTT_ROW_H)
-            r.button._entry = nil
-            FTTSetRowTarget(r.button, nil)
-            if r.button._hl then r.button._hl:Hide() end
+    local function EnsureFTTDivider(idx)
+        if _friendsTTDividers[idx] then
+            return _friendsTTDividers[idx]
         end
+        local tt = GetFriendsTT()
+        local tex = tt:CreateTexture(nil, "ARTWORK")
+        tex:SetColorTexture(1, 1, 1, 0.12)
+        local PP = CludesUI.PP
+        if PP and PP.Snap then
+            tex:SetHeight(PP.Snap(1))
+        else
+            tex:SetHeight(1)
+        end
+        _friendsTTDividers[idx] = tex
+        return tex
     end
-    for i = 1, #_friendsTTHeaders do _friendsTTHeaders[i]:Hide() end
-    for i = 1, #_friendsTTDividers do _friendsTTDividers[i]:Hide() end
 
-    if total == 0 then
-        local row = EnsureFTTRow(1)
-        FTTNameFont(row.name, 10)
-        row.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
-        row.zone:SetText("")
-        tt:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
-        row.button:ClearAllPoints()
-        row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, -FTT_PAD)
-        row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
-        row.button._entry = nil
-        FTTSetRowTarget(row.button, nil)
-        row.button:Show()
-        row.name:Show()
+    function ShowFriendsTooltip(anchor)
+        CancelFTTHide()
+        local guild, favorites, friends = GatherOnlineFriends()
+        local tt = GetFriendsTT()
+        -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
+        tt:SetScale(GetCustomTooltipScale())
+        local total = #guild + #favorites + #friends
+
+        local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
+        local maxRows = mp and tonumber(mp.friendsMaxRows) or 0
+        if maxRows and maxRows < 0 then
+            maxRows = 0
+        end
+        -- Hard cap 30 rows per section, even at 0 ("no cap") or stale over-max values -- big guilds otherwise build enormous tooltips. Overflow gets "...and N more".
+        if maxRows == 0 or maxRows > 30 then
+            maxRows = 30
+        end
+        local showNotes = mp and mp.friendsShowNotes
+
+        local font = FTT_FONT()
+        for i = 1, #_friendsTTRows do
+            FTTNameFont(_friendsTTRows[i].name, 10)
+            _friendsTTRows[i].zone:SetFont(font, 10, "")
+        end
+        for i = 1, #_friendsTTHeaders do
+            _friendsTTHeaders[i]:SetFont(font, 12, "")
+        end
+
+        -- Hide pooled elements and clear stale entry refs.
+        for i = 1, #_friendsTTRows do
+            local r = _friendsTTRows[i]
+            r.name:Hide()
+            r.zone:Hide()
+            r.note:Hide()
+            if r.button then
+                r.button:Hide()
+                r.button:SetHeight(FTT_ROW_H)
+                r.button._entry = nil
+                FTTSetRowTarget(r.button, nil)
+                if r.button._hl then
+                    r.button._hl:Hide()
+                end
+            end
+        end
+        for i = 1, #_friendsTTHeaders do
+            _friendsTTHeaders[i]:Hide()
+        end
+        for i = 1, #_friendsTTDividers do
+            _friendsTTDividers[i]:Hide()
+        end
+
+        if total == 0 then
+            local row = EnsureFTTRow(1)
+            FTTNameFont(row.name, 10)
+            row.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
+            row.zone:SetText("")
+            tt:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
+            row.button:ClearAllPoints()
+            row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, -FTT_PAD)
+            row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
+            row.button._entry = nil
+            FTTSetRowTarget(row.button, nil)
+            row.button:Show()
+            row.name:Show()
+            tt:ClearAllPoints()
+            local gpt = EBS._Grow.edge[EBS._Grow.Dir()] or EBS._Grow.edge.left
+            tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
+            tt:Show()
+            return total
+        end
+
+        local sections = {}
+        if #favorites > 0 then
+            sections[#sections + 1] = { title = "Favorites", list = favorites }
+        end
+        if #guild > 0 then
+            sections[#sections + 1] = { title = "Guild", list = guild }
+        end
+        if #friends > 0 then
+            sections[#sections + 1] = { title = "Friends", list = friends }
+        end
+
+        local rowIdx = 0
+        local hdrIdx = 0
+        local divIdx = 0
+        local maxNameW, maxZoneW, maxNoteW = 0, 0, 0
+        local curY = -FTT_PAD
+
+        for si, sec in ipairs(sections) do
+            -- Divider line between sections (not before the first)
+            if si > 1 then
+                curY = curY - FTT_DIV_PAD
+                divIdx = divIdx + 1
+                local div = EnsureFTTDivider(divIdx)
+                div:ClearAllPoints()
+                div:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
+                div:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                div:Show()
+                curY = curY - div:GetHeight() - FTT_DIV_PAD
+            end
+
+            curY = curY - 5 -- spacing above header
+            hdrIdx = hdrIdx + 1
+            local hdr = EnsureFTTHeader(hdrIdx)
+            hdr:SetFont(font, 12, "")
+            local ac = CludesUI.CLUDES_GREEN or CludesUI._accentColor
+            local acHex = ac
+                    and format(
+                        "%02x%02x%02x",
+                        (ac.r or 0.05) * 255,
+                        (ac.g or 0.82) * 255,
+                        (ac.b or 0.62) * 255
+                    )
+                or "4cc9f0"
+            hdr:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
+            hdr:ClearAllPoints()
+            hdr:SetPoint("TOP", tt, "TOP", 0, curY)
+            hdr:Show()
+            curY = curY - FTT_HDR_H - 5 -- spacing below header
+
+            local shown = #sec.list
+            if maxRows > 0 and shown > maxRows then
+                shown = maxRows
+            end
+            for i = 1, shown do
+                local e = sec.list[i]
+                rowIdx = rowIdx + 1
+                local row = EnsureFTTRow(rowIdx)
+                FTTNameFont(row.name, 10)
+                row.zone:SetFont(font, 10, "")
+
+                local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
+                local colored = cc and cc:WrapTextInColorCode(e.name) or e.name
+                -- BNet friends: show battle tag before the in-game name, e.g. "Bigmacz (Unholyftw)"
+                if e.bnetTag then
+                    colored = "|cffffd100" .. e.bnetTag .. "|r (" .. colored .. ")"
+                end
+                -- Level to the right of the in-game name, e.g. "Unholyftw 80"
+                local lvl = tonumber(e.level)
+                if lvl and lvl > 0 then
+                    colored = colored .. " |cffb0b0b0" .. lvl .. "|r"
+                end
+                row.name:SetText(colored)
+                row.name:SetTextColor(1, 1, 1, 0.85)
+
+                local zone = e.zone or ""
+                if zone ~= "" then
+                    row.zone:SetText(CludesUI.COLOR_CODES.DIM .. zone .. "|r")
+                else
+                    row.zone:SetText("")
+                end
+
+                row.button._entry = e
+                FTTSetRowTarget(row.button, e.full or e.name, e.bnetName)
+                row.button:ClearAllPoints()
+                row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
+                row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                row.button:Show()
+                row.name:Show()
+                row.zone:Show()
+
+                local nw = row.name:GetStringWidth() or 0
+                local zw = row.zone:GetStringWidth() or 0
+                if nw > maxNameW then
+                    maxNameW = nw
+                end
+                if zw > maxZoneW then
+                    maxZoneW = zw
+                end
+
+                local rowH = FTT_ROW_H
+                local note = showNotes and CludesUI.StripFriendNoteTag(e.note)
+                if note then
+                    FTTNameFont(row.note, 9)
+                    row.note:SetText(note)
+                    row.note:Show()
+                    local ntw = row.note:GetUnboundedStringWidth() or 0
+                    if ntw > FTT_NOTE_MAX_W then
+                        ntw = FTT_NOTE_MAX_W
+                    end
+                    if ntw > maxNoteW then
+                        maxNoteW = ntw
+                    end
+                    rowH = FTT_ROW_H + FTT_NOTE_H
+                end
+                row.button:SetHeight(rowH)
+
+                curY = curY - (rowH + FTT_GAP)
+            end
+
+            if maxRows > 0 and #sec.list > maxRows then
+                rowIdx = rowIdx + 1
+                local row = EnsureFTTRow(rowIdx)
+                FTTNameFont(row.name, 10)
+                row.name:SetText(
+                    CludesUI.COLOR_CODES.DIM .. CludesUI.Lf("...and %1$d more", #sec.list - maxRows) .. "|r"
+                )
+                row.zone:SetText("")
+                row.button._entry = nil
+                FTTSetRowTarget(row.button, nil)
+                row.button:ClearAllPoints()
+                row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
+                row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                row.button:Show()
+                row.name:Show()
+                curY = curY - (FTT_ROW_H + FTT_GAP)
+            end
+        end
+
+        local contentW = FTT_PAD + maxNameW + 16 + maxZoneW + FTT_PAD
+        local noteW = FTT_PAD + FTT_NOTE_INDENT + maxNoteW + FTT_PAD
+        local ttW = math.max(contentW, noteW, 160)
+        local ttH = -curY + FTT_PAD
+
+        tt:SetSize(ttW, ttH)
         tt:ClearAllPoints()
         local gpt = EBS._Grow.edge[EBS._Grow.Dir()] or EBS._Grow.edge.left
         tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
         tt:Show()
+        -- SetClampedToScreen handles off-screen for every Grow direction.
         return total
     end
 
-    local sections = {}
-    if #favorites > 0 then sections[#sections + 1] = { title = "Favorites", list = favorites } end
-    if #guild > 0 then sections[#sections + 1] = { title = "Guild", list = guild } end
-    if #friends > 0 then sections[#sections + 1] = { title = "Friends", list = friends } end
-
-    local rowIdx = 0
-    local hdrIdx = 0
-    local divIdx = 0
-    local maxNameW, maxZoneW, maxNoteW = 0, 0, 0
-    local curY = -FTT_PAD
-
-    for si, sec in ipairs(sections) do
-        -- Divider line between sections (not before the first)
-        if si > 1 then
-            curY = curY - FTT_DIV_PAD
-            divIdx = divIdx + 1
-            local div = EnsureFTTDivider(divIdx)
-            div:ClearAllPoints()
-            div:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-            div:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
-            div:Show()
-            curY = curY - div:GetHeight() - FTT_DIV_PAD
-        end
-
-        curY = curY - 5  -- spacing above header
-        hdrIdx = hdrIdx + 1
-        local hdr = EnsureFTTHeader(hdrIdx)
-        hdr:SetFont(font, 12, "")
-        local ac = CludesUI.CLUDES_GREEN or CludesUI._accentColor
-        local acHex = ac and format("%02x%02x%02x", (ac.r or 0.05) * 255, (ac.g or 0.82) * 255, (ac.b or 0.62) * 255) or "4cc9f0"
-        hdr:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
-        hdr:ClearAllPoints()
-        hdr:SetPoint("TOP", tt, "TOP", 0, curY)
-        hdr:Show()
-        curY = curY - FTT_HDR_H - 5  -- spacing below header
-
-        local shown = #sec.list
-        if maxRows > 0 and shown > maxRows then shown = maxRows end
-        for i = 1, shown do
-            local e = sec.list[i]
-            rowIdx = rowIdx + 1
-            local row = EnsureFTTRow(rowIdx)
-            FTTNameFont(row.name, 10)
-            row.zone:SetFont(font, 10, "")
-
-            local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
-            local colored = cc and cc:WrapTextInColorCode(e.name) or e.name
-            -- BNet friends: show battle tag before the in-game name, e.g. "Bigmacz (Unholyftw)"
-            if e.bnetTag then
-                colored = "|cffffd100" .. e.bnetTag .. "|r (" .. colored .. ")"
-            end
-            -- Level to the right of the in-game name, e.g. "Unholyftw 80"
-            local lvl = tonumber(e.level)
-            if lvl and lvl > 0 then
-                colored = colored .. " |cffb0b0b0" .. lvl .. "|r"
-            end
-            row.name:SetText(colored)
-            row.name:SetTextColor(1, 1, 1, 0.85)
-
-            local zone = e.zone or ""
-            if zone ~= "" then
-                row.zone:SetText(CludesUI.COLOR_CODES.DIM .. zone .. "|r")
-            else
-                row.zone:SetText("")
-            end
-
-            row.button._entry = e
-            FTTSetRowTarget(row.button, e.full or e.name, e.bnetName)
-            row.button:ClearAllPoints()
-            row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-            row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
-            row.button:Show()
-            row.name:Show()
-            row.zone:Show()
-
-            local nw = row.name:GetStringWidth() or 0
-            local zw = row.zone:GetStringWidth() or 0
-            if nw > maxNameW then maxNameW = nw end
-            if zw > maxZoneW then maxZoneW = zw end
-
-            local rowH = FTT_ROW_H
-            local note = showNotes and CludesUI.StripFriendNoteTag(e.note)
-            if note then
-                FTTNameFont(row.note, 9)
-                row.note:SetText(note)
-                row.note:Show()
-                local ntw = row.note:GetUnboundedStringWidth() or 0
-                if ntw > FTT_NOTE_MAX_W then ntw = FTT_NOTE_MAX_W end
-                if ntw > maxNoteW then maxNoteW = ntw end
-                rowH = FTT_ROW_H + FTT_NOTE_H
-            end
-            row.button:SetHeight(rowH)
-
-            curY = curY - (rowH + FTT_GAP)
-        end
-
-        if maxRows > 0 and #sec.list > maxRows then
-            rowIdx = rowIdx + 1
-            local row = EnsureFTTRow(rowIdx)
-            FTTNameFont(row.name, 10)
-            row.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.Lf("...and %1$d more", #sec.list - maxRows) .. "|r")
-            row.zone:SetText("")
-            row.button._entry = nil
-            FTTSetRowTarget(row.button, nil)
-            row.button:ClearAllPoints()
-            row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-            row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
-            row.button:Show()
-            row.name:Show()
-            curY = curY - (FTT_ROW_H + FTT_GAP)
-        end
+    function HideFriendsTooltip()
+        ScheduleFTTHide()
     end
-
-    local contentW = FTT_PAD + maxNameW + 16 + maxZoneW + FTT_PAD
-    local noteW = FTT_PAD + FTT_NOTE_INDENT + maxNoteW + FTT_PAD
-    local ttW = math.max(contentW, noteW, 160)
-    local ttH = -curY + FTT_PAD
-
-    tt:SetSize(ttW, ttH)
-    tt:ClearAllPoints()
-    local gpt = EBS._Grow.edge[EBS._Grow.Dir()] or EBS._Grow.edge.left
-    tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
-    tt:Show()
-    -- SetClampedToScreen handles off-screen for every Grow direction.
-    return total
-end
-
-function HideFriendsTooltip()
-    ScheduleFTTHide()
-end
-end  -- friends tooltip do-block
+end -- friends tooltip do-block
 
 -- Custom calendar tooltip with right-aligned kill counts and server/reset footer.
 local _calendarTT
@@ -606,7 +722,9 @@ local CTT_TITLE_H = 16
 local CTT_GAP = 6
 
 local function GetCalendarTT()
-    if _calendarTT then return _calendarTT end
+    if _calendarTT then
+        return _calendarTT
+    end
     local f = CreateFrame("Frame", nil, UIParent)
     f:SetFrameStrata("TOOLTIP")
     f:SetFrameLevel(200)
@@ -621,7 +739,9 @@ local function GetCalendarTT()
 end
 
 local function EnsureCalendarTTRow(idx)
-    if _calendarTTRows[idx] then return _calendarTTRows[idx] end
+    if _calendarTTRows[idx] then
+        return _calendarTTRows[idx]
+    end
     local tt = GetCalendarTT()
     local leftFS = tt:CreateFontString(nil, "OVERLAY")
     leftFS:SetFont(FTT_FONT(), 10, "")
@@ -634,7 +754,9 @@ local function EnsureCalendarTTRow(idx)
 end
 
 local function EnsureCalendarTTFooter(idx)
-    if _calendarTTFooters[idx] then return _calendarTTFooters[idx] end
+    if _calendarTTFooters[idx] then
+        return _calendarTTFooters[idx]
+    end
     local tt = GetCalendarTT()
     local leftFS = tt:CreateFontString(nil, "OVERLAY")
     leftFS:SetFont(FTT_FONT(), 10, "")
@@ -649,7 +771,9 @@ local function EnsureCalendarTTFooter(idx)
 end
 
 local function EnsureCalendarTTTitle()
-    if _calendarTTTitle then return _calendarTTTitle end
+    if _calendarTTTitle then
+        return _calendarTTTitle
+    end
     local tt = GetCalendarTT()
     local fs = tt:CreateFontString(nil, "OVERLAY")
     fs:SetFont(FTT_FONT(), 12, "")
@@ -667,7 +791,9 @@ local function GetServerTimeText()
     end
     local ampm = h >= 12 and "PM" or "AM"
     h = h % 12
-    if h == 0 then h = 12 end
+    if h == 0 then
+        h = 12
+    end
     return format("%d:%02d %s", h, m, ampm)
 end
 
@@ -682,7 +808,9 @@ local function GetWeeklyResetText()
 end
 
 local function HideCalendarTooltip()
-    if _calendarTT then _calendarTT:Hide() end
+    if _calendarTT then
+        _calendarTT:Hide()
+    end
 end
 
 local function ShowCalendarTooltip(anchor, lockoutEntries)
@@ -728,12 +856,18 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
         row.right:ClearAllPoints()
         row.right:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -CTT_PAD, curY)
         row.left:Show()
-        if entry.right and entry.right ~= "" then row.right:Show() end
+        if entry.right and entry.right ~= "" then
+            row.right:Show()
+        end
 
         local lw = row.left:GetStringWidth() or 0
         local rw = row.right:GetStringWidth() or 0
-        if lw > maxLeftW then maxLeftW = lw end
-        if rw > maxRightW then maxRightW = rw end
+        if lw > maxLeftW then
+            maxLeftW = lw
+        end
+        if rw > maxRightW then
+            maxRightW = rw
+        end
 
         curY = curY - CTT_ROW_H
     end
@@ -755,8 +889,12 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
 
         local lw = footer.left:GetStringWidth() or 0
         local rw = footer.right:GetStringWidth() or 0
-        if lw > maxLeftW then maxLeftW = lw end
-        if rw > maxRightW then maxRightW = rw end
+        if lw > maxLeftW then
+            maxLeftW = lw
+        end
+        if rw > maxRightW then
+            maxRightW = rw
+        end
 
         curY = curY - CTT_ROW_H
     end
@@ -783,23 +921,26 @@ local function LockoutTierAndLabel(difficulty, fallbackLabel)
         local d = { GetDifficultyInfo(difficulty) }
         label = d[1] or fallbackLabel
         if d[6] then
-            tier = "mythic"      -- displays as mythic
+            tier = "mythic" -- displays as mythic
         elseif d[3] or d[5] then
-            tier = "heroic"      -- is, or displays as, heroic
+            tier = "heroic" -- is, or displays as, heroic
         end
     end
     local du = _G.DifficultyUtil
-    if du and du.ID
-        and (difficulty == du.ID.RaidLFR or difficulty == du.ID.PrimaryRaidLFR) then
+    if du and du.ID and (difficulty == du.ID.RaidLFR or difficulty == du.ID.PrimaryRaidLFR) then
         tier = "lfr"
     end
     return tier, label or ""
 end
 
 local function GetCalendarLockoutEntries()
-    if not GetNumSavedInstances or not GetSavedInstanceInfo then return end
+    if not GetNumSavedInstances or not GetSavedInstanceInfo then
+        return
+    end
 
-    if RequestRaidInfo then RequestRaidInfo() end
+    if RequestRaidInfo then
+        RequestRaidInfo()
+    end
 
     local entries = {}
     for i = 1, GetNumSavedInstances() do
@@ -826,10 +967,14 @@ local function GetCalendarLockoutEntries()
         end
     end
 
-    if #entries == 0 then return end
+    if #entries == 0 then
+        return
+    end
 
     table.sort(entries, function(a, b)
-        if a.name ~= b.name then return a.name < b.name end
+        if a.name ~= b.name then
+            return a.name < b.name
+        end
         return a.tierOrder < b.tierOrder
     end)
     return entries

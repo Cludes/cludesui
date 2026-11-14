@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Slots.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local tonumber, type, select = tonumber, type, select
@@ -38,7 +42,14 @@ local tinsert = table.insert
 local WORLD_MARKER_ENGINE = { 5, 6, 3, 2, 7, 1, 4, 8 }
 
 local MARKER_NAMES = {
-    "Star", "Circle", "Diamond", "Triangle", "Moon", "Square", "Cross", "Skull",
+    "Star",
+    "Circle",
+    "Diamond",
+    "Triangle",
+    "Moon",
+    "Square",
+    "Cross",
+    "Skull",
 }
 
 -------------------------------------------------------------------------------
@@ -66,9 +77,13 @@ local CYCLE_N = 8
 local function CycleSteps(kind)
     local out = {}
     if kind == "cycleraidtarget" then
-        for i = 1, CYCLE_N do out[i] = "/tm " .. i end
+        for i = 1, CYCLE_N do
+            out[i] = "/tm " .. i
+        end
     elseif kind == "cycleworldmarker" then
-        for i = 1, CYCLE_N do out[i] = "/wm " .. WORLD_MARKER_ENGINE[i] end
+        for i = 1, CYCLE_N do
+            out[i] = "/wm " .. WORLD_MARKER_ENGINE[i]
+        end
     else
         return nil
     end
@@ -79,7 +94,9 @@ end
 -- than stored itself, so there is only ever one number to keep in step.
 local function CycleNext(slot)
     local last = tonumber(slot and slot.cyclePos) or 0
-    if last < 1 or last > CYCLE_N then last = 0 end
+    if last < 1 or last > CYCLE_N then
+        last = 0
+    end
     return last % CYCLE_N + 1
 end
 
@@ -88,9 +105,13 @@ end
 -- Called from the release; a cell that does not cycle answers nothing and
 -- leaves the slot alone.
 local function CyclePosBack(btn, idx, slot)
-    if not btn or not idx or not slot then return end
+    if not btn or not idx or not slot then
+        return
+    end
     local pos = tonumber(btn:GetAttribute("eqdCycPos" .. idx))
-    if pos and CycleSteps(slot.kind) then slot.cyclePos = pos end
+    if pos and CycleSteps(slot.kind) then
+        slot.cyclePos = pos
+    end
 end
 
 -- "Summon Random Favorite Mount", used only to DRAW the entry -- its icon and
@@ -116,21 +137,31 @@ end
 -- dynamicspec slot banks the position instead, and means it -- the second on a
 -- druid and the second on a warrior are both simply "the second one".
 local function SpecIndexFor(slot)
-    if not slot or not C_SpecializationInfo then return nil end
+    if not slot or not C_SpecializationInfo then
+        return nil
+    end
     local classID = select(3, UnitClass("player"))
-    if not classID then return nil end
+    if not classID then
+        return nil
+    end
     local count = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
 
     if slot.kind == "dynamicspec" then
         local i = tonumber(slot.index)
-        if i and i >= 1 and i <= count then return i end
+        if i and i >= 1 and i <= count then
+            return i
+        end
         return nil
     end
 
     local want = tonumber(slot.specID)
-    if not want then return nil end
+    if not want then
+        return nil
+    end
     for i = 1, count do
-        if C_SpecializationInfo.GetSpecializationInfo(i) == want then return i end
+        if C_SpecializationInfo.GetSpecializationInfo(i) == want then
+            return i
+        end
     end
     return nil
 end
@@ -164,21 +195,31 @@ do
     local cache = {}
 
     local function Resolve(slot)
-        if not slot or slot.kind ~= "dynamicprofession" then return nil, nil end
+        if not slot or slot.kind ~= "dynamicprofession" then
+            return nil, nil
+        end
         local i = tonumber(slot.index)
-        if not i then return nil, nil end
-        local key = i * 4 + (slot.extra and 1 or 0)
-            + (slot.specialization and 2 or 0)
+        if not i then
+            return nil, nil
+        end
+        local key = i * 4 + (slot.extra and 1 or 0) + (slot.specialization and 2 or 0)
         local hit = cache[key]
-        if hit then return hit.book, hit.spell end
+        if hit then
+            return hit.book, hit.spell
+        end
 
         local prof1, prof2, arch, fish, cook = GetProfessions()
         local book
-        if i == 1 then book = prof1
-        elseif i == 2 then book = prof2
-        elseif i == 3 then book = cook
-        elseif i == 4 then book = fish
-        elseif i == 5 then book = arch
+        if i == 1 then
+            book = prof1
+        elseif i == 2 then
+            book = prof2
+        elseif i == 3 then
+            book = cook
+        elseif i == 4 then
+            book = fish
+        elseif i == 5 then
+            book = arch
         end
 
         -- Gathering specialization abilities live in general spellbook
@@ -190,15 +231,21 @@ do
                 -- Blizzard exposes each learned flyout and each profession's
                 -- skill line, but no relationship between the two.
                 local flyoutID
-                if skillLine == 182 then flyoutID = 239       -- Herbalism
-                elseif skillLine == 186 then flyoutID = 240   -- Mining
-                elseif skillLine == 393 then flyoutID = 238   -- Skinning
+                if skillLine == 182 then
+                    flyoutID = 239 -- Herbalism
+                elseif skillLine == 186 then
+                    flyoutID = 240 -- Mining
+                elseif skillLine == 393 then
+                    flyoutID = 238 -- Skinning
                 end
                 if flyoutID then
                     local numSlots = select(3, GetFlyoutInfo(flyoutID))
                     for n = 1, (numSlots or 0) do
                         local spellID, _, isKnown = GetFlyoutSlotInfo(flyoutID, n)
-                        if isKnown then spell = spellID; break end
+                        if isKnown then
+                            spell = spellID
+                            break
+                        end
                     end
                 end
             else
@@ -208,10 +255,15 @@ do
                 local seen = 0
                 for n = 1, (numSpells or 0) do
                     local info = C_SpellBook.GetSpellBookItemInfo(
-                        n + (spellOffset or 0), Enum.SpellBookSpellBank.Player)
+                        n + (spellOffset or 0),
+                        Enum.SpellBookSpellBank.Player
+                    )
                     if info and info.spellID and not info.isPassive then
                         seen = seen + 1
-                        if seen == which then spell = info.spellID; break end
+                        if seen == which then
+                            spell = info.spellID
+                            break
+                        end
                     end
                 end
             end
@@ -221,9 +273,15 @@ do
         return book, spell
     end
 
-    ns.ProfessionBookIndexFor = function(slot) return (Resolve(slot)) end
-    ns.ProfessionSpellFor = function(slot) return (select(2, Resolve(slot))) end
-    ns.WipeProfessionCache = function() wipe(cache) end
+    ns.ProfessionBookIndexFor = function(slot)
+        return (Resolve(slot))
+    end
+    ns.ProfessionSpellFor = function(slot)
+        return (select(2, Resolve(slot)))
+    end
+    ns.WipeProfessionCache = function()
+        wipe(cache)
+    end
 end
 
 -- Picker / unresolved-placeholder name for a dynamicprofession position (the
@@ -232,19 +290,24 @@ end
 ns.ProfessionPositionName = function(index, extra, specialization)
     index = tonumber(index)
     local base
-    if index == 3 then base = COOKING or "Cooking"
-    elseif index == 4 then base = FISHING or "Fishing"
+    if index == 3 then
+        base = COOKING or "Cooking"
+    elseif index == 4 then
+        base = FISHING or "Fishing"
     elseif index == 5 then
         -- WoW Forever's professions book reads GetProfessions as prof1, prof2,
         -- First Aid, fishing, cooking: there the position is First Aid, named
         -- by its skill line (129) as the client spells it.
         if CludesUI.IS_FOREVER then
             base = C_TradeSkillUI.GetTradeSkillDisplayName(129)
-            if type(base) ~= "string" or base == "" then base = CludesUI.L("First Aid") end
+            if type(base) ~= "string" or base == "" then
+                base = CludesUI.L("First Aid")
+            end
         else
             base = ARCHAEOLOGY or "Archaeology"
         end
-    else base = CludesUI.Lf("Profession %1$d", index or 0)
+    else
+        base = CludesUI.Lf("Profession %1$d", index or 0)
     end
     if specialization then
         return CludesUI.Lf("%1$s Specialization Ability", base)
@@ -271,7 +334,9 @@ function ns.OutfitSlots()
     for _, info in ipairs(C_TransmogOutfitInfo.GetOutfitsInfo() or {}) do
         if not info.isDisabled then
             out[#out + 1] = {
-                kind = "outfit", id = info.outfitID, name = info.name,
+                kind = "outfit",
+                id = info.outfitID,
+                name = info.name,
                 icon = ns.OutfitIcon(info) or { atlas = "poi-transmogrifier" },
             }
         end
@@ -282,24 +347,28 @@ end
 -- Set IDs are character-local even when the palette is shared.
 local function EquipmentSetOwner()
     local guid = UnitGUID("player")
-    if not issecretvalue(guid) then return guid end
+    if not issecretvalue(guid) then
+        return guid
+    end
 end
 
 function ns.EquipmentSetInfo(slot)
-    if type(slot.id) ~= "number" or type(slot.owner) ~= "string"
-        or slot.owner ~= EquipmentSetOwner() then return end
+    if type(slot.id) ~= "number" or type(slot.owner) ~= "string" or slot.owner ~= EquipmentSetOwner() then
+        return
+    end
     return C_EquipmentSet.GetEquipmentSetInfo(slot.id)
 end
 
 function ns.EquipmentSetSlots()
     local out = {}
     local owner = EquipmentSetOwner()
-    if not owner then return out end
+    if not owner then
+        return out
+    end
     for _, id in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
         local name, icon = C_EquipmentSet.GetEquipmentSetInfo(id)
         if name then
-            out[#out + 1] = { kind = "equipmentset", id = id, owner = owner,
-                             name = name, icon = icon }
+            out[#out + 1] = { kind = "equipmentset", id = id, owner = owner, name = name, icon = icon }
         end
     end
     return out
@@ -332,96 +401,188 @@ do
     --   entry and the Great Vault is unavailable) even though MAX_SLOTS now
     --   seats the full set. Both are still in the picker.
     local PANELS = {
-        { key = "character",   icon = ART .. "menu-character.png",
-          button = "CharacterMicroButton",
-          label = "CHARACTER_BUTTON",           default = "Character" },
-        { key = "spellbook",   icon = ART .. "menu-spellbook.png",
-          button = { "PlayerSpellsMicroButton", "SpellbookMicroButton" },
-          label = { "PLAYERSPELLS_BUTTON", "TALENTS_BUTTON" },
-          default = "Spellbook and Talents" },
-        { key = "professions", icon = ART .. "menu-professions.png",
-          button = "ProfessionMicroButton",
-          label = "PROFESSIONS_BUTTON",         default = "Professions" },
-        { key = "achievements", icon = ART .. "menu-achievements.png",
-          button = "AchievementMicroButton",
-          label = { "ACHIEVEMENT_BUTTON", "ACHIEVEMENTS" },
-          default = "Achievements" },
-        { key = "quests",      icon = ART .. "menu-quests.png",
-          button = "QuestLogMicroButton",
-          label = { "QUESTLOG_BUTTON", "QUEST_LOG" }, default = "Quest Log" },
-        { key = "guild",       icon = ART .. "menu-guild.png",
-          button = "GuildMicroButton",
-          label = { "GUILD_AND_COMMUNITIES", "GUILD" }, default = "Guild" },
-        { key = "groupfinder", icon = ART .. "menu-group.png",
-          button = "LFDMicroButton",
-          label = "DUNGEONS_BUTTON",            default = "Group Finder" },
+        {
+            key = "character",
+            icon = ART .. "menu-character.png",
+            button = "CharacterMicroButton",
+            label = "CHARACTER_BUTTON",
+            default = "Character",
+        },
+        {
+            key = "spellbook",
+            icon = ART .. "menu-spellbook.png",
+            button = { "PlayerSpellsMicroButton", "SpellbookMicroButton" },
+            label = { "PLAYERSPELLS_BUTTON", "TALENTS_BUTTON" },
+            default = "Spellbook and Talents",
+        },
+        {
+            key = "professions",
+            icon = ART .. "menu-professions.png",
+            button = "ProfessionMicroButton",
+            label = "PROFESSIONS_BUTTON",
+            default = "Professions",
+        },
+        {
+            key = "achievements",
+            icon = ART .. "menu-achievements.png",
+            button = "AchievementMicroButton",
+            label = { "ACHIEVEMENT_BUTTON", "ACHIEVEMENTS" },
+            default = "Achievements",
+        },
+        {
+            key = "quests",
+            icon = ART .. "menu-quests.png",
+            button = "QuestLogMicroButton",
+            label = { "QUESTLOG_BUTTON", "QUEST_LOG" },
+            default = "Quest Log",
+        },
+        {
+            key = "guild",
+            icon = ART .. "menu-guild.png",
+            button = "GuildMicroButton",
+            label = { "GUILD_AND_COMMUNITIES", "GUILD" },
+            default = "Guild",
+        },
+        {
+            key = "groupfinder",
+            icon = ART .. "menu-group.png",
+            button = "LFDMicroButton",
+            label = "DUNGEONS_BUTTON",
+            default = "Group Finder",
+        },
         -- No micro button of its own since the Group Finder swallowed the tab:
         -- TogglePVPUI is the call the game's own binding makes, and it lives in
         -- a [Bootstrap] file, so it answers from login however late the panel
         -- itself loads.
-        { key = "pvp",         icon = ART .. "menu-pvp.png",
-          fire = function() if TogglePVPUI then TogglePVPUI() end end,
-          exists = function() return TogglePVPUI ~= nil end,
-          label = { "PLAYER_V_PLAYER", "PVP" },  default = "Player vs Player" },
-        { key = "adventure",   icon = ART .. "menu-adventure.png",
-          button = "EJMicroButton",
-          label = { "ADVENTURE_JOURNAL", "ENCOUNTER_JOURNAL" },
-          default = "Adventure Guide" },
-        { key = "collections", icon = ART .. "menu-collections.png",
-          button = "CollectionsMicroButton",
-          label = "COLLECTIONS",                default = "Collections" },
-        { key = "housing",     icon = ART .. "menu-housing.png",
-          button = "HousingMicroButton",
-          label = "HOUSING_MICRO_BUTTON",       default = "Housing" },
+        {
+            key = "pvp",
+            icon = ART .. "menu-pvp.png",
+            fire = function()
+                if TogglePVPUI then
+                    TogglePVPUI()
+                end
+            end,
+            exists = function()
+                return TogglePVPUI ~= nil
+            end,
+            label = { "PLAYER_V_PLAYER", "PVP" },
+            default = "Player vs Player",
+        },
+        {
+            key = "adventure",
+            icon = ART .. "menu-adventure.png",
+            button = "EJMicroButton",
+            label = { "ADVENTURE_JOURNAL", "ENCOUNTER_JOURNAL" },
+            default = "Adventure Guide",
+        },
+        {
+            key = "collections",
+            icon = ART .. "menu-collections.png",
+            button = "CollectionsMicroButton",
+            label = "COLLECTIONS",
+            default = "Collections",
+        },
+        {
+            key = "housing",
+            icon = ART .. "menu-housing.png",
+            button = "HousingMicroButton",
+            label = "HOUSING_MICRO_BUTTON",
+            default = "Housing",
+        },
         -- The Quick Join toast, which is what the game binds TOGGLESOCIAL to
         -- now that the social micro button is gone. Same button the micro menu
         -- data bar block clicks for its Friends entry.
-        { key = "social",      icon = ART .. "menu-friends.png",
-          button = "QuickJoinToastButton",
-          label = { "SOCIAL_LABEL", "SOCIAL_BUTTON", "FRIENDS" },
-          default = "Social" },
-        { key = "map",         icon = ART .. "menu-map.png",
-          fire = function() if ToggleWorldMap then ToggleWorldMap() end end,
-          exists = function() return ToggleWorldMap ~= nil end,
-          label = { "WORLD_MAP", "WORLDMAP_BUTTON" }, default = "Map" },
-        { key = "bags",        icon = ART .. "menu-bags.png",
-          fire = function() if ToggleAllBags then ToggleAllBags() end end,
-          exists = function() return ToggleAllBags ~= nil end,
-          label = { "BAGSLOTTEXT", "INVENTORY_TOOLTIP" }, default = "Bags" },
+        {
+            key = "social",
+            icon = ART .. "menu-friends.png",
+            button = "QuickJoinToastButton",
+            label = { "SOCIAL_LABEL", "SOCIAL_BUTTON", "FRIENDS" },
+            default = "Social",
+        },
+        {
+            key = "map",
+            icon = ART .. "menu-map.png",
+            fire = function()
+                if ToggleWorldMap then
+                    ToggleWorldMap()
+                end
+            end,
+            exists = function()
+                return ToggleWorldMap ~= nil
+            end,
+            label = { "WORLD_MAP", "WORLDMAP_BUTTON" },
+            default = "Map",
+        },
+        {
+            key = "bags",
+            icon = ART .. "menu-bags.png",
+            fire = function()
+                if ToggleAllBags then
+                    ToggleAllBags()
+                end
+            end,
+            exists = function()
+                return ToggleAllBags ~= nil
+            end,
+            label = { "BAGSLOTTEXT", "INVENTORY_TOOLTIP" },
+            default = "Bags",
+        },
         -- The Great Vault, which the game gives no keybind of its own at all.
         -- Blizzard's entry point only ever SHOWS it, so the toggle half is
         -- ours: a second press on an open vault closes it, which is how every
         -- other entry here answers a second press.
-        { key = "greatvault",  icon = ART .. "menu-vault.png",
-          fire = function()
-              local f = WeeklyRewardsFrame
-              if f and f:IsShown() then
-                  HideUIPanel(f)
-              elseif WeeklyRewards_ShowUI then
-                  WeeklyRewards_ShowUI()
-              end
-          end,
-          exists = function() return WeeklyRewards_ShowUI ~= nil end,
-          label = "GREAT_VAULT_REWARDS",        default = "Great Vault" },
+        {
+            key = "greatvault",
+            icon = ART .. "menu-vault.png",
+            fire = function()
+                local f = WeeklyRewardsFrame
+                if f and f:IsShown() then
+                    HideUIPanel(f)
+                elseif WeeklyRewards_ShowUI then
+                    WeeklyRewards_ShowUI()
+                end
+            end,
+            exists = function()
+                return WeeklyRewards_ShowUI ~= nil
+            end,
+            label = "GREAT_VAULT_REWARDS",
+            default = "Great Vault",
+        },
         -- The one panel with a micro button that cannot be clicked: its OnClick
         -- opens nothing unless the cursor is ON the button
         -- (MainMenuBarMicroButtons.lua:1844), which a macro's click never is.
-        { key = "gamemenu",    icon = ART .. "menu-options.png",
-          fire = function()
-              if GameMenuFrame and GameMenuFrame:IsShown() then
-                  HideUIPanel(GameMenuFrame)
-              elseif GameMenuFrame_Show then
-                  GameMenuFrame_Show()
-              end
-          end,
-          exists = function() return GameMenuFrame_Show ~= nil end,
-          label = "MAINMENU_BUTTON",            default = "Game Menu" },
-        { key = "shop",        icon = ART .. "menu-shop.png", minor = true,
-          button = "StoreMicroButton",
-          label = "BLIZZARD_STORE",             default = "Shop" },
-        { key = "help",        icon = ART .. "menu-cs.png", minor = true,
-          button = "HelpMicroButton",
-          label = "HELP_BUTTON",                default = "Customer Support" },
+        {
+            key = "gamemenu",
+            icon = ART .. "menu-options.png",
+            fire = function()
+                if GameMenuFrame and GameMenuFrame:IsShown() then
+                    HideUIPanel(GameMenuFrame)
+                elseif GameMenuFrame_Show then
+                    GameMenuFrame_Show()
+                end
+            end,
+            exists = function()
+                return GameMenuFrame_Show ~= nil
+            end,
+            label = "MAINMENU_BUTTON",
+            default = "Game Menu",
+        },
+        {
+            key = "shop",
+            icon = ART .. "menu-shop.png",
+            minor = true,
+            button = "StoreMicroButton",
+            label = "BLIZZARD_STORE",
+            default = "Shop",
+        },
+        {
+            key = "help",
+            icon = ART .. "menu-cs.png",
+            minor = true,
+            button = "HelpMicroButton",
+            label = "HELP_BUTTON",
+            default = "Customer Support",
+        },
     }
 
     -- WoW Forever has no Great Vault content: its weekly rewards entry point
@@ -438,22 +599,34 @@ do
     -- are on and click the micro buttons otherwise.
     if CludesUI.IS_FOREVER then
         for _, def in ipairs(PANELS) do
-            if def.key == "greatvault" then def.fire = nil end
+            if def.key == "greatvault" then
+                def.fire = nil
+            end
         end
         for i, def in ipairs(PANELS) do
             if def.key == "spellbook" then
-                def.button, def.label, def.default = { "CUI_SpellbookRoute", "SpellbookMicroButton" }, "SPELLBOOK", "Spellbook"
-                tinsert(PANELS, i + 1, { key = "talents",
-                    icon = ART .. "menu-achievements.png",
-                    button = { "CUI_TalentsRoute", "TalentMicroButton" },
-                    label = "TALENTS",                  default = "Talents" })
+                def.button, def.label, def.default =
+                    { "CUI_SpellbookRoute", "SpellbookMicroButton" }, "SPELLBOOK", "Spellbook"
+                tinsert(
+                    PANELS,
+                    i + 1,
+                    {
+                        key = "talents",
+                        icon = ART .. "menu-achievements.png",
+                        button = { "CUI_TalentsRoute", "TalentMicroButton" },
+                        label = "TALENTS",
+                        default = "Talents",
+                    }
+                )
                 break
             end
         end
     end
 
     local byKey = {}
-    for _, def in ipairs(PANELS) do byKey[def.key] = def end
+    for _, def in ipairs(PANELS) do
+        byKey[def.key] = def
+    end
 
     -- The button this panel is clicked by, or nil for the ones with none and
     -- for a client that has not got the button. IsForbidden as well as
@@ -461,8 +634,12 @@ do
     -- (SlashCommands.lua:738), so an entry pointing at one would fire nothing.
     local function PanelButton(def)
         local names = def and def.button
-        if not names then return nil end
-        if type(names) == "string" then names = { names } end
+        if not names then
+            return nil
+        end
+        if type(names) == "string" then
+            names = { names }
+        end
         for _, name in ipairs(names) do
             local f = _G[name]
             if f and f.Click and f.IsForbidden and not f:IsForbidden() then
@@ -477,12 +654,18 @@ do
     end
 
     ns.PanelName = function(def)
-        if not def then return nil end
+        if not def then
+            return nil
+        end
         local names = def.label
-        if type(names) == "string" then names = { names } end
+        if type(names) == "string" then
+            names = { names }
+        end
         for _, g in ipairs(names) do
             local s = _G[g]
-            if type(s) == "string" and s ~= "" then return s end
+            if type(s) == "string" and s ~= "" then
+                return s
+            end
         end
         return CludesUI.L(def.default)
     end
@@ -494,7 +677,9 @@ do
     end
 
     ns.PanelFire = function(def)
-        if def and def.fire and (not def.exists or def.exists()) then def.fire() end
+        if def and def.fire and (not def.exists or def.exists()) then
+            def.fire()
+        end
     end
 
     -- Whether this client has the panel at all: Housing arrived in 12.0, the
@@ -502,8 +687,12 @@ do
     -- never loaded has no toggle to call. An entry that answers no goes dark
     -- under Hide Unavailable Actions rather than sitting there firing nothing.
     ns.PanelAvailable = function(def)
-        if not def then return false end
-        if def.button then return PanelButton(def) ~= nil end
+        if not def then
+            return false
+        end
+        if def.button then
+            return PanelButton(def) ~= nil
+        end
         return (def.fire ~= nil) and (not def.exists or def.exists())
     end
 

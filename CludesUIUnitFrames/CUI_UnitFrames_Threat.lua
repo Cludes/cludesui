@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Threat.lua
 --
@@ -15,7 +17,9 @@ local PP = CludesUI.PP
 local I = ns._internals
 local frames, GetSelectedFont, SetFSFont = I.frames, I.GetSelectedFont, I.SetFSFont
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -------------------------------------------------------------------------------
 --  Player Threat border (additive "Shadow" style on the PLAYER frame)
@@ -25,15 +29,19 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 --  ... "player") plus minimal combat/zone boundaries to clear it; shows only in
 --  instanced content (party/raid/delve) while grouped -- mirrors nameplate non-tank logic.
 -------------------------------------------------------------------------------
-local _ptWatcher       -- lazily-created event frame
-local _ptOn = false    -- the watcher's events are registered
-local _ptShownState    -- nil / "has" / "near" -- skip redundant re-apply
+local _ptWatcher -- lazily-created event frame
+local _ptOn = false -- the watcher's events are registered
+local _ptShownState -- nil / "has" / "near" -- skip redundant re-apply
 
 -- party/raid/delve instances only (mirrors the nameplate threat-context gate)
 local function PT_InInstancedContent()
     local _, instanceType, difficultyID = GetInstanceInfo()
-    if (tonumber(difficultyID) or 0) == 0 then return false end
-    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
+    if (tonumber(difficultyID) or 0) == 0 then
+        return false
+    end
+    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
+        return false
+    end
     local isDelve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress()
     return instanceType == "party" or instanceType == "raid" or isDelve
 end
@@ -42,7 +50,9 @@ end
 -- sits behind the frame like the real "Shadow" border style, separate from the
 -- unified border so it ADDS to whatever border the user already has.
 local function PT_EnsureBorder(pf)
-    if pf._threatShadowBorder then return pf._threatShadowBorder end
+    if pf._threatShadowBorder then
+        return pf._threatShadowBorder
+    end
     local b = CreateFrame("Frame", nil, pf)
     PP.Point(b, "TOPLEFT", pf, "TOPLEFT", 0, 0)
     PP.Point(b, "BOTTOMRIGHT", pf, "BOTTOMRIGHT", 0, 0)
@@ -54,7 +64,9 @@ end
 
 local function PT_Hide()
     local pf = frames.player
-    if pf and pf._threatShadowBorder then pf._threatShadowBorder:Hide() end
+    if pf and pf._threatShadowBorder then
+        pf._threatShadowBorder:Hide()
+    end
     _ptShownState = nil
 end
 
@@ -62,7 +74,9 @@ end
 -- identical to picking "Shadow" at size 2 from the Border Style dropdown.
 local function PT_Show(state, c)
     local pf = frames.player
-    if not pf then return end
+    if not pf then
+        return
+    end
     local b = PT_EnsureBorder(pf)
     if _ptShownState ~= state then
         _ptShownState = state
@@ -75,9 +89,17 @@ end
 
 -- Re-evaluate the player's threat and paint/clear the additive shadow border.
 function ns.UpdatePlayerThreatBorder()
-    if not (db and db.profile and db.profile.playerThreatBorderEnabled) then PT_Hide(); return end
-    if not frames.player then return end
-    if not PT_InInstancedContent() or not IsInGroup() then PT_Hide(); return end
+    if not (db and db.profile and db.profile.playerThreatBorderEnabled) then
+        PT_Hide()
+        return
+    end
+    if not frames.player then
+        return
+    end
+    if not PT_InInstancedContent() or not IsInGroup() then
+        PT_Hide()
+        return
+    end
     local status = UnitThreatSituation("player")
     if status and status >= 2 then
         -- status 2/3: the mob is on you -- you have aggro.
@@ -97,7 +119,9 @@ function ns.SetPlayerThreatEnabled(on)
     if on then
         if not _ptWatcher then
             _ptWatcher = CreateFrame("Frame")
-            _ptWatcher:SetScript("OnEvent", function() ns.UpdatePlayerThreatBorder() end)
+            _ptWatcher:SetScript("OnEvent", function()
+                ns.UpdatePlayerThreatBorder()
+            end)
         end
         _ptWatcher:RegisterUnitEvent("UNIT_THREAT_SITUATION_UPDATE", "player")
         _ptWatcher:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -106,7 +130,9 @@ function ns.SetPlayerThreatEnabled(on)
         _ptWatcher:RegisterEvent("GROUP_ROSTER_UPDATE")
         ns.UpdatePlayerThreatBorder()
     else
-        if _ptWatcher then _ptWatcher:UnregisterAllEvents() end
+        if _ptWatcher then
+            _ptWatcher:UnregisterAllEvents()
+        end
         PT_Hide()
     end
 end
@@ -131,11 +157,11 @@ if CludesUI.IS_FOREVER then
     -- Inside spots sit on the health bar; outside spots sit beside the whole
     -- frame (past an attached portrait), centred on its height.
     local POS = {
-        RIGHT  = { point = "RIGHT",  x = -4 },
-        LEFT   = { point = "LEFT",   x = 4 },
+        RIGHT = { point = "RIGHT", x = -4 },
+        LEFT = { point = "LEFT", x = 4 },
         CENTER = { point = "CENTER", x = 0 },
-        OUTRIGHT = { point = "LEFT",  rel = "RIGHT", x = 4,  outside = true },
-        OUTLEFT  = { point = "RIGHT", rel = "LEFT",  x = -4, outside = true },
+        OUTRIGHT = { point = "LEFT", rel = "RIGHT", x = 4, outside = true },
+        OUTLEFT = { point = "RIGHT", rel = "LEFT", x = -4, outside = true },
     }
     local watcher = CreateFrame("Frame")
 
@@ -146,8 +172,14 @@ if CludesUI.IS_FOREVER then
         local x, y = p.threatPctXOffset, p.threatPctYOffset
         local font = GetSelectedFont()
         local outline = CludesUI.GetFontOutlineFlag("unitFrames")
-        if frame._tpPos == posKey and frame._tpSize == size and frame._tpX == x and frame._tpY == y
-            and frame._tpFont == font and frame._tpOutline == outline then
+        if
+            frame._tpPos == posKey
+            and frame._tpSize == size
+            and frame._tpX == x
+            and frame._tpY == y
+            and frame._tpFont == font
+            and frame._tpOutline == outline
+        then
             return
         end
         frame._tpPos, frame._tpSize, frame._tpX, frame._tpY = posKey, size, x, y
@@ -163,7 +195,9 @@ if CludesUI.IS_FOREVER then
     -- (a readable 0 hides the text), then it goes straight to PaintThreatPct.
     local function UpdateUnit(unit)
         local frame = frames[unit]
-        if not (frame and frame._textOverlay) then return end
+        if not (frame and frame._textOverlay) then
+            return
+        end
         local fs = frame._threatPctText
         local p = db.profile
         if p.threatPctEnabled and (unit == "target" or p.threatPctFocus) then
@@ -180,7 +214,9 @@ if CludesUI.IS_FOREVER then
                 return
             end
         end
-        if fs then fs:Hide() end
+        if fs then
+            fs:Hide()
+        end
     end
 
     local function UpdateAll()

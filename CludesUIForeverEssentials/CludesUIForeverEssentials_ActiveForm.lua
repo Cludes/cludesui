@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ActiveForm.lua  (WoW Forever only)
 --  One click-through icon for the active warrior stance, druid form, paladin
@@ -12,13 +16,17 @@ local _, module = ...
 -- Settings live in CludesUIDB.activeForm, beside the shared visibility keys
 -- (unset = Always); unset keys read these.
 local DEFAULTS = {
-    enabled  = false,
+    enabled = false,
     iconSize = 40,
-    zoom     = 8,   -- percent of the icon cropped from each edge
+    zoom = 8, -- percent of the icon cropped from each edge
     -- Border keys as the other bordered surfaces store them: borderSize is
     -- the legacy step, borderSizePx the exact size beside it (CludesUI.BorderPx).
-    borderSize = 1, borderTexture = "solid",
-    borderR = 0, borderG = 0, borderB = 0, borderA = 1,
+    borderSize = 1,
+    borderTexture = "solid",
+    borderR = 0,
+    borderG = 0,
+    borderB = 0,
+    borderA = 1,
 }
 local F = module.Feature("activeForm", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = -200 })
 local Get, Read, Enabled = F.Get, F.Read, F.Enabled
@@ -27,22 +35,22 @@ local Get, Read, Enabled = F.Get, F.Read, F.Enabled
 -- 1.60.1.70245).
 local BUFF_SPELLS = {
     HUNTER = {
-        { 13165, 14318, 14319, 14320, 14321, 14322, 25296 },         -- Hawk
-        { 13163 },                                                   -- Monkey
-        { 5118 },                                                    -- Cheetah
-        { 13159 },                                                   -- Pack
-        { 13161, 1299445, 1299446, 1299447 },                        -- Beast
-        { 20043, 20190 },                                            -- Wild
-        { 34074, 415423, 415424, 415718 },                           -- Viper
+        { 13165, 14318, 14319, 14320, 14321, 14322, 25296 }, -- Hawk
+        { 13163 }, -- Monkey
+        { 5118 }, -- Cheetah
+        { 13159 }, -- Pack
+        { 13161, 1299445, 1299446, 1299447 }, -- Beast
+        { 20043, 20190 }, -- Wild
+        { 34074, 415423, 415424, 415718 }, -- Viper
     },
     PALADIN = {
-        { 465, 10290, 643, 1032, 10291, 10292, 10293},               -- Devotion
-        { 7294, 10298, 10299, 10300, 10301 },                        -- Retribution
-        { 19746 },                                                   -- Concentration
-        { 19876, 19895, 19896 },                                     -- Shadow Resistance
-        { 19888, 19897, 19898 },                                     -- Frost Resistance
-        { 19891, 19899, 19900 },                                     -- Fire Resistance
-        { 20218 },                                                   -- Sanctity
+        { 465, 10290, 643, 1032, 10291, 10292, 10293 }, -- Devotion
+        { 7294, 10298, 10299, 10300, 10301 }, -- Retribution
+        { 19746 }, -- Concentration
+        { 19876, 19895, 19896 }, -- Shadow Resistance
+        { 19888, 19897, 19898 }, -- Frost Resistance
+        { 19891, 19899, 19900 }, -- Fire Resistance
+        { 20218 }, -- Sanctity
     },
 }
 
@@ -51,7 +59,7 @@ local buffSpells = BUFF_SPELLS[classFile]
 -- The classes the icon draws for; on any other it stays hidden.
 local FORM_CLASSES = { WARRIOR = true, DRUID = true, PALADIN = true, HUNTER = true }
 local supported = FORM_CLASSES[classFile] == true
-local buffIDs  -- [spell id] = true, built the first time it is needed
+local buffIDs -- [spell id] = true, built the first time it is needed
 -- The last buff scan's answer (the aspect or aura icon and its aura instance),
 -- reused until an aura change can have moved it (buffDirty).
 local buffIcon, buffInstance
@@ -59,17 +67,21 @@ local buffDirty = true
 
 local frame, tex, border
 local eventFrame = CreateFrame("Frame")
-local active = false         -- shown, with its events registered
-local visRegistered = false  -- on the shared visibility dispatcher
+local active = false -- shown, with its events registered
+local visRegistered = false -- on the shared visibility dispatcher
 
 local IsSecret = CludesUI.IsSecret
 
 local function BuildBuffIDs()
-    if buffIDs then return end
+    if buffIDs then
+        return
+    end
     buffIDs = {}
     for i = 1, #buffSpells do
         local ids = buffSpells[i]
-        for j = 1, #ids do buffIDs[ids[j]] = true end
+        for j = 1, #ids do
+            buffIDs[ids[j]] = true
+        end
     end
 end
 
@@ -78,19 +90,27 @@ end
 -- index scan is a hard error, so the last answer stands until the restriction
 -- lifts (combat end rescans).
 local function BuffIcon()
-    if not buffDirty then return buffIcon end
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return buffIcon end
+    if not buffDirty then
+        return buffIcon
+    end
+    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
+        return buffIcon
+    end
     BuildBuffIDs()
     buffDirty = false
     buffIcon, buffInstance = nil, nil
     for i = 1, 40 do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL|PLAYER")
-        if not aura then break end
+        if not aura then
+            break
+        end
         local id = aura.spellId
         if not IsSecret(id) and id and buffIDs[id] then
             buffIcon = aura.icon
             local iid = aura.auraInstanceID
-            if not IsSecret(iid) then buffInstance = iid end
+            if not IsSecret(iid) then
+                buffInstance = iid
+            end
             break
         end
     end
@@ -104,25 +124,39 @@ end
 -- be read counts as one that matters (the scan keeps its last answer while
 -- aura data is restricted).
 local function AuraChangeMatters(info)
-    if info == nil or IsSecret(info) then return true end
+    if info == nil or IsSecret(info) then
+        return true
+    end
     local full = info.isFullUpdate
-    if IsSecret(full) or full then return true end
+    if IsSecret(full) or full then
+        return true
+    end
     local added = info.addedAuras
     if added ~= nil and buffIDs then
-        if IsSecret(added) then return true end
+        if IsSecret(added) then
+            return true
+        end
         for i = 1, #added do
             local aura = added[i]
-            if aura == nil or IsSecret(aura) then return true end
+            if aura == nil or IsSecret(aura) then
+                return true
+            end
             local id = aura.spellId
-            if not IsSecret(id) and id and buffIDs[id] then return true end
+            if not IsSecret(id) and id and buffIDs[id] then
+                return true
+            end
         end
     end
     local removed = info.removedAuraInstanceIDs
     if removed ~= nil and buffInstance then
-        if IsSecret(removed) then return true end
+        if IsSecret(removed) then
+            return true
+        end
         for i = 1, #removed do
             local iid = removed[i]
-            if not IsSecret(iid) and iid == buffInstance then return true end
+            if not IsSecret(iid) and iid == buffInstance then
+                return true
+            end
         end
     end
     return false
@@ -133,10 +167,14 @@ end
 -- stance bar gives an active druid form or paladin aura a generic one.
 local function CurrentIcon()
     local n = GetNumShapeshiftForms()
-    if IsSecret(n) then return false end
+    if IsSecret(n) then
+        return false
+    end
     for i = 1, n do
         local icon, isActive, _, spellID = GetShapeshiftFormInfo(i)
-        if IsSecret(isActive) then return false end
+        if IsSecret(isActive) then
+            return false
+        end
         if isActive then
             if spellID and not IsSecret(spellID) then
                 return C_Spell.GetSpellTexture(spellID) or icon
@@ -148,7 +186,9 @@ local function CurrentIcon()
 end
 
 local function Refresh()
-    if not active then return end
+    if not active then
+        return
+    end
     local icon = CurrentIcon()
     -- A secret icon still paints (the texture takes it); it cannot be tested.
     if IsSecret(icon) then
@@ -156,7 +196,9 @@ local function Refresh()
         frame:Show()
         return
     end
-    if icon == false then return end
+    if icon == false then
+        return
+    end
     if icon then
         tex:SetTexture(icon)
         frame:Show()
@@ -172,12 +214,18 @@ local function OnEvent(_, event, _, info, spellID)
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         -- Only while the buff scan cannot run (combat): own casts stay readable, a tracked
         -- cast is the new aspect or aura, and the scan reruns once it can.
-        if not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()) then return end
+        if not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()) then
+            return
+        end
         BuildBuffIDs()
-        if IsSecret(spellID) or not (spellID and buffIDs[spellID]) then return end
+        if IsSecret(spellID) or not (spellID and buffIDs[spellID]) then
+            return
+        end
         buffIcon, buffInstance, buffDirty = (C_Spell.GetSpellTexture(spellID)), nil, true
     elseif event == "UNIT_AURA" then
-        if not AuraChangeMatters(info) then return end
+        if not AuraChangeMatters(info) then
+            return
+        end
         buffDirty = true
     elseif event == "PLAYER_REGEN_ENABLED" or event == "PLAYER_ENTERING_WORLD" then
         buffDirty = true
@@ -194,14 +242,29 @@ local function Style()
     local z = Get("zoom") / 100
     tex:SetTexCoord(z, 1 - z, z, 1 - z)
     local step, texture = Get("borderSize"), Get("borderTexture")
-    CludesUI.ApplyBorderStyle(border, step,
-        Get("borderR"), Get("borderG"), Get("borderB"), Get("borderA"), texture,
-        Read().borderTextureOffset, Read().borderTextureOffsetY, nil, nil, nil, step, nil,
-        CludesUI.BorderPx(Read().borderSizePx, step, texture))
+    CludesUI.ApplyBorderStyle(
+        border,
+        step,
+        Get("borderR"),
+        Get("borderG"),
+        Get("borderB"),
+        Get("borderA"),
+        texture,
+        Read().borderTextureOffset,
+        Read().borderTextureOffsetY,
+        nil,
+        nil,
+        nil,
+        step,
+        nil,
+        CludesUI.BorderPx(Read().borderSizePx, step, texture)
+    )
 end
 
 local function BuildFrame()
-    if frame then return end
+    if frame then
+        return
+    end
     frame = CreateFrame("Frame", "CludesUIActiveForm", UIParent)
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
@@ -218,7 +281,9 @@ end
 -- Active = shown, with its events registered. While enabled but hidden by the
 -- visibility setting it costs only that setting's check.
 local function SetActive(on)
-    if on == active then return end
+    if on == active then
+        return
+    end
     active = on
     if on then
         eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
@@ -228,7 +293,7 @@ local function SetActive(on)
             eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
             eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
             eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-            buffDirty = true  -- nothing was watched while inactive
+            buffDirty = true -- nothing was watched while inactive
         end
         Refresh()
         return
@@ -238,7 +303,9 @@ local function SetActive(on)
 end
 
 local function UpdateVisibility()
-    SetActive((frame and supported and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false)
+    SetActive(
+        (frame and supported and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
+    )
 end
 
 local function Apply()
@@ -249,7 +316,9 @@ local function Apply()
             CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
         end
         Style()
-        if not CludesUI._unlockActive then F.Place(frame, true) end
+        if not CludesUI._unlockActive then
+            F.Place(frame, true)
+        end
     elseif visRegistered then
         visRegistered = false
         CludesUI.UnregisterVisibilityUpdater(UpdateVisibility)
@@ -267,11 +336,17 @@ CludesUI._ActiveForm = {
 }
 
 F.Start(Apply, {
-    key = "CUI_ActiveForm", label = "Active Stance", order = 730,
-    frame = function() return frame end,
+    key = "CUI_ActiveForm",
+    label = "Active Stance",
+    order = 730,
+    frame = function()
+        return frame
+    end,
     size = function()
         local size = SnappedSize()
         return size, size
     end,
-    snap = true, noAnchorTarget = true, noSizeMatchTarget = true,
+    snap = true,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

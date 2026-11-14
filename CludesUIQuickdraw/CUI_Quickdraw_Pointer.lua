@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Pointer.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor, max, abs = math.floor, math.max, math.abs
@@ -21,7 +25,9 @@ local SelectColor, TWO_PI, PaletteView = I.SelectColor, I.TWO_PI, I.PaletteView
 local SelectedZoom, FalloffK, FalloffRatios = I.SelectedZoom, I.FalloffK, I.FalloffRatios
 
 local scrollCatcher
-I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v) scrollCatcher = v end
+I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v)
+    scrollCatcher = v
+end
 
 -------------------------------------------------------------------------------
 --  Selection connector line -- the unlock-mode anchor line's exact look: a
@@ -41,7 +47,9 @@ I.scrollCatcherSetters[#I.scrollCatcherSetters + 1] = function(v) scrollCatcher 
 -------------------------------------------------------------------------------
 function PaletteView:EnsureNeedle()
     local hub = self.hub
-    if hub.needle then return end
+    if hub.needle then
+        return
+    end
     local line = self.frame:CreateLine(nil, "ARTWORK", nil, 1)
     line:SetThickness(3)
     line:SetSnapToPixelGrid(false)
@@ -72,7 +80,7 @@ function PaletteView:ShowNeedle(index)
     local _, viewIcon = self:Geom()
     local base = (p and p.iconSize) or 40
     local k = (base > 0) and (viewIcon / base) or 1
-    local logo = max(8, 40 * k)  -- the hub logo's hardcoded height
+    local logo = max(8, 40 * k) -- the hub logo's hardcoded height
     self._needleTrimS = logo * (2 / 3)
     self._needleTrimE = logo * (1 / 3)
     -- A NEW target grows in from the hub again; the same target keeps its
@@ -86,7 +94,9 @@ function PaletteView:ShowNeedle(index)
         -- removed with the line, never rebuilt per show.
         if not self._needleTicker then
             local view = self
-            self._needleTicker = function() view:AdvanceNeedle(GetTime()) end
+            self._needleTicker = function()
+                view:AdvanceNeedle(GetTime())
+            end
         end
         self.frame:SetScript("OnUpdate", self._needleTicker)
     end
@@ -96,8 +106,12 @@ end
 function PaletteView:HideNeedle()
     self._needleTarget = nil
     local hub = self.hub
-    if hub.needle then hub.needle:Hide() end
-    if hub.pulse then hub.pulse:Hide() end
+    if hub.needle then
+        hub.needle:Hide()
+    end
+    if hub.pulse then
+        hub.pulse:Hide()
+    end
     if not self.opts.live and self.frame:GetScript("OnUpdate") == self._needleTicker then
         self.frame:SetScript("OnUpdate", nil)
     end
@@ -110,12 +124,16 @@ function PaletteView:AdvanceNeedle(now)
     local index = self._needleTarget
     local hub = self.hub
     local line = index and hub.needle
-    if not line then return end
+    if not line then
+        return
+    end
 
     local w = self.widgets[index]
     local fx, fy = self.frame:GetCenter()
     local wx, wy
-    if w and w:IsShown() then wx, wy = w:GetCenter() end
+    if w and w:IsShown() then
+        wx, wy = w:GetCenter()
+    end
     if not fx or not wx then
         line:Hide()
         hub.pulse:Hide()
@@ -142,7 +160,9 @@ function PaletteView:AdvanceNeedle(now)
     -- the armed border uses -- so the line and the entry it lands on agree.
     local r, g, b = SelectColor(self:P())
     local t = (now - (self._needleT0 or now)) / 0.25
-    if t > 1 then t = 1 end
+    if t > 1 then
+        t = 1
+    end
     local ease = 1 - (1 - t) * (1 - t)
     line:SetStartPoint("CENTER", self.frame, sx, sy)
     line:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
@@ -161,7 +181,9 @@ function PaletteView:AdvanceNeedle(now)
             local smoothT = st * st * (3 - 2 * st)
             local headT = smoothT * 2.0
             local tailT = headT - 1.0
-            if tailT < 0 then tailT = 0 end
+            if tailT < 0 then
+                tailT = 0
+            end
             local clampHead = (headT < 1) and headT or 1
             local clampTail = (tailT < 1) and tailT or 1
             local fadeA = 1
@@ -170,16 +192,25 @@ function PaletteView:AdvanceNeedle(now)
             elseif smoothT > 0.7 then
                 fadeA = (1 - smoothT) / 0.3
             end
-            if fadeA < 0 then fadeA = 0 end
+            if fadeA < 0 then
+                fadeA = 0
+            end
             if clampHead <= clampTail then
                 pulse:Hide()
             else
-                pulse:SetStartPoint("CENTER", self.frame,
-                    sx + (ex - sx) * clampTail, sy + (ey - sy) * clampTail)
-                pulse:SetEndPoint("CENTER", self.frame,
-                    sx + (ex - sx) * clampHead, sy + (ey - sy) * clampHead)
-                pulse:SetVertexColor(r + (1 - r) * 0.55, g + (1 - g) * 0.55,
-                    b + (1 - b) * 0.55, 0.5 * fadeA)
+                pulse:SetStartPoint(
+                    "CENTER",
+                    self.frame,
+                    sx + (ex - sx) * clampTail,
+                    sy + (ey - sy) * clampTail
+                )
+                pulse:SetEndPoint(
+                    "CENTER",
+                    self.frame,
+                    sx + (ex - sx) * clampHead,
+                    sy + (ey - sy) * clampHead
+                )
+                pulse:SetVertexColor(r + (1 - r) * 0.55, g + (1 - g) * 0.55, b + (1 - b) * 0.55, 0.5 * fadeA)
                 pulse:Show()
             end
         else
@@ -202,7 +233,9 @@ end
 -------------------------------------------------------------------------------
 function PaletteView:AdvanceSlam(now)
     local t0 = self._slamT0
-    if not t0 then return end
+    if not t0 then
+        return
+    end
     local t = (now - t0) / 0.12
     if t >= 1 then
         self._slamT0 = nil
@@ -219,8 +252,7 @@ function PaletteView:AdvanceSlam(now)
         local w = self.widgets[i]
         local a = arcStart + (i - 1) * step
         w:ClearAllPoints()
-        w:SetPoint("CENTER", frame, "CENTER",
-            radius * travel * sin(a), radius * travel * cos(a))
+        w:SetPoint("CENTER", frame, "CENTER", radius * travel * sin(a), radius * travel * cos(a))
         w:SetAlpha(alpha)
     end
 
@@ -257,18 +289,24 @@ function PaletteView:PointerPolar()
     mx, my = mx / es, my / es
 
     if not self._steered then
-        if abs(mx - self._gateX) < 1 and abs(my - self._gateY) < 1 then return nil end
+        if abs(mx - self._gateX) < 1 and abs(my - self._gateY) < 1 then
+            return nil
+        end
         self._steered = true
     end
 
     local cx, cy = frame:GetCenter()
-    if not cx then return nil end
+    if not cx then
+        return nil
+    end
 
     local dx, dy = mx - cx, my - cy
     -- atan2(dx, dy) measures clockwise from straight up, matching the layout
     -- (slot 1 at 12 o'clock, index increasing clockwise).
     local theta = atan2(dx, dy)
-    if theta < 0 then theta = theta + TWO_PI end
+    if theta < 0 then
+        theta = theta + TWO_PI
+    end
     return theta, sqrt(dx * dx + dy * dy)
 end
 
@@ -283,11 +321,17 @@ end
 -- on its own.
 function PaletteView:HitTest(theta, dist)
     local shown = self.shownCount
-    if shown < 1 then return nil end
+    if shown < 1 then
+        return nil
+    end
     local _, _, deadZone = self:Geom()
 
-    if not theta then theta, dist = self:PointerPolar() end
-    if not theta then return nil end
+    if not theta then
+        theta, dist = self:PointerPolar()
+    end
+    if not theta then
+        return nil
+    end
 
     -- The armed claim's rings, and no other's. A child sector reaches past its
     -- parent entry's own, so answering the parent first
@@ -319,13 +363,19 @@ function PaletteView:HitTest(theta, dist)
         end
     end
 
-    if dist < deadZone then return nil end
+    if dist < deadZone then
+        return nil
+    end
 
     local step, arcStart, full = self:ArcGeom(shown)
-    if step == 0 then return 1 end
+    if step == 0 then
+        return 1
+    end
 
     local rel = theta - arcStart
-    if full then return (floor(rel / step + 0.5) % shown) + 1 end
+    if full then
+        return (floor(rel / step + 0.5) % shown) + 1
+    end
 
     -- Resolved into [0, TWO_PI) from the arc's start, NOT into (-pi, pi]: an arc
     -- may span up to a full turn, so an offset of more than half a turn is a
@@ -336,10 +386,14 @@ function PaletteView:HitTest(theta, dist)
     -- The arc owns half a step past its last entry, the same width every
     -- interior entry gets. Beyond that is a miss, not a clamp: outside the arc
     -- is the only place its cancel can live once the dead zone has been left.
-    if rel > (shown - 1) * step + step * 0.5 then return nil end
+    if rel > (shown - 1) * step + step * 0.5 then
+        return nil
+    end
 
     local idx = floor(rel / step + 0.5) + 1
-    if idx < 1 or idx > shown then return nil end
+    if idx < 1 or idx > shown then
+        return nil
+    end
     return idx
 end
 
@@ -372,8 +426,8 @@ function PaletteView:AdvanceArc()
 
     local _, iconSize, deadZone = self:Geom()
     local decay, aDecay = FalloffRatios(p)
-    local minS   = p.fanMinScale or 0.30
-    local minA   = p.fanMinAlpha or 0.12
+    local minS = p.fanMinScale or 0.30
+    local minA = p.fanMinAlpha or 0.12
 
     local step, arcStart = self:ArcGeom(shown)
     -- Inside the dead zone the cursor is not pointing anywhere yet: an angle
@@ -392,7 +446,9 @@ function PaletteView:AdvanceArc()
             -- the entry's own sector -- see FalloffK -- so the entry the cursor
             -- is on holds still while the cursor moves about inside it.
             local d = (theta - (arcStart + (i - 1) * step)) % TWO_PI
-            if d > pi then d = TWO_PI - d end
+            if d > pi then
+                d = TWO_PI - d
+            end
             local k = FalloffK(d / step)
             s = max(minS, decay ^ k)
             a = max(minA, aDecay ^ k)
@@ -431,16 +487,17 @@ function PaletteView:SteerUnchanged()
     local armed = self:ArmedClaim()
     -- Read the same way AdvanceFan reads it, so a wheel tick the pass has not
     -- picked up yet still counts as a change.
-    local wheel = self.opts.live and scrollCatcher
-                  and scrollCatcher:GetAttribute("eqdFanTarget") or nil
+    local wheel = self.opts.live and scrollCatcher and scrollCatcher:GetAttribute("eqdFanTarget") or nil
     -- Mid-settle the strip's geometry moves on its own. Both are nil on the
     -- layouts that have no settle at all, which compares equal -- which is why
     -- ns.Close has to clear the pair rather than just the target.
     local settling = self.fanVisual ~= self.fanTarget
 
     local same = not settling
-             and x == self._steerX and y == self._steerY
-             and armed == self._steerArmed and wheel == self._steerWheel
+        and x == self._steerX
+        and y == self._steerY
+        and armed == self._steerArmed
+        and wheel == self._steerWheel
     self._steerX, self._steerY = x, y
     self._steerArmed, self._steerWheel = armed, wheel
     return same

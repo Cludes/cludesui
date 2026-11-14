@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_SimplifiedStats.lua  (WoW Forever only)
 --  Simpler stat lines on item tooltips.
@@ -21,11 +25,13 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 --  Essentials > General (CUI_ForeverEssentials_General_Options.lua).
 -------------------------------------------------------------------------------
 local _, module = ...
-if not (TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall) then return end
+if not (TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall) then
+    return
+end
 
 -- Settings live in CludesUIDB.simplifiedStats; unset keys read these.
-local F = module.Feature("simplifiedStats",
-    { shorten = false, colors = false, merge = false, numColor = "signed" })
+local F =
+    module.Feature("simplifiedStats", { shorten = false, colors = false, merge = false, numColor = "signed" })
 
 local statRules, statLabels
 -- Prefixed lines: { pat = "^(prefix)(.*)$", kind = "set" | "enchant", gray }
@@ -40,7 +46,9 @@ local mShorten, mColors, mMerge, mNum
 
 -- A stat figure in the chosen number color; hex is the stat's hue.
 local function Num(n, hex)
-    if numMode == "line" then return n end
+    if numMode == "line" then
+        return n
+    end
     if numMode ~= "stat" then
         local sign = n:sub(1, 1)
         hex = (sign == "+" and "1eff00") or (sign == "-" and "ff2020") or "ffffff"
@@ -50,7 +58,9 @@ end
 
 -- "+X Label", colored when Color Stats is on.
 local function Stat(n, label, hex)
-    if not colorOn then return n .. " " .. label end
+    if not colorOn then
+        return n .. " " .. label
+    end
     return Num(n, hex) .. " |cff" .. hex .. label .. "|r"
 end
 
@@ -58,7 +68,10 @@ end
 -- each positional argument's capture slot (a locale may reorder them).
 local function StatPattern(fmt)
     local slot, n = {}, 0
-    for a in fmt:gmatch("%%(%d)%$") do n = n + 1; slot[tonumber(a)] = n end
+    for a in fmt:gmatch("%%(%d)%$") do
+        n = n + 1
+        slot[tonumber(a)] = n
+    end
     local p = fmt:gsub("%%%d%$[%d.]*[dfs]", "\001"):gsub("%%%%", "%%")
     p = p:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("\001", "([%%d.]+)")
     return "^" .. p .. "$", slot
@@ -67,7 +80,9 @@ end
 -- "(%d) Set: %s" -> "^(%(%d+%) Set: )(.*)$"; nil unless the format ends in %s.
 local function PrefixPattern(fmt)
     local pre = type(fmt) == "string" and fmt:match("^(.-)%%s$")
-    if not pre or pre == "" then return end
+    if not pre or pre == "" then
+        return
+    end
     pre = pre:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%d", "%%d+")
     return "^(" .. pre .. ")(.*)$"
 end
@@ -77,10 +92,15 @@ local function BuildStatRules()
     prefixRules = {}
     -- label text -> hue, for the short lines
     statLabels = {}
-    for _, f in ipairs({ { ITEM_SET_BONUS, "set" }, { ITEM_SET_BONUS_GRAY, "set", true },
-                         { ENCHANTED_TOOLTIP_LINE, "enchant" } }) do
+    for _, f in ipairs({
+        { ITEM_SET_BONUS, "set" },
+        { ITEM_SET_BONUS_GRAY, "set", true },
+        { ENCHANTED_TOOLTIP_LINE, "enchant" },
+    }) do
         local pat = PrefixPattern(f[1])
-        if pat then prefixRules[#prefixRules + 1] = { pat = pat, kind = f[2], gray = f[3] } end
+        if pat then
+            prefixRules[#prefixRules + 1] = { pat = pat, kind = f[2], gray = f[3] }
+        end
     end
     -- The "Equip: " every stat format starts with; set bonuses carry the rest.
     local equip = type(ITEM_SPELL_TRIGGER_ONEQUIP) == "string" and ITEM_SPELL_TRIGGER_ONEQUIP
@@ -89,28 +109,42 @@ local function BuildStatRules()
     -- merge: a spell damage + healing rule that Merge folds into Spell Power.
     local function Rule(key, outs, merge)
         local fmt = _G["TOOLTIP_ITEM_STAT_" .. key]
-        if type(fmt) ~= "string" then return end
+        if type(fmt) ~= "string" then
+            return
+        end
         local labels = {}
         for i, o in ipairs(outs) do
             local label = _G[o[3]]
-            if type(label) ~= "string" then return end
+            if type(label) ~= "string" then
+                return
+            end
             labels[i] = label
         end
         -- comparison delta lines ("+12 Spell Damage") use these labels too
-        for i, o in ipairs(outs) do statLabels[labels[i]] = o[4] end
+        for i, o in ipairs(outs) do
+            statLabels[labels[i]] = o[4]
+        end
         local pat, slot = StatPattern(fmt)
         local barePat
         if equip and fmt:find(equip, 1, true) == 1 then
             barePat = StatPattern((fmt:sub(#equip + 1):gsub("^%s+", "")))
         end
-        statRules[#statRules + 1] = { pat = pat, barePat = barePat, slot = slot, outs = outs, labels = labels,
+        statRules[#statRules + 1] = {
+            pat = pat,
+            barePat = barePat,
+            slot = slot,
+            outs = outs,
+            labels = labels,
             pct = fmt:find("%%%%") and "%" or "",
-            merge = merge and type(ITEM_MOD_SPELL_POWER_SHORT) == "string" or nil }
+            merge = merge and type(ITEM_MOD_SPELL_POWER_SHORT) == "string" or nil,
+        }
     end
     local function Pair(key, label, hex, label2, hex2)
         for _, d in ipairs({ { "+", "_INCREASE" }, { "-", "_DECREASE" } }) do
             local outs = { { 1, d[1], label, hex } }
-            if label2 then outs[2] = { 1, d[1], label2, hex2 } end
+            if label2 then
+                outs[2] = { 1, d[1], label2, hex2 }
+            end
             Rule(key .. d[2], outs, label2 ~= nil)
         end
     end
@@ -128,8 +162,14 @@ local function BuildStatRules()
             }, true)
         end
     end
-    for _, s in ipairs({ { "HOLY", HUE.holy }, { "FIRE", HUE.fire }, { "FROST", HUE.frost },
-                         { "NATURE", HUE.nature }, { "SHADOW", HUE.shadow }, { "ARCANE", HUE.arcane } }) do
+    for _, s in ipairs({
+        { "HOLY", HUE.holy },
+        { "FIRE", HUE.fire },
+        { "FROST", HUE.frost },
+        { "NATURE", HUE.nature },
+        { "SHADOW", HUE.shadow },
+        { "ARCANE", HUE.arcane },
+    }) do
         Pair(s[1] .. "_DAMAGE", "ITEM_MOD_" .. s[1] .. "_DAMAGE_DONE_SHORT", s[2])
         Pair(s[1] .. "_PENETRATION", "ITEM_MOD_" .. s[1] .. "_PENETRATION_SHORT", s[2])
     end
@@ -150,32 +190,62 @@ local function BuildStatRules()
     Pair("HEALTH_REGEN", "ITEM_MOD_HEALTH_REGEN_SHORT", HUE.hp5)
     -- TOOLTIP_ITEM_STAT_SKILL_<k> -> ITEM_MOD_<v>_SHORT
     for k, v in pairs({
-        ALCHEMY = "ALCHEMY", AXES = "AXES", BLACKSMITHING = "BLACKSMITHING", BOWS = "BOWS",
-        COOKING = "COOKING", CROSSBOWS = "CROSSBOWS", DAGGERS = "DAGGERS",
-        DUAL_WIELDING = "DUAL_WIELD", ENCHANTING = "ENCHANTING", ENGINEERING = "ENGINEERING",
-        FIRST_AID = "FIRST_AID", FISHING = "FISHING", FIST_WEAPONS = "FIST_WEAPONS",
-        GUNS = "GUNS", HERBALISM = "HERBALISM", JEWELCRAFTING = "JEWELCRAFTING",
-        LEATHERWORKING = "LEATHERWORKING", MACES = "MACES", MINING = "MINING",
-        POLEARMS = "POLEARMS", SKINNING = "SKINNING", STAVES = "STAVES", SWORDS = "SWORDS",
-        TAILORING = "TAILORING", THROWN_WEAPONS = "THROWN", WANDS = "WANDS",
+        ALCHEMY = "ALCHEMY",
+        AXES = "AXES",
+        BLACKSMITHING = "BLACKSMITHING",
+        BOWS = "BOWS",
+        COOKING = "COOKING",
+        CROSSBOWS = "CROSSBOWS",
+        DAGGERS = "DAGGERS",
+        DUAL_WIELDING = "DUAL_WIELD",
+        ENCHANTING = "ENCHANTING",
+        ENGINEERING = "ENGINEERING",
+        FIRST_AID = "FIRST_AID",
+        FISHING = "FISHING",
+        FIST_WEAPONS = "FIST_WEAPONS",
+        GUNS = "GUNS",
+        HERBALISM = "HERBALISM",
+        JEWELCRAFTING = "JEWELCRAFTING",
+        LEATHERWORKING = "LEATHERWORKING",
+        MACES = "MACES",
+        MINING = "MINING",
+        POLEARMS = "POLEARMS",
+        SKINNING = "SKINNING",
+        STAVES = "STAVES",
+        SWORDS = "SWORDS",
+        TAILORING = "TAILORING",
+        THROWN_WEAPONS = "THROWN",
+        WANDS = "WANDS",
     }) do
         Pair("SKILL_" .. k, "ITEM_MOD_" .. v .. "_SHORT", GRAY)
     end
 
     local function Name(label, hex)
-        if type(label) == "string" and label ~= "" then statLabels[label] = hex end
+        if type(label) == "string" and label ~= "" then
+            statLabels[label] = hex
+        end
     end
     -- The label a format leaves once its sign and number are removed.
     local function Label(fmt, hex, ...)
-        if type(fmt) ~= "string" then return end
+        if type(fmt) ~= "string" then
+            return
+        end
         local f = fmt:gsub("%%%d%$", "%%"):gsub("%%c", "")
         local ok, sample = pcall(string.format, f, 0, ...)
-        if not ok then return end
+        if not ok then
+            return
+        end
         Name(sample:gsub("[%+%-]?0", "", 1):match("^%s*(.-)%s*$"), hex)
     end
-    for _, a in ipairs({ { "STRENGTH", HUE.str }, { "AGILITY", HUE.agi }, { "STAMINA", HUE.sta },
-                         { "INTELLECT", HUE.int }, { "SPIRIT", HUE.spi }, { "HEALTH", HUE.health },
-                         { "MANA", HUE.mana } }) do
+    for _, a in ipairs({
+        { "STRENGTH", HUE.str },
+        { "AGILITY", HUE.agi },
+        { "STAMINA", HUE.sta },
+        { "INTELLECT", HUE.int },
+        { "SPIRIT", HUE.spi },
+        { "HEALTH", HUE.health },
+        { "MANA", HUE.mana },
+    }) do
         Name(_G["ITEM_MOD_" .. a[1] .. "_SHORT"], a[2])
         Label(_G["ITEM_MOD_" .. a[1]], a[2])
     end
@@ -196,7 +266,9 @@ end
 
 -- The figures of the label ColorStatLabel colors, in its hue.
 local labelHex
-local function LabelNum(n) return Num(n, labelHex) end
+local function LabelNum(n)
+    return Num(n, labelHex)
+end
 
 -- A short line with its label colored, or nil when the line is not a
 -- known label and a number.
@@ -208,7 +280,12 @@ local function ColorStatLabel(text)
             if (before .. after):match("^%s*[%+%-]?[%d,.]+%%?%s*$") then
                 local num = "[%+%-]?[%d,.]+%%?"
                 labelHex = hex
-                return (before:gsub(num, LabelNum)) .. "|cff" .. hex .. label .. "|r" .. (after:gsub(num, LabelNum))
+                return (before:gsub(num, LabelNum))
+                    .. "|cff"
+                    .. hex
+                    .. label
+                    .. "|r"
+                    .. (after:gsub(num, LabelNum))
             end
         end
     end
@@ -221,7 +298,9 @@ local function SimplifyStatLine(text, bare)
         local pat = bare and r.barePat or (not bare and r.pat)
         -- At most two figures per format (the healing + damage lines).
         local c1, c2
-        if pat then c1, c2 = text:match(pat) end
+        if pat then
+            c1, c2 = text:match(pat)
+        end
         if c1 then
             local out = {}
             for i, o in ipairs(r.outs) do
@@ -240,7 +319,9 @@ end
 
 -- The set bonus prefix PrefixedLine repeats on every output line.
 local linePre
-local function PrefixNewline() return "\n" .. linePre end
+local function PrefixNewline()
+    return "\n" .. linePre
+end
 
 -- A set bonus or enchant line, rewritten after its prefix; false when the
 -- line has a prefix but nothing to change, nil when it has none.
@@ -252,7 +333,9 @@ local function PrefixedLine(text, shortenOn)
             if p.kind == "set" then
                 if shortenOn then
                     local c = colorOn
-                    if p.gray then colorOn = false end
+                    if p.gray then
+                        colorOn = false
+                    end
                     out = SimplifyStatLine(inner, true)
                     colorOn = c
                     -- every output line keeps the prefix
@@ -263,7 +346,9 @@ local function PrefixedLine(text, shortenOn)
                 end
             elseif colorOn then
                 out = ColorStatLabel(inner)
-                if out then out = pre .. out end
+                if out then
+                    out = pre .. out
+                end
             end
             return out or false
         end
@@ -286,13 +371,23 @@ local SHOWN_TIPS = {
 
 local function SimplifyStatsHook(tooltip)
     local shortenOn, colors = F.Get("shorten"), F.Get("colors")
-    if not (shortenOn or colors) then return end
-    if not tooltip or not tooltip.GetName then return end
+    if not (shortenOn or colors) then
+        return
+    end
+    if not tooltip or not tooltip.GetName then
+        return
+    end
     local ok, name = pcall(tooltip.GetName, tooltip)
-    if not ok or not name or not SHOWN_TIPS[name] then return end
-    if not statRules then BuildStatRules() end
+    if not ok or not name or not SHOWN_TIPS[name] then
+        return
+    end
+    if not statRules then
+        BuildStatRules()
+    end
     local equip = ITEM_SPELL_TRIGGER_ONEQUIP
-    if type(equip) ~= "string" then return end
+    if type(equip) ~= "string" then
+        return
+    end
     colorOn, numMode, mergeOn = colors, F.Get("numColor"), F.Get("merge")
     -- Every input of a rewrite but the text: a change starts the memo over.
     if shortenOn ~= mShorten or colorOn ~= mColors or mergeOn ~= mMerge or numMode ~= mNum then
@@ -310,10 +405,14 @@ local function SimplifyStatsHook(tooltip)
                 local new = memo[text]
                 if new == nil then
                     if isEquip then
-                        if shortenOn then new = SimplifyStatLine(text) end
+                        if shortenOn then
+                            new = SimplifyStatLine(text)
+                        end
                     else
                         new = PrefixedLine(text, shortenOn)
-                        if new == nil and colorOn then new = ColorStatLabel(text) end
+                        if new == nil and colorOn then
+                            new = ColorStatLabel(text)
+                        end
                     end
                     if memoN >= MEMO_MAX then
                         wipe(memo)
@@ -329,7 +428,9 @@ local function SimplifyStatsHook(tooltip)
             end
         end
     end
-    if changed then tooltip:Show() end
+    if changed then
+        tooltip:Show()
+    end
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, SimplifyStatsHook)
@@ -341,7 +442,9 @@ if TooltipComparisonManager and TooltipComparisonManager.SetItemTooltip then
     hooksecurefunc(TooltipComparisonManager, "SetItemTooltip", function(mgr, isPrimaryTooltip)
         local tips = mgr.tooltip and mgr.tooltip.shoppingTooltips
         local tip = tips and tips[isPrimaryTooltip and 1 or 2]
-        if tip then SimplifyStatsHook(tip) end
+        if tip then
+            SimplifyStatsHook(tip)
+        end
     end)
 end
 

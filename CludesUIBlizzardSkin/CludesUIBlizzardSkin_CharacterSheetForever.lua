@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Character Sheet on WoW Forever
 --
@@ -57,15 +59,21 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 
 local FFD, GetFFD = CludesUI.NewFrameData()
 
 -- The Character Sheet card's Off and the window skins kill switch, which
 -- stop both looks (as they stop the retail sheet's).
 local function SheetOn()
-    if not CludesUIDB then return true end
-    if CludesUIDB.themedCharacterSheet == false then return false end
+    if not CludesUIDB then
+        return true
+    end
+    if CludesUIDB.themedCharacterSheet == false then
+        return false
+    end
     return not CludesUI.BlizzWindowSkinsKilled()
 end
 
@@ -95,7 +103,9 @@ end
 -- Hide() gets undone by the client's own refreshes, a hidden parent does not.
 local Bin
 local function Discard(region)
-    if not region or not region.SetParent then return end
+    if not region or not region.SetParent then
+        return
+    end
     if not Bin then
         Bin = CreateFrame("Frame")
         Bin:Hide()
@@ -110,30 +120,50 @@ end
 --  takes Attack's.
 --------------------------------------------------------------------------------
 local DEFAULT_COLORS = {
-    General            = { r = 0.30,  g = 0.80,  b = 0.95 },
-    Attributes         = { r = 0.298, g = 0.788, b = 0.941 },
-    Attack             = { r = 1,     g = 0.353, b = 0.122 },
+    General = { r = 0.30, g = 0.80, b = 0.95 },
+    Attributes = { r = 0.298, g = 0.788, b = 0.941 },
+    Attack = { r = 1, g = 0.353, b = 0.122 },
     ["Secondary Stats"] = { r = 0.471, g = 0.255, b = 0.784 },
-    Defense            = { r = 0.247, g = 0.655, b = 1 },
+    Defense = { r = 0.247, g = 0.655, b = 1 },
 }
 local CATEGORY_KEY = {}
-if STAT_CATEGORY_GENERAL then CATEGORY_KEY[STAT_CATEGORY_GENERAL] = "General" end
-if STAT_CATEGORY_PRIMARY_ATTRIBUTES then CATEGORY_KEY[STAT_CATEGORY_PRIMARY_ATTRIBUTES] = "Attributes" end
-if STAT_CATEGORY_WEAPONS then CATEGORY_KEY[STAT_CATEGORY_WEAPONS] = "Attack" end
-if STAT_CATEGORY_MODIFIERS then CATEGORY_KEY[STAT_CATEGORY_MODIFIERS] = "Secondary Stats" end
-if STAT_CATEGORY_DEFENSE then CATEGORY_KEY[STAT_CATEGORY_DEFENSE] = "Defense" end
-if STAT_CATEGORY_COMBAT then CATEGORY_KEY[STAT_CATEGORY_COMBAT] = "Attack" end
+if STAT_CATEGORY_GENERAL then
+    CATEGORY_KEY[STAT_CATEGORY_GENERAL] = "General"
+end
+if STAT_CATEGORY_PRIMARY_ATTRIBUTES then
+    CATEGORY_KEY[STAT_CATEGORY_PRIMARY_ATTRIBUTES] = "Attributes"
+end
+if STAT_CATEGORY_WEAPONS then
+    CATEGORY_KEY[STAT_CATEGORY_WEAPONS] = "Attack"
+end
+if STAT_CATEGORY_MODIFIERS then
+    CATEGORY_KEY[STAT_CATEGORY_MODIFIERS] = "Secondary Stats"
+end
+if STAT_CATEGORY_DEFENSE then
+    CATEGORY_KEY[STAT_CATEGORY_DEFENSE] = "Defense"
+end
+if STAT_CATEGORY_COMBAT then
+    CATEGORY_KEY[STAT_CATEGORY_COMBAT] = "Attack"
+end
 
 local function CategoryColor(categoryName)
     local key = categoryName and CATEGORY_KEY[categoryName]
     local db = CludesUIDB
     -- A custom colour applies only while its "use" flag is on, as on retail.
-    local custom = key and db and db.statCategoryUseColor and db.statCategoryUseColor[key]
-        and db.statCategoryColors and db.statCategoryColors[key]
+    local custom = key
+        and db
+        and db.statCategoryUseColor
+        and db.statCategoryUseColor[key]
+        and db.statCategoryColors
+        and db.statCategoryColors[key]
     local c = custom or (key and DEFAULT_COLORS[key])
-    if c and c.r then return c.r, c.g, c.b end
+    if c and c.r then
+        return c.r, c.g, c.b
+    end
     local EG = CludesUI.CLUDES_GREEN
-    if EG then return EG.r, EG.g, EG.b end
+    if EG then
+        return EG.r, EG.g, EG.b
+    end
     return 1, 1, 1
 end
 
@@ -141,12 +171,18 @@ end
 -- then its rows, so it is the last header ahead of the element.
 local function CategoryOf(box, elementData)
     local list = box and box.elementData
-    if type(list) ~= "table" then return nil end
+    if type(list) ~= "table" then
+        return nil
+    end
     local current
     for i = 1, #list do
         local d = list[i]
-        if d.isHeader then current = d.name end
-        if d == elementData then return current end
+        if d.isHeader then
+            current = d.name
+        end
+        if d == elementData then
+            return current
+        end
     end
     return current
 end
@@ -158,7 +194,9 @@ local function OnePixel(frame)
     local PP = CludesUI.PP
     local perfect = (PP and PP.perfect) or 1
     local es = frame:GetEffectiveScale()
-    if not es or es <= 0 then es = 1 end
+    if not es or es <= 0 then
+        es = 1
+    end
     return perfect / es
 end
 
@@ -166,7 +204,9 @@ local function SkinHeader(frame, r, g, b)
     local d = GetFFD(frame)
     if not d.done then
         d.done = true
-        if frame.Background then frame.Background:SetAlpha(0) end
+        if frame.Background then
+            frame.Background:SetAlpha(0)
+        end
         if frame.Title then
             frame.Title:SetFont(FontPath(), 11, "")
         end
@@ -179,7 +219,9 @@ local function SkinHeader(frame, r, g, b)
         rightBar:SetPoint("RIGHT", frame, "RIGHT", -8, 0)
         d.rightBar = rightBar
     end
-    if frame.Title then frame.Title:SetTextColor(r, g, b, 1) end
+    if frame.Title then
+        frame.Title:SetTextColor(r, g, b, 1)
+    end
     local px = OnePixel(frame)
     d.leftBar:SetColorTexture(r, g, b, 0.8)
     d.rightBar:SetColorTexture(r, g, b, 0.8)
@@ -191,9 +233,15 @@ local function SkinRow(frame, r, g, b)
     local d = GetFFD(frame)
     if not d.done then
         d.done = true
-        if frame.Background then frame.Background:SetAlpha(0) end
-        if frame.Label then frame.Label:SetFont(FontPath(), 10, "") end
-        if frame.Value then frame.Value:SetFont(FontPath(), 10, "") end
+        if frame.Background then
+            frame.Background:SetAlpha(0)
+        end
+        if frame.Label then
+            frame.Label:SetFont(FontPath(), 10, "")
+        end
+        if frame.Value then
+            frame.Value:SetFont(FontPath(), 10, "")
+        end
         -- The retail rows carry a faint divider under each line.
         local divider = frame:CreateTexture(nil, "ARTWORK")
         divider:SetColorTexture(1, 1, 1, 0.06)
@@ -202,12 +250,18 @@ local function SkinRow(frame, r, g, b)
         divider:SetHeight(OnePixel(frame))
         d.divider = divider
     end
-    if frame.Label then frame.Label:SetTextColor(0.7, 0.7, 0.7, 0.8) end
-    if frame.Value then frame.Value:SetTextColor(r, g, b, 1) end
+    if frame.Label then
+        frame.Label:SetTextColor(0.7, 0.7, 0.7, 0.8)
+    end
+    if frame.Value then
+        frame.Value:SetTextColor(r, g, b, 1)
+    end
 end
 
 local function SkinElement(box, frame, elementData)
-    if not frame or not elementData then return end
+    if not frame or not elementData then
+        return
+    end
     if elementData.isHeader then
         SkinHeader(frame, CategoryColor(elementData.name))
     else
@@ -216,7 +270,9 @@ local function SkinElement(box, frame, elementData)
 end
 
 local function HookStatsList(box)
-    if not box or not box.ScrollBox or GetFFD(box).hooked then return end
+    if not box or not box.ScrollBox or GetFFD(box).hooked then
+        return
+    end
     GetFFD(box).hooked = true
     if ScrollUtil and ScrollUtil.AddInitializedFrameCallback then
         -- The event hands (owner, frame, elementData); the helper's own
@@ -226,7 +282,9 @@ local function HookStatsList(box)
             SkinElement(box, frame, elementData)
         end, nil, false)
         if box.ScrollBox.ForEachFrame then
-            box.ScrollBox:ForEachFrame(function(frame, elementData) SkinElement(box, frame, elementData) end)
+            box.ScrollBox:ForEachFrame(function(frame, elementData)
+                SkinElement(box, frame, elementData)
+            end)
         end
     end
 end
@@ -236,11 +294,15 @@ end
 -- name is replaced (it walks retail-only state), so the swatches reach this.
 local STAT_BOXES = { "CharacterStatsPaneScrollBox", "CharacterStatsPanePetScrollBox" }
 function CludesUI._refreshCharacterSheetColors()
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     for i = 1, #STAT_BOXES do
         local box = _G[STAT_BOXES[i]]
         if box and box.ScrollBox and box.ScrollBox.ForEachFrame then
-            box.ScrollBox:ForEachFrame(function(frame, elementData) SkinElement(box, frame, elementData) end)
+            box.ScrollBox:ForEachFrame(function(frame, elementData)
+                SkinElement(box, frame, elementData)
+            end)
         end
     end
 end
@@ -249,15 +311,32 @@ end
 --  The frame
 --------------------------------------------------------------------------------
 local SLOTS = {
-    "CharacterHeadSlot", "CharacterNeckSlot", "CharacterShoulderSlot", "CharacterBackSlot",
-    "CharacterChestSlot", "CharacterShirtSlot", "CharacterTabardSlot", "CharacterWristSlot",
-    "CharacterHandsSlot", "CharacterWaistSlot", "CharacterLegsSlot", "CharacterFeetSlot",
-    "CharacterFinger0Slot", "CharacterFinger1Slot", "CharacterTrinket0Slot", "CharacterTrinket1Slot",
-    "CharacterMainHandSlot", "CharacterSecondaryHandSlot", "CharacterRangedSlot", "CharacterAmmoSlot",
+    "CharacterHeadSlot",
+    "CharacterNeckSlot",
+    "CharacterShoulderSlot",
+    "CharacterBackSlot",
+    "CharacterChestSlot",
+    "CharacterShirtSlot",
+    "CharacterTabardSlot",
+    "CharacterWristSlot",
+    "CharacterHandsSlot",
+    "CharacterWaistSlot",
+    "CharacterLegsSlot",
+    "CharacterFeetSlot",
+    "CharacterFinger0Slot",
+    "CharacterFinger1Slot",
+    "CharacterTrinket0Slot",
+    "CharacterTrinket1Slot",
+    "CharacterMainHandSlot",
+    "CharacterSecondaryHandSlot",
+    "CharacterRangedSlot",
+    "CharacterAmmoSlot",
 }
 
 local function FadeChildren(frame, Fade)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local children = { frame:GetChildren() }
     for i = 1, #children do
         local child = children[i]
@@ -277,7 +356,9 @@ local function QualityColor(slot)
         elseif GetItemQualityColor then
             r, g, b = GetItemQualityColor(quality)
         end
-        if r then return r, g, b end
+        if r then
+            return r, g, b
+        end
     end
 end
 
@@ -285,13 +366,17 @@ end
 -- (the retail sheet's values).
 local function SlotBorderColor(slot)
     local r, g, b = QualityColor(slot)
-    if r then return r, g, b end
+    if r then
+        return r, g, b
+    end
     return 0.4, 0.4, 0.4
 end
 
 local function ColorSlotBorder(slot)
     local PanelPP = CludesUI.PanelPP
-    if not (PanelPP and PanelPP.SetBorderColor) then return end
+    if not (PanelPP and PanelPP.SetBorderColor) then
+        return
+    end
     local r, g, b = SlotBorderColor(slot)
     PanelPP.SetBorderColor(slot, r, g, b, 1)
 end
@@ -303,16 +388,16 @@ end
 --  enchant settings keys, sizes and colours, so those options rows drive it
 --  through the refreshers redefined below.
 --------------------------------------------------------------------------------
-local EX_LOOK = 5  -- the CludesUI look's text edge, off the slot edge
+local EX_LOOK = 5 -- the CludesUI look's text edge, off the slot edge
 local EX = EX_LOOK -- the text's near edge, off the slot edge
-local WY = 10      -- the outer weapon slots' first line, above the slot's centre
+local WY = 10 -- the outer weapon slots' first line, above the slot's centre
 -- Under Blizz Default Blizzard's bronze slot frames stay: the 55px art round
 -- each 37px slot reaches 9px past its edges. The text sits 4px past that,
 -- and the outer weapon slots' first line drops to the slot's centre so it
 -- clears the frames of the columns' bottom slots (set at the build, the
 -- style being latched for the session).
 local SLOT_FRAME = 9
-local stockPane      -- Blizz Default: the left pane, which the side weapon lines stop at
+local stockPane -- Blizz Default: the left pane, which the side weapon lines stop at
 
 -- Where each slot's text sits: "R" right of it, "L" left of it, "B" below
 -- it, "T" above it. The inner side for the two columns; the outer side for
@@ -322,18 +407,31 @@ local stockPane      -- Blizz Default: the left pane, which the side weapon line
 -- border leaves no room under it). Shirt, tabard and ammo carry none
 -- (shirt and tabard carry none on retail either).
 local TEXT_SIDE = {
-    CharacterHeadSlot = "R", CharacterNeckSlot = "R", CharacterShoulderSlot = "R",
-    CharacterBackSlot = "R", CharacterChestSlot = "R", CharacterWristSlot = "R",
-    CharacterHandsSlot = "L", CharacterWaistSlot = "L", CharacterLegsSlot = "L",
-    CharacterFeetSlot = "L", CharacterFinger0Slot = "L", CharacterFinger1Slot = "L",
-    CharacterTrinket0Slot = "L", CharacterTrinket1Slot = "L",
-    CharacterMainHandSlot = "L", CharacterSecondaryHandSlot = "B", CharacterRangedSlot = "R",
+    CharacterHeadSlot = "R",
+    CharacterNeckSlot = "R",
+    CharacterShoulderSlot = "R",
+    CharacterBackSlot = "R",
+    CharacterChestSlot = "R",
+    CharacterWristSlot = "R",
+    CharacterHandsSlot = "L",
+    CharacterWaistSlot = "L",
+    CharacterLegsSlot = "L",
+    CharacterFeetSlot = "L",
+    CharacterFinger0Slot = "L",
+    CharacterFinger1Slot = "L",
+    CharacterTrinket0Slot = "L",
+    CharacterTrinket1Slot = "L",
+    CharacterMainHandSlot = "L",
+    CharacterSecondaryHandSlot = "B",
+    CharacterRangedSlot = "R",
 }
 
 -- The slots that can hold a weapon carry a dps line (painted only when the
 -- item there is one).
 local WEAPON_SLOT = {
-    CharacterMainHandSlot = true, CharacterSecondaryHandSlot = true, CharacterRangedSlot = true,
+    CharacterMainHandSlot = true,
+    CharacterSecondaryHandSlot = true,
+    CharacterRangedSlot = true,
 }
 
 -- C_Item.GetItemStats keys in tie order (an earlier key wins a tie), with our
@@ -344,44 +442,46 @@ local WEAPON_SLOT = {
 -- locale catalog is active.
 local STAT_LIST
 local function StatList()
-    if STAT_LIST then return STAT_LIST end
+    if STAT_LIST then
+        return STAT_LIST
+    end
     local crit, hit = CludesUI.L("Crit"), CludesUI.L("Hit")
     local mp5, hp5 = CludesUI.L("MP5"), CludesUI.L("HP5")
     STAT_LIST = {
-        { "ITEM_MOD_STRENGTH_SHORT",             CludesUI.L("Str") },
-        { "ITEM_MOD_AGILITY_SHORT",              CludesUI.L("Agi") },
-        { "ITEM_MOD_INTELLECT_SHORT",            CludesUI.L("Int") },
-        { "ITEM_MOD_STAMINA_SHORT",              CludesUI.L("Stam") },
-        { "ITEM_MOD_SPIRIT_SHORT",               CludesUI.L("Spi") },
-        { "ITEM_MOD_ATTACK_POWER_SHORT",         CludesUI.L("AP") },
-        { "ITEM_MOD_RANGED_ATTACK_POWER_SHORT",  CludesUI.L("RAP") },
-        { "ITEM_MOD_SPELL_POWER_SHORT",          CludesUI.L("SP") },
-        { "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT",    CludesUI.L("Spell Dmg") },
-        { "ITEM_MOD_SPELL_HEALING_DONE_SHORT",   CludesUI.L("Heal") },
-        { "ITEM_MOD_CRIT_RATING_SHORT",          crit },
-        { "ITEM_MOD_CRIT_MELEE_RATING_SHORT",    crit },
-        { "ITEM_MOD_CRIT_RANGED_RATING_SHORT",   crit },
-        { "ITEM_MOD_CRIT_SPELL_RATING_SHORT",    CludesUI.L("Spell Crit") },
-        { "ITEM_MOD_HIT_RATING_SHORT",           hit },
-        { "ITEM_MOD_HIT_MELEE_RATING_SHORT",     hit },
-        { "ITEM_MOD_HIT_RANGED_RATING_SHORT",    hit },
-        { "ITEM_MOD_HIT_SPELL_RATING_SHORT",     CludesUI.L("Spell Hit") },
-        { "ITEM_MOD_HASTE_RATING_SHORT",         CludesUI.L("Haste") },
-        { "ITEM_MOD_MANA_REGENERATION_SHORT",    mp5 },
-        { "ITEM_MOD_POWER_REGEN0_SHORT",         mp5 },
-        { "ITEM_MOD_HEALTH_REGEN_SHORT",         hp5 },
-        { "ITEM_MOD_HEALTH_REGENERATION_SHORT",  hp5 },
+        { "ITEM_MOD_STRENGTH_SHORT", CludesUI.L("Str") },
+        { "ITEM_MOD_AGILITY_SHORT", CludesUI.L("Agi") },
+        { "ITEM_MOD_INTELLECT_SHORT", CludesUI.L("Int") },
+        { "ITEM_MOD_STAMINA_SHORT", CludesUI.L("Stam") },
+        { "ITEM_MOD_SPIRIT_SHORT", CludesUI.L("Spi") },
+        { "ITEM_MOD_ATTACK_POWER_SHORT", CludesUI.L("AP") },
+        { "ITEM_MOD_RANGED_ATTACK_POWER_SHORT", CludesUI.L("RAP") },
+        { "ITEM_MOD_SPELL_POWER_SHORT", CludesUI.L("SP") },
+        { "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", CludesUI.L("Spell Dmg") },
+        { "ITEM_MOD_SPELL_HEALING_DONE_SHORT", CludesUI.L("Heal") },
+        { "ITEM_MOD_CRIT_RATING_SHORT", crit },
+        { "ITEM_MOD_CRIT_MELEE_RATING_SHORT", crit },
+        { "ITEM_MOD_CRIT_RANGED_RATING_SHORT", crit },
+        { "ITEM_MOD_CRIT_SPELL_RATING_SHORT", CludesUI.L("Spell Crit") },
+        { "ITEM_MOD_HIT_RATING_SHORT", hit },
+        { "ITEM_MOD_HIT_MELEE_RATING_SHORT", hit },
+        { "ITEM_MOD_HIT_RANGED_RATING_SHORT", hit },
+        { "ITEM_MOD_HIT_SPELL_RATING_SHORT", CludesUI.L("Spell Hit") },
+        { "ITEM_MOD_HASTE_RATING_SHORT", CludesUI.L("Haste") },
+        { "ITEM_MOD_MANA_REGENERATION_SHORT", mp5 },
+        { "ITEM_MOD_POWER_REGEN0_SHORT", mp5 },
+        { "ITEM_MOD_HEALTH_REGEN_SHORT", hp5 },
+        { "ITEM_MOD_HEALTH_REGENERATION_SHORT", hp5 },
         { "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", CludesUI.L("Def") },
-        { "ITEM_MOD_DODGE_RATING_SHORT",         CludesUI.L("Dodge") },
-        { "ITEM_MOD_PARRY_RATING_SHORT",         CludesUI.L("Parry") },
-        { "ITEM_MOD_BLOCK_RATING_SHORT",         CludesUI.L("Block") },
-        { "ITEM_MOD_SPELL_PENETRATION_SHORT",    CludesUI.L("Spell Pen") },
-        { "RESISTANCE1_NAME",                    CludesUI.L("Holy Res") },
-        { "RESISTANCE2_NAME",                    CludesUI.L("Fire Res") },
-        { "RESISTANCE3_NAME",                    CludesUI.L("Nature Res") },
-        { "RESISTANCE4_NAME",                    CludesUI.L("Frost Res") },
-        { "RESISTANCE5_NAME",                    CludesUI.L("Shadow Res") },
-        { "RESISTANCE6_NAME",                    CludesUI.L("Arcane Res") },
+        { "ITEM_MOD_DODGE_RATING_SHORT", CludesUI.L("Dodge") },
+        { "ITEM_MOD_PARRY_RATING_SHORT", CludesUI.L("Parry") },
+        { "ITEM_MOD_BLOCK_RATING_SHORT", CludesUI.L("Block") },
+        { "ITEM_MOD_SPELL_PENETRATION_SHORT", CludesUI.L("Spell Pen") },
+        { "RESISTANCE1_NAME", CludesUI.L("Holy Res") },
+        { "RESISTANCE2_NAME", CludesUI.L("Fire Res") },
+        { "RESISTANCE3_NAME", CludesUI.L("Nature Res") },
+        { "RESISTANCE4_NAME", CludesUI.L("Frost Res") },
+        { "RESISTANCE5_NAME", CludesUI.L("Shadow Res") },
+        { "RESISTANCE6_NAME", CludesUI.L("Arcane Res") },
     }
     return STAT_LIST
 end
@@ -394,25 +494,35 @@ local statTextCache = {}
 local armorLabel
 local function StatText(link)
     local text = statTextCache[link]
-    if text then return text end
+    if text then
+        return text
+    end
     local stats = C_Item.GetItemStats(link)
-    if not stats then return "" end
+    if not stats then
+        return ""
+    end
     local list = StatList()
     local main, mainV = nil, 0
     for i = 1, 3 do
         local v = stats[list[i][1]]
-        if v and v > mainV then main, mainV = i, v end
+        if v and v > mainV then
+            main, mainV = i, v
+        end
     end
     if not main then
         for i = 4, 5 do
             local v = stats[list[i][1]]
-            if v and v > mainV then main, mainV = i, v end
+            if v and v > mainV then
+                main, mainV = i, v
+            end
         end
     end
     local second, secondV = nil, 0
     for i = 1, #list do
         local v = i ~= main and stats[list[i][1]]
-        if v and v > secondV then second, secondV = i, v end
+        if v and v > secondV then
+            second, secondV = i, v
+        end
     end
     if main and second then
         text = string.format("+%d %s / +%d %s", mainV, list[main][2], secondV, list[second][2])
@@ -437,11 +547,15 @@ local dpsTextCache = {}
 local dpsLabel
 local function DpsText(link)
     local text = dpsTextCache[link]
-    if text then return text end
+    if text then
+        return text
+    end
     text = ""
     if select(6, C_Item.GetItemInfoInstant(link)) == Enum.ItemClass.Weapon then
         local stats = C_Item.GetItemStats(link)
-        if not stats then return "" end
+        if not stats then
+            return ""
+        end
         local dps = stats.ITEM_MOD_DAMAGE_PER_SECOND_SHORT
         if dps and dps > 0 then
             dpsLabel = dpsLabel or CludesUI.L("Dps")
@@ -464,20 +578,24 @@ end
 -- sheet names its enchants through the same function.
 local ENCHANT_PREFIX = ENCHANTED_TOOLTIP_LINE and ENCHANTED_TOOLTIP_LINE:match("^(.-)%%s")
 function ns.ForeverEnchantName(text)
-    if text == "" then return text end
+    if text == "" then
+        return text
+    end
     if ENCHANT_PREFIX and ENCHANT_PREFIX ~= "" and text:sub(1, #ENCHANT_PREFIX) == ENCHANT_PREFIX then
         text = text:sub(#ENCHANT_PREFIX + 1)
     end
-    if text:find("^%d") then text = "+" .. text end
+    if text:find("^%d") then
+        text = "+" .. text
+    end
     return text
 end
 local function EnchantName(slotID)
     return ns.ForeverEnchantName(CludesUI.GetEnchantText(slotID))
 end
 
-local textVer = 1               -- bumped by every options refresh
+local textVer = 1 -- bumped by every options refresh
 local pending, pendingN = {}, 0 -- SLOTS index -> itemID waiting on item data
-local itemWatch                 -- GET_ITEM_INFO_RECEIVED, registered only while a slot waits
+local itemWatch -- GET_ITEM_INFO_RECEIVED, registered only while a slot waits
 
 -- The stats font (and the weapon slots' dps line): the retail upgrade
 -- track's size, outline and shadow keys. The enchant's font follows its
@@ -499,10 +617,16 @@ end
 -- (the stats and dps take its width, justified to their anchored side; the
 -- enchant shrinks to it when wider), cut short rather than run past it.
 local function CapLines(d, room, justify)
-    if not room or room <= 0 then return end
-    d.stats:SetWidth(room); d.stats:SetJustifyH(justify)
-    d.dps:SetWidth(room); d.dps:SetJustifyH(justify)
-    if d.ench:GetWidth() > room then d.ench:SetWidth(room) end
+    if not room or room <= 0 then
+        return
+    end
+    d.stats:SetWidth(room)
+    d.stats:SetJustifyH(justify)
+    d.dps:SetWidth(room)
+    d.dps:SetJustifyH(justify)
+    if d.ench:GetWidth() > room then
+        d.ench:SetWidth(room)
+    end
 end
 
 -- The side weapon lines stop 6px inside the left pane (its frame border on
@@ -532,7 +656,9 @@ end
 local LINE = 13
 local function StackWeaponText(d, anchor)
     local stats, dps, ench = d.stats, d.dps, d.ench
-    stats:ClearAllPoints(); dps:ClearAllPoints(); ench:ClearAllPoints()
+    stats:ClearAllPoints()
+    dps:ClearAllPoints()
+    ench:ClearAllPoints()
     if d.side == "B" then
         -- About 30px sit between the weapon row and the frame's bottom edge:
         -- three lines do not fit, so under the middle slot the stats and the
@@ -567,7 +693,9 @@ local function StackWeaponText(d, anchor)
         local y = SLOT_FRAME + 2
         local col, top = _G.CharacterWristSlot, anchor:GetTop()
         local colTop = col and col:GetTop()
-        if top and colTop and colTop - top + 2 > y then y = colTop - top + 2 end
+        if top and colTop and colTop - top + 2 > y then
+            y = colTop - top + 2
+        end
         local right, colRight = anchor:GetRight(), col and col:GetRight()
         CapLines(d, right and colRight and right - colRight - EX, "RIGHT")
         ench:SetJustifyH("RIGHT")
@@ -579,12 +707,18 @@ local function StackWeaponText(d, anchor)
             dps:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, y)
             y = y + dps:GetStringHeight() + 1
         end
-        if d.hasStats then stats:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, y) end
+        if d.hasStats then
+            stats:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, y)
+        end
         return
     end
     local point, rel, x = "LEFT", "RIGHT", EX
-    if d.side == "L" then point, rel, x = "RIGHT", "LEFT", -EX end
-    if stockPane then CapToPane(d, anchor, point) end
+    if d.side == "L" then
+        point, rel, x = "RIGHT", "LEFT", -EX
+    end
+    if stockPane then
+        CapToPane(d, anchor, point)
+    end
     local y = WY
     if d.hasStats then
         stats:SetPoint(point, anchor, rel, x, y)
@@ -601,9 +735,12 @@ end
 -- The stats off the slot's edge where retail's item level sits, the
 -- enchant under them hugging the slot.
 local function PlaceText(d, anchor)
-    if d.dps then return StackWeaponText(d, anchor) end
+    if d.dps then
+        return StackWeaponText(d, anchor)
+    end
     local stats, ench = d.stats, d.ench
-    stats:ClearAllPoints(); ench:ClearAllPoints()
+    stats:ClearAllPoints()
+    ench:ClearAllPoints()
     if d.side == "R" then
         stats:SetPoint("LEFT", anchor, "RIGHT", EX, 10)
         ench:SetPoint("LEFT", anchor, "RIGHT", EX, -5)
@@ -620,7 +757,9 @@ end
 local function PaintSlotText(slot)
     local d = FFD[slot]
     local stats = d and d.stats
-    if not stats then return end
+    if not stats then
+        return
+    end
     -- The ranged text sits past the ammo slot while that shows (checked
     -- ahead of the memo: the ammo slot comes and goes with the class).
     local ammo = d.ammo
@@ -634,20 +773,29 @@ local function PaintSlotText(slot)
     -- Memo: the equipped link and the settings version are every input.
     local slotID = slot:GetID()
     local link = GetInventoryItemLink("player", slotID)
-    if d.paintLink == link and d.paintVer == textVer then return end
+    if d.paintLink == link and d.paintVer == textVer then
+        return
+    end
     d.paintLink, d.paintVer = link, textVer
     local idx = d.idx
     if pending[idx] then
         pending[idx] = nil
         pendingN = pendingN - 1
-        if pendingN == 0 then itemWatch:UnregisterEvent("GET_ITEM_INFO_RECEIVED") end
+        if pendingN == 0 then
+            itemWatch:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+        end
     end
-    if d.fontVer ~= textVer then ApplyLabelFonts(d) end
+    if d.fontVer ~= textVer then
+        ApplyLabelFonts(d)
+    end
     local ench = d.ench
     local itemID = link and GetInventoryItemID("player", slotID)
     if not (itemID and C_Item.IsItemDataCachedByID(itemID)) then
-        stats:SetText(""); ench:SetText("")
-        if d.dps then d.dps:SetText("") end
+        stats:SetText("")
+        ench:SetText("")
+        if d.dps then
+            d.dps:SetText("")
+        end
         if itemID then
             -- Not cached yet: one repaint when it lands, watched only while
             -- the slot shows (and ahead of the request, whose answer can
@@ -672,7 +820,9 @@ local function PaintSlotText(slot)
         r, g, b = custom.r, custom.g, custom.b
     elseif DB("charSheetColorItemLevel") ~= false then
         local qr, qg, qb = QualityColor(slot)
-        if qr then r, g, b = qr, qg, qb end
+        if qr then
+            r, g, b = qr, qg, qb
+        end
     end
 
     -- The upgrade track's key and colour override: the item's stats (or its
@@ -683,7 +833,9 @@ local function PaintSlotText(slot)
     stats:SetText(statText)
     local sc = DB("charSheetUpgradeTrackUseColor") and DB("charSheetUpgradeTrackColor")
     local sr, sg, sb = r, g, b
-    if sc then sr, sg, sb = sc.r, sc.g, sc.b end
+    if sc then
+        sr, sg, sb = sc.r, sc.g, sc.b
+    end
     stats:SetTextColor(sr, sg, sb, 0.8)
     local dps = d.dps
     if dps then
@@ -722,12 +874,16 @@ end
 -- The slots went away (tab, pet view, close): nothing waits any more; a
 -- slot that was waiting repaints on its next show.
 local function ClearPending()
-    if pendingN == 0 then return end
+    if pendingN == 0 then
+        return
+    end
     for i = 1, #SLOTS do
         if pending[i] then
             pending[i] = nil
             local d = FFD[_G[SLOTS[i]]]
-            if d then d.paintLink = nil end
+            if d then
+                d.paintLink = nil
+            end
         end
     end
     pendingN = 0
@@ -745,19 +901,25 @@ local function OnItemInfo(_, _, itemID, success)
             if success then
                 local slot = _G[SLOTS[i]]
                 local d = FFD[slot]
-                if d then d.paintLink = nil end
+                if d then
+                    d.paintLink = nil
+                end
                 PaintSlotText(slot)
             end
         end
     end
-    if pendingN == 0 then itemWatch:UnregisterEvent("GET_ITEM_INFO_RECEIVED") end
+    if pendingN == 0 then
+        itemWatch:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+    end
 end
 
-local slotOverlay   -- every slot's text; the eyeball fades it
+local slotOverlay -- every slot's text; the eyeball fades it
 
 local function BuildSlotText()
     local host = _G.PaperDollItemsFrame
-    if not host or itemWatch then return end
+    if not host or itemWatch then
+        return
+    end
     -- Blizz Default: the text goes past Blizzard's bronze slot frames.
     local fv = ns.CharSheetForever()
     if fv then
@@ -784,8 +946,11 @@ local function BuildSlotText()
             -- right; under Blizz Default the middle one's text goes above
             -- it.
             if side == "B" then
-                if not rangedShown then side = "R"
-                elseif fv then side = "T" end
+                if not rangedShown then
+                    side = "R"
+                elseif fv then
+                    side = "T"
+                end
             end
             local d = GetFFD(slot)
             d.idx, d.side, d.anchor = i, side, slot
@@ -801,7 +966,9 @@ local function BuildSlotText()
             d.ench:SetFont(path, DB("charSheetEnchantSize") or 9, "")
             d.ench:SetWordWrap(false)
             ApplyLabelFonts(d)
-            if slot == ranged then d.ammo = _G.CharacterAmmoSlot end
+            if slot == ranged then
+                d.ammo = _G.CharacterAmmoSlot
+            end
             PlaceText(d, slot)
         end
     end
@@ -810,7 +977,9 @@ local function BuildSlotText()
     -- slots' first show) has already had Blizzard's update.
     for i = 1, #SLOTS do
         local slot = _G[SLOTS[i]]
-        if slot and slot:IsVisible() then PaintSlotText(slot) end
+        if slot and slot:IsVisible() then
+            PaintSlotText(slot)
+        end
     end
 end
 
@@ -821,10 +990,14 @@ end
 -- sheet repaints on its next show.
 local function RefreshSlotText()
     textVer = textVer + 1
-    if not TextEnabled() then return end
+    if not TextEnabled() then
+        return
+    end
     for i = 1, #SLOTS do
         local slot = _G[SLOTS[i]]
-        if slot and slot:IsVisible() then PaintSlotText(slot) end
+        if slot and slot:IsVisible() then
+            PaintSlotText(slot)
+        end
     end
 end
 CludesUI._refreshItemLevelVisibility = RefreshSlotText
@@ -838,22 +1011,32 @@ CludesUI._applyCharSheetTextSizes = RefreshSlotText
 -- have no entry.
 local function OnSlotUpdate(slot)
     local d = FFD[slot]
-    if not d then return end
-    if d.border then ColorSlotBorder(slot) end
-    if d.stats then PaintSlotText(slot) end
+    if not d then
+        return
+    end
+    if d.border then
+        ColorSlotBorder(slot)
+    end
+    if d.stats then
+        PaintSlotText(slot)
+    end
 end
 
 -- Both looks follow that update through one hook, installed once.
 local slotHooked = false
 local function HookSlotUpdates()
-    if slotHooked or type(_G.PaperDollItemSlotButton_Update) ~= "function" then return end
+    if slotHooked or type(_G.PaperDollItemSlotButton_Update) ~= "function" then
+        return
+    end
     slotHooked = true
     hooksecurefunc("PaperDollItemSlotButton_Update", OnSlotUpdate)
 end
 
 local function SkinSlot(slotName, Fade)
     local slot = _G[slotName]
-    if not slot or GetFFD(slot).done then return end
+    if not slot or GetFFD(slot).done then
+        return
+    end
     GetFFD(slot).done = true
     -- The bronze slot frame lives on a child frame; the button art is the
     -- named NormalTexture (hidden, not faded: the client rewrites its vertex
@@ -867,14 +1050,20 @@ local function SkinSlot(slotName, Fade)
         local regions = { slot:GetRegions() }
         for i = 1, #regions do
             local r = regions[i]
-            if r.GetAtlas and r:GetAtlas() == "UI-Character-Info-GearSlotSmall" then r:SetAlpha(0) end
+            if r.GetAtlas and r:GetAtlas() == "UI-Character-Info-GearSlotSmall" then
+                r:SetAlpha(0)
+            end
         end
     end
     local normal = _G[slotName .. "NormalTexture"]
-    if normal then normal:Hide() end
+    if normal then
+        normal:Hide()
+    end
     -- Blizzard's quality ring gets re-shown and recoloured on every item
     -- update, so it is collapsed onto one blank texel instead of hidden.
-    if slot.IconBorder then slot.IconBorder:SetTexCoord(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8) end
+    if slot.IconBorder then
+        slot.IconBorder:SetTexCoord(0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8)
+    end
     -- The item icon is the button's own; the ammo slot also declares a
     -- legacy texture under the same global name, which is not it.
     local icon = slot.icon or _G[slotName .. "IconTexture"]
@@ -890,7 +1079,9 @@ local function SkinSlot(slotName, Fade)
     if PanelPP and PanelPP.CreateBorder then
         PanelPP.CreateBorder(slot, 0.4, 0.4, 0.4, 1, 2, "OVERLAY", 1)
         local borders = PanelPP.GetBorders and PanelPP.GetBorders(slot)
-        if borders then borders:SetFrameLevel(slot:GetFrameLevel()) end
+        if borders then
+            borders:SetFrameLevel(slot:GetFrameLevel())
+        end
         GetFFD(slot).border = true
         ColorSlotBorder(slot)
     end
@@ -899,13 +1090,17 @@ end
 -- Options-page refresh: the Icon Zoom slider lands here (the retail sheet's
 -- own refresher is replaced, it walks the retail slot list).
 function CludesUI._refreshCharSheetIconZoom()
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     local z = Zoom()
     for i = 1, #SLOTS do
         local slot = _G[SLOTS[i]]
         if slot and FFD[slot] and FFD[slot].done then
             local icon = slot.icon or _G[SLOTS[i] .. "IconTexture"]
-            if icon then icon:SetTexCoord(z, 1 - z, z, 1 - z) end
+            if icon then
+                icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            end
         end
     end
 end
@@ -913,12 +1108,16 @@ end
 --------------------------------------------------------------------------------
 --  The model backdrop and the sidebar panel, as on retail
 --------------------------------------------------------------------------------
-local IMG_ASPECT = 787 / 1030   -- character-bg.png
+local IMG_ASPECT = 787 / 1030 -- character-bg.png
 
 -- Cover crop: the image keeps its aspect and the box shows its centre.
 local function CoverCrop(tex, w, h)
-    if issecretvalue and (issecretvalue(w) or issecretvalue(h)) then return end
-    if not w or not h or w <= 0 or h <= 0 then return end
+    if issecretvalue and (issecretvalue(w) or issecretvalue(h)) then
+        return
+    end
+    if not w or not h or w <= 0 or h <= 0 then
+        return
+    end
     local box = w / h
     if box > IMG_ASPECT then
         local trim = (1 - IMG_ASPECT / box) / 2
@@ -943,7 +1142,9 @@ end
 local function ModelBackdrop(frame, topBar)
     local scene = _G.CharacterModelScene
     local doll = _G.PaperDollFrame
-    if not (scene and doll) or GetFFD(frame).modelBg then return end
+    if not (scene and doll) or GetFFD(frame).modelBg then
+        return
+    end
     -- Under the paper doll so it comes and goes with that tab; one level
     -- under the scene so the character renders over it.
     local host = CreateFrame("Frame", nil, doll)
@@ -955,14 +1156,18 @@ local function ModelBackdrop(frame, topBar)
     local tex = host:CreateTexture(nil, "BACKGROUND")
     tex:SetAllPoints(host)
     tex:SetTexture(MEDIA .. "character-bg.png")
-    host:SetScript("OnSizeChanged", function(_, w, h) CoverCrop(tex, w, h) end)
+    host:SetScript("OnSizeChanged", function(_, w, h)
+        CoverCrop(tex, w, h)
+    end)
     CoverCrop(tex, host:GetSize())
     GetFFD(frame).modelBg = host
 end
 
 local function SidebarPanel(frame, topBar)
     local host = frame.RightPaneHost
-    if not host or GetFFD(frame).sidebar then return end
+    if not host or GetFFD(frame).sidebar then
+        return
+    end
     -- A child of the pane host so it collapses with it, at the host's own
     -- level so every list and scrollbar draws over it.
     local panel = CreateFrame("Frame", nil, host)
@@ -980,19 +1185,29 @@ end
 local function SkinFrame()
     local frame = _G.CharacterFrame
     local WSkin = ns.WSkin
-    if not (frame and WSkin and WSkin.Shell) then return false end
+    if not (frame and WSkin and WSkin.Shell) then
+        return false
+    end
     local Fade = WSkin.FadeRegions
-    if not Fade then return false end
+    if not Fade then
+        return false
+    end
     local d = GetFFD(frame)
-    if d.done then return true end
+    if d.done then
+        return true
+    end
     d.done = true
 
     -- The ordinary window treatment: shell, border, top bar, house close
     -- button, title centred on the bar. explicitControls keeps the engine
     -- away from the stats scrollbar, which stays Blizzard's.
     WSkin.Shell("charsheet", frame)
-    if WSkin.CommonChrome then WSkin.CommonChrome(frame, "CharacterFrame", true) end
-    if WSkin.RemovePortrait then WSkin.RemovePortrait(frame) end
+    if WSkin.CommonChrome then
+        WSkin.CommonChrome(frame, "CharacterFrame", true)
+    end
+    if WSkin.RemovePortrait then
+        WSkin.RemovePortrait(frame)
+    end
 
     -- The right-pane collapse arrow goes. The pane it toggles is kept open:
     -- with the arrow gone a sheet collapsed from an earlier session (the
@@ -1000,7 +1215,9 @@ local function SkinFrame()
     Discard(frame.RightPaneToggleButton)
     if frame.IsRightPaneCollapsed and frame.SetRightPaneCollapsed then
         frame:HookScript("OnShow", function(self)
-            if self:IsRightPaneCollapsed() then self:SetRightPaneCollapsed(false) end
+            if self:IsRightPaneCollapsed() then
+                self:SetRightPaneCollapsed(false)
+            end
         end)
     end
 
@@ -1008,11 +1225,17 @@ local function SkinFrame()
     -- view's): the house font on Blizzard's own font strings, so the text
     -- (pvp title, class colour) stays theirs.
     local title = _G.CharacterFrameTitleText or (frame.TitleContainer and frame.TitleContainer.TitleText)
-    if title and WSkin.Font then WSkin.Font(title, 1, 1, 1) end
+    if title and WSkin.Font then
+        WSkin.Font(title, 1, 1, 1)
+    end
     local level = _G.CharacterLevelText
-    if level and WSkin.Font then WSkin.Font(level) end
+    if level and WSkin.Font then
+        WSkin.Font(level)
+    end
     local petLevel = _G.PetCharacterLevelText
-    if petLevel and WSkin.Font then WSkin.Font(petLevel) end
+    if petLevel and WSkin.Font then
+        WSkin.Font(petLevel)
+    end
 
     -- Pane backdrops, the stone header, the divider strip, the stats box
     -- chrome (inside frame, scroll line, class crest) and the model backdrop.
@@ -1025,7 +1248,9 @@ local function SkinFrame()
             Fade(child)
         end
     end)
-    if frame.RightPaneHost and frame.RightPaneHost.StoneBg then frame.RightPaneHost.StoneBg:SetAlpha(0) end
+    if frame.RightPaneHost and frame.RightPaneHost.StoneBg then
+        frame.RightPaneHost.StoneBg:SetAlpha(0)
+    end
     Fade(_G.CharacterStatsPaneScrollBox)
     Fade(_G.CharacterStatsPanePetScrollBox)
     Fade(_G.PaperDollFrame)
@@ -1039,7 +1264,9 @@ local function SkinFrame()
     -- Item slots: frames off, icons cropped, a grey square and a quality
     -- border on each, and the slot text beside them; both follow Blizzard's
     -- own slot refresh.
-    for i = 1, #SLOTS do SkinSlot(SLOTS[i], Fade) end
+    for i = 1, #SLOTS do
+        SkinSlot(SLOTS[i], Fade)
+    end
     BuildSlotText()
     -- Top-left eyeball, as on retail: hides every slot's text for the
     -- session by fading their shared overlay.
@@ -1085,9 +1312,13 @@ local function SkinFrame()
     -- bar keeps its scripts and its mouse handling.
     if WSkin.ScrollBar then
         local stats = _G.CharacterStatsPaneScrollBox
-        if stats and stats.ScrollBar then WSkin.ScrollBar(stats.ScrollBar, true) end
+        if stats and stats.ScrollBar then
+            WSkin.ScrollBar(stats.ScrollBar, true)
+        end
         local pet = _G.CharacterStatsPanePetScrollBox
-        if pet and pet.ScrollBar then WSkin.ScrollBar(pet.ScrollBar, true) end
+        if pet and pet.ScrollBar then
+            WSkin.ScrollBar(pet.ScrollBar, true)
+        end
     end
     return true
 end
@@ -1095,7 +1326,9 @@ end
 -- Blizz Default: the slot text alone, built at the slots' first show;
 -- every later show returns at once.
 local function BuildStockText()
-    if itemWatch then return end
+    if itemWatch then
+        return
+    end
     BuildSlotText()
     HookSlotUpdates()
 end
@@ -1104,12 +1337,16 @@ local init = CreateFrame("Frame")
 init:RegisterEvent("PLAYER_LOGIN")
 init:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
-    if not _G.CharacterFrame then return end
+    if not _G.CharacterFrame then
+        return
+    end
     if Enabled() then
         if not SkinFrame() then
             -- The engine loads after this addon's own files; one retry on the
             -- first open covers a late shell.
-            _G.CharacterFrame:HookScript("OnShow", function() SkinFrame() end)
+            _G.CharacterFrame:HookScript("OnShow", function()
+                SkinFrame()
+            end)
         end
     elseif TextEnabled() and _G.PaperDollItemsFrame then
         _G.PaperDollItemsFrame:HookScript("OnShow", BuildStockText)

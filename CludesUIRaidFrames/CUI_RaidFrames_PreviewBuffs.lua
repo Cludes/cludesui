@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewBuffs.lua
 --
@@ -9,13 +11,15 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local pairs        = pairs
-local ipairs       = ipairs
-local wipe         = wipe
-local C_Timer               = C_Timer
+local pairs = pairs
+local ipairs = ipairs
+local wipe = wipe
+local C_Timer = C_Timer
 
 local PixelSnap = ns._internals.PixelSnap
 
@@ -25,7 +29,9 @@ local PvSettings, StartPvAuraTicker = I.PvSettings, I.StartPvAuraTicker
 local StopPvAuraTicker = I.StopPvAuraTicker
 
 local previewActive = false
-I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v) previewActive = v end
+I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v)
+    previewActive = v
+end
 
 -------------------------------------------------------------------------------
 --  Preview Buff Ticker (test mode only: cycles configured buffs across frames)
@@ -38,7 +44,9 @@ local function GetConfiguredBuffSpells()
     -- spec (every bucket it draws from, Show In and per-spec disables applied,
     -- spell unions resolved), at the live frames' size.
     local indicators = ns.BM2_SpecIndicators and ns.BM2_SpecIndicators("raid")
-    if not indicators then return {} end
+    if not indicators then
+        return {}
+    end
     local iscale = ns._bmScale or 1
     local spells = {}
     local seen = {}
@@ -53,7 +61,8 @@ local function GetConfiguredBuffSpells()
                         iconTex = info and info.iconID or 136243
                     end
                     spells[#spells + 1] = {
-                        id = sid, icon = iconTex,
+                        id = sid,
+                        icon = iconTex,
                         indType = ind.type,
                         color = (ind.spellColors and ind.spellColors[sid]) or ind.color,
                         size = ns.RFC_BmSize(ind, iscale),
@@ -73,17 +82,23 @@ local function GetConfiguredBuffSpells()
 end
 
 ns.PvBuffAnchor = function(icon, f, spellInfo, prevIcon)
-    if not f._health then return end
+    if not f._health then
+        return
+    end
     icon:SetSize(spellInfo.size, spellInfo.size)
     icon:ClearAllPoints()
     if prevIcon then
         -- Chain from previous icon using growth direction
         local spc = PixelSnap(spellInfo.spacing or 0)
         local grow = spellInfo.growDirection or "RIGHT"
-        if grow == "RIGHT" then icon:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
-        elseif grow == "LEFT" then icon:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
-        elseif grow == "UP" then icon:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
-        elseif grow == "DOWN" then icon:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
+        if grow == "RIGHT" then
+            icon:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
+        elseif grow == "LEFT" then
+            icon:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
+        elseif grow == "UP" then
+            icon:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
+        elseif grow == "DOWN" then
+            icon:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
         end
     else
         local pos = spellInfo.position and spellInfo.position:upper() or "BOTTOMLEFT"
@@ -94,9 +109,13 @@ end
 
 ns.PvBuffApply = function(spellInfo, frameIndex, slot)
     local f = previewFrames[frameIndex]
-    if not f or not f._pvBuffs then return end
+    if not f or not f._pvBuffs then
+        return
+    end
     local icon = f._pvBuffs[slot]
-    if not icon then return end
+    if not icon then
+        return
+    end
 
     if spellInfo.indType == "icon" then
         icon._tex:SetTexture(spellInfo.icon or 136243)
@@ -131,7 +150,9 @@ ns.PvBuffApply = function(spellInfo, frameIndex, slot)
 end
 
 ns.PvBuffTick = function()
-    if not previewActive or not ns._testBuffsVisible then return end
+    if not previewActive or not ns._testBuffsVisible then
+        return
+    end
     local now = GetTime()
     local PREVIEW_COUNT2 = #previewFrames
 
@@ -143,7 +164,7 @@ ns.PvBuffTick = function()
                 if not info.cdEndTime or now >= info.cdEndTime then
                     local ic = playerF._pvBuffs[info.slot]
                     if ic and ic._cooldown then
-                        local dur = 12 + math.random() * 8  -- 12-20s
+                        local dur = 12 + math.random() * 8 -- 12-20s
                         ic._cooldown:SetCooldown(now, dur)
                         info.cdEndTime = now + dur
                     end
@@ -160,13 +181,16 @@ ns.PvBuffTick = function()
             if f and f._pvBuffs and f._pvBuffs[info.slot] then
                 local ic = f._pvBuffs[info.slot]
                 ic:Hide()
-                if ic._cooldown then ic._cooldown:SetCooldown(0, 0) end
+                if ic._cooldown then
+                    ic._cooldown:SetCooldown(0, 0)
+                end
             end
             -- Pick new frame (skip frame 1 = player)
             local newFi = math.random(2, PREVIEW_COUNT2)
             local tries = 0
             while newFi == info.frameIndex and tries < 5 do
-                newFi = math.random(2, PREVIEW_COUNT2); tries = tries + 1
+                newFi = math.random(2, PREVIEW_COUNT2)
+                tries = tries + 1
             end
             info.frameIndex = newFi
             info.expTime = now + 15
@@ -176,18 +200,22 @@ ns.PvBuffTick = function()
 end
 
 ns.StartPvBuffTicker = function()
-    if ns._pvBuffTicker then return end
+    if ns._pvBuffTicker then
+        return
+    end
     wipe(ns._pvBuffAssignments)
 
     local spells = GetConfiguredBuffSpells()
-    if #spells == 0 then return end
+    if #spells == 0 then
+        return
+    end
 
     local now = GetTime()
     local PREVIEW_COUNT2 = #previewFrames
     local playerSlot = 0
 
     -- Player frame (1): show all buffs, max 3 per position, chained
-    local posCounts = {}   -- [position] = count
+    local posCounts = {} -- [position] = count
     local posLastIcon = {} -- [position] = last icon frame for chaining
     local playerF = previewFrames[1]
     if playerF and playerF._pvBuffs then
@@ -196,7 +224,9 @@ ns.StartPvBuffTicker = function()
             posCounts[pos] = (posCounts[pos] or 0) + 1
             if posCounts[pos] <= 3 then
                 playerSlot = playerSlot + 1
-                if playerSlot > 8 then break end
+                if playerSlot > 8 then
+                    break
+                end
                 local prev = posLastIcon[pos]
                 ns.PvBuffApply(sp, 1, playerSlot)
                 local icon = playerF._pvBuffs[playerSlot]
@@ -205,8 +235,11 @@ ns.StartPvBuffTicker = function()
                     posLastIcon[pos] = icon
                 end
                 ns._pvBuffAssignments[sp.id .. ":p"] = {
-                    spellInfo = sp, frameIndex = 1, slot = playerSlot,
-                    expTime = now + 99999, permanent = true,  -- always visible on player
+                    spellInfo = sp,
+                    frameIndex = 1,
+                    slot = playerSlot,
+                    expTime = now + 99999,
+                    permanent = true, -- always visible on player
                 }
             end
         end
@@ -218,9 +251,13 @@ ns.StartPvBuffTicker = function()
         local fi = ((i - 1) % (PREVIEW_COUNT2 - 1)) + 2
         frameSlotsUsed[fi] = (frameSlotsUsed[fi] or 0) + 1
         local slot = frameSlotsUsed[fi]
-        if slot > 4 then break end
+        if slot > 4 then
+            break
+        end
         ns._pvBuffAssignments[sp.id] = {
-            spellInfo = sp, frameIndex = fi, slot = slot,
+            spellInfo = sp,
+            frameIndex = fi,
+            slot = slot,
             expTime = sp.permanent and (now + 99999) or (now + math.random(3, 15)),
             permanent = sp.permanent,
         }
@@ -231,13 +268,18 @@ ns.StartPvBuffTicker = function()
 end
 
 ns.StopPvBuffTicker = function()
-    if ns._pvBuffTicker then ns._pvBuffTicker:Cancel(); ns._pvBuffTicker = nil end
+    if ns._pvBuffTicker then
+        ns._pvBuffTicker:Cancel()
+        ns._pvBuffTicker = nil
+    end
     wipe(ns._pvBuffAssignments)
     for _, f in ipairs(previewFrames) do
         if f._pvBuffs then
             for _, ic in ipairs(f._pvBuffs) do
                 ic:Hide()
-                if ic._cooldown then ic._cooldown:SetCooldown(0, 0) end
+                if ic._cooldown then
+                    ic._cooldown:SetCooldown(0, 0)
+                end
             end
         end
     end
@@ -257,7 +299,9 @@ ns.RestartPvAuraTicker = RestartPvAuraTicker
 ns._PvAuraReanchorFrame = PvAuraReanchorFrame
 ns.RefreshPvAuraVisuals = function()
     local s2 = PvSettings()
-    if not s2 then return end
+    if not s2 then
+        return
+    end
     local _pvFrames = PvFrames()
     local _reanchor = ns._PvAuraReanchorFrame
     local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -292,7 +336,8 @@ ns.RefreshPvAuraVisuals = function()
                         ic._cooldown:SetDrawSwipe(dbShowSwipe)
                         ic._cooldown:SetHideCountdownNumbers(not dbShowDurText)
                         if dbShowDurText then
-                            local cdText = ic._cooldown.GetCountdownFontString and ic._cooldown:GetCountdownFontString()
+                            local cdText = ic._cooldown.GetCountdownFontString
+                                and ic._cooldown:GetCountdownFontString()
                             if cdText then
                                 CludesUI.ApplyIconTextFont(cdText, fp, dbDtSz, "raidFrames")
                                 cdText:SetTextColor(dbDtC.r, dbDtC.g, dbDtC.b)
@@ -321,7 +366,8 @@ ns.RefreshPvAuraVisuals = function()
                         ic._cooldown:SetDrawSwipe(defShowSwipe)
                         ic._cooldown:SetHideCountdownNumbers(not defShowDurText)
                         if defShowDurText then
-                            local cdText = ic._cooldown.GetCountdownFontString and ic._cooldown:GetCountdownFontString()
+                            local cdText = ic._cooldown.GetCountdownFontString
+                                and ic._cooldown:GetCountdownFontString()
                             if cdText then
                                 CludesUI.ApplyIconTextFont(cdText, fp, defDtSz, "raidFrames")
                                 cdText:SetTextColor(defDtC.r, defDtC.g, defDtC.b)

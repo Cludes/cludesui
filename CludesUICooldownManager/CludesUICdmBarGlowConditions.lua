@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmBarGlowConditions.lua
 --  Extra conditions on a Bar Glow entry, evaluated after the entry's own
@@ -26,7 +28,9 @@ local _, ns = ...
 local function ActiveHeroTree()
     local CT = C_ClassTalents
     local id = CT and CT.GetActiveHeroTalentSpec and CT.GetActiveHeroTalentSpec()
-    if type(id) == "number" and id > 0 then return id end
+    if type(id) == "number" and id > 0 then
+        return id
+    end
     return nil
 end
 
@@ -35,12 +39,19 @@ end
 function ns.BarGlowHeroTrees()
     local out = {}
     local CT = C_ClassTalents
-    if not (CT and CT.GetHeroTalentSpecsForClassSpec and CT.GetActiveConfigID) then return out end
+    if not (CT and CT.GetHeroTalentSpecsForClassSpec and CT.GetActiveConfigID) then
+        return out
+    end
     local configID = CT.GetActiveConfigID()
     local ok, ids = pcall(CT.GetHeroTalentSpecsForClassSpec, configID)
-    if not ok or type(ids) ~= "table" then return out end
+    if not ok or type(ids) ~= "table" then
+        return out
+    end
     for _, id in ipairs(ids) do
-        local info = configID and C_Traits and C_Traits.GetSubTreeInfo and C_Traits.GetSubTreeInfo(configID, id)
+        local info = configID
+            and C_Traits
+            and C_Traits.GetSubTreeInfo
+            and C_Traits.GetSubTreeInfo(configID, id)
         out[#out + 1] = { id = id, name = (info and info.name) or ("Hero Tree " .. id) }
     end
     return out
@@ -49,13 +60,23 @@ end
 -- The entry's final glow state, given its own Glow When result `main`.
 function ns.BarGlowCombine(entry, main, cache)
     local hero = entry.heroTree
-    if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then return false end
-    if entry.andMode ~= "and" then return main end
+    if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then
+        return false
+    end
+    if entry.andMode ~= "and" then
+        return main
+    end
     local c = type(entry.conditions) == "table" and entry.conditions[1]
     local sid = type(c) == "table" and tonumber(c.spellID)
-    if not sid or sid <= 0 then return main end
+    if not sid or sid <= 0 then
+        return main
+    end
     local active = (cache ~= nil and cache[sid] == true)
     local ok
-    if c.state == "missing" then ok = not active else ok = active end
+    if c.state == "missing" then
+        ok = not active
+    else
+        ok = active
+    end
     return (main and ok) and true or false
 end

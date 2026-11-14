@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Uprank.lua  (WoW Forever only)
 --  When you or your pet get a higher rank of a spell, swaps every lower rank
@@ -26,16 +30,18 @@ local PLAYER, PET = Enum.SpellBookSpellBank.Player, Enum.SpellBookSpellBank.Pet
 local F = module.Feature("spellUprank", { enabled = false })
 
 local events, flusher
-local booted        -- the login apply has run
-local firstScan     -- the first SPELLS_CHANGED after login reads the player's spellbook whole
-local wantPlayer, wantPet = false, false  -- what the next check reads
-local learned = {}  -- spell IDs learned since the last check
+local booted -- the login apply has run
+local firstScan -- the first SPELLS_CHANGED after login reads the player's spellbook whole
+local wantPlayer, wantPet = false, false -- what the next check reads
+local learned = {} -- spell IDs learned since the last check
 local pending = { player = {}, pet = {} } -- spell names to uprank once out of combat with an empty cursor
 -- Read tables, reused by every read
 local playerTop, petTop, petSlots, counts = {}, {}, {}, {}
 
 local function Plain(v, kind)
-    if not issecretvalue(v) and type(v) == (kind or "number") then return v end
+    if not issecretvalue(v) and type(v) == (kind or "number") then
+        return v
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -47,11 +53,15 @@ local function ReadPlayerTop()
         local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
         if li and not li.offSpecID then
             for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
-                if C_SpellBook.GetSpellBookItemType(slot, PLAYER) == Enum.SpellBookItemType.Spell
-                   and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
-                   and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER) then
+                if
+                    C_SpellBook.GetSpellBookItemType(slot, PLAYER) == Enum.SpellBookItemType.Spell
+                    and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
+                    and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
+                then
                     local info = C_SpellBook.GetSpellBookItemInfo(slot, PLAYER)
-                    if info and info.spellID and info.name then playerTop[info.name] = info.spellID end
+                    if info and info.spellID and info.name then
+                        playerTop[info.name] = info.spellID
+                    end
                 end
             end
         end
@@ -65,13 +75,17 @@ local function ReadPetTop()
     wipe(petTop)
     wipe(petSlots)
     local n = C_SpellBook.HasPetSpells()
-    if not n or n == 0 then return false end
+    if not n or n == 0 then
+        return false
+    end
     for slot = 1, n do
         -- Pet spells are PetAction items; the stances and commands among them carry no spell ID.
         local info = C_SpellBook.GetSpellBookItemInfo(slot, PET)
         if info and info.spellID and info.name and not info.isPassive then
             petSlots[info.spellID] = slot
-            if not C_SpellBook.IsSpellBookItemLowRank(slot, PET) then petTop[info.name] = info.spellID end
+            if not C_SpellBook.IsSpellBookItemLowRank(slot, PET) then
+                petTop[info.name] = info.spellID
+            end
         end
     end
     return true
@@ -80,7 +94,9 @@ end
 -- Family and name: a hunter's two cats stay apart, a warlock's demon keeps its own.
 local function PetKey()
     local family, name = Plain(UnitCreatureFamily("pet"), "string"), Plain(UnitName("pet"), "string")
-    if name == UNKNOWNOBJECT then return end -- the name loads a moment after the pet
+    if name == UNKNOWNOBJECT then
+        return
+    end -- the name loads a moment after the pet
     return family and name and (family .. ":" .. name)
 end
 
@@ -118,9 +134,15 @@ local function ProbeLearned(known)
     for id in pairs(learned) do
         local name = C_Spell.GetSpellName(id)
         local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(id)
-        if not (name and slot) then return false end
-        if bank == PLAYER and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
-           and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER) and known.player[name] ~= id then
+        if not (name and slot) then
+            return false
+        end
+        if
+            bank == PLAYER
+            and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
+            and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
+            and known.player[name] ~= id
+        then
             known.player[name] = id
             pending.player[name] = true
         end
@@ -135,7 +157,8 @@ local function Report()
     for id, count in pairs(counts) do
         local name = C_Spell.GetSpellName(id)
         local rank = C_Spell.GetSpellSubtext(id)
-        local spell = (C_Spell.GetSpellLink(id) or name or "?") .. (rank and rank ~= "" and " (" .. rank .. ")" or "")
+        local spell = (C_Spell.GetSpellLink(id) or name or "?")
+            .. (rank and rank ~= "" and " (" .. rank .. ")" or "")
         local msg = count == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
             or CludesUI.Lf("Upranked %1$s on %2$d action slots.", spell, count)
         CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
@@ -148,7 +171,9 @@ end
 local function UprankPending()
     local hasPlayer = next(pending.player) ~= nil
     local hasPet = next(pending.pet) ~= nil and ReadPetTop()
-    if hasPlayer then ReadPlayerTop() end
+    if hasPlayer then
+        ReadPlayerTop()
+    end
     wipe(counts)
 
     for action = 1, MAX_ACTION_SLOT do
@@ -179,7 +204,9 @@ end
 
 -- Placing actions needs no combat and an empty cursor; waits for both.
 local function Flush()
-    if not (next(pending.player) or next(pending.pet)) then return end
+    if not (next(pending.player) or next(pending.pet)) then
+        return
+    end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("SpellUprank", Flush)
         return
@@ -199,10 +226,14 @@ local function Check()
     flusher:Hide()
     local known = Known()
     if next(learned) then
-        if not wantPlayer and not ProbeLearned(known) then wantPlayer = true end
+        if not wantPlayer and not ProbeLearned(known) then
+            wantPlayer = true
+        end
         wipe(learned)
     end
-    if wantPlayer then Diff(ReadPlayerTop(), known.player, pending.player) end
+    if wantPlayer then
+        Diff(ReadPlayerTop(), known.player, pending.player)
+    end
     if wantPet then
         local key = PetKey()
         if key and ReadPetTop() then
@@ -235,7 +266,9 @@ local function OnEvent(_, event, spellID)
     end
     if event == "LEARNED_SPELL_IN_SKILL_LINE" then
         spellID = Plain(spellID)
-        if not spellID then return end
+        if not spellID then
+            return
+        end
         learned[spellID] = true
     elseif event == "SPELLS_CHANGED" then
         if firstScan then
@@ -251,8 +284,12 @@ local function OnEvent(_, event, spellID)
 end
 
 local function Apply()
-    if events then events:UnregisterAllEvents() end
-    if flusher then flusher:Hide() end
+    if events then
+        events:UnregisterAllEvents()
+    end
+    if flusher then
+        flusher:Hide()
+    end
     local login = not booted
     booted = true
     wipe(learned)

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICooldownManager.lua
 --  CDM Look Customization and Cooldown Display
@@ -7,8 +9,22 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Does NOT parse secret values works around restricted APIs.
 -------------------------------------------------------------------------------
 local _, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.SetFramePlacer and CludesUI._Pool and CludesUI.NewFrameData and CludesUI.TalentConditionsHold) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the loot roll placement uses the parent's frame placer, the hooks file its frame-data constructor, Talent Conditions the parent's talent check)
-CludesUI._ModuleNS["CludesUICooldownManager"] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.SetFramePlacer
+        and CludesUI._Pool
+        and CludesUI.NewFrameData
+        and CludesUI.TalentConditionsHold
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the loot roll placement uses the parent's frame placer, the hooks file its frame-data constructor, Talent Conditions the parent's talent check)
+CludesUI._ModuleNS["CludesUICooldownManager"] = ns -- LOD options files read this module ns via the registry
 
 -- CPU-attribution shell pool: the engine bills a handler's call tree to the addon
 -- whose context created the frame, so frames built later under the parent's dispatch
@@ -18,7 +34,9 @@ CludesUI._ModuleNS["CludesUICooldownManager"] = ns  -- LOD options files read th
 do
     local pool = {}
     local n = 47 -- keep above every shell this module takes, with spare
-    for i = 1, n do pool[i] = CreateFrame("Frame") end
+    for i = 1, n do
+        pool[i] = CreateFrame("Frame")
+    end
     ns.TakeShell = function()
         if n > 0 then
             local f = pool[n]
@@ -52,46 +70,60 @@ function ns.CdmIconStyle()
     local v = ns._cdmIconStyle
     if v == nil then
         local p = ECME.db and ECME.db.profile
-        if not p then return "cui" end
+        if not p then
+            return "cui"
+        end
         v = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
         ns._cdmIconStyle = v
         -- The WoW Forever variant of Blizzard Style, latched with it.
-        ns._cdmFvIcons = v == "blizzard" and CludesUI.IS_FOREVER == true
-            and p.useForeverStyle == true
+        ns._cdmFvIcons = v == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
     end
     return v
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and chrome they share).
-function ns.CdmBlizzIcons() return ns.CdmIconStyle() ~= "cui" end
-function ns.CdmClassicIcons() return ns.CdmIconStyle() == "classic" end
+function ns.CdmBlizzIcons()
+    return ns.CdmIconStyle() ~= "cui"
+end
+function ns.CdmClassicIcons()
+    return ns.CdmIconStyle() == "classic"
+end
 -- The style the tracked buff bars render this session, latched the same way.
 function ns.CdmBarStyle()
     local v = ns._cdmBarStyle
     if v == nil then
         local p = ECME.db and ECME.db.profile
-        if not p then return "cui" end
+        if not p then
+            return "cui"
+        end
         v = (p.useClassicStyleBars and "classic") or (p.useBlizzardStyleBars and "blizzard") or "cui"
         ns._cdmBarStyle = v
-        ns._cdmFvBars = v == "blizzard" and CludesUI.IS_FOREVER == true
-            and p.useForeverStyleBars == true
+        ns._cdmFvBars = v == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyleBars == true
     end
     return v
 end
-function ns.CdmBlizzBars() return ns.CdmBarStyle() ~= "cui" end
-function ns.CdmClassicBars() return ns.CdmBarStyle() == "classic" end
+function ns.CdmBlizzBars()
+    return ns.CdmBarStyle() ~= "cui"
+end
+function ns.CdmClassicBars()
+    return ns.CdmBarStyle() == "classic"
+end
 -- Blizzard's cooldown viewer art: the rounded icon mask, the bevel ring drawn
 -- around every icon, and the rounded swipe file the viewer's Cooldown uses.
-ns.CDM_BLIZZ_MASK    = "UI-HUD-CoolDownManager-Mask"
+ns.CDM_BLIZZ_MASK = "UI-HUD-CoolDownManager-Mask"
 ns.CDM_BLIZZ_OVERLAY = "UI-HUD-CoolDownManager-IconOverlay"
-ns.CDM_BLIZZ_SWIPE   = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
+ns.CDM_BLIZZ_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
 -- WoW Forever variant of Blizzard Style on the icons / the tracked buff bars
 -- (latched with the style; false off Forever).
 function ns.CdmIconsForever()
-    if ns._cdmIconStyle == nil then ns.CdmIconStyle() end
+    if ns._cdmIconStyle == nil then
+        ns.CdmIconStyle()
+    end
     return ns._cdmFvIcons == true
 end
 function ns.CdmBarsForever()
-    if ns._cdmBarStyle == nil then ns.CdmBarStyle() end
+    if ns._cdmBarStyle == nil then
+        ns.CdmBarStyle()
+    end
     return ns._cdmFvBars == true
 end
 -- Blizzard Style ring art: tex:SetAtlas(name) on every client but WoW Forever,
@@ -100,20 +132,26 @@ end
 -- tracked buff bars' row).
 function ns.CdmStockAtlas(tex, name, bars)
     local fv
-    if bars then fv = ns.CdmBarsForever() else fv = ns.CdmIconsForever() end
-    if fv then return tex:SetAtlas(name) end
+    if bars then
+        fv = ns.CdmBarsForever()
+    else
+        fv = ns.CdmIconsForever()
+    end
+    if fv then
+        return tex:SetAtlas(name)
+    end
     return CludesUI.StockAtlas(tex, name)
 end
 -- Ring inset as a fraction of the icon size (the viewer anchors its 50px
 -- essential icons at -9/+8, i.e. the ring sits proportionally outside the icon).
-ns.CDM_BLIZZ_RING_X  = 0.18
-ns.CDM_BLIZZ_RING_Y  = 0.16
+ns.CDM_BLIZZ_RING_X = 0.18
+ns.CDM_BLIZZ_RING_Y = 0.16
 -- Classic WoW UI icon art: the vanilla action button ring, a plain 66px
 -- texture on a 36px button centred one pixel low, sized by the icon it rings.
 -- Classic icons are square: no mask, full art, CUI's own square swipe.
-ns.CDM_CLASSIC_RING       = "Interface\\Buttons\\UI-Quickslot2"
+ns.CDM_CLASSIC_RING = "Interface\\Buttons\\UI-Quickslot2"
 ns.CDM_CLASSIC_RING_SCALE = 66 / 36
-ns.CDM_CLASSIC_RING_Y     = -1 / 36
+ns.CDM_CLASSIC_RING_Y = -1 / 36
 -- Places a classic ring texture round a w x h icon region.
 function ns.CdmPlaceClassicRing(ov, anchor, w, h)
     ov:ClearAllPoints()
@@ -123,7 +161,9 @@ end
 -- The swipe file the latched icon style draws: the viewer's rounded swipe
 -- under Blizzard Style, CUI's square swipe otherwise.
 function ns.CdmSwipeFile()
-    if ns.CdmIconStyle() == "blizzard" then return ns.CDM_BLIZZ_SWIPE end
+    if ns.CdmIconStyle() == "blizzard" then
+        return ns.CDM_BLIZZ_SWIPE
+    end
     return "Interface\\AddOns\\CludesUI\\media\\white-square.png"
 end
 -- Creation-time crop for icons on frames we build ourselves (trinkets,
@@ -139,9 +179,13 @@ end
 
 -- Snap to whole physical pixels at the bar's effective scale (same convert-round-convert approach as the border system).
 local function SnapForScale(x, barScale)
-    if x == 0 then return 0 end
+    if x == 0 then
+        return 0
+    end
     local PP = CludesUI and CludesUI.PP
-    if PP then return PP.Scale(x) end
+    if PP then
+        return PP.Scale(x)
+    end
     return math.floor(x + 0.5)
 end
 
@@ -159,20 +203,37 @@ local CDM_SHAPES = {
     insets = CludesUI.SHAPE_INSETS,
     iconExpand = 7,
     iconExpandOffsets = {
-        circle = 2, csquare = 4, diamond = 2, hexagon = 4,
-        portrait = 2, shield = 2, square = 4,
+        circle = 2,
+        csquare = 4,
+        diamond = 2,
+        hexagon = 4,
+        portrait = 2,
+        shield = 2,
+        square = 4,
     },
     zoomDefaults = {
-        none = 0.08, cropped = 0.04, square = 0.06, circle = 0.06, csquare = 0.06,
-        diamond = 0.06, hexagon = 0.06, portrait = 0.06, shield = 0.06,
+        none = 0.08,
+        cropped = 0.04,
+        square = 0.06,
+        circle = 0.06,
+        csquare = 0.06,
+        diamond = 0.06,
+        hexagon = 0.06,
+        portrait = 0.06,
+        shield = 0.06,
     },
     edgeScales = {
-        circle = 0.75, csquare = 0.75, diamond = 0.70,
-        hexagon = 0.65, portrait = 0.70, shield = 0.65, square = 0.75,
+        circle = 0.75,
+        csquare = 0.75,
+        diamond = 0.70,
+        hexagon = 0.65,
+        portrait = 0.70,
+        shield = 0.65,
+        square = 0.75,
     },
 }
-ns.CDM_SHAPES        = CDM_SHAPES
-ns.CDM_SHAPE_MASKS   = CDM_SHAPES.masks
+ns.CDM_SHAPES = CDM_SHAPES
+ns.CDM_SHAPE_MASKS = CDM_SHAPES.masks
 ns.CDM_SHAPE_BORDERS = CDM_SHAPES.borders
 ns.CDM_SHAPE_ZOOM_DEFAULTS = CDM_SHAPES.zoomDefaults
 ns.CDM_SHAPE_EDGE_SCALES = CDM_SHAPES.edgeScales
@@ -184,27 +245,37 @@ do
     local CROP_DEFAULT_PCT = 10
     local function CropPercent(bd)
         local pct = tonumber(bd and bd.iconCropPercent) or CROP_DEFAULT_PCT
-        if pct < 5 then pct = 5 elseif pct > 25 then pct = 25 end
+        if pct < 5 then
+            pct = 5
+        elseif pct > 25 then
+            pct = 25
+        end
         return pct
     end
     ns.CdmCropPercent = CropPercent
     -- Icon height as a fraction of width.
-    function ns.CdmCropFactor(bd) return 1 - 2 * (CropPercent(bd) / 100) end
+    function ns.CdmCropFactor(bd)
+        return 1 - 2 * (CropPercent(bd) / 100)
+    end
     -- Vertical texcoord trim per side, added on top of the bar's zoom.
-    function ns.CdmCropTrim(bd) return CropPercent(bd) / 100 end
+    function ns.CdmCropTrim(bd)
+        return CropPercent(bd) / 100
+    end
 end
 
 -- Keybind cache: built once out-of-combat, looked up per tick
-local _cdmKeybindCache       = {}   -- [spellID] -> formatted key string
-local _cdmKeybindRank        = {}   -- [key] -> priority rank of the stored bind (lower wins)
-local _bonusScanSeen         = {}   -- [bonus bar offset] -> true once scanned this session
+local _cdmKeybindCache = {} -- [spellID] -> formatted key string
+local _cdmKeybindRank = {} -- [key] -> priority rank of the stored bind (lower wins)
+local _bonusScanSeen = {} -- [bonus bar offset] -> true once scanned this session
 
 -- Combat state tracked via events (InCombatLockdown() can lag behind PLAYER_REGEN_DISABLED)
 local _inCombat = false
 
 -- Shared read for other CDM files (Tracking Bars' "Only In Combat" gate). Buffered,
 -- not raw InCombatLockdown(): debounced combat-exit so brief OOC blips don't flash a bar away.
-function ns.CDMInCombat() return _inCombat end
+function ns.CDMInCombat()
+    return _inCombat
+end
 
 -- Resting alpha for a bar's icons: oocFadeAlpha when enabled+OOC, else barOpacity.
 -- All alpha restores go through this so the fade survives cd-state/buff re-renders.
@@ -226,15 +297,19 @@ ns.EffectiveBarAlpha = EffectiveBarAlpha
 -- at all). Single predicate so the alpha passes and the mouse passes can never
 -- disagree. Off-by-default flags first: non-users stop at the first field.
 local function IsPlaceholderRenderHidden(icon, barData)
-    if not icon then return false end
+    if not icon then
+        return false
+    end
     return ((barData and barData.hidePlaceholderIcon) or icon._missingHidden)
-        and icon._isPlaceholderFrame and true or false
+            and icon._isPlaceholderFrame
+            and true
+        or false
 end
 ns.IsPlaceholderRenderHidden = IsPlaceholderRenderHidden
 
 -- Multi-charge spell tracking
 local _multiChargeSpells = {}
-local _maxChargeCount    = {}
+local _maxChargeCount = {}
 
 local _cdmViewerNames = {
     "EssentialCooldownViewer",
@@ -246,48 +321,55 @@ local _cdmViewerNames = {
 -- External cache keyed by Blizzard frame ref (never custom keys on Blizzard frame
 -- tables -- taints them). Weak-keyed so entries GC when frames are recycled.
 local _ecmeFC = setmetatable({}, { __mode = "k" })
-local function FC(f) local c = _ecmeFC[f]; if not c then c = {}; _ecmeFC[f] = c end; return c end
+local function FC(f)
+    local c = _ecmeFC[f]
+    if not c then
+        c = {}
+        _ecmeFC[f] = c
+    end
+    return c
+end
 
 -- Separate weak-keyed table for SetFrameClickThrough mouse state: it recurses into
 -- Blizzard pool icons parented to CDM bars, so state must live externally, not on the frames.
 local _cdmMouseState = setmetatable({}, { __mode = "k" })
 
 -- Decoration data stored externally by CludesUICdmHooks.lua (loads later).
-local function _getFD(f) return ns._hookFrameData and ns._hookFrameData[f] end
-
-
+local function _getFD(f)
+    return ns._hookFrameData and ns._hookFrameData[f]
+end
 
 -- Racial ability data
 local RACE_RACIALS = {
-    Scourge            = { 7744 },
-    Tauren             = { 20549 },
-    Orc                = { 20572, 33697, 33702 },
-    BloodElf           = { 202719, 50613, 25046, 69179, 80483, 155145, 129597, 232633, 28730 },
-    Dwarf              = { 20594 },
-    Troll              = { 26297 },
-    Draenei            = { 28880, 59543, 59545, 121093, 59544, 370626, 59547, 59548, 59542, 416250 },
-    NightElf           = { 58984 },
-    Human              = { 59752 },
-    DarkIronDwarf      = { 265221 },
-    Gnome              = { 20589 },
-    HighmountainTauren = { 255654 },  -- Bull Rush
-    Worgen             = { 68992 },
-    Goblin             = { 69070 },
-    Pandaren           = { 107079 },
-    MagharOrc          = { 274738 },
+    Scourge = { 7744 },
+    Tauren = { 20549 },
+    Orc = { 20572, 33697, 33702 },
+    BloodElf = { 202719, 50613, 25046, 69179, 80483, 155145, 129597, 232633, 28730 },
+    Dwarf = { 20594 },
+    Troll = { 26297 },
+    Draenei = { 28880, 59543, 59545, 121093, 59544, 370626, 59547, 59548, 59542, 416250 },
+    NightElf = { 58984 },
+    Human = { 59752 },
+    DarkIronDwarf = { 265221 },
+    Gnome = { 20589 },
+    HighmountainTauren = { 255654 }, -- Bull Rush
+    Worgen = { 68992 },
+    Goblin = { 69070 },
+    Pandaren = { 107079 },
+    MagharOrc = { 274738 },
     LightforgedDraenei = { 255647 },
-    VoidElf            = { 256948 },
-    KulTiran           = { 287712 },
-    ZandalariTroll     = { 291944 },
-    Vulpera            = { 312411 },
-    Mechagnome         = { 312924 },
-    Nightborne         = { 260364 },
+    VoidElf = { 256948 },
+    KulTiran = { 287712 },
+    ZandalariTroll = { 291944 },
+    Vulpera = { 312411 },
+    Mechagnome = { 312924 },
+    Nightborne = { 260364 },
     -- Wing Buffet (357214) is all-Dracthyr but Blizzard's CDM already gives it to Evokers,
     -- so notClass avoids duplicate injection; Tail Swipe (368970) is Evoker-only and
     -- already in CDM, so it's omitted entirely.
-    Dracthyr           = { { 357214, notClass = "EVOKER" } },
-    EarthenDwarf       = { 436344 },
-    Haranir            = { 1237885 },  -- Thorn Bloom
+    Dracthyr = { { 357214, notClass = "EVOKER" } },
+    EarthenDwarf = { 436344 },
+    Haranir = { 1237885 }, -- Thorn Bloom
 }
 -- WoW Forever's races learn other racials: Every Man for Himself (59752),
 -- Shadowmeld 58984 and Berserking 26297 do not exist there. Each Forever ID
@@ -297,11 +379,11 @@ local RACE_RACIALS = {
 -- Regeneration, Cannibalize, Eureka!, Walk on Air) stay ordinary spells: the
 -- CDM keeps one Racial slot and strips every other listed racial from bars.
 if CludesUI.IS_FOREVER then
-    table.insert(RACE_RACIALS.Human, 1, 1259718)       -- Will to Survive
-    table.insert(RACE_RACIALS.NightElf, 1, 20580)      -- Shadowmeld
-    table.insert(RACE_RACIALS.Troll, 1, 20554)         -- Berserking (every class)
+    table.insert(RACE_RACIALS.Human, 1, 1259718) -- Will to Survive
+    table.insert(RACE_RACIALS.NightElf, 1, 20580) -- Shadowmeld
+    table.insert(RACE_RACIALS.Troll, 1, 20554) -- Berserking (every class)
     -- Each Skyborne variant learns one of the two.
-    RACE_RACIALS.Skyborne = { 1259705, 1259686 }       -- Read Ley Line, Skysight
+    RACE_RACIALS.Skyborne = { 1259705, 1259686 } -- Read Ley Line, Skysight
 end
 ns.RACE_RACIALS = RACE_RACIALS
 
@@ -310,15 +392,21 @@ ns.RACE_RACIALS = RACE_RACIALS
 -- ID (both clients'): the Cooldowns bar (Blizzard's Essential) or the Utility
 -- bar, at its end. A racial not listed follows Blizzard's layout instead.
 ns.RACIAL_REPOP_BAR = {
-    [20572] = "cooldowns", [33697] = "cooldowns", [33702] = "cooldowns",  -- Blood Fury
-    [20554] = "cooldowns", [26297] = "cooldowns",                         -- Berserking
-    [7744] = "utility",                                                   -- Will of the Forsaken
-    [20549] = "utility",                                                  -- War Stomp
-    [1259718] = "utility", [59752] = "utility",                           -- Will to Survive
-    [20594] = "utility",                                                  -- Stoneform
-    [20580] = "utility", [58984] = "utility",                             -- Shadowmeld
-    [20589] = "utility",                                                  -- Escape Artist
-    [1259705] = "utility", [1259686] = "utility",                         -- Read Ley Line, Skysight
+    [20572] = "cooldowns",
+    [33697] = "cooldowns",
+    [33702] = "cooldowns", -- Blood Fury
+    [20554] = "cooldowns",
+    [26297] = "cooldowns", -- Berserking
+    [7744] = "utility", -- Will of the Forsaken
+    [20549] = "utility", -- War Stomp
+    [1259718] = "utility",
+    [59752] = "utility", -- Will to Survive
+    [20594] = "utility", -- Stoneform
+    [20580] = "utility",
+    [58984] = "utility", -- Shadowmeld
+    [20589] = "utility", -- Escape Artist
+    [1259705] = "utility",
+    [1259686] = "utility", -- Read Ley Line, Skysight
 }
 
 local ALL_RACIAL_SPELLS = {}
@@ -344,15 +432,18 @@ local _activeRacialSpellID = nil
 local function ResolveActiveRacial()
     _activeRacialSpellID = nil
     for _, sid in ipairs(_myRacials) do
-        local inBook = C_SpellBook and C_SpellBook.IsSpellInSpellBook
-            and C_SpellBook.IsSpellInSpellBook(sid)
-        if inBook then _activeRacialSpellID = sid; break end
+        local inBook = C_SpellBook and C_SpellBook.IsSpellInSpellBook and C_SpellBook.IsSpellInSpellBook(sid)
+        if inBook then
+            _activeRacialSpellID = sid
+            break
+        end
     end
-    if not _activeRacialSpellID then _activeRacialSpellID = _myRacials[1] end
+    if not _activeRacialSpellID then
+        _activeRacialSpellID = _myRacials[1]
+    end
     ns._activeRacialSpellID = _activeRacialSpellID
     return _activeRacialSpellID
 end
-
 
 -- The potion and healthstone ids of the presets below: the shared consumables
 -- catalogue (CludesUI_BuffPresets.lua), never copied here.
@@ -368,52 +459,52 @@ local BUFF_BAR_PRESETS = {
         -- Horde order; ns.RefreshLustPresetFaction flips it for Alliance below.
         -- BOTH ids are listed so the "already on this bar" tests recognise a lust
         -- icon added by the other faction on a shared profile.
-        key      = "bloodlust",
-        name     = "Bloodlust",
-        icon     = "Interface\\Icons\\spell_nature_bloodlust",
+        key = "bloodlust",
+        name = "Bloodlust",
+        icon = "Interface\\Icons\\spell_nature_bloodlust",
         spellIDs = { 2825, 32182 },
         duration = 40,
-        tbbOnly  = true,  -- not a cooldown-usable preset (kept out of the CD/utility picker)
-        customAuraToo = true,  -- but allowed on Custom Auras (icon) bars; debuff-driven 40s window
+        tbbOnly = true, -- not a cooldown-usable preset (kept out of the CD/utility picker)
+        customAuraToo = true, -- but allowed on Custom Auras (icon) bars; debuff-driven 40s window
     },
     {
         -- Time Spiral "Free Move" proc: self-timed 10s window armed by a spell-activation
         -- glow on the player's class movement ability, not cooldown-detected (TBB special-case "timespiral").
-        key      = "timespiral",
-        name     = "Time Spiral",
-        icon     = 4622479,
+        key = "timespiral",
+        name = "Time Spiral",
+        icon = 4622479,
         spellIDs = { 374968 },
         duration = 10,
-        tbbOnly  = true,       -- not a cooldown-usable preset (kept out of the CD/utility picker)
-        customAuraToo = true,  -- but allowed on Custom Auras (icon) bars; glow-driven 10s window
+        tbbOnly = true, -- not a cooldown-usable preset (kept out of the CD/utility picker)
+        customAuraToo = true, -- but allowed on Custom Auras (icon) bars; glow-driven 10s window
     },
     {
-        key      = "lights_potential",
-        name     = "Light's Potential",
-        icon     = 7548911,
+        key = "lights_potential",
+        name = "Light's Potential",
+        icon = 7548911,
         spellIDs = CON.lights_potential.spellIDs,
         duration = 30,
     },
     {
-        key      = "potion_recklessness",
-        name     = "Potion of Recklessness",
-        icon     = 7548916,
+        key = "potion_recklessness",
+        name = "Potion of Recklessness",
+        icon = 7548916,
         spellIDs = CON.potion_recklessness.spellIDs,
         duration = 30,
     },
     {
-        key      = "liquid_luster",
-        name     = "Liquid Luster",
+        key = "liquid_luster",
+        name = "Liquid Luster",
         -- Picker art runtime-resolved (fileID not known statically at authoring
         -- time), mirroring CDM_ITEM_PRESETS' liquid_luster entry below.
-        icon     = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271887)) or 134400,
+        icon = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271887)) or 134400,
         spellIDs = CON.liquid_luster.spellIDs,
         duration = 30,
     },
     {
-        key      = "invis_potion",
-        name     = "Invisibility Potion",
-        icon     = 134764,
+        key = "invis_potion",
+        name = "Invisibility Potion",
+        icon = 134764,
         spellIDs = CON.invis_potion.spellIDs,
         duration = 18,
     },
@@ -428,7 +519,7 @@ function ns.RefreshLustPresetFaction()
     local alliance = UnitFactionGroup("player") == "Alliance"
     local name = alliance and "Heroism" or "Bloodlust"
     local icon = alliance and "Interface\\Icons\\ability_shaman_heroism"
-                          or  "Interface\\Icons\\spell_nature_bloodlust"
+        or "Interface\\Icons\\spell_nature_bloodlust"
     ns._lustPresetSpellID = alliance and 32182 or 2825
     for _, p in ipairs(BUFF_BAR_PRESETS) do
         if p.key == "bloodlust" then
@@ -443,7 +534,10 @@ function ns.RefreshLustPresetFaction()
     -- The Tracking Bar list copies name/icon by value at load (spellIDs is the
     -- same table), and is built after this file, so it is absent on the first call.
     for _, e in ipairs(ns.TBB_POPULAR_BUFFS or {}) do
-        if e.key == "bloodlust" then e.name, e.icon = name, icon; break end
+        if e.key == "bloodlust" then
+            e.name, e.icon = name, icon
+            break
+        end
     end
 end
 ns.RefreshLustPresetFaction()
@@ -473,11 +567,11 @@ end
 -- preset's key (CUI_CDM_HookResolve.lua, NativeItemKeyFor).
 local CDM_ITEM_PRESETS = {
     {
-        key      = "lights_potential",
-        name     = "Combat Potion",
+        key = "lights_potential",
+        name = "Combat Potion",
         familyName = "Light's Potential",
-        icon     = 7548911,
-        itemID   = CON.lights_potential.itemID,
+        icon = 7548911,
+        itemID = CON.lights_potential.itemID,
         altItemIDs = CON.lights_potential.altItemIDs,
         displayOrder = CON.lights_potential.displayOrder,
         potFamily = "light",
@@ -485,11 +579,11 @@ local CDM_ITEM_PRESETS = {
         nativeCategory = 4,
     },
     {
-        key      = "potion_recklessness",
-        name     = "Combat Potion",
+        key = "potion_recklessness",
+        name = "Combat Potion",
         familyName = "Potion of Recklessness",
-        icon     = 7548916,
-        itemID   = CON.potion_recklessness.itemID,
+        icon = 7548916,
+        itemID = CON.potion_recklessness.itemID,
         altItemIDs = CON.potion_recklessness.altItemIDs,
         displayOrder = CON.potion_recklessness.displayOrder,
         potFamily = "reck",
@@ -498,14 +592,14 @@ local CDM_ITEM_PRESETS = {
         legacy = true,
     },
     {
-        key      = "liquid_luster",
-        name     = "Combat Potion",
+        key = "liquid_luster",
+        name = "Combat Potion",
         familyName = "Liquid Luster",
         -- Family art runtime-resolved (fileID not known statically at authoring
         -- time); question-mark fallback is theoretical -- icon lookups are
         -- client-DB-local.
-        icon     = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271887)) or 134400,
-        itemID   = CON.liquid_luster.itemID,
+        icon = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271887)) or 134400,
+        itemID = CON.liquid_luster.itemID,
         altItemIDs = CON.liquid_luster.altItemIDs,
         displayOrder = CON.liquid_luster.displayOrder,
         potFamily = "luster",
@@ -514,53 +608,53 @@ local CDM_ITEM_PRESETS = {
         legacy = true,
     },
     {
-        key      = "silvermoon_health",
-        name     = "Concentrated Health Potion",
+        key = "silvermoon_health",
+        name = "Concentrated Health Potion",
         -- Picker-only art (current-tier pot): PotSwap.Ensure paints every resolved
         -- variant from its own item id, so this never overrides a counted variant's
         -- icon. Runtime-resolved because the fileID isn't item-DB-stable across
         -- builds; the old Silvermoon art is the fallback.
-        icon     = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271884)) or 7548909,
+        icon = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(271884)) or 7548909,
         -- itemID (241304) is the identity anchor for saved frames and PotSwap.Ensure's
         -- primary check, so it never follows the newer tier that leads the display.
-        itemID   = CON.silvermoon_health.itemID,
+        itemID = CON.silvermoon_health.itemID,
         altItemIDs = CON.silvermoon_health.altItemIDs,
         displayOrder = CON.silvermoon_health.displayOrder,
         nativeCategory = 30,
     },
     {
-        key      = "lightfused_mana",
-        name     = "Lightfused Mana Potion",
-        icon     = 7548907,
-        itemID   = CON.lightfused_mana.itemID,
+        key = "lightfused_mana",
+        name = "Lightfused Mana Potion",
+        icon = 7548907,
+        itemID = CON.lightfused_mana.itemID,
         altItemIDs = CON.lightfused_mana.altItemIDs,
     },
     {
-        key      = "invis_potion",
-        name     = "Invisibility Potion",
-        icon     = 7548917,
-        itemID   = CON.invis_potion.itemID,
+        key = "invis_potion",
+        name = "Invisibility Potion",
+        icon = 7548917,
+        itemID = CON.invis_potion.itemID,
         altItemIDs = CON.invis_potion.altItemIDs,
     },
     {
-        key      = "healthstone",
-        name     = "Healthstone",
-        icon     = 538745,
-        itemID   = CON.healthstone.itemID,
+        key = "healthstone",
+        name = "Healthstone",
+        icon = 538745,
+        itemID = CON.healthstone.itemID,
         -- Pact of Gluttony turns self-conjured stones into Demonic Healthstones. Both
         -- share one unique slot, so a warlock holds one or the other and the
         -- primary-then-alts count shows whichever is owned. The lockout stays keyed
         -- to 6262 only: Demonic stones are reusable in combat.
         altItemIDs = CON.healthstone.altItemIDs,
-        spellID  = CON.healthstone.spellIDs[1],
+        spellID = CON.healthstone.spellIDs[1],
         combatLockout = true,
         nativeCategory = 1711,
     },
     {
-        key      = "demonic_healthstone",
-        name     = "Demonic Healthstone",
-        itemID   = CON.demonic_healthstone.itemID,
-        spellID  = CON.demonic_healthstone.spellIDs[1],
+        key = "demonic_healthstone",
+        name = "Demonic Healthstone",
+        itemID = CON.demonic_healthstone.itemID,
+        spellID = CON.demonic_healthstone.spellIDs[1],
         nativeCategory = 2566,
     },
 }
@@ -578,13 +672,21 @@ ns.CDM_ITEM_PRESETS = CDM_ITEM_PRESETS
 -- item cooldown drives the swipe for whichever stone is owned.
 if CludesUI.IS_FOREVER then
     local drop = {
-        bloodlust = true, timespiral = true, lights_potential = true,
-        potion_recklessness = true, liquid_luster = true, invis_potion = true,
-        silvermoon_health = true, lightfused_mana = true, demonic_healthstone = true,
+        bloodlust = true,
+        timespiral = true,
+        lights_potential = true,
+        potion_recklessness = true,
+        liquid_luster = true,
+        invis_potion = true,
+        silvermoon_health = true,
+        lightfused_mana = true,
+        demonic_healthstone = true,
     }
     for _, list in ipairs({ BUFF_BAR_PRESETS, CDM_ITEM_PRESETS }) do
         for i = #list, 1, -1 do
-            if drop[list[i].key] then table.remove(list, i) end
+            if drop[list[i].key] then
+                table.remove(list, i)
+            end
         end
     end
     for _, p in ipairs(CDM_ITEM_PRESETS) do
@@ -619,14 +721,19 @@ do
         local cat = p.nativeCategory
         if cat then
             local list = nativeKeys[cat]
-            if not list then list = {}; nativeKeys[cat] = list end
+            if not list then
+                list = {}
+                nativeKeys[cat] = list
+            end
             list[#list + 1] = -p.itemID
         end
         byKey[-p.itemID] = p
     end
     ns.COMBAT_POTION_FAMILIES = families
     ns.CDM_NATIVE_ITEM_KEYS = nativeKeys
-    function ns.ItemPresetForKey(key) return byKey[key] end
+    function ns.ItemPresetForKey(key)
+        return byKey[key]
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -641,20 +748,27 @@ local DEFAULTS = {
         -- art. Classic WoW UI: square icons in the vanilla action button
         -- ring; tracked buff bars in the vanilla cast bar frame. Every CUI
         -- feature keeps working; only the CUI-look settings are disabled.
-        useBlizzardStyle     = false,
+        useBlizzardStyle = false,
         useBlizzardStyleBars = false,
-        useClassicStyle      = false,
-        useClassicStyleBars  = false,
+        useClassicStyle = false,
+        useClassicStyleBars = false,
         -- Bar Glows (per-spec)
-        spec            = {},
-        activeSpecKey   = "0",
+        spec = {},
+        activeSpecKey = "0",
         -- Independent display of Blizzard's current recommendation (opt-in).
         rotationAssistIcon = {
-            enabled = false, onlyInCombat = false, iconSize = 48,
+            enabled = false,
+            onlyInCombat = false,
+            iconSize = 48,
             showGCD = false,
-            showKeybind = false, keybindSize = 14,
-            keybindOffsetX = 2, keybindOffsetY = -2,
-            keybindR = 1, keybindG = 1, keybindB = 1, keybindA = 0.9,
+            showKeybind = false,
+            keybindSize = 14,
+            keybindOffsetX = 2,
+            keybindOffsetY = -2,
+            keybindR = 1,
+            keybindG = 1,
+            keybindB = 1,
+            keybindA = 0.9,
         },
         -- CDM Bars (our replacement for Blizzard CDM)
         cdmBars = {
@@ -684,68 +798,165 @@ local DEFAULTS = {
             -- The 3 default bars (match Blizzard CDM)
             bars = {
                 {
-                    key = "cooldowns", name = "Cooldowns", enabled = true,
+                    key = "cooldowns",
+                    name = "Cooldowns",
+                    enabled = true,
                     barType = "cooldowns",
-                    iconSize = 42, numRows = 1, spacing = 2,
-                    borderSize = 1, borderR = 0, borderG = 0, borderB = 0, borderA = 1,
-                    borderClassColor = false, borderTexture = "solid",
-                    bgR = 0.08, bgG = 0.08, bgB = 0.08, bgA = 0.6,
-                    iconZoom = 0.08, iconShape = "none",
-                    verticalOrientation = false, barBgEnabled = false,                    barBgR = 0, barBgG = 0, barBgB = 0,
+                    iconSize = 42,
+                    numRows = 1,
+                    spacing = 2,
+                    borderSize = 1,
+                    borderR = 0,
+                    borderG = 0,
+                    borderB = 0,
+                    borderA = 1,
+                    borderClassColor = false,
+                    borderTexture = "solid",
+                    bgR = 0.08,
+                    bgG = 0.08,
+                    bgB = 0.08,
+                    bgA = 0.6,
+                    iconZoom = 0.08,
+                    iconShape = "none",
+                    verticalOrientation = false,
+                    barBgEnabled = false,
+                    barBgR = 0,
+                    barBgG = 0,
+                    barBgB = 0,
                     borderThickness = "thin",
-                    anchorTo = "none", anchorPosition = "left",
-                    anchorOffsetX = 0, anchorOffsetY = 0,
-                    barVisibility = "always", housingHideEnabled = true,
-                    visHideHousing = true, visOnlyInstances = false,
-                    visHideMounted = false, visHideNoTarget = false, visHideNoEnemy = false,
-                    showCooldownText = true, cooldownTextPosition = "center",
-                    showItemCount = true, showTooltip = false, showKeybind = false,
-                    keybindSize = 10, keybindOffsetX = 2, keybindOffsetY = -2, keybindAlign = "left",
-                    keybindR = 1, keybindG = 1, keybindB = 1, keybindA = 0.9,
+                    anchorTo = "none",
+                    anchorPosition = "left",
+                    anchorOffsetX = 0,
+                    anchorOffsetY = 0,
+                    barVisibility = "always",
+                    housingHideEnabled = true,
+                    visHideHousing = true,
+                    visOnlyInstances = false,
+                    visHideMounted = false,
+                    visHideNoTarget = false,
+                    visHideNoEnemy = false,
+                    showCooldownText = true,
+                    cooldownTextPosition = "center",
+                    showItemCount = true,
+                    showTooltip = false,
+                    showKeybind = false,
+                    keybindSize = 10,
+                    keybindOffsetX = 2,
+                    keybindOffsetY = -2,
+                    keybindAlign = "left",
+                    keybindR = 1,
+                    keybindG = 1,
+                    keybindB = 1,
+                    keybindA = 0.9,
                 },
                 {
-                    key = "utility", name = "Utility", enabled = true,
+                    key = "utility",
+                    name = "Utility",
+                    enabled = true,
                     barType = "utility",
-                    iconSize = 36, numRows = 1, spacing = 2,
-                    borderSize = 1, borderR = 0, borderG = 0, borderB = 0, borderA = 1,
-                    borderClassColor = false, borderTexture = "solid",
-                    bgR = 0.08, bgG = 0.08, bgB = 0.08, bgA = 0.6,
-                    iconZoom = 0.08, iconShape = "none",
-                    verticalOrientation = false, barBgEnabled = false,                    barBgR = 0, barBgG = 0, barBgB = 0,
+                    iconSize = 36,
+                    numRows = 1,
+                    spacing = 2,
+                    borderSize = 1,
+                    borderR = 0,
+                    borderG = 0,
+                    borderB = 0,
+                    borderA = 1,
+                    borderClassColor = false,
+                    borderTexture = "solid",
+                    bgR = 0.08,
+                    bgG = 0.08,
+                    bgB = 0.08,
+                    bgA = 0.6,
+                    iconZoom = 0.08,
+                    iconShape = "none",
+                    verticalOrientation = false,
+                    barBgEnabled = false,
+                    barBgR = 0,
+                    barBgG = 0,
+                    barBgB = 0,
                     borderThickness = "thin",
-                    anchorTo = "none", anchorPosition = "left",
-                    anchorOffsetX = 0, anchorOffsetY = 0,
-                    barVisibility = "always", housingHideEnabled = true,
-                    visHideHousing = true, visOnlyInstances = false,
-                    visHideMounted = false, visHideNoTarget = false, visHideNoEnemy = false,
-                    showCooldownText = true, cooldownTextPosition = "center",
-                    showItemCount = true, showTooltip = false, showKeybind = false,
-                    keybindSize = 10, keybindOffsetX = 2, keybindOffsetY = -2, keybindAlign = "left",
-                    keybindR = 1, keybindG = 1, keybindB = 1, keybindA = 0.9,
+                    anchorTo = "none",
+                    anchorPosition = "left",
+                    anchorOffsetX = 0,
+                    anchorOffsetY = 0,
+                    barVisibility = "always",
+                    housingHideEnabled = true,
+                    visHideHousing = true,
+                    visOnlyInstances = false,
+                    visHideMounted = false,
+                    visHideNoTarget = false,
+                    visHideNoEnemy = false,
+                    showCooldownText = true,
+                    cooldownTextPosition = "center",
+                    showItemCount = true,
+                    showTooltip = false,
+                    showKeybind = false,
+                    keybindSize = 10,
+                    keybindOffsetX = 2,
+                    keybindOffsetY = -2,
+                    keybindAlign = "left",
+                    keybindR = 1,
+                    keybindG = 1,
+                    keybindB = 1,
+                    keybindA = 0.9,
                 },
                 {
-                    key = "buffs", name = "Buffs", enabled = true,
+                    key = "buffs",
+                    name = "Buffs",
+                    enabled = true,
                     barType = "buffs",
                     -- Always Show Buffs (per-bar): greyed placeholder icon for each
                     -- inactive tracked buff; desaturateInactiveBuffs is the inline cog.
-                    showInactiveBuffIcons = false, desaturateInactiveBuffs = true,
+                    showInactiveBuffIcons = false,
+                    desaturateInactiveBuffs = true,
                     hidePlaceholderIcon = false,
-                    iconSize = 32, numRows = 1, spacing = 2,
-                    borderSize = 1, borderR = 0, borderG = 0, borderB = 0, borderA = 1,
-                    borderClassColor = false, borderTexture = "solid",
-                    bgR = 0.08, bgG = 0.08, bgB = 0.08, bgA = 0.6,
-                    iconZoom = 0.08, iconShape = "none",
-                    verticalOrientation = false, barBgEnabled = false,                    barBgR = 0, barBgG = 0, barBgB = 0,
+                    iconSize = 32,
+                    numRows = 1,
+                    spacing = 2,
+                    borderSize = 1,
+                    borderR = 0,
+                    borderG = 0,
+                    borderB = 0,
+                    borderA = 1,
+                    borderClassColor = false,
+                    borderTexture = "solid",
+                    bgR = 0.08,
+                    bgG = 0.08,
+                    bgB = 0.08,
+                    bgA = 0.6,
+                    iconZoom = 0.08,
+                    iconShape = "none",
+                    verticalOrientation = false,
+                    barBgEnabled = false,
+                    barBgR = 0,
+                    barBgG = 0,
+                    barBgB = 0,
                     borderThickness = "thin",
-                    anchorTo = "none", anchorPosition = "left",
-                    anchorOffsetX = 0, anchorOffsetY = 0,
-                    barVisibility = "always", housingHideEnabled = true,
-                    visHideHousing = true, visOnlyInstances = false,
-                    visHideMounted = false, visHideNoTarget = false, visHideNoEnemy = false,
-                    showCooldownText = true, cooldownTextPosition = "center",
-                    showItemCount = true, showTooltip = false, showKeybind = false,
-                    keybindSize = 10, keybindOffsetX = 2, keybindOffsetY = -2, keybindAlign = "left",
-                    keybindR = 1, keybindG = 1, keybindB = 1, keybindA = 0.9,
+                    anchorTo = "none",
+                    anchorPosition = "left",
+                    anchorOffsetX = 0,
+                    anchorOffsetY = 0,
+                    barVisibility = "always",
+                    housingHideEnabled = true,
+                    visHideHousing = true,
+                    visOnlyInstances = false,
+                    visHideMounted = false,
+                    visHideNoTarget = false,
+                    visHideNoEnemy = false,
+                    showCooldownText = true,
+                    cooldownTextPosition = "center",
+                    showItemCount = true,
+                    showTooltip = false,
+                    showKeybind = false,
+                    keybindSize = 10,
+                    keybindOffsetX = 2,
+                    keybindOffsetY = -2,
+                    keybindAlign = "left",
+                    keybindR = 1,
+                    keybindG = 1,
+                    keybindB = 1,
+                    keybindA = 0.9,
                 },
             },
         },
@@ -761,14 +972,30 @@ local DEFAULTS = {
 -- the files behind it return at their first lines (same for the Hooks and
 -- Buff Bars tables).
 CludesUI.NewInternals(ns, "_internals", {
-    _bonusScanSeen = _bonusScanSeen, _cdmKeybindCache = _cdmKeybindCache,
-    _cdmKeybindRank = _cdmKeybindRank, _cdmMouseState = _cdmMouseState,
-    _cdmViewerNames = _cdmViewerNames, _ecmeFC = _ecmeFC, _getFD = _getFD,
-    _maxChargeCount = _maxChargeCount, _multiChargeSpells = _multiChargeSpells,
-    _myRacials = _myRacials, _myRacialsSet = _myRacialsSet,
-    ALL_RACIAL_SPELLS = ALL_RACIAL_SPELLS, CDM_SHAPES = CDM_SHAPES, DEFAULTS = DEFAULTS,
-    ECME = ECME, EffectiveBarAlpha = EffectiveBarAlpha, FC = FC,
-    IsPlaceholderRenderHidden = IsPlaceholderRenderHidden, RACE_RACIALS = RACE_RACIALS,
-    ResolveActiveRacial = ResolveActiveRacial, SnapForScale = SnapForScale,
-    inCombatSetters = { function(v) _inCombat = v end },
+    _bonusScanSeen = _bonusScanSeen,
+    _cdmKeybindCache = _cdmKeybindCache,
+    _cdmKeybindRank = _cdmKeybindRank,
+    _cdmMouseState = _cdmMouseState,
+    _cdmViewerNames = _cdmViewerNames,
+    _ecmeFC = _ecmeFC,
+    _getFD = _getFD,
+    _maxChargeCount = _maxChargeCount,
+    _multiChargeSpells = _multiChargeSpells,
+    _myRacials = _myRacials,
+    _myRacialsSet = _myRacialsSet,
+    ALL_RACIAL_SPELLS = ALL_RACIAL_SPELLS,
+    CDM_SHAPES = CDM_SHAPES,
+    DEFAULTS = DEFAULTS,
+    ECME = ECME,
+    EffectiveBarAlpha = EffectiveBarAlpha,
+    FC = FC,
+    IsPlaceholderRenderHidden = IsPlaceholderRenderHidden,
+    RACE_RACIALS = RACE_RACIALS,
+    ResolveActiveRacial = ResolveActiveRacial,
+    SnapForScale = SnapForScale,
+    inCombatSetters = {
+        function(v)
+            _inCombat = v
+        end,
+    },
 }, { SetInCombat = "inCombatSetters" })

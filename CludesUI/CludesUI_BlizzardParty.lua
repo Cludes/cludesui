@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_BlizzardParty.lua
 --  Shared "Hide Blizzard Party Panel" feature.
@@ -25,9 +27,13 @@ local _partyOrigParent
 local function ApplyHideBlizzardPartyFrame()
     local shouldHide = CludesUIDB and CludesUIDB.hideBlizzardPartyFrame
     -- Never hidden this session and not wanted hidden: nothing to apply.
-    if not shouldHide and not _partyOrigParent then return end
+    if not shouldHide and not _partyOrigParent then
+        return
+    end
     local mgr = CompactRaidFrameManager
-    if not mgr then return end
+    if not mgr then
+        return
+    end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("BlizzardPartyPanel", ApplyHideBlizzardPartyFrame)
         return

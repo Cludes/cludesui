@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Bags.lua
 -- Bag space block factory.
 
@@ -9,25 +11,25 @@ local K = ns.BlockKit
 -- Upvalues
 local CreateFrame = CreateFrame
 local C_Container = C_Container
-local floor       = math.floor
-local max         = math.max
-local min         = math.min
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
-local IconColorOf          = K.IconColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -- Backpack + four bag slots; the reagent bag is opt-in per block.
-local LAST_BAG    = NUM_BAG_SLOTS or 4
+local LAST_BAG = NUM_BAG_SLOTS or 4
 local REAGENT_BAG = Enum.BagIndex.ReagentBag
 
 -- Low space text color default (soft red, matches durability's low tint).
@@ -45,8 +47,12 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
 
     local mouseOver = false
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local button = CreateFrame("Button", nil, content)
     button:SetAllPoints()
@@ -164,7 +170,9 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
             end
             bagText:ClearAllPoints()
             local xOff = 0
-            if iconSz > 0 then xOff = iconSz + ICON_GAP - 2 end
+            if iconSz > 0 then
+                xOff = iconSz + ICON_GAP - 2
+            end
             bagText:SetPoint("LEFT", button, "LEFT", xOff, 0)
             local tw = ns.SnapToPixelGrid(bagText:GetStringWidth())
             local totalW = min(slotW, xOff + tw + 4)
@@ -177,10 +185,20 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
 
     local function AddBagRow(bag)
         local n = C_Container.GetContainerNumSlots(bag) or 0
-        if n <= 0 then return end
+        if n <= 0 then
+            return
+        end
         local used = n - (C_Container.GetContainerNumFreeSlots(bag) or 0)
-        ns.Tip_AddDouble(C_Container.GetBagName(bag) or ("#" .. bag), used .. "/" .. n,
-            0.6, 0.6, 0.6, 1, 1, 1)
+        ns.Tip_AddDouble(
+            C_Container.GetBagName(bag) or ("#" .. bag),
+            used .. "/" .. n,
+            0.6,
+            0.6,
+            0.6,
+            1,
+            1,
+            1
+        )
     end
 
     local function ShowBagsTooltip()
@@ -189,8 +207,12 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
         ns.Tip_Begin(button)
         ns.Tip_AddLine(L["BAGS"], 1, 1, 1)
         ns.Tip_AddLine(" ")
-        for bag = 0, LAST_BAG do AddBagRow(bag) end
-        if IncludeBag(REAGENT_BAG) then AddBagRow(REAGENT_BAG) end
+        for bag = 0, LAST_BAG do
+            AddBagRow(bag)
+        end
+        if IncludeBag(REAGENT_BAG) then
+            AddBagRow(REAGENT_BAG)
+        end
         ns.Tip_AddLine(" ")
         ns.Tip_AddDouble(L["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
         ns.Tip_AddLine(" ")
@@ -209,7 +231,9 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
         inst:Refresh()
     end)
     button:SetScript("OnClick", function(_, mb)
-        if mb == "LeftButton" then ToggleAllBags() end
+        if mb == "LeftButton" then
+            ToggleAllBags()
+        end
     end)
 
     -- Most bag batches (a potion, stacking, sorting) leave the counts on
@@ -217,7 +241,9 @@ ns.BlockFactories.bags = function(blockCfg, slot, content, barCtx)
     inst.eventFrame = MakeEventFrame(inst, function(self, event)
         if event == "BAG_UPDATE_DELAYED" then
             local free, total = Count()
-            if free == lastFree and total == lastTotal then return end
+            if free == lastFree and total == lastTotal then
+                return
+            end
         end
         self:Refresh()
     end)

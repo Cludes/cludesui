@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIChat_Forever.lua
 --
@@ -29,17 +31,22 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local CUI = _G.CludesUI
 local ECHAT = ns.ECHAT
-if not ECHAT or not CUI then return end
+if not ECHAT or not CUI then
+    return
+end
 local CFD = CUI._chatCFD
 local BORDER = CUI.FOREVER_BORDER
 local HEAVY = CUI.FOREVER_HEAVY
 
 local FV = {
-    lift   = { 1, 0.75, 0.45, 0.6 },   -- the additive copy: tint, alpha
+    lift = { 1, 0.75, 0.45, 0.6 }, -- the additive copy: tint, alpha
     -- Heavy Bronze: the art scale per piece (its rim and dark line are
     -- HEAVY.band art units; the panel at the window scale) and each tab's
     -- art pulled in from Blizzard's 1px tab gap.
-    panelK = HEAVY.k, tabK = 0.8, btnK = 0.7, hvTabInset = 1,
+    panelK = HEAVY.k,
+    tabK = 0.8,
+    btnK = 0.7,
+    hvTabInset = 1,
     -- Panel geometry off the chat frame's rect (UI units): both frames' outer
     -- edges X past its sides (the text stands well clear of the line) and
     -- TOP above it (Blizzard's tab row stands there), the message frame
@@ -48,17 +55,23 @@ local FV = {
     -- header, 15 into the box, lands on the text column). The combat log's
     -- filter bar (CL_BAR tall, above its window) sits inside that window's
     -- frame.
-    X = 20, TOP = 3, MSG_B = 11, GAP = 4, IN_PAD = 5, EB_X = 15, CL_BAR = 24,
+    X = 20,
+    TOP = 3,
+    MSG_B = 11,
+    GAP = 4,
+    IN_PAD = 5,
+    EB_X = 15,
+    CL_BAR = 24,
     -- Each tab's line in from its ghost's sides and top by its outer
     -- shadow's reach, so the ghost's clip keeps that shadow.
     tabInset = BORDER.outer,
-    tabX = 8,      -- the first docked tab's left edge in from the panel's
-    gold  = { 1, 0.82, 0 },
-    tan   = { 0.83, 0.71, 0.52 },
+    tabX = 8, -- the first docked tab's left edge in from the panel's
+    gold = { 1, 0.82, 0 },
+    tan = { 0.83, 0.71, 0.52 },
     thumb = { 0.72, 0.56, 0.36, 0.7 },
     plateFill = { 0.06, 0.06, 0.065, 0.92 },
     -- Tab bodies, bottom then top: selected (warm) and idle.
-    tabSel  = { 0.17, 0.09, 0.035, 0.95, 0.12, 0.063, 0.024, 0.95 },
+    tabSel = { 0.17, 0.09, 0.035, 0.95, 0.12, 0.063, 0.024, 0.95 },
     tabIdle = { 0.08, 0.08, 0.085, 0.92, 0.10, 0.10, 0.105, 0.92 },
     -- The last fill ApplyBackground painted (panels built later take it).
     _fill = { r = 0.03, g = 0.045, b = 0.05, a = 0.65 },
@@ -90,10 +103,15 @@ end
 local function SeatBox(box, host, tp, ty, by, inX)
     local f, x = BORDER.fill, inX or 0
     local s = box.seat
-    if not s then s = {}; box.seat = s end
+    if not s then
+        s = {}
+        box.seat = s
+    end
     s[1], s[2], s[3], s[4], s[5] = tp, x, ty, -x, by
     CUI.ForeverBorderSeat(box.rim, host, tp, x, ty, -x, by)
-    if box.lift then CUI.ForeverBorderSeat(box.lift, host, tp, x, ty, -x, by) end
+    if box.lift then
+        CUI.ForeverBorderSeat(box.lift, host, tp, x, ty, -x, by)
+    end
     Seat(box.fill, host, tp, x + f, ty - f, -x - f, by + f)
 end
 
@@ -118,7 +136,9 @@ end
 local function SeatHeavyBox(box, host, tp, ty, by, inX)
     local x = inX or 0
     CUI.ForeverHeavySeat(box.rim, host, tp, x, ty, -x, by)
-    if box.lift then CUI.ForeverHeavySeat(box.lift, host, tp, x, ty, -x, by) end
+    if box.lift then
+        CUI.ForeverHeavySeat(box.lift, host, tp, x, ty, -x, by)
+    end
     CUI.ForeverHeavyFill(box.rim, box.fill, host, tp, x, ty, -x, by)
 end
 
@@ -127,7 +147,9 @@ end
 local function ShowLift(box, shown)
     local lift = box.lift
     if not lift then
-        if not shown then return end
+        if not shown then
+            return
+        end
         local l, s = FV.lift, box.seat
         lift = CUI.ForeverBorder(box.host, "ARTWORK", 0, true, ns.ChatFvKind())
         CUI.ForeverBorderPaint(lift, l[1], l[2], l[3], l[4])
@@ -169,10 +191,15 @@ end
 -- Seats the input and records the panel insets (numeric placement off the
 -- chat frame's rect, PositionChatPanel; the engine derives the text area).
 function ECHAT.FV_SeatInput(cf, eb, inputH)
-    if eb then ECHAT.FV_PlaceEditBox(cf, eb, inputH) end
+    if eb then
+        ECHAT.FV_PlaceEditBox(cf, eb, inputH)
+    end
     local d = CFD(cf)
     local ins = d._bgIns
-    if not ins then ins = {}; d._bgIns = ins end
+    if not ins then
+        ins = {}
+        d._bgIns = ins
+    end
     ins.l, ins.r = -FV.X, FV.X
     ins.t = FV.TOP + ((cf == _G.ChatFrame2) and FV.CL_BAR or 0)
     ins.b = -ECHAT.FV_PanelDrop(inputH)
@@ -184,7 +211,9 @@ end
 function ECHAT.FV_LayoutPanel(cf, inputH)
     local d = CFD(cf)
     local host = d.fvHost
-    if not host or d.fvInputH == inputH then return end
+    if not host or d.fvInputH == inputH then
+        return
+    end
     d.fvInputH = inputH
     local inTall = inputH + 2 * FV.IN_PAD
     if d.fvMsg.heavy then
@@ -201,7 +230,9 @@ end
 -- panel's art scale.
 function ECHAT.FV_BuildPanel(cf, bg, inputH)
     local d = CFD(cf)
-    if d.fvHost then return end
+    if d.fvHost then
+        return
+    end
     local host = CreateFrame("Frame", nil, bg)
     local New = NewBox
     if ns.ChatFvHeavy() then
@@ -238,12 +269,14 @@ end
 --  meeting the frame's rim). Built once per ghost; repainted only when its
 --  selected state flips.
 -------------------------------------------------------------------------------
-local tabCol   -- colour objects (selected bottom, top, idle bottom, top)
+local tabCol -- colour objects (selected bottom, top, idle bottom, top)
 local function TabColours()
     local s, i = FV.tabSel, FV.tabIdle
     tabCol = {
-        CreateColor(s[1], s[2], s[3], s[4]), CreateColor(s[5], s[6], s[7], s[8]),
-        CreateColor(i[1], i[2], i[3], i[4]), CreateColor(i[5], i[6], i[7], i[8]),
+        CreateColor(s[1], s[2], s[3], s[4]),
+        CreateColor(s[5], s[6], s[7], s[8]),
+        CreateColor(i[1], i[2], i[3], i[4]),
+        CreateColor(i[5], i[6], i[7], i[8]),
     }
 end
 
@@ -255,7 +288,9 @@ function ECHAT.FV_StyleGhost(g, isActive)
         clip:SetClipsChildren(true)
         art = CreateFrame("Frame", nil, clip)
         local heavy = ns.ChatFvHeavy()
-        if heavy then art:SetScale(FV.tabK) end
+        if heavy then
+            art:SetScale(FV.tabK)
+        end
         art:SetAllPoints(clip)
         -- Label and alert glow over the art (they are the ghost's regions).
         local top = CreateFrame("Frame", nil, g)
@@ -286,15 +321,25 @@ function ECHAT.FV_StyleGhost(g, isActive)
         g._underline:Hide()
         g._sep:Hide()
         g._borderHost:Hide()
-        if not tabCol then TabColours() end
+        if not tabCol then
+            TabColours()
+        end
     end
     -- Relative levels, re-asserted: docked ghosts change parent between
     -- passes (strip / scroll clip).
     local L = g:GetFrameLevel()
-    if g._fvClip:GetFrameLevel() ~= L + 1 then g._fvClip:SetFrameLevel(L + 1) end
-    if art:GetFrameLevel() ~= L + 2 then art:SetFrameLevel(L + 2) end
-    if g._fvTop:GetFrameLevel() ~= L + 3 then g._fvTop:SetFrameLevel(L + 3) end
-    if g._fvOn == isActive then return end
+    if g._fvClip:GetFrameLevel() ~= L + 1 then
+        g._fvClip:SetFrameLevel(L + 1)
+    end
+    if art:GetFrameLevel() ~= L + 2 then
+        art:SetFrameLevel(L + 2)
+    end
+    if g._fvTop:GetFrameLevel() ~= L + 3 then
+        g._fvTop:SetFrameLevel(L + 3)
+    end
+    if g._fvOn == isActive then
+        return
+    end
     g._fvOn = isActive
     local box = g._fvBox
     local v = isActive and 1 or 0.85
@@ -320,28 +365,40 @@ end
 -------------------------------------------------------------------------------
 local function PlateEnter(self)
     local p = self._fvPlate
-    if p then ShowLift(p, true) end
+    if p then
+        ShowLift(p, true)
+    end
 end
 local function PlateLeave(self)
     local p = self._fvPlate
-    if p then ShowLift(p, false) end
+    if p then
+        ShowLift(p, false)
+    end
 end
 local function HeavyPlateEnter(self)
     local p = self._fvPlate
-    if p then CUI.ForeverHeavyShown(p.lift, true) end
+    if p then
+        CUI.ForeverHeavyShown(p.lift, true)
+    end
 end
 local function HeavyPlateLeave(self)
     local p = self._fvPlate
-    if p then CUI.ForeverHeavyShown(p.lift, false) end
+    if p then
+        CUI.ForeverHeavyShown(p.lift, false)
+    end
 end
 
 function ECHAT.FV_Plate(btn, on)
     local p = btn._fvPlate
     if not p then
-        if not on then return end
+        if not on then
+            return
+        end
         local host = CreateFrame("Frame", nil, btn)
         local heavy = ns.ChatFvHeavy()
-        if heavy then host:SetScale(FV.btnK) end
+        if heavy then
+            host:SetScale(FV.btnK)
+        end
         host:SetAllPoints(btn)
         p = heavy and NewHeavyBox(host, true) or NewBox(host)
         local c = FV.plateFill
@@ -359,7 +416,9 @@ function ECHAT.FV_Plate(btn, on)
     -- level with its seat).
     local L = btn:GetFrameLevel()
     local want = L > 0 and L - 1 or 0
-    if p.host:GetFrameLevel() ~= want then p.host:SetFrameLevel(want) end
+    if p.host:GetFrameLevel() ~= want then
+        p.host:SetFrameLevel(want)
+    end
     p.host:SetShown(on and true or false)
     return p
 end
@@ -379,29 +438,69 @@ if CUI.IS_FOREVER and Entry and ECHAT.SB_KITS then
     -- brighter tint (tan / 0.83) lands them on the same tan.
     local ATL_TINT = { 1, 0.86, 0.63 }
     local FSQ = { w = 34, h = 34, padT = 0, padB = 0, plate = true, push = true }
-    local function A(atlas, w, h, y) return { atlas = atlas, w = w, h = h, y = y, tint = ATL_TINT } end
-    local function P(name, y) return { file = MEDIA .. name, w = 18, h = 18, y = y } end
+    local function A(atlas, w, h, y)
+        return { atlas = atlas, w = w, h = h, y = y, tint = ATL_TINT }
+    end
+    local function P(name, y)
+        return { file = MEDIA .. name, w = 18, h = 18, y = y }
+    end
     local blizz = ECHAT.SB_KITS.blizzard
     ECHAT.SB_KITS.forever = {
-        col = { dx = -FV.GAP, top = 0, bot = 0 }, colW = 34, gap = 8, voiceState = true, flash = "fade",
-        tint = TAN, countColor = TAN, countY = 5,
-        friends    = Entry(FSQ, { count = "inside", glyph = {
-                        A("socialqueuing-icon-group", 20, 17, 5), P("chat_friends.png", 5) } }),
-        guild      = Entry(FSQ, { count = "below", glyph = {
-                        A("friends-icon-tab-guildmates", 17, 17), P("chat_guild.png") } }),
-        durability = Entry(FSQ, { count = "inside", alert = true, glyph = { P("chat_durability.png", 5) },
-                        alertColors = { [0] = { TAN[1], TAN[2], TAN[3], 1 },
-                                        { 1, 0.5, 0.1, 1 }, { 0.93, 0.07, 0.07, 1 } } }),
-        copy       = Entry(FSQ, { glyph = { P("chat_copy.png") } }),
-        portals    = Entry(FSQ, { glyph = { P("chat_portal.png") } }),
-        voice      = Entry(FSQ, { glyph = { A("chatframe-button-icon-voicechat", 20, 20) } }),
-        chatmenu   = Entry(FSQ, { glyph = { { file = ECHAT.CHAT_MENU_GLYPH, w = 18, h = 18 } } }),
-        settings   = Entry(FSQ, { glyph = { P("chat_settings.png") } }),
+        col = { dx = -FV.GAP, top = 0, bot = 0 },
+        colW = 34,
+        gap = 8,
+        voiceState = true,
+        flash = "fade",
+        tint = TAN,
+        countColor = TAN,
+        countY = 5,
+        friends = Entry(
+            FSQ,
+            {
+                count = "inside",
+                glyph = {
+                    A("socialqueuing-icon-group", 20, 17, 5),
+                    P("chat_friends.png", 5),
+                },
+            }
+        ),
+        guild = Entry(
+            FSQ,
+            {
+                count = "below",
+                glyph = {
+                    A("friends-icon-tab-guildmates", 17, 17),
+                    P("chat_guild.png"),
+                },
+            }
+        ),
+        durability = Entry(
+            FSQ,
+            {
+                count = "inside",
+                alert = true,
+                glyph = { P("chat_durability.png", 5) },
+                alertColors = {
+                    [0] = { TAN[1], TAN[2], TAN[3], 1 },
+                    { 1, 0.5, 0.1, 1 },
+                    { 0.93, 0.07, 0.07, 1 },
+                },
+            }
+        ),
+        copy = Entry(FSQ, { glyph = { P("chat_copy.png") } }),
+        portals = Entry(FSQ, { glyph = { P("chat_portal.png") } }),
+        voice = Entry(FSQ, { glyph = { A("chatframe-button-icon-voicechat", 20, 20) } }),
+        chatmenu = Entry(FSQ, { glyph = { { file = ECHAT.CHAT_MENU_GLYPH, w = 18, h = 18 } } }),
+        settings = Entry(FSQ, { glyph = { P("chat_settings.png") } }),
         scroll = {
-            sidebar = { w = 34, h = 34, plate = true,
-                        glyph = { A("minimal-scrollbar-arrow-returntobottom", 17, 15) },
-                        flashArt = { atlas = "minimal-scrollbar-arrow-returntobottom" } },
-            chat    = blizz and blizz.scroll and blizz.scroll.chat,
+            sidebar = {
+                w = 34,
+                h = 34,
+                plate = true,
+                glyph = { A("minimal-scrollbar-arrow-returntobottom", 17, 15) },
+                flashArt = { atlas = "minimal-scrollbar-arrow-returntobottom" },
+            },
+            chat = blizz and blizz.scroll and blizz.scroll.chat,
         },
     }
 end

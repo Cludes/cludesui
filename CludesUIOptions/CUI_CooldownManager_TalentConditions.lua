@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CooldownManager_TalentConditions.lua
 --  Talent Conditions for the CDM per-icon menu (cooldown/utility bars): the
@@ -12,7 +14,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  what decides the icon.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not ns then return end
+if not ns then
+    return
+end
 
 -- The options page pool (CludesUI_FramePool.lua): the corner mark on a
 -- preview slot (a reused header's slot is a pool host) is handed out again
@@ -27,13 +31,18 @@ local iconTexts
 local function IconTexts()
     if not iconTexts then
         iconTexts = {
-            hint = CludesUI.L("Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the icon to show."),
+            hint = CludesUI.L(
+                "Click a talent to require it: Taken, then Not Taken, then cleared. Every condition must hold for the icon to show."
+            ),
             none = CludesUI.L("No conditions: the icon always shows."),
             met = function(n)
                 return CludesUI.Lf("%1$d condition(s), met by your current talents: the icon shows.", n)
             end,
             notMet = function(n)
-                return CludesUI.Lf("%1$d condition(s), not met by your current talents: the icon is hidden.", n)
+                return CludesUI.Lf(
+                    "%1$d condition(s), not met by your current talents: the icon is hidden.",
+                    n
+                )
             end,
         }
     end
@@ -49,7 +58,9 @@ end
 -- "off" when they do not. Includes Empty Slot markers; nil when none have conditions.
 function ns.TalentCondPreviewSet(barKey, tracked)
     local store = ns.GetSpellSettingsStore(barKey)
-    if not store or type(tracked) ~= "table" then return nil end
+    if not store or type(tracked) ~= "table" then
+        return nil
+    end
     local set
     for _, id in ipairs(tracked) do
         local entry = type(id) == "number" and (id > 0 or ns.IsEmptySlotMarker(id)) and store[id]
@@ -69,7 +80,9 @@ end
 function ns.PaintTalentCondMark(slot, state)
     local mark = slot._tcMark
     if not state then
-        if mark then mark:Hide() end
+        if mark then
+            mark:Hide()
+        end
         return
     end
     if not mark then
@@ -100,7 +113,8 @@ end
 -------------------------------------------------------------------------------
 function ns.ShowCDMTalentConditionsPopup(spellID, conds, confirm)
     local spellName = ns.IsEmptySlotMarker(spellID) and CludesUI.L("Empty Slot")
-        or C_Spell.GetSpellName(spellID) or tostring(spellID)
+        or C_Spell.GetSpellName(spellID)
+        or tostring(spellID)
     CludesUI.ShowTalentConditionsPopup({
         title = CludesUI.Lf("Talent Conditions: %1$s", spellName),
         conds = conds,

@@ -1,11 +1,15 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL_Shifter_Options.lua
 --  Builds the "Shifter" page inside the Quality of Life module.
 -------------------------------------------------------------------------------
 
 -- "CharacterFrame" -> "Character", "AuctionHouseFrame" -> "Auction House", etc.
-if not CludesUI._ModuleNS["CludesUIQoL"] then return end  -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIQoL"] then
+    return
+end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -14,8 +18,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 
 local function PrettifyName(name)
     local pretty = name:gsub("Frame$", "")
-    pretty = pretty:gsub("(%l)(%u)", "%1 %2")
-                    :gsub("(%u)(%u%l)", "%1 %2")
+    pretty = pretty:gsub("(%l)(%u)", "%1 %2"):gsub("(%u)(%u%l)", "%1 %2")
     return pretty
 end
 
@@ -26,8 +29,7 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
 
     -- Info text (top of page, matching bags pattern)
     do
-        local fontPath = (CludesUI.GetFontPath())
-            or "Fonts\\FRIZQT__.TTF"
+        local fontPath = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local infoFrame = CreateFrame("Frame", nil, parent)
         infoFrame:SetSize(parent:GetWidth(), 34)
         infoFrame:SetPoint("TOP", parent, "TOP", 0, y - 10)
@@ -43,49 +45,55 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
         line2:SetTextColor(1, 1, 1, 0.75)
         line2:SetPoint("TOP", line1, "BOTTOM", 0, -2)
         line2:SetJustifyH("CENTER")
-        line2:SetText(CludesUI.L("Ctrl + Left-Click Drag for a temporary move that resets when the panel closes."))
+        line2:SetText(
+            CludesUI.L("Ctrl + Left-Click Drag for a temporary move that resets when the panel closes.")
+        )
         local line3 = infoFrame:CreateFontString(nil, "OVERLAY")
         line3:SetFont(fontPath, 15, "")
         line3:SetTextColor(1, 1, 1, 0.75)
         line3:SetPoint("TOP", line2, "BOTTOM", 0, -2)
         line3:SetJustifyH("CENTER")
-        line3:SetText(CludesUI.L("Shift + Scroll to permanently zoom a panel. Ctrl + Scroll for a temporary zoom."))
+        line3:SetText(
+            CludesUI.L("Shift + Scroll to permanently zoom a panel. Ctrl + Scroll for a temporary zoom.")
+        )
         y = y - 70
     end
 
     -- Reset All button
-    _, h = W:WideButton(parent, "Reset All Positions & Zoom", y,
-        function()
-            CludesUI:ShowConfirmPopup({
-                title   = "Reset Shifter Positions & Zoom",
-                message = "This will reset all saved panel positions and zoom levels and reload your UI.",
-                confirmText = "Reset",
-                cancelText  = "Cancel",
-                reload = true,
-                onConfirm = function()
-                    if CludesUI._ResetShifterPositions then
-                        CludesUI._ResetShifterPositions()
-                    end
-                end,
-            })
-        end
-    );  y = y - h
+    _, h = W:WideButton(parent, "Reset All Positions & Zoom", y, function()
+        CludesUI:ShowConfirmPopup({
+            title = "Reset Shifter Positions & Zoom",
+            message = "This will reset all saved panel positions and zoom levels and reload your UI.",
+            confirmText = "Reset",
+            cancelText = "Cancel",
+            reload = true,
+            onConfirm = function()
+                if CludesUI._ResetShifterPositions then
+                    CludesUI._ResetShifterPositions()
+                end
+            end,
+        })
+    end)
+    y = y - h
 
     ---------------------------------------------------------------------------
     --  SHIFTER
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "SHIFTER", y);  y = y - h
+    _, h = W:SectionHeader(parent, "SHIFTER", y)
+    y = y - h
 
     parent._showRowDivider = true
 
     -- Build dropdown values for Reset Specific Window (any window with a
     -- saved position OR a saved zoom)
     local ddValues = { [""] = "Choose Window..." }
-    local ddOrder  = {}
+    local ddOrder = {}
     do
         local seen = {}
         local function collect(tbl)
-            if not tbl then return end
+            if not tbl then
+                return
+            end
             for name in pairs(tbl) do
                 if not seen[name] then
                     seen[name] = true
@@ -102,183 +110,250 @@ _G._CUI_BuildShifterPage = function(pageName, parent, yOffset)
     end
 
     -- Row 1: Enable Shifter | Reset Specific Window
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Enable Shifter",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterEnabled or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterEnabled = v
-              if v and CludesUI._InitShifter then
-                  CludesUI._InitShifter()
-              elseif not v and CludesUI._ShutdownShifter then
-                  CludesUI._ShutdownShifter()
-              end
-          end },
-        { type = "dropdown", text = "Reset Specific Window",
-          values = ddValues,
-          order  = ddOrder,
-          getValue = function() return "" end,
-          setValue = function(frameName)
-              if frameName == "" then return end
-              local pretty = ddValues[frameName] or PrettifyName(frameName)
-              CludesUI:ShowConfirmPopup({
-                  title   = "Reset Window Position & Zoom",
-                  message = CludesUI.Lf("Reset %1$s to its default position and zoom and reload your UI?", pretty),
-                  confirmText = "Reset",
-                  cancelText  = "Cancel",
-                  reload = true,
-                  onConfirm = function()
-                      if CludesUIDB and CludesUIDB.shifterPositions then
-                          CludesUIDB.shifterPositions[frameName] = nil
-                      end
-                      if CludesUIDB and CludesUIDB.shifterScales then
-                          CludesUIDB.shifterScales[frameName] = nil
-                      end
-                  end,
-              })
-          end }
-    );  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Enable Shifter",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterEnabled or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterEnabled = v
+            if v and CludesUI._InitShifter then
+                CludesUI._InitShifter()
+            elseif not v and CludesUI._ShutdownShifter then
+                CludesUI._ShutdownShifter()
+            end
+        end,
+    }, {
+        type = "dropdown",
+        text = "Reset Specific Window",
+        values = ddValues,
+        order = ddOrder,
+        getValue = function()
+            return ""
+        end,
+        setValue = function(frameName)
+            if frameName == "" then
+                return
+            end
+            local pretty = ddValues[frameName] or PrettifyName(frameName)
+            CludesUI:ShowConfirmPopup({
+                title = "Reset Window Position & Zoom",
+                message = CludesUI.Lf(
+                    "Reset %1$s to its default position and zoom and reload your UI?",
+                    pretty
+                ),
+                confirmText = "Reset",
+                cancelText = "Cancel",
+                reload = true,
+                onConfirm = function()
+                    if CludesUIDB and CludesUIDB.shifterPositions then
+                        CludesUIDB.shifterPositions[frameName] = nil
+                    end
+                    if CludesUIDB and CludesUIDB.shifterScales then
+                        CludesUIDB.shifterScales[frameName] = nil
+                    end
+                end,
+            })
+        end,
+    })
+    y = y - h
 
     -- Row 2: Move windows without shift
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Windows Without Shift",
-          tooltip = "When enabled, left-click dragging a window will save its position without needing to hold Shift. Ctrl+drag still does a temporary move.",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterNoShift or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterNoShift = v
-          end },
-        { type = "label", text = "" }
-    );  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Move Windows Without Shift",
+        tooltip = "When enabled, left-click dragging a window will save its position without needing to hold Shift. Ctrl+drag still does a temporary move.",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterNoShift or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterNoShift = v
+        end,
+    }, { type = "label", text = "" })
+    y = y - h
 
     ---------------------------------------------------------------------------
     --  LOOT WINDOWS
     ---------------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "LOOT WINDOWS", y);  y = y - h
+    hdr, h = W:SectionHeader(parent, "LOOT WINDOWS", y)
+    y = y - h
 
     local function lootUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterLootUnlock)
     end
     -- One toggle adds all three loot movers, so the button takes the first.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_BonusRoll", disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Layout Mode" })
+    CludesUI.BuildSectionUnlockJump(
+        hdr,
+        {
+            key = "CUI_BonusRoll",
+            disabled = lootUnlockOff,
+            disabledTooltip = "Move Loot Windows in Layout Mode",
+        }
+    )
 
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Loot Windows in Layout Mode",
-          tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Layout Mode.",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterLootUnlock or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterLootUnlock = v
-              if v then
-                  if CludesUI._InitShifterLootWindows then
-                      CludesUI._InitShifterLootWindows()
-                  end
-              else
-                  if CludesUI._DisableShifterLootWindows then
-                      CludesUI._DisableShifterLootWindows()
-                  end
-              end
-              CludesUI:RefreshPage()  -- update the overlay toggle disabled state
-          end },
-        { type = "toggle", text = "Hide Layout Mode Overlays",
-          tooltip = "Hides the loot window movers in Layout Mode while keeping their saved positions applied.",
-          disabled = lootUnlockOff, disabledTooltip = "Move Loot Windows in Layout Mode",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterLootHideOverlays or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterLootHideOverlays = v
-          end }
-    );  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Move Loot Windows in Layout Mode",
+        tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Layout Mode.",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterLootUnlock or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterLootUnlock = v
+            if v then
+                if CludesUI._InitShifterLootWindows then
+                    CludesUI._InitShifterLootWindows()
+                end
+            else
+                if CludesUI._DisableShifterLootWindows then
+                    CludesUI._DisableShifterLootWindows()
+                end
+            end
+            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+        end,
+    }, {
+        type = "toggle",
+        text = "Hide Layout Mode Overlays",
+        tooltip = "Hides the loot window movers in Layout Mode while keeping their saved positions applied.",
+        disabled = lootUnlockOff,
+        disabledTooltip = "Move Loot Windows in Layout Mode",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterLootHideOverlays or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterLootHideOverlays = v
+        end,
+    })
+    y = y - h
 
     ---------------------------------------------------------------------------
     --  BLIZZARD TOP BAR EVENT TEXT
     ---------------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "BLIZZARD TOP BAR EVENT TEXT", y);  y = y - h
+    hdr, h = W:SectionHeader(parent, "BLIZZARD TOP BAR EVENT TEXT", y)
+    y = y - h
 
     local function topBarUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterTopBarUnlock)
     end
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_TopBarEventText", disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Layout Mode" })
+    CludesUI.BuildSectionUnlockJump(
+        hdr,
+        {
+            key = "CUI_TopBarEventText",
+            disabled = topBarUnlockOff,
+            disabledTooltip = "Move Top Bar Event Text in Layout Mode",
+        }
+    )
 
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Top Bar Event Text in Layout Mode",
-          tooltip = "Adds a mover for Blizzard's top-center event text and widgets (scenario, event, and encounter bars).",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterTopBarUnlock or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterTopBarUnlock = v
-              if v then
-                  if CludesUI._InitShifterTopBar then
-                      CludesUI._InitShifterTopBar()
-                  end
-              else
-                  if CludesUI._DisableShifterTopBar then
-                      CludesUI._DisableShifterTopBar()
-                  end
-              end
-              CludesUI:RefreshPage()  -- update the overlay toggle disabled state
-          end },
-        { type = "toggle", text = "Hide Layout Mode Overlay",
-          tooltip = "Hides the Top Bar Event Text mover in Layout Mode while keeping its saved position applied.",
-          disabled = topBarUnlockOff, disabledTooltip = "Move Top Bar Event Text in Layout Mode",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterTopBarHideOverlay or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterTopBarHideOverlay = v
-          end }
-    );  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Move Top Bar Event Text in Layout Mode",
+        tooltip = "Adds a mover for Blizzard's top-center event text and widgets (scenario, event, and encounter bars).",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterTopBarUnlock or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterTopBarUnlock = v
+            if v then
+                if CludesUI._InitShifterTopBar then
+                    CludesUI._InitShifterTopBar()
+                end
+            else
+                if CludesUI._DisableShifterTopBar then
+                    CludesUI._DisableShifterTopBar()
+                end
+            end
+            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+        end,
+    }, {
+        type = "toggle",
+        text = "Hide Layout Mode Overlay",
+        tooltip = "Hides the Top Bar Event Text mover in Layout Mode while keeping its saved position applied.",
+        disabled = topBarUnlockOff,
+        disabledTooltip = "Move Top Bar Event Text in Layout Mode",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterTopBarHideOverlay or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterTopBarHideOverlay = v
+        end,
+    })
+    y = y - h
 
     ---------------------------------------------------------------------------
     --  BATTLEGROUND FRAMES
     ---------------------------------------------------------------------------
-    hdr, h = W:SectionHeader(parent, "BATTLEGROUND FRAMES", y);  y = y - h
+    hdr, h = W:SectionHeader(parent, "BATTLEGROUND FRAMES", y)
+    y = y - h
 
     local function battlegroundUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterBattlegroundUnlock)
     end
     -- One toggle adds both battleground movers, so the button takes the flag carriers'.
-    CludesUI.BuildSectionUnlockJump(hdr, { key = "CUI_FlagCarriers", disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Layout Mode" })
+    CludesUI.BuildSectionUnlockJump(
+        hdr,
+        {
+            key = "CUI_FlagCarriers",
+            disabled = battlegroundUnlockOff,
+            disabledTooltip = "Move Battleground Frames in Layout Mode",
+        }
+    )
 
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Move Battleground Frames in Layout Mode",
-          tooltip = "Adds movers for the battleground flag carriers and the capture bar to Layout Mode.",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterBattlegroundUnlock = v
-              if CludesUI._InitShifterLootWindows then
-                  CludesUI._InitShifterLootWindows()
-              end
-              if CludesUI._SyncShifterCarriers then
-                  CludesUI._SyncShifterCarriers()
-              end
-              CludesUI:RefreshPage()  -- update the overlay toggle disabled state
-          end },
-        { type = "toggle", text = "Hide Layout Mode Overlays",
-          tooltip = "Hides the battleground frame movers in Layout Mode while keeping their saved positions applied.",
-          disabled = battlegroundUnlockOff, disabledTooltip = "Move Battleground Frames in Layout Mode",
-          getValue = function()
-              return CludesUIDB and CludesUIDB.shifterBattlegroundHideOverlays or false
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.shifterBattlegroundHideOverlays = v
-          end }
-    );  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Move Battleground Frames in Layout Mode",
+        tooltip = "Adds movers for the battleground flag carriers and the capture bar to Layout Mode.",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterBattlegroundUnlock = v
+            if CludesUI._InitShifterLootWindows then
+                CludesUI._InitShifterLootWindows()
+            end
+            if CludesUI._SyncShifterCarriers then
+                CludesUI._SyncShifterCarriers()
+            end
+            CludesUI:RefreshPage() -- update the overlay toggle disabled state
+        end,
+    }, {
+        type = "toggle",
+        text = "Hide Layout Mode Overlays",
+        tooltip = "Hides the battleground frame movers in Layout Mode while keeping their saved positions applied.",
+        disabled = battlegroundUnlockOff,
+        disabledTooltip = "Move Battleground Frames in Layout Mode",
+        getValue = function()
+            return CludesUIDB and CludesUIDB.shifterBattlegroundHideOverlays or false
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.shifterBattlegroundHideOverlays = v
+        end,
+    })
+    y = y - h
 
     return math.abs(y)
 end

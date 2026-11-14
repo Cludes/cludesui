@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  RaidFrames_Options\VisualBars_Options.lua
 --  Raid Frames options: the Health Bar, Absorbs, Power Bar and Text Display
@@ -7,7 +9,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  from ns._RFO_OptEnv.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUIRaidFrames"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper and every frame it hands out) are reset and
@@ -26,18 +30,26 @@ local animEyesOnHide
 local function StopAnimEyesOnHide()
     local eyes = ns._eye
     if ns._healthAnimActive then
-        if ns.StopHealthAnim then ns.StopHealthAnim() end
+        if ns.StopHealthAnim then
+            ns.StopHealthAnim()
+        end
         if eyes then
             for _, eye in pairs(eyes) do
-                if eye.refreshHealthEye then eye.refreshHealthEye() end
+                if eye.refreshHealthEye then
+                    eye.refreshHealthEye()
+                end
             end
         end
     end
     if ns._powerAnimActive then
-        if ns.StopPowerAnim then ns.StopPowerAnim() end
+        if ns.StopPowerAnim then
+            ns.StopPowerAnim()
+        end
         if eyes then
             for _, eye in pairs(eyes) do
-                if eye.refreshPowerEye then eye.refreshPowerEye() end
+                if eye.refreshPowerEye then
+                    eye.refreshPowerEye()
+                end
             end
         end
     end
@@ -45,26 +57,30 @@ end
 
 local function BuildVisualBars(parent, y, W, onSection, EYE)
     local env = ns._RFO_OptEnv
-    local AbbreviateNumbers, absorbStyleOrder, absorbStyleValues, db = env.AbbreviateNumbers, env.absorbStyleOrder, env.absorbStyleValues, env.db
-    local hbtOrder, hbtValues, healAbsorbStyleOrder, healthColorOrder = env.hbtOrder, env.hbtValues, env.healAbsorbStyleOrder, env.healthColorOrder
-    local healthColorValues, IsPreviewOff, maxHealthStyleOrder = env.healthColorValues, env.IsPreviewOff, env.maxHealthStyleOrder
+    local AbbreviateNumbers, absorbStyleOrder, absorbStyleValues, db =
+        env.AbbreviateNumbers, env.absorbStyleOrder, env.absorbStyleValues, env.db
+    local hbtOrder, hbtValues, healAbsorbStyleOrder, healthColorOrder =
+        env.hbtOrder, env.hbtValues, env.healAbsorbStyleOrder, env.healthColorOrder
+    local healthColorValues, IsPreviewOff, maxHealthStyleOrder =
+        env.healthColorValues, env.IsPreviewOff, env.maxHealthStyleOrder
     local optState, PP, ReloadAndUpdate = env.optState, env.PP, env.ReloadAndUpdate
     local SGet, SGetPx, SSet, SVal = env.SGet, env.SGetPx, env.SSet, env.SVal
     local SWrite = env.SWrite
     local TexBgRowCfg = env.TexBgRowCfg
     local _, h
     local row
-    local _secY  -- section start tracker
+    local _secY -- section start tracker
     -------------------------------------------------------------------
     --  HEALTH BAR
     -------------------------------------------------------------------
     _secY = y
     local healthHeader
-    healthHeader, h = W:SectionHeader(parent, "HEALTH BAR", y); y = y - h
+    healthHeader, h = W:SectionHeader(parent, "HEALTH BAR", y)
+    y = y - h
 
     -- Eyeball: animate health bars (damage/healing simulation); built on raid + party pages, reads the active frame set via ns.PvActiveFrames().
     if not CludesUI._prebuilding then
-        local EYE_VISIBLE   = CludesUI.EYE_VISIBLE_ICON
+        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
         -- State lives on ns (single shared ticker) so raid and party eyeball builds drive one animation and start/stop works across both. ns._healthAnimActive is the truth the renderer reads.
         ns._healthAnimState = ns._healthAnimState or {}
@@ -87,7 +103,9 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         ns.StopHealthAnim = StopHealthAnim
 
         local function StartHealthAnim()
-            if ns._healthAnimTicker then return end
+            if ns._healthAnimTicker then
+                return
+            end
             ns._healthAnimActive = true
             wipe(ns._healthAnimState)
 
@@ -105,10 +123,13 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 end
             end
 
-            local smoothInterp = Enum and Enum.StatusBarInterpolation
+            local smoothInterp = Enum
+                and Enum.StatusBarInterpolation
                 and Enum.StatusBarInterpolation.ExponentialEaseOut
             ns._healthAnimTicker = C_Timer.NewTicker(0.1, function()
-                if not ns._healthAnimActive then return end
+                if not ns._healthAnimActive then
+                    return
+                end
                 -- Real preview contract: ticks must render effective-overlay values only, never the panel view's swapped values.
                 local s = ns.PvSettings()
                 local smooth = s.smoothBars
@@ -150,7 +171,8 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                                 local r, g, b = ns.ResolveDynamicColor(s, st.current / 100)
                                 f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
                             elseif s.healthColorMode == "classReactive" then
-                                local r, g, b = ns.ResolveClassReactiveColor(s, f._classToken, st.current / 100)
+                                local r, g, b =
+                                    ns.ResolveClassReactiveColor(s, f._classToken, st.current / 100)
                                 f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
                             end
                         end -- snapTimer ready
@@ -163,7 +185,8 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         local headerLabel
         for _, rgn in ipairs({ healthHeader:GetRegions() }) do
             if rgn.GetText and CludesUI.EnKey(rgn:GetText()) == "HEALTH BAR" then
-                headerLabel = rgn; break
+                headerLabel = rgn
+                break
             end
         end
         local eyeBtn = CreateFrame("Button", nil, healthHeader)
@@ -191,18 +214,24 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         ns._stopHealthAnim = StopHealthAnim
         ns._startHealthAnim = StartHealthAnim
         eyeBtn:SetScript("OnClick", function()
-            if IsPreviewOff() then return end
+            if IsPreviewOff() then
+                return
+            end
             if ns._healthAnimActive then
                 StopHealthAnim()
             else
                 if ns._indicatorsVisible then
                     ns._indicatorsVisible = false
-                    if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
+                    if EYE.refreshIndicatorEye then
+                        EYE.refreshIndicatorEye()
+                    end
                 end
                 StartHealthAnim()
             end
             RefreshHealthEye()
-            if ns.PvRefresh then ns.PvRefresh() end
+            if ns.PvRefresh then
+                ns.PvRefresh()
+            end
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
@@ -210,10 +239,15 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 return
             end
             CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(self, ns._healthAnimActive and "Stop health bar effects" or "Preview health bar effects")
+            CludesUI.ShowWidgetTooltip(
+                self,
+                ns._healthAnimActive and "Stop health bar effects" or "Preview health bar effects"
+            )
         end)
         eyeBtn:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
+            if not IsPreviewOff() then
+                CludesUI.SetGlyphAlpha(self, 0.4)
+            end
             CludesUI.HideWidgetTooltip()
         end)
 
@@ -231,10 +265,21 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         if not optState._partyCtx and not (CludesUIDB and CludesUIDB.rfEyeHintSeen) then
             if not eyeHintTip then
                 eyeHintTip = CludesUI.BuildTipCallout(CludesUI._panelBody, {
-                    width = 310, height = 82, pp = PP,
-                    text = CludesUI.L("Click this eye icon to preview live\nhealth bar effects like absorbs and healing."),
-                    fontSize = 10, textTop = 12, textInset = 24, spacing = 4, bgAlpha = 0.95,
-                    btnW = 70, btnH = 22, btnBottom = 10, btnFontSize = 10,
+                    width = 310,
+                    height = 82,
+                    pp = PP,
+                    text = CludesUI.L(
+                        "Click this eye icon to preview live\nhealth bar effects like absorbs and healing."
+                    ),
+                    fontSize = 10,
+                    textTop = 12,
+                    textInset = 24,
+                    spacing = 4,
+                    bgAlpha = 0.95,
+                    btnW = 70,
+                    btnH = 22,
+                    btnBottom = 10,
+                    btnFontSize = 10,
                     onOkay = function()
                         ns._rfEyeHintTip = nil
                         CludesUIDB = CludesUIDB or {}
@@ -245,77 +290,134 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             eyeHintTip:ClearAllPoints()
             eyeHintTip:SetPoint("TOP", eyeBtn, "BOTTOM", 0, -14)
             ns._rfEyeHintTip = eyeHintTip
-            if not eyeHintTip:IsShown() then CludesUI.ShowTipCallout(eyeHintTip) end
+            if not eyeHintTip:IsShown() then
+                CludesUI.ShowTipCallout(eyeHintTip)
+            end
         end
-    end  -- health eyeball
+    end -- health eyeball
 
     local texRow
-    texRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Health Bar Texture", values=hbtValues, order=hbtOrder,
-          getValue=function() return SVal("healthBarTexture", "atrocity") end,
-          setValue=function(v) SSet("healthBarTexture", v) end },
-        { type="slider", text="Fill Opacity", min=0, max=100, step=1,
-          disabled=function() return SVal("healthColorMode", "class") == "dark" end,
-          disabledTooltip="Not available in Dark Mode", rawTooltip=true,
-          getValue=function() return SVal("healthBarOpacity", 100) end,
-          setValue=function(v) SSet("healthBarOpacity", v) end });
+    texRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Health Bar Texture",
+        values = hbtValues,
+        order = hbtOrder,
+        getValue = function()
+            return SVal("healthBarTexture", "atrocity")
+        end,
+        setValue = function(v)
+            SSet("healthBarTexture", v)
+        end,
+    }, {
+        type = "slider",
+        text = "Fill Opacity",
+        min = 0,
+        max = 100,
+        step = 1,
+        disabled = function()
+            return SVal("healthColorMode", "class") == "dark"
+        end,
+        disabledTooltip = "Not available in Dark Mode",
+        rawTooltip = true,
+        getValue = function()
+            return SVal("healthBarOpacity", 100)
+        end,
+        setValue = function(v)
+            SSet("healthBarOpacity", v)
+        end,
+    })
     -- Vertical Fill cog lives in the Health Bar party-sync section, so an unsynced party tab keeps its own value.
     if not CludesUI._prebuilding then
         local lrgn = texRow._leftRegion
         CludesUI.BuildInlineCog(lrgn, {
             title = "Health Bar Fill",
             rows = {
-                ns.RF_PartyKitGate({ type="toggle", label="Vertical Fill",
-                  tooltip="Fill the health bar bottom-to-top instead of left-to-right. Absorbs, heal prediction and the bar background follow the same axis.",
-                  get=function() return SVal("healthVerticalFill", false) end,
-                  -- RefreshPage re-labels Absorbs Placement for the new axis; cog popups bake labels in on first build.
-                  set=function(v) SSet("healthVerticalFill", v); CludesUI:RefreshPage() end }),
-                ns.RF_PartyKitGate({ type="toggle", label="Fill Missing Health",
-                  tooltip="The bar fills with missing health, growing as the unit takes damage.",
-                  get=function() return SVal("healthInvertFill", false) end,
-                  set=function(v) SSet("healthInvertFill", v) end }),
+                ns.RF_PartyKitGate({
+                    type = "toggle",
+                    label = "Vertical Fill",
+                    tooltip = "Fill the health bar bottom-to-top instead of left-to-right. Absorbs, heal prediction and the bar background follow the same axis.",
+                    get = function()
+                        return SVal("healthVerticalFill", false)
+                    end,
+                    -- RefreshPage re-labels Absorbs Placement for the new axis; cog popups bake labels in on first build.
+                    set = function(v)
+                        SSet("healthVerticalFill", v)
+                        CludesUI:RefreshPage()
+                    end,
+                }),
+                ns.RF_PartyKitGate({
+                    type = "toggle",
+                    label = "Fill Missing Health",
+                    tooltip = "The bar fills with missing health, growing as the unit takes damage.",
+                    get = function()
+                        return SVal("healthInvertFill", false)
+                    end,
+                    set = function(v)
+                        SSet("healthInvertFill", v)
+                    end,
+                }),
                 TexBgRowCfg(SVal, SSet),
             },
         })
     end
     y = y - h
 
-    row, h = W:DualRow(parent, y,
-        { type="dropdown", text="Fill Color", values=healthColorValues, order=healthColorOrder,
-          tooltip="Custom Dynamic Colors: the health bar smoothly blends between three colors you pick -- one for full health (100%), one for half (50%), and one for empty (0%) -- shifting through them as the unit takes damage or is healed.",
-          getValue=function() return SVal("healthColorMode", "class") end,
-          setValue=function(v)
-              SSet("healthColorMode", v)
-              -- "dark" feeds the Dark Mode conditional-override condition.
-              CludesUI.Conditions_Recheck()
-              CludesUI:RefreshPage()
-          end },
-        { type="slider", text="Background", min=0, max=100, step=1,
-          disabled=function() return SVal("healthColorMode", "class") == "dark" end,
-          disabledTooltip="Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.", rawTooltip=true,
-          getValue=function() return SVal("bgDarkness", 50) end,
-          setValue=function(v) SSet("bgDarkness", v) end });  y = y - h
+    row, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Fill Color",
+        values = healthColorValues,
+        order = healthColorOrder,
+        tooltip = "Custom Dynamic Colors: the health bar smoothly blends between three colors you pick -- one for full health (100%), one for half (50%), and one for empty (0%) -- shifting through them as the unit takes damage or is healed.",
+        getValue = function()
+            return SVal("healthColorMode", "class")
+        end,
+        setValue = function(v)
+            SSet("healthColorMode", v)
+            -- "dark" feeds the Dark Mode conditional-override condition.
+            CludesUI.Conditions_Recheck()
+            CludesUI:RefreshPage()
+        end,
+    }, {
+        type = "slider",
+        text = "Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        disabled = function()
+            return SVal("healthColorMode", "class") == "dark"
+        end,
+        disabledTooltip = "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.",
+        rawTooltip = true,
+        getValue = function()
+            return SVal("bgDarkness", 50)
+        end,
+        setValue = function(v)
+            SSet("bgDarkness", v)
+        end,
+    })
+    y = y - h
     -- Fill Color's "dark" choice IS the Dark Mode condition's input, so lock the dropdown while a Dark Mode conditional is being edited -- else the override could capture a mode change that flips its own condition.
     if CludesUI.SpecOverrides_AttachEditLock and not CludesUI._prebuilding then
-        CludesUI.SpecOverrides_AttachEditLock(row._leftRegion,
+        CludesUI.SpecOverrides_AttachEditLock(
+            row._leftRegion,
             "Fill Color's Dark Mode choice drives a Dark Mode override condition, so it can't be changed while editing an override",
-            CludesUI.SpecOverrides_DarkCondEditActive)
+            CludesUI.SpecOverrides_DarkCondEditActive
+        )
     end
     -- Custom fill swatch plus the three Custom Dynamic stop swatches (100/50/0%) share one inline slot; the Fill Color mode decides which set is interactive.
     if not CludesUI._prebuilding then
         local rgn = row._leftRegion
 
-        local swatch = CludesUI.BuildColorSwatch(
-            rgn, row:GetFrameLevel() + 3,
-            function()
-                local c = SGet("customFillColor")
-                if c then return c.r, c.g, c.b, 1 end
-                return 37/255, 193/255, 29/255, 1
-            end,
-            function(r, g, b)
-                SWrite("customFillColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local swatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+            local c = SGet("customFillColor")
+            if c then
+                return c.r, c.g, c.b, 1
+            end
+            return 37 / 255, 193 / 255, 29 / 255, 1
+        end, function(r, g, b)
+            SWrite("customFillColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
@@ -323,32 +425,52 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         block:SetAllPoints()
         block:SetFrameLevel(swatch:GetFrameLevel() + 10)
         block:EnableMouse(true)
-        block:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(swatch, "Only available with Custom fill color") end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(swatch, "Only available with Custom fill color")
+        end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
 
         -- Three gradient-stop swatches, built right-to-left so the visual order reads 100% | 50% | 0%; tooltips carry the pct.
         local dynDefs = {
-            { key = "dynamicColor100", def = { r = 0, g = 1, b = 0 }, label = "100%", tip = "Health bar color at full (100%) health" },
-            { key = "dynamicColor50",  def = { r = 0xEC/255, g = 0xEC/255, b = 0x32/255 }, label = "50%",  tip = "Health bar color at half (50%) health" },
-            { key = "dynamicColor0",   def = { r = 0xE3/255, g = 0x30/255, b = 0x30/255 }, label = "0%",   tip = "Health bar color at empty (0%) health" },
+            {
+                key = "dynamicColor100",
+                def = { r = 0, g = 1, b = 0 },
+                label = "100%",
+                tip = "Health bar color at full (100%) health",
+            },
+            {
+                key = "dynamicColor50",
+                def = { r = 0xEC / 255, g = 0xEC / 255, b = 0x32 / 255 },
+                label = "50%",
+                tip = "Health bar color at half (50%) health",
+            },
+            {
+                key = "dynamicColor0",
+                def = { r = 0xE3 / 255, g = 0x30 / 255, b = 0x30 / 255 },
+                label = "0%",
+                tip = "Health bar color at empty (0%) health",
+            },
         }
         local dynSwatches = {}
         local prevAnchor = rgn._control
         for i = #dynDefs, 1, -1 do
             local dd = dynDefs[i]
-            local sw = CludesUI.BuildColorSwatch(
-                rgn, row:GetFrameLevel() + 3,
-                function()
-                    local c = SGet(dd.key) or dd.def
-                    return c.r, c.g, c.b, 1
-                end,
-                function(r, g, b)
-                    SWrite(dd.key, { r=r, g=g, b=b })
-                    ReloadAndUpdate()
-                end, false, 18)
+            local sw = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+                local c = SGet(dd.key) or dd.def
+                return c.r, c.g, c.b, 1
+            end, function(r, g, b)
+                SWrite(dd.key, { r = r, g = g, b = b })
+                ReloadAndUpdate()
+            end, false, 18)
             sw:SetPoint("RIGHT", prevAnchor, "LEFT", (prevAnchor == rgn._control) and -8 or -6, 0)
-            sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, dd.tip) end)
-            sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            sw:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(sw, dd.tip)
+            end)
+            sw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             dynSwatches[i] = sw
             prevAnchor = sw
         end
@@ -361,15 +483,25 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             local isClassReactive = mode == "classReactive"
             -- Single custom swatch: live only in Custom mode, dimmed+blocked in other modes, fully HIDDEN in Dynamic/Class Reactive modes so it doesn't sit behind the dynamic swatches.
             if isDynamic or isClassReactive then
-                swatch:Hide(); block:Hide()
+                swatch:Hide()
+                block:Hide()
             else
                 swatch:Show()
-                if mode == "custom" then swatch:SetAlpha(1); block:Hide()
-                else swatch:SetAlpha(0.3); block:Show() end
+                if mode == "custom" then
+                    swatch:SetAlpha(1)
+                    block:Hide()
+                else
+                    swatch:SetAlpha(0.3)
+                    block:Show()
+                end
             end
             for i, sw in ipairs(dynSwatches) do
                 -- dynSwatches[1] = the 100% stop (class-driven in Class Reactive).
-                if isDynamic or (isClassReactive and i > 1) then sw:Show() else sw:Hide() end
+                if isDynamic or (isClassReactive and i > 1) then
+                    sw:Show()
+                else
+                    sw:Hide()
+                end
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSwatchVis)
@@ -379,46 +511,56 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     if not CludesUI._prebuilding then
         local rgn = row._rightRegion
         -- Class swatch shows the player's class color and is not editable.
-        local bgClassSwatch = CludesUI.BuildColorSwatch(
-            rgn, row:GetFrameLevel() + 3,
-            function()
-                local _, ct = UnitClass("player")
-                local cc = ct and CludesUI.GetClassColor(ct)
-                if cc then return cc.r, cc.g, cc.b, 1 end
-                return 1, 1, 1, 1
-            end,
-            function() end, false, 20)
+        local bgClassSwatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+            local _, ct = UnitClass("player")
+            local cc = ct and CludesUI.GetClassColor(ct)
+            if cc then
+                return cc.r, cc.g, cc.b, 1
+            end
+            return 1, 1, 1, 1
+        end, function() end, false, 20)
         bgClassSwatch:SetScript("OnClick", function()
             SSet("bgClassColored", true)
-            ReloadAndUpdate(); CludesUI:RefreshPage()
+            ReloadAndUpdate()
+            CludesUI:RefreshPage()
         end)
-        bgClassSwatch:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background") end)
-        bgClassSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgClassSwatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background")
+        end)
+        bgClassSwatch:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         bgClassSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(
-            rgn, row:GetFrameLevel() + 3,
-            function()
-                local c = SGet("customBgColor")
-                if c then return c.r, c.g, c.b, 1 end
-                return 17/255, 17/255, 17/255, 1
-            end,
-            function(r, g, b)
-                SWrite("customBgColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local bgSwatch = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+            local c = SGet("customBgColor")
+            if c then
+                return c.r, c.g, c.b, 1
+            end
+            return 17 / 255, 17 / 255, 17 / 255, 1
+        end, function(r, g, b)
+            SWrite("customBgColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
             if SVal("bgClassColored", false) then
                 SSet("bgClassColored", false)
-                ReloadAndUpdate(); CludesUI:RefreshPage()
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
                 return
             end
-            if self._eabOrigClick then self._eabOrigClick(self) end
+            if self._eabOrigClick then
+                self._eabOrigClick(self)
+            end
         end)
-        bgSwatch:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color") end)
-        bgSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgSwatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color")
+        end)
+        bgSwatch:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         bgSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgSwatch
         -- Blocking overlay spans BOTH swatches: Dark Mode has no background.
@@ -427,11 +569,20 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         bgBlock:SetPoint("BOTTOMRIGHT", bgClassSwatch, "BOTTOMRIGHT", 0, 0)
         bgBlock:SetFrameLevel(bgClassSwatch:GetFrameLevel() + 10)
         bgBlock:EnableMouse(true)
-        bgBlock:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSwatch, "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.") end)
-        bgBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgBlock:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(
+                bgSwatch,
+                "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
+            )
+        end)
+        bgBlock:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local function UpdateBgSwatchVis()
             if SVal("healthColorMode", "class") == "dark" then
-                bgSwatch:SetAlpha(0.3); bgClassSwatch:SetAlpha(0.3); bgBlock:Show()
+                bgSwatch:SetAlpha(0.3)
+                bgClassSwatch:SetAlpha(0.3)
+                bgBlock:Show()
             else
                 bgBlock:Hide()
                 local classOn = SVal("bgClassColored", false)
@@ -449,29 +600,47 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     local editTargets = CludesUI._prebuilding and {} or ns._editTargets
 
     local healPredRow
-    healPredRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Heal Prediction",
-          getValue=function() return SVal("healPrediction", false) end,
-          setValue=function(v) SSet("healPrediction", v); CludesUI:RefreshPage() end },
-        { type="slider", text="Prediction Opacity", min=5, max=100, step=1,
-          disabled=function() return not SVal("healPrediction", false) end,
-          disabledTooltip="Heal Prediction",
-          getValue=function() return SVal("healPredOpacity", 75) end,
-          setValue=function(v) SSet("healPredOpacity", v) end });  y = y - h
+    healPredRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Heal Prediction",
+        getValue = function()
+            return SVal("healPrediction", false)
+        end,
+        setValue = function(v)
+            SSet("healPrediction", v)
+            CludesUI:RefreshPage()
+        end,
+    }, {
+        type = "slider",
+        text = "Prediction Opacity",
+        min = 5,
+        max = 100,
+        step = 1,
+        disabled = function()
+            return not SVal("healPrediction", false)
+        end,
+        disabledTooltip = "Heal Prediction",
+        getValue = function()
+            return SVal("healPredOpacity", 75)
+        end,
+        setValue = function(v)
+            SSet("healPredOpacity", v)
+        end,
+    })
+    y = y - h
     editTargets.healPrediction = healPredRow
     if not CludesUI._prebuilding then
         local rgn = healPredRow._leftRegion
-        local swatch = CludesUI.BuildColorSwatch(
-            rgn, healPredRow:GetFrameLevel() + 3,
-            function()
-                local c = SGet("healPredColor")
-                if c then return c.r, c.g, c.b, 1 end
-                return 102/255, 243/255, 102/255, 1
-            end,
-            function(r, g, b)
-                SWrite("healPredColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local swatch = CludesUI.BuildColorSwatch(rgn, healPredRow:GetFrameLevel() + 3, function()
+            local c = SGet("healPredColor")
+            if c then
+                return c.r, c.g, c.b, 1
+            end
+            return 102 / 255, 243 / 255, 102 / 255, 1
+        end, function(r, g, b)
+            SWrite("healPredColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         local function UpdateHealPredSwatchVis()
@@ -487,13 +656,19 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     -- ns.RF_CustomBorderOn), and no Compact Mode, whose shared outline stands in for
     -- the frame's border. Cog rows re-check this on every open.
     local function CustomBorderOff()
-        if ns.RF_CompactOnTab(optState._partyCtx) then return true end
-        if ns.RF_Stock and ns.RF_Stock() then return true end
+        if ns.RF_CompactOnTab(optState._partyCtx) then
+            return true
+        end
+        if ns.RF_Stock and ns.RF_Stock() then
+            return true
+        end
         local tex = SGet("borderTexture")
         return tex == nil or tex == "" or tex == "solid" or SVal("borderSize", 1) <= 0
     end
     local function CustomBorderOffTip()
-        if ns.RF_CompactOnTab(optState._partyCtx) then return "Compact Mode" end
+        if ns.RF_CompactOnTab(optState._partyCtx) then
+            return "Compact Mode"
+        end
         if ns.RF_Stock and ns.RF_Stock() then
             return CludesUI.BlizzStyle and CludesUI.BlizzStyle.Label("raidframes")
         end
@@ -505,13 +680,29 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     end
 
     local smoothThreatRow
-    smoothThreatRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Smooth Health Bars",
-          getValue=function() return SVal("smoothBars", true) end,
-          setValue=function(v) SSet("smoothBars", v) end },
-        { type="slider", text="Threat Borders", min=0, max=4, step=1,
-          getValue=function() return SVal("threatBorderSize", 2) end,
-          setValue=function(v) SSet("threatBorderSize", v) end });  y = y - h
+    smoothThreatRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Smooth Health Bars",
+        getValue = function()
+            return SVal("smoothBars", true)
+        end,
+        setValue = function(v)
+            SSet("smoothBars", v)
+        end,
+    }, {
+        type = "slider",
+        text = "Threat Borders",
+        min = 0,
+        max = 4,
+        step = 1,
+        getValue = function()
+            return SVal("threatBorderSize", 2)
+        end,
+        setValue = function(v)
+            SSet("threatBorderSize", v)
+        end,
+    })
+    y = y - h
     editTargets.threat = smoothThreatRow
     editTargets.animateBars = smoothThreatRow
     -- Cog on Threat Borders: Color Custom Borders recolors the frame's own border in
@@ -521,22 +712,29 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         local rgn = smoothThreatRow._rightRegion
         -- Its only row needs a custom border: dimmed, with the reason, until there is one.
         CludesUI.BuildInlineCog(rgn, {
-            disabled = CustomBorderOff, disabledTooltip = CustomBorderOffTip, requireState = "disabled",
+            disabled = CustomBorderOff,
+            disabledTooltip = CustomBorderOffTip,
+            requireState = "disabled",
             title = "Threat Borders",
             rows = {
-                { type="toggle", label="Color Custom Borders",
-                  tooltip="Recolors the frame border in the threat color while the unit has aggro instead of drawing a separate border.",
-                  disabled=CustomBorderOff,
-                  disabledTooltip=CustomBorderOffTip,
-                  requireState="disabled",
-                  get=function()
-                      return not ns.RF_CompactOnTab(optState._partyCtx)
-                          and SVal("threatCustomBorder", false)
-                  end,
-                  set=function(v)
-                      if v and CustomBorderOff() then return end
-                      SSet("threatCustomBorder", v)
-                  end },
+                {
+                    type = "toggle",
+                    label = "Color Custom Borders",
+                    tooltip = "Recolors the frame border in the threat color while the unit has aggro instead of drawing a separate border.",
+                    disabled = CustomBorderOff,
+                    disabledTooltip = CustomBorderOffTip,
+                    requireState = "disabled",
+                    get = function()
+                        return not ns.RF_CompactOnTab(optState._partyCtx)
+                            and SVal("threatCustomBorder", false)
+                    end,
+                    set = function(v)
+                        if v and CustomBorderOff() then
+                            return
+                        end
+                        SSet("threatCustomBorder", v)
+                    end,
+                },
             },
         })
     end
@@ -547,18 +745,23 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     --  Health Bar sync state via ns._NormalizePartySyncSections.
     -------------------------------------------------------------------
     local absorbsHeader
-    if onSection then onSection("healthBar", _secY, y) end; _secY = y
-    absorbsHeader, h = W:SectionHeader(parent, "ABSORBS", y); y = y - h
+    if onSection then
+        onSection("healthBar", _secY, y)
+    end
+    _secY = y
+    absorbsHeader, h = W:SectionHeader(parent, "ABSORBS", y)
+    y = y - h
 
     -- Eyeball: toggle shield/heal-absorb effects on the preview frames.
     if not CludesUI._prebuilding then
-        local EYE_VISIBLE   = CludesUI.EYE_VISIBLE_ICON
+        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
 
         local abLabel
         for _, rgn in ipairs({ absorbsHeader:GetRegions() }) do
             if rgn.GetText and CludesUI.EnKey(rgn:GetText()) == "ABSORBS" then
-                abLabel = rgn; break
+                abLabel = rgn
+                break
             end
         end
         local eyeBtn = CreateFrame("Button", nil, absorbsHeader)
@@ -574,7 +777,9 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         eyeTex:SetAllPoints()
 
         -- On ns so the preview renderer can read it.
-        if ns._absorbsPreviewVisible == nil then ns._absorbsPreviewVisible = false end
+        if ns._absorbsPreviewVisible == nil then
+            ns._absorbsPreviewVisible = false
+        end
 
         local function RefreshAbsorbEye()
             if IsPreviewOff() then
@@ -588,15 +793,21 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         EYE.refreshAbsorbEye = RefreshAbsorbEye
         RefreshAbsorbEye()
         eyeBtn:SetScript("OnClick", function()
-            if IsPreviewOff() then return end
+            if IsPreviewOff() then
+                return
+            end
             ns._absorbsPreviewVisible = not ns._absorbsPreviewVisible
             -- Indicators suppress bar effects, so clear them.
             if ns._absorbsPreviewVisible and ns._indicatorsVisible then
                 ns._indicatorsVisible = false
-                if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
+                if EYE.refreshIndicatorEye then
+                    EYE.refreshIndicatorEye()
+                end
             end
             RefreshAbsorbEye()
-            if ns.PvRefresh then ns.PvRefresh() end
+            if ns.PvRefresh then
+                ns.PvRefresh()
+            end
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
@@ -604,146 +815,204 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 return
             end
             CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(self, ns._absorbsPreviewVisible and "Hide shield effects on preview" or "Show shield effects on preview")
+            CludesUI.ShowWidgetTooltip(
+                self,
+                ns._absorbsPreviewVisible and "Hide shield effects on preview"
+                    or "Show shield effects on preview"
+            )
         end)
         eyeBtn:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
+            if not IsPreviewOff() then
+                CludesUI.SetGlyphAlpha(self, 0.4)
+            end
             CludesUI.HideWidgetTooltip()
         end)
-    end  -- absorbs eyeball
+    end -- absorbs eyeball
 
     local absorbRow
-    absorbRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Absorb Style", values=absorbStyleValues, order=absorbStyleOrder,
-          getValue=function() return SVal("absorbStyle", "none") end,
-          setValue=function(v)
-              -- Blizzard Glow Line follows the pick: on with Default Blizz Frames, off when
-              -- leaving it, else kept. A set value is stored explicitly, so a party that
-              -- starts keeping its own style here keeps the line it showed; an unset one
-              -- stays unset and keeps following the style.
-              local was = SVal("absorbStyle", "none")
-              local glow = SGetPx("absorbGlowLine", "absorbStyle")
-              if v == "blizzardModern" then
-                  glow = true
-              elseif was == "blizzardModern" then
-                  glow = false
-              end
-              if glow ~= nil then SWrite("absorbGlowLine", glow == true) end
-              SSet("absorbStyle", v)
-              if v == "clean" then
-                  SSet("absorbOpacity", 30)
-              elseif v ~= "blizzardModern" then
-                  -- Blizzard (Modern) hardcodes color+opacity in the renderer; leave saved opacity untouched.
-                  SSet("absorbOpacity", 90)
-              end
-              CludesUI:RefreshPage()
-          end },
-        { type="slider", text="Absorb Opacity", min=5, max=100, step=1,
-          disabled=function()
-              local st = SVal("absorbStyle", "none")
-              return st == "none" or st == "blizzardModern"
-          end,
-          disabledTooltip="Absorb Style",
-          getValue=function() return SVal("absorbOpacity", 90) end,
-          setValue=function(v) SSet("absorbOpacity", v) end });  y = y - h
+    absorbRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Absorb Style",
+        values = absorbStyleValues,
+        order = absorbStyleOrder,
+        getValue = function()
+            return SVal("absorbStyle", "none")
+        end,
+        setValue = function(v)
+            -- Blizzard Glow Line follows the pick: on with Default Blizz Frames, off when
+            -- leaving it, else kept. A set value is stored explicitly, so a party that
+            -- starts keeping its own style here keeps the line it showed; an unset one
+            -- stays unset and keeps following the style.
+            local was = SVal("absorbStyle", "none")
+            local glow = SGetPx("absorbGlowLine", "absorbStyle")
+            if v == "blizzardModern" then
+                glow = true
+            elseif was == "blizzardModern" then
+                glow = false
+            end
+            if glow ~= nil then
+                SWrite("absorbGlowLine", glow == true)
+            end
+            SSet("absorbStyle", v)
+            if v == "clean" then
+                SSet("absorbOpacity", 30)
+            elseif v ~= "blizzardModern" then
+                -- Blizzard (Modern) hardcodes color+opacity in the renderer; leave saved opacity untouched.
+                SSet("absorbOpacity", 90)
+            end
+            CludesUI:RefreshPage()
+        end,
+    }, {
+        type = "slider",
+        text = "Absorb Opacity",
+        min = 5,
+        max = 100,
+        step = 1,
+        disabled = function()
+            local st = SVal("absorbStyle", "none")
+            return st == "none" or st == "blizzardModern"
+        end,
+        disabledTooltip = "Absorb Style",
+        getValue = function()
+            return SVal("absorbOpacity", 90)
+        end,
+        setValue = function(v)
+            SSet("absorbOpacity", v)
+        end,
+    })
+    y = y - h
     editTargets.absorbs = absorbRow
     -- Inline cog: absorb placement (overlay / right edge / left edge)
     do
         local rgn = absorbRow._leftRegion
         -- Placement labels follow the FILL AXIS: saved values stay right/left (meaning the FAR/NEAR end of the fill), worded top/bottom on a vertical bar.
         -- MUTATE IN PLACE, never rebuild this table: RefreshPage's fast path skips a full rebuild and the cog popup is built once then cached, so a fresh table would never reach the widget. The popup re-reads values[get()] every show; _invalidateMenu makes an already-built menu re-read entries from this same table on next click.
-        local absorbEdgeLabels = { overlay = "Overlay", overlayReverse = "Overlay Reverse", overlayReverseFull = "Overlay Reverse (Full)" }
-        local absorbEdgeLabelsVert  -- last applied axis; nil until first sync
+        local absorbEdgeLabels = {
+            overlay = "Overlay",
+            overlayReverse = "Overlay Reverse",
+            overlayReverseFull = "Overlay Reverse (Full)",
+        }
+        local absorbEdgeLabelsVert -- last applied axis; nil until first sync
         -- (The Party Frames kit's bar always fills horizontally; decided at build.)
         local kitPage = ns.RF_OptPartyKit()
         -- Returns true ONLY when the axis flipped, so callers skip _invalidateMenu on unrelated refreshes -- it nils the cached menu and would break an open menu's wired click.
         local function SyncAbsorbEdgeLabels()
             local vert = (not kitPage) and SVal("healthVerticalFill", false) and true or false
-            if absorbEdgeLabelsVert == vert then return false end
+            if absorbEdgeLabelsVert == vert then
+                return false
+            end
             absorbEdgeLabelsVert = vert
-            absorbEdgeLabels.right = vert and "From Top Edge"    or "From Right Edge"
-            absorbEdgeLabels.left  = vert and "From Bottom Edge" or "From Left Edge"
+            absorbEdgeLabels.right = vert and "From Top Edge" or "From Right Edge"
+            absorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
             return true
         end
         SyncAbsorbEdgeLabels()
         local _, cogShow = CludesUI.BuildInlineCog(rgn, {
             title = "Absorb Rendering",
             rows = {
-                { type="dropdown", label="Placement",
-                  values = absorbEdgeLabels,
-                  -- Wide enough for "Overlay Reverse (Full)".
-                  ddWidth = 190,
-                  order = { "overlay", "overlayReverse", "overlayReverseFull", "right", "left" },
-                  disabled = function() return SVal("absorbStyle", "none") == "blizzardModern" end,
-                  disabledTooltip = "Default Blizz Frames uses a fixed placement",
-                  rawTooltip = true,
-                  get=function() SyncAbsorbEdgeLabels(); return SVal("absorbEdgeMode", "overlay") end,
-                  set=function(v) SSet("absorbEdgeMode", v) end },
-                { type="dropdown", label="Show Overshield",
-                  tooltip="Overshield is the part of an absorb exceeding your empty health. Always backfills it over current health from the shield's edge; From Left grows it from the opposite end of the bar; Never hides it.",
-                  values = { never = "Never", always = "Always", fromleft = "From Left" },
-                  order = { "never", "always", "fromleft" },
-                  -- From Left only exists in the plain Overlay placement:
-                  -- edge modes have no overshield, Overlay Reverse
-                  -- already clamps the whole absorb inside the fill and
-                  -- its Full variant draws the excess from the origin edge.
-                  itemDisabled=function(v)
-                      return v == "fromleft" and SVal("absorbEdgeMode", "overlay") ~= "overlay"
-                  end,
-                  get=function()
-                      -- Legacy boolean fallback: profiles saved before the
-                      -- dropdown keep their toggle's meaning.
-                      local m = SVal("overshieldMode", nil)
-                      if m == nil then m = (SVal("showOvershield", true) == false) and "never" or "always" end
-                      return m
-                  end,
-                  set=function(v)
-                      -- Mirror the legacy boolean so pre-dropdown readers
-                      -- (incl. the live-client profile) track Never/Always.
-                      SSet("showOvershield", v ~= "never")
-                      SSet("overshieldMode", v)
-                  end },
-                { type="toggle", label="Blizzard Glow Line",
-                  tooltip="Adds the Default Blizz Frames glow line where the shield meets current health.",
-                  disabled = function()
-                      if (not kitPage) and SVal("healthVerticalFill", false) == true then return true end
-                      return SVal("absorbEdgeMode", "overlay") == "left" and SVal("absorbStyle", "none") ~= "blizzardModern"
-                  end,
-                  disabledTooltip = "The glow line is not shown on a vertical fill or with the From Left Edge placement",
-                  rawTooltip = true,
-                  get=function()
-                      -- Unset follows the style: on for Default Blizz Frames only.
-                      local g = SGetPx("absorbGlowLine", "absorbStyle")
-                      if g == nil then return SVal("absorbStyle", "none") == "blizzardModern" end
-                      return g == true
-                  end,
-                  set=function(v) SSet("absorbGlowLine", v and true or false) end },
+                {
+                    type = "dropdown",
+                    label = "Placement",
+                    values = absorbEdgeLabels,
+                    -- Wide enough for "Overlay Reverse (Full)".
+                    ddWidth = 190,
+                    order = { "overlay", "overlayReverse", "overlayReverseFull", "right", "left" },
+                    disabled = function()
+                        return SVal("absorbStyle", "none") == "blizzardModern"
+                    end,
+                    disabledTooltip = "Default Blizz Frames uses a fixed placement",
+                    rawTooltip = true,
+                    get = function()
+                        SyncAbsorbEdgeLabels()
+                        return SVal("absorbEdgeMode", "overlay")
+                    end,
+                    set = function(v)
+                        SSet("absorbEdgeMode", v)
+                    end,
+                },
+                {
+                    type = "dropdown",
+                    label = "Show Overshield",
+                    tooltip = "Overshield is the part of an absorb exceeding your empty health. Always backfills it over current health from the shield's edge; From Left grows it from the opposite end of the bar; Never hides it.",
+                    values = { never = "Never", always = "Always", fromleft = "From Left" },
+                    order = { "never", "always", "fromleft" },
+                    -- From Left only exists in the plain Overlay placement:
+                    -- edge modes have no overshield, Overlay Reverse
+                    -- already clamps the whole absorb inside the fill and
+                    -- its Full variant draws the excess from the origin edge.
+                    itemDisabled = function(v)
+                        return v == "fromleft" and SVal("absorbEdgeMode", "overlay") ~= "overlay"
+                    end,
+                    get = function()
+                        -- Legacy boolean fallback: profiles saved before the
+                        -- dropdown keep their toggle's meaning.
+                        local m = SVal("overshieldMode", nil)
+                        if m == nil then
+                            m = (SVal("showOvershield", true) == false) and "never" or "always"
+                        end
+                        return m
+                    end,
+                    set = function(v)
+                        -- Mirror the legacy boolean so pre-dropdown readers
+                        -- (incl. the live-client profile) track Never/Always.
+                        SSet("showOvershield", v ~= "never")
+                        SSet("overshieldMode", v)
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Blizzard Glow Line",
+                    tooltip = "Adds the Default Blizz Frames glow line where the shield meets current health.",
+                    disabled = function()
+                        if (not kitPage) and SVal("healthVerticalFill", false) == true then
+                            return true
+                        end
+                        return SVal("absorbEdgeMode", "overlay") == "left"
+                            and SVal("absorbStyle", "none") ~= "blizzardModern"
+                    end,
+                    disabledTooltip = "The glow line is not shown on a vertical fill or with the From Left Edge placement",
+                    rawTooltip = true,
+                    get = function()
+                        -- Unset follows the style: on for Default Blizz Frames only.
+                        local g = SGetPx("absorbGlowLine", "absorbStyle")
+                        if g == nil then
+                            return SVal("absorbStyle", "none") == "blizzardModern"
+                        end
+                        return g == true
+                    end,
+                    set = function(v)
+                        SSet("absorbGlowLine", v and true or false)
+                    end,
+                },
             },
         })
         -- Re-label on page refresh (Vertical Fill fires one) and drop any built menu so its entries rebuild with the new wording.
         CludesUI.RegisterWidgetRefresh(function()
-            if not SyncAbsorbEdgeLabels() then return end
+            if not SyncAbsorbEdgeLabels() then
+                return
+            end
             local pf = cogShow and cogShow._popupFrame
             if pf and pf.GetChildren then
                 for _, child in ipairs({ pf:GetChildren() }) do
-                    if child._invalidateMenu then child._invalidateMenu() end
+                    if child._invalidateMenu then
+                        child._invalidateMenu()
+                    end
                 end
             end
         end)
     end
     if not CludesUI._prebuilding then
         local rgn = absorbRow._leftRegion
-        local swatch = CludesUI.BuildColorSwatch(
-            rgn, absorbRow:GetFrameLevel() + 3,
-            function()
-                local c = SGet("absorbColor")
-                if c then return c.r, c.g, c.b, 1 end
-                return 1, 1, 1, 1
-            end,
-            function(r, g, b)
-                SWrite("absorbColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local swatch = CludesUI.BuildColorSwatch(rgn, absorbRow:GetFrameLevel() + 3, function()
+            local c = SGet("absorbColor")
+            if c then
+                return c.r, c.g, c.b, 1
+            end
+            return 1, 1, 1, 1
+        end, function(r, g, b)
+            SWrite("absorbColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         -- BuildColorSwatch has no disabled state, so a mouse-enabled frame on top eats clicks when the color isn't user-editable (no absorb, or hardcoded-color "Blizzard (Modern)").
@@ -756,7 +1025,11 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             local st = SVal("absorbStyle", "none")
             local off = (st == "none" or st == "blizzardModern")
             swatch:SetAlpha(off and 0.3 or 1)
-            if off then swatchBlock:Show() else swatchBlock:Hide() end
+            if off then
+                swatchBlock:Show()
+            else
+                swatchBlock:Hide()
+            end
         end
         CludesUI.RegisterWidgetRefresh(UpdateAbsorbSwatchVis)
         UpdateAbsorbSwatchVis()
@@ -764,25 +1037,51 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
 
     local function CurAbsorbBarPos()
         local p = SGet("absorbBarPosition")
-        if p then return p end
+        if p then
+            return p
+        end
         return SVal("absorbBarEnabled", false) and "aboveRight" or "none"
     end
     local absorbBarRow
-    absorbBarRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Absorb Bar",
-          values={ none="None", aboveRight="Above Frame Right", aboveLeft="Above Frame Left", topRight="Top Right", topLeft="Top Left", rightVertical="Right Edge (Vertical)", leftVertical="Left Edge (Vertical)" },
-          order={ "none", "aboveRight", "aboveLeft", "topRight", "topLeft", "rightVertical", "leftVertical" },
-          getValue=function() return CurAbsorbBarPos() end,
-          setValue=function(v)
-              SWrite("absorbBarEnabled", v ~= "none")  -- keep legacy flag in sync
-              SSet("absorbBarPosition", v)
-              CludesUI:RefreshPage()
-          end },
-        { type="slider", text="Bar Height", min=1, max=20, step=1,
-          disabled=function() return CurAbsorbBarPos() == "none" end,
-          disabledTooltip="Absorb Bar",
-          getValue=function() return SVal("absorbBarHeight", 4) end,
-          setValue=function(v) SSet("absorbBarHeight", v) end });  y = y - h
+    absorbBarRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Absorb Bar",
+        values = {
+            none = "None",
+            aboveRight = "Above Frame Right",
+            aboveLeft = "Above Frame Left",
+            topRight = "Top Right",
+            topLeft = "Top Left",
+            rightVertical = "Right Edge (Vertical)",
+            leftVertical = "Left Edge (Vertical)",
+        },
+        order = { "none", "aboveRight", "aboveLeft", "topRight", "topLeft", "rightVertical", "leftVertical" },
+        getValue = function()
+            return CurAbsorbBarPos()
+        end,
+        setValue = function(v)
+            SWrite("absorbBarEnabled", v ~= "none") -- keep legacy flag in sync
+            SSet("absorbBarPosition", v)
+            CludesUI:RefreshPage()
+        end,
+    }, {
+        type = "slider",
+        text = "Bar Height",
+        min = 1,
+        max = 20,
+        step = 1,
+        disabled = function()
+            return CurAbsorbBarPos() == "none"
+        end,
+        disabledTooltip = "Absorb Bar",
+        getValue = function()
+            return SVal("absorbBarHeight", 4)
+        end,
+        setValue = function(v)
+            SSet("absorbBarHeight", v)
+        end,
+    })
+    y = y - h
     if not CludesUI._prebuilding then
         local rgn = absorbBarRow._leftRegion
         CludesUI.BuildInlineCog(rgn, {
@@ -795,17 +1094,24 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             rawTooltip = true,
             title = "Absorb Bar Rendering",
             rows = {
-                { type="dropdown", label="Vertical Grow",
-                  values = { up = "Up", down = "Down" },
-                  order = { "up", "down" },
-                  disabled = function()
-                      local p = CurAbsorbBarPos()
-                      return p ~= "rightVertical" and p ~= "leftVertical"
-                  end,
-                  disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
-                  rawTooltip = true,
-                  get=function() return SVal("absorbBarGrowDir", "up") end,
-                  set=function(v) SSet("absorbBarGrowDir", v) end },
+                {
+                    type = "dropdown",
+                    label = "Vertical Grow",
+                    values = { up = "Up", down = "Down" },
+                    order = { "up", "down" },
+                    disabled = function()
+                        local p = CurAbsorbBarPos()
+                        return p ~= "rightVertical" and p ~= "leftVertical"
+                    end,
+                    disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
+                    rawTooltip = true,
+                    get = function()
+                        return SVal("absorbBarGrowDir", "up")
+                    end,
+                    set = function(v)
+                        SSet("absorbBarGrowDir", v)
+                    end,
+                },
             },
         })
     end
@@ -822,17 +1128,16 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     end
     if not CludesUI._prebuilding then
         local rgn = absorbBarRow._rightRegion
-        local swatch = CludesUI.BuildColorSwatch(
-            rgn, absorbBarRow:GetFrameLevel() + 3,
-            function()
-                local c = SGet("absorbBarColor")
-                if c then return c.r, c.g, c.b, c.a or 1 end
-                return 1, 1, 1, 1
-            end,
-            function(r, g, b, a)
-                SWrite("absorbBarColor", { r=r, g=g, b=b, a=a })
-                ReloadAndUpdate()
-            end, true, 20)
+        local swatch = CludesUI.BuildColorSwatch(rgn, absorbBarRow:GetFrameLevel() + 3, function()
+            local c = SGet("absorbBarColor")
+            if c then
+                return c.r, c.g, c.b, c.a or 1
+            end
+            return 1, 1, 1, 1
+        end, function(r, g, b, a)
+            SWrite("absorbBarColor", { r = r, g = g, b = b, a = a })
+            ReloadAndUpdate()
+        end, true, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         local function UpdateAbsorbBarSwatchVis()
@@ -843,79 +1148,127 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     end
 
     local healAbsorbRow
-    healAbsorbRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Heal Absorb Style", values=absorbStyleValues, order=healAbsorbStyleOrder,
-          getValue=function() return SVal("healAbsorbStyle", "clean") end,
-          setValue=function(v)
-              SSet("healAbsorbStyle", v)
-              if v == "clean" then
-                  SSet("healAbsorbOpacity", 50)
-              else
-                  SSet("healAbsorbOpacity", 75)
-              end
-              CludesUI:RefreshPage()
-          end },
-        { type="slider", text="Heal Absorb Opacity", min=5, max=100, step=1,
-          disabled=function() return SVal("healAbsorbStyle", "clean") == "none" end,
-          disabledTooltip="Heal Absorb Style",
-          getValue=function() return SVal("healAbsorbOpacity", 75) end,
-          setValue=function(v) SSet("healAbsorbOpacity", v) end });  y = y - h
+    healAbsorbRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Heal Absorb Style",
+        values = absorbStyleValues,
+        order = healAbsorbStyleOrder,
+        getValue = function()
+            return SVal("healAbsorbStyle", "clean")
+        end,
+        setValue = function(v)
+            SSet("healAbsorbStyle", v)
+            if v == "clean" then
+                SSet("healAbsorbOpacity", 50)
+            else
+                SSet("healAbsorbOpacity", 75)
+            end
+            CludesUI:RefreshPage()
+        end,
+    }, {
+        type = "slider",
+        text = "Heal Absorb Opacity",
+        min = 5,
+        max = 100,
+        step = 1,
+        disabled = function()
+            return SVal("healAbsorbStyle", "clean") == "none"
+        end,
+        disabledTooltip = "Heal Absorb Style",
+        getValue = function()
+            return SVal("healAbsorbOpacity", 75)
+        end,
+        setValue = function(v)
+            SSet("healAbsorbOpacity", v)
+        end,
+    })
+    y = y - h
     editTargets.healAbsorbs = healAbsorbRow
     -- Inline cog: heal absorb placement (independent of shield absorb)
     do
         local rgn = healAbsorbRow._leftRegion
         -- Same axis-labelling contract as the shield absorb cog above (MUTATE IN PLACE; return true only on a real axis flip).
         local healAbsorbEdgeLabels = { overlay = "Overlay" }
-        local healAbsorbEdgeLabelsVert  -- last applied axis; nil until first sync
+        local healAbsorbEdgeLabelsVert -- last applied axis; nil until first sync
         local kitPage = ns.RF_OptPartyKit()
         local function SyncHealAbsorbEdgeLabels()
             local vert = (not kitPage) and SVal("healthVerticalFill", false) and true or false
-            if healAbsorbEdgeLabelsVert == vert then return false end
+            if healAbsorbEdgeLabelsVert == vert then
+                return false
+            end
             healAbsorbEdgeLabelsVert = vert
-            healAbsorbEdgeLabels.right = vert and "From Top Edge"    or "From Right Edge"
-            healAbsorbEdgeLabels.left  = vert and "From Bottom Edge" or "From Left Edge"
+            healAbsorbEdgeLabels.right = vert and "From Top Edge" or "From Right Edge"
+            healAbsorbEdgeLabels.left = vert and "From Bottom Edge" or "From Left Edge"
             return true
         end
         SyncHealAbsorbEdgeLabels()
         local _, cogShow = CludesUI.BuildInlineCog(rgn, {
             title = "Heal Absorb Rendering",
             rows = {
-                { type="dropdown", label="Placement",
-                  values = healAbsorbEdgeLabels,
-                  order = { "overlay", "right", "left" },
-                  get=function() SyncHealAbsorbEdgeLabels(); return SVal("healAbsorbEdgeMode", "overlay") end,
-                  set=function(v) SSet("healAbsorbEdgeMode", v) end },
-                { type="slider", label="Backing Opacity", min=0, max=100, step=1,
-                  get=function() return SVal("healAbsorbBgOpacity", 25) end,
-                  set=function(v) SSet("healAbsorbBgOpacity", v) end },
-                { type="toggle", label="Show Over Dispels",
-                  get=function() return SVal("healAbsorbOverDispel", false) == true end,
-                  set=function(v) SSet("healAbsorbOverDispel", v) end },
+                {
+                    type = "dropdown",
+                    label = "Placement",
+                    values = healAbsorbEdgeLabels,
+                    order = { "overlay", "right", "left" },
+                    get = function()
+                        SyncHealAbsorbEdgeLabels()
+                        return SVal("healAbsorbEdgeMode", "overlay")
+                    end,
+                    set = function(v)
+                        SSet("healAbsorbEdgeMode", v)
+                    end,
+                },
+                {
+                    type = "slider",
+                    label = "Backing Opacity",
+                    min = 0,
+                    max = 100,
+                    step = 1,
+                    get = function()
+                        return SVal("healAbsorbBgOpacity", 25)
+                    end,
+                    set = function(v)
+                        SSet("healAbsorbBgOpacity", v)
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Show Over Dispels",
+                    get = function()
+                        return SVal("healAbsorbOverDispel", false) == true
+                    end,
+                    set = function(v)
+                        SSet("healAbsorbOverDispel", v)
+                    end,
+                },
             },
         })
         CludesUI.RegisterWidgetRefresh(function()
-            if not SyncHealAbsorbEdgeLabels() then return end
+            if not SyncHealAbsorbEdgeLabels() then
+                return
+            end
             local pf = cogShow and cogShow._popupFrame
             if pf and pf.GetChildren then
                 for _, child in ipairs({ pf:GetChildren() }) do
-                    if child._invalidateMenu then child._invalidateMenu() end
+                    if child._invalidateMenu then
+                        child._invalidateMenu()
+                    end
                 end
             end
         end)
     end
     if not CludesUI._prebuilding then
         local rgn = healAbsorbRow._leftRegion
-        local swatch = CludesUI.BuildColorSwatch(
-            rgn, healAbsorbRow:GetFrameLevel() + 3,
-            function()
-                local c = SGet("healAbsorbColor")
-                if c then return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1 end
-                return 0.8, 0.15, 0.15, 1
-            end,
-            function(r, g, b)
-                SWrite("healAbsorbColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local swatch = CludesUI.BuildColorSwatch(rgn, healAbsorbRow:GetFrameLevel() + 3, function()
+            local c = SGet("healAbsorbColor")
+            if c then
+                return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
+            end
+            return 0.8, 0.15, 0.15, 1
+        end, function(r, g, b)
+            SWrite("healAbsorbColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         -- Blocked for "none" and the pre-colored heal styles (healBlizzModern is hardcoded white).
@@ -926,9 +1279,18 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         swatchBlock:Hide()
         local function UpdateHealAbsorbSwatchVis()
             local st = SVal("healAbsorbStyle", "clean")
-            local off = (st == "none" or st == "healBlizzModern" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+            local off = (
+                st == "none"
+                or st == "healBlizzModern"
+                or st == "largeOutlinedStripes"
+                or st == "largeOutlinedStripesR"
+            )
             swatch:SetAlpha(off and 0.3 or 1)
-            if off then swatchBlock:Show() else swatchBlock:Hide() end
+            if off then
+                swatchBlock:Show()
+            else
+                swatchBlock:Hide()
+            end
         end
         CludesUI.RegisterWidgetRefresh(UpdateHealAbsorbSwatchVis)
         UpdateHealAbsorbSwatchVis()
@@ -939,30 +1301,66 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             return SGet("healAbsorbBarPosition") or "none"
         end
         local healAbsorbBarRow
-        healAbsorbBarRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Heal Absorb Bar",
-              values={ none="None", belowAbsorb="Below Absorb Bar", aboveRight="Above Frame Right", aboveLeft="Above Frame Left", topRight="Top Right", topLeft="Top Left", rightVertical="Right Edge (Vertical)", leftVertical="Left Edge (Vertical)" },
-              order={ "none", "belowAbsorb", "aboveRight", "aboveLeft", "topRight", "topLeft", "rightVertical", "leftVertical" },
-              getValue=function() return CurHealAbsorbBarPos() end,
-              setValue=function(v) SSet("healAbsorbBarPosition", v); CludesUI:RefreshPage() end },
-            { type="slider", text="Bar Height", min=1, max=20, step=1,
-              disabled=function() return CurHealAbsorbBarPos() == "none" end,
-              disabledTooltip="Heal Absorb Bar",
-              getValue=function() return SVal("healAbsorbBarHeight", 4) end,
-              setValue=function(v) SSet("healAbsorbBarHeight", v) end });  y = y - h
+        healAbsorbBarRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Heal Absorb Bar",
+            values = {
+                none = "None",
+                belowAbsorb = "Below Absorb Bar",
+                aboveRight = "Above Frame Right",
+                aboveLeft = "Above Frame Left",
+                topRight = "Top Right",
+                topLeft = "Top Left",
+                rightVertical = "Right Edge (Vertical)",
+                leftVertical = "Left Edge (Vertical)",
+            },
+            order = {
+                "none",
+                "belowAbsorb",
+                "aboveRight",
+                "aboveLeft",
+                "topRight",
+                "topLeft",
+                "rightVertical",
+                "leftVertical",
+            },
+            getValue = function()
+                return CurHealAbsorbBarPos()
+            end,
+            setValue = function(v)
+                SSet("healAbsorbBarPosition", v)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Bar Height",
+            min = 1,
+            max = 20,
+            step = 1,
+            disabled = function()
+                return CurHealAbsorbBarPos() == "none"
+            end,
+            disabledTooltip = "Heal Absorb Bar",
+            getValue = function()
+                return SVal("healAbsorbBarHeight", 4)
+            end,
+            setValue = function(v)
+                SSet("healAbsorbBarHeight", v)
+            end,
+        })
+        y = y - h
         if not CludesUI._prebuilding then
             local rgn = healAbsorbBarRow._rightRegion
-            local swatch = CludesUI.BuildColorSwatch(
-                rgn, healAbsorbBarRow:GetFrameLevel() + 3,
-                function()
-                    local c = SGet("healAbsorbBarColor")
-                    if c then return c.r, c.g, c.b, c.a or 1 end
-                    return 200/255, 29/255, 29/255, 1
-                end,
-                function(r, g, b, a)
-                    SWrite("healAbsorbBarColor", { r=r, g=g, b=b, a=a })
-                    ReloadAndUpdate()
-                end, true, 20)
+            local swatch = CludesUI.BuildColorSwatch(rgn, healAbsorbBarRow:GetFrameLevel() + 3, function()
+                local c = SGet("healAbsorbBarColor")
+                if c then
+                    return c.r, c.g, c.b, c.a or 1
+                end
+                return 200 / 255, 29 / 255, 29 / 255, 1
+            end, function(r, g, b, a)
+                SWrite("healAbsorbBarColor", { r = r, g = g, b = b, a = a })
+                ReloadAndUpdate()
+            end, true, 20)
             swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = swatch
             local function UpdateHealAbsorbBarSwatchVis()
@@ -983,17 +1381,24 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 rawTooltip = true,
                 title = "Heal Absorb Bar Rendering",
                 rows = {
-                    { type="dropdown", label="Vertical Grow",
-                      values = { up = "Up", down = "Down" },
-                      order = { "up", "down" },
-                      disabled = function()
-                          local p = CurHealAbsorbBarPos()
-                          return p ~= "rightVertical" and p ~= "leftVertical"
-                      end,
-                      disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
-                      rawTooltip = true,
-                      get=function() return SVal("healAbsorbBarGrowDir", "up") end,
-                      set=function(v) SSet("healAbsorbBarGrowDir", v) end },
+                    {
+                        type = "dropdown",
+                        label = "Vertical Grow",
+                        values = { up = "Up", down = "Down" },
+                        order = { "up", "down" },
+                        disabled = function()
+                            local p = CurHealAbsorbBarPos()
+                            return p ~= "rightVertical" and p ~= "leftVertical"
+                        end,
+                        disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
+                        rawTooltip = true,
+                        get = function()
+                            return SVal("healAbsorbBarGrowDir", "up")
+                        end,
+                        set = function(v)
+                            SSet("healAbsorbBarGrowDir", v)
+                        end,
+                    },
                 },
             })
         end
@@ -1013,42 +1418,71 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     -- Max Health Texture (+cog+swatch) | Max Health Opacity. Styles mirror Heal Absorb plus "Max Health Stripes" first; no placement control, overlay is always right-anchored.
     do
         local maxHealthRow
-        maxHealthRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Max Health Style", values=absorbStyleValues,
-              order=maxHealthStyleOrder,
-              getValue=function() return SVal("maxHealthStyle", "maxHealthStripes") end,
-              setValue=function(v) SSet("maxHealthStyle", v); CludesUI:RefreshPage() end },
-            { type="slider", text="Max Health Opacity", min=5, max=100, step=1,
-              disabled=function() return SVal("maxHealthStyle", "maxHealthStripes") == "none" end,
-              disabledTooltip="Max Health Style",
-              getValue=function() return SVal("maxHealthOpacity", 100) end,
-              setValue=function(v) SSet("maxHealthOpacity", v) end });  y = y - h
+        maxHealthRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Max Health Style",
+            values = absorbStyleValues,
+            order = maxHealthStyleOrder,
+            getValue = function()
+                return SVal("maxHealthStyle", "maxHealthStripes")
+            end,
+            setValue = function(v)
+                SSet("maxHealthStyle", v)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Max Health Opacity",
+            min = 5,
+            max = 100,
+            step = 1,
+            disabled = function()
+                return SVal("maxHealthStyle", "maxHealthStripes") == "none"
+            end,
+            disabledTooltip = "Max Health Style",
+            getValue = function()
+                return SVal("maxHealthOpacity", 100)
+            end,
+            setValue = function(v)
+                SSet("maxHealthOpacity", v)
+            end,
+        })
+        y = y - h
         -- Cog carries backing opacity only; placement is fixed right-side.
         if not CludesUI._prebuilding then
             local rgn = maxHealthRow._leftRegion
             CludesUI.BuildInlineCog(rgn, {
                 title = "Max Health Rendering",
                 rows = {
-                    { type="slider", label="Backing Opacity", min=0, max=100, step=1,
-                      get=function() return SVal("maxHealthBgOpacity", 100) end,
-                      set=function(v) SSet("maxHealthBgOpacity", v) end },
+                    {
+                        type = "slider",
+                        label = "Backing Opacity",
+                        min = 0,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return SVal("maxHealthBgOpacity", 100)
+                        end,
+                        set = function(v)
+                            SSet("maxHealthBgOpacity", v)
+                        end,
+                    },
                 },
             })
         end
         -- Swatch tints the max health texture.
         if not CludesUI._prebuilding then
             local rgn = maxHealthRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(
-                rgn, maxHealthRow:GetFrameLevel() + 3,
-                function()
-                    local c = SGet("maxHealthColor")
-                    if c then return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1 end
-                    return 0.7, 0.1, 0.1, 1
-                end,
-                function(r, g, b)
-                    SWrite("maxHealthColor", { r=r, g=g, b=b })
-                    ReloadAndUpdate()
-                end, false, 20)
+            local swatch = CludesUI.BuildColorSwatch(rgn, maxHealthRow:GetFrameLevel() + 3, function()
+                local c = SGet("maxHealthColor")
+                if c then
+                    return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
+                end
+                return 0.7, 0.1, 0.1, 1
+            end, function(r, g, b)
+                SWrite("maxHealthColor", { r = r, g = g, b = b })
+                ReloadAndUpdate()
+            end, false, 20)
             swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = swatch
             -- Blocked for "none" and the pre-colored styles.
@@ -1059,9 +1493,18 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
                 local st = SVal("maxHealthStyle", "maxHealthStripes")
-                local off = (st == "none" or st == "healBlizzModern" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+                local off = (
+                    st == "none"
+                    or st == "healBlizzModern"
+                    or st == "largeOutlinedStripes"
+                    or st == "largeOutlinedStripesR"
+                )
                 swatch:SetAlpha(off and 0.3 or 1)
-                if off then swatchBlock:Show() else swatchBlock:Hide() end
+                if off then
+                    swatchBlock:Show()
+                else
+                    swatchBlock:Hide()
+                end
             end
             CludesUI.RegisterWidgetRefresh(UpdateMaxHealthSwatchVis)
             UpdateMaxHealthSwatchVis()
@@ -1072,12 +1515,16 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     --  POWER BAR
     -------------------------------------------------------------------
     local powerHeader
-    if onSection then onSection("absorbs", _secY, y) end; _secY = y
-    powerHeader, h = W:SectionHeader(parent, "POWER BAR", y); y = y - h
+    if onSection then
+        onSection("absorbs", _secY, y)
+    end
+    _secY = y
+    powerHeader, h = W:SectionHeader(parent, "POWER BAR", y)
+    y = y - h
 
     -- Power bar animation: same pattern as health, serves raid + party.
     if not CludesUI._prebuilding then
-        local EYE_VISIBLE   = CludesUI.EYE_VISIBLE_ICON
+        local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
         -- On ns: single ticker, resolves the active preview at call time.
         ns._powerAnimState = ns._powerAnimState or {}
@@ -1099,7 +1546,9 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         ns.StopPowerAnim = StopPowerAnim
 
         local function StartPowerAnim()
-            if ns._powerAnimTicker then return end
+            if ns._powerAnimTicker then
+                return
+            end
             ns._powerAnimActive = true
             wipe(ns._powerAnimState)
 
@@ -1118,13 +1567,15 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 end
             end
 
-            local pwSmoothInterp = Enum and Enum.StatusBarInterpolation
+            local pwSmoothInterp = Enum
+                and Enum.StatusBarInterpolation
                 and Enum.StatusBarInterpolation.ExponentialEaseOut
             ns._powerAnimTicker = C_Timer.NewTicker(0.1, function()
-                if not ns._powerAnimActive then return end
+                if not ns._powerAnimActive then
+                    return
+                end
                 -- Effective overlay; see the health ticker note above.
-                local smooth = ((ns.PvEffectiveProfile and ns.PvEffectiveProfile())
-                    or db.profile).smoothPowerBars
+                local smooth = ((ns.PvEffectiveProfile and ns.PvEffectiveProfile()) or db.profile).smoothPowerBars
 
                 for i, st in pairs(ns._powerAnimState) do
                     local f = st.frame
@@ -1157,7 +1608,8 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         local pwLabel
         for _, rgn in ipairs({ powerHeader:GetRegions() }) do
             if rgn.GetText and CludesUI.EnKey(rgn:GetText()) == "POWER BAR" then
-                pwLabel = rgn; break
+                pwLabel = rgn
+                break
             end
         end
         local eyeBtn = CreateFrame("Button", nil, powerHeader)
@@ -1184,13 +1636,17 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         ns._stopPowerAnim = StopPowerAnim
         RefreshPowerEye()
         eyeBtn:SetScript("OnClick", function()
-            if IsPreviewOff() then return end
+            if IsPreviewOff() then
+                return
+            end
             if ns._powerAnimActive then
                 StopPowerAnim()
             else
                 if ns._indicatorsVisible then
                     ns._indicatorsVisible = false
-                    if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
+                    if EYE.refreshIndicatorEye then
+                        EYE.refreshIndicatorEye()
+                    end
                 end
                 StartPowerAnim()
             end
@@ -1202,71 +1658,127 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 return
             end
             CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(self, ns._powerAnimActive and "Stop power animation" or "Animate power bars")
+            CludesUI.ShowWidgetTooltip(
+                self,
+                ns._powerAnimActive and "Stop power animation" or "Animate power bars"
+            )
         end)
         eyeBtn:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
+            if not IsPreviewOff() then
+                CludesUI.SetGlyphAlpha(self, 0.4)
+            end
             CludesUI.HideWidgetTooltip()
         end)
         -- (The panel-close stop and eye reset: StopAnimEyesOnHide, at the top.)
-    end  -- power eyeball
+    end -- power eyeball
 
     -- Power bar is off when no role is selected.
     -- The Party Frames kit's mana bar always shows. Decided at build time:
     -- the page being built is only known then, and this runs on refreshes.
-    local IsPowerOff = ns.RF_OptPartyKit() and function() return false end or function()
-        return not SVal("powerShowForHealer", true) and not SVal("powerShowForTank", true) and not SVal("powerShowForDPS", false)
+    local IsPowerOff = ns.RF_OptPartyKit() and function()
+        return false
+    end or function()
+        return not SVal("powerShowForHealer", true)
+            and not SVal("powerShowForTank", true)
+            and not SVal("powerShowForDPS", false)
     end
 
     do
         local showForItems = {
             { key = "healer", label = "Healers" },
-            { key = "tank",   label = "Tanks" },
-            { key = "dps",    label = "DPS" },
+            { key = "tank", label = "Tanks" },
+            { key = "dps", label = "DPS" },
         }
-        local showForKeyMap = { healer = "powerShowForHealer", tank = "powerShowForTank", dps = "powerShowForDPS" }
+        local showForKeyMap =
+            { healer = "powerShowForHealer", tank = "powerShowForTank", dps = "powerShowForDPS" }
         -- Party Frames kit: the stock mana bar always shows at the stock
         -- size, so this row (and its cog) hides on the Party page.
-        row, h = W:DualRow(parent, y,
-            ns.RF_PartyKitGate({ type="dropdown", text="Show Power Bar For",
-              values={ __placeholder = "Healers, Tanks" }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end,
-              setValue=function() end }),
-            ns.RF_PartyKitGate({ type="slider", text="Power Height", min=1, max=20, step=1,
-              disabled=function() return IsPowerOff() end,
-              disabledTooltip="Show Power Bar For",
-              getValue=function() return SVal("powerHeight", 4) end,
-              setValue=function(v) SSet("powerHeight", v) end }));  y = y - h
+        row, h = W:DualRow(
+            parent,
+            y,
+            ns.RF_PartyKitGate({
+                type = "dropdown",
+                text = "Show Power Bar For",
+                values = { __placeholder = "Healers, Tanks" },
+                order = { "__placeholder" },
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            }),
+            ns.RF_PartyKitGate({
+                type = "slider",
+                text = "Power Height",
+                min = 1,
+                max = 20,
+                step = 1,
+                disabled = function()
+                    return IsPowerOff()
+                end,
+                disabledTooltip = "Show Power Bar For",
+                getValue = function()
+                    return SVal("powerHeight", 4)
+                end,
+                setValue = function(v)
+                    SSet("powerHeight", v)
+                end,
+            })
+        )
+        y = y - h
         -- Cog: uniform icon anchoring. Greyed + blocked while no role shows a power bar (nothing to ignore then).
         do
             local rgn = row._rightRegion
             CludesUI.BuildInlineCog(rgn, {
-                disabled = IsPowerOff, disabledTooltip = "Show Power Bar For",
+                disabled = IsPowerOff,
+                disabledTooltip = "Show Power Bar For",
                 title = "Power Height",
                 rows = {
-                    { type="toggle", label="Icons Ignore Power Bar",
-                      tooltip="Anchor icons and text as if no power bar existed, so frames with and without one line up identically.",
-                      get=function() return SVal("powerUniformAnchors", false) end,
-                      set=function(v) SSet("powerUniformAnchors", v) end },
-                    { type="toggle", label="Extend Health Bar Behind Power",
-                      tooltip="Health bar spans the full frame height and the power bar draws on top of it.",
-                      get=function() return SVal("extendHealthBehindPower", false) end,
-                      set=function(v) SSet("extendHealthBehindPower", v) end },
+                    {
+                        type = "toggle",
+                        label = "Icons Ignore Power Bar",
+                        tooltip = "Anchor icons and text as if no power bar existed, so frames with and without one line up identically.",
+                        get = function()
+                            return SVal("powerUniformAnchors", false)
+                        end,
+                        set = function(v)
+                            SSet("powerUniformAnchors", v)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Extend Health Bar Behind Power",
+                        tooltip = "Health bar spans the full frame height and the power bar draws on top of it.",
+                        get = function()
+                            return SVal("extendHealthBehindPower", false)
+                        end,
+                        set = function(v)
+                            SSet("extendHealthBehindPower", v)
+                        end,
+                    },
                 },
             })
         end
         if not CludesUI._prebuilding then
             local rgn = row._leftRegion
-            if rgn._control then rgn._control:Hide() end
+            if rgn._control then
+                rgn._control:Hide()
+            end
             local cbDD = CludesUI.BuildVisOptsCBDropdown(
-                rgn, 170, rgn:GetFrameLevel() + 2,
+                rgn,
+                170,
+                rgn:GetFrameLevel() + 2,
                 showForItems,
-                function(k) return SVal(showForKeyMap[k], true) end,
+                function(k)
+                    return SVal(showForKeyMap[k], true)
+                end,
                 function(k, v)
                     SSet(showForKeyMap[k], v)
-                    if ns.UpdatePowerEventRegistration then ns.UpdatePowerEventRegistration() end
+                    if ns.UpdatePowerEventRegistration then
+                        ns.UpdatePowerEventRegistration()
+                    end
                     CludesUI:RefreshPage()
-                end)
+                end
+            )
             PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = cbDD
             rgn._lastInline = nil
@@ -1274,9 +1786,9 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     end
 
     local pwBorderStyleValues = {
-        cui     = "CludesUI",
+        cui = "CludesUI",
         divider = "Divider",
-        border  = "Border",
+        border = "Border",
     }
     local pwBorderStyleOrder = { "cui", "divider", "border" }
     -- Classic WoW UI draws the stock health/power divider in place of the
@@ -1293,137 +1805,238 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
         return not CludesUI.BlizzStyle.Get("raidframes") and CludesUI._pixelArtBorders[key] == true
     end
     local function MatchingPowerBorder()
-        return SVal("powerBorderMatchFrame", false) and CanMatchPowerBorder() and SVal("powerBorderStyle", "cui") ~= "cui"
+        return SVal("powerBorderMatchFrame", false)
+            and CanMatchPowerBorder()
+            and SVal("powerBorderStyle", "cui") ~= "cui"
     end
     local pwSizeCfg
     if MatchingPowerBorder() then
         pwSizeCfg = CludesUI.BorderPxSliderCfg({
-            getStep=function() return SVal("borderSize", 1) end,
-            setStep=function() end,
-            getTex=function() return SGet("borderTexture") end,
-            getPx=function() return SGetPx("borderSizePx", "borderSize") end,
-            setPx=function() end,
-            disabled=function() return true end,
-            disabledTooltip="Size and color follow the frame border while Match Frame Border is enabled.",
-            rawTooltip=true,
+            getStep = function()
+                return SVal("borderSize", 1)
+            end,
+            setStep = function() end,
+            getTex = function()
+                return SGet("borderTexture")
+            end,
+            getPx = function()
+                return SGetPx("borderSizePx", "borderSize")
+            end,
+            setPx = function() end,
+            disabled = function()
+                return true
+            end,
+            disabledTooltip = "Size and color follow the frame border while Match Frame Border is enabled.",
+            rawTooltip = true,
         })
     else
-        pwSizeCfg = { type="slider", text="Border Size", min=0, max=4, step=1,
-            disabled=function() return IsPowerOff() or SVal("powerBorderStyle", "cui") == "cui" end,
-            disabledTooltip="Show Power Bar For",
-            getValue=function() return SVal("powerBorderSize", 1) end,
-            setValue=function(v) SSet("powerBorderSize", v) end }
+        pwSizeCfg = {
+            type = "slider",
+            text = "Border Size",
+            min = 0,
+            max = 4,
+            step = 1,
+            disabled = function()
+                return IsPowerOff() or SVal("powerBorderStyle", "cui") == "cui"
+            end,
+            disabledTooltip = "Show Power Bar For",
+            getValue = function()
+                return SVal("powerBorderSize", 1)
+            end,
+            setValue = function(v)
+                SSet("powerBorderSize", v)
+            end,
+        }
     end
-    pwBdrRow, h = W:DualRow(parent, y,
-        ns.RF_PartyKitGate(PwClassicGate({ type="dropdown", text="Border Style", values=pwBorderStyleValues, order=pwBorderStyleOrder,
-          disabled=function() return IsPowerOff() end,
-          disabledTooltip="Show Power Bar For",
-          getValue=function() return SVal("powerBorderStyle", "divider") end,
-          setValue=function(v)
-              SSet("powerBorderStyle", v)
-              CludesUI:RefreshPage(SVal("powerBorderMatchFrame", false) and CanMatchPowerBorder())
-          end })),
-        ns.RF_PartyKitGate(PwClassicGate(pwSizeCfg)));  y = y - h
+    pwBdrRow, h = W:DualRow(
+        parent,
+        y,
+        ns.RF_PartyKitGate(PwClassicGate({
+            type = "dropdown",
+            text = "Border Style",
+            values = pwBorderStyleValues,
+            order = pwBorderStyleOrder,
+            disabled = function()
+                return IsPowerOff()
+            end,
+            disabledTooltip = "Show Power Bar For",
+            getValue = function()
+                return SVal("powerBorderStyle", "divider")
+            end,
+            setValue = function(v)
+                SSet("powerBorderStyle", v)
+                CludesUI:RefreshPage(SVal("powerBorderMatchFrame", false) and CanMatchPowerBorder())
+            end,
+        })),
+        ns.RF_PartyKitGate(PwClassicGate(pwSizeCfg))
+    )
+    y = y - h
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(pwBdrRow._leftRegion, {
-            disabled=function() return IsPowerOff() or not CanMatchPowerBorder() end,
-            disabledTooltip=function() return IsPowerOff() and "Show Power Bar For" or "Pixels or Pixels Textured Border Style" end,
-            title="Power Border Options",
-            rows={
-                ns.RF_PartyKitGate({ type="toggle", label="Match Frame Border",
-                  tooltip="Uses the frame border's art, size and color.",
-                  get=function() return SVal("powerBorderMatchFrame", false) end,
-                  set=function(v) SSet("powerBorderMatchFrame", v); CludesUI:RefreshPage(true) end }),
-                ns.RF_PartyKitGate({ type="toggle", label="Match Highlight Colors",
-                  tooltip="The divider follows hover and target colors.",
-                  disabled=function() return not MatchingPowerBorder() or SVal("powerBorderStyle", "cui") ~= "divider" end,
-                  disabledTooltip="Requires Match Frame Border and Divider.",
-                  rawTooltip=true,
-                  get=function() return SVal("powerBorderMatchColor", false) end,
-                  set=function(v) SSet("powerBorderMatchColor", v) end }),
+            disabled = function()
+                return IsPowerOff() or not CanMatchPowerBorder()
+            end,
+            disabledTooltip = function()
+                return IsPowerOff() and "Show Power Bar For" or "Pixels or Pixels Textured Border Style"
+            end,
+            title = "Power Border Options",
+            rows = {
+                ns.RF_PartyKitGate({
+                    type = "toggle",
+                    label = "Match Frame Border",
+                    tooltip = "Uses the frame border's art, size and color.",
+                    get = function()
+                        return SVal("powerBorderMatchFrame", false)
+                    end,
+                    set = function(v)
+                        SSet("powerBorderMatchFrame", v)
+                        CludesUI:RefreshPage(true)
+                    end,
+                }),
+                ns.RF_PartyKitGate({
+                    type = "toggle",
+                    label = "Match Highlight Colors",
+                    tooltip = "The divider follows hover and target colors.",
+                    disabled = function()
+                        return not MatchingPowerBorder() or SVal("powerBorderStyle", "cui") ~= "divider"
+                    end,
+                    disabledTooltip = "Requires Match Frame Border and Divider.",
+                    rawTooltip = true,
+                    get = function()
+                        return SVal("powerBorderMatchColor", false)
+                    end,
+                    set = function(v)
+                        SSet("powerBorderMatchColor", v)
+                    end,
+                }),
             },
         })
         local rgn = pwBdrRow._rightRegion
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-            rgn, pwBdrRow:GetFrameLevel() + 3,
-            function()
-                if MatchingPowerBorder() then
-                    local c = SGet("borderColor")
-                    return c and c.r or 0, c and c.g or 0, c and c.b or 0, SVal("borderAlpha", 1)
-                end
-                local c = SGet("powerBorderColor")
-                if c then return c.r, c.g, c.b, SVal("powerBorderAlpha", 1) end
-                return 0, 0, 0, 1
-            end,
-            function(r, g, b, a)
-                SWrite("powerBorderColor", { r=r, g=g, b=b })
-                SWrite("powerBorderAlpha", a)
-                ReloadAndUpdate()
-            end, true, 20)
+        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, pwBdrRow:GetFrameLevel() + 3, function()
+            if MatchingPowerBorder() then
+                local c = SGet("borderColor")
+                return c and c.r or 0, c and c.g or 0, c and c.b or 0, SVal("borderAlpha", 1)
+            end
+            local c = SGet("powerBorderColor")
+            if c then
+                return c.r, c.g, c.b, SVal("powerBorderAlpha", 1)
+            end
+            return 0, 0, 0, 1
+        end, function(r, g, b, a)
+            SWrite("powerBorderColor", { r = r, g = g, b = b })
+            SWrite("powerBorderAlpha", a)
+            ReloadAndUpdate()
+        end, true, 20)
         swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         local block = CreateFrame("Frame", nil, swatch)
-        block:SetAllPoints(); block:SetFrameLevel(swatch:GetFrameLevel() + 10); block:EnableMouse(true)
+        block:SetAllPoints()
+        block:SetFrameLevel(swatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
         block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, MatchingPowerBorder()
-                and "Size and color follow the frame border while Match Frame Border is enabled."
-                or CludesUI.DisabledTooltip("Border Style"))
+            CludesUI.ShowWidgetTooltip(
+                swatch,
+                MatchingPowerBorder()
+                        and "Size and color follow the frame border while Match Frame Border is enabled."
+                    or CludesUI.DisabledTooltip("Border Style")
+            )
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local function UpdatePwBdrSwatchState()
-            local off = IsPowerOff() or SVal("powerBorderSize", 1) == 0 or SVal("powerBorderStyle", "cui") == "cui" or MatchingPowerBorder()
-            if off then swatch:SetAlpha(0.3); block:Show() else swatch:SetAlpha(1); block:Hide() end
+            local off = IsPowerOff()
+                or SVal("powerBorderSize", 1) == 0
+                or SVal("powerBorderStyle", "cui") == "cui"
+                or MatchingPowerBorder()
+            if off then
+                swatch:SetAlpha(0.3)
+                block:Show()
+            else
+                swatch:SetAlpha(1)
+                block:Hide()
+            end
         end
-        CludesUI.RegisterWidgetRefresh(function() if updateSwatch then updateSwatch() end; UpdatePwBdrSwatchState() end)
+        CludesUI.RegisterWidgetRefresh(function()
+            if updateSwatch then
+                updateSwatch()
+            end
+            UpdatePwBdrSwatchState()
+        end)
         UpdatePwBdrSwatchState()
     end
 
     local pwBgRow
-    pwBgRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Smooth Power Bars",
-          disabled=function() return IsPowerOff() end,
-          disabledTooltip="Show Power Bar For",
-          getValue=function() return SVal("smoothPowerBars", true) end,
-          setValue=function(v) SSet("smoothPowerBars", v) end },
-        { type="slider", text="Background", min=0, max=100, step=1,
-          disabled=function() return IsPowerOff() end,
-          disabledTooltip="Show Power Bar For",
-          getValue=function() return SVal("powerBgDarkness", 70) end,
-          setValue=function(v) SSet("powerBgDarkness", v) end });  y = y - h
+    pwBgRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Smooth Power Bars",
+        disabled = function()
+            return IsPowerOff()
+        end,
+        disabledTooltip = "Show Power Bar For",
+        getValue = function()
+            return SVal("smoothPowerBars", true)
+        end,
+        setValue = function(v)
+            SSet("smoothPowerBars", v)
+        end,
+    }, {
+        type = "slider",
+        text = "Background",
+        min = 0,
+        max = 100,
+        step = 1,
+        disabled = function()
+            return IsPowerOff()
+        end,
+        disabledTooltip = "Show Power Bar For",
+        getValue = function()
+            return SVal("powerBgDarkness", 70)
+        end,
+        setValue = function(v)
+            SSet("powerBgDarkness", v)
+        end,
+    })
+    y = y - h
     -- Power bg Custom + Power Colored swatch pair: clicking either toggles powerBgPowerColored, the inactive one dims (mirrors the health bg).
     if not CludesUI._prebuilding then
         local rgn = pwBgRow._rightRegion
         -- Power swatch shows the player's power color and is not editable.
-        local bgPwrSwatch = CludesUI.BuildColorSwatch(
-            rgn, pwBgRow:GetFrameLevel() + 3,
-            function()
-                local _, pToken = UnitPowerType("player")
-                local info = CludesUI.GetPowerColor(pToken or "MANA")
-                local f = CludesUI.GetPowerBgDarkenFactor()
-                if info then return info.r * f, info.g * f, info.b * f, 1 end
-                return 0, 0.5 * f, f, 1
-            end,
-            function() end, false, 20)
+        local bgPwrSwatch = CludesUI.BuildColorSwatch(rgn, pwBgRow:GetFrameLevel() + 3, function()
+            local _, pToken = UnitPowerType("player")
+            local info = CludesUI.GetPowerColor(pToken or "MANA")
+            local f = CludesUI.GetPowerBgDarkenFactor()
+            if info then
+                return info.r * f, info.g * f, info.b * f, 1
+            end
+            return 0, 0.5 * f, f, 1
+        end, function() end, false, 20)
         bgPwrSwatch:SetScript("OnClick", function()
             SSet("powerBgPowerColored", true)
             CludesUI:RefreshPage()
         end)
-        bgPwrSwatch:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgPwrSwatch, "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors.") end)
-        bgPwrSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgPwrSwatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(
+                bgPwrSwatch,
+                "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors."
+            )
+        end)
+        bgPwrSwatch:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         bgPwrSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgPwrSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(
-            rgn, pwBgRow:GetFrameLevel() + 3,
-            function()
-                local c = SGet("powerBgColor")
-                if c then return c.r, c.g, c.b, 1 end
-                return 0, 0, 0, 1
-            end,
-            function(r, g, b)
-                SWrite("powerBgColor", { r=r, g=g, b=b })
-                ReloadAndUpdate()
-            end, false, 20)
+        local bgSwatch = CludesUI.BuildColorSwatch(rgn, pwBgRow:GetFrameLevel() + 3, function()
+            local c = SGet("powerBgColor")
+            if c then
+                return c.r, c.g, c.b, 1
+            end
+            return 0, 0, 0, 1
+        end, function(r, g, b)
+            SWrite("powerBgColor", { r = r, g = g, b = b })
+            ReloadAndUpdate()
+        end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
             if SVal("powerBgPowerColored", false) then
@@ -1431,10 +2044,16 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
                 CludesUI:RefreshPage()
                 return
             end
-            if self._eabOrigClick then self._eabOrigClick(self) end
+            if self._eabOrigClick then
+                self._eabOrigClick(self)
+            end
         end)
-        bgSwatch:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Colored Background") end)
-        bgSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        bgSwatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Colored Background")
+        end)
+        bgSwatch:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         bgSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = bgSwatch
 
@@ -1450,23 +2069,43 @@ local function BuildVisualBars(parent, y, W, onSection, EYE)
     -------------------------------------------------------------------
     --  TEXT DISPLAY
     -------------------------------------------------------------------
-    if onSection then onSection("powerBar", _secY, y) end; _secY = y
-    _, h = W:SectionHeader(parent, "TEXT DISPLAY", y); y = y - h
+    if onSection then
+        onSection("powerBar", _secY, y)
+    end
+    _secY = y
+    _, h = W:SectionHeader(parent, "TEXT DISPLAY", y)
+    y = y - h
 
     y = ns.RFO_BuildTextDisplay(W, parent, y, { page = CludesUI._buildingPage, party = optState._partyCtx })
     -- The Name Format also shapes the Top Name Bar, so it has a row of its own,
     -- not a place on the Name tile. Raid Frames saves "full" (an unset party
     -- key reads the raid's).
     do
-        local function Set(v) SSet("nameFormat", v) end
-        local values, order, getValue = CludesUI.NameFormatMenu(
-            function() return SVal("nameFormat", "full") end, Set)
-        _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Name Format", values=values, order=order,
-              getValue=getValue, setValue=Set },
-            CludesUI.BlankRowCfg());  y = y - h
+        local function Set(v)
+            SSet("nameFormat", v)
+        end
+        local values, order, getValue = CludesUI.NameFormatMenu(function()
+            return SVal("nameFormat", "full")
+        end, Set)
+        _, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "dropdown",
+                text = "Name Format",
+                values = values,
+                order = order,
+                getValue = getValue,
+                setValue = Set,
+            },
+            CludesUI.BlankRowCfg()
+        )
+        y = y - h
     end
-    if onSection then onSection("textDisplay", _secY, y) end; _secY = y
+    if onSection then
+        onSection("textDisplay", _secY, y)
+    end
+    _secY = y
     return y, CustomBorderOff, CustomBorderOffTip
 end
 

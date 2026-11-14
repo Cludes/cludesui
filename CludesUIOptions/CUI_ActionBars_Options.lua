@@ -1,11 +1,15 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBar_Options.lua
 --  Registers the Action Bars module. All get/set calls go to EAB.db.profile.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIActionBars"
-local ns = CludesUI._ModuleNS[ADDON_NAME]  -- module namespace (published by the module at its load)
-if not ns then return end  -- module disabled: no options page
+local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not ns then
+    return
+end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page or header root and every frame it
 -- hands out) is reset and dressed again by the next build instead of made
@@ -19,12 +23,18 @@ local VisibilityCompat = EAB and EAB.VisibilityCompat
 -- Anchor dropdown for the three button texts (keybind / charges / macro name);
 -- "default" = stock placement, stored as nil in the profile.
 local TEXT_ANCHOR_LABELS = {
-    default = "Default", TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right",
-    BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right",
+    default = "Default",
+    TOPLEFT = "Top Left",
+    TOP = "Top",
+    TOPRIGHT = "Top Right",
+    BOTTOMLEFT = "Bottom Left",
+    BOTTOM = "Bottom",
+    BOTTOMRIGHT = "Bottom Right",
 }
 local TEXT_ANCHOR_DROPDOWN_ORDER = { "default" }
-for i, a in ipairs(EAB and EAB.TEXT_ANCHOR_ORDER or {}) do TEXT_ANCHOR_DROPDOWN_ORDER[i + 1] = a end
-
+for i, a in ipairs(EAB and EAB.TEXT_ANCHOR_ORDER or {}) do
+    TEXT_ANCHOR_DROPDOWN_ORDER[i + 1] = a
+end
 
 -- The registry offsets/shifts a border renders with when the user has set none
 -- (the Border Options cog's shown Shift defaults; the Width/Height Offset row
@@ -37,7 +47,8 @@ local function ShownBorderDefaults(tex, sizeKey, step, px)
         local gamePP = CludesUI.PP
         local EDGE_MAP = CludesUI.BORDER_EDGE_MAP
         local f = (px * gamePP.mult) / (EDGE_MAP[step] or EDGE_MAP[1])
-        dox, doy, dsx, dsy = gamePP.Snap(dox * f), gamePP.Snap(doy * f), gamePP.Snap(dsx * f), gamePP.Snap(dsy * f)
+        dox, doy, dsx, dsy =
+            gamePP.Snap(dox * f), gamePP.Snap(doy * f), gamePP.Snap(dsx * f), gamePP.Snap(dsy * f)
     end
     return dox, doy, dsx, dsy
 end
@@ -45,14 +56,14 @@ end
 -------------------------------------------------------------------------------
 --  Section / page names  (edit here to rename everywhere)
 -------------------------------------------------------------------------------
-local PAGE_DISPLAY        = "Bar Display"
-local PAGE_XPBAR          = "XP Bar"
-local PAGE_MENUBAGSREP    = "Menu, Bags & Rep Bars"
-local PAGE_ANIMATIONS     = "Bar Animations"
+local PAGE_DISPLAY = "Bar Display"
+local PAGE_XPBAR = "XP Bar"
+local PAGE_MENUBAGSREP = "Menu, Bags & Rep Bars"
+local PAGE_ANIMATIONS = "Bar Animations"
 local SECTION_ICON_APPEARANCE = "APPEARANCE"
-local SECTION_LAYOUT      = "LAYOUT"
-local SECTION_TEXT        = "TEXT"
-local SECTION_VISIBILITY  = "VISIBILITY & FADING"
+local SECTION_LAYOUT = "LAYOUT"
+local SECTION_TEXT = "TEXT"
+local SECTION_VISIBILITY = "VISIBILITY & FADING"
 
 -- CludesUI is created by another addon in the suite; wait for it.
 local initFrame = CreateFrame("Frame")
@@ -60,18 +71,22 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    if not CludesUI or not CludesUI.RegisterModule then return end
+    if not CludesUI or not CludesUI.RegisterModule then
+        return
+    end
     local PP = CludesUI.PanelPP
-    if not EAB or not EAB.db then return end
+    if not EAB or not EAB.db then
+        return
+    end
 
     ---------------------------------------------------------------------------
     --  Local references from the addon namespace
     ---------------------------------------------------------------------------
     local BAR_DROPDOWN_VALUES = ns.BAR_DROPDOWN_VALUES
-    local BAR_DROPDOWN_ORDER  = ns.BAR_DROPDOWN_ORDER
-    local VISIBILITY_ONLY     = ns.VISIBILITY_ONLY
-    local BAR_LOOKUP          = ns.BAR_LOOKUP
-    local DATA_BAR            = ns.DATA_BAR or {}
+    local BAR_DROPDOWN_ORDER = ns.BAR_DROPDOWN_ORDER
+    local VISIBILITY_ONLY = ns.VISIBILITY_ONLY
+    local BAR_LOOKUP = ns.BAR_LOOKUP
+    local DATA_BAR = ns.DATA_BAR or {}
 
     -- Filtered bar list for multi-edit: action bars only (no MicroBar/BagBar)
     local GROUP_BAR_ORDER = {}
@@ -83,9 +98,13 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Bar enabled state; we control all bars, so default is true.
     local function IsBarEnabled(barKey)
-        if not EAB or not EAB.db then return true end
+        if not EAB or not EAB.db then
+            return true
+        end
         local s = EAB.db.profile.bars[barKey]
-        if s and s.enabled ~= nil then return s.enabled end
+        if s and s.enabled ~= nil then
+            return s.enabled
+        end
         return true
     end
 
@@ -119,9 +138,13 @@ initFrame:SetScript("OnEvent", function(self)
     -- native button -- callers default the size; avoids concatenating a nil prefix.
     local function FirstBarButton(key)
         local eb = ns.barButtons and ns.barButtons[key]
-        if eb and eb[1] then return eb[1] end
+        if eb and eb[1] then
+            return eb[1]
+        end
         local bi = BAR_LOOKUP[key]
-        if bi and bi.buttonPrefix then return _G[bi.buttonPrefix .. "1"] end
+        if bi and bi.buttonPrefix then
+            return _G[bi.buttonPrefix .. "1"]
+        end
         return nil
     end
 
@@ -129,11 +152,17 @@ initFrame:SetScript("OnEvent", function(self)
     --  Ordered dropdown values for the bar selector
     ---------------------------------------------------------------------------
     local barLabels = {}
-    local barOrder  = {}
+    local barOrder = {}
     for _, key in ipairs(BAR_DROPDOWN_ORDER) do
         -- XP lives on the "XP Bar" tab and Micro/Bag/Rep/Favor on the "Menu,
         -- Bags & Rep Bars" tab, not the Bar Display bar selector.
-        if key ~= "MicroBar" and key ~= "BagBar" and key ~= "XPBar" and key ~= "RepBar" and key ~= "FavorBar" then
+        if
+            key ~= "MicroBar"
+            and key ~= "BagBar"
+            and key ~= "XPBar"
+            and key ~= "RepBar"
+            and key ~= "FavorBar"
+        then
             barLabels[key] = BAR_DROPDOWN_VALUES[key]
             barOrder[#barOrder + 1] = key
         end
@@ -144,12 +173,16 @@ initFrame:SetScript("OnEvent", function(self)
     -- value consumed at build time. Both ignore non-dropdown keys (Micro/Bag/XP/Rep)
     -- so the selector never blanks.
     CludesUI._setActionBarKey = function(key)
-        if barLabels[key] then _selectedBarKey = key end
+        if barLabels[key] then
+            _selectedBarKey = key
+        end
     end
     CludesUI._consumePendingActionBarSelect = function()
         local pending = CludesUI._pendingActionBarSelect
         CludesUI._pendingActionBarSelect = nil
-        if pending and barLabels[pending] then _selectedBarKey = pending end
+        if pending and barLabels[pending] then
+            _selectedBarKey = pending
+        end
     end
 
     ---------------------------------------------------------------------------
@@ -159,12 +192,14 @@ initFrame:SetScript("OnEvent", function(self)
     --  when hidden or mouseover-fade.
     ---------------------------------------------------------------------------
     local EXTRA_BARS = ns.EXTRA_BARS or {}
-    local editOverlayFrame = nil  -- reusable overlay frame
+    local editOverlayFrame = nil -- reusable overlay frame
 
     local function GetEditOverlayTarget(barKey)
         -- Data bars: show overlay only if not using Blizzard data bars
         if DATA_BAR[barKey] then
-            if EAB.db.profile.useBlizzardDataBars then return nil end
+            if EAB.db.profile.useBlizzardDataBars then
+                return nil
+            end
             local df = ns.dataBarFrames and ns.dataBarFrames[barKey]
             return df
         end
@@ -185,7 +220,9 @@ initFrame:SetScript("OnEvent", function(self)
     local function ShowEditOverlay(barKey)
         local target = GetEditOverlayTarget(barKey)
         if not target then
-            if editOverlayFrame then editOverlayFrame:Hide() end
+            if editOverlayFrame then
+                editOverlayFrame:Hide()
+            end
             return
         end
 
@@ -193,7 +230,7 @@ initFrame:SetScript("OnEvent", function(self)
             editOverlayFrame = CreateFrame("Frame", "CludesEAB_EditOverlay", UIParent)
             editOverlayFrame:SetFrameStrata("HIGH")
             editOverlayFrame:SetFrameLevel(100)
-            editOverlayFrame:EnableMouse(false)  -- non-interactive, no dragging
+            editOverlayFrame:EnableMouse(false) -- non-interactive, no dragging
 
             local bg = editOverlayFrame:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
@@ -203,8 +240,11 @@ initFrame:SetScript("OnEvent", function(self)
             if CludesUI and CludesUI.MakeBorder then
                 local eg = CludesUI.CLUDES_GREEN
                 local ar, ag, ab = 1, 1, 1
-                if eg then ar, ag, ab = eg.r, eg.g, eg.b end
-                editOverlayFrame._border = CludesUI.MakeBorder(editOverlayFrame, ar, ag, ab, 0.6, CludesUI.PanelPP)
+                if eg then
+                    ar, ag, ab = eg.r, eg.g, eg.b
+                end
+                editOverlayFrame._border =
+                    CludesUI.MakeBorder(editOverlayFrame, ar, ag, ab, 0.6, CludesUI.PanelPP)
             end
 
             local label = editOverlayFrame:CreateFontString(nil, "OVERLAY")
@@ -237,13 +277,17 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function HideEditOverlay()
-        if editOverlayFrame then editOverlayFrame:Hide() end
+        if editOverlayFrame then
+            editOverlayFrame:Hide()
+        end
     end
 
     CludesUI:RegisterOnHide(HideEditOverlay)
 
     -- Sync Edit Mode icon counts on panel close (numIcons may have changed).
-    CludesUI:RegisterOnHide(function() EAB:SyncEditModeIcons() end)
+    CludesUI:RegisterOnHide(function()
+        EAB:SyncEditModeIcons()
+    end)
 
     ---------------------------------------------------------------------------
     --  Live Preview System
@@ -257,12 +301,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- activePreview: reference to the current preview frame (if any).
     local optState = {}
     local headerFixedH = 0 -- fixed height in content header (dropdown + label + padding), excluding preview
-    local _barsHeaderBuilder  -- stored header builder for cache restore
-    local _abPreviewHintFS                 -- hint FontString for Single Bar Edit
+    local _barsHeaderBuilder -- stored header builder for cache restore
+    local _abPreviewHintFS -- hint FontString for Single Bar Edit
     -- The header Bar Display's own builds use, and the header the hint's host
     -- was last moved into (page reuse gives each page a header of its own).
     local _abDisplayHdr, _abHintHdr
-    local barsHeaderBaseH = 0              -- bars header height WITHOUT hint
+    local barsHeaderBaseH = 0 -- bars header height WITHOUT hint
 
     local function IsPreviewHintDismissed()
         return CludesUIDB and CludesUIDB.previewHintDismissed
@@ -289,7 +333,8 @@ initFrame:SetScript("OnEvent", function(self)
             optState.activePreview:Update()
             if headerFixedH > 0 then
                 local hintH = (not IsPreviewHintDismissed()) and 29 or 0
-                local wrapH = optState.activePreview._wrapper and optState.activePreview._wrapper:GetHeight() or (optState.activePreview:GetHeight() * optState.activePreview:GetScale())
+                local wrapH = optState.activePreview._wrapper and optState.activePreview._wrapper:GetHeight()
+                    or (optState.activePreview:GetHeight() * optState.activePreview:GetScale())
                 local newTotal = headerFixedH + wrapH + hintH
                 CludesUI:UpdateContentHeaderHeight(newTotal)
             end
@@ -313,27 +358,24 @@ initFrame:SetScript("OnEvent", function(self)
         end)
     end
 
-
-
-
     ---------------------------------------------------------------------------
     --  Short labels for sync icon multi-apply
     ---------------------------------------------------------------------------
     local SHORT_LABELS = {
-        MainBar  = "Bar 1",
-        Bar2     = "Bar 2",
-        Bar3     = "Bar 3",
-        Bar4     = "Bar 4",
-        Bar5     = "Bar 5",
-        Bar6     = "Bar 6",
-        Bar7     = "Bar 7",
-        Bar8     = "Bar 8",
+        MainBar = "Bar 1",
+        Bar2 = "Bar 2",
+        Bar3 = "Bar 3",
+        Bar4 = "Bar 4",
+        Bar5 = "Bar 5",
+        Bar6 = "Bar 6",
+        Bar7 = "Bar 7",
+        Bar8 = "Bar 8",
         StanceBar = "Stance",
-        PetBar   = "Pet",
+        PetBar = "Pet",
         MicroBar = "Micro",
-        BagBar   = "Bags",
-        XPBar    = "XP",
-        RepBar   = "Rep",
+        BagBar = "Bags",
+        XPBar = "XP",
+        RepBar = "Rep",
         FavorBar = "Favor",
     }
 
@@ -381,7 +423,9 @@ initFrame:SetScript("OnEvent", function(self)
         -- carries them alongside the mode selection.
         local optKeys = CludesUI.VIS_OPT_KEYS
         if optKeys then
-            for i = 1, #optKeys do dst[optKeys[i]] = src[optKeys[i]] or nil end
+            for i = 1, #optKeys do
+                dst[optKeys[i]] = src[optKeys[i]] or nil
+            end
         end
         if VisibilityCompat then
             -- Pet Bar ignores group modes: strip them from a copied multi-selection.
@@ -400,9 +444,6 @@ initFrame:SetScript("OnEvent", function(self)
         dst.combatShowEnabled = src.combatShowEnabled
         dst.dragShow = src.dragShow
     end
-
-
-
 
     -- An End Caps row: the End Caps checklist (Left Endcap / Right Endcap) and
     -- its cog (the CludesUI style's art, size, offsets), per bar through the
@@ -431,24 +472,35 @@ initFrame:SetScript("OnEvent", function(self)
         -- tooltip and dims on a vertical bar.
         function C.Cfg()
             local classic = CludesUI.BlizzStyle.Active("actionbars") == "classic"
-            return { type="dropdown", text=o.label,
-              tooltip=(not C.stock) and "Which ends of the bar show end cap art; the cog picks the art."
-                  or classic and "Which ends of the bar show the gryphons."
-                  or "Which ends of the bar show the gryphons or wyverns.",
-              values={ __placeholder = "..." }, order={ "__placeholder" },
-              disabled=C.Vertical,
-              disabledTooltip="Vertical Orientation", requireState="disabled",
-              getValue=function() return "__placeholder" end,
-              setValue=function() end }
+            return {
+                type = "dropdown",
+                text = o.label,
+                tooltip = (not C.stock) and "Which ends of the bar show end cap art; the cog picks the art."
+                    or classic and "Which ends of the bar show the gryphons."
+                    or "Which ends of the bar show the gryphons or wyverns.",
+                values = { __placeholder = "..." },
+                order = { "__placeholder" },
+                disabled = C.Vertical,
+                disabledTooltip = "Vertical Orientation",
+                requireState = "disabled",
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            }
         end
         -- A bar's whole end cap setting onto bar `dst`, as this bar resolves
         -- it (sides, the CludesUI style's art, size, offsets).
         function C.CopyTo(dst)
             local src = o.key()
             local d = EAB.db.profile.bars[dst]
-            if dst == src or not d then return end
+            if dst == src or not d then
+                return
+            end
             d.endCapLeft, d.endCapRight = ns.AB_CapsSides(src)
-            if not C.stock then d.endCapArt = ns.AB_CapsArt(src) end
+            if not C.stock then
+                d.endCapArt = ns.AB_CapsArt(src)
+            end
             local _, dx, dy, sc = ns.AB_CapsTweak(src)
             d.endCapScale, d.endCapOffsetX, d.endCapOffsetY = sc, dx, dy
             o.copyApply(dst)
@@ -457,9 +509,15 @@ initFrame:SetScript("OnEvent", function(self)
             local src = o.key()
             local sl, sr = ns.AB_CapsSides(src)
             local kl, kr = ns.AB_CapsSides(key)
-            if sl ~= kl or sr ~= kr then return false end
-            if not (sl or sr) then return true end
-            if not C.stock and ns.AB_CapsArt(src) ~= ns.AB_CapsArt(key) then return false end
+            if sl ~= kl or sr ~= kr then
+                return false
+            end
+            if not (sl or sr) then
+                return true
+            end
+            if not C.stock and ns.AB_CapsArt(src) ~= ns.AB_CapsArt(key) then
+                return false
+            end
             local _, sx, sy, ss = ns.AB_CapsTweak(src)
             local _, kx, ky, ks = ns.AB_CapsTweak(key)
             return ss == ks and sx == kx and sy == ky
@@ -467,14 +525,22 @@ initFrame:SetScript("OnEvent", function(self)
         -- The checklist in `rgn` (a DualRow half built from C.Cfg), its cog
         -- and its Apply to All link.
         function C.Build(rgn)
-            if CludesUI._prebuilding then return end
-            if rgn._control then rgn._control:Hide() end
+            if CludesUI._prebuilding then
+                return
+            end
+            if rgn._control then
+                rgn._control:Hide()
+            end
             local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn, 170, rgn:GetFrameLevel() + 2,
+                rgn,
+                170,
+                rgn:GetFrameLevel() + 2,
                 { { key = "L", label = "Left Endcap" }, { key = "R", label = "Right Endcap" } },
                 function(k)
                     local l, r = ns.AB_CapsSides(o.key())
-                    if k == "L" then return l end
+                    if k == "L" then
+                        return l
+                    end
                     return r
                 end,
                 function(k, v)
@@ -482,12 +548,22 @@ initFrame:SetScript("OnEvent", function(self)
                     -- shows it now: a written side never reads a default.
                     local s = o.store()
                     local l, r = ns.AB_CapsSides(o.key())
-                    if k == "L" then l = v and true or false else r = v and true or false end
+                    if k == "L" then
+                        l = v and true or false
+                    else
+                        r = v and true or false
+                    end
                     s.endCapLeft, s.endCapRight = l, r
                     o.write()
-                end, nil, nil, nil, nil, nil,
+                end,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
                 -- Spec Overrides see each click as it happens (the slot's capture).
-                { notifyWrites = true })
+                { notifyWrites = true }
+            )
             PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = cbDD
             rgn._lastInline = nil
@@ -505,37 +581,78 @@ initFrame:SetScript("OnEvent", function(self)
             local rows = {}
             if not C.stock then
                 -- WoW Forever's own art exists only on that client.
-                local values = { blizzard="Modern", classic="Classic" }
+                local values = { blizzard = "Modern", classic = "Classic" }
                 local order = { "blizzard", "classic" }
                 if CludesUI.IS_FOREVER then
                     values.forever = "WoW Forever"
                     order[#order + 1] = "forever"
                 end
-                rows[#rows + 1] = { type="dropdown", label="Art", values=values, order=order,
-                  tooltip=CludesUI.IS_FOREVER
-                      and "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons, WoW Forever this client's own."
-                      or "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons.",
-                  get=function() return ns.AB_CapsArt(o.key()) end,
-                  set=function(v) o.write("endCapArt", v) end }
+                rows[#rows + 1] = {
+                    type = "dropdown",
+                    label = "Art",
+                    values = values,
+                    order = order,
+                    tooltip = CludesUI.IS_FOREVER
+                            and "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons, WoW Forever this client's own."
+                        or "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons.",
+                    get = function()
+                        return ns.AB_CapsArt(o.key())
+                    end,
+                    set = function(v)
+                        o.write("endCapArt", v)
+                    end,
+                }
             end
-            rows[#rows + 1] = { type="slider", label="Size", min=50, max=200, step=5,
-              tooltip="Percent of the end caps' normal size.",
-              get=function() return ns.AB_CapsVal(o.key(), "endCapScale") or 100 end,
-              set=function(v) o.write("endCapScale", v) end }
-            rows[#rows + 1] = { type="slider", label="X Offset", min=-100, max=100, step=1,
-              tooltip="Positive values move both end caps away from the bar.",
-              get=function() return ns.AB_CapsVal(o.key(), "endCapOffsetX") or 0 end,
-              set=function(v) o.write("endCapOffsetX", v) end }
-            rows[#rows + 1] = { type="slider", label="Y Offset", min=-100, max=100, step=1,
-              get=function() return ns.AB_CapsVal(o.key(), "endCapOffsetY") or 5 end,
-              set=function(v) o.write("endCapOffsetY", v) end }
+            rows[#rows + 1] = {
+                type = "slider",
+                label = "Size",
+                min = 50,
+                max = 200,
+                step = 5,
+                tooltip = "Percent of the end caps' normal size.",
+                get = function()
+                    return ns.AB_CapsVal(o.key(), "endCapScale") or 100
+                end,
+                set = function(v)
+                    o.write("endCapScale", v)
+                end,
+            }
+            rows[#rows + 1] = {
+                type = "slider",
+                label = "X Offset",
+                min = -100,
+                max = 100,
+                step = 1,
+                tooltip = "Positive values move both end caps away from the bar.",
+                get = function()
+                    return ns.AB_CapsVal(o.key(), "endCapOffsetX") or 0
+                end,
+                set = function(v)
+                    o.write("endCapOffsetX", v)
+                end,
+            }
+            rows[#rows + 1] = {
+                type = "slider",
+                label = "Y Offset",
+                min = -100,
+                max = 100,
+                step = 1,
+                get = function()
+                    return ns.AB_CapsVal(o.key(), "endCapOffsetY") or 5
+                end,
+                set = function(v)
+                    o.write("endCapOffsetY", v)
+                end,
+            }
             CludesUI.BuildInlineCog(rgn, {
                 title = "End Cap Settings",
                 disabled = function()
                     return C.Vertical() or C.Off()
                 end,
                 disabledTooltip = function()
-                    if C.Vertical() then return CludesUI.DisabledTooltip("Vertical Orientation", "disabled") end
+                    if C.Vertical() then
+                        return CludesUI.DisabledTooltip("Vertical Orientation", "disabled")
+                    end
                     return CludesUI.DisabledTooltip("Left Endcap or Right Endcap")
                 end,
                 rawTooltip = true,
@@ -544,25 +661,35 @@ initFrame:SetScript("OnEvent", function(self)
 
             if o.syncKeys then
                 CludesUI.BuildSyncIcon({
-                    region  = rgn,
+                    region = rgn,
                     tooltip = "Apply End Caps to all Bars",
                     onClick = function()
-                        for _, key in ipairs(o.syncKeys) do C.CopyTo(key) end
+                        for _, key in ipairs(o.syncKeys) do
+                            C.CopyTo(key)
+                        end
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
                         for _, key in ipairs(o.syncKeys) do
-                            if not C.Same(key) then return false end
+                            if not C.Same(key) then
+                                return false
+                            end
                         end
                         return true
                     end,
-                    flashTargets = function() return { rgn } end,
+                    flashTargets = function()
+                        return { rgn }
+                    end,
                     multiApply = {
-                        elementKeys   = o.syncKeys,
+                        elementKeys = o.syncKeys,
                         elementLabels = o.syncLabels,
-                        getCurrentKey = function() return o.key() end,
-                        onApply       = function(checkedKeys)
-                            for _, key in ipairs(checkedKeys) do C.CopyTo(key) end
+                        getCurrentKey = function()
+                            return o.key()
+                        end,
+                        onApply = function(checkedKeys)
+                            for _, key in ipairs(checkedKeys) do
+                                C.CopyTo(key)
+                            end
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -583,7 +710,9 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local function SSet(key, val, applyFn)
             SB()[key] = val
-            if applyFn then applyFn(SelectedKey()) end
+            if applyFn then
+                applyFn(SelectedKey())
+            end
             CludesUI:RefreshPage()
         end
         local function SDB()
@@ -594,8 +723,10 @@ initFrame:SetScript("OnEvent", function(self)
             return v ~= nil and v or default
         end
         local function SSetColor(key, r, g, b, a, applyFn)
-            SB()[key] = { r=r, g=g, b=b, a=a }
-            if applyFn then applyFn(SelectedKey()) end
+            SB()[key] = { r = r, g = g, b = b, a = a }
+            if applyFn then
+                applyFn(SelectedKey())
+            end
             CludesUI:RefreshPage()
         end
         local function SUpdatePreview()
@@ -610,10 +741,16 @@ initFrame:SetScript("OnEvent", function(self)
         -- whatever the boxes held (a Cropped shape's preset included).
         local function SSeedTextOffsets(kind, anchorKey, oxKey, oyKey, anchor)
             local prev = SVal(anchorKey, nil)
-            if prev == anchor then return end
+            if prev == anchor then
+                return
+            end
             local px, py, nx, ny = 0, 0, 0, 0
-            if prev then px, py = EAB.StockTextOffsets(kind, prev) end
-            if anchor then nx, ny = EAB.StockTextOffsets(kind, anchor) end
+            if prev then
+                px, py = EAB.StockTextOffsets(kind, prev)
+            end
+            if anchor then
+                nx, ny = EAB.StockTextOffsets(kind, anchor)
+            end
             SB()[oxKey] = SVal(oxKey, 0) - px + nx
             SB()[oyKey] = SVal(oyKey, 0) - py + ny
         end
@@ -636,9 +773,16 @@ initFrame:SetScript("OnEvent", function(self)
         -- (APPEARANCE, EFFECTS, BEHAVIOR & PAGING, TEXT); the second returns the
         -- rows the click navigation below maps to.
         local ctx = {
-            BgDisabled = BgDisabled, SDB = SDB, SGet = SGet, SSeedTextOffsets = SSeedTextOffsets,
-            SSet = SSet, SSetColor = SSetColor, SUpdatePreview = SUpdatePreview,
-            SUpdatePreviewAndResize = SUpdatePreviewAndResize, SVal = SVal, visOnly = visOnly,
+            BgDisabled = BgDisabled,
+            SDB = SDB,
+            SGet = SGet,
+            SSeedTextOffsets = SSeedTextOffsets,
+            SSet = SSet,
+            SSetColor = SSetColor,
+            SUpdatePreview = SUpdatePreview,
+            SUpdatePreviewAndResize = SUpdatePreviewAndResize,
+            SVal = SVal,
+            visOnly = visOnly,
             W = W,
         }
         y = ns.ABO_BuildBarVisibilityLayout(parent, y, ctx)
@@ -651,50 +795,78 @@ initFrame:SetScript("OnEvent", function(self)
             -------------------------------------------------------------------
             --  CLICK NAVIGATION
             -------------------------------------------------------------------
-            local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN, thickness = function() return PP.Scale(2) end, noSnap = true })
+            local PlaySettingGlow = CludesUI.MakeSettingGlow({
+                color = CludesUI.CLUDES_GREEN,
+                thickness = function()
+                    return PP.Scale(2)
+                end,
+                noSnap = true,
+            })
 
             local clickMappings = {
-                icon       = { section = iconsSectionHeader, target = classColorBorderRow },
-                keybind    = { section = textSectionHeader,  target = keybindRow, slotSide = "right" },
-                charges    = { section = textSectionHeader,  target = chargesRow, slotSide = "right" },
+                icon = { section = iconsSectionHeader, target = classColorBorderRow },
+                keybind = { section = textSectionHeader, target = keybindRow, slotSide = "right" },
+                charges = { section = textSectionHeader, target = chargesRow, slotSide = "right" },
             }
 
             local function NavigateToSetting(key)
                 local m = clickMappings[key]
-                if not m or not m.section or not m.target then return end
+                if not m or not m.section or not m.target then
+                    return
+                end
 
                 CludesUI.DismissPreviewHint(_abPreviewHintFS, barsHeaderBaseH, 29, 17)
 
                 local sf = CludesUI._scrollFrame
-                if not sf then return end
+                if not sf then
+                    return
+                end
                 local _, _, _, _, headerY = m.section:GetPoint(1)
-                if not headerY then return end
+                if not headerY then
+                    return
+                end
                 local scrollPos = math.max(0, math.abs(headerY) - 40)
                 CludesUI.SmoothScrollTo(scrollPos)
                 local glowTarget = m.target
                 if m.slotSide and m.target then
                     local region = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                    if region then glowTarget = region end
+                    if region then
+                        glowTarget = region
+                    end
                 end
                 -- The glow is for the row of the build that was clicked: a row
                 -- the page pool dressed again in the meantime (a rebuild) gets none.
                 local glowGen = PoolGen(glowTarget)
                 C_Timer.After(0.15, function()
-                    if PoolGen(glowTarget) ~= glowGen then return end
+                    if PoolGen(glowTarget) ~= glowGen then
+                        return
+                    end
                     PlaySettingGlow(glowTarget)
                 end)
             end
 
             local hitStyle = { tightText = true }
             local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, opts)
-                return (CludesUI.CreatePreviewHitOverlay(element, NavigateToSetting, mappingKey, isText, frameLevelOverride, opts, hitStyle))
+                return (
+                    CludesUI.CreatePreviewHitOverlay(
+                        element,
+                        NavigateToSetting,
+                        mappingKey,
+                        isText,
+                        frameLevelOverride,
+                        opts,
+                        hitStyle
+                    )
+                )
             end
 
             local textOverlays = {}
             if optState.activePreview then
                 local pv = optState.activePreview
                 local pvButtons = pv._buttons
-                local iconLevel = (pvButtons[1] and pvButtons[1].frame and pvButtons[1].frame:GetFrameLevel() or 5) + 10
+                local iconLevel = (
+                    pvButtons[1] and pvButtons[1].frame and pvButtons[1].frame:GetFrameLevel() or 5
+                ) + 10
                 local textOnIconLevel = iconLevel + 10
                 local iconHlOpts = { hlBehindText = true }
                 for i = 1, pv._barInfo.count do
@@ -702,16 +874,18 @@ initFrame:SetScript("OnEvent", function(self)
                     if entry and entry.frame then
                         CreateHitOverlay(entry.frame, "icon", false, iconLevel, iconHlOpts)
                         if entry.keybind then
-                            textOverlays[#textOverlays + 1] = CreateHitOverlay(entry.keybind, "keybind", true, textOnIconLevel)
+                            textOverlays[#textOverlays + 1] =
+                                CreateHitOverlay(entry.keybind, "keybind", true, textOnIconLevel)
                         end
                         if entry.count then
-                            textOverlays[#textOverlays + 1] = CreateHitOverlay(entry.count, "charges", true, textOnIconLevel)
+                            textOverlays[#textOverlays + 1] =
+                                CreateHitOverlay(entry.count, "charges", true, textOnIconLevel)
                         end
                     end
                 end
                 pv._textOverlays = textOverlays
             end
-        end  -- if not visOnly
+        end -- if not visOnly
 
         return y
     end
@@ -724,7 +898,9 @@ initFrame:SetScript("OnEvent", function(self)
         optState.activePreview = nil
 
         -- Consume any pending bar selection from Element Options navigation.
-        if CludesUI._consumePendingActionBarSelect then CludesUI._consumePendingActionBarSelect() end
+        if CludesUI._consumePendingActionBarSelect then
+            CludesUI._consumePendingActionBarSelect()
+        end
 
         -- Tag every option registered while building this page with the selected bar, so a global-search
         -- jump to a bar-specific setting restores this exact selection first via _setActionBarKey
@@ -737,9 +913,11 @@ initFrame:SetScript("OnEvent", function(self)
         --  CONTENT HEADER  (dropdown + preview)
         -------------------------------------------------------------------
         _barsHeaderBuilder = function(hdr, hdrW)
-            if CludesUI:GetActivePage() == PAGE_DISPLAY then _abDisplayHdr = hdr end
+            if CludesUI:GetActivePage() == PAGE_DISPLAY then
+                _abDisplayHdr = hdr
+            end
             local PAD = CludesUI.CONTENT_PAD
-            local PV_PAD = 10  -- internal padding inside BuildLivePreview
+            local PV_PAD = 10 -- internal padding inside BuildLivePreview
             local fy = -20
 
             -- Centered dropdown (same pattern as Multi Bar Edit)
@@ -747,9 +925,14 @@ initFrame:SetScript("OnEvent", function(self)
             local availW = hdrW - PAD * 2
             local ddW = 350
             local ddBtn, ddLbl = CludesUI.BuildDropdownControl(
-                hdr, ddW, hdr:GetFrameLevel() + 5,
-                barLabels, barOrder,
-                function() return SelectedKey() end,
+                hdr,
+                ddW,
+                hdr:GetFrameLevel() + 5,
+                barLabels,
+                barOrder,
+                function()
+                    return SelectedKey()
+                end,
                 function(v)
                     _selectedBarKey = v
                     -- Always force a full rebuild: visibility-only bars and StanceBar share visOnly/dataBar flags, so a conditional misses transitions.
@@ -759,8 +942,12 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 function(key)
                     -- Bar9/Bar10 default to Hidden visibility but must stay selectable so they can be configured -- never show the disabled effect.
-                    if key == "Bar9" or key == "Bar10" then return nil end
-                    if not IsBarEnabled(key) then return CludesUI.DisabledTooltip("this action bar") end
+                    if key == "Bar9" or key == "Bar10" then
+                        return nil
+                    end
+                    if not IsBarEnabled(key) then
+                        return CludesUI.DisabledTooltip("this action bar")
+                    end
                 end
             )
             -- The Quick Keybind Mode key button sits KB_GAP left of the
@@ -776,7 +963,9 @@ initFrame:SetScript("OnEvent", function(self)
                 PP.Point(kbBtn, "RIGHT", ddBtn, "LEFT", -KB_GAP, 0)
                 kbBtn:SetFrameLevel(hdr:GetFrameLevel() + 5)
                 CludesUI.MakeStyledButton(kbBtn, "", 13, CludesUI.RD_DD_COLOURS, function()
-                    if InCombatLockdown() then return end
+                    if InCombatLockdown() then
+                        return
+                    end
                     if not C_AddOns.IsAddOnLoaded("Blizzard_QuickKeybind") then
                         C_AddOns.LoadAddOn("Blizzard_QuickKeybind")
                     end
@@ -789,7 +978,10 @@ initFrame:SetScript("OnEvent", function(self)
                 local kbIcon = kbBtn:CreateTexture(nil, "ARTWORK")
                 kbIcon:SetSize(24, 24)
                 kbIcon:SetPoint("CENTER")
-                if kbIcon.SetSnapToPixelGrid then kbIcon:SetSnapToPixelGrid(false); kbIcon:SetTexelSnappingBias(0) end
+                if kbIcon.SetSnapToPixelGrid then
+                    kbIcon:SetSnapToPixelGrid(false)
+                    kbIcon:SetTexelSnappingBias(0)
+                end
                 kbIcon:SetTexture(CludesUI.MEDIA_PATH .. "icons\\cui-keyboard.png")
                 kbIcon:SetAlpha(CludesUI.DD_TXT_A)
                 kbBtn:HookScript("OnEnter", function(self)
@@ -821,7 +1013,9 @@ initFrame:SetScript("OnEvent", function(self)
                     hintHost:SetAllPoints(hdr)
                     _abPreviewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
                     _abPreviewHintFS:SetAlpha(0.45)
-                    _abPreviewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+                    _abPreviewHintFS:SetText(
+                        CludesUI.L("Click elements to scroll to and highlight their options")
+                    )
                 end
                 _abPreviewHintFS:GetParent():SetParent(hdr)
                 _abHintHdr = hdr
@@ -851,7 +1045,6 @@ initFrame:SetScript("OnEvent", function(self)
         return math.abs(y)
     end
 
-
     -- Bar Animations page (ActionBars_Options\AnimationsPage_Options.lua). Called
     -- here so its Custom Proc Glow site registers at the original point in the load order.
     local BuildAnimationsPage = ns.ABO_InitAnimationsPage(PP, EAB, PAGE_ANIMATIONS)
@@ -872,15 +1065,28 @@ initFrame:SetScript("OnEvent", function(self)
     -- Shared with the page builders under ActionBars_Options\ (read in their
     -- prologs). Every field is final here: optState holds the mutable state.
     ns._ABO_OptEnv = {
-        ApplyVisibilityKey = ApplyVisibilityKey, BAR_LOOKUP = BAR_LOOKUP,
-        CopyVisibilitySettings = CopyVisibilitySettings, EAB = EAB, EndCapsCtl = EndCapsCtl,
-        FirstBarButton = FirstBarButton, floor = floor, GetVisibilityKey = GetVisibilityKey,
-        GROUP_BAR_ORDER = GROUP_BAR_ORDER, InCombatLockdown = InCombatLockdown,
-        IsDataBar = IsDataBar, optState = optState, pcall = pcall, PP = PP,
-        RANGE_INDICATOR = RANGE_INDICATOR, SB = SB,
-        SECTION_ICON_APPEARANCE = SECTION_ICON_APPEARANCE, SECTION_LAYOUT = SECTION_LAYOUT,
-        SECTION_TEXT = SECTION_TEXT, SECTION_VISIBILITY = SECTION_VISIBILITY,
-        SelectedKey = SelectedKey, SHORT_LABELS = SHORT_LABELS,
+        ApplyVisibilityKey = ApplyVisibilityKey,
+        BAR_LOOKUP = BAR_LOOKUP,
+        CopyVisibilitySettings = CopyVisibilitySettings,
+        EAB = EAB,
+        EndCapsCtl = EndCapsCtl,
+        FirstBarButton = FirstBarButton,
+        floor = floor,
+        GetVisibilityKey = GetVisibilityKey,
+        GROUP_BAR_ORDER = GROUP_BAR_ORDER,
+        InCombatLockdown = InCombatLockdown,
+        IsDataBar = IsDataBar,
+        optState = optState,
+        pcall = pcall,
+        PP = PP,
+        RANGE_INDICATOR = RANGE_INDICATOR,
+        SB = SB,
+        SECTION_ICON_APPEARANCE = SECTION_ICON_APPEARANCE,
+        SECTION_LAYOUT = SECTION_LAYOUT,
+        SECTION_TEXT = SECTION_TEXT,
+        SECTION_VISIBILITY = SECTION_VISIBILITY,
+        SelectedKey = SelectedKey,
+        SHORT_LABELS = SHORT_LABELS,
         ShownBorderDefaults = ShownBorderDefaults,
         TEXT_ANCHOR_DROPDOWN_ORDER = TEXT_ANCHOR_DROPDOWN_ORDER,
         TEXT_ANCHOR_LABELS = TEXT_ANCHOR_LABELS,
@@ -890,10 +1096,10 @@ initFrame:SetScript("OnEvent", function(self)
     --  Register the module
     ---------------------------------------------------------------------------
     CludesUI:RegisterModule("CludesUIActionBars", {
-        title       = "Action Bars",
+        title = "Action Bars",
         description = "Configure visuals and behavior for your action bars.",
-        pages       = { PAGE_DISPLAY, PAGE_XPBAR, PAGE_MENUBAGSREP, PAGE_ANIMATIONS },
-        buildPage   = function(pageName, parent, yOffset)
+        pages = { PAGE_DISPLAY, PAGE_XPBAR, PAGE_MENUBAGSREP, PAGE_ANIMATIONS },
+        buildPage = function(pageName, parent, yOffset)
             -- BuildBarDisplayPage calls ShowEditOverlay() unconditionally at build time, showing a
             -- real UIParent-parented overlay over the live action bars. A hidden search pre-build
             -- would flash it onscreen, so skip PAGE_DISPLAY here; it indexes on first visit.
@@ -960,10 +1166,12 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             else
                 HideEditOverlay()
-                if pageName == PAGE_XPBAR then ns.ABO_XPPreviewRefresh() end
+                if pageName == PAGE_XPBAR then
+                    ns.ABO_XPPreviewRefresh()
+                end
             end
         end,
-        onReset     = function()
+        onReset = function()
             EAB.db:ResetProfile()
             -- Clear the per-install capture flag: the snapshot re-runs post-reload and re-reads Blizzard's bar layout.
             if EAB.db and EAB.db.sv then
@@ -974,4 +1182,6 @@ initFrame:SetScript("OnEvent", function(self)
     })
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then initFrame:GetScript("OnEvent")(initFrame) end
+if IsLoggedIn() then
+    initFrame:GetScript("OnEvent")(initFrame)
+end

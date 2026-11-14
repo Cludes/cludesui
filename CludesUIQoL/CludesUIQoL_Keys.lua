@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no keystones on WoW Forever: no /keys popup, no events, no slash commands; the options section is not built there and every reader nil-guards
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then
+    return
+end -- no keystones on WoW Forever: no /keys popup, no events, no slash commands; the options section is not built there and every reader nil-guards
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Keys.lua
 --  /keys slash command: displays party keystone levels in a styled popup.
@@ -8,7 +12,7 @@ if CludesUI and CludesUI.IS_FOREVER then return end -- no keystones on WoW Forev
 local LibKeystone = LibStub and LibStub("LibKeystone", true)
 
 local myRealm = (GetRealmName():gsub("%s", ""))
-local partyKeys = {}  -- [playerName] = { dungeon = mapID, keyLevel = N, rating = N }
+local partyKeys = {} -- [playerName] = { dungeon = mapID, keyLevel = N, rating = N }
 
 -- Dungeon mapID -> teleport spellID
 -- mapIDs here match what C_ChallengeMode returns and what keystone links store.
@@ -67,7 +71,9 @@ do
     -- A miss while the map table is still empty means the localized names never
     -- loaded either: rebuild once and look again (the popup path heals the same way).
     CludesUI.ResolveTeleportSpellByName = function(displayName)
-        if type(displayName) ~= "string" then return nil end
+        if type(displayName) ~= "string" then
+            return nil
+        end
         local n = displayName:lower():gsub("%s*%b()%s*$", "")
         local spellID = TELEPORT_BY_NAME[n]
         if not spellID and not next(MAP_TELEPORT_SPELLS) then
@@ -77,21 +83,29 @@ do
         return spellID
     end
 end
-local guildKeys = {}  -- [playerName] = { dungeon = mapID, keyLevel = N, rating = N }
+local guildKeys = {} -- [playerName] = { dungeon = mapID, keyLevel = N, rating = N }
 
 -------------------------------------------------------------------------------
 --  Helpers
 -------------------------------------------------------------------------------
 local function PlayerName(unit)
     local name, realm = UnitFullName(unit or "player")
-    if not name then return UnitName(unit or "player") or "Unknown" end
-    if realm and realm ~= "" and realm ~= myRealm then return name .. "-" .. realm end
+    if not name then
+        return UnitName(unit or "player") or "Unknown"
+    end
+    if realm and realm ~= "" and realm ~= myRealm then
+        return name .. "-" .. realm
+    end
     return name
 end
 
 local function StripRealm(fullName)
-    if not fullName then return "?" end
-    if Ambiguate then return Ambiguate(fullName, "short") or fullName end
+    if not fullName then
+        return "?"
+    end
+    if Ambiguate then
+        return Ambiguate(fullName, "short") or fullName
+    end
     return fullName:match("^([^%-]+)") or fullName
 end
 
@@ -109,47 +123,61 @@ local function BuildClassColorMap()
             local gName, _, _, _, _, _, _, _, _, _, classFile = GetGuildRosterInfo(i)
             if gName and classFile then
                 local gShort = Ambiguate and Ambiguate(gName, "short") or gName:match("^([^%-]+)")
-                if gShort then map[gShort] = classFile end
+                if gShort then
+                    map[gShort] = classFile
+                end
             end
         end
     end
     local prefix, count
-    if IsInRaid() then prefix, count = "raid", GetNumGroupMembers()
-    elseif IsInGroup() then prefix, count = "party", GetNumGroupMembers() - 1
-    else prefix, count = nil, 0 end
+    if IsInRaid() then
+        prefix, count = "raid", GetNumGroupMembers()
+    elseif IsInGroup() then
+        prefix, count = "party", GetNumGroupMembers() - 1
+    else
+        prefix, count = nil, 0
+    end
     if prefix then
         for i = 1, count do
             local unit = prefix .. i
             local uName = UnitName(unit)
             if uName then
                 local _, classFile = UnitClass(unit)
-                if classFile then map[uName] = classFile end
+                if classFile then
+                    map[uName] = classFile
+                end
             end
         end
     end
     local myName = UnitName("player")
     if myName then
         local _, classFile = UnitClass("player")
-        if classFile then map[myName] = classFile end
+        if classFile then
+            map[myName] = classFile
+        end
     end
     return map
 end
 
 local function GetMyKeystone()
-    if not C_MythicPlus then return 0, 0 end
-    local map = C_MythicPlus.GetOwnedKeystoneChallengeMapID and C_MythicPlus.GetOwnedKeystoneChallengeMapID() or 0
+    if not C_MythicPlus then
+        return 0, 0
+    end
+    local map = C_MythicPlus.GetOwnedKeystoneChallengeMapID and C_MythicPlus.GetOwnedKeystoneChallengeMapID()
+        or 0
     local lvl = C_MythicPlus.GetOwnedKeystoneLevel and C_MythicPlus.GetOwnedKeystoneLevel() or 0
     return map, lvl
 end
 
 local function DungeonNameFromMap(mapID)
-    if not mapID or mapID == 0 then return nil end
+    if not mapID or mapID == 0 then
+        return nil
+    end
     if C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
         return (C_ChallengeMode.GetMapUIInfo(mapID))
     end
     return "Unknown"
 end
-
 
 -------------------------------------------------------------------------------
 --  Keystone read / request
@@ -159,17 +187,25 @@ local function RecordOwnKey()
     local rating = 0
     if C_PlayerInfo and C_PlayerInfo.GetPlayerMythicPlusRatingSummary then
         local summary = C_PlayerInfo.GetPlayerMythicPlusRatingSummary("player")
-        if summary and summary.currentSeasonScore then rating = summary.currentSeasonScore end
+        if summary and summary.currentSeasonScore then
+            rating = summary.currentSeasonScore
+        end
     end
     local me = UnitName("player")
     local _, myClassFile = UnitClass("player")
-    if me then partyKeys[me] = { dungeon = map, keyLevel = lvl, rating = rating, classFile = myClassFile } end
+    if me then
+        partyKeys[me] = { dungeon = map, keyLevel = lvl, rating = rating, classFile = myClassFile }
+    end
 end
 
 local function QueryPartyKeys()
-    if not LibKeystone then return end
+    if not LibKeystone then
+        return
+    end
     -- A party of your own: PARTY from a Dungeon Finder group alone only brings back "You aren't in a party."
-    if IsInGroup(LE_PARTY_CATEGORY_HOME) then LibKeystone.Request("PARTY") end
+    if IsInGroup(LE_PARTY_CATEGORY_HOME) then
+        LibKeystone.Request("PARTY")
+    end
     LibKeystone.Request("GUILD")
 end
 
@@ -178,18 +214,18 @@ end
 -------------------------------------------------------------------------------
 local CUI = CludesUI
 local PP = CUI and CUI.PP
-local POPUP_W  = 330
-local ROW_H    = 20
-local ROW_GAP  = 4
-local TITLE_H  = 27
-local PAD      = 10
-local HDR_H    = 18  -- section header height ("Party", "Guild")
-local HDR_GAP  = 1   -- gap after section header
-local SEC_GAP  = 20  -- gap before Guild section
+local POPUP_W = 330
+local ROW_H = 20
+local ROW_GAP = 4
+local TITLE_H = 27
+local PAD = 10
+local HDR_H = 18 -- section header height ("Party", "Guild")
+local HDR_GAP = 1 -- gap after section header
+local SEC_GAP = 20 -- gap before Guild section
 local MAX_CONTENT_H = 300
 
 local popup, rowFrames
-local ShowKeystonePopup  -- forward declaration
+local ShowKeystonePopup -- forward declaration
 
 local function ResolveFont()
     return (CUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
@@ -210,7 +246,9 @@ local function MakeLabel(parent, size, _, r, g, b, a, family)
         CludesUI.PrimeFontShadow(fs, flags == "")
         fs:SetFont(ResolveFont(), size, flags)
     end
-    if r then fs:SetTextColor(r, g or 1, b or 1, a or 1) end
+    if r then
+        fs:SetTextColor(r, g or 1, b or 1, a or 1)
+    end
     return fs
 end
 
@@ -221,7 +259,9 @@ local function MakeSolid(parent, layer, r, g, b, a, sub)
 end
 
 local function BuildPopup()
-    if popup then return popup end
+    if popup then
+        return popup
+    end
     rowFrames = {}
 
     popup = CreateFrame("Frame", "CUIKeysPopup", UIParent)
@@ -231,8 +271,12 @@ local function BuildPopup()
     popup:SetMovable(true)
     popup:EnableMouse(true)
     popup:RegisterForDrag("LeftButton")
-    popup:SetScript("OnDragStart", function(s) s:StartMoving() end)
-    popup:SetScript("OnDragStop", function(s) s:StopMovingOrSizing() end)
+    popup:SetScript("OnDragStart", function(s)
+        s:StartMoving()
+    end)
+    popup:SetScript("OnDragStop", function(s)
+        s:StopMovingOrSizing()
+    end)
 
     local bg = popup:CreateTexture(nil, "BACKGROUND", nil, 0)
     bg:SetAllPoints()
@@ -242,13 +286,18 @@ local function BuildPopup()
     overlay:SetAllPoints()
     overlay:SetColorTexture(0, 0, 0, 0.55)
 
-    if PP and PP.CreateBorder then PP.CreateBorder(popup, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7) end
+    if PP and PP.CreateBorder then
+        PP.CreateBorder(popup, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
+    end
 
     local hdrBg = MakeSolid(popup, "BORDER", 0, 0, 0, 0.25)
-    hdrBg:SetPoint("TOPLEFT", 1, -1); hdrBg:SetPoint("TOPRIGHT", -1, 0); hdrBg:SetHeight(TITLE_H)
+    hdrBg:SetPoint("TOPLEFT", 1, -1)
+    hdrBg:SetPoint("TOPRIGHT", -1, 0)
+    hdrBg:SetHeight(TITLE_H)
 
     local title = MakeLabel(popup, 11, "OUTLINE", 1, 1, 1, 1)
-    title:SetPoint("TOPLEFT", PAD, -8); title:SetText("CludesUI Keystones")
+    title:SetPoint("TOPLEFT", PAD, -8)
+    title:SetText("CludesUI Keystones")
 
     local ICON_SZ = 14
     local ICON_ALPHA = 0.5
@@ -260,9 +309,15 @@ local function BuildPopup()
     xTex:SetAllPoints()
     xTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
     xTex:SetAlpha(ICON_ALPHA)
-    xBtn:SetScript("OnEnter", function() xTex:SetAlpha(1) end)
-    xBtn:SetScript("OnLeave", function() xTex:SetAlpha(ICON_ALPHA) end)
-    xBtn:SetScript("OnClick", function() popup:Hide() end)
+    xBtn:SetScript("OnEnter", function()
+        xTex:SetAlpha(1)
+    end)
+    xBtn:SetScript("OnLeave", function()
+        xTex:SetAlpha(ICON_ALPHA)
+    end)
+    xBtn:SetScript("OnClick", function()
+        popup:Hide()
+    end)
 
     -- Refresh button
     local refBtn = CreateFrame("Button", nil, popup)
@@ -282,14 +337,20 @@ local function BuildPopup()
     end)
     local refLocked = false
     refBtn:SetScript("OnClick", function()
-        if refLocked then return end
+        if refLocked then
+            return
+        end
         refLocked = true
         refBtn:EnableMouse(false)
         refTex:SetAlpha(0.15)
         RecordOwnKey()
-        if IsInGroup() then QueryPartyKeys() end
+        if IsInGroup() then
+            QueryPartyKeys()
+        end
         ShowKeystonePopup()
-        if IsInGroup() then C_Timer.After(1.0, ShowKeystonePopup) end
+        if IsInGroup() then
+            C_Timer.After(1.0, ShowKeystonePopup)
+        end
         C_Timer.After(2, function()
             refLocked = false
             refBtn:EnableMouse(true)
@@ -297,7 +358,9 @@ local function BuildPopup()
         end)
     end)
 
-    if CUI and CUI.RegisterEscapeClose then CUI.RegisterEscapeClose(popup) end
+    if CUI and CUI.RegisterEscapeClose then
+        CUI.RegisterEscapeClose(popup)
+    end
 
     -- Scroll frame for content
     local sf = CreateFrame("ScrollFrame", nil, popup)
@@ -325,7 +388,9 @@ local function BuildPopup()
 end
 
 local function AcquireRow(i)
-    if rowFrames[i] then return rowFrames[i] end
+    if rowFrames[i] then
+        return rowFrames[i]
+    end
     local p = BuildPopup()
     local r = CreateFrame("Frame", nil, p._body)
     r:SetHeight(ROW_H)
@@ -336,14 +401,20 @@ local function AcquireRow(i)
     end
 
     r._nameFS = MakeLabel(r, 11, nil, 1, 1, 1, 0.85, true)
-    r._nameFS:SetPoint("LEFT", 2, 0); r._nameFS:SetWidth(80); r._nameFS:SetJustifyH("LEFT")
+    r._nameFS:SetPoint("LEFT", 2, 0)
+    r._nameFS:SetWidth(80)
+    r._nameFS:SetJustifyH("LEFT")
     r._nameFS:SetWordWrap(false)
 
     r._ratingFS = MakeLabel(r, 10, nil, 0.6, 0.6, 0.6, 1)
-    r._ratingFS:SetPoint("LEFT", r._nameFS, "RIGHT", 4, 0); r._ratingFS:SetWidth(40); r._ratingFS:SetJustifyH("LEFT")
+    r._ratingFS:SetPoint("LEFT", r._nameFS, "RIGHT", 4, 0)
+    r._ratingFS:SetWidth(40)
+    r._ratingFS:SetJustifyH("LEFT")
 
     r._dungeonFS = MakeLabel(r, 11, nil, 0.7, 0.7, 0.7, 1)
-    r._dungeonFS:SetPoint("LEFT", r._ratingFS, "RIGHT", 4, 0); r._dungeonFS:SetWidth(130); r._dungeonFS:SetJustifyH("LEFT")
+    r._dungeonFS:SetPoint("LEFT", r._ratingFS, "RIGHT", 4, 0)
+    r._dungeonFS:SetWidth(130)
+    r._dungeonFS:SetJustifyH("LEFT")
     r._dungeonFS:SetWordWrap(false)
 
     -- Teleport button overlaying the dungeon name
@@ -357,10 +428,14 @@ local function AcquireRow(i)
     local EG = CludesUI.CLUDES_GREEN
     tpBtn:SetScript("OnEnter", function()
         local sid = tpBtn._spellID
-        if not sid then return end
+        if not sid then
+            return
+        end
         local known = IsPlayerSpell(sid)
         if known then
-            if EG then r._dungeonFS:SetTextColor(EG.r, EG.g, EG.b, 1) end
+            if EG then
+                r._dungeonFS:SetTextColor(EG.r, EG.g, EG.b, 1)
+            end
             local cdInfo = C_Spell.GetSpellCooldown(sid)
             if cdInfo and cdInfo.duration and cdInfo.duration > 0 then
                 CludesUI.ShowWidgetTooltip(tpBtn, "Portal on Cooldown")
@@ -375,14 +450,18 @@ local function AcquireRow(i)
     r._tpBtn = tpBtn
 
     r._levelFS = MakeLabel(r, 11, "OUTLINE", 1, 1, 1, 1)
-    r._levelFS:SetPoint("RIGHT", -2, 0); r._levelFS:SetJustifyH("RIGHT")
+    r._levelFS:SetPoint("RIGHT", -2, 0)
+    r._levelFS:SetJustifyH("RIGHT")
 
     local sep = r:CreateTexture(nil, "ARTWORK")
     sep:SetColorTexture(1, 1, 1, 0.10)
-    if PP and PP.DisablePixelSnap then PP.DisablePixelSnap(sep) end
+    if PP and PP.DisablePixelSnap then
+        PP.DisablePixelSnap(sep)
+    end
     sep:SetHeight((PP and PP.mult) or 1)
     local gapMid = -math.floor(ROW_GAP / 2)
-    sep:SetPoint("BOTTOMLEFT", 0, gapMid); sep:SetPoint("BOTTOMRIGHT", 0, gapMid)
+    sep:SetPoint("BOTTOMLEFT", 0, gapMid)
+    sep:SetPoint("BOTTOMRIGHT", 0, gapMid)
 
     rowFrames[i] = r
     return r
@@ -391,7 +470,9 @@ end
 -- Section header pool
 local secHeaders = {}
 local function AcquireSecHeader(i)
-    if secHeaders[i] then return secHeaders[i] end
+    if secHeaders[i] then
+        return secHeaders[i]
+    end
     local p = BuildPopup()
     local h = CreateFrame("Frame", nil, p._body)
     h:SetHeight(HDR_H)
@@ -419,23 +500,35 @@ end
 
 local function PopulateRow(r, e, ccMap)
     ApplyRowFontSize(r)
-    r._nameFS:SetText(StripRealm(e.name)); r._nameFS:SetWidth(80)
+    r._nameFS:SetText(StripRealm(e.name))
+    r._nameFS:SetWidth(80)
     -- Cheap paths first: the entry's own classFile, then the per-rebuild map
     local cf = e.classFile
-    if not cf and ccMap then cf = ccMap[StripRealm(e.name)] end
+    if not cf and ccMap then
+        cf = ccMap[StripRealm(e.name)]
+    end
     local cc = cf and RAID_CLASS_COLORS[cf]
-    if cc then r._nameFS:SetTextColor(cc.r, cc.g, cc.b, 1)
-    else r._nameFS:SetTextColor(1, 1, 1, 0.85) end
+    if cc then
+        r._nameFS:SetTextColor(cc.r, cc.g, cc.b, 1)
+    else
+        r._nameFS:SetTextColor(1, 1, 1, 0.85)
+    end
     r._ratingFS:SetText(e.rating and e.rating > 0 and tostring(e.rating) or "")
     if e.dungeonName then
         r._dungeonFS:SetText(e.dungeonName)
         r._dungeonFS:SetTextColor(0.7, 0.7, 0.7, 1)
         r._levelFS:SetText("+" .. e.lvl)
-        if e.lvl >= 12 then      r._levelFS:SetTextColor(1, 0.5, 0, 1)
-        elseif e.lvl >= 10 then   r._levelFS:SetTextColor(0.63, 0.2, 0.93, 1)
-        elseif e.lvl >= 7 then    r._levelFS:SetTextColor(0, 0.44, 0.87, 1)
-        elseif e.lvl >= 4 then    r._levelFS:SetTextColor(0.12, 1, 0, 1)
-        else                      r._levelFS:SetTextColor(1, 1, 1, 1) end
+        if e.lvl >= 12 then
+            r._levelFS:SetTextColor(1, 0.5, 0, 1)
+        elseif e.lvl >= 10 then
+            r._levelFS:SetTextColor(0.63, 0.2, 0.93, 1)
+        elseif e.lvl >= 7 then
+            r._levelFS:SetTextColor(0, 0.44, 0.87, 1)
+        elseif e.lvl >= 4 then
+            r._levelFS:SetTextColor(0.12, 1, 0, 1)
+        else
+            r._levelFS:SetTextColor(1, 1, 1, 1)
+        end
         -- Teleport button
         local spellID = e.mapID and MAP_TELEPORT_SPELLS[e.mapID]
         if spellID and r._tpBtn then
@@ -447,15 +540,20 @@ local function PopulateRow(r, e, ccMap)
             r._tpBtn:Hide()
         end
     else
-        r._dungeonFS:SetText("No keystone"); r._dungeonFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
+        r._dungeonFS:SetText("No keystone")
+        r._dungeonFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
         r._levelFS:SetText("")
-        if r._tpBtn then r._tpBtn:Hide() end
+        if r._tpBtn then
+            r._tpBtn:Hide()
+        end
     end
 end
 
 ShowKeystonePopup = function()
     RecordOwnKey()
-    if not next(MAP_TELEPORT_SPELLS) then RebuildTeleportTables() end
+    if not next(MAP_TELEPORT_SPELLS) then
+        RebuildTeleportTables()
+    end
     local p = BuildPopup()
     local body = p._body
     local contentW = POPUP_W - PAD * 2
@@ -468,18 +566,29 @@ ShowKeystonePopup = function()
         local count = GetNumGroupMembers()
         for i = 1, (IsInRaid() and count or count - 1) do
             local name = PlayerName(prefix .. i)
-            if name then currentMembers[name] = true end
+            if name then
+                currentMembers[name] = true
+            end
         end
     end
     local partyEntries = {}
     for name, info in pairs(partyKeys) do
         if currentMembers[name] or currentMembers[StripRealm(name)] then
             local dName = DungeonNameFromMap(info.dungeon)
-            partyEntries[#partyEntries + 1] = { name = name, dungeonName = dName, lvl = info.keyLevel or 0, rating = info.rating or 0, classFile = info.classFile, mapID = info.dungeon }
+            partyEntries[#partyEntries + 1] = {
+                name = name,
+                dungeonName = dName,
+                lvl = info.keyLevel or 0,
+                rating = info.rating or 0,
+                classFile = info.classFile,
+                mapID = info.dungeon,
+            }
         end
     end
     table.sort(partyEntries, function(a, b)
-        if a.lvl ~= b.lvl then return a.lvl > b.lvl end
+        if a.lvl ~= b.lvl then
+            return a.lvl > b.lvl
+        end
         return a.name < b.name
     end)
 
@@ -489,11 +598,20 @@ ShowKeystonePopup = function()
     for name, info in pairs(guildKeys) do
         if name ~= myName and StripRealm(name) ~= StripRealm(myName) and (info.keyLevel or 0) > 0 then
             local dName = DungeonNameFromMap(info.dungeon)
-            guildEntries[#guildEntries + 1] = { name = name, dungeonName = dName, lvl = info.keyLevel, rating = info.rating or 0, classFile = info.classFile, mapID = info.dungeon }
+            guildEntries[#guildEntries + 1] = {
+                name = name,
+                dungeonName = dName,
+                lvl = info.keyLevel,
+                rating = info.rating or 0,
+                classFile = info.classFile,
+                mapID = info.dungeon,
+            }
         end
     end
     table.sort(guildEntries, function(a, b)
-        if a.lvl ~= b.lvl then return a.lvl > b.lvl end
+        if a.lvl ~= b.lvl then
+            return a.lvl > b.lvl
+        end
         return a.name < b.name
     end)
 
@@ -503,19 +621,31 @@ ShowKeystonePopup = function()
     do
         local needMap = false
         for _, e in ipairs(partyEntries) do
-            if not e.classFile then needMap = true; break end
+            if not e.classFile then
+                needMap = true
+                break
+            end
         end
         if not needMap then
             for _, e in ipairs(guildEntries) do
-                if not e.classFile then needMap = true; break end
+                if not e.classFile then
+                    needMap = true
+                    break
+                end
             end
         end
-        if needMap then ccMap = BuildClassColorMap() end
+        if needMap then
+            ccMap = BuildClassColorMap()
+        end
     end
 
     -- Hide all pooled frames
-    for i = 1, #rowFrames do rowFrames[i]:Hide() end
-    for i = 1, #secHeaders do secHeaders[i]:Hide() end
+    for i = 1, #rowFrames do
+        rowFrames[i]:Hide()
+    end
+    for i = 1, #secHeaders do
+        secHeaders[i]:Hide()
+    end
 
     local curY = 0
     local rowIdx = 0
@@ -534,9 +664,12 @@ ShowKeystonePopup = function()
     if #partyEntries == 0 then
         rowIdx = rowIdx + 1
         local r = AcquireRow(rowIdx)
-        r._nameFS:SetText("No keystones found"); r._nameFS:SetWidth(contentW)
+        r._nameFS:SetText("No keystones found")
+        r._nameFS:SetWidth(contentW)
         r._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
-        r._ratingFS:SetText(""); r._dungeonFS:SetText(""); r._levelFS:SetText("")
+        r._ratingFS:SetText("")
+        r._dungeonFS:SetText("")
+        r._levelFS:SetText("")
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
         r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
@@ -570,9 +703,12 @@ ShowKeystonePopup = function()
     if #guildEntries == 0 then
         rowIdx = rowIdx + 1
         local r = AcquireRow(rowIdx)
-        r._nameFS:SetText("Waiting for data..."); r._nameFS:SetWidth(contentW)
+        r._nameFS:SetText("Waiting for data...")
+        r._nameFS:SetWidth(contentW)
         r._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.5)
-        r._ratingFS:SetText(""); r._dungeonFS:SetText(""); r._levelFS:SetText("")
+        r._ratingFS:SetText("")
+        r._dungeonFS:SetText("")
+        r._levelFS:SetText("")
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
         r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
@@ -608,12 +744,18 @@ end
 -- rebuild re-lays-out every row. Coalesce bursts into one rebuild per 0.2s.
 local refreshQueued = false
 local function RefreshPopupIfOpen()
-    if not (popup and popup:IsShown()) then return end
-    if refreshQueued then return end
+    if not (popup and popup:IsShown()) then
+        return
+    end
+    if refreshQueued then
+        return
+    end
     refreshQueued = true
     C_Timer.After(0.2, function()
         refreshQueued = false
-        if popup and popup:IsShown() then ShowKeystonePopup() end
+        if popup and popup:IsShown() then
+            ShowKeystonePopup()
+        end
     end)
 end
 _G._CUI_RefreshKeystonePopup = RefreshPopupIfOpen
@@ -632,7 +774,9 @@ do
     local enabled = not cfg or cfg.enabled ~= false
     if LibKeystone and enabled then
         LibKeystone.Register(lksCallbackTable, function(keyLevel, keyMapID, playerRating, playerName, channel)
-            if not playerName then return end
+            if not playerName then
+                return
+            end
             local tbl = (channel == "GUILD") and guildKeys or partyKeys
             tbl[playerName] = { dungeon = keyMapID, keyLevel = keyLevel, rating = playerRating }
             RefreshPopupIfOpen()
@@ -654,7 +798,9 @@ do
     end
 
     SlashCmdList["CUIKEYS"] = function()
-        if not enabled then return end
+        if not enabled then
+            return
+        end
         RecordOwnKey()
         QueryPartyKeys()
         ShowKeystonePopup()

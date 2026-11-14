@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_TalentConditionsPopup.lua
 --  The Talent Conditions picker, CludesUI.ShowTalentConditionsPopup(opts).
@@ -71,8 +73,8 @@ CludesUI.TALENT_COND_NOT_TAKEN = { NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B }
 --  font's settings changed) re-fonts what exists; chips made later take the
 --  font in use.
 -------------------------------------------------------------------------------
-local fonted = {}         -- [i] = { fs, size }
-local buttonLabels = {}   -- the footer buttons' labels
+local fonted = {} -- [i] = { fs, size }
+local buttonLabels = {} -- the footer buttons' labels
 local fontKey, fontPath, fontFlags
 
 local function SetTCFont(fs, size)
@@ -82,13 +84,17 @@ end
 
 local function UseFont(key)
     local path, flags = CludesUI.GetFontPath(key), CludesUI.GetFontOutlineFlag(key)
-    if key == fontKey and path == fontPath and flags == fontFlags then return end
+    if key == fontKey and path == fontPath and flags == fontFlags then
+        return
+    end
     fontKey, fontPath, fontFlags = key, path, flags
     for i = 1, #fonted do
         local f = fonted[i]
         CludesUI.ApplyModuleFont(f.fs, nil, f.size, key)
     end
-    for i = 1, #buttonLabels do buttonLabels[i]:SetFont(path, BTN_FONT, "") end
+    for i = 1, #buttonLabels do
+        buttonLabels[i]:SetFont(path, BTN_FONT, "")
+    end
 end
 
 -- A MakeActionButton's label (btn._label), re-fonted with the strings above.
@@ -114,7 +120,9 @@ local function ReadNode(configID, nodeID, info)
             }
         end
     end
-    if #entries == 0 then return nil end
+    if #entries == 0 then
+        return nil
+    end
     -- Committed build only, the same test the condition check uses: a pick the
     -- player has staged but not applied is not taken yet (activeRank already
     -- counts it). A granted rank (activeRank above ranksPurchased) cannot be
@@ -133,15 +141,21 @@ local function ReadNode(configID, nodeID, info)
         entries = entries,
         choice = (info.type == Enum.TraitNodeType.Selection) and #entries > 1,
         edges = info.visibleEdges,
-        taken = taken,   -- current build: committed entryID, true, or false
+        taken = taken, -- current build: committed entryID, true, or false
     }
 end
 
 -- Horizontal distance from x to a half's column range (0 inside it).
 local function RangeDistance(half, x)
-    if not half.minX then return math.huge end
-    if x < half.minX then return half.minX - x end
-    if x > half.maxX then return x - half.maxX end
+    if not half.minX then
+        return math.huge
+    end
+    if x < half.minX then
+        return half.minX - x
+    end
+    if x > half.maxX then
+        return x - half.maxX
+    end
     return 0
 end
 
@@ -150,11 +164,15 @@ end
 local function ReadTree()
     local configID = C_ClassTalents.GetActiveConfigID()
     local specIndex = C_SpecializationInfo.GetSpecialization()
-    if not configID or not specIndex or specIndex == 0 then return nil end
+    if not configID or not specIndex or specIndex == 0 then
+        return nil
+    end
     local specID, specName = C_SpecializationInfo.GetSpecializationInfo(specIndex)
     local treeID = specID and C_ClassTalents.GetTraitTreeForSpec(specID)
     local nodeIDs = treeID and C_Traits.GetTreeNodes(treeID)
-    if not nodeIDs then return nil end
+    if not nodeIDs then
+        return nil
+    end
 
     -- Which points a node costs tells the halves apart. The game lists the
     -- class currency first and the spec currency second.
@@ -166,20 +184,33 @@ local function ReadTree()
     local free = {}
     for _, nodeID in ipairs(nodeIDs) do
         local info = C_Traits.GetNodeInfo(configID, nodeID)
-        if info and info.isVisible and not info.subTreeID
-           and info.type ~= Enum.TraitNodeType.SubTreeSelection then
+        if
+            info
+            and info.isVisible
+            and not info.subTreeID
+            and info.type ~= Enum.TraitNodeType.SubTreeSelection
+        then
             local node = ReadNode(configID, nodeID, info)
             if node then
                 local half
                 for _, cost in ipairs(C_Traits.GetNodeCost(configID, nodeID) or EMPTY) do
-                    if cost.ID == specCur then half = SPEC_HALF; break end
-                    if cost.ID == classCur then half = CLASS_HALF end
+                    if cost.ID == specCur then
+                        half = SPEC_HALF
+                        break
+                    end
+                    if cost.ID == classCur then
+                        half = CLASS_HALF
+                    end
                 end
                 if half then
                     local h = halves[half]
                     h[#h + 1] = node
-                    if not h.minX or node.x < h.minX then h.minX = node.x end
-                    if not h.maxX or node.x > h.maxX then h.maxX = node.x end
+                    if not h.minX or node.x < h.minX then
+                        h.minX = node.x
+                    end
+                    if not h.maxX or node.x > h.maxX then
+                        h.maxX = node.x
+                    end
                 else
                     free[#free + 1] = node
                 end
@@ -203,7 +234,9 @@ end
 -- their rows and columns line up side by side.
 local function ReadForeverTrees()
     local configID, _, trees = CludesUI.ForeverTalentTrees()
-    if not trees then return nil end
+    if not trees then
+        return nil
+    end
     local out, span = {}, { x = 1, y = 1 }
     for i, t in ipairs(trees) do
         local cells = CludesUI.TalentTreeGrid(configID, t.nodes)
@@ -213,8 +246,12 @@ local function ReadForeverTrees()
             local node = cell and ReadNode(configID, nodeID, cell.info)
             if node then
                 node.x, node.y = cell.col, cell.row
-                if node.x > span.x then span.x = node.x end
-                if node.y > span.y then span.y = node.y end
+                if node.x > span.x then
+                    span.x = node.x
+                end
+                if node.y > span.y then
+                    span.y = node.y
+                end
                 nodes[#nodes + 1] = node
             end
         end
@@ -232,18 +269,20 @@ local dimmer, popup, titleFS, hintFS, statusFS, offFrame
 -- button pool so a button never changes parent (its border's frame level is fixed
 -- when it is built).
 local panels = {}
-local chips = {}       -- off-tree chip pool, [i] shows offTree[i]
-local pending = {}     -- nodeID -> { nodeID, entryID, spellID, taken }
-local offTree = {}     -- saved conditions no drawn node shows; kept unless removed
+local chips = {} -- off-tree chip pool, [i] shows offTree[i]
+local pending = {} -- nodeID -> { nodeID, entryID, spellID, taken }
+local offTree = {} -- saved conditions no drawn node shows; kept unless removed
 local onConfirm
-local texts            -- the open's texts (opts.texts)
-local tipOwner         -- node button that set GameTooltip up (hidden only while it owns it)
+local texts -- the open's texts (opts.texts)
+local tipOwner -- node button that set GameTooltip up (hidden only while it owns it)
 
 local RepaintAll, UpdateStatus, LayoutOffTree
 
 local function ConditionOn(btn)
     local c = pending[btn.node.nodeID]
-    if c and c.entryID == btn.entryID then return c end
+    if c and c.entryID == btn.entryID then
+        return c
+    end
     return nil
 end
 
@@ -281,14 +320,22 @@ local function ButtonOnEnter(btn)
         GameTooltip:AddLine(CludesUI.L("Shown only while this talent is taken"), ar, ag, ab, true)
         GameTooltip:AddLine(CludesUI.L("Click: show only while it is NOT taken"), 0.7, 0.7, 0.7, true)
     else
-        GameTooltip:AddLine(CludesUI.L("Shown only while this talent is NOT taken"), NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, true)
+        GameTooltip:AddLine(
+            CludesUI.L("Shown only while this talent is NOT taken"),
+            NOT_TAKEN_R,
+            NOT_TAKEN_G,
+            NOT_TAKEN_B,
+            true
+        )
         GameTooltip:AddLine(CludesUI.L("Click: clear"), 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
 end
 
 local function ButtonOnLeave(btn)
-    if GameTooltip:IsOwned(btn) then GameTooltip:Hide() end
+    if GameTooltip:IsOwned(btn) then
+        GameTooltip:Hide()
+    end
     tipOwner = nil
 end
 
@@ -305,7 +352,9 @@ local function ButtonOnClick(btn)
     else
         pending[nodeID] = nil
     end
-    for _, b in ipairs(btn.node.btns) do PaintButton(b) end
+    for _, b in ipairs(btn.node.btns) do
+        PaintButton(b)
+    end
     UpdateStatus()
     ButtonOnEnter(btn)
 end
@@ -333,7 +382,9 @@ local function IsDrawn(nodeID, entryID)
     for _, panel in ipairs(panels) do
         for i = 1, panel.used do
             local b = panel.buttons[i]
-            if b.node.nodeID == nodeID and b.entryID == entryID then return true end
+            if b.node.nodeID == nodeID and b.entryID == entryID then
+                return true
+            end
         end
     end
     return false
@@ -341,7 +392,9 @@ end
 
 RepaintAll = function()
     for _, panel in ipairs(panels) do
-        for i = 1, panel.used do PaintButton(panel.buttons[i]) end
+        for i = 1, panel.used do
+            PaintButton(panel.buttons[i])
+        end
     end
 end
 
@@ -349,11 +402,15 @@ UpdateStatus = function()
     local count, met = 0, true
     for _, c in pairs(pending) do
         count = count + 1
-        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
+        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then
+            met = false
+        end
     end
     for _, c in ipairs(offTree) do
         count = count + 1
-        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then met = false end
+        if CludesUI.TalentCondIsTaken(c.nodeID, c.entryID) ~= c.taken then
+            met = false
+        end
     end
     if count == 0 then
         statusFS:SetText(texts.none)
@@ -377,7 +434,9 @@ local function LayoutPanel(panel, nodes, span)
     local area = panel.area
     local lines = panel.lines
     local usedLines = 0
-    for i = 1, panel.used do panel.buttons[i]:Hide() end
+    for i = 1, panel.used do
+        panel.buttons[i]:Hide()
+    end
     panel.used = 0
 
     if nodes and #nodes > 0 then
@@ -386,10 +445,18 @@ local function LayoutPanel(panel, nodes, span)
             minX, maxX, minY, maxY = 0, span.x, 0, span.y
         else
             for _, n in ipairs(nodes) do
-                if n.x < minX then minX = n.x end
-                if n.x > maxX then maxX = n.x end
-                if n.y < minY then minY = n.y end
-                if n.y > maxY then maxY = n.y end
+                if n.x < minX then
+                    minX = n.x
+                end
+                if n.x > maxX then
+                    maxX = n.x
+                end
+                if n.y < minY then
+                    minY = n.y
+                end
+                if n.y > maxY then
+                    maxY = n.y
+                end
             end
         end
         local spanX = math.max(maxX - minX, 1)
@@ -426,7 +493,9 @@ local function LayoutPanel(panel, nodes, span)
 
         -- Connections, drawn under the nodes. Only edges whose both ends sit in this tree.
         local byID = {}
-        for _, n in ipairs(nodes) do byID[n.nodeID] = n end
+        for _, n in ipairs(nodes) do
+            byID[n.nodeID] = n
+        end
         for _, n in ipairs(nodes) do
             for _, edge in ipairs(n.edges or EMPTY) do
                 local target = edge.targetNode and byID[edge.targetNode]
@@ -447,7 +516,9 @@ local function LayoutPanel(panel, nodes, span)
         end
     end
 
-    for i = usedLines + 1, #lines do lines[i]:Hide() end
+    for i = usedLines + 1, #lines do
+        lines[i]:Hide()
+    end
     panel.empty:SetShown(not nodes or #nodes == 0)
 end
 
@@ -457,7 +528,9 @@ end
 local function ChipOnEnter(chip)
     chip.x:SetAlpha(1)
     local c = offTree[chip.index]
-    if not c then return end
+    if not c then
+        return
+    end
     local state = c.taken and CludesUI.L("Shown only while this talent is taken")
         or CludesUI.L("Shown only while this talent is NOT taken")
     CludesUI.ShowWidgetTooltip(chip, state .. "\n" .. CludesUI.L("Click: clear"))
@@ -469,13 +542,17 @@ local function ChipOnLeave(chip)
 end
 
 local function ChipOnClick(chip)
-    if not offTree[chip.index] then return end
+    if not offTree[chip.index] then
+        return
+    end
     table.remove(offTree, chip.index)
     CludesUI.HideWidgetTooltip(true)
     LayoutOffTree()
     UpdateStatus()
     -- The chip under the cursor now shows the next condition: describe that one.
-    if offTree[chip.index] then ChipOnEnter(chip) end
+    if offTree[chip.index] then
+        ChipOnEnter(chip)
+    end
 end
 
 local function MakeChip(i)
@@ -492,7 +569,10 @@ local function MakeChip(i)
     chip.x = chip:CreateTexture(nil, "ARTWORK")
     chip.x:SetSize(10, 10)
     chip.x:SetPoint("RIGHT", chip, "RIGHT", -8, 0)
-    if chip.x.SetSnapToPixelGrid then chip.x:SetSnapToPixelGrid(false); chip.x:SetTexelSnappingBias(0) end
+    if chip.x.SetSnapToPixelGrid then
+        chip.x:SetSnapToPixelGrid(false)
+        chip.x:SetTexelSnappingBias(0)
+    end
     chip.x:SetTexture(CLOSE_ICON)
     chip.x:SetAlpha(0.6)
     chip.label = chip:CreateFontString(nil, "OVERLAY")
@@ -526,8 +606,13 @@ LayoutOffTree = function()
             local col = (i - 1) % CHIP_COLS
             local row = math.floor((i - 1) / CHIP_COLS)
             chip:ClearAllPoints()
-            chip:SetPoint("TOPLEFT", offFrame, "TOPLEFT", col * (CHIP_W + CHIP_GAP_X),
-                -(OFF_LABEL_H + row * (CHIP_H + CHIP_GAP_Y)))
+            chip:SetPoint(
+                "TOPLEFT",
+                offFrame,
+                "TOPLEFT",
+                col * (CHIP_W + CHIP_GAP_X),
+                -(OFF_LABEL_H + row * (CHIP_H + CHIP_GAP_Y))
+            )
             chip.index = i
             chip.x:SetAlpha(0.6)
             local sid = type(c.spellID) == "number" and c.spellID or nil
@@ -544,7 +629,9 @@ LayoutOffTree = function()
     else
         offFrame:Hide()
     end
-    for i = n + 1, #chips do chips[i]:Hide() end
+    for i = n + 1, #chips do
+        chips[i]:Hide()
+    end
     popup:SetHeight(h)
     popup:SetScale(CludesUI.PopupBump(POPUP_BUMP))
     CludesUI.ClampPopupToScreen(popup, POPUP_W, h)
@@ -558,8 +645,7 @@ end
 local function MakePanel(index)
     local frame = CreateFrame("Frame", nil, popup)
     frame:SetSize(PANEL_W, PANEL_H)
-    frame:SetPoint("TOPLEFT", popup, "TOPLEFT",
-        SIDE_PAD + (index - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
+    frame:SetPoint("TOPLEFT", popup, "TOPLEFT", SIDE_PAD + (index - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
     local bg = frame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.060, 0.049, 0.037, 1)
@@ -581,12 +667,21 @@ local function MakePanel(index)
     empty:SetText(CludesUI.L("Talent data is not available right now."))
     empty:Hide()
 
-    panels[index] = { frame = frame, label = label, area = area, empty = empty,
-                      lines = {}, buttons = {}, used = 0 }
+    panels[index] = {
+        frame = frame,
+        label = label,
+        area = area,
+        empty = empty,
+        lines = {},
+        buttons = {},
+        used = 0,
+    }
 end
 
 local function Close()
-    if tipOwner and GameTooltip:IsOwned(tipOwner) then GameTooltip:Hide() end
+    if tipOwner and GameTooltip:IsOwned(tipOwner) then
+        GameTooltip:Hide()
+    end
     tipOwner = nil
     -- A chip hidden under the cursor never gets OnLeave; the modal dimmer means
     -- only this popup can own the widget tooltip here.
@@ -599,23 +694,36 @@ local function Commit()
     for _, c in pairs(pending) do
         out[#out + 1] = { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken }
     end
-    for _, c in ipairs(offTree) do out[#out + 1] = c end
-    table.sort(out, function(a, b) return a.nodeID < b.nodeID end)
+    for _, c in ipairs(offTree) do
+        out[#out + 1] = c
+    end
+    table.sort(out, function(a, b)
+        return a.nodeID < b.nodeID
+    end)
     -- Hiding clears onConfirm (dimmer OnHide), so take it first.
     local confirm = onConfirm
     Close()
-    if confirm then confirm(#out > 0 and out or nil) end
+    if confirm then
+        confirm(#out > 0 and out or nil)
+    end
 end
 
 local function Build()
-    if popup then return end
+    if popup then
+        return
+    end
     -- Dimmer scaled by the panel scale, the popup by its bump (the sibling CDM popups'
     -- density), and registered so the Panel Scale slider rescales it. Clamped: the
     -- trees side by side are wide, and the dimmer eats every click behind it, so an
     -- overflowing popup would strand its buttons off-screen.
     dimmer, popup = CludesUI.BuildPopupShell("CUI_TalentConditions", {
-        w = POPUP_W, h = POPUP_H, bump = POPUP_BUMP, dimAlpha = 0.25, clamp = true,
-        onEscape = Close, onDimmerDown = Close,
+        w = POPUP_W,
+        h = POPUP_H,
+        bump = POPUP_BUMP,
+        dimAlpha = 0.25,
+        clamp = true,
+        onEscape = Close,
+        onDimmerDown = Close,
     })
     dimmer:Hide()
     CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popup, dimmer = dimmer }
@@ -630,7 +738,9 @@ local function Build()
     hintFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -6)
     hintFS:SetTextColor(0.7, 0.7, 0.7, 0.85)
 
-    for i = 1, PANELS do MakePanel(i) end
+    for i = 1, PANELS do
+        MakePanel(i)
+    end
 
     offFrame = CreateFrame("Frame", nil, popup)
     offFrame:SetPoint("TOPLEFT", popup, "TOPLEFT", SIDE_PAD, -(HEADER_H + PANEL_H + OFF_PAD))
@@ -648,15 +758,29 @@ local function Build()
     saveBtn:SetScript("OnClick", Commit)
     KeepButtonLabel(saveBtn)
 
-    local cancelBtn = CludesUI.MakeActionButton(popup, fontPath, CludesUI.L("Cancel"), 1, 1, 1,
-        { w = BTN_W, secondary = true, hoverA = 0.8 })
+    local cancelBtn = CludesUI.MakeActionButton(
+        popup,
+        fontPath,
+        CludesUI.L("Cancel"),
+        1,
+        1,
+        1,
+        { w = BTN_W, secondary = true, hoverA = 0.8 }
+    )
     cancelBtn:SetPoint("RIGHT", saveBtn, "LEFT", -BTN_GAP, 0)
     cancelBtn:SetScript("OnClick", Close)
     popup._cancelBtn = cancelBtn
     KeepButtonLabel(cancelBtn)
 
-    local clearBtn = CludesUI.MakeActionButton(popup, fontPath, CludesUI.L("Clear All"), 1, 1, 1,
-        { w = BTN_W, secondary = true, hoverA = 0.8 })
+    local clearBtn = CludesUI.MakeActionButton(
+        popup,
+        fontPath,
+        CludesUI.L("Clear All"),
+        1,
+        1,
+        1,
+        { w = BTN_W, secondary = true, hoverA = 0.8 }
+    )
     clearBtn:SetPoint("RIGHT", cancelBtn, "LEFT", -BTN_GAP, 0)
     clearBtn:SetScript("OnClick", function()
         wipe(pending)
@@ -678,7 +802,9 @@ local function Build()
 
     -- Hooked, not set: hide hooks the popup shell or the controller cursor put
     -- on this dimmer must survive (with none, this is its only handler).
-    dimmer:HookScript("OnHide", function() onConfirm = nil end)
+    dimmer:HookScript("OnHide", function()
+        onConfirm = nil
+    end)
 end
 
 -------------------------------------------------------------------------------
@@ -715,7 +841,8 @@ function CludesUI.ShowTalentConditionsPopup(opts)
     wipe(offTree)
     for _, c in ipairs(type(opts.conds) == "table" and opts.conds or EMPTY) do
         if type(c) == "table" and c.nodeID then
-            local copy = { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken ~= false }
+            local copy =
+                { nodeID = c.nodeID, entryID = c.entryID, spellID = c.spellID, taken = c.taken ~= false }
             if not pending[c.nodeID] and IsDrawn(c.nodeID, c.entryID) then
                 pending[c.nodeID] = copy
             else
@@ -728,6 +855,6 @@ function CludesUI.ShowTalentConditionsPopup(opts)
     LayoutOffTree()
     RepaintAll()
     UpdateStatus()
-    CludesUI.PadPopupOpen(dimmer, popup, popup._cancelBtn, Close)  -- controller cursor
+    CludesUI.PadPopupOpen(dimmer, popup, popup._cancelBtn, Close) -- controller cursor
     dimmer:Show()
 end

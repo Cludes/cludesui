@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Pushed.lua
 --
@@ -18,73 +20,110 @@ local EAB, barButtons = ns.EAB, ns.barButtons
 local HIGHLIGHT_TEXTURES, ResolveBorderThickness = ns.HIGHLIGHT_TEXTURES, ns.ResolveBorderThickness
 local I = ns._internals
 local BAR_CONFIG, _quickKeybindState = I.BAR_CONFIG, I._quickKeybindState
-local SetSquareTexture, _controllerButtons, allButtons = I.SetSquareTexture, I._controllerButtons, I.allButtons
+local SetSquareTexture, _controllerButtons, allButtons =
+    I.SetSquareTexture, I._controllerButtons, I.allButtons
 
 -------------------------------------------------------------------------------
 --  Pushed / Highlight Textures
 --  These are global settings that apply to ALL action bar buttons.
 -------------------------------------------------------------------------------
 local PUSHED_TYPES = {
-    [1] = "light",   -- Light overlay
-    [2] = "medium",  -- Medium overlay
-    [3] = "strong",  -- Strong overlay
-    [4] = "solid",   -- Solid color fill
-    [5] = "border",  -- Border only
-    [6] = "none",    -- No pushed effect
+    [1] = "light", -- Light overlay
+    [2] = "medium", -- Medium overlay
+    [3] = "strong", -- Strong overlay
+    [4] = "solid", -- Solid color fill
+    [5] = "border", -- Border only
+    [6] = "none", -- No pushed effect
 }
 
 do
-local function _setupBorderEdges(btn, storeKey, driverTex)
-    -- Edge state lives in EFD, never on the button table: StanceBar/PetBar
-    -- flow through here with BLIZZARD-owned buttons (StanceButton/
-    -- PetActionButton), which must never receive custom keys.
-    local edges = EFD(btn)[storeKey]
-    if not edges then
-        edges = {}
-        for j = 1, 4 do
-            local t = btn:CreateTexture(nil, "OVERLAY", nil, 2)
-            t:SetColorTexture(1, 1, 1, 1)
-            t:Hide()
-            edges[j] = t
+    local function _setupBorderEdges(btn, storeKey, driverTex)
+        -- Edge state lives in EFD, never on the button table: StanceBar/PetBar
+        -- flow through here with BLIZZARD-owned buttons (StanceButton/
+        -- PetActionButton), which must never receive custom keys.
+        local edges = EFD(btn)[storeKey]
+        if not edges then
+            edges = {}
+            for j = 1, 4 do
+                local t = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+                t:SetColorTexture(1, 1, 1, 1)
+                t:Hide()
+                edges[j] = t
+            end
+            EFD(btn)[storeKey] = edges
+            if driverTex then
+                hooksecurefunc(driverTex, "Show", function()
+                    if not edges._active then
+                        return
+                    end
+                    for j = 1, 4 do
+                        edges[j]:Show()
+                    end
+                end)
+                hooksecurefunc(driverTex, "Hide", function()
+                    for j = 1, 4 do
+                        edges[j]:Hide()
+                    end
+                end)
+            end
         end
-        EFD(btn)[storeKey] = edges
-        if driverTex then
-            hooksecurefunc(driverTex, "Show", function()
-                if not edges._active then return end
-                for j = 1, 4 do edges[j]:Show() end
-            end)
-            hooksecurefunc(driverTex, "Hide", function()
-                for j = 1, 4 do edges[j]:Hide() end
-            end)
+        return edges
+    end
+
+    local function _applyBorderEdges(edges, btn, brdSize, cr, cg, cb)
+        edges._active = true
+        local anchor = btn.icon or btn.Icon or btn
+        local PP = CludesUI.PP
+        for j = 1, 4 do
+            edges[j]:SetVertexColor(cr, cg, cb, 1)
+        end
+        edges[1]:ClearAllPoints()
+        edges[1]:SetPoint("TOPLEFT", anchor)
+        edges[1]:SetPoint("TOPRIGHT", anchor)
+        if PP then
+            PP.Height(edges[1], brdSize)
+        else
+            edges[1]:SetHeight(brdSize)
+        end
+        edges[2]:ClearAllPoints()
+        edges[2]:SetPoint("BOTTOMLEFT", anchor)
+        edges[2]:SetPoint("BOTTOMRIGHT", anchor)
+        if PP then
+            PP.Height(edges[2], brdSize)
+        else
+            edges[2]:SetHeight(brdSize)
+        end
+        edges[3]:ClearAllPoints()
+        edges[3]:SetPoint("TOPLEFT", edges[1], "BOTTOMLEFT")
+        edges[3]:SetPoint("BOTTOMLEFT", edges[2], "TOPLEFT")
+        if PP then
+            PP.Width(edges[3], brdSize)
+        else
+            edges[3]:SetWidth(brdSize)
+        end
+        edges[4]:ClearAllPoints()
+        edges[4]:SetPoint("TOPRIGHT", edges[1], "BOTTOMRIGHT")
+        edges[4]:SetPoint("BOTTOMRIGHT", edges[2], "TOPRIGHT")
+        if PP then
+            PP.Width(edges[4], brdSize)
+        else
+            edges[4]:SetWidth(brdSize)
         end
     end
-    return edges
-end
 
-local function _applyBorderEdges(edges, btn, brdSize, cr, cg, cb)
-    edges._active = true
-    local anchor = btn.icon or btn.Icon or btn
-    local PP = CludesUI.PP
-    for j = 1, 4 do edges[j]:SetVertexColor(cr, cg, cb, 1) end
-    edges[1]:ClearAllPoints(); edges[1]:SetPoint("TOPLEFT", anchor); edges[1]:SetPoint("TOPRIGHT", anchor)
-    if PP then PP.Height(edges[1], brdSize) else edges[1]:SetHeight(brdSize) end
-    edges[2]:ClearAllPoints(); edges[2]:SetPoint("BOTTOMLEFT", anchor); edges[2]:SetPoint("BOTTOMRIGHT", anchor)
-    if PP then PP.Height(edges[2], brdSize) else edges[2]:SetHeight(brdSize) end
-    edges[3]:ClearAllPoints(); edges[3]:SetPoint("TOPLEFT", edges[1], "BOTTOMLEFT"); edges[3]:SetPoint("BOTTOMLEFT", edges[2], "TOPLEFT")
-    if PP then PP.Width(edges[3], brdSize) else edges[3]:SetWidth(brdSize) end
-    edges[4]:ClearAllPoints(); edges[4]:SetPoint("TOPRIGHT", edges[1], "BOTTOMRIGHT"); edges[4]:SetPoint("BOTTOMRIGHT", edges[2], "TOPRIGHT")
-    if PP then PP.Width(edges[4], brdSize) else edges[4]:SetWidth(brdSize) end
-end
-
-local function _hideBorderEdges(btn, storeKey)
-    local edges = EFD(btn)[storeKey]
-    if not edges then return end
-    edges._active = false
-    for j = 1, 4 do edges[j]:Hide() end
-end
-ns._setupBorderEdges = _setupBorderEdges
-ns._applyBorderEdges = _applyBorderEdges
-ns._hideBorderEdges  = _hideBorderEdges
+    local function _hideBorderEdges(btn, storeKey)
+        local edges = EFD(btn)[storeKey]
+        if not edges then
+            return
+        end
+        edges._active = false
+        for j = 1, 4 do
+            edges[j]:Hide()
+        end
+    end
+    ns._setupBorderEdges = _setupBorderEdges
+    ns._applyBorderEdges = _applyBorderEdges
+    ns._hideBorderEdges = _hideBorderEdges
 end
 
 -------------------------------------------------------------------------------
@@ -109,9 +148,9 @@ end
 -- Tint slots (r, g, b, a), refilled in place by the pushed and highlight passes
 -- while their role is on, so a paint allocates nothing.
 ns._ixPushC = { 1, 1, 1, 1 }
-ns._ixHlC   = { 1, 1, 1, 1 }
+ns._ixHlC = { 1, 1, 1, 1 }
 -- [barKey] = the bar's last computed eligibility (GetCheckedAlpha reads it).
-ns._ixElig  = {}
+ns._ixElig = {}
 
 -- Which roles are on, from the profile alone: each needs its own opt-in plus
 -- the setting it restyles (Border pushed / highlight type, cast highlight on).
@@ -131,8 +170,12 @@ ns._ixBarEligible = function(barKey)
     if s and p.squareIcons and ns.AB_Style() == "cui" then
         local shape = s.buttonShape or "none"
         local tex = s.borderTexture or "solid"
-        if (shape == "none" or shape == "cropped") and tex ~= "" and tex ~= "solid"
-           and CludesUI.ResolveBorderTexture(tex) then
+        if
+            (shape == "none" or shape == "cropped")
+            and tex ~= ""
+            and tex ~= "solid"
+            and CludesUI.ResolveBorderTexture(tex)
+        then
             ok = ResolveBorderThickness(s) > 0
         end
     end
@@ -149,12 +192,27 @@ end
 ns._ixStyle = function(btn, fd, s)
     local host = fd.ixHost
     local sz, px = ResolveBorderThickness(s)
-    CludesUI.ApplyBorderStyle(host, sz, fd.ixR or 1, fd.ixG or 1, fd.ixB or 1, fd.ixA or 1,
-        s.borderTexture, s.borderTextureOffset, s.borderTextureOffsetY,
-        s.borderTextureShiftX, s.borderTextureShiftY, "actionbars",
-        s.borderThickness or "thin", nil, px)
+    CludesUI.ApplyBorderStyle(
+        host,
+        sz,
+        fd.ixR or 1,
+        fd.ixG or 1,
+        fd.ixB or 1,
+        fd.ixA or 1,
+        s.borderTexture,
+        s.borderTextureOffset,
+        s.borderTextureOffsetY,
+        s.borderTextureShiftX,
+        s.borderTextureShiftY,
+        "actionbars",
+        s.borderThickness or "thin",
+        nil,
+        px
+    )
     local bd = CludesUI._bdBorderData[host]
-    if bd then bd:SetFrameLevel(ns._eabBorderLevel(btn, s.borderBehind, s.borderAboveEffects)) end
+    if bd then
+        bd:SetFrameLevel(ns._eabBorderLevel(btn, s.borderBehind, s.borderAboveEffects))
+    end
     fd.ixStyled = true
 end
 
@@ -163,7 +221,9 @@ end
 -- edge. Runs from hooks in and out of combat: our own frames only.
 ns._ixPaint = function(btn, fd)
     local w = fd.ixBorder
-    if not w then return end
+    if not w then
+        return
+    end
     local bdData = CludesUI._bdBorderData
     local bd = bdData[fd.ixHost]
     local c
@@ -193,7 +253,9 @@ ns._ixPaint = function(btn, fd)
         fd.ixLit = nil
         w:Hide()
         local base = bdData[btn]
-        if base then base:SetAlpha(fd.ixBaseA or 1) end
+        if base then
+            base:SetAlpha(fd.ixBaseA or 1)
+        end
     end
 end
 
@@ -224,20 +286,28 @@ ns._ixHookPress = function(btn, fd)
     fd.ixPressHooked = true
     local pt = btn.PushedTexture
     if pt then
-        hooksecurefunc(pt, "Show", function() ns._ixPressOn(btn) end)
-        hooksecurefunc(pt, "Hide", function() ns._ixPressOff(btn) end)
+        hooksecurefunc(pt, "Show", function()
+            ns._ixPressOn(btn)
+        end)
+        hooksecurefunc(pt, "Hide", function()
+            ns._ixPressOff(btn)
+        end)
     end
     btn:HookScript("OnMouseDown", ns._ixPressOn)
     btn:HookScript("OnMouseUp", ns._ixPressOff)
     btn:HookScript("OnHide", ns._ixPressOff)
-    if _controllerButtons[btn] then btn:HookScript("OnDragStart", ns._ixPressOff) end
+    if _controllerButtons[btn] then
+        btn:HookScript("OnDragStart", ns._ixPressOff)
+    end
 end
 
 -- Reads the checked state and paints only when it really changed. A secret
 -- value is skipped without a retry; the next SetChecked samples again.
 ns._ixSampleChecked = function(btn, fd)
     local c = btn:GetChecked()
-    if issecretvalue and issecretvalue(c) then return end
+    if issecretvalue and issecretvalue(c) then
+        return
+    end
     c = c and true or nil
     if fd.ixChecked ~= c then
         fd.ixChecked = c
@@ -252,7 +322,9 @@ ns._ixHookChecked = function(btn, fd)
     fd.ixCheckHooked = true
     hooksecurefunc(btn, "SetChecked", function()
         local d = ns._eabFD[btn]
-        if d and d.ixCast then ns._ixSampleChecked(btn, d) end
+        if d and d.ixCast then
+            ns._ixSampleChecked(btn, d)
+        end
     end)
 end
 
@@ -281,13 +353,21 @@ ns._ixRole = function(btn, s, role, on)
                 fd.ixBorder, fd.ixHost = w, host
                 ns._ixEver = true
             end
-            if not fd.ixStyled then ns._ixStyle(btn, fd, s) end
-            if role == "ixPush" and not fd.ixPressHooked then ns._ixHookPress(btn, fd) end
-            if role == "ixCast" and not fd.ixCheckHooked then ns._ixHookChecked(btn, fd) end
+            if not fd.ixStyled then
+                ns._ixStyle(btn, fd, s)
+            end
+            if role == "ixPush" and not fd.ixPressHooked then
+                ns._ixHookPress(btn, fd)
+            end
+            if role == "ixCast" and not fd.ixCheckHooked then
+                ns._ixHookChecked(btn, fd)
+            end
         end
         fd[role] = true
         -- A (re)armed cast role starts from the button's real state.
-        if role == "ixCast" then ns._ixSampleChecked(btn, fd) end
+        if role == "ixCast" then
+            ns._ixSampleChecked(btn, fd)
+        end
         ns._ixPaint(btn, fd)
         return true
     elseif fd[role] then
@@ -313,13 +393,18 @@ function EAB:ApplyPushedTextures()
     local abStyle = ns.AB_Style()
     local pType = p.pushedTextureType or 2
     local useCC = p.pushedUseClassColor
-    local customC = p.pushedCustomColor or { r=0.973, g=0.839, b=0.604, a=1 }
+    local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local brdSize = p.pushedBorderSize or 4
 
     local cr, cg, cb = customC.r, customC.g, customC.b
     if useCC then
         local _, ct = UnitClass("player")
-        if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then cr, cg, cb = cc.r, cc.g, cc.b end end
+        if ct then
+            local cc = RAID_CLASS_COLORS[ct]
+            if cc then
+                cr, cg, cb = cc.r, cc.g, cc.b
+            end
+        end
     end
 
     -- Match Bar Border (pushed): eligible bars trade the flat edges for the
@@ -373,7 +458,10 @@ function EAB:ApplyPushedTextures()
                         btn.PushedTexture:SetAlpha(1)
                         ns._hideBorderEdges(btn, "_pushedBorder")
                         if pType <= 3 then
-                            SetSquareTexture(btn.PushedTexture, HIGHLIGHT_TEXTURES[pType] or HIGHLIGHT_TEXTURES[2])
+                            SetSquareTexture(
+                                btn.PushedTexture,
+                                HIGHLIGHT_TEXTURES[pType] or HIGHLIGHT_TEXTURES[2]
+                            )
                             btn.PushedTexture:SetVertexColor(cr, cg, cb, 1)
                         elseif pType == 4 then
                             btn.PushedTexture:SetColorTexture(cr, cg, cb, 0.35)
@@ -381,7 +469,9 @@ function EAB:ApplyPushedTextures()
                     end
                     -- Stock styles, other pushed types, the option off and
                     -- bars that left eligibility all land here.
-                    if ixEver and not ixBar then ns._ixRole(btn, s, "ixPush", false) end
+                    if ixEver and not ixBar then
+                        ns._ixRole(btn, s, "ixPush", false)
+                    end
                 end
             end
         end
@@ -397,12 +487,14 @@ end
 -------------------------------------------------------------------------------
 do
     local _pushedHooked = false
-    local _activePushed = {}  -- btn -> true
+    local _activePushed = {} -- btn -> true
     local _activePushedN = 0
-    local _btnKeys = {}       -- btn -> { k1, k2 } (reused, no alloc per press)
+    local _btnKeys = {} -- btn -> { k1, k2 } (reused, no alloc per press)
     local _pollFrame
     function EAB:HookPushedFlash()
-        if _pushedHooked then return end
+        if _pushedHooked then
+            return
+        end
         _pushedHooked = true
         _pollFrame = ns.TakeShell()
         _pollFrame:SetScript("OnUpdate", function()
@@ -417,41 +509,67 @@ do
                     for i = 1, #keys do
                         -- IsKeyDown reads no non-ASCII key name (the Nordic section key):
                         -- such a key stays lit until its binding's key-up below.
-                        if IsKeyDown(keys[i]) or keys[i]:find("[\128-\255]") then held = true; break end
+                        if IsKeyDown(keys[i]) or keys[i]:find("[\128-\255]") then
+                            held = true
+                            break
+                        end
                     end
                 end
                 if not held then
-                    if btn.PushedTexture then btn.PushedTexture:Hide() end
+                    if btn.PushedTexture then
+                        btn.PushedTexture:Hide()
+                    end
                     _activePushed[btn] = nil
                     _activePushedN = _activePushedN - 1
                 end
             end
-            if _activePushedN == 0 then _pollFrame:Hide() end
+            if _activePushedN == 0 then
+                _pollFrame:Hide()
+            end
         end)
         _pollFrame:Hide()
         -- Extract the base key from a compound binding ("SHIFT-1" -> "1",
         -- "CTRL-Q" -> "Q"): IsKeyDown only accepts raw key names.
         local function BaseKey(binding)
-            if not binding then return nil end
+            if not binding then
+                return nil
+            end
             -- The minus key's name is the literal "-", so "-" and modifier
             -- combos like "SHIFT--" END in "-": the trailing char IS the key,
             -- and the pattern below would find no non-hyphen run (nil).
-            if binding:sub(-1) == "-" then return "-" end
+            if binding:sub(-1) == "-" then
+                return "-"
+            end
             return binding:match("[^%-]+$")
         end
         local function ShowPushedForSlot(slot)
             local prof = EAB.db and EAB.db.profile
-            if not prof then return end
-            if ns.AB_Style() == "cui" and (prof.pushedTextureType or 2) == 6 then return end
+            if not prof then
+                return
+            end
+            if ns.AB_Style() == "cui" and (prof.pushedTextureType or 2) == 6 then
+                return
+            end
             local btn = allButtons[slot]
-            if not btn or not btn.PushedTexture then return end
+            if not btn or not btn.PushedTexture then
+                return
+            end
             local cmd = btn.commandName
-            if not cmd then return end
+            if not cmd then
+                return
+            end
             local k1, k2 = GetBindingKey(cmd)
-            if not k1 then return end
+            if not k1 then
+                return
+            end
             local keys = _btnKeys[btn]
-            if not keys then keys = {}; _btnKeys[btn] = keys end
-            keys[1] = BaseKey(k1); keys[2] = BaseKey(k2); keys[3] = nil
+            if not keys then
+                keys = {}
+                _btnKeys[btn] = keys
+            end
+            keys[1] = BaseKey(k1)
+            keys[2] = BaseKey(k2)
+            keys[3] = nil
             btn.PushedTexture:Show()
             if not _activePushed[btn] then
                 _activePushed[btn] = true
@@ -461,36 +579,48 @@ do
         end
         local function HidePushedForSlot(slot)
             local btn = allButtons[slot]
-            if not (btn and _activePushed[btn]) then return end
-            if btn.PushedTexture then btn.PushedTexture:Hide() end
+            if not (btn and _activePushed[btn]) then
+                return
+            end
+            if btn.PushedTexture then
+                btn.PushedTexture:Hide()
+            end
             _activePushed[btn] = nil
             _activePushedN = _activePushedN - 1
         end
         -- ActionButtonDown/MultiActionButtonDown fire on key press regardless
         -- of "cast on key down" CVar. This ensures pushed texture shows while
         -- the key is held for both key-down and key-up casting modes.
-        hooksecurefunc("ActionButtonDown", function(id) ShowPushedForSlot(id) end)
-        hooksecurefunc("ActionButtonUp", function(id) HidePushedForSlot(id) end)
+        hooksecurefunc("ActionButtonDown", function(id)
+            ShowPushedForSlot(id)
+        end)
+        hooksecurefunc("ActionButtonUp", function(id)
+            HidePushedForSlot(id)
+        end)
         if MultiActionButtonDown then
             local multiBarPage = {
-                MultiBarBottomLeft  = 6,
+                MultiBarBottomLeft = 6,
                 MultiBarBottomRight = 5,
-                MultiBarRight       = 3,
-                MultiBarLeft        = 4,
-                MultiBar5           = 13,
-                MultiBar6           = 14,
-                MultiBar7           = 15,
+                MultiBarRight = 3,
+                MultiBarLeft = 4,
+                MultiBar5 = 13,
+                MultiBar6 = 14,
+                MultiBar7 = 15,
             }
             hooksecurefunc("MultiActionButtonDown", function(barName, id)
                 local page = multiBarPage[barName]
-                if not page then return end
+                if not page then
+                    return
+                end
                 local slot = (page - 1) * 12 + id
                 ShowPushedForSlot(slot)
             end)
             if MultiActionButtonUp then
                 hooksecurefunc("MultiActionButtonUp", function(barName, id)
                     local page = multiBarPage[barName]
-                    if page then HidePushedForSlot((page - 1) * 12 + id) end
+                    if page then
+                        HidePushedForSlot((page - 1) * 12 + id)
+                    end
                 end)
             end
         end
@@ -502,13 +632,18 @@ function EAB:ApplyHighlightTextures()
     local abStock = ns.AB_Style() ~= "cui"
     local hType = p.highlightTextureType or 2
     local useCC = p.highlightUseClassColor
-    local customC = p.highlightCustomColor or { r=0.973, g=0.839, b=0.604, a=1 }
+    local customC = p.highlightCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local brdSize = p.highlightBorderSize or 4
 
     local cr, cg, cb = customC.r, customC.g, customC.b
     if useCC then
         local _, ct = UnitClass("player")
-        if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then cr, cg, cb = cc.r, cc.g, cc.b end end
+        if ct then
+            local cc = RAID_CLASS_COLORS[ct]
+            if cc then
+                cr, cg, cb = cc.r, cc.g, cc.b
+            end
+        end
     end
 
     -- Match Bar Border (hover), plus the tint the spell-cast copy shares with
@@ -533,71 +668,88 @@ function EAB:ApplyHighlightTextures()
             if buttons then
                 for i = 1, #buttons do
                     local btn = buttons[i]
-                    if btn then ns._ixRole(btn, nil, "ixHover", false) end
+                    if btn then
+                        ns._ixRole(btn, nil, "ixHover", false)
+                    end
                 end
             end
         else
-        local buttons = barButtons[info.key]
-        if buttons then
-            local s = p.bars[info.key]
-            local ixBar = ixOn and ns._ixBarEligible(info.key)
-            for i = 1, #buttons do
-                local btn = buttons[i]
-                if btn and btn.HighlightTexture then
-                    if hType == 6 then
-                        btn.HighlightTexture:SetAlpha(0)
-                        ns._hideBorderEdges(btn, "_highlightBorder")
-                    elseif hType == 5 then
-                        btn.HighlightTexture:SetAlpha(0)
-                        if ixBar and ns._ixRole(btn, s, "ixHover", true) then
+            local buttons = barButtons[info.key]
+            if buttons then
+                local s = p.bars[info.key]
+                local ixBar = ixOn and ns._ixBarEligible(info.key)
+                for i = 1, #buttons do
+                    local btn = buttons[i]
+                    if btn and btn.HighlightTexture then
+                        if hType == 6 then
+                            btn.HighlightTexture:SetAlpha(0)
                             ns._hideBorderEdges(btn, "_highlightBorder")
+                        elseif hType == 5 then
+                            btn.HighlightTexture:SetAlpha(0)
+                            if ixBar and ns._ixRole(btn, s, "ixHover", true) then
+                                ns._hideBorderEdges(btn, "_highlightBorder")
+                            else
+                                local edges = ns._setupBorderEdges(btn, "_highlightBorder")
+                                ns._applyBorderEdges(edges, btn, brdSize, cr, cg, cb)
+                            end
+                            if not EFD(btn).hlBorderHooked then
+                                EFD(btn).hlBorderHooked = true
+                                -- Hover driver for both looks: the armed copy, else
+                                -- today's edges.
+                                btn:HookScript("OnEnter", function(self)
+                                    local fd = EFD(self)
+                                    if fd.ixHover then
+                                        fd.ixOver = true
+                                        ns._ixPaint(self, fd)
+                                        return
+                                    end
+                                    local be = fd._highlightBorder
+                                    if be and be._active then
+                                        for j = 1, 4 do
+                                            be[j]:Show()
+                                        end
+                                    end
+                                end)
+                                btn:HookScript("OnLeave", function(self)
+                                    local fd = EFD(self)
+                                    if fd.ixOver then
+                                        fd.ixOver = nil
+                                        ns._ixPaint(self, fd)
+                                    end
+                                    local be = fd._highlightBorder
+                                    if be then
+                                        for j = 1, 4 do
+                                            be[j]:Hide()
+                                        end
+                                    end
+                                end)
+                            end
                         else
-                            local edges = ns._setupBorderEdges(btn, "_highlightBorder")
-                            ns._applyBorderEdges(edges, btn, brdSize, cr, cg, cb)
+                            btn.HighlightTexture:SetAlpha(1)
+                            ns._hideBorderEdges(btn, "_highlightBorder")
+                            if hType <= 3 then
+                                SetSquareTexture(
+                                    btn.HighlightTexture,
+                                    HIGHLIGHT_TEXTURES[hType] or HIGHLIGHT_TEXTURES[1]
+                                )
+                                btn.HighlightTexture:SetVertexColor(cr, cg, cb, 1)
+                            elseif hType == 4 then
+                                btn.HighlightTexture:SetColorTexture(cr, cg, cb, 0.35)
+                            end
                         end
-                        if not EFD(btn).hlBorderHooked then
-                            EFD(btn).hlBorderHooked = true
-                            -- Hover driver for both looks: the armed copy, else
-                            -- today's edges.
-                            btn:HookScript("OnEnter", function(self)
-                                local fd = EFD(self)
-                                if fd.ixHover then
-                                    fd.ixOver = true
-                                    ns._ixPaint(self, fd)
-                                    return
-                                end
-                                local be = fd._highlightBorder
-                                if be and be._active then for j = 1, 4 do be[j]:Show() end end
-                            end)
-                            btn:HookScript("OnLeave", function(self)
-                                local fd = EFD(self)
-                                if fd.ixOver then
-                                    fd.ixOver = nil
-                                    ns._ixPaint(self, fd)
-                                end
-                                local be = fd._highlightBorder
-                                if be then for j = 1, 4 do be[j]:Hide() end end
-                            end)
-                        end
-                    else
-                        btn.HighlightTexture:SetAlpha(1)
-                        ns._hideBorderEdges(btn, "_highlightBorder")
-                        if hType <= 3 then
-                            SetSquareTexture(btn.HighlightTexture, HIGHLIGHT_TEXTURES[hType] or HIGHLIGHT_TEXTURES[1])
-                            btn.HighlightTexture:SetVertexColor(cr, cg, cb, 1)
-                        elseif hType == 4 then
-                            btn.HighlightTexture:SetColorTexture(cr, cg, cb, 0.35)
+                        if ixEver and not ixBar then
+                            ns._ixRole(btn, s, "ixHover", false)
                         end
                     end
-                    if ixEver and not ixBar then ns._ixRole(btn, s, "ixHover", false) end
+                    if ixCast and ixEver and btn then
+                        local fd = ns._eabFD[btn]
+                        if fd and fd.ixCast then
+                            ns._ixPaint(btn, fd)
+                        end
+                    end
+                    _quickKeybindState.art.RefreshButton(btn)
                 end
-                if ixCast and ixEver and btn then
-                    local fd = ns._eabFD[btn]
-                    if fd and fd.ixCast then ns._ixPaint(btn, fd) end
-                end
-                _quickKeybindState.art.RefreshButton(btn)
             end
-        end
         end -- abStock
     end
 
@@ -606,4 +758,3 @@ function EAB:ApplyHighlightTextures()
     -- Keep their QuickKeybind highlight aligned with the CUI button art too.
     _quickKeybindState.art.ForEachSpecialButton(_quickKeybindState.art.InitializeButton)
 end
-

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_SidebarIcons.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ECHAT = ns.ECHAT
@@ -19,28 +23,34 @@ local CFD, GetTabAreaHeight = I.CFD, I.GetTabAreaHeight
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local _sidebarFadeTarget = I._sidebarFadeTarget
-I.sidebarFadeTargetSetters[#I.sidebarFadeTargetSetters + 1] = function(v) _sidebarFadeTarget = v end
+I.sidebarFadeTargetSetters[#I.sidebarFadeTargetSetters + 1] = function(v)
+    _sidebarFadeTarget = v
+end
 local _sidebarFadeAlpha = I._sidebarFadeAlpha
-I.sidebarFadeAlphaSetters[#I.sidebarFadeAlphaSetters + 1] = function(v) _sidebarFadeAlpha = v end
+I.sidebarFadeAlphaSetters[#I.sidebarFadeAlphaSetters + 1] = function(v)
+    _sidebarFadeAlpha = v
+end
 
 -- Show/hide individual sidebar icons and re-anchor visible ones to close gaps
 -- Chain refs for ApplySidebarIcons (static: that pass runs on every sidebar
 -- fade edge).
 ECHAT.SIDEBAR_CHAIN_REFS = {
-    showFriends    = { btn = "friendsBtn",    tail = "friendsCount" },
-    showGuild      = { btn = "guildBtn",      tail = "guildCount" },
+    showFriends = { btn = "friendsBtn", tail = "friendsCount" },
+    showGuild = { btn = "guildBtn", tail = "guildCount" },
     showDurability = { btn = "durabilityBtn", tail = "durabilityPct" },
-    showCopy       = { btn = "copyBtn" },
-    showPortals    = { btn = "portalBtn" },
-    showVoice      = { btn = "voiceBtn" },
-    showChatMenu   = { btn = "chatMenuBtn" },
-    showSettings   = { btn = "settingsBtn" },
+    showCopy = { btn = "copyBtn" },
+    showPortals = { btn = "portalBtn" },
+    showVoice = { btn = "voiceBtn" },
+    showChatMenu = { btn = "chatMenuBtn" },
+    showSettings = { btn = "settingsBtn" },
 }
 function ECHAT.ApplySidebarIcons()
     local cfg = ECHAT.DB()
     local cf1 = _G.ChatFrame1
     local sb = cf1 and CFD(cf1).sidebar
-    if not sb then return end
+    if not sb then
+        return
+    end
 
     -- Stock kits pack their column like the stock one: their own spacing
     -- (the visible gap between art; each button's transparent pads come off).
@@ -76,7 +86,9 @@ function ECHAT.ApplySidebarIcons()
             local shown = cfg[key] ~= false and not sbHidden
             btn:SetShown(shown)
             local tail = refs.tail and sbd[refs.tail]
-            if tail then tail:SetShown(shown) end
+            if tail then
+                tail:SetShown(shown)
+            end
             if shown then
                 -- Pads are nil on the CludesUI look (the maths there is
                 -- unchanged); the stock column starts at the sidebar's top.
@@ -101,14 +113,19 @@ function ECHAT.ApplySidebarIcons()
     -- Scroll is independent; when anchored to the chat panel it is exempt
     -- from the hidden-sidebar cutoff.
     if sbd.scrollBtn then
-        sbd.scrollBtn:SetShown(cfg.showScroll ~= false
-            and (not sbHidden
-                or (cfg.scrollButtonOnChat == true and ns._chatPassthrough ~= true)))
+        sbd.scrollBtn:SetShown(
+            cfg.showScroll ~= false
+                and (not sbHidden or (cfg.scrollButtonOnChat == true and ns._chatPassthrough ~= true))
+        )
     end
-    if ECHAT.ApplyScrollButtonPosition then ECHAT.ApplyScrollButtonPosition() end
+    if ECHAT.ApplyScrollButtonPosition then
+        ECHAT.ApplyScrollButtonPosition()
+    end
 
     -- Re-apply free move offsets after chain layout
-    if ECHAT.ApplyIconFreeMove then ECHAT.ApplyIconFreeMove() end
+    if ECHAT.ApplyIconFreeMove then
+        ECHAT.ApplyIconFreeMove()
+    end
 end
 
 -- Map of sidebar-icon visibility key -> its CFD button reference. Buttons are
@@ -117,15 +134,15 @@ end
 -- panel uses this to fire a reload prompt only when adding a new icon
 -- (scrollBtn is always created, so it never needs one).
 local SIDEBAR_ICON_REFS = {
-    showFriends    = "friendsBtn",
-    showGuild      = "guildBtn",
+    showFriends = "friendsBtn",
+    showGuild = "guildBtn",
     showDurability = "durabilityBtn",
-    showCopy       = "copyBtn",
-    showPortals    = "portalBtn",
-    showVoice      = "voiceBtn",
-    showChatMenu   = "chatMenuBtn",
-    showSettings   = "settingsBtn",
-    showScroll     = "scrollBtn",
+    showCopy = "copyBtn",
+    showPortals = "portalBtn",
+    showVoice = "voiceBtn",
+    showChatMenu = "chatMenuBtn",
+    showSettings = "settingsBtn",
+    showScroll = "scrollBtn",
 }
 
 -- Canonical chain-icon keys and fallback order values. Explicit numbers in
@@ -134,7 +151,13 @@ local SIDEBAR_ICON_REFS = {
 -- still order Friends, Durability, then the middle group. Scroll is not part
 -- of the chain -- it stays pinned at the sidebar bottom.
 local SIDEBAR_CHAIN_KEYS = {
-    "showFriends", "showGuild", "showDurability", "showCopy", "showPortals", "showVoice", "showChatMenu",
+    "showFriends",
+    "showGuild",
+    "showDurability",
+    "showCopy",
+    "showPortals",
+    "showVoice",
+    "showChatMenu",
     "showSettings",
 }
 -- No keystones on Forever, so no season portals (the Minimap button is never
@@ -142,7 +165,9 @@ local SIDEBAR_CHAIN_KEYS = {
 -- it from creation and from the options icon list. Every button reader guards.
 if CludesUI.IS_FOREVER then
     for i = #SIDEBAR_CHAIN_KEYS, 1, -1 do
-        if SIDEBAR_CHAIN_KEYS[i] == "showPortals" then table.remove(SIDEBAR_CHAIN_KEYS, i) end
+        if SIDEBAR_CHAIN_KEYS[i] == "showPortals" then
+            table.remove(SIDEBAR_CHAIN_KEYS, i)
+        end
     end
 end
 -- Chat Menu leaves the chain under WoW Forever's Gamepad interface style
@@ -154,14 +179,22 @@ end
 local chatMenuPadOff
 local function ChatMenuPadOff()
     if chatMenuPadOff == nil then
-        if not IsLoggedIn() then return CludesUI.PadGamepadUI() end
+        if not IsLoggedIn() then
+            return CludesUI.PadGamepadUI()
+        end
         chatMenuPadOff = CludesUI.PadGamepadUI()
     end
     return chatMenuPadOff
 end
 local SIDEBAR_FALLBACK_ORDER = {
-    showFriends = -20, showGuild = -15, showDurability = -10,
-    showCopy = 1, showPortals = 2, showVoice = 3, showChatMenu = 4, showSettings = 4,
+    showFriends = -20,
+    showGuild = -15,
+    showDurability = -10,
+    showCopy = 1,
+    showPortals = 2,
+    showVoice = 3,
+    showChatMenu = 4,
+    showSettings = 4,
 }
 -- An icon with no saved place takes its neighbour's (a tie goes to list
 -- position): Chat Menu sorts just above Settings in any saved order, and no
@@ -186,15 +219,21 @@ function ECHAT.ResolveSidebarIconOrder()
     end
     local function OrderOf(key)
         local o = map[key]
-        if type(o) == "number" then return o end
+        if type(o) == "number" then
+            return o
+        end
         local with = SIDEBAR_FALLBACK_WITH[key]
         o = with and map[with]
-        if type(o) == "number" then return o end
+        if type(o) == "number" then
+            return o
+        end
         return SIDEBAR_FALLBACK_ORDER[key] or 999
     end
     table.sort(keys, function(a, b)
         local oa, ob = OrderOf(a), OrderOf(b)
-        if oa ~= ob then return oa < ob end
+        if oa ~= ob then
+            return oa < ob
+        end
         return keyIndex[a] < keyIndex[b]
     end)
     return keys
@@ -202,9 +241,13 @@ end
 
 function ECHAT.SidebarIconExists(key)
     local ref = SIDEBAR_ICON_REFS[key]
-    if not ref then return true end
+    if not ref then
+        return true
+    end
     local cf1 = _G.ChatFrame1
-    if not cf1 then return true end
+    if not cf1 then
+        return true
+    end
     return CFD(cf1)[ref] ~= nil
 end
 
@@ -226,10 +269,12 @@ end
 -------------------------------------------------------------------------------
 ECHAT.CHAT_MENU_GLYPH = "Interface\\AddOns\\CludesUI\\media\\micromenu\\menu-options.png"
 do
-    local host  -- our sidebar icon, once attached
+    local host -- our sidebar icon, once attached
 
     local function Fwd(event, ...)
-        if host:GetScript(event) then ExecuteFrameScript(host, event, ...) end
+        if host:GetScript(event) then
+            ExecuteFrameScript(host, event, ...)
+        end
     end
     local function OnEnter(_, motion)
         host:LockHighlight()
@@ -240,7 +285,9 @@ do
         Fwd("OnLeave", motion)
     end
     local function OnMouseDown(_, button)
-        if button == "LeftButton" then host:SetButtonState("PUSHED") end
+        if button == "LeftButton" then
+            host:SetButtonState("PUSHED")
+        end
         Fwd("OnMouseDown", button)
     end
     local function OnMouseUp(_, button)
@@ -251,13 +298,17 @@ do
     -- Called once, as the icon is built (only with Chat Menu on at login).
     function ECHAT.AttachChatMenu(btn)
         local mb = _G.ChatFrameMenuButton
-        if host or not mb then return end
+        if host or not mb then
+            return
+        end
         host = btn
         mb:HookScript("OnEnter", OnEnter)
         mb:HookScript("OnLeave", OnLeave)
         mb:HookScript("OnMouseDown", OnMouseDown)
         mb:HookScript("OnMouseUp", OnMouseUp)
-        btn:HookScript("OnShow", function() mb:EnableMouse(true) end)
+        btn:HookScript("OnShow", function()
+            mb:EnableMouse(true)
+        end)
         btn:HookScript("OnHide", function()
             mb:EnableMouse(false)
             btn:UnlockHighlight()
@@ -272,7 +323,9 @@ do
     -- Re-run after the login pass that hides Blizzard's chat buttons.
     function ECHAT.SeatChatMenu()
         local mb = _G.ChatFrameMenuButton
-        if not (host and mb) then return end
+        if not (host and mb) then
+            return
+        end
         mb:ClearAllPoints()
         mb:SetAllPoints(host)
         mb:SetFrameStrata(host:GetFrameStrata())

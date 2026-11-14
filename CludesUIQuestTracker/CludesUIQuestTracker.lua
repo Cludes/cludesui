@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker.lua
 --
@@ -10,8 +12,11 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- Blizzard_ObjectiveTracker has loaded.
 -------------------------------------------------------------------------------
 local addonName, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[addonName] = ns  -- LOD options files read this module ns via the registry
+if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue) then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
+CludesUI._ModuleNS[addonName] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local EQT = {}
@@ -26,58 +31,64 @@ _G.CludesUIQuestTracker = EQT
 local QT_DEFAULTS = {
     profile = {
         questTracker = {
-            enabled              = true,
-            forceOnScreen        = true,
-            visibility           = "always",
-            visOnlyInstances     = false,
-            visHideHousing       = false,
-            visHideMounted       = false,
-            visHideNoTarget      = false,
-            visHideNoEnemy       = false,
+            enabled = true,
+            forceOnScreen = true,
+            visibility = "always",
+            visOnlyInstances = false,
+            visHideHousing = false,
+            visHideMounted = false,
+            visHideNoTarget = false,
+            visHideNoEnemy = false,
 
             -- Raid auto-hide mode: "always" hides the tracker the whole time
             -- you are in a raid; "boss" (default) only hides it during boss encounters.
-            hideInRaidMode       = "boss",
+            hideInRaidMode = "boss",
 
             -- Style page (reload-gated): Blizzard Style / Classic WoW UI
-            useBlizzardStyle     = false,
-            useClassicStyle      = false,
+            useBlizzardStyle = false,
+            useClassicStyle = false,
 
             -- Skin toggles
-            skinHeaders          = true,
+            skinHeaders = true,
             -- Show Blizzard's native quest type icons/buttons (right side)
             -- instead of our custom classified icons. Off = our icons. Reload-gated.
-            showQuestIcons       = false,
+            showQuestIcons = false,
 
             -- Font sizes (single source of truth used by skin code)
-            titleFontSize        = 12,
-            objectiveFontSize    = 10,
-            headerFontSize       = 13,
+            titleFontSize = 12,
+            objectiveFontSize = 10,
+            headerFontSize = 13,
 
             -- Background (rendered behind ObjectiveTrackerFrame, our own frame)
-            bgR                  = 0.035,
-            bgG                  = 0.035,
-            bgB                  = 0.035,
-            bgAlpha              = 0.75,
-            showTopLine          = true,
+            bgR = 0.035,
+            bgG = 0.035,
+            bgB = 0.035,
+            bgAlpha = 0.75,
+            showTopLine = true,
 
             -- Text colors. All apply via SetTextColor on their respective
             -- FontStrings (titles, objective lines, focus override).
-            titleR               = 1.000, titleG = 0.910, titleB = 0.471,  -- FFE878
-            completedR           = 0.251, completedG = 1.000, completedB = 0.349,  -- 40FF59
-            focusR               = 0.871, focusG = 0.251, focusB = 1.000,  -- DE40FF
+            titleR = 1.000,
+            titleG = 0.910,
+            titleB = 0.471, -- FFE878
+            completedR = 0.251,
+            completedG = 1.000,
+            completedB = 0.349, -- 40FF59
+            focusR = 0.871,
+            focusG = 0.251,
+            focusB = 1.000, -- DE40FF
 
             -- QoL
-            autoAccept           = false,
+            autoAccept = false,
             autoAcceptPreventMulti = true,
             autoAcceptShiftEnable = false,
-            autoAcceptShiftSkip  = true,
+            autoAcceptShiftSkip = true,
             autoAcceptIgnoreTrivial = false,
             autoAcceptIgnoreOldExpansion = false,
-            autoTurnIn           = false,
+            autoTurnIn = false,
             autoTurnInShiftEnable = false,
-            autoTurnInShiftSkip  = true,
-            questItemHotkey      = nil,
+            autoTurnInShiftSkip = true,
+            questItemHotkey = nil,
         },
     },
 }
@@ -87,10 +98,14 @@ ns.QT_DEFAULTS = QT_DEFAULTS
 
 local _qtDB
 local function EnsureDB()
-    if _qtDB then return _qtDB end
-    if not CludesUI or not CludesUI.Lite then return nil end
+    if _qtDB then
+        return _qtDB
+    end
+    if not CludesUI or not CludesUI.Lite then
+        return nil
+    end
     _qtDB = CludesUI.Lite.NewDB("CludesUIQuestTrackerDB", QT_DEFAULTS)
-    _G._EQT_DB = _qtDB
+    _G._CUQT_DB = _qtDB
     return _qtDB
 end
 
@@ -110,8 +125,12 @@ function EQT.DB()
     return EQT._tmpDB
 end
 
-function EQT.Cfg(k) return EQT.DB()[k] end
-function EQT.Set(k, v) EQT.DB()[k] = v end
+function EQT.Cfg(k)
+    return EQT.DB()[k]
+end
+function EQT.Set(k, v)
+    EQT.DB()[k] = v
+end
 
 -- The style this module RENDERS this session: "cui" | "blizzard" | "classic".
 -- Read from the real profile once and latched for the session (a live profile
@@ -128,7 +147,9 @@ function ns.QT_Style()
     if v == nil then
         local d = EnsureDB()
         local qt = d and d.profile and d.profile.questTracker
-        if not qt then return "cui" end
+        if not qt then
+            return "cui"
+        end
         v = StyleOf(qt)
         ns._qtStyle = v
     end
@@ -143,10 +164,16 @@ end
 -- everyone who had not turned it off, so a true in it never was one and is
 -- not read.
 function ns.CustomTrackerWanted(qt)
-    if CludesUI.IS_FOREVER ~= true then return false end
+    if CludesUI.IS_FOREVER ~= true then
+        return false
+    end
     local pick = qt.customTrackerPick
-    if pick == nil and qt.customTracker == false then pick = false end
-    if pick ~= nil then return pick end
+    if pick == nil and qt.customTracker == false then
+        pick = false
+    end
+    if pick ~= nil then
+        return pick
+    end
     return StyleOf(qt) == "cui"
 end
 
@@ -168,31 +195,43 @@ function ns.UseCustomTracker()
     if v == nil then
         local d = EnsureDB()
         local qt = d and d.profile and d.profile.questTracker
-        if not qt then return false end
+        if not qt then
+            return false
+        end
         v = ns.CustomTrackerWanted(qt)
         ns._customTracker = v
     end
     return v
 end
 
-function EQT.Blizz() return ns.QT_Style() ~= "cui" end
-function EQT.Classic() return ns.QT_Style() == "classic" end
+function EQT.Blizz()
+    return ns.QT_Style() ~= "cui"
+end
+function EQT.Classic()
+    return ns.QT_Style() == "classic"
+end
 
 -------------------------------------------------------------------------------
 -- Cross-module suppression API. Other CUI modules (e.g. M+ Timer preview
--- mode) can call _EQT_SetSuppressed(key, true) to temporarily hide our
+-- mode) can call _CUQT_SetSuppressed(key, true) to temporarily hide our
 -- tracker. Suppression stacks across callers.
 --
 -- Top-level only: never walk into the frame's children. We reparent the
 -- ObjectiveTrackerFrame to a hidden container; mouse state is implicit.
 -------------------------------------------------------------------------------
 local _qtSuppressors = {}
-function _G._EQT_SetSuppressed(key, on)
-    if not key then return end
+function _G._CUQT_SetSuppressed(key, on)
+    if not key then
+        return
+    end
     _qtSuppressors[key] = on and true or nil
-    if EQT.ApplySuppression then EQT.ApplySuppression(next(_qtSuppressors) ~= nil) end
+    if EQT.ApplySuppression then
+        EQT.ApplySuppression(next(_qtSuppressors) ~= nil)
+    end
 end
-function EQT.IsSuppressed() return next(_qtSuppressors) ~= nil end
+function EQT.IsSuppressed()
+    return next(_qtSuppressors) ~= nil
+end
 
 -------------------------------------------------------------------------------
 -- Loader
@@ -210,24 +249,38 @@ if C_AddOns.IsAddOnLoaded("Blizzard_ObjectiveTracker") or _G.ObjectiveTrackerFra
 end
 
 local function TryInit()
-    if not (_sawSelf and _sawOT and _loggedIn) then return end
+    if not (_sawSelf and _sawOT and _loggedIn) then
+        return
+    end
     EnsureDB()
     if ns.UseCustomTracker() then
         EQT.InitCustom()
     else
-        if EQT.InitSkin       then EQT.InitSkin()       end
-        if EQT.InitVisibility then EQT.InitVisibility() end
+        if EQT.InitSkin then
+            EQT.InitSkin()
+        end
+        if EQT.InitVisibility then
+            EQT.InitVisibility()
+        end
     end
-    if EQT.InitQoL        then EQT.InitQoL()        end
+    if EQT.InitQoL then
+        EQT.InitQoL()
+    end
     -- The custom tracker has its own mover; this one drives Blizzard's frame.
-    if EQT.InitPosition and not ns.UseCustomTracker() then EQT.InitPosition() end
+    if EQT.InitPosition and not ns.UseCustomTracker() then
+        EQT.InitPosition()
+    end
     loader:UnregisterAllEvents()
 end
 
 loader:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
-        if arg1 == addonName then _sawSelf = true end
-        if arg1 == "Blizzard_ObjectiveTracker" then _sawOT = true end
+        if arg1 == addonName then
+            _sawSelf = true
+        end
+        if arg1 == "Blizzard_ObjectiveTracker" then
+            _sawOT = true
+        end
     elseif event == "PLAYER_LOGIN" then
         _loggedIn = true
     end
@@ -236,26 +289,50 @@ end)
 
 -- Profile-swap refresh: called from CludesUI.RefreshAllAddons to re-read
 -- DB and refresh all visuals after a profile switch without /reload.
-_G._EQT_RefreshAll = function()
-    if EQT.RefreshFonts then EQT.RefreshFonts() end
-    if EQT.UpdateVisibility then EQT.UpdateVisibility() end
-    if EQT.RestyleAll then EQT.RestyleAll() end
+_G._CUQT_RefreshAll = function()
+    if EQT.RefreshFonts then
+        EQT.RefreshFonts()
+    end
+    if EQT.UpdateVisibility then
+        EQT.UpdateVisibility()
+    end
+    if EQT.RestyleAll then
+        EQT.RestyleAll()
+    end
     -- Before ApplyBackground: the BG's top anchor depends on whether the
     -- master header is suppressed.
-    if EQT.ApplyMasterHeaderVisibility then EQT.ApplyMasterHeaderVisibility() end
-    if EQT.ApplyBackground then EQT.ApplyBackground() end
-    if EQT.ApplyForceOnScreen then EQT.ApplyForceOnScreen() end
-    if EQT.SyncPosition then EQT.SyncPosition() end
+    if EQT.ApplyMasterHeaderVisibility then
+        EQT.ApplyMasterHeaderVisibility()
+    end
+    if EQT.ApplyBackground then
+        EQT.ApplyBackground()
+    end
+    if EQT.ApplyForceOnScreen then
+        EQT.ApplyForceOnScreen()
+    end
+    if EQT.SyncPosition then
+        EQT.SyncPosition()
+    end
     -- The hotkey is a per-profile setting backed by an override binding, so a
     -- profile or spec swap has to re-point it. Without this the outgoing
     -- profile's key stays overridden -- taken from whatever the player really
     -- has bound there -- and the incoming profile's key is never laid down.
-    if EQT.ApplyQuestItemHotkey then EQT.ApplyQuestItemHotkey() end
-    if EQT.SyncAutoQuests then EQT.SyncAutoQuests() end
+    if EQT.ApplyQuestItemHotkey then
+        EQT.ApplyQuestItemHotkey()
+    end
+    if EQT.SyncAutoQuests then
+        EQT.SyncAutoQuests()
+    end
     -- WoW Forever's quest tools (nil on retail).
-    if EQT.ApplyQuestWatches then EQT.ApplyQuestWatches() end
-    if EQT.ApplyQuestProgress then EQT.ApplyQuestProgress() end
-    if EQT.ApplyQuestLinks then EQT.ApplyQuestLinks() end
+    if EQT.ApplyQuestWatches then
+        EQT.ApplyQuestWatches()
+    end
+    if EQT.ApplyQuestProgress then
+        EQT.ApplyQuestProgress()
+    end
+    if EQT.ApplyQuestLinks then
+        EQT.ApplyQuestLinks()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -266,15 +343,23 @@ SlashCmdList.EQT = function(msg)
     msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
     if msg == "show" then
         EQT.Set("enabled", true)
-        if EQT.UpdateVisibility then EQT.UpdateVisibility() end
+        if EQT.UpdateVisibility then
+            EQT.UpdateVisibility()
+        end
     elseif msg == "hide" then
         EQT.Set("enabled", false)
-        if EQT.UpdateVisibility then EQT.UpdateVisibility() end
+        if EQT.UpdateVisibility then
+            EQT.UpdateVisibility()
+        end
     elseif msg == "toggle" then
         EQT.Set("enabled", not EQT.Cfg("enabled"))
-        if EQT.UpdateVisibility then EQT.UpdateVisibility() end
+        if EQT.UpdateVisibility then
+            EQT.UpdateVisibility()
+        end
     else
-        if InCombatLockdown and InCombatLockdown() then return end
+        if InCombatLockdown and InCombatLockdown() then
+            return
+        end
         CludesUI:ShowModule("CludesUIQuestTracker")
     end
 end

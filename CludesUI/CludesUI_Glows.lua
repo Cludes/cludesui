@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Glows.lua
 --  Shared glow rendering engine for the CludesUI addon suite.
@@ -7,13 +9,17 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Blackout (solid colour fill with adjustable transparency).
 --  Each addon attaches to CludesUI.Glows.* instead of duplicating engines.
 -------------------------------------------------------------------------------
-if not CludesUI then return end
-if CludesUI.Glows then return end  -- already loaded by another addon
+if not CludesUI then
+    return
+end
+if CludesUI.Glows then
+    return
+end -- already loaded by another addon
 
 local floor = math.floor
-local min   = math.min
-local ceil  = math.ceil
-local sin   = math.sin
+local min = math.min
+local ceil = math.ceil
+local sin = math.sin
 
 -------------------------------------------------------------------------------
 --  Style Definitions (superset of all addons)
@@ -23,32 +29,37 @@ local sin   = math.sin
 --          previewScale
 -------------------------------------------------------------------------------
 local GLOW_STYLES = {
-    { name = "Pixel Glow",         procedural = true },
+    { name = "Pixel Glow", procedural = true },
     { name = "Action Button Glow", buttonGlow = true },
-    { name = "Auto-Cast Shine",    autocast   = true },
-    { name = "Shape Glow",         shapeGlow  = true },
-    { name = "GCD",
-      atlas = "RotationHelper_Ants_Flipbook", texPadding = 1.6 },
-    { name = "Modern WoW Glow",
-      atlas = "UI-HUD-ActionBar-Proc-Loop-Flipbook", texPadding = 1.4 },
-    { name = "Classic WoW Glow",
-      texture = "Interface\\SpellActivationOverlay\\IconAlertAnts",
-      -- 5x5 grid = 25 cells, but only the first 22 are real ant frames; the last
-      -- 3 are blank. Playing all 25 flashed an empty gap each loop that read as a
-      -- backwards stutter. 22 matches what the Action Button Glow uses.
-      -- This entry also doubles as Action Button Glow's FlipBook twin on
-      -- engine-hosted buttons; the twin adds ABG's soft outer halo via
-      -- opts.abgHalo, scoped to that substitution (see StartEngineGlow) --
-      -- a direct Classic pick keeps this entry's bare-ants look.
-      rows = 5, columns = 5, frames = 22, duration = 0.3,
-      frameW = 48, frameH = 48, texPadding = 1.25 },
-    { name = "Blackout",           solidFill = true },
+    { name = "Auto-Cast Shine", autocast = true },
+    { name = "Shape Glow", shapeGlow = true },
+    { name = "GCD", atlas = "RotationHelper_Ants_Flipbook", texPadding = 1.6 },
+    { name = "Modern WoW Glow", atlas = "UI-HUD-ActionBar-Proc-Loop-Flipbook", texPadding = 1.4 },
+    {
+        name = "Classic WoW Glow",
+        texture = "Interface\\SpellActivationOverlay\\IconAlertAnts",
+        -- 5x5 grid = 25 cells, but only the first 22 are real ant frames; the last
+        -- 3 are blank. Playing all 25 flashed an empty gap each loop that read as a
+        -- backwards stutter. 22 matches what the Action Button Glow uses.
+        -- This entry also doubles as Action Button Glow's FlipBook twin on
+        -- engine-hosted buttons; the twin adds ABG's soft outer halo via
+        -- opts.abgHalo, scoped to that substitution (see StartEngineGlow) --
+        -- a direct Classic pick keeps this entry's bare-ants look.
+        rows = 5,
+        columns = 5,
+        frames = 22,
+        duration = 0.3,
+        frameW = 48,
+        frameH = 48,
+        texPadding = 1.25,
+    },
+    { name = "Blackout", solidFill = true },
 }
 
 -- Static border styles, picker values outside the STYLES list (see the
 -- Blizzard Border and Blizzard Pandemic Border blocks below).
 local STEALABLE_BORDER = 99
-local PANDEMIC_BORDER  = 98
+local PANDEMIC_BORDER = 98
 
 -- Engine hosts bound to their aura button (G.BindEngineHost): wrapper ->
 -- { button, d }. Kept outside the wrapper's own fields, so the options frame
@@ -58,11 +69,11 @@ local BOUND = setmetatable({}, { __mode = "k" })
 -------------------------------------------------------------------------------
 --  Texture constants
 -------------------------------------------------------------------------------
-local ANTS_TEX      = [[Interface\SpellActivationOverlay\IconAlertAnts]]
+local ANTS_TEX = [[Interface\SpellActivationOverlay\IconAlertAnts]]
 local ICON_ALERT_TEX = [[Interface\SpellActivationOverlay\IconAlert]]
 local BG_GLOW_L, BG_GLOW_R = 0.00781250, 0.50781250
 local BG_GLOW_T, BG_GLOW_B = 0.27734375, 0.52734375
-local SHINE_TEX    = [[Interface\Artifacts\Artifacts]]
+local SHINE_TEX = [[Interface\Artifacts\Artifacts]]
 local SHINE_COORDS = { 0.8115234375, 0.9169921875, 0.8798828125, 0.9853515625 }
 local SPARKLE_LAYER_SIZES = { 7, 6, 5, 4 }
 
@@ -75,17 +86,17 @@ local SPARKLE_LAYER_SIZES = { 7, 6, 5, 4 }
 --  here. The driver hides itself when no glow is registered (zero idle cost)
 --  and re-arms when the first glow registers.
 -------------------------------------------------------------------------------
-local DRIVER_GATE = 0.016  -- ~60fps ceiling for the entire dispatch loop
+local DRIVER_GATE = 0.016 -- ~60fps ceiling for the entire dispatch loop
 
 -- Array-based registry for cheap churn. _reg is a dense 1..N array of wrapper frames;
 -- _regFn the parallel array of their engine update functions (called directly in the
 -- hot loop, so dispatch is pure array access with no kind->fn lookup); _regIndex maps
 -- wrapper -> its slot in _reg (for O(1) swap-remove); _regKind maps wrapper -> its kind
 -- tag, read only by Unregister (cold path). _regCount is the live entry count.
-local _reg      = {}
-local _regFn    = {}
+local _reg = {}
+local _regFn = {}
 local _regIndex = {}
-local _regKind  = {}
+local _regKind = {}
 local _regCount = 0
 local _driver
 local _driverAccum = 0
@@ -99,8 +110,12 @@ local _driverAccum = 0
 -- (Defined above the driver loop: the loop drops forbidden wrappers itself.)
 local function _Unregister(wrapper, kind)
     local idx = _regIndex[wrapper]
-    if not idx then return end
-    if kind and _regKind[wrapper] ~= kind then return end
+    if not idx then
+        return
+    end
+    if kind and _regKind[wrapper] ~= kind then
+        return
+    end
     local last = _reg[_regCount]
     _reg[idx] = last
     _regFn[idx] = _regFn[_regCount]
@@ -110,10 +125,14 @@ local function _Unregister(wrapper, kind)
     _regCount = _regCount - 1
     _regIndex[wrapper] = nil
     _regKind[wrapper] = nil
-    if _regCount == 0 and _driver then _driver:Hide() end
+    if _regCount == 0 and _driver then
+        _driver:Hide()
+    end
 end
 
-local function _VisProbe(w) return w:IsVisible() end
+local function _VisProbe(w)
+    return w:IsVisible()
+end
 
 local function _DriverOnUpdate(self, elapsed)
     -- Gate the WHOLE loop at ~60fps: accumulate raw elapsed and only run a
@@ -167,7 +186,9 @@ local function _DriverOnUpdate(self, elapsed)
         end
         if vis then
             local fn = _regFn[i]
-            if fn then fn(wrapper, dt) end
+            if fn then
+                fn(wrapper, dt)
+            end
         end
         if _reg[i] == wrapper then
             i = i + 1
@@ -184,7 +205,7 @@ local function _Arm()
         _driver:Hide()
         _driver:SetScript("OnUpdate", _DriverOnUpdate)
     end
-    _driverAccum = 0          -- avoid a stale-dt spike after an idle period
+    _driverAccum = 0 -- avoid a stale-dt spike after an idle period
     _driver:Show()
 end
 
@@ -204,7 +225,9 @@ local function _Register(wrapper, fn, kind)
     _regFn[_regCount] = fn
     _regIndex[wrapper] = _regCount
     _regKind[wrapper] = kind
-    if _regCount == 1 then _Arm() end
+    if _regCount == 1 then
+        _Arm()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -232,9 +255,12 @@ local function _AntsResolveSize(self, d)
         h = tonumber(tostring(h)) or 0
     end
     if w * h == 0 and d.fallbackW and d.fallbackW > 0 then
-        w = d.fallbackW; h = d.fallbackH or d.fallbackW
+        w = d.fallbackW
+        h = d.fallbackH or d.fallbackW
     end
-    if w * h == 0 then return false end
+    if w * h == 0 then
+        return false
+    end
     -- Snap dimensions AND thickness to physical pixels so every edge renders
     -- the same whole-pixel thickness (unsnapped SetHeight/SetWidth lets some
     -- sides round thicker than others at fractional effective scale).
@@ -248,48 +274,67 @@ local function _AntsResolveSize(self, d)
     -- Same subtree class the GetSize taint-strip above exists for: a secret
     -- effective scale would hard-error on the comparison below, so take the
     -- retry path instead. No-op for normal values.
-    if not es or (issecretvalue and issecretvalue(es)) or es < 0.1 then return false end
+    if not es or (issecretvalue and issecretvalue(es)) or es < 0.1 then
+        return false
+    end
     local onePixel = PP.perfect / es
     w = floor(w / onePixel + 0.5) * onePixel
     h = floor(h / onePixel + 0.5) * onePixel
     -- A genuinely sub-pixel wrapper passes the size test above but snaps to 0;
     -- floor both dimensions at one pixel so (w + h) is always a real divisor.
-    if w < onePixel then w = onePixel end
-    if h < onePixel then h = onePixel end
+    if w < onePixel then
+        w = onePixel
+    end
+    if h < onePixel then
+        h = onePixel
+    end
     -- Total sanity gate before anything is cached. An infinite onePixel (a
     -- bogus PP.physicalHeight makes PP.perfect infinite) snaps w and h to NaN,
     -- which slips past every comparison above and then poisons the k divide
     -- below. NaN and inf both fail this test, so the phase endpoints are always
     -- real numbers and SetTexCoord can never be handed a value it rejects.
-    if not (w > 0 and h > 0 and w + h < math.huge) then return false end
+    if not (w > 0 and h > 0 and w + h < math.huge) then
+        return false
+    end
     local sTh = floor(d.th / onePixel + 0.5) * onePixel
-    if sTh < onePixel then sTh = onePixel end
-    d.top:SetHeight(sTh); d.bottom:SetHeight(sTh)
-    d.left:SetWidth(sTh); d.right:SetWidth(sTh)
-    d.w = w; d.h = h
+    if sTh < onePixel then
+        sTh = onePixel
+    end
+    d.top:SetHeight(sTh)
+    d.bottom:SetHeight(sTh)
+    d.left:SetWidth(sTh)
+    d.right:SetWidth(sTh)
+    d.w = w
+    d.h = h
     -- Precompute the per-edge phase endpoints; they are invariant until the
     -- next resize/restart, so only the scroll offset o changes per tick.
     -- ph(P) = P * N / perim is the perimeter position in dash-period units;
     -- the four edges share it so dashes stay continuous around every corner.
     local k = d.N / (2 * (w + h))
-    d.wk   = w * k
-    d.whk  = (w + h) * k
+    d.wk = w * k
+    d.whk = (w + h) * k
     d.wwhk = (2 * w + h) * k
     return true
 end
 
 local function _AntsOnUpdate(self, elapsed)
     local d = self._cuiScrollData
-    if not d then return end
+    if not d then
+        return
+    end
     d.timer = d.timer + elapsed
-    if d.timer >= d.period then d.timer = d.timer - d.period end
+    if d.timer >= d.period then
+        d.timer = d.timer - d.period
+    end
     -- Positive-test rather than == 0 so a non-finite cached size fails it too
     -- and re-resolves, instead of feeding bad texcoords in forever.
     if not (d.w > 0 and d.h > 0) then
-        if not _AntsResolveSize(self, d) then return end
+        if not _AntsResolveSize(self, d) then
+            return
+        end
     end
     local N = d.N
-    local o = (d.timer / d.period) * N   -- scroll offset (N integer -> seamless wrap)
+    local o = (d.timer / d.period) * N -- scroll offset (N integer -> seamless wrap)
     -- Direction is clockwise; the bottom/left edges flip their coords to match.
     local wk, whk, wwhk = d.wk, d.whk, d.wwhk
     d.top:SetTexCoord(-o, wk - o, 0, 1)
@@ -315,9 +360,14 @@ end
 -- once, then unregisters so a static border costs nothing per frame thereafter.
 local function _AntsStaticSettle(self, elapsed)
     local d = self._cuiScrollData
-    if not d then _Unregister(self, "ants"); return end
+    if not d then
+        _Unregister(self, "ants")
+        return
+    end
     if not (d.w > 0 and d.h > 0) then
-        if not _AntsResolveSize(self, d) then return end
+        if not _AntsResolveSize(self, d) then
+            return
+        end
     end
     _AntsDrawStatic(self, d)
     _Unregister(self, "ants")
@@ -325,7 +375,23 @@ end
 
 -- lineLen is accepted for call-signature compatibility but unused: the dash
 -- length is the texture's duty cycle, not a runtime segment length.
-local function StartProceduralAnts(wrapper, N, th, period, lineLen, cr, cg, cb, szOrW, szH, bgR, bgG, bgB, bgA, static)
+local function StartProceduralAnts(
+    wrapper,
+    N,
+    th,
+    period,
+    lineLen,
+    cr,
+    cg,
+    cb,
+    szOrW,
+    szH,
+    bgR,
+    bgG,
+    bgB,
+    bgA,
+    static
+)
     if not wrapper._cuiScrollData then
         local function mk(p1, p1f, p2, p2f)
             local t = wrapper:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -334,24 +400,32 @@ local function StartProceduralAnts(wrapper, N, th, period, lineLen, cr, cg, cb, 
             return t
         end
         wrapper._cuiScrollData = {
-            top    = mk("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT"),
+            top = mk("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT"),
             bottom = mk("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT"),
-            left   = mk("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT"),
-            right  = mk("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT"),
-            timer = 0, w = 0, h = 0,
+            left = mk("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT"),
+            right = mk("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT"),
+            timer = 0,
+            w = 0,
+            h = 0,
         }
     end
     local d = wrapper._cuiScrollData
     d.N = (N and N > 0) and N or 8
     d.period = period or 4
-    d.w = 0; d.h = 0
-    d.fallbackW = szOrW or 0; d.fallbackH = szH or szOrW or 0
+    d.w = 0
+    d.h = 0
+    d.fallbackW = szOrW or 0
+    d.fallbackH = szH or szOrW or 0
     th = th or 2
     d.th = th
-    d.top:SetTexture(DASH_H, "REPEAT", "REPEAT");    d.top:SetHeight(th)
-    d.bottom:SetTexture(DASH_H, "REPEAT", "REPEAT"); d.bottom:SetHeight(th)
-    d.left:SetTexture(DASH_V, "REPEAT", "REPEAT");   d.left:SetWidth(th)
-    d.right:SetTexture(DASH_V, "REPEAT", "REPEAT");  d.right:SetWidth(th)
+    d.top:SetTexture(DASH_H, "REPEAT", "REPEAT")
+    d.top:SetHeight(th)
+    d.bottom:SetTexture(DASH_H, "REPEAT", "REPEAT")
+    d.bottom:SetHeight(th)
+    d.left:SetTexture(DASH_V, "REPEAT", "REPEAT")
+    d.left:SetWidth(th)
+    d.right:SetTexture(DASH_V, "REPEAT", "REPEAT")
+    d.right:SetWidth(th)
     -- bgR being non-nil is the "background on" signal; callers pass nil to
     -- disable. Do NOT change this to `bgR > 0`: a fully black background is
     -- r=0, which is a valid enabled color and must still draw.
@@ -363,32 +437,45 @@ local function StartProceduralAnts(wrapper, N, th, period, lineLen, cr, cg, cb, 
                 t:SetPoint(p2, wrapper, p2f)
                 return t
             end
-            d.bgTop    = mkBg("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT")
+            d.bgTop = mkBg("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT")
             d.bgBottom = mkBg("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT")
-            d.bgLeft   = mkBg("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT")
-            d.bgRight  = mkBg("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT")
+            d.bgLeft = mkBg("TOPLEFT", "TOPLEFT", "BOTTOMLEFT", "BOTTOMLEFT")
+            d.bgRight = mkBg("TOPRIGHT", "TOPRIGHT", "BOTTOMRIGHT", "BOTTOMRIGHT")
         end
         bgA = bgA or 1
-        d.bgTop:SetHeight(th); d.bgBottom:SetHeight(th)
-        d.bgLeft:SetWidth(th); d.bgRight:SetWidth(th)
-        d.bgTop:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA);       d.bgTop:Show()
-        d.bgBottom:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA);    d.bgBottom:Show()
-        d.bgLeft:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA);      d.bgLeft:Show()
-        d.bgRight:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA);     d.bgRight:Show()
+        d.bgTop:SetHeight(th)
+        d.bgBottom:SetHeight(th)
+        d.bgLeft:SetWidth(th)
+        d.bgRight:SetWidth(th)
+        d.bgTop:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA)
+        d.bgTop:Show()
+        d.bgBottom:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA)
+        d.bgBottom:Show()
+        d.bgLeft:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA)
+        d.bgLeft:Show()
+        d.bgRight:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA)
+        d.bgRight:Show()
     elseif d.bgTop then
-        d.bgTop:Hide(); d.bgBottom:Hide(); d.bgLeft:Hide(); d.bgRight:Hide()
+        d.bgTop:Hide()
+        d.bgBottom:Hide()
+        d.bgLeft:Hide()
+        d.bgRight:Hide()
     end
-    d.top:SetVertexColor(cr, cg, cb, 1);    d.top:Show()
-    d.bottom:SetVertexColor(cr, cg, cb, 1); d.bottom:Show()
-    d.left:SetVertexColor(cr, cg, cb, 1);   d.left:Show()
-    d.right:SetVertexColor(cr, cg, cb, 1);  d.right:Show()
+    d.top:SetVertexColor(cr, cg, cb, 1)
+    d.top:Show()
+    d.bottom:SetVertexColor(cr, cg, cb, 1)
+    d.bottom:Show()
+    d.left:SetVertexColor(cr, cg, cb, 1)
+    d.left:Show()
+    d.right:SetVertexColor(cr, cg, cb, 1)
+    d.right:Show()
     if static then
         -- Frozen dashes: draw once now (size permitting) and stay off the
         -- animation driver. If layout has not resolved yet, a one-shot settler
         -- draws on the first tick that reads a real size, then unregisters.
         if _AntsResolveSize(wrapper, d) then
             _AntsDrawStatic(wrapper, d)
-            _Unregister(wrapper, "ants")   -- clear any prior animated registration
+            _Unregister(wrapper, "ants") -- clear any prior animated registration
         else
             _Register(wrapper, _AntsStaticSettle, "ants")
         end
@@ -401,8 +488,16 @@ local function StopProceduralAnts(wrapper)
     _Unregister(wrapper, "ants")
     local d = wrapper._cuiScrollData
     if d then
-        d.top:Hide(); d.bottom:Hide(); d.left:Hide(); d.right:Hide()
-        if d.bgTop then d.bgTop:Hide(); d.bgBottom:Hide(); d.bgLeft:Hide(); d.bgRight:Hide() end
+        d.top:Hide()
+        d.bottom:Hide()
+        d.left:Hide()
+        d.right:Hide()
+        if d.bgTop then
+            d.bgTop:Hide()
+            d.bgBottom:Hide()
+            d.bgLeft:Hide()
+            d.bgRight:Hide()
+        end
     end
 end
 
@@ -411,7 +506,9 @@ end
 -- Used by the Raid Frames Frame-Border threshold recolor.
 local function SetProceduralAntsColor(wrapper, r, g, b, a)
     local d = wrapper._cuiScrollData
-    if not d then return end
+    if not d then
+        return
+    end
     a = a or 1
     d.top:SetVertexColor(r, g, b, a)
     d.bottom:SetVertexColor(r, g, b, a)
@@ -430,17 +527,19 @@ end
 -- the glow driver ticks at 60fps or faster, and it does not inherit the original
 -- global's framerate-dependent quirks. ANTS_FRAME_TIME (seconds per cell) is the
 -- single knob for the speed. State lives on our own ants texture.
-local ANTS_FRAME_TIME = 0.017  -- ~59 cells/sec -> ~0.37s per 22-frame loop
+local ANTS_FRAME_TIME = 0.017 -- ~59 cells/sec -> ~0.37s per 22-frame loop
 local function _AnimateTexCoords(tex, sheetW, sheetH, cellW, cellH, numFrames, elapsed)
     if not tex._cuiAnimCols then
-        tex._cuiAnimCols  = floor(sheetW / cellW)
-        tex._cuiAnimColW  = cellW / sheetW
-        tex._cuiAnimRowH  = cellH / sheetH
+        tex._cuiAnimCols = floor(sheetW / cellW)
+        tex._cuiAnimColW = cellW / sheetW
+        tex._cuiAnimRowH = cellH / sheetH
         tex._cuiAnimFrame = 0
         tex._cuiAnimAccum = 0
     end
     tex._cuiAnimAccum = tex._cuiAnimAccum + elapsed
-    if tex._cuiAnimAccum < ANTS_FRAME_TIME then return end
+    if tex._cuiAnimAccum < ANTS_FRAME_TIME then
+        return
+    end
 
     local advance = floor(tex._cuiAnimAccum / ANTS_FRAME_TIME)
     tex._cuiAnimAccum = tex._cuiAnimAccum - advance * ANTS_FRAME_TIME
@@ -451,13 +550,15 @@ local function _AnimateTexCoords(tex, sheetW, sheetH, cellW, cellH, numFrames, e
     local colW = tex._cuiAnimColW
     local rowH = tex._cuiAnimRowH
     local left = (frame % cols) * colW
-    local top  = floor(frame / cols) * rowH
+    local top = floor(frame / cols) * rowH
     tex:SetTexCoord(left, left + colW, top, top + rowH)
 end
 
 local function _ButtonGlowOnUpdate(self, elapsed)
     local d = self._cuiBgData
-    if not d then return end
+    if not d then
+        return
+    end
     _AnimateTexCoords(d.ants, 256, 256, 48, 48, 22, elapsed)
 end
 
@@ -483,11 +584,15 @@ local function StartButtonGlow(wrapper, szOrW, cr, cg, cb, scale, szH)
     local antsW, antsH = w * 1.35, h * 1.35
     local glowW, glowH = antsW * 1.3, antsH * 1.3
     d.glow:SetSize(glowW, glowH)
-    d.glow:SetDesaturated(true); d.glow:SetVertexColor(cr, cg, cb, 1)
-    d.glow:SetAlpha(1); d.glow:Show()
+    d.glow:SetDesaturated(true)
+    d.glow:SetVertexColor(cr, cg, cb, 1)
+    d.glow:SetAlpha(1)
+    d.glow:Show()
     d.ants:SetSize(antsW, antsH)
-    d.ants:SetDesaturated(true); d.ants:SetVertexColor(cr, cg, cb, 1)
-    d.ants:SetAlpha(1); d.ants:Show()
+    d.ants:SetDesaturated(true)
+    d.ants:SetVertexColor(cr, cg, cb, 1)
+    d.ants:SetAlpha(1)
+    d.ants:Show()
     _Register(wrapper, _ButtonGlowOnUpdate, "button")
 end
 
@@ -525,15 +630,21 @@ end
 
 local function _AutoCastOnUpdate(self, elapsed)
     local d = self._cuiAcData
-    if not d then return end
+    if not d then
+        return
+    end
     local layerPhase = d.layerPhase
     local basePeriod = d.period
     for layer = 1, 4 do
         layerPhase[layer] = layerPhase[layer] + elapsed / (basePeriod * layer)
-        if layerPhase[layer] > 1 then layerPhase[layer] = layerPhase[layer] - 1 end
+        if layerPhase[layer] > 1 then
+            layerPhase[layer] = layerPhase[layer] - 1
+        end
     end
     d._accum = (d._accum or 0) + elapsed
-    if d._accum < 0.016 then return end
+    if d._accum < 0.016 then
+        return
+    end
     d._accum = 0
     local w, h = d.w, d.h
     if w * h == 0 then
@@ -549,10 +660,14 @@ local function _AutoCastOnUpdate(self, elapsed)
         -- Fallback to the w/h passed at start time (SetAllPoints wrappers
         -- may return 0 before layout resolves)
         if w * h == 0 and d.fallbackW and d.fallbackW > 0 then
-            w = d.fallbackW; h = d.fallbackH or d.fallbackW
+            w = d.fallbackW
+            h = d.fallbackH or d.fallbackW
         end
-        if w * h == 0 then return end
-        d.w = w; d.h = h
+        if w * h == 0 then
+            return
+        end
+        d.w = w
+        d.h = h
         d.perim = 2 * (w + h)
         d.spacing = d.perim / d.dotsPerLayer
     end
@@ -584,18 +699,23 @@ local function StartAutoCastShine(wrapper, szOrW, cr, cg, cb, scale, szH)
             layerPhase = { 0, 0.25, 0.5, 0.75 },
             dotsPerLayer = dotsPerLayer,
             period = 2,
-            w = 0, h = 0,
+            w = 0,
+            h = 0,
         }
     end
     local d = wrapper._cuiAcData
     d.dotsPerLayer = dotsPerLayer
-    d.layerPhase[1] = 0; d.layerPhase[2] = 0.25; d.layerPhase[3] = 0.5; d.layerPhase[4] = 0.75
+    d.layerPhase[1] = 0
+    d.layerPhase[2] = 0.25
+    d.layerPhase[3] = 0.5
+    d.layerPhase[4] = 0.75
     for idx = 1, totalDots do
         if not d.sparkles[idx] then
             local dot = wrapper:CreateTexture(nil, "OVERLAY", nil, 7)
             dot:SetTexture(SHINE_TEX)
             dot:SetTexCoord(SHINE_COORDS[1], SHINE_COORDS[2], SHINE_COORDS[3], SHINE_COORDS[4])
-            dot:SetDesaturated(true); dot:SetBlendMode("ADD")
+            dot:SetDesaturated(true)
+            dot:SetBlendMode("ADD")
             d.sparkles[idx] = dot
         end
         local layer = ceil(idx / dotsPerLayer)
@@ -604,15 +724,22 @@ local function StartAutoCastShine(wrapper, szOrW, cr, cg, cb, scale, szH)
         d.sparkles[idx]:SetVertexColor(cr, cg, cb, 1)
         d.sparkles[idx]:Show()
     end
-    for idx = totalDots + 1, #d.sparkles do d.sparkles[idx]:Hide() end
-    d.w = 0; d.h = 0; d.fallbackW = szOrW or 0; d.fallbackH = szH or szOrW or 0
+    for idx = totalDots + 1, #d.sparkles do
+        d.sparkles[idx]:Hide()
+    end
+    d.w = 0
+    d.h = 0
+    d.fallbackW = szOrW or 0
+    d.fallbackH = szH or szOrW or 0
     _Register(wrapper, _AutoCastOnUpdate, "autocast")
 end
 
 local function StopAutoCastShine(wrapper)
     _Unregister(wrapper, "autocast")
     if wrapper._cuiAcData then
-        for _, dot in ipairs(wrapper._cuiAcData.sparkles) do dot:Hide() end
+        for _, dot in ipairs(wrapper._cuiAcData.sparkles) do
+            dot:Hide()
+        end
     end
 end
 
@@ -626,15 +753,21 @@ end
 -------------------------------------------------------------------------------
 local function _ShapeGlowOnUpdate(self, elapsed)
     local d = self._cuiSgData
-    if not d then return end
+    if not d then
+        return
+    end
     local timer = d.timer + elapsed * d.speed
-    if timer > 6.2832 then timer = timer - 6.2832 end
+    if timer > 6.2832 then
+        timer = timer - 6.2832
+    end
     d.timer = timer
     d.glow:SetAlpha(0.25 + 0.25 * (0.5 + 0.5 * sin(timer)))
     local bright = d.bright
     if bright then
         local bTimer = (d.bTimer or 0) + elapsed * d.speed * 0.50
-        if bTimer > 6.2832 then bTimer = bTimer - 6.2832 end
+        if bTimer > 6.2832 then
+            bTimer = bTimer - 6.2832
+        end
         d.bTimer = bTimer
         bright:SetAlpha(0.35 + 0.10 * (0.5 + 0.5 * sin(bTimer)))
     end
@@ -647,11 +780,13 @@ local function StartShapeGlow(wrapper, sz, cr, cg, cb, scale, opts)
     -- parented to a different frame (e.g. action bar wrappers use
     -- btn:GetParent() to escape mask clipping).
     local btn = opts.anchorFrame or wrapper:GetParent()
-    if not btn then return end
+    if not btn then
+        return
+    end
     if not wrapper._cuiSgData then
-        local glow   = btn:CreateTexture(nil, "OVERLAY", nil, 5)
+        local glow = btn:CreateTexture(nil, "OVERLAY", nil, 5)
         glow:SetBlendMode("ADD")
-        local edge   = btn:CreateTexture(nil, "OVERLAY", nil, 5)
+        local edge = btn:CreateTexture(nil, "OVERLAY", nil, 5)
         edge:SetBlendMode("ADD")
         local bright = btn:CreateTexture(nil, "OVERLAY", nil, 7)
         bright:SetBlendMode("ADD")
@@ -663,9 +798,9 @@ local function StartShapeGlow(wrapper, sz, cr, cg, cb, scale, opts)
     -- Glow extends slightly past the button edge for the pulsing effect
     local extend = sz * 0.10
     d.glow:ClearAllPoints()
-    d.glow:SetPoint("TOPLEFT",     btn, "TOPLEFT",     -extend,  extend)
-    d.glow:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT",  extend, -extend)
-    local maskPath   = opts.maskPath
+    d.glow:SetPoint("TOPLEFT", btn, "TOPLEFT", -extend, extend)
+    d.glow:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", extend, -extend)
+    local maskPath = opts.maskPath
     local borderPath = opts.borderPath
     if maskPath then
         d.glow:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -673,20 +808,23 @@ local function StartShapeGlow(wrapper, sz, cr, cg, cb, scale, opts)
         d.glow:SetColorTexture(1, 1, 1, 1)
     end
     d.glow:SetVertexColor(cr, cg, cb, 1)
-    d.glow:SetAlpha(1); d.glow:Show()
+    d.glow:SetAlpha(1)
+    d.glow:Show()
 
     -- Edge: not used (created an ugly inset inner border ring)
     d.edge:Hide()
 
     -- Bright border overlay
-    d.bright:ClearAllPoints(); d.bright:SetAllPoints(btn)
+    d.bright:ClearAllPoints()
+    d.bright:SetAllPoints(btn)
     if borderPath then
         d.bright:SetTexture(borderPath)
     else
         d.bright:SetColorTexture(0, 0, 0, 0)
     end
     d.bright:SetVertexColor(cr, cg, cb, 1)
-    d.bright:SetAlpha(0.5); d.bright:Show()
+    d.bright:SetAlpha(0.5)
+    d.bright:Show()
 
     -- Mask the pulsing glow with the shape mask texture
     local shapeMask = opts.shapeMask
@@ -804,7 +942,9 @@ local function StartFlipBookGlow(wrapper, szOrW, entry, cr, cg, cb, szH, opts)
         d.antsAg:Play()
     elseif d.ants then
         d.ants:Hide()
-        if d.antsAg then d.antsAg:Stop() end
+        if d.antsAg then
+            d.antsAg:Stop()
+        end
     end
 
     -- Soft outer halo: matches the halo StartButtonGlow draws behind its ants.
@@ -826,16 +966,26 @@ local function StartFlipBookGlow(wrapper, szOrW, entry, cr, cg, cb, szH, opts)
     end
 
     -- The scrub is pointless on a bound host, whose wrapper never had a script.
-    if not BOUND[wrapper] then wrapper:SetScript("OnUpdate", nil) end
+    if not BOUND[wrapper] then
+        wrapper:SetScript("OnUpdate", nil)
+    end
 end
 
 local function StopFlipBookGlow(wrapper)
     if wrapper._cuiFlipData then
         wrapper._cuiFlipData.tex:Hide()
-        if wrapper._cuiFlipData.ag then wrapper._cuiFlipData.ag:Stop() end
-        if wrapper._cuiFlipData.ants then wrapper._cuiFlipData.ants:Hide() end
-        if wrapper._cuiFlipData.antsAg then wrapper._cuiFlipData.antsAg:Stop() end
-        if wrapper._cuiFlipData.halo then wrapper._cuiFlipData.halo:Hide() end
+        if wrapper._cuiFlipData.ag then
+            wrapper._cuiFlipData.ag:Stop()
+        end
+        if wrapper._cuiFlipData.ants then
+            wrapper._cuiFlipData.ants:Hide()
+        end
+        if wrapper._cuiFlipData.antsAg then
+            wrapper._cuiFlipData.antsAg:Stop()
+        end
+        if wrapper._cuiFlipData.halo then
+            wrapper._cuiFlipData.halo:Hide()
+        end
     end
 end
 
@@ -861,26 +1011,36 @@ local function StartSolidFill(wrapper, cr, cg, cb, opts)
     -- spill past a rounded/circular border.
     local shapeMask = opts.shapeMask
     if d.mask ~= shapeMask then
-        if d.mask then pcall(d.tex.RemoveMaskTexture, d.tex, d.mask) end
-        if shapeMask then pcall(d.tex.AddMaskTexture, d.tex, shapeMask) end
+        if d.mask then
+            pcall(d.tex.RemoveMaskTexture, d.tex, d.mask)
+        end
+        if shapeMask then
+            pcall(d.tex.AddMaskTexture, d.tex, shapeMask)
+        end
         d.mask = shapeMask
     end
     d.tex:Show()
 end
 
 local function StopSolidFill(wrapper)
-    if wrapper._cuiFillData then wrapper._cuiFillData.tex:Hide() end
+    if wrapper._cuiFillData then
+        wrapper._cuiFillData.tex:Hide()
+    end
 end
 
 -- Defined above StopAllGlows so engine-hosted ants (StartEngineGlow /
 -- StartAnimatedAnts) tear down through the same unified stop path.
 local function StopAnimatedAnts(wrapper)
     local d = wrapper._cuiAnimAnts
-    if not d then return end
+    if not d then
+        return
+    end
     for i = 1, 4 do
         d.groups[i]:Stop()
         d.strips[i]:Hide()
-        if d.bgs and d.bgs[i] then d.bgs[i]:Hide() end
+        if d.bgs and d.bgs[i] then
+            d.bgs[i]:Hide()
+        end
     end
 end
 
@@ -888,7 +1048,9 @@ end
 --  StopAllGlows — clears any active glow engine on a wrapper frame
 -------------------------------------------------------------------------------
 local function StopAllGlows(wrapper)
-    if not wrapper then return end
+    if not wrapper then
+        return
+    end
     StopProceduralAnts(wrapper)
     StopButtonGlow(wrapper)
     StopAutoCastShine(wrapper)
@@ -900,19 +1062,27 @@ local function StopAllGlows(wrapper)
     -- Pandemic Border (PANDEMIC_BORDER) are static textures on the same hosts;
     -- a stop clears them too.
     local steal = wrapper._cuiStealTex
-    if steal then steal:Hide() end
+    if steal then
+        steal:Hide()
+    end
     local pan = wrapper._cuiPanTex
-    if pan then pan:Hide() end
+    if pan then
+        pan:Hide()
+    end
     -- StartSpecGlow's change signature describes a glow that is now gone.
     local sig = wrapper._cuiSpecSig
-    if sig then sig.idx = nil end
+    if sig then
+        sig.idx = nil
+    end
     -- Defensive scrub: the central driver owns the only OnUpdate now, so the
     -- five Stop* calls above already unregistered this wrapper from the driver.
     -- This clears any stale OnUpdate a pre-migration build may have left on the
     -- wrapper itself (harmless on our own frame; never touches the driver).
     -- A bound host (G.BindEngineHost) never had one. Its groups stay
     -- registered here: StopGlow hands them back, a restart re-plays them.
-    if not BOUND[wrapper] then wrapper:SetScript("OnUpdate", nil) end
+    if not BOUND[wrapper] then
+        wrapper:SetScript("OnUpdate", nil)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -926,7 +1096,9 @@ end
 --  restricted content. Dedicated wrappers only: the mask is never removed.
 -------------------------------------------------------------------------------
 local function ApplyMaskWith(wrapper, mask)
-    if not (wrapper and mask) then return end
+    if not (wrapper and mask) then
+        return
+    end
     for _, r in ipairs({ wrapper:GetRegions() }) do
         if r.AddMaskTexture and r._cuiTGMask ~= mask then
             r._cuiTGMask = mask
@@ -943,16 +1115,20 @@ end
 --  cr,cg,cb : glow color (0-1)
 --  opts     : optional table with overrides:
 --    .scale       — override entry.scale
-    --    .N, .th, .period, .bg — pixel glow tuning/background
+--    .N, .th, .period, .bg — pixel glow tuning/background
 --    .maskPath, .borderPath, .shapeMask — shape glow textures
 --    .untinted    -- a nil color stays nil on the FlipBook path (the atlas's
 --                   own untinted look) instead of desaturated white
 --    .alpha       -- Blackout fill opacity (0-1, default 1 = opaque)
 -------------------------------------------------------------------------------
 local function StartGlow(wrapper, styleIdx, szOrW, cr, cg, cb, opts, szH)
-    if not wrapper then return end
+    if not wrapper then
+        return
+    end
     styleIdx = tonumber(styleIdx) or 1
-    if styleIdx < 1 or styleIdx > #GLOW_STYLES then styleIdx = 1 end
+    if styleIdx < 1 or styleIdx > #GLOW_STYLES then
+        styleIdx = 1
+    end
     local entry = GLOW_STYLES[styleIdx]
     opts = opts or {}
     local w = szOrW or 36
@@ -961,34 +1137,47 @@ local function StartGlow(wrapper, styleIdx, szOrW, cr, cg, cb, opts, szH)
     -- the white every other style falls back to below.
     local noColor = (cr == nil)
     local keepUntinted = opts.untinted and cr == nil
-    cr = cr or 1; cg = cg or 1; cb = cb or 1
+    cr = cr or 1
+    cg = cg or 1
+    cb = cb or 1
 
     -- Stop any previous glow
     StopAllGlows(wrapper)
 
     if entry.procedural then
-        local N       = opts.N or 8
-        local th      = opts.th or 2
-        local period  = opts.period or 4
+        local N = opts.N or 8
+        local th = opts.th or 2
+        local period = opts.period or 4
         local lineLen = floor((w + h) * (2 / N - 0.1))
         lineLen = min(lineLen, min(w, h))
-        if lineLen < 1 then lineLen = 1 end
+        if lineLen < 1 then
+            lineLen = 1
+        end
         local bg = opts.bg
-        StartProceduralAnts(wrapper, N, th, period, lineLen, cr, cg, cb, w, h,
-            bg and (bg.r or 0) or nil, bg and (bg.g or 0) or nil, bg and (bg.b or 0) or nil, bg and (bg.a or 1) or nil)
-
+        StartProceduralAnts(
+            wrapper,
+            N,
+            th,
+            period,
+            lineLen,
+            cr,
+            cg,
+            cb,
+            w,
+            h,
+            bg and (bg.r or 0) or nil,
+            bg and (bg.g or 0) or nil,
+            bg and (bg.b or 0) or nil,
+            bg and (bg.a or 1) or nil
+        )
     elseif entry.buttonGlow then
         StartButtonGlow(wrapper, w, cr, cg, cb, nil, h)
-
     elseif entry.autocast then
         StartAutoCastShine(wrapper, w, cr, cg, cb, 1.0, h)
-
     elseif entry.shapeGlow then
         StartShapeGlow(wrapper, w, cr, cg, cb, 1.20, opts)
-
     elseif entry.solidFill then
         StartSolidFill(wrapper, noColor and 0 or cr, noColor and 0 or cg, noColor and 0 or cb, opts)
-
     else
         -- FlipBook mode (GCD, Modern WoW Glow, Classic WoW Glow, etc.)
         if keepUntinted then
@@ -998,7 +1187,9 @@ local function StartGlow(wrapper, styleIdx, szOrW, cr, cg, cb, opts, szH)
         end
     end
 
-    if opts.maskWith then ApplyMaskWith(wrapper, opts.maskWith) end
+    if opts.maskWith then
+        ApplyMaskWith(wrapper, opts.maskWith)
+    end
 
     wrapper._cuiGlowActive = true
     wrapper:SetAlpha(1)
@@ -1036,12 +1227,16 @@ local function EngineGroupsInto(wrapper, idx, out)
     local n = 0
     idx = tonumber(idx) or 1
     if idx ~= STEALABLE_BORDER and idx ~= PANDEMIC_BORDER then
-        if idx < 1 or idx > #GLOW_STYLES or GLOW_STYLES[idx].solidFill then idx = 1 end
+        if idx < 1 or idx > #GLOW_STYLES or GLOW_STYLES[idx].solidFill then
+            idx = 1
+        end
         local entry = GLOW_STYLES[idx]
         if entry.procedural then
             local a = wrapper._cuiAnimAnts
             if a then
-                for i = 1, 4 do out[i] = a.groups[i] end
+                for i = 1, 4 do
+                    out[i] = a.groups[i]
+                end
                 n = 4
             end
         else
@@ -1061,7 +1256,9 @@ local function EngineGroupsInto(wrapper, idx, out)
             end
         end
     end
-    for i = n + 1, #out do out[i] = nil end
+    for i = n + 1, #out do
+        out[i] = nil
+    end
     return n
 end
 
@@ -1070,7 +1267,9 @@ local _bWant = {}
 
 local function _InWant(ag, n)
     for i = 1, n do
-        if _bWant[i] == ag then return true end
+        if _bWant[i] == ag then
+            return true
+        end
     end
     return false
 end
@@ -1079,7 +1278,9 @@ end
 -- the bound host's button refuses our calls right now.
 local function BoundBlocked(rec)
     local AK = CludesUI.AuraKit
-    if AK.CanTouchButton(rec.button) then return false end
+    if AK.CanTouchButton(rec.button) then
+        return false
+    end
     AK.DeferRestyle(rec.d.styleKey)
     return true
 end
@@ -1095,35 +1296,48 @@ local function SyncBoundHost(wrapper, rec, n)
     if a then
         for i = 1, 4 do
             local ag = a.groups[i]
-            if not _InWant(ag, n) and not AK.SetShownAnimation(button, d, ag, false) then ok = false end
+            if not _InWant(ag, n) and not AK.SetShownAnimation(button, d, ag, false) then
+                ok = false
+            end
         end
     end
     local f = wrapper._cuiFlipData
     if f then
-        if not _InWant(f.ag, n) and not AK.SetShownAnimation(button, d, f.ag, false) then ok = false end
+        if not _InWant(f.ag, n) and not AK.SetShownAnimation(button, d, f.ag, false) then
+            ok = false
+        end
         local antsAg = f.antsAg
-        if antsAg and not _InWant(antsAg, n)
-            and not AK.SetShownAnimation(button, d, antsAg, false) then
+        if antsAg and not _InWant(antsAg, n) and not AK.SetShownAnimation(button, d, antsAg, false) then
             ok = false
         end
     end
     for i = 1, n do
-        if not AK.SetShownAnimation(button, d, _bWant[i], true) then ok = false end
+        if not AK.SetShownAnimation(button, d, _bWant[i], true) then
+            ok = false
+        end
     end
-    if ok and n > 0 then ok = AK.KickShownAnimations(button, d, _bWant, n) end
+    if ok and n > 0 then
+        ok = AK.KickShownAnimations(button, d, _bWant, n)
+    end
     return ok
 end
 
 -- Bound host: false when the stop had to wait for the restriction lift (the
 -- glow keeps its state until then), else whether its groups were handed back.
 local function StopGlow(wrapper)
-    if not wrapper then return end
+    if not wrapper then
+        return
+    end
     local rec = BOUND[wrapper]
-    if rec and BoundBlocked(rec) then return false end
+    if rec and BoundBlocked(rec) then
+        return false
+    end
     StopAllGlows(wrapper)
     wrapper._cuiGlowActive = false
     wrapper:SetAlpha(0)
-    if rec then return SyncBoundHost(wrapper, rec, 0) end
+    if rec then
+        return SyncBoundHost(wrapper, rec, 0)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -1151,7 +1365,9 @@ end
 -- all hidden. The data table appears only once every region exists.
 local function _EnsureAnimAnts(wrapper)
     local d = wrapper._cuiAnimAnts
-    if d then return d end
+    if d then
+        return d
+    end
     d = { strips = {}, masks = {}, groups = {}, trs = {}, bgs = {} }
     for i = 1, 4 do
         local mask = wrapper:CreateMaskTexture()
@@ -1187,15 +1403,20 @@ local function StartAnimatedAnts(wrapper, N, th, period, cr, cg, cb, w, h, ca, b
     N = (N and N > 0) and N or 8
     th = th or 2
     period = period or 4
-    w = w or 36; h = h or w
+    w = w or 36
+    h = h or w
     local perim = 2 * (w + h)
-    local P = perim / N              -- pixels per dash cycle
-    local step = period / N          -- seconds per dash cycle
+    local P = perim / N -- pixels per dash cycle
+    local step = period / N -- seconds per dash cycle
     local d = _EnsureAnimAnts(wrapper)
     for i = 1, 4 do
         local t = d.bgs[i]
         if bgR then
-            if i == 1 or i == 3 then t:SetHeight(th) else t:SetWidth(th) end
+            if i == 1 or i == 3 then
+                t:SetHeight(th)
+            else
+                t:SetWidth(th)
+            end
             t:SetColorTexture(bgR, bgG or 0, bgB or 0, bgA or 1)
             t:Show()
         else
@@ -1215,7 +1436,9 @@ local function StartAnimatedAnts(wrapper, N, th, period, cr, cg, cb, w, h, ca, b
         strip:ClearAllPoints()
         if i == 1 or i == 3 then
             local base = 0
-            if i == 3 then base = (w + h) / P end
+            if i == 3 then
+                base = (w + h) / P
+            end
             strip:SetTexture(DASH_H, "REPEAT", "REPEAT")
             mask:SetSize(w, th)
             strip:SetSize(w + P, th)
@@ -1231,7 +1454,9 @@ local function StartAnimatedAnts(wrapper, N, th, period, cr, cg, cb, w, h, ca, b
             strip:SetTexCoord(base, base + (w + P) / P, 0, 1)
         else
             local base = w / P
-            if i == 4 then base = (w + h + w) / P end
+            if i == 4 then
+                base = (w + h + w) / P
+            end
             strip:SetTexture(DASH_V, "REPEAT", "REPEAT")
             mask:SetSize(th, h)
             strip:SetSize(th, h + P)
@@ -1266,22 +1491,39 @@ end
 --  those two; the fallback only covers stale saved values). FlipBook picks
 --  pass through untouched. Never registers with the central driver.
 -------------------------------------------------------------------------------
-local ABG_HALO_OPTS = { abgHalo = true }  -- shared scratch for the no-opts ABG substitution (halo color rewritten per call, read synchronously)
+local ABG_HALO_OPTS = { abgHalo = true } -- shared scratch for the no-opts ABG substitution (halo color rewritten per call, read synchronously)
 local function StartEngineGlow(wrapper, styleIdx, szOrW, cr, cg, cb, opts, szH)
-    if not wrapper then return end
+    if not wrapper then
+        return
+    end
     styleIdx = tonumber(styleIdx) or 1
     -- Blackout is Cooldown Manager only: engine hosts draw Pixel instead, as
     -- ResolveStyle does.
-    if styleIdx < 1 or styleIdx > #GLOW_STYLES or GLOW_STYLES[styleIdx].solidFill then styleIdx = 1 end
+    if styleIdx < 1 or styleIdx > #GLOW_STYLES or GLOW_STYLES[styleIdx].solidFill then
+        styleIdx = 1
+    end
     local entry = GLOW_STYLES[styleIdx]
     if entry.procedural then
         opts = opts or {}
         local w = szOrW or 36
         local bg = opts.bg
         StopAllGlows(wrapper)
-        StartAnimatedAnts(wrapper, opts.N or 8, opts.th or 2, opts.period or 4,
-            cr or 1, cg or 1, cb or 1, w, szH or w, nil,
-            bg and (bg.r or 0) or nil, bg and (bg.g or 0) or nil, bg and (bg.b or 0) or nil, bg and (bg.a or 1) or nil)
+        StartAnimatedAnts(
+            wrapper,
+            opts.N or 8,
+            opts.th or 2,
+            opts.period or 4,
+            cr or 1,
+            cg or 1,
+            cb or 1,
+            w,
+            szH or w,
+            nil,
+            bg and (bg.r or 0) or nil,
+            bg and (bg.g or 0) or nil,
+            bg and (bg.b or 0) or nil,
+            bg and (bg.a or 1) or nil
+        )
         wrapper._cuiGlowActive = true
         wrapper:SetAlpha(1)
         return
@@ -1295,7 +1537,12 @@ local function StartEngineGlow(wrapper, styleIdx, szOrW, cr, cg, cb, opts, szH)
         styleIdx = 7
         -- untinted would turn the white ants into the sheet's raw gold; the
         -- substitution always wants them white.
-        if opts then opts.abgHalo = true; opts.untinted = nil else opts = ABG_HALO_OPTS end
+        if opts then
+            opts.abgHalo = true
+            opts.untinted = nil
+        else
+            opts = ABG_HALO_OPTS
+        end
         opts.haloR, opts.haloG, opts.haloB = cr, cg, cb
         cr, cg, cb = nil, nil, nil
     elseif entry.autocast or entry.shapeGlow then
@@ -1330,49 +1577,59 @@ end
 -- false). Unbound wrappers run the engine exactly as before.
 local function StartAnimatedAntsPublic(wrapper, ...)
     local rec = BOUND[wrapper]
-    if not rec then return StartAnimatedAnts(wrapper, ...) end
-    if BoundBlocked(rec) then return false end
+    if not rec then
+        return StartAnimatedAnts(wrapper, ...)
+    end
+    if BoundBlocked(rec) then
+        return false
+    end
     StartAnimatedAnts(wrapper, ...)
     return SyncBoundHost(wrapper, rec, EngineGroupsInto(wrapper, 1, _bWant))
 end
 
 local function StopAnimatedAntsPublic(wrapper)
     local rec = BOUND[wrapper]
-    if not rec then return StopAnimatedAnts(wrapper) end
+    if not rec then
+        return StopAnimatedAnts(wrapper)
+    end
     -- Never armed: nothing to stop and nothing registered.
-    if not wrapper._cuiAnimAnts then return true end
-    if BoundBlocked(rec) then return false end
+    if not wrapper._cuiAnimAnts then
+        return true
+    end
+    if BoundBlocked(rec) then
+        return false
+    end
     StopAnimatedAnts(wrapper)
     return SyncBoundHost(wrapper, rec, 0)
 end
 
 CludesUI.Glows = {
-    STYLES              = GLOW_STYLES,
+    STYLES = GLOW_STYLES,
 
     -- High-level API (recommended)
-    StartGlow           = StartGlow,
-    StartEngineGlow     = StartEngineGlow,
-    StopGlow            = StopGlow,
+    StartGlow = StartGlow,
+    StartEngineGlow = StartEngineGlow,
+    StopGlow = StopGlow,
     RestrictionSafeStyle = RestrictionSafeStyle,
 
     -- Low-level engines (for addons that need direct control)
     StartProceduralAnts = StartProceduralAnts,
-    StopProceduralAnts  = StopProceduralAnts,
+    StopProceduralAnts = StopProceduralAnts,
     SetProceduralAntsColor = SetProceduralAntsColor,
-    StartButtonGlow     = StartButtonGlow,
-    StopButtonGlow      = StopButtonGlow,
-    StartAutoCastShine  = StartAutoCastShine,
-    StopAutoCastShine   = StopAutoCastShine,
-    StartAnimatedAnts   = StartAnimatedAntsPublic,
-    StopAnimatedAnts    = StopAnimatedAntsPublic,
-    StartShapeGlow      = StartShapeGlow,
-    StopShapeGlow       = StopShapeGlow,
-    StartFlipBookGlow   = StartFlipBookGlow,
-    StopFlipBookGlow    = StopFlipBookGlow,
-    StartSolidFill      = StartSolidFill,
-    StopSolidFill       = StopSolidFill,
-    ApplyMaskWith       = ApplyMaskWith,
-    StopAllGlows        = StopAllGlows,
+    StartButtonGlow = StartButtonGlow,
+    StopButtonGlow = StopButtonGlow,
+    StartAutoCastShine = StartAutoCastShine,
+    StopAutoCastShine = StopAutoCastShine,
+    StartAnimatedAnts = StartAnimatedAntsPublic,
+    StopAnimatedAnts = StopAnimatedAntsPublic,
+    StartShapeGlow = StartShapeGlow,
+    StopShapeGlow = StopShapeGlow,
+    StartFlipBookGlow = StartFlipBookGlow,
+    StopFlipBookGlow = StopFlipBookGlow,
+    StartSolidFill = StartSolidFill,
+    StopSolidFill = StopSolidFill,
+    ApplyMaskWith = ApplyMaskWith,
+    StopAllGlows = StopAllGlows,
 }
 
 -------------------------------------------------------------------------------
@@ -1487,7 +1744,9 @@ do
             fromShared[si] = i
         end
         for si = 1, #GLOW_STYLES do
-            if fromShared[si] then ordered[#ordered + 1] = fromShared[si] end
+            if fromShared[si] then
+                ordered[#ordered + 1] = fromShared[si]
+            end
         end
         return { list = list, toShared = toShared, fromShared = fromShared, ordered = ordered }
     end
@@ -1502,8 +1761,8 @@ do
     --   engine : 12.1 aura-button subtree; no driver ticks, so no Auto-Cast or
     --            Shape (Pixel renders as animated ants, ABG as its FlipBook twin)
     G.HOSTS = {
-        icon   = { true, true, true, true,  true, true, true },
-        bar    = { true, true, true, false, true, true, true },
+        icon = { true, true, true, true, true, true, true },
+        bar = { true, true, true, false, true, true, true },
         engine = { true, true, false, false, true, true, true },
     }
 
@@ -1516,28 +1775,36 @@ do
 
     -- Nearest renderable replacement, in preference order, per wanted style.
     local FALLBACK = {
-        [1] = { 7, 6, 5 },   -- Pixel      -> Classic ants
-        [2] = { 7, 6, 1 },   -- ABG        -> Classic
-        [3] = { 6, 5, 1 },   -- Auto-Cast  -> Modern (StartEngineGlow's own remap)
-        [4] = { 6, 1, 7 },   -- Shape      -> Modern
+        [1] = { 7, 6, 5 }, -- Pixel      -> Classic ants
+        [2] = { 7, 6, 1 }, -- ABG        -> Classic
+        [3] = { 6, 5, 1 }, -- Auto-Cast  -> Modern (StartEngineGlow's own remap)
+        [4] = { 6, 1, 7 }, -- Shape      -> Modern
         [5] = { 6, 7, 1 },
         [6] = { 5, 7, 1 },
         [7] = { 1, 6, 5 },
-        [8] = { 1, 6, 7 },   -- Blackout   -> Pixel
+        [8] = { 1, 6, 7 }, -- Blackout   -> Pixel
     }
 
     -- Shared index -> renderable shared index, plus whether it had to change.
     function G.ResolveStyle(idx, host, excludes)
         idx = tonumber(idx) or 1
         -- The two static borders are plain textures: every host can show them.
-        if idx == STEALABLE_BORDER or idx == PANDEMIC_BORDER then return idx, false end
-        if idx < 1 or idx > #GLOW_STYLES then idx = 1 end
+        if idx == STEALABLE_BORDER or idx == PANDEMIC_BORDER then
+            return idx, false
+        end
+        if idx < 1 or idx > #GLOW_STYLES then
+            idx = 1
+        end
         local caps = G.HOSTS[host or "icon"] or G.HOSTS.icon
-        if caps[idx] and not (excludes and excludes[idx]) then return idx, false end
+        if caps[idx] and not (excludes and excludes[idx]) then
+            return idx, false
+        end
         local alts = FALLBACK[idx]
         for k = 1, #alts do
             local a = alts[k]
-            if caps[a] and not (excludes and excludes[a]) then return a, true end
+            if caps[a] and not (excludes and excludes[a]) then
+                return a, true
+            end
         end
         return 1, true
     end
@@ -1546,19 +1813,25 @@ do
     -- style). A nil mode is a legacy site that never stored one: it reads as
     -- custom with the site's own default, so its look is unchanged.
     function G.ResolveColor(mode, r, g, b, defR, defG, defB)
-        if mode == "default" then return nil end
+        if mode == "default" then
+            return nil
+        end
         if mode == "class" then
             -- The palette colour (custom + Class Color Darken); an unknown class is white.
             local c = CludesUI.GetClassColor(CludesUI._playerClass)
             return c.r, c.g, c.b
         end
-        if r ~= nil then return r, g or 0, b or 0 end
+        if r ~= nil then
+            return r, g or 0, b or 0
+        end
         return defR, defG, defB
     end
 
     -- Legacy sites store a class-color boolean instead of a mode.
     function G.DeriveColorMode(mode, classFlag)
-        if mode then return mode end
+        if mode then
+            return mode
+        end
         return classFlag and "class" or "custom"
     end
 
@@ -1567,10 +1840,16 @@ do
     -- render as saved and read as the slowest step until edited.
     function G.SpeedToUI(period)
         local v = 9 - (period or 4)
-        if v < 1 then v = 1 elseif v > 8 then v = 8 end
+        if v < 1 then
+            v = 1
+        elseif v > 8 then
+            v = 8
+        end
         return v
     end
-    function G.SpeedFromUI(v) return 9 - v end
+    function G.SpeedFromUI(v)
+        return 9 - v
+    end
 
     -- Spec from a settings table using the prefix key schema shared by the aura
     -- managers: <p>Type (shared index, 0 = off), <p>ColorMode, legacy
@@ -1580,10 +1859,21 @@ do
     local function PrefixKeys(p)
         local k = _prefixKeys[p]
         if not k then
-            k = { type = p .. "Type", mode = p .. "ColorMode", class = p .. "ClassColor",
-                  r = p .. "R", g = p .. "G", b = p .. "B", lines = p .. "Lines",
-                  th = p .. "Thickness", speed = p .. "Speed", bg = p .. "Background",
-                  bgR = p .. "BackgroundR", bgG = p .. "BackgroundG", bgB = p .. "BackgroundB" }
+            k = {
+                type = p .. "Type",
+                mode = p .. "ColorMode",
+                class = p .. "ClassColor",
+                r = p .. "R",
+                g = p .. "G",
+                b = p .. "B",
+                lines = p .. "Lines",
+                th = p .. "Thickness",
+                speed = p .. "Speed",
+                bg = p .. "Background",
+                bgR = p .. "BackgroundR",
+                bgG = p .. "BackgroundG",
+                bgB = p .. "BackgroundB",
+            }
             _prefixKeys[p] = k
         end
         return k
@@ -1593,10 +1883,12 @@ do
     function G.SpecFromPrefix(out, t, p, defR, defG, defB)
         local k = PrefixKeys(p)
         local style = t and t[k.type] or 0
-        if not style or style == 0 then return nil end
+        if not style or style == 0 then
+            return nil
+        end
         out.style = style
-        out.r, out.g, out.b = G.ResolveColor(G.DeriveColorMode(t[k.mode], t[k.class]),
-            t[k.r], t[k.g], t[k.b], defR, defG, defB)
+        out.r, out.g, out.b =
+            G.ResolveColor(G.DeriveColorMode(t[k.mode], t[k.class]), t[k.r], t[k.g], t[k.b], defR, defG, defB)
         out.lines, out.thickness, out.speed = t[k.lines], t[k.th], t[k.speed]
         if t[k.bg] then
             out.bg, out.bgR, out.bgG, out.bgB = true, t[k.bgR] or 0, t[k.bgG] or 0, t[k.bgB] or 0
@@ -1615,9 +1907,16 @@ do
     function G.FlatKeys(p)
         local k = _flatKeys[p]
         if not k then
-            k = { style = p .. "Style", mode = p .. "ColorMode", color = p .. "Color",
-                  lines = p .. "Lines", thickness = p .. "Thickness", speed = p .. "Speed",
-                  bg = p .. "Background", bgColor = p .. "BackgroundColor" }
+            k = {
+                style = p .. "Style",
+                mode = p .. "ColorMode",
+                color = p .. "Color",
+                lines = p .. "Lines",
+                thickness = p .. "Thickness",
+                speed = p .. "Speed",
+                bg = p .. "Background",
+                bgColor = p .. "BackgroundColor",
+            }
             _flatKeys[p] = k
         end
         return k
@@ -1629,7 +1928,9 @@ do
     -- defs: fallbacks under the same keys (a module's defaults table).
     local function FlatVal(t, defs, key)
         local v = t[key]
-        if v == nil and defs then v = defs[key] end
+        if v == nil and defs then
+            v = defs[key]
+        end
         return v
     end
     function G.SpecFromFlat(out, t, k, mode, defs)
@@ -1657,7 +1958,9 @@ do
     function G.PanelThickness(th)
         local PP, PPP = CludesUI.PP, CludesUI.PanelPP
         local px = math.floor(th / ((PP and PP.mult) or 1) + 0.5)
-        if px < 1 then px = 1 end
+        if px < 1 then
+            px = 1
+        end
         return px * ((PPP and PPP.mult) or 1)
     end
 
@@ -1682,22 +1985,28 @@ do
     -- change anything returns nothing and defers the button's style key to
     -- the restriction lift; an unchanged glow still returns at once.
     function G.StartSpecGlow(wrapper, spec, w, h, host, extra)
-        if not (wrapper and spec) then return end
+        if not (wrapper and spec) then
+            return
+        end
         local idx, converted = G.ResolveStyle(spec.style, host, spec.excludes)
-        w = w or 36; h = h or w
+        w = w or 36
+        h = h or w
         local s = wrapper._cuiSpecSig
         local rec = BOUND[wrapper]
         -- The static borders: no glow, no parameters. Blizzard Border: nil
         -- color = Blizzard's art. Blizzard Pandemic Border: always untinted.
         if idx == STEALABLE_BORDER or idx == PANDEMIC_BORDER then
             local r, g, b
-            if idx == STEALABLE_BORDER then r, g, b = spec.r, spec.g, spec.b end
-            if rec and BoundBlocked(rec) then return end
+            if idx == STEALABLE_BORDER then
+                r, g, b = spec.r, spec.g, spec.b
+            end
+            if rec and BoundBlocked(rec) then
+                return
+            end
             -- StopGlow leaves the host at alpha 0 and a caller may park it
             -- there, so the alpha is re-asserted even when nothing changed.
             wrapper:SetAlpha(1)
-            if s and s.idx == idx and s.w == w and s.h == h
-               and s.r == r and s.g == g and s.b == b then
+            if s and s.idx == idx and s.w == w and s.h == h and s.r == r and s.g == g and s.b == b then
                 return idx, false
             end
             -- Clear the flag too (StopAllGlows keeps it), so later calls skip the teardown.
@@ -1707,8 +2016,12 @@ do
             else
                 -- From the other static border: only its texture can be up.
                 local other = (idx == STEALABLE_BORDER) and wrapper._cuiPanTex or wrapper._cuiStealTex
-                if other then other:Hide() end
-                if s then s.idx = nil end
+                if other then
+                    other:Hide()
+                end
+                if s then
+                    s.idx = nil
+                end
             end
             if idx == STEALABLE_BORDER then
                 G.ShowStealableBorder(wrapper, w, h, r, g, b)
@@ -1716,8 +2029,13 @@ do
                 G.ShowPandemicBorder(wrapper, w, h)
             end
             -- A static border plays no group: a bound host hands them back.
-            if rec and not SyncBoundHost(wrapper, rec, 0) then return idx, false end
-            if not s then s = {}; wrapper._cuiSpecSig = s end
+            if rec and not SyncBoundHost(wrapper, rec, 0) then
+                return idx, false
+            end
+            if not s then
+                s = {}
+                wrapper._cuiSpecSig = s
+            end
             s.idx, s.host, s.w, s.h, s.r, s.g, s.b = idx, host, w, h, r, g, b
             return idx, false
         end
@@ -1729,29 +2047,50 @@ do
         local isFlip = not (entry.procedural or entry.buttonGlow or entry.autocast or entry.shapeGlow)
         -- Default look: FlipBooks stay untinted (nil). The engine-hosted ABG
         -- twin takes nil too (white ants, gold halo); everything else is gold.
-        if r == nil and not isFlip
-           and not (engineHost and entry.buttonGlow) then
+        if r == nil and not isFlip and not (engineHost and entry.buttonGlow) then
             r, g, b = DEF_R, DEF_G, DEF_B
         end
         local N, th, period = spec.lines or 8, spec.thickness or 2, spec.speed or 4
-        if extra and extra.panel then th = G.PanelThickness(th) end
+        if extra and extra.panel then
+            th = G.PanelThickness(th)
+        end
         local bgOn = spec.bg and true or false
         -- An off background draws nothing, so its colour never counts (a
         -- reused scratch spec can still carry an old one).
         local bgR, bgG, bgB = 0, 0, 0
-        if bgOn then bgR, bgG, bgB = spec.bgR or 0, spec.bgG or 0, spec.bgB or 0 end
+        if bgOn then
+            bgR, bgG, bgB = spec.bgR or 0, spec.bgG or 0, spec.bgB or 0
+        end
         local mask = extra and extra.maskWith or nil
         local maskPath = extra and extra.maskPath or nil
         local shapeMask = extra and extra.shapeMask or nil
 
-        if s and wrapper._cuiGlowActive and s.idx == idx and s.host == host
-           and s.w == w and s.h == h and s.r == r and s.g == g and s.b == b
-           and s.N == N and s.th == th and s.period == period
-           and s.bg == bgOn and s.bgR == bgR and s.bgG == bgG and s.bgB == bgB
-           and s.mask == mask and s.maskPath == maskPath and s.shapeMask == shapeMask then
+        if
+            s
+            and wrapper._cuiGlowActive
+            and s.idx == idx
+            and s.host == host
+            and s.w == w
+            and s.h == h
+            and s.r == r
+            and s.g == g
+            and s.b == b
+            and s.N == N
+            and s.th == th
+            and s.period == period
+            and s.bg == bgOn
+            and s.bgR == bgR
+            and s.bgG == bgG
+            and s.bgB == bgB
+            and s.mask == mask
+            and s.maskPath == maskPath
+            and s.shapeMask == shapeMask
+        then
             return idx, converted
         end
-        if rec and BoundBlocked(rec) then return end
+        if rec and BoundBlocked(rec) then
+            return
+        end
 
         local o = _opts
         o.N, o.th, o.period = N, th, period
@@ -1764,9 +2103,9 @@ do
         o.untinted = (r == nil) or nil
         o.abgHalo, o.haloR, o.haloG, o.haloB = nil, nil, nil, nil
         o.maskWith = mask
-        o.maskPath    = maskPath
-        o.borderPath  = extra and extra.borderPath or nil
-        o.shapeMask   = shapeMask
+        o.maskPath = maskPath
+        o.borderPath = extra and extra.borderPath or nil
+        o.shapeMask = shapeMask
         o.anchorFrame = extra and extra.anchorFrame or nil
         if engineHost then
             StartEngineGlow(wrapper, idx, w, r, g, b, o, h)
@@ -1781,7 +2120,10 @@ do
 
         -- Stored after the start: StartGlow's StopAllGlows invalidates it.
         s = wrapper._cuiSpecSig
-        if not s then s = {}; wrapper._cuiSpecSig = s end
+        if not s then
+            s = {}
+            wrapper._cuiSpecSig = s
+        end
         s.idx, s.host, s.w, s.h, s.r, s.g, s.b = idx, host, w, h, r, g, b
         s.N, s.th, s.period = N, th, period
         s.bg, s.bgR, s.bgG, s.bgB, s.mask = bgOn, bgR, bgG, bgB, mask
@@ -1801,11 +2143,21 @@ do
     -- stay for call compatibility (creation needs no size). Repeat calls are
     -- free: each family's data table appears only once its regions exist.
     function G.PrewarmEngineHost(wrapper, w, h, need)
-        if not wrapper then return end
-        if not need or need.ants then _EnsureAnimAnts(wrapper) end
-        if not need or need.flip then _EnsureFlip(wrapper, true, true) end
-        if not need or need.stealable then G.EnsureStealableBorder(wrapper) end
-        if not need or need.pandemic then G.EnsurePandemicBorder(wrapper) end
+        if not wrapper then
+            return
+        end
+        if not need or need.ants then
+            _EnsureAnimAnts(wrapper)
+        end
+        if not need or need.flip then
+            _EnsureFlip(wrapper, true, true)
+        end
+        if not need or need.stealable then
+            G.EnsureStealableBorder(wrapper)
+        end
+        if not need or need.pandemic then
+            G.EnsurePandemicBorder(wrapper)
+        end
     end
 
     -- Binds an engine host to the aura button it sits on, so the button runs
@@ -1821,17 +2173,25 @@ do
     -- path. A glow already running on the host restarts through the next
     -- StartSpecGlow, which registers it.
     function G.BindEngineHost(wrapper, button, d, kickIcon)
-        if not (wrapper and button and d) then return false end
+        if not (wrapper and button and d) then
+            return false
+        end
         local AK = CludesUI.AuraKit
         local rec = BOUND[wrapper]
         if not rec then
-            if not (AK and AK.CanRunAnimations(button)) then return false end
+            if not (AK and AK.CanRunAnimations(button)) then
+                return false
+            end
             rec = { button = button, d = d }
             BOUND[wrapper] = rec
             local s = wrapper._cuiSpecSig
-            if s then s.idx = nil end
+            if s then
+                s.idx = nil
+            end
         end
-        if kickIcon then AK.EnsureKickIcon(button, d, kickIcon) end
+        if kickIcon then
+            AK.EnsureKickIcon(button, d, kickIcon)
+        end
         return true
     end
 
@@ -1839,4 +2199,3 @@ do
         return wrapper ~= nil and BOUND[wrapper] ~= nil
     end
 end
-

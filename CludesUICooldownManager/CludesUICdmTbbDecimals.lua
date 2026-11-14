@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUICdmTbbDecimals.lua
 --  12.1-only engine-driven decimal duration text for Tracking Bars.
@@ -48,7 +50,11 @@ local AK -- CludesUI.AuraKit, resolved at first sync
 -- at threshold = 0 in GetDecimalFormatter's table.
 local function ClampThr(v)
     v = tonumber(v) or 5
-    if v < 1 then v = 1 elseif v > 120 then v = 120 end
+    if v < 1 then
+        v = 1
+    elseif v > 120 then
+        v = 120
+    end
     return math.floor(v + 0.5)
 end
 
@@ -57,16 +63,17 @@ local function GetDecimalFormatter(thr)
     thr = ClampThr(thr)
     local cached = formatterByThr[thr]
     if cached ~= nil then
-        if cached then return cached end
+        if cached then
+            return cached
+        end
         return nil -- false sentinel: this threshold's table was rejected
     end
-    if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter
-        and Enum.NumericRuleFormatRounding) then
+    if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding) then
         formatterByThr[thr] = false
         return nil
     end
     local Nearest = Enum.NumericRuleFormatRounding.Nearest
-    local Up      = Enum.NumericRuleFormatRounding.Up
+    local Up = Enum.NumericRuleFormatRounding.Up
     local f = C_StringUtil.CreateNumericRuleFormatter()
     -- Shape of the field-proven threshold-text formatter: tenths Nearest below the
     -- threshold, whole seconds Up to the minute, then m:ss/h/d with boundaries offset
@@ -78,18 +85,38 @@ local function GetDecimalFormatter(thr)
     }
     if thr <= 59 then
         points[#points + 1] = { threshold = thr, format = "%d", rounding = Up, step = 1 }
-        points[#points + 1] = { threshold = 59.0001, format = "%d:%02d", rounding = Up, step = 1,
-            components = { { div = 60 }, { mod = 60 } } }
+        points[#points + 1] = {
+            threshold = 59.0001,
+            format = "%d:%02d",
+            rounding = Up,
+            step = 1,
+            components = { { div = 60 }, { mod = 60 } },
+        }
     else
         -- Threshold past the minute boundary: tenths run right up to it,
         -- then hand off straight to m:ss (no whole-second band).
-        points[#points + 1] = { threshold = thr + 0.0001, format = "%d:%02d", rounding = Up, step = 1,
-            components = { { div = 60 }, { mod = 60 } } }
+        points[#points + 1] = {
+            threshold = thr + 0.0001,
+            format = "%d:%02d",
+            rounding = Up,
+            step = 1,
+            components = { { div = 60 }, { mod = 60 } },
+        }
     end
-    points[#points + 1] = { threshold = 3599.0001, format = "%dh", rounding = Up, step = 1,
-        components = { { div = 3600 } } }
-    points[#points + 1] = { threshold = 86399.0001, format = "%dd", rounding = Up, step = 1,
-        components = { { div = 86400 } } }
+    points[#points + 1] = {
+        threshold = 3599.0001,
+        format = "%dh",
+        rounding = Up,
+        step = 1,
+        components = { { div = 3600 } },
+    }
+    points[#points + 1] = {
+        threshold = 86399.0001,
+        format = "%dd",
+        rounding = Up,
+        step = 1,
+        components = { { div = 86400 } },
+    }
     local ok = pcall(f.SetBreakpoints, f, points)
     if not ok then
         formatterByThr[thr] = false
@@ -102,16 +129,22 @@ end
 -- Variant expansion for one stored spell id: the live aura can come up under
 -- the talent override (or base) form of the id the config captured.
 local function AddVariants(include, sid)
-    if type(sid) ~= "number" or sid <= 0 then return end
+    if type(sid) ~= "number" or sid <= 0 then
+        return
+    end
     include[sid] = true
     if C_Spell then
         if C_Spell.GetOverrideSpell then
             local o = C_Spell.GetOverrideSpell(sid)
-            if type(o) == "number" and o > 0 then include[o] = true end
+            if type(o) == "number" and o > 0 then
+                include[o] = true
+            end
         end
         if C_Spell.GetBaseSpell then
             local b = C_Spell.GetBaseSpell(sid)
-            if type(b) == "number" and b > 0 then include[b] = true end
+            if type(b) == "number" and b > 0 then
+                include[b] = true
+            end
         end
     end
 end
@@ -120,8 +153,12 @@ end
 -- active frame's ids can be SECRET; a secret table key would blow up the
 -- filter). issecretvalue FIRST, arithmetic after.
 local function AddCleanID(include, id)
-    if issecretvalue and issecretvalue(id) then return end
-    if type(id) ~= "number" or id <= 0 then return end
+    if issecretvalue and issecretvalue(id) then
+        return
+    end
+    if type(id) ~= "number" or id <= 0 then
+        return
+    end
     AddVariants(include, id)
 end
 
@@ -132,7 +169,9 @@ end
 -- slot filter can never match. Sync-time only (rebuilds), never per tick.
 local function AddCooldownInfoIDs(include, cfg)
     local frame = ns.FindTBBChild and ns.FindTBBChild(cfg)
-    if not frame then return end
+    if not frame then
+        return
+    end
     -- The frame's canonical id resolves GetSpellID/GetAuraSpellID (the actual
     -- aura variant) with its own secret handling.
     if ns.GetCanonicalSpellIDForFrame then
@@ -141,7 +180,9 @@ local function AddCooldownInfoIDs(include, cfg)
     local cdID = frame.cooldownID
     local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local info = cdID and gci and gci(cdID)
-    if not info then return end
+    if not info then
+        return
+    end
     AddCleanID(include, info.spellID)
     AddCleanID(include, info.overrideSpellID)
     AddCleanID(include, info.overrideTooltipSpellID)
@@ -152,12 +193,12 @@ local function AddCooldownInfoIDs(include, cfg)
     end
 end
 
-local host           -- shown 1px anchor for the container (alpha 0, mouse-off)
-local container      -- live AuraContainer, or nil
-local signature      -- signature string of the live container's slot set
-local boundIndex = {}   -- bar index -> slot button (rebuilt per container)
-local boundThr = {}     -- bar index -> threshold its binding was registered with
-local pendingRegen      -- true while a combat-deferred rebuild is queued
+local host -- shown 1px anchor for the container (alpha 0, mouse-off)
+local container -- live AuraContainer, or nil
+local signature -- signature string of the live container's slot set
+local boundIndex = {} -- bar index -> slot button (rebuilt per container)
+local boundThr = {} -- bar index -> threshold its binding was registered with
+local pendingRegen -- true while a combat-deferred rebuild is queued
 
 local function SyncAfterCombat()
     if pendingRegen then
@@ -175,7 +216,9 @@ local function UnmarkAll()
             -- The mirror gates the timer FS alpha from the secret aura
             -- presence; an unbound bar must never keep a stuck alpha-0 FS.
             if bar._tbbAlphaGated then
-                if bar._timerText then bar._timerText:SetAlpha(1) end
+                if bar._timerText then
+                    bar._timerText:SetAlpha(1)
+                end
                 bar._tbbAlphaGated = nil
             end
         end
@@ -206,29 +249,41 @@ end
 local function CollectDesired()
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
     local bars = tbb and tbb.bars
-    if not bars then return nil, "" end
+    if not bars then
+        return nil, ""
+    end
 
     local work, claimed
     for i, cfg in ipairs(bars) do
-        if cfg.enabled ~= false and cfg.timerDecimals and not cfg.popularKey
-           and cfg.trackType ~= "cooldown" then
+        if
+            cfg.enabled ~= false
+            and cfg.timerDecimals
+            and not cfg.popularKey
+            and cfg.trackType ~= "cooldown"
+        then
             local include = {}
             AddVariants(include, cfg.spellID)
             AddVariants(include, cfg.baseSpellID)
             if cfg.spellIDs then
-                for k = 1, #cfg.spellIDs do AddVariants(include, cfg.spellIDs[k]) end
+                for k = 1, #cfg.spellIDs do
+                    AddVariants(include, cfg.spellIDs[k])
+                end
             end
             if next(include) then
                 work = work or {}
                 claimed = claimed or {}
                 work[#work + 1] = { index = i, cfg = cfg, include = include }
                 for id in pairs(include) do
-                    if claimed[id] == nil then claimed[id] = i end
+                    if claimed[id] == nil then
+                        claimed[id] = i
+                    end
                 end
             end
         end
     end
-    if not work then return nil, "" end
+    if not work then
+        return nil, ""
+    end
 
     local desired, sigParts = {}, {}
     local extra = {}
@@ -243,12 +298,18 @@ local function CollectDesired()
             end
         end
         local ids = {}
-        for id in pairs(w.include) do ids[#ids + 1] = id end
+        for id in pairs(w.include) do
+            ids[#ids + 1] = id
+        end
         table.sort(ids)
         -- thr intentionally stays OUT of the signature: a slider move
         -- re-registers the live binding in place (no container swap).
-        desired[#desired + 1] = { index = w.index, include = w.include, ids = ids,
-            thr = ClampThr(w.cfg.timerDecimalThreshold) }
+        desired[#desired + 1] = {
+            index = w.index,
+            include = w.include,
+            ids = ids,
+            thr = ClampThr(w.cfg.timerDecimalThreshold),
+        }
         sigParts[#sigParts + 1] = w.index .. "=" .. table.concat(ids, ",")
     end
     return desired, table.concat(sigParts, ";")
@@ -268,8 +329,7 @@ local function BuildContainer(desired)
         host:EnableMouse(false)
     end
 
-    AK.styles.tbbDecimalText = AK.styles.tbbDecimalText
-        or { width = 1, height = 1, noRegions = true }
+    AK.styles.tbbDecimalText = AK.styles.tbbDecimalText or { width = 1, height = 1, noRegions = true }
 
     local slots = {}
     for n = 1, #desired do
@@ -280,11 +340,17 @@ local function BuildContainer(desired)
             candidateFilters = { includeSpellIDs = want.include },
             style = "tbbDecimalText",
             extraInit = function(button)
-                if button.SetMouseMotionEnabled then button:SetMouseMotionEnabled(false) end
+                if button.SetMouseMotionEnabled then
+                    button:SetMouseMotionEnabled(false)
+                end
                 local fmt = GetDecimalFormatter(want.thr)
-                if not fmt then return end -- rejected: tick keeps its mirror
+                if not fmt then
+                    return
+                end -- rejected: tick keeps its mirror
                 local bar = ns.GetTBBFrame and ns.GetTBBFrame(want.index)
-                if not (bar and bar._timerText) then return end -- unbound: tick keeps its mirror
+                if not (bar and bar._timerText) then
+                    return
+                end -- unbound: tick keeps its mirror
                 -- The bound FS MUST be a descendant of the aura button (aspect
                 -- inheritance) -- so the engine writes into this hidden one and
                 -- the tick copies its string to the bar's real timer FS. Same
@@ -294,8 +360,12 @@ local function BuildContainer(desired)
                 local carrier = CreateFrame("Frame", nil, button)
                 carrier:SetAllPoints(button)
                 local fs = carrier:CreateFontString(nil, "OVERLAY")
-                fs:SetFont((ns.GetCDMFont and ns.GetCDMFont())
-                    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF", 12, "")
+                fs:SetFont(
+                    (ns.GetCDMFont and ns.GetCDMFont())
+                        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
+                    12,
+                    ""
+                )
                 fs:SetPoint("CENTER", button, "CENTER", 0, 0)
                 -- 68914 schema: updateInterval is a binding-level knob now,
                 -- so the formatter + 0.05s interval travel on a configured
@@ -321,12 +391,16 @@ end
 
 function ns.TBBDecimals_Sync()
     AK = AK or (CludesUI and CludesUI.AuraKit)
-    if not AK then return end
+    if not AK then
+        return
+    end
 
     local desired, sig = CollectDesired()
 
     if not desired then
-        if container then ReleaseCurrent() end
+        if container then
+            ReleaseCurrent()
+        end
         return
     end
 
@@ -348,9 +422,14 @@ function ns.TBBDecimals_Sync()
                         -- Stamp only on success: SetDurationTextSafe never throws
                         -- anymore, and a denied re-registration under restriction must
                         -- stay unstamped so a later Sync retries it.
-                        local ok = AK.SetDurationTextSafe(button, bar._tbbEngineFS,
-                            AK.BuildDurationTextOpts(fmt, nil, 0.05))
-                        if ok then boundThr[want.index] = want.thr end
+                        local ok = AK.SetDurationTextSafe(
+                            button,
+                            bar._tbbEngineFS,
+                            AK.BuildDurationTextOpts(fmt, nil, 0.05)
+                        )
+                        if ok then
+                            boundThr[want.index] = want.thr
+                        end
                     end
                 end
             end
@@ -374,4 +453,3 @@ function ns.TBBDecimals_Sync()
     BuildContainer(desired)
     signature = container and sig or nil
 end
-

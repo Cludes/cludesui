@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmTalentConditions.lua
 --  Per-spell Talent Conditions for cooldown/utility icons: the icon shows only
@@ -47,7 +49,9 @@ end
 
 -- Empty Slots are injected after TalentCondFilterPass, with no spell resolver.
 function ns.EmptySlotTalentConditionsHold(barKey, marker)
-    if not ns._cdmAnyTalentCond then return true end
+    if not ns._cdmAnyTalentCond then
+        return true
+    end
     local store = ns.GetSpellSettingsStore(barKey)
     local entry = store and store[marker]
     local conds = type(entry) == "table" and rawget(entry, "talentConditions")
@@ -62,8 +66,8 @@ end
 -------------------------------------------------------------------------------
 local _ecmeFC = ns._ecmeFC
 local _hookFrameData = ns._hookFrameData
-local _hiddenSets = {}     -- barKey -> { [spellID] = true }
-local _hiddenFrames = {}   -- barKey -> { frame, ... }
+local _hiddenSets = {} -- barKey -> { [spellID] = true }
+local _hiddenFrames = {} -- barKey -> { frame, ... }
 local _anyHidden = false
 local _empty = {}
 
@@ -82,11 +86,15 @@ end
 -- claimed frame passes through here and a stale tcHidden tag always gets cleared.
 function ns.TalentCondFilterPass(cdFrames)
     if _anyHidden then
-        for _, s in pairs(_hiddenSets) do wipe(s) end
-        for _, l in pairs(_hiddenFrames) do wipe(l) end
+        for _, s in pairs(_hiddenSets) do
+            wipe(s)
+        end
+        for _, l in pairs(_hiddenFrames) do
+            wipe(l)
+        end
         _anyHidden = false
     end
-    local configID   -- read once, on the first frame that carries conditions (false = none)
+    local configID -- read once, on the first frame that carries conditions (false = none)
     for bk, frames in pairs(cdFrames) do
         for i = #frames, 1, -1 do
             local frame = frames[i]
@@ -111,7 +119,9 @@ function ns.TalentCondFilterPass(cdFrames)
                 end
                 local hide = false
                 if conds then
-                    if configID == nil then configID = C_ClassTalents.GetActiveConfigID() or false end
+                    if configID == nil then
+                        configID = C_ClassTalents.GetActiveConfigID() or false
+                    end
                     hide = not Hold(conds, configID)
                 end
                 if hide then
@@ -135,13 +145,17 @@ function ns.TalentCondFilterPass(cdFrames)
                     fc.tcHidden = true
                     ns._cdReadySoundWatch[frame] = nil
                     local fd = _hookFrameData[frame]
-                    if fd then fd._cdReadyArmed = false end
+                    if fd then
+                        fd._cdReadyArmed = false
+                    end
                     if cdSid then
                         -- Buff-viewer frame: Phase 4 leaves these hands-off, so blank it
                         -- here or it stays at its old slot over the collapsed bar. The
                         -- SetPoint hook keeps it blank while unclaimed; a re-claim
                         -- restores alpha and anchor.
-                        if fd then fd._cdmAnchor = nil end
+                        if fd then
+                            fd._cdmAnchor = nil
+                        end
                         frame:SetAlpha(0)
                         -- Alpha does not stop hit-testing: drop the tooltip motion the bar
                         -- gave it, or it keeps catching hover and [@mouseover] over that
@@ -164,8 +178,12 @@ end
 -- has a condition. Skips the reanchor filter for non-users. Same monotonic, scanned-once
 -- contract as the other per-spell gates; talentConditions is never written to bar tiers.
 function ns.RescanTalentCondFlag()
-    if ns._cdmAnyTalentCond or ns._talentCondFlagScanned then return end
-    if not CludesUIDB then return end
+    if ns._cdmAnyTalentCond or ns._talentCondFlagScanned then
+        return
+    end
+    if not CludesUIDB then
+        return
+    end
     ns._talentCondFlagScanned = true
     ns.ForEachSavedSettingsBlock(function(ss)
         local conds = rawget(ss, "talentConditions")

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Nicknames.lua -- Raid Lead: CludesUI's own nicknames, synced with the guild.
 --
@@ -25,13 +27,21 @@ local function Short(name)
     return (name or ""):match("^([^%-]+)") or name or ""
 end
 
-function ns.MyNickname() return CludesUIDB.cuiNickname or "" end
+function ns.MyNickname()
+    return CludesUIDB.cuiNickname or ""
+end
 
 --- The nickname for a character name (Name or Name-Realm), or nil.
 function CludesUI.GetNickname(name)
-    if type(name) ~= "string" or name == "" then return nil end
-    if issecretvalue and issecretvalue(name) then return nil end
-    if CludesUIDB.cuiNicknamesOff then return nil end
+    if type(name) ~= "string" or name == "" then
+        return nil
+    end
+    if issecretvalue and issecretvalue(name) then
+        return nil
+    end
+    if CludesUIDB.cuiNicknamesOff then
+        return nil
+    end
     local store = Store()
     return store[name:lower()] or store[Short(name):lower()]
 end
@@ -50,12 +60,16 @@ local function Remember(name, nick)
     else
         store[key], store[short] = nick, nick
     end
-    if ns.OnNicknamesChanged then ns.OnNicknamesChanged() end
+    if ns.OnNicknamesChanged then
+        ns.OnNicknamesChanged()
+    end
 end
 
 --- Called by Comms.lua when someone announces their nickname.
 function ns.ReceiveNickname(sender, nick)
-    if not sender or (issecretvalue and issecretvalue(sender)) then return end
+    if not sender or (issecretvalue and issecretvalue(sender)) then
+        return
+    end
     Remember(sender, nick)
 end
 
@@ -63,8 +77,12 @@ local lastGroupSend = 0
 
 local function Announce(toGroup)
     local nick = ns.MyNickname()
-    if nick == "" or not ns.SendNickname then return end
-    if IsInGuild() then ns.SendNickname(nick, "GUILD") end
+    if nick == "" or not ns.SendNickname then
+        return
+    end
+    if IsInGuild() then
+        ns.SendNickname(nick, "GUILD")
+    end
     if toGroup and IsInGroup() and GetTime() - lastGroupSend > 60 then
         lastGroupSend = GetTime()
         ns.SendNickname(nick, nil)
@@ -84,14 +102,21 @@ function ns.ImportNicknames(text)
     local n = 0
     for name, nick in (text or ""):gmatch("([^=\n\r,;]+)=([^\n\r,;]+)") do
         name = name:gsub("^%s+", ""):gsub("%s+$", "")
-        if name ~= "" then Remember(name, nick); n = n + 1 end
+        if name ~= "" then
+            Remember(name, nick)
+            n = n + 1
+        end
     end
     return n
 end
 
 function ns.NicknameCount()
     local n = 0
-    for k in pairs(Store()) do if not k:find("-", 1, true) then n = n + 1 end end
+    for k in pairs(Store()) do
+        if not k:find("-", 1, true) then
+            n = n + 1
+        end
+    end
     return n
 end
 
@@ -100,8 +125,12 @@ ev:RegisterEvent("PLAYER_LOGIN")
 ev:RegisterEvent("GROUP_JOINED")
 ev:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
-        C_Timer.After(15, function() Announce(false) end)
+        C_Timer.After(15, function()
+            Announce(false)
+        end)
     else
-        C_Timer.After(3, function() Announce(true) end)
+        C_Timer.After(3, function()
+            Announce(true)
+        end)
     end
 end)

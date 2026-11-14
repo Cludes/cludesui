@@ -1,11 +1,15 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_MythicTimer_Options.lua  --  Settings pages for Mythic+ Tools
 --  (Mythic+ Timer / Kick Tracker / Cast Bars / Target & Focus Bars / Run Summary)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIMythicTimer"
-local ns = CludesUI._ModuleNS[ADDON_NAME]  -- module namespace (published by the module at its load)
-if not ns then return end  -- module disabled: no options page
+local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not ns then
+    return
+end -- module disabled: no options page
 
 local PAGE_DISPLAY = "Mythic+ Timer"
 -- The page keeps its identity (search alias, links, remembered page); its tab
@@ -31,13 +35,19 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    if not CludesUI or not CludesUI.RegisterModule then return end
+    if not CludesUI or not CludesUI.RegisterModule then
+        return
+    end
 
     local db
-    C_Timer.After(0, function() db = _G._EMT_AceDB end)
+    C_Timer.After(0, function()
+        db = _G._CUMT_AceDB
+    end)
 
     local function DB()
-        if not db then db = _G._EMT_AceDB end
+        if not db then
+            db = _G._CUMT_AceDB
+        end
         return db and db.profile
     end
 
@@ -48,21 +58,29 @@ initFrame:SetScript("OnEvent", function(self)
 
     local function Set(key, val)
         local p = DB()
-        if p then p[key] = val end
+        if p then
+            p[key] = val
+        end
     end
 
     -- Advanced-mode toggle removed: every option is always shown so the
     -- page can be trimmed deliberately. Guard kept as a stub so existing
     -- "if IsAdvanced() then ... end" blocks render unconditionally.
-    local function IsAdvanced() return true end
+    local function IsAdvanced()
+        return true
+    end
 
     local function Refresh()
-        if _G._EMT_ApplyTimer then _G._EMT_ApplyTimer() end
+        if _G._CUMT_ApplyTimer then
+            _G._CUMT_ApplyTimer()
+        end
         CludesUI:RefreshPage()
     end
 
     local function RebuildPage()
-        if _G._EMT_ApplyTimer then _G._EMT_ApplyTimer() end
+        if _G._CUMT_ApplyTimer then
+            _G._CUMT_ApplyTimer()
+        end
         CludesUI:RefreshPage(true)
     end
 
@@ -80,18 +98,22 @@ initFrame:SetScript("OnEvent", function(self)
     --  under a pooled frame); only the title host and its font strings come
     --  from the pool.
     ---------------------------------------------------------------------------
-    local PV_TITLE_H = 15  -- the 12 px title line and its 3 px gap, header px
-    local PV_PAD_Y = 20    -- above and below the block
+    local PV_TITLE_H = 15 -- the 12 px title line and its 3 px gap, header px
+    local PV_PAD_Y = 20 -- above and below the block
     local PV_MIN_H = 80
 
-    local function PvNewState() return { cols = {} } end
+    local function PvNewState()
+        return { cols = {} }
+    end
 
     -- Paints every column and lays the block out; returns the header height
     -- (header px). building: the header builder's own pass, which returns
     -- the height instead of writing it.
     local function PvUpdate(st, building)
         local hdr = st.hdr
-        if not hdr then return 0 end
+        if not hdr then
+            return 0
+        end
         local hdrW = st.hdrW or hdr:GetWidth()
         -- The panel's scale compensated: a sample renders at UIParent's.
         st.scale = UIParent:GetEffectiveScale() / hdr:GetEffectiveScale()
@@ -102,7 +124,9 @@ initFrame:SetScript("OnEvent", function(self)
         for i = 1, n do
             local c = cols[i]
             local host = c.host
-            if host:GetParent() ~= hdr then host:SetParent(hdr) end
+            if host:GetParent() ~= hdr then
+                host:SetParent(hdr)
+            end
             -- Painted at the last pass's scale, so the sample's pixel snaps
             -- read the scale it shows at; a changed fit paints it again.
             local fit = c.fit or 1
@@ -175,7 +199,10 @@ initFrame:SetScript("OnEvent", function(self)
             st.lblHost = lblHost
             for i = 1, #cols do
                 local c = st.cols[i]
-                if not c then c = {}; st.cols[i] = c end
+                if not c then
+                    c = {}
+                    st.cols[i] = c
+                end
                 c.def = cols[i]
                 c.host = c.host or _G.CreateFrame("Frame", nil, hdr)
                 local fs = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
@@ -192,7 +219,9 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- A write on the page: its shown preview paints again.
     local function PvRepaint(st)
-        if st.hdr and st.hdr:IsVisible() then PvUpdate(st, false) end
+        if st.hdr and st.hdr:IsVisible() then
+            PvUpdate(st, false)
+        end
     end
 
     local tsbPv, tfbPv = PvNewState(), PvNewState()
@@ -229,8 +258,8 @@ initFrame:SetScript("OnEvent", function(self)
     local function _setPreview(v)
         Set("showPreview", v)
         Refresh()
-        if _G._EQT_SetSuppressed then
-            _G._EQT_SetSuppressed("MTimerPreview", v == true)
+        if _G._CUQT_SetSuppressed then
+            _G._CUQT_SetSuppressed("MTimerPreview", v == true)
         end
     end
 
@@ -239,12 +268,14 @@ initFrame:SetScript("OnEvent", function(self)
     -- first time the M+ Timer page is built (which guarantees CludesUIFrame exists).
     local function _installPreviewAutoOff()
         local mf = _G.CludesUIFrame
-        if not mf or mf._eMTPreviewHook then return end
+        if not mf or mf._eMTPreviewHook then
+            return
+        end
         mf._eMTPreviewHook = true
         mf:HookScript("OnHide", function()
             if Cfg("showPreview") == true then
                 _setPreview(false)
-                CludesUI:RefreshPage()  -- update toggle visual immediately
+                CludesUI:RefreshPage() -- update toggle visual immediately
             end
         end)
     end
@@ -257,13 +288,19 @@ initFrame:SetScript("OnEvent", function(self)
         local y = yOffset
         local _, row, h, hdr
 
-        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+        if CludesUI.ClearContentHeader then
+            CludesUI:ClearContentHeader()
+        end
         parent._showRowDivider = true
 
-        local function ApplyBorder() if ns.ApplyBorder then ns.ApplyBorder() end end
+        local function ApplyBorder()
+            if ns.ApplyBorder then
+                ns.ApplyBorder()
+            end
+        end
 
         local alignValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
-        local alignOrder  = { "LEFT", "CENTER", "RIGHT" }
+        local alignOrder = { "LEFT", "CENTER", "RIGHT" }
         local titleAffixPositionValues = {
             ABOVE_TIMER = "Above Timer",
             BELOW_TIMER = "Below Timer",
@@ -272,50 +309,69 @@ initFrame:SetScript("OnEvent", function(self)
         local objectiveTimePositionValues = { RIGHT = "Right", LEFT = "Left" }
         local objectiveTimePositionOrder = { "RIGHT", "LEFT" }
         local compareModeValues = {
-          NONE = "None",
-          DUNGEON = "Per Dungeon",
-          LEVEL = "Per Dungeon + Level",
-          LEVEL_AFFIX = "Per Dungeon + Level + Affixes",
+            NONE = "None",
+            DUNGEON = "Per Dungeon",
+            LEVEL = "Per Dungeon + Level",
+            LEVEL_AFFIX = "Per Dungeon + Level + Affixes",
         }
         local compareModeOrder = { "NONE", "DUNGEON", "LEVEL", "LEVEL_AFFIX" }
         local forcesTextValues = {
-          PERCENT = "Percent",
-          COUNT = "Count / Total",
-          COUNT_PERCENT = "Count / Total + %",
-          COUNT_REMAINING = "Count / Total + Remaining",
-          REMAINING = "Remaining Count",
+            PERCENT = "Percent",
+            COUNT = "Count / Total",
+            COUNT_PERCENT = "Count / Total + %",
+            COUNT_REMAINING = "Count / Total + Remaining",
+            REMAINING = "Remaining Count",
         }
         local forcesTextOrder = { "PERCENT", "COUNT", "COUNT_PERCENT", "COUNT_REMAINING", "REMAINING" }
 
         -- DISPLAY
-        hdr, h = W:SectionHeader(parent, "DISPLAY", y); y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "EMT_MythicTimer",
-            disabled = function() return Cfg("enabled") == false end,
-            disabledTooltip = "Enable Mythic+ Timer" })
+        hdr, h = W:SectionHeader(parent, "DISPLAY", y)
+        y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, {
+            key = "EMT_MythicTimer",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "Enable Mythic+ Timer",
+        })
 
         local alignAllValues = { LEFT = "Left", RIGHT = "Right" }
-        local alignAllOrder  = { "LEFT", "RIGHT" }
+        local alignAllOrder = { "LEFT", "RIGHT" }
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Mythic+ Timer",
-              tooltip="The Mythic+ timer window in keys.",
-              getValue=function() return Cfg("enabled") ~= false end,
-              setValue=function(v)
-                  Set("enabled", v and true or false)
-                  if not v and Cfg("showPreview") == true then _setPreview(false) end
-                  Refresh()
-              end },
-            { type="dropdown", text="Text Align",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              values=alignAllValues,
-              order=alignAllOrder,
-              getValue=function() return Cfg("alignAllText") or "RIGHT" end,
-              setValue=function(v)
-                  Set("alignAllText", v)
-                  if _G._EMT_RebuildStandalone then _G._EMT_RebuildStandalone() end
-                  Refresh()
-              end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Mythic+ Timer",
+            tooltip = "The Mythic+ timer window in keys.",
+            getValue = function()
+                return Cfg("enabled") ~= false
+            end,
+            setValue = function(v)
+                Set("enabled", v and true or false)
+                if not v and Cfg("showPreview") == true then
+                    _setPreview(false)
+                end
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Text Align",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            values = alignAllValues,
+            order = alignAllOrder,
+            getValue = function()
+                return Cfg("alignAllText") or "RIGHT"
+            end,
+            setValue = function(v)
+                Set("alignAllText", v)
+                if _G._CUMT_RebuildStandalone then
+                    _G._CUMT_RebuildStandalone()
+                end
+                Refresh()
+            end,
+        })
         y = y - h
         -- The preview eye on the enable toggle: a sample run in the timer
         -- window while the page is open (off again when the panel closes,
@@ -330,7 +386,9 @@ initFrame:SetScript("OnEvent", function(self)
             rgn._lastInline = eyeBtn
             local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
-            local function Off() return Cfg("enabled") == false end
+            local function Off()
+                return Cfg("enabled") == false
+            end
             local function RefreshEye()
                 -- The art is named the other way round: the "invisible" file is the open eye.
                 eyeTex:SetTexture(Cfg("showPreview") == true and EYE_INVISIBLE or EYE_VISIBLE)
@@ -339,13 +397,19 @@ initFrame:SetScript("OnEvent", function(self)
             RefreshEye()
             CludesUI.RegisterWidgetRefresh(RefreshEye)
             eyeBtn:SetScript("OnClick", function()
-                if Off() then return end
+                if Off() then
+                    return
+                end
                 _setPreview(Cfg("showPreview") ~= true)
                 RefreshEye()
             end)
             eyeBtn:SetScript("OnEnter", function(self)
                 if Off() then
-                    CludesUI.ShowWidgetTooltip(self, CludesUI.DisabledTooltip("Enable Mythic+ Timer"), { width = 175 })
+                    CludesUI.ShowWidgetTooltip(
+                        self,
+                        CludesUI.DisabledTooltip("Enable Mythic+ Timer"),
+                        { width = 175 }
+                    )
                     return
                 end
                 CludesUI.SetGlyphAlpha(self, 0.7)
@@ -359,20 +423,44 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Scale + Background Opacity: side-by-side dual row.
         local scaleRow
-        scaleRow, h = W:DualRow(parent, y,
-            { type="slider", text="Scale",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              min=0.5, max=2.0, step=0.01, isPercent=false,
-              getValue=function() return Cfg("scale") or 1.0 end,
-              setValue=function(v) Set("scale", v); Refresh() end },
-            { type="slider", text="Background Opacity",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              min=0, max=100, step=5, isPercent=false,
-              -- Stored 0..1 internally; displayed 0..100 to the user.
-              getValue=function() return (Cfg("standaloneAlpha") or 0) * 100 end,
-              setValue=function(v) Set("standaloneAlpha", v / 100); Refresh() end })
+        scaleRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Scale",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            min = 0.5,
+            max = 2.0,
+            step = 0.01,
+            isPercent = false,
+            getValue = function()
+                return Cfg("scale") or 1.0
+            end,
+            setValue = function(v)
+                Set("scale", v)
+                Refresh()
+            end,
+        }, {
+            type = "slider",
+            text = "Background Opacity",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            min = 0,
+            max = 100,
+            step = 5,
+            isPercent = false,
+            -- Stored 0..1 internally; displayed 0..100 to the user.
+            getValue = function()
+                return (Cfg("standaloneAlpha") or 0) * 100
+            end,
+            setValue = function(v)
+                Set("standaloneAlpha", v / 100)
+                Refresh()
+            end,
+        })
         y = y - h
 
         -- Inline RESIZE cog on Scale: Frame Width slider
@@ -381,39 +469,73 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.BuildInlineCog(leftRgn, {
                 title = "Frame Width",
                 rows = {
-                    { type="slider", label="Width", min=180, max=420, step=1,
-                      get=function() return Cfg("frameWidth") or 260 end,
-                      set=function(v) Set("frameWidth", v); Refresh() end },
+                    {
+                        type = "slider",
+                        label = "Width",
+                        min = 180,
+                        max = 420,
+                        step = 1,
+                        get = function()
+                            return Cfg("frameWidth") or 260
+                        end,
+                        set = function(v)
+                            Set("frameWidth", v)
+                            Refresh()
+                        end,
+                    },
                 },
-                gap = 6, chain = false,
-                disabled = function() return Cfg("enabled") == false end, disabledTooltip = "the module",
+                gap = 6,
+                chain = false,
+                disabled = function()
+                    return Cfg("enabled") == false
+                end,
+                disabledTooltip = "the module",
             })
         end
 
         -- Bar Width and the border apply to the timer bar and the forces bar alike,
         -- so they stay usable while either bar is shown.
         local function _barsOff()
-            return Cfg("enabled") == false
-                or (Cfg("showTimerBar") == false and Cfg("showEnemyBar") == false)
+            return Cfg("enabled") == false or (Cfg("showTimerBar") == false and Cfg("showEnemyBar") == false)
         end
         local function _barsReq()
-            if Cfg("enabled") == false then return "the module" end
+            if Cfg("enabled") == false then
+                return "the module"
+            end
             return "This option requires Show Timer Bar or Show Enemy Forces to be enabled"
         end
 
-        row, h = W:DualRow(parent, y,
-            { type="slider", text="Bar Width",
-              disabled=_barsOff,
-              disabledTooltip=_barsReq,
-              min=120, max=420, step=1, isPercent=false,
-              getValue=function() return Cfg("barWidth") or 210 end,
-              setValue=function(v) Set("barWidth", v); Refresh() end },
-            { type="toggle", text="Custom Border Style",
-              tooltip="Show the border style and size controls for the timer bars.",
-              disabled=_barsOff,
-              disabledTooltip=_barsReq,
-              getValue=function() return Cfg("customBorderStyle") == true end,
-              setValue=function(v) Set("customBorderStyle", v); ApplyBorder(); CludesUI:RefreshPage(true) end })
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Bar Width",
+            disabled = _barsOff,
+            disabledTooltip = _barsReq,
+            min = 120,
+            max = 420,
+            step = 1,
+            isPercent = false,
+            getValue = function()
+                return Cfg("barWidth") or 210
+            end,
+            setValue = function(v)
+                Set("barWidth", v)
+                Refresh()
+            end,
+        }, {
+            type = "toggle",
+            text = "Custom Border Style",
+            tooltip = "Show the border style and size controls for the timer bars.",
+            disabled = _barsOff,
+            disabledTooltip = _barsReq,
+            getValue = function()
+                return Cfg("customBorderStyle") == true
+            end,
+            setValue = function(v)
+                Set("customBorderStyle", v)
+                ApplyBorder()
+                CludesUI:RefreshPage(true)
+            end,
+        })
         y = y - h
 
         --Border Style (+ cog) | Border Size (+ inline swatch)
@@ -421,61 +543,107 @@ initFrame:SetScript("OnEvent", function(self)
         -- row plus its offset cog and colour swatch stay hidden by default and
         -- reclaim their space when off.
         if Cfg("customBorderStyle") then
-        -- The border reaches the forces bar only with Apply to Forces Bar on, so
-        -- with the timer bar hidden it has nothing to draw on without it. The
-        -- Border Options cog (which holds that toggle) stays usable regardless.
-        local function _borderOff()
-            if _barsOff() then return true end
-            return Cfg("showTimerBar") == false and Cfg("borderApplyToForces") == false
-        end
-        local function _borderReq()
-            if _barsOff() then return _barsReq() end
-            return "This option requires Show Timer Bar or Apply to Forces Bar to be enabled"
-        end
-        -- Distinct local names on purpose: this border-texture list must NOT
-        -- be confused with the bar-texture "texValues"/"texOrder" used by the
-        -- timer and forces bar Texture dropdowns. Feeding border textures into
-        -- those dropdowns once let a border key get written into barTexture.
-        local borderTexValues, borderTexOrder = CludesUI.GetBorderTextureDropdown()
-        borderTexValues.shadow = nil
-        for i = #borderTexOrder, 1, -1 do
-            if borderTexOrder[i] == "shadow" then table.remove(borderTexOrder, i) end
-        end
+            -- The border reaches the forces bar only with Apply to Forces Bar on, so
+            -- with the timer bar hidden it has nothing to draw on without it. The
+            -- Border Options cog (which holds that toggle) stays usable regardless.
+            local function _borderOff()
+                if _barsOff() then
+                    return true
+                end
+                return Cfg("showTimerBar") == false and Cfg("borderApplyToForces") == false
+            end
+            local function _borderReq()
+                if _barsOff() then
+                    return _barsReq()
+                end
+                return "This option requires Show Timer Bar or Apply to Forces Bar to be enabled"
+            end
+            -- Distinct local names on purpose: this border-texture list must NOT
+            -- be confused with the bar-texture "texValues"/"texOrder" used by the
+            -- timer and forces bar Texture dropdowns. Feeding border textures into
+            -- those dropdowns once let a border key get written into barTexture.
+            local borderTexValues, borderTexOrder = CludesUI.GetBorderTextureDropdown()
+            borderTexValues.shadow = nil
+            for i = #borderTexOrder, 1, -1 do
+                if borderTexOrder[i] == "shadow" then
+                    table.remove(borderTexOrder, i)
+                end
+            end
 
-        local bsRow
-        bsRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Border Style",
-                disabled=_borderOff, disabledTooltip=_borderReq,
-                values=borderTexValues, order=borderTexOrder,
-                getValue=function() return Cfg("borderTexture") or "solid" end,
-                setValue=function(v)
-                    Set("borderTexture", v)
-                    Set("borderTextureOffset", nil)
-                    Set("borderTextureOffsetY", nil)
-                    Set("borderTextureShiftX", nil)
-                    Set("borderTextureShiftY", nil)
-                    local selC = CludesUI.GetBorderSelectColor(v)
-                    if selC then
-                        -- The style's select colour (Pixels grey).
-                        Set("borderR", selC.r); Set("borderG", selC.g); Set("borderB", selC.b); Set("borderA", 1)
-                    elseif v ~= "solid" then
-                        Set("borderR", 1); Set("borderG", 1); Set("borderB", 1); Set("borderA", 1)
-                    else
-                        Set("borderR", 0); Set("borderG", 0); Set("borderB", 0); Set("borderA", 1)
-                    end
-                    local defSz = CludesUI.GetBorderDefaultSize("MythicPlus", v)
-                    if defSz then Set("borderSize", defSz) end
-                    if Cfg("borderSizePx") then Set("borderSizePx", false) end
-                    ApplyBorder(); CludesUI:RefreshPage(true)
-                end },
-            CludesUI.BorderPxSliderCfg({ text="Border Size",
-                disabled=_borderOff, disabledTooltip=_borderReq,
-                getStep=function() return Cfg("borderSize") or 0 end,
-                setStep=function(step) Set("borderSize", step) end,
-                getTex=function() return Cfg("borderTexture") or "solid" end,
-                getPx=function() return Cfg("borderSizePx") end,
-                setPx=function(v) Set("borderSizePx", v) end,
-                apply=function() ApplyBorder(); CludesUI:RefreshPage() end }))
+            local bsRow
+            bsRow, h = W:DualRow(
+                parent,
+                y,
+                {
+                    type = "dropdown",
+                    text = "Border Style",
+                    disabled = _borderOff,
+                    disabledTooltip = _borderReq,
+                    values = borderTexValues,
+                    order = borderTexOrder,
+                    getValue = function()
+                        return Cfg("borderTexture") or "solid"
+                    end,
+                    setValue = function(v)
+                        Set("borderTexture", v)
+                        Set("borderTextureOffset", nil)
+                        Set("borderTextureOffsetY", nil)
+                        Set("borderTextureShiftX", nil)
+                        Set("borderTextureShiftY", nil)
+                        local selC = CludesUI.GetBorderSelectColor(v)
+                        if selC then
+                            -- The style's select colour (Pixels grey).
+                            Set("borderR", selC.r)
+                            Set("borderG", selC.g)
+                            Set("borderB", selC.b)
+                            Set("borderA", 1)
+                        elseif v ~= "solid" then
+                            Set("borderR", 1)
+                            Set("borderG", 1)
+                            Set("borderB", 1)
+                            Set("borderA", 1)
+                        else
+                            Set("borderR", 0)
+                            Set("borderG", 0)
+                            Set("borderB", 0)
+                            Set("borderA", 1)
+                        end
+                        local defSz = CludesUI.GetBorderDefaultSize("MythicPlus", v)
+                        if defSz then
+                            Set("borderSize", defSz)
+                        end
+                        if Cfg("borderSizePx") then
+                            Set("borderSizePx", false)
+                        end
+                        ApplyBorder()
+                        CludesUI:RefreshPage(true)
+                    end,
+                },
+                CludesUI.BorderPxSliderCfg({
+                    text = "Border Size",
+                    disabled = _borderOff,
+                    disabledTooltip = _borderReq,
+                    getStep = function()
+                        return Cfg("borderSize") or 0
+                    end,
+                    setStep = function(step)
+                        Set("borderSize", step)
+                    end,
+                    getTex = function()
+                        return Cfg("borderTexture") or "solid"
+                    end,
+                    getPx = function()
+                        return Cfg("borderSizePx")
+                    end,
+                    setPx = function(v)
+                        Set("borderSizePx", v)
+                    end,
+                    apply = function()
+                        ApplyBorder()
+                        CludesUI:RefreshPage()
+                    end,
+                })
+            )
             y = y - h
             -- Width Offset | Height Offset: only while a textured style is
             -- selected (a solid border has no outward offsets). Built during
@@ -484,15 +652,33 @@ initFrame:SetScript("OnEvent", function(self)
             if borderTex ~= "" and borderTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "MythicPlus",
-                    getTex = function() return Cfg("borderTexture") or "solid" end,
-                    getStep = function() return Cfg("borderSize") or 0 end,
-                    getSizeKey = function() return Cfg("borderSize") or 0 end,
-                    getPx = function() return Cfg("borderSizePx") end,
-                    getX = function() return Cfg("borderTextureOffset") end,
-                    setX = function(v) Set("borderTextureOffset", v) end,
-                    getY = function() return Cfg("borderTextureOffsetY") end,
-                    setY = function(v) Set("borderTextureOffsetY", v) end,
-                    apply = function() ApplyBorder() end,
+                    getTex = function()
+                        return Cfg("borderTexture") or "solid"
+                    end,
+                    getStep = function()
+                        return Cfg("borderSize") or 0
+                    end,
+                    getSizeKey = function()
+                        return Cfg("borderSize") or 0
+                    end,
+                    getPx = function()
+                        return Cfg("borderSizePx")
+                    end,
+                    getX = function()
+                        return Cfg("borderTextureOffset")
+                    end,
+                    setX = function(v)
+                        Set("borderTextureOffset", v)
+                    end,
+                    getY = function()
+                        return Cfg("borderTextureOffsetY")
+                    end,
+                    setY = function(v)
+                        Set("borderTextureOffsetY", v)
+                    end,
+                    apply = function()
+                        ApplyBorder()
+                    end,
                 })
                 ocfgL.disabled, ocfgL.disabledTooltip = _borderOff, _borderReq
                 ocfgR.disabled, ocfgR.disabledTooltip = _borderOff, _borderReq
@@ -505,68 +691,111 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.BuildInlineCog(rgn, {
                     title = "Border Options",
                     -- Greys with the bars; stays usable when only Apply to Forces Bar is off.
-                    disabled = _barsOff, disabledTooltip = _barsReq,
+                    disabled = _barsOff,
+                    disabledTooltip = _barsReq,
                     rows = {
-                        { type = "toggle", label = "Apply to Forces Bar",
-                            get = function() return Cfg("borderApplyToForces") ~= false end,
-                            set = function(v) Set("borderApplyToForces", v); ApplyBorder(); CludesUI:RefreshPage() end },
-                        { type = "slider", label = "Shift X", min = -10, max = 10, step = 1,
+                        {
+                            type = "toggle",
+                            label = "Apply to Forces Bar",
+                            get = function()
+                                return Cfg("borderApplyToForces") ~= false
+                            end,
+                            set = function(v)
+                                Set("borderApplyToForces", v)
+                                ApplyBorder()
+                                CludesUI:RefreshPage()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Shift X",
+                            min = -10,
+                            max = 10,
+                            step = 1,
                             get = function()
                                 local v = Cfg("borderTextureShiftX")
-                                if v then return v end
+                                if v then
+                                    return v
+                                end
                                 local tex = Cfg("borderTexture") or "solid"
                                 local sz = Cfg("borderSize") or 1
                                 local _, _, dsx = CludesUI.GetBorderDefaults("MythicPlus", tex, sz)
                                 return dsx
                             end,
-                            set = function(v) Set("borderTextureShiftX", v == 0 and nil or v); ApplyBorder() end },
-                        { type = "slider", label = "Shift Y", min = -10, max = 10, step = 1,
+                            set = function(v)
+                                Set("borderTextureShiftX", v == 0 and nil or v)
+                                ApplyBorder()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Shift Y",
+                            min = -10,
+                            max = 10,
+                            step = 1,
                             get = function()
                                 local v = Cfg("borderTextureShiftY")
-                                if v then return v end
+                                if v then
+                                    return v
+                                end
                                 local tex = Cfg("borderTexture") or "solid"
                                 local sz = Cfg("borderSize") or 1
                                 local _, _, _, dsy = CludesUI.GetBorderDefaults("MythicPlus", tex, sz)
                                 return dsy
                             end,
-                            set = function(v) Set("borderTextureShiftY", v == 0 and nil or v); ApplyBorder() end },
+                            set = function(v)
+                                Set("borderTextureShiftY", v == 0 and nil or v)
+                                ApplyBorder()
+                            end,
                         },
+                    },
                     anchorTo = rgn._control,
                 })
+            end
+            -- Inline color swatch on Border Size (right region)
+            if not CludesUI._prebuilding then
+                local rgn = bsRow._rightRegion
+                local ctrl = rgn._control
+                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    rgn,
+                    rgn:GetFrameLevel() + 3,
+                    function()
+                        return Cfg("borderR") or 0,
+                            Cfg("borderG") or 0,
+                            Cfg("borderB") or 0,
+                            Cfg("borderA") or 1
+                    end,
+                    function(r, g, b, a)
+                        Set("borderR", r)
+                        Set("borderG", g)
+                        Set("borderB", b)
+                        Set("borderA", a)
+                        ApplyBorder()
+                    end,
+                    true,
+                    20
+                )
+                PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                -- Disabled block: swallows clicks and shows the requirement tooltip.
+                local block = CreateFrame("Frame", nil, swatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(_borderReq()))
+                end)
+                block:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                local function UpdateSwatch()
+                    updateSwatch()
+                    local off = _borderOff()
+                    swatch:SetAlpha(off and 0.3 or 1)
+                    block:SetShown(off)
                 end
-                -- Inline color swatch on Border Size (right region)
-                if not CludesUI._prebuilding then
-                    local rgn = bsRow._rightRegion
-                    local ctrl = rgn._control
-                    local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                        rgn, rgn:GetFrameLevel() + 3,
-                        function()
-                            return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
-                        end,
-                        function(r, g, b, a)
-                            Set("borderR", r); Set("borderG", g); Set("borderB", b); Set("borderA", a)
-                            ApplyBorder()
-                        end,
-                        true, 20)
-                    PP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                    -- Disabled block: swallows clicks and shows the requirement tooltip.
-                    local block = CreateFrame("Frame", nil, swatch)
-                    block:SetAllPoints()
-                    block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-                    block:EnableMouse(true)
-                    block:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(_borderReq()))
-                    end)
-                    block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                    local function UpdateSwatch()
-                        updateSwatch()
-                        local off = _borderOff()
-                        swatch:SetAlpha(off and 0.3 or 1)
-                        block:SetShown(off)
-                    end
-                    CludesUI.RegisterWidgetRefresh(UpdateSwatch)
-                    UpdateSwatch()
-                end
+                CludesUI.RegisterWidgetRefresh(UpdateSwatch)
+                UpdateSwatch()
+            end
         end
 
         -- Inline color swatch attached to a DualRow region (left of the control,
@@ -574,19 +803,19 @@ initFrame:SetScript("OnEvent", function(self)
         -- + dimmed via overlay when isDisabled() is true, mirroring the cog pattern.
         local function _AttachInlineSwatch(rgn, colorKey, defR, defG, defB, afterSet, isDisabled, disabledTip)
             local PP = CludesUI.PP
-            local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rgn, rgn:GetFrameLevel() + 5,
-                function()
-                    local c = Cfg(colorKey)
-                    if c then return c.r or defR, c.g or defG, c.b or defB, 1 end
-                    return defR, defG, defB, 1
-                end,
-                function(r, g, b)
-                    Set(colorKey, { r = r, g = g, b = b })
-                    if afterSet then afterSet(r, g, b) end
-                    Refresh()
-                end,
-                false, 18)
+            local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local c = Cfg(colorKey)
+                if c then
+                    return c.r or defR, c.g or defG, c.b or defB, 1
+                end
+                return defR, defG, defB, 1
+            end, function(r, g, b)
+                Set(colorKey, { r = r, g = g, b = b })
+                if afterSet then
+                    afterSet(r, g, b)
+                end
+                Refresh()
+            end, false, 18)
             PP.Point(swatch, "RIGHT", rgn._lastInline or rgn._control or rgn, "LEFT", -8, 0)
             rgn._lastInline = swatch
             local block = CreateFrame("Frame", nil, swatch)
@@ -596,13 +825,19 @@ initFrame:SetScript("OnEvent", function(self)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(disabledTip or "the module"))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function UpdateState()
-                if updateSwatch then updateSwatch() end
+                if updateSwatch then
+                    updateSwatch()
+                end
                 if isDisabled and isDisabled() then
-                    swatch:SetAlpha(0.3); block:Show()
+                    swatch:SetAlpha(0.3)
+                    block:Show()
                 else
-                    swatch:SetAlpha(1); block:Hide()
+                    swatch:SetAlpha(1)
+                    block:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(UpdateState)
@@ -618,12 +853,24 @@ initFrame:SetScript("OnEvent", function(self)
         -- requirement tooltip while isDisabled() is true (mirrors _AttachInlineSwatch).
         -- followTip/followColor optionally replace the accent swatch's label and
         -- color source when the "follow" color is not the theme accent.
-        local function _AttachInlineAccentSwatches(rgn, useAccentKey, colorKey, defR, defG, defB, isDisabled, disabledTip, followTip, followColor)
+        local function _AttachInlineAccentSwatches(
+            rgn,
+            useAccentKey,
+            colorKey,
+            defR,
+            defG,
+            defB,
+            isDisabled,
+            disabledTip,
+            followTip,
+            followColor
+        )
             local PP = CludesUI.PP
 
             -- Accent swatch (nearest the control, or the cog): live theme accent.
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                rgn, rgn:GetFrameLevel() + 5,
+                rgn,
+                rgn:GetFrameLevel() + 5,
                 function()
                     local ar, ag, ab
                     if followColor then
@@ -633,66 +880,100 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     return ar, ag, ab, 1
                 end,
-                function() end, false, 18)
+                function() end,
+                false,
+                18
+            )
             accentSwatch:SetScript("OnClick", function()
-                Set(useAccentKey, true); Refresh(); CludesUI:RefreshPage()
+                Set(useAccentKey, true)
+                Refresh()
+                CludesUI:RefreshPage()
             end)
             PP.Point(accentSwatch, "RIGHT", rgn._lastInline or rgn._control or rgn, "LEFT", -8, 0)
             rgn._lastInline = accentSwatch
 
             -- Custom-colour swatch (to the left of accent): the stored custom colour.
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                rgn, rgn:GetFrameLevel() + 5,
+                rgn,
+                rgn:GetFrameLevel() + 5,
                 function()
                     local c = Cfg(colorKey)
-                    if c then return c.r or defR, c.g or defG, c.b or defB, 1 end
+                    if c then
+                        return c.r or defR, c.g or defG, c.b or defB, 1
+                    end
                     return defR, defG, defB, 1
                 end,
                 function(r, g, b)
-                    Set(colorKey, { r = r, g = g, b = b }); Refresh()
-                end, false, 18)
+                    Set(colorKey, { r = r, g = g, b = b })
+                    Refresh()
+                end,
+                false,
+                18
+            )
             -- Preserve BuildColorSwatch's picker click, but while accent mode is on a
             -- click just switches back to custom mode (accent turns off) instead.
             local openPicker = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self)
                 if Cfg(useAccentKey) ~= false then
-                    Set(useAccentKey, false); Refresh(); CludesUI:RefreshPage()
+                    Set(useAccentKey, false)
+                    Refresh()
+                    CludesUI:RefreshPage()
                     return
                 end
-                if openPicker then openPicker(self) end
+                if openPicker then
+                    openPicker(self)
+                end
             end)
             PP.Point(customSwatch, "RIGHT", rgn._lastInline or rgn._control or rgn, "LEFT", -8, 0)
             rgn._lastInline = customSwatch
 
             -- Per-swatch hover tooltip (colour name when enabled) + disabled block.
             local function AddBlock(sw, enterTip)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, enterTip) end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, enterTip)
+                end)
+                sw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local block = CreateFrame("Frame", nil, sw)
-                block:SetAllPoints(); block:SetFrameLevel(sw:GetFrameLevel() + 10); block:EnableMouse(true)
+                block:SetAllPoints()
+                block:SetFrameLevel(sw:GetFrameLevel() + 10)
+                block:EnableMouse(true)
                 block:SetScript("OnEnter", function()
                     -- disabledTip may be a function, like a DualRow cfg.disabledTooltip.
                     local tip = disabledTip
-                    if type(tip) == "function" then tip = tip() end
+                    if type(tip) == "function" then
+                        tip = tip()
+                    end
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(tip or "the module"))
                 end)
-                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                block:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 sw._block = block
             end
             AddBlock(accentSwatch, followTip or "Accent Color")
             AddBlock(customSwatch, "Custom Color")
 
             local function UpdateState()
-                if updateAccent then updateAccent() end
-                if updateCustom then updateCustom() end
+                if updateAccent then
+                    updateAccent()
+                end
+                if updateCustom then
+                    updateCustom()
+                end
                 local disabled = isDisabled and isDisabled()
                 local useAccent = Cfg(useAccentKey) ~= false
                 if disabled then
-                    accentSwatch:SetAlpha(0.15); accentSwatch._block:Show()
-                    customSwatch:SetAlpha(0.15); customSwatch._block:Show()
+                    accentSwatch:SetAlpha(0.15)
+                    accentSwatch._block:Show()
+                    customSwatch:SetAlpha(0.15)
+                    customSwatch._block:Show()
                 else
-                    accentSwatch:SetAlpha(useAccent and 1 or 0.3); accentSwatch._block:Hide()
-                    customSwatch:SetAlpha(useAccent and 0.3 or 1); customSwatch._block:Hide()
+                    accentSwatch:SetAlpha(useAccent and 1 or 0.3)
+                    accentSwatch._block:Hide()
+                    customSwatch:SetAlpha(useAccent and 0.3 or 1)
+                    customSwatch._block:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(UpdateState)
@@ -700,10 +981,10 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local timerDisplayValues = {
-            REMAINING       = "11:37",
+            REMAINING = "11:37",
             REMAINING_TOTAL = "11:37 / 33:00",
-            ELAPSED         = "21:23",
-            ELAPSED_DETAIL  = "21:23 (11:37 / 33:00)",
+            ELAPSED = "21:23",
+            ELAPSED_DETAIL = "21:23 (11:37 / 33:00)",
         }
         local timerDisplayOrder = { "REMAINING", "REMAINING_TOTAL", "ELAPSED", "ELAPSED_DETAIL" }
         local timerBarStyleValues = { TICKS = "Ticks", SEGMENTS = "Gaps" }
@@ -714,202 +995,499 @@ initFrame:SetScript("OnEvent", function(self)
         -- toggle, so name whichever is actually off.
         local function ModuleOr(noun)
             return function()
-                if Cfg("enabled") == false then return "the module" end
+                if Cfg("enabled") == false then
+                    return "the module"
+                end
                 return noun
             end
         end
 
-        _, h = W:SectionHeader(parent, "TITLE AND AFFIXES", y); y = y - h
+        _, h = W:SectionHeader(parent, "TITLE AND AFFIXES", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Title",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              getValue=function() return Cfg("showTitle") ~= false end,
-              setValue=function(v) Set("showTitle", v); Refresh() end },
-            { type="slider", text="Title Size", min=8, max=24, step=1, trackWidth=130,
-              disabled=function() return Cfg("enabled") == false or Cfg("showTitle") == false end,
-              disabledTooltip=ModuleOr("Show Title"),
-              getValue=function() return Cfg("titleSize") or 16 end,
-              setValue=function(v) Set("titleSize", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Title",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            getValue = function()
+                return Cfg("showTitle") ~= false
+            end,
+            setValue = function(v)
+                Set("showTitle", v)
+                Refresh()
+            end,
+        }, {
+            type = "slider",
+            text = "Title Size",
+            min = 8,
+            max = 24,
+            step = 1,
+            trackWidth = 130,
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTitle") == false
+            end,
+            disabledTooltip = ModuleOr("Show Title"),
+            getValue = function()
+                return Cfg("titleSize") or 16
+            end,
+            setValue = function(v)
+                Set("titleSize", v)
+                Refresh()
+            end,
+        })
         -- Regular-cog settings popup on Show Title: Show Dungeon Name (default on;
         -- when off the title shows only the +key level, not the dungeon name).
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._leftRegion, { title = "Title", gap = 6, rows = {
-            { type="toggle", label="Show Dungeon Name",
-              get=function() return Cfg("showDungeonName") ~= false end,
-              set=function(v) Set("showDungeonName", v); Refresh() end },
-            -- Moves the lone "+key" title down onto the timer line as "+21  |  timer".
-            -- Only meaningful when the dungeon name is hidden, so it is gated on that.
-            { type="toggle", label="Show Key Level on Timer",
-              disabled=function() return Cfg("showDungeonName") ~= false end,
-              disabledTooltip="Show Dungeon Name", requireState="disabled",
-              get=function() return Cfg("showKeyLevelOnTimer") == true end,
-              set=function(v) Set("showKeyLevelOnTimer", v); Refresh() end },
-            { type="slider", pixel=true, label="Spacing", min=0, max=40, step=1,
-              disabled=function() return Cfg("showKeyLevelOnTimer") ~= true end,
-              disabledTooltip="Show Key Level on Timer",
-              get=function() return Cfg("keyLevelTimerSpacing") or 8 end,
-              set=function(v) Set("keyLevelTimerSpacing", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showTitle") == false end, disabledTooltip = ModuleOr("Show Title") })
-        -- Inline accent + custom colour swatches on the Title Size slider.
-        _AttachInlineAccentSwatches(row._rightRegion, "titleUseAccent", "titleColor", 1, 1, 1,
-            function() return Cfg("enabled") == false or Cfg("showTitle") == false end, "Show Title")
+            CludesUI.BuildInlineCog(row._leftRegion, {
+                title = "Title",
+                gap = 6,
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Show Dungeon Name",
+                        get = function()
+                            return Cfg("showDungeonName") ~= false
+                        end,
+                        set = function(v)
+                            Set("showDungeonName", v)
+                            Refresh()
+                        end,
+                    },
+                    -- Moves the lone "+key" title down onto the timer line as "+21  |  timer".
+                    -- Only meaningful when the dungeon name is hidden, so it is gated on that.
+                    {
+                        type = "toggle",
+                        label = "Show Key Level on Timer",
+                        disabled = function()
+                            return Cfg("showDungeonName") ~= false
+                        end,
+                        disabledTooltip = "Show Dungeon Name",
+                        requireState = "disabled",
+                        get = function()
+                            return Cfg("showKeyLevelOnTimer") == true
+                        end,
+                        set = function(v)
+                            Set("showKeyLevelOnTimer", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Spacing",
+                        min = 0,
+                        max = 40,
+                        step = 1,
+                        disabled = function()
+                            return Cfg("showKeyLevelOnTimer") ~= true
+                        end,
+                        disabledTooltip = "Show Key Level on Timer",
+                        get = function()
+                            return Cfg("keyLevelTimerSpacing") or 8
+                        end,
+                        set = function(v)
+                            Set("keyLevelTimerSpacing", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false or Cfg("showTitle") == false
+                end,
+                disabledTooltip = ModuleOr("Show Title"),
+            })
+            -- Inline accent + custom colour swatches on the Title Size slider.
+            _AttachInlineAccentSwatches(row._rightRegion, "titleUseAccent", "titleColor", 1, 1, 1, function()
+                return Cfg("enabled") == false or Cfg("showTitle") == false
+            end, "Show Title")
         end
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Affix",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              getValue=function() return Cfg("showAffixes") ~= false end,
-              setValue=function(v) Set("showAffixes", v); Refresh() end },
-            { type="dropdown", text="Title/Affix Position",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              values=titleAffixPositionValues,
-              order=titleAffixPositionOrder,
-              getValue=function() return Cfg("titleAffixPosition") or "ABOVE_TIMER" end,
-              setValue=function(v) Set("titleAffixPosition", v); Refresh(); CludesUI:RefreshPage() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Affix",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            getValue = function()
+                return Cfg("showAffixes") ~= false
+            end,
+            setValue = function(v)
+                Set("showAffixes", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Title/Affix Position",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            values = titleAffixPositionValues,
+            order = titleAffixPositionOrder,
+            getValue = function()
+                return Cfg("titleAffixPosition") or "ABOVE_TIMER"
+            end,
+            setValue = function(v)
+                Set("titleAffixPosition", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        })
         -- Inline Affix Size cog on Show Affix (cog before swatch), then the Affix Color swatch
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._leftRegion, { title = "Affix Size", gap = 6, rows = {
-            { type="slider", label="Size", min=6, max=20, step=1,
-              get=function() return Cfg("affixSize") or 12 end,
-              set=function(v) Set("affixSize", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showAffixes") == false end, disabledTooltip = ModuleOr("Show Affix") })
-        _AttachInlineSwatch(row._leftRegion, "affixTextColor", 1, 1, 1, nil,
-            function() return Cfg("enabled") == false or Cfg("showAffixes") == false end, "Show Affix")
-        -- Title/Affix Spacing cog on Position (now the right-side widget)
-        CludesUI.BuildInlineCog(row._rightRegion, { title = "Title/Affix Spacing", gap = 6, rows = {
-            { type="slider", pixel=true, label="Death Gap", min=-10, max=30, step=1,
-              disabled=function() return (Cfg("titleAffixPosition") or "ABOVE_TIMER") == "BELOW_TIMER" end,
-              disabledTooltip="Above Timer",
-              get=function() return Cfg("titleAffixDeathGap") or 11 end,
-              set=function(v) Set("titleAffixDeathGap", v); Refresh() end },
-            { type="slider", pixel=true, label="Timer Gap", min=-10, max=30, step=1,
-              disabled=function() return (Cfg("titleAffixPosition") or "ABOVE_TIMER") ~= "BELOW_TIMER" end,
-              disabledTooltip="Below Timer",
-              get=function() return Cfg("titleAffixTimerGap") or Cfg("titleAffixSandwichGap") or 6 end,
-              set=function(v) Set("titleAffixTimerGap", v); Refresh() end },
-            { type="slider", pixel=true, label="Bar Gap", min=-10, max=30, step=1,
-              disabled=function() return (Cfg("titleAffixPosition") or "ABOVE_TIMER") ~= "BELOW_TIMER" end,
-              disabledTooltip="Below Timer",
-              get=function() return Cfg("titleAffixBarGap") or Cfg("titleAffixSandwichGap") or 6 end,
-              set=function(v) Set("titleAffixBarGap", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false end, disabledTooltip = "the module" })
+            CludesUI.BuildInlineCog(row._leftRegion, {
+                title = "Affix Size",
+                gap = 6,
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Size",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return Cfg("affixSize") or 12
+                        end,
+                        set = function(v)
+                            Set("affixSize", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false or Cfg("showAffixes") == false
+                end,
+                disabledTooltip = ModuleOr("Show Affix"),
+            })
+            _AttachInlineSwatch(row._leftRegion, "affixTextColor", 1, 1, 1, nil, function()
+                return Cfg("enabled") == false or Cfg("showAffixes") == false
+            end, "Show Affix")
+            -- Title/Affix Spacing cog on Position (now the right-side widget)
+            CludesUI.BuildInlineCog(row._rightRegion, {
+                title = "Title/Affix Spacing",
+                gap = 6,
+                rows = {
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Death Gap",
+                        min = -10,
+                        max = 30,
+                        step = 1,
+                        disabled = function()
+                            return (Cfg("titleAffixPosition") or "ABOVE_TIMER") == "BELOW_TIMER"
+                        end,
+                        disabledTooltip = "Above Timer",
+                        get = function()
+                            return Cfg("titleAffixDeathGap") or 11
+                        end,
+                        set = function(v)
+                            Set("titleAffixDeathGap", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Timer Gap",
+                        min = -10,
+                        max = 30,
+                        step = 1,
+                        disabled = function()
+                            return (Cfg("titleAffixPosition") or "ABOVE_TIMER") ~= "BELOW_TIMER"
+                        end,
+                        disabledTooltip = "Below Timer",
+                        get = function()
+                            return Cfg("titleAffixTimerGap") or Cfg("titleAffixSandwichGap") or 6
+                        end,
+                        set = function(v)
+                            Set("titleAffixTimerGap", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Bar Gap",
+                        min = -10,
+                        max = 30,
+                        step = 1,
+                        disabled = function()
+                            return (Cfg("titleAffixPosition") or "ABOVE_TIMER") ~= "BELOW_TIMER"
+                        end,
+                        disabledTooltip = "Below Timer",
+                        get = function()
+                            return Cfg("titleAffixBarGap") or Cfg("titleAffixSandwichGap") or 6
+                        end,
+                        set = function(v)
+                            Set("titleAffixBarGap", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false
+                end,
+                disabledTooltip = "the module",
+            })
         end
         y = y - h
 
-        _, h = W:SectionHeader(parent, "TIMER", y); y = y - h
+        _, h = W:SectionHeader(parent, "TIMER", y)
+        y = y - h
 
         local timerFontValues, timerFontOrder = CludesUI.BuildFontDropdownData()
         -- Timer Size only drives the standalone clock; the in-bar timer text has a fixed size.
-        row, h = W:DualRow(parent, y,
-            { type="slider", text="Timer Size",
-              disabled=function()
-                  return Cfg("enabled") == false or (Cfg("timerInBar") == true and Cfg("showTimerBar") ~= false)
-              end,
-              disabledTooltip=function()
-                  if Cfg("enabled") == false then return "the module" end
-                  return "This option requires Move Timer Inside Bar to be disabled"
-              end,
-              min=10, max=32, step=1, isPercent=false,
-              getValue=function() return Cfg("timerTextSize") or 20 end,
-              setValue=function(v) Set("timerTextSize", v); Refresh() end },
-            { type="dropdown", text="Timer Format",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              values=timerDisplayValues,
-              order=timerDisplayOrder,
-              getValue=function() return Cfg("timerDisplayMode") or "REMAINING_TOTAL" end,
-              setValue=function(v) Set("timerDisplayMode", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Timer Size",
+            disabled = function()
+                return Cfg("enabled") == false or (Cfg("timerInBar") == true and Cfg("showTimerBar") ~= false)
+            end,
+            disabledTooltip = function()
+                if Cfg("enabled") == false then
+                    return "the module"
+                end
+                return "This option requires Move Timer Inside Bar to be disabled"
+            end,
+            min = 10,
+            max = 32,
+            step = 1,
+            isPercent = false,
+            getValue = function()
+                return Cfg("timerTextSize") or 20
+            end,
+            setValue = function(v)
+                Set("timerTextSize", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Timer Format",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            values = timerDisplayValues,
+            order = timerDisplayOrder,
+            getValue = function()
+                return Cfg("timerDisplayMode") or "REMAINING_TOTAL"
+            end,
+            setValue = function(v)
+                Set("timerDisplayMode", v)
+                Refresh()
+            end,
+        })
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Timer Font",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              values=timerFontValues,
-              order=timerFontOrder,
-              getValue=function() return Cfg("timerFont") or "__global" end,
-              setValue=function(v) Set("timerFont", v); Refresh() end },
-            CludesUI.BlankRowCfg())
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Timer Font",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            values = timerFontValues,
+            order = timerFontOrder,
+            getValue = function()
+                return Cfg("timerFont") or "__global"
+            end,
+            setValue = function(v)
+                Set("timerFont", v)
+                Refresh()
+            end,
+        }, CludesUI.BlankRowCfg())
         y = y - h
 
-        _, h = W:SectionHeader(parent, "TIMER BAR", y); y = y - h
+        _, h = W:SectionHeader(parent, "TIMER BAR", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Timer Bar",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              getValue=function() return Cfg("showTimerBar") ~= false end,
-              setValue=function(v)
-                  Set("showTimerBar", v)
-                  Refresh(); CludesUI:RefreshPage()
-              end },
-            { type="toggle", text="Move Timer Inside Bar",
-              disabled=function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end,
-              disabledTooltip=ModuleOr("Show Timer Bar"),
-              getValue=function() return Cfg("timerInBar") == true end,
-              setValue=function(v) Set("timerInBar", v); Refresh(); CludesUI:RefreshPage() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Timer Bar",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            getValue = function()
+                return Cfg("showTimerBar") ~= false
+            end,
+            setValue = function(v)
+                Set("showTimerBar", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "toggle",
+            text = "Move Timer Inside Bar",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTimerBar") == false
+            end,
+            disabledTooltip = ModuleOr("Show Timer Bar"),
+            getValue = function()
+                return Cfg("timerInBar") == true
+            end,
+            setValue = function(v)
+                Set("timerInBar", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        })
         if not CludesUI._prebuilding then
-        -- These rows only affect the in-bar timer, so the cog also requires Move Timer Inside Bar.
-        CludesUI.BuildInlineCog(row._rightRegion, { title = "In-Bar Timer", gap = 6, rows = {
-            { type="slider", label="In-Bar Height", min=8, max=40, step=1,
-              tooltip="Minimum height of the timer bar while the timer is inside it. The larger of this and Timer Bar Height is used.",
-              get=function() return Cfg("barHeightExpanded") or 22 end,
-              set=function(v) Set("barHeightExpanded", v); Refresh() end },
-            { type="slider", label="Fill Opacity", min=0, max=1, step=0.05,
-              tooltip="Opacity of the bar fill while the timer is inside it.",
-              get=function() return Cfg("barFillAlphaExpanded") or 0.85 end,
-              set=function(v) Set("barFillAlphaExpanded", v); Refresh() end },
-            { type="toggle", label="Left Text",
-              tooltip="Align the timer text to the left edge of the bar instead of centering it.",
-              get=function() return Cfg("timerInBarLeftText") == true end,
-              set=function(v) Set("timerInBarLeftText", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showTimerBar") == false or Cfg("timerInBar") ~= true end,
-           disabledTooltip = function()
-               if Cfg("enabled") == false then return "the module" end
-               if Cfg("showTimerBar") == false then return "Show Timer Bar" end
-               return "Move Timer Inside Bar"
-           end })
+            -- These rows only affect the in-bar timer, so the cog also requires Move Timer Inside Bar.
+            CludesUI.BuildInlineCog(row._rightRegion, {
+                title = "In-Bar Timer",
+                gap = 6,
+                rows = {
+                    {
+                        type = "slider",
+                        label = "In-Bar Height",
+                        min = 8,
+                        max = 40,
+                        step = 1,
+                        tooltip = "Minimum height of the timer bar while the timer is inside it. The larger of this and Timer Bar Height is used.",
+                        get = function()
+                            return Cfg("barHeightExpanded") or 22
+                        end,
+                        set = function(v)
+                            Set("barHeightExpanded", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Fill Opacity",
+                        min = 0,
+                        max = 1,
+                        step = 0.05,
+                        tooltip = "Opacity of the bar fill while the timer is inside it.",
+                        get = function()
+                            return Cfg("barFillAlphaExpanded") or 0.85
+                        end,
+                        set = function(v)
+                            Set("barFillAlphaExpanded", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Left Text",
+                        tooltip = "Align the timer text to the left edge of the bar instead of centering it.",
+                        get = function()
+                            return Cfg("timerInBarLeftText") == true
+                        end,
+                        set = function(v)
+                            Set("timerInBarLeftText", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false
+                        or Cfg("showTimerBar") == false
+                        or Cfg("timerInBar") ~= true
+                end,
+                disabledTooltip = function()
+                    if Cfg("enabled") == false then
+                        return "the module"
+                    end
+                    if Cfg("showTimerBar") == false then
+                        return "Show Timer Bar"
+                    end
+                    return "Move Timer Inside Bar"
+                end,
+            })
         end
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="slider", text="Timer Bar Height",
-              tooltip="Height of the timer bar. While the timer is inside the bar, In-Bar Height sets the minimum.",
-              disabled=function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end,
-              disabledTooltip=ModuleOr("Show Timer Bar"),
-              min=4, max=30, step=1, isPercent=false,
-              getValue=function() return Cfg("barHeight") or 8 end,
-              setValue=function(v)
-                  -- Pin the forces bar to its current height before the first
-                  -- change, so the two height sliders act independently.
-                  if Cfg("enemyBarHeight") == nil then Set("enemyBarHeight", Cfg("barHeight") or 8) end
-                  Set("barHeight", v); Refresh()
-              end },
-            { type="dropdown", text="Timer Bar Texture",
-              disabled=function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end,
-              disabledTooltip=ModuleOr("Show Timer Bar"),
-              values=texValues,
-              order=texOrder,
-              getValue=function() return Cfg("barTexture") or "none" end,
-              setValue=function(v) Set("barTexture", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Timer Bar Height",
+            tooltip = "Height of the timer bar. While the timer is inside the bar, In-Bar Height sets the minimum.",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTimerBar") == false
+            end,
+            disabledTooltip = ModuleOr("Show Timer Bar"),
+            min = 4,
+            max = 30,
+            step = 1,
+            isPercent = false,
+            getValue = function()
+                return Cfg("barHeight") or 8
+            end,
+            setValue = function(v)
+                -- Pin the forces bar to its current height before the first
+                -- change, so the two height sliders act independently.
+                if Cfg("enemyBarHeight") == nil then
+                    Set("enemyBarHeight", Cfg("barHeight") or 8)
+                end
+                Set("barHeight", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Timer Bar Texture",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTimerBar") == false
+            end,
+            disabledTooltip = ModuleOr("Show Timer Bar"),
+            values = texValues,
+            order = texOrder,
+            getValue = function()
+                return Cfg("barTexture") or "none"
+            end,
+            setValue = function(v)
+                Set("barTexture", v)
+                Refresh()
+            end,
+        })
         -- Inline cog on Bar Texture: the bar's background texture
-        CludesUI.BuildInlineCog(row._rightRegion, { title = "Bar Texture", gap = 6, rows = {
-            { type="dropdown", label="Background Texture",
-              values=texValues, order=texOrder,
-              get=function() return Cfg("barBgTexture") or "none" end,
-              set=function(v) Set("barBgTexture", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end, disabledTooltip = ModuleOr("Show Timer Bar") })
+        CludesUI.BuildInlineCog(row._rightRegion, {
+            title = "Bar Texture",
+            gap = 6,
+            rows = {
+                {
+                    type = "dropdown",
+                    label = "Background Texture",
+                    values = texValues,
+                    order = texOrder,
+                    get = function()
+                        return Cfg("barBgTexture") or "none"
+                    end,
+                    set = function(v)
+                        Set("barBgTexture", v)
+                        Refresh()
+                    end,
+                },
+            },
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTimerBar") == false
+            end,
+            disabledTooltip = ModuleOr("Show Timer Bar"),
+        })
         y = y - h
 
         -- Builds a threshold toggle config plus an attach() that hangs the inline
         -- RESIZE cog (white text / size / x / y) and the colour swatch onto a given
         -- DualRow region, so two thresholds can share one dual row.
-        local function _ThresholdWidget(label, barColorKey, showKey, sizeKey, offsetXKey, offsetYKey, whiteKey, defR, defG, defB, afterBarSet)
+        local function _ThresholdWidget(
+            label,
+            barColorKey,
+            showKey,
+            sizeKey,
+            offsetXKey,
+            offsetYKey,
+            whiteKey,
+            defR,
+            defG,
+            defB,
+            afterBarSet
+        )
             local function IsTimerTextShown()
                 if showKey == "showThreshRemaining" then
                     return Cfg(showKey) == true
@@ -917,167 +1495,436 @@ initFrame:SetScript("OnEvent", function(self)
                 return Cfg(showKey) ~= false
             end
 
-            local cfg = { type="toggle", text="Show " .. label .. " Timer Text",
-                  tooltip="Show Timer Text",
-                  disabled=function() return Cfg("enabled") == false end,
-                  disabledTooltip="the module",
-                  getValue=IsTimerTextShown,
-                  setValue=function(v) Set(showKey, v); Refresh() end }
+            local cfg = {
+                type = "toggle",
+                text = "Show " .. label .. " Timer Text",
+                tooltip = "Show Timer Text",
+                disabled = function()
+                    return Cfg("enabled") == false
+                end,
+                disabledTooltip = "the module",
+                getValue = IsTimerTextShown,
+                setValue = function(v)
+                    Set(showKey, v)
+                    Refresh()
+                end,
+            }
 
             local function attach(rgn)
                 -- Inline RESIZE cog (white text / size / x / y) on the toggle first so it
                 -- sits adjacent to the control, before the swatch (cog-before-swatch rule).
-                CludesUI.BuildInlineCog(rgn, { title = label .. " Timer Text", gap = 6, rows = {
-                    { type="toggle", label="White Text",
-                      get=function() return Cfg(whiteKey) == true end,
-                      set=function(v) Set(whiteKey, v); Refresh() end },
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function() return Cfg(sizeKey) or Cfg("thresholdSize") or 12 end,
-                      set=function(v) Set(sizeKey, v); Refresh() end },
-                    { type="slider", label="Text X", min=-80, max=80, step=1,
-                      get=function() return Cfg(offsetXKey) or Cfg("thresholdTextOffsetX") or 0 end,
-                      set=function(v) Set(offsetXKey, v); Refresh() end },
-                    { type="slider", label="Text Y", min=-40, max=40, step=1,
-                      get=function() return Cfg(offsetYKey) or Cfg("thresholdTextOffsetY") or 0 end,
-                      set=function(v) Set(offsetYKey, v); Refresh() end },
-                }, disabled = function() return Cfg("enabled") == false or not IsTimerTextShown() end,
-                   disabledTooltip = ModuleOr(cfg.text) })
+                CludesUI.BuildInlineCog(rgn, {
+                    title = label .. " Timer Text",
+                    gap = 6,
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "White Text",
+                            get = function()
+                                return Cfg(whiteKey) == true
+                            end,
+                            set = function(v)
+                                Set(whiteKey, v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                return Cfg(sizeKey) or Cfg("thresholdSize") or 12
+                            end,
+                            set = function(v)
+                                Set(sizeKey, v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text X",
+                            min = -80,
+                            max = 80,
+                            step = 1,
+                            get = function()
+                                return Cfg(offsetXKey) or Cfg("thresholdTextOffsetX") or 0
+                            end,
+                            set = function(v)
+                                Set(offsetXKey, v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text Y",
+                            min = -40,
+                            max = 40,
+                            step = 1,
+                            get = function()
+                                return Cfg(offsetYKey) or Cfg("thresholdTextOffsetY") or 0
+                            end,
+                            set = function(v)
+                                Set(offsetYKey, v)
+                                Refresh()
+                            end,
+                        },
+                    },
+                    disabled = function()
+                        return Cfg("enabled") == false or not IsTimerTextShown()
+                    end,
+                    disabledTooltip = ModuleOr(cfg.text),
+                })
                 -- Inline colour swatch (the +N threshold / segment colour), left of the cog
-                _AttachInlineSwatch(rgn, barColorKey, defR, defG, defB, afterBarSet,
-                    function() return Cfg("enabled") == false end, "the module")
+                _AttachInlineSwatch(rgn, barColorKey, defR, defG, defB, afterBarSet, function()
+                    return Cfg("enabled") == false
+                end, "the module")
             end
 
             return cfg, attach
         end
 
-        _, h = W:SectionHeader(parent, "THRESHOLDS", y); y = y - h
+        _, h = W:SectionHeader(parent, "THRESHOLDS", y)
+        y = y - h
 
-        local p3cfg, p3attach = _ThresholdWidget("+3 Threshold", "timerSegment1Color", "showPlusThreeTimer", "thresholdPlusThreeSize", "thresholdPlusThreeTextOffsetX", "thresholdPlusThreeTextOffsetY", "thresholdPlusThreeTextWhite", 0.4, 1, 0.4,
-            function(r, g, b) Set("timerPlusThreeColor", { r = r, g = g, b = b }) end)
-        local p2cfg, p2attach = _ThresholdWidget("+2 Threshold", "timerSegment2Color", "showPlusTwoTimer", "thresholdPlusTwoSize", "thresholdPlusTwoTextOffsetX", "thresholdPlusTwoTextOffsetY", "thresholdPlusTwoTextWhite", 0.3, 0.8, 1,
-            function(r, g, b) Set("timerPlusTwoColor", { r = r, g = g, b = b }) end)
-        local p1cfg, p1attach = _ThresholdWidget("+1 Threshold", "timerSegment3Color", "showThreshRemaining", "thresholdPlusOneSize", "thresholdPlusOneTextOffsetX", "thresholdPlusOneTextOffsetY", "thresholdPlusOneTextWhite", 0.69, 0.35, 0.8)
+        local p3cfg, p3attach = _ThresholdWidget(
+            "+3 Threshold",
+            "timerSegment1Color",
+            "showPlusThreeTimer",
+            "thresholdPlusThreeSize",
+            "thresholdPlusThreeTextOffsetX",
+            "thresholdPlusThreeTextOffsetY",
+            "thresholdPlusThreeTextWhite",
+            0.4,
+            1,
+            0.4,
+            function(r, g, b)
+                Set("timerPlusThreeColor", { r = r, g = g, b = b })
+            end
+        )
+        local p2cfg, p2attach = _ThresholdWidget(
+            "+2 Threshold",
+            "timerSegment2Color",
+            "showPlusTwoTimer",
+            "thresholdPlusTwoSize",
+            "thresholdPlusTwoTextOffsetX",
+            "thresholdPlusTwoTextOffsetY",
+            "thresholdPlusTwoTextWhite",
+            0.3,
+            0.8,
+            1,
+            function(r, g, b)
+                Set("timerPlusTwoColor", { r = r, g = g, b = b })
+            end
+        )
+        local p1cfg, p1attach = _ThresholdWidget(
+            "+1 Threshold",
+            "timerSegment3Color",
+            "showThreshRemaining",
+            "thresholdPlusOneSize",
+            "thresholdPlusOneTextOffsetX",
+            "thresholdPlusOneTextOffsetY",
+            "thresholdPlusOneTextWhite",
+            0.69,
+            0.35,
+            0.8
+        )
 
         -- Row 1: Ticks / Gaps (style + inline cog + Tick Color swatch) | +3 Threshold
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Ticks / Gaps",
-              disabled=function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end,
-              disabledTooltip=ModuleOr("Show Timer Bar"),
-              values=timerBarStyleValues,
-              order=timerBarStyleOrder,
-              getValue=function() return Cfg("timerBarStyle") or "TICKS" end,
-              setValue=function(v) Set("timerBarStyle", v); Refresh(); CludesUI:RefreshPage() end },
-            p3cfg)
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Ticks / Gaps",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showTimerBar") == false
+            end,
+            disabledTooltip = ModuleOr("Show Timer Bar"),
+            values = timerBarStyleValues,
+            order = timerBarStyleOrder,
+            getValue = function()
+                return Cfg("timerBarStyle") or "TICKS"
+            end,
+            setValue = function(v)
+                Set("timerBarStyle", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, p3cfg)
         -- Inline cog first so it sits adjacent to the control, then the Tick Color
         -- swatch (TICKS style only) left of it (cog-before-swatch rule).
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._leftRegion, { title = "Ticks / Gaps", gap = 6, rows = {
-            { type="slider", label="Tick Opacity", min=0, max=1, step=0.05,
-              disabled=function() return (Cfg("timerBarStyle") or "TICKS") ~= "TICKS" end,
-              disabledTooltip="Ticks",
-              get=function() return Cfg("tickAlpha") or 1 end,
-              set=function(v) Set("tickAlpha", v); Refresh() end },
-            { type="slider", pixel=true, label="Gap Size", min=0, max=12, step=1,
-              disabled=function() return (Cfg("timerBarStyle") or "TICKS") ~= "SEGMENTS" end,
-              disabledTooltip="Gaps",
-              get=function() return Cfg("timerBarSegmentGap") or 2 end,
-              set=function(v) Set("timerBarSegmentGap", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showTimerBar") == false end, disabledTooltip = ModuleOr("Show Timer Bar") })
-        _AttachInlineSwatch(row._leftRegion, "timerTickColor", 1, 1, 1, nil,
-            function() return Cfg("enabled") == false or Cfg("showTimerBar") == false or (Cfg("timerBarStyle") or "TICKS") ~= "TICKS" end, "Ticks")
-        p3attach(row._rightRegion)
+            CludesUI.BuildInlineCog(row._leftRegion, {
+                title = "Ticks / Gaps",
+                gap = 6,
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Tick Opacity",
+                        min = 0,
+                        max = 1,
+                        step = 0.05,
+                        disabled = function()
+                            return (Cfg("timerBarStyle") or "TICKS") ~= "TICKS"
+                        end,
+                        disabledTooltip = "Ticks",
+                        get = function()
+                            return Cfg("tickAlpha") or 1
+                        end,
+                        set = function(v)
+                            Set("tickAlpha", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Gap Size",
+                        min = 0,
+                        max = 12,
+                        step = 1,
+                        disabled = function()
+                            return (Cfg("timerBarStyle") or "TICKS") ~= "SEGMENTS"
+                        end,
+                        disabledTooltip = "Gaps",
+                        get = function()
+                            return Cfg("timerBarSegmentGap") or 2
+                        end,
+                        set = function(v)
+                            Set("timerBarSegmentGap", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false or Cfg("showTimerBar") == false
+                end,
+                disabledTooltip = ModuleOr("Show Timer Bar"),
+            })
+            _AttachInlineSwatch(row._leftRegion, "timerTickColor", 1, 1, 1, nil, function()
+                return Cfg("enabled") == false
+                    or Cfg("showTimerBar") == false
+                    or (Cfg("timerBarStyle") or "TICKS") ~= "TICKS"
+            end, "Ticks")
+            p3attach(row._rightRegion)
         end
         y = y - h
 
         -- Row 2: +2 Threshold | +1 Threshold
         row, h = W:DualRow(parent, y, p2cfg, p1cfg)
         if not CludesUI._prebuilding then
-        p2attach(row._leftRegion)
-        p1attach(row._rightRegion)
+            p2attach(row._leftRegion)
+            p1attach(row._rightRegion)
         end
         y = y - h
 
-        _, h = W:SectionHeader(parent, "FORCES", y); y = y - h
-
-        local function _forcesOff() return Cfg("enabled") == false or Cfg("showEnemyBar") == false end
-
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Enemy Forces",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              getValue=function() return Cfg("showEnemyBar") ~= false end,
-              setValue=function(v) Set("showEnemyBar", v); Refresh(); CludesUI:RefreshPage() end },
-            { type="slider", text="Forces Bar Height",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              min=4, max=30, step=1, isPercent=false,
-              -- enemyBarHeight stays unset until either height slider is changed
-              -- and falls back to the timer bar height, so existing layouts keep
-              -- their look.
-              getValue=function() return Cfg("enemyBarHeight") or Cfg("barHeight") or 8 end,
-              setValue=function(v) Set("enemyBarHeight", v); Refresh() end })
+        _, h = W:SectionHeader(parent, "FORCES", y)
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Enemy Text Format",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              values=forcesTextValues,
-              order=forcesTextOrder,
-              getValue=function() return Cfg("enemyForcesTextFormat") or "PERCENT" end,
-              setValue=function(v) Set("enemyForcesTextFormat", v); Refresh() end },
-            { type="dropdown", text="Percent Position",
-              tooltip="Where the enemy forces percentage is shown: in the label text, in the bar or beside it.",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              values={ LABEL = "In Label Text", BAR = "In Bar", BESIDE = "Beside Bar" },
-              order={ "LABEL", "BAR", "BESIDE" },
-              getValue=function() return Cfg("enemyForcesPctPos") or "LABEL" end,
-              setValue=function(v) Set("enemyForcesPctPos", v); Refresh() end })
+        local function _forcesOff()
+            return Cfg("enabled") == false or Cfg("showEnemyBar") == false
+        end
+
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Enemy Forces",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            getValue = function()
+                return Cfg("showEnemyBar") ~= false
+            end,
+            setValue = function(v)
+                Set("showEnemyBar", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Forces Bar Height",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            min = 4,
+            max = 30,
+            step = 1,
+            isPercent = false,
+            -- enemyBarHeight stays unset until either height slider is changed
+            -- and falls back to the timer bar height, so existing layouts keep
+            -- their look.
+            getValue = function()
+                return Cfg("enemyBarHeight") or Cfg("barHeight") or 8
+            end,
+            setValue = function(v)
+                Set("enemyBarHeight", v)
+                Refresh()
+            end,
+        })
+        y = y - h
+
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Enemy Text Format",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            values = forcesTextValues,
+            order = forcesTextOrder,
+            getValue = function()
+                return Cfg("enemyForcesTextFormat") or "PERCENT"
+            end,
+            setValue = function(v)
+                Set("enemyForcesTextFormat", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Percent Position",
+            tooltip = "Where the enemy forces percentage is shown: in the label text, in the bar or beside it.",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            values = { LABEL = "In Label Text", BAR = "In Bar", BESIDE = "Beside Bar" },
+            order = { "LABEL", "BAR", "BESIDE" },
+            getValue = function()
+                return Cfg("enemyForcesPctPos") or "LABEL"
+            end,
+            setValue = function(v)
+                Set("enemyForcesPctPos", v)
+                Refresh()
+            end,
+        })
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._leftRegion, { title = "Enemy Forces Text", gap = 6, rows = {
-            { type="toggle", label="Hide Label",
-              get=function() return Cfg("hideEnemyForcesLabel") == true end,
-              set=function(v) Set("hideEnemyForcesLabel", v); Refresh() end },
-            { type="slider", label="Text Size", min=8, max=24, step=1,
-              get=function() return Cfg("enemyForcesTextSize") or Cfg("objectivesSize") or 12 end,
-              set=function(v) Set("enemyForcesTextSize", v); Refresh() end },
-            { type="slider", label="Text X", min=-80, max=80, step=1,
-              get=function() return Cfg("enemyForcesTextOffsetX") or 0 end,
-              set=function(v) Set("enemyForcesTextOffsetX", v); Refresh() end },
-            { type="slider", label="Text Y", min=-40, max=40, step=1,
-              get=function() return Cfg("enemyForcesTextOffsetY") or 0 end,
-              set=function(v) Set("enemyForcesTextOffsetY", v); Refresh() end },
-        }, disabled = _forcesOff, disabledTooltip = ModuleOr("Show Enemy Forces") })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    title = "Enemy Forces Text",
+                    gap = 6,
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Hide Label",
+                            get = function()
+                                return Cfg("hideEnemyForcesLabel") == true
+                            end,
+                            set = function(v)
+                                Set("hideEnemyForcesLabel", v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text Size",
+                            min = 8,
+                            max = 24,
+                            step = 1,
+                            get = function()
+                                return Cfg("enemyForcesTextSize") or Cfg("objectivesSize") or 12
+                            end,
+                            set = function(v)
+                                Set("enemyForcesTextSize", v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text X",
+                            min = -80,
+                            max = 80,
+                            step = 1,
+                            get = function()
+                                return Cfg("enemyForcesTextOffsetX") or 0
+                            end,
+                            set = function(v)
+                                Set("enemyForcesTextOffsetX", v)
+                                Refresh()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Text Y",
+                            min = -40,
+                            max = 40,
+                            step = 1,
+                            get = function()
+                                return Cfg("enemyForcesTextOffsetY") or 0
+                            end,
+                            set = function(v)
+                                Set("enemyForcesTextOffsetY", v)
+                                Refresh()
+                            end,
+                        },
+                    },
+                    disabled = _forcesOff,
+                    disabledTooltip = ModuleOr("Show Enemy Forces"),
+                }
+            )
         end
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Enemy Forces Position",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              values={ BOTTOM = "Bottom", UNDER_BAR = "Under Timer Bar" },
-              order={ "BOTTOM", "UNDER_BAR" },
-              getValue=function() return Cfg("enemyForcesPos") or "BOTTOM" end,
-              setValue=function(v) Set("enemyForcesPos", v); Refresh() end },
-            { type="dropdown", text="Forces Bar Texture",
-              tooltip="Texture of the enemy forces bar. The swatches next to it set the Enemy Bar Color (theme accent or a custom color).",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              values=texValues,
-              order=texOrder,
-              getValue=function() return Cfg("enemyBarTexture") or "none" end,
-              setValue=function(v) Set("enemyBarTexture", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Enemy Forces Position",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            values = { BOTTOM = "Bottom", UNDER_BAR = "Under Timer Bar" },
+            order = { "BOTTOM", "UNDER_BAR" },
+            getValue = function()
+                return Cfg("enemyForcesPos") or "BOTTOM"
+            end,
+            setValue = function(v)
+                Set("enemyForcesPos", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Forces Bar Texture",
+            tooltip = "Texture of the enemy forces bar. The swatches next to it set the Enemy Bar Color (theme accent or a custom color).",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            values = texValues,
+            order = texOrder,
+            getValue = function()
+                return Cfg("enemyBarTexture") or "none"
+            end,
+            setValue = function(v)
+                Set("enemyBarTexture", v)
+                Refresh()
+            end,
+        })
         if not CludesUI._prebuilding then
-        -- The background texture cog, then the fill colour (accent or custom) as inline swatches.
-        CludesUI.BuildInlineCog(row._rightRegion, { title = "Bar Texture", gap = 6, rows = {
-            { type="dropdown", label="Background Texture",
-              values=texValues, order=texOrder,
-              get=function() return Cfg("enemyBarBgTexture") or "none" end,
-              set=function(v) Set("enemyBarBgTexture", v); Refresh() end },
-        }, disabled = _forcesOff, disabledTooltip = ModuleOr("Show Enemy Forces") })
-        _AttachInlineAccentSwatches(row._rightRegion, "enemyBarUseAccent", "enemyBarColor", 0.35, 0.55, 0.8,
-            _forcesOff, ModuleOr("Show Enemy Forces"))
+            -- The background texture cog, then the fill colour (accent or custom) as inline swatches.
+            CludesUI.BuildInlineCog(
+                row._rightRegion,
+                {
+                    title = "Bar Texture",
+                    gap = 6,
+                    rows = {
+                        {
+                            type = "dropdown",
+                            label = "Background Texture",
+                            values = texValues,
+                            order = texOrder,
+                            get = function()
+                                return Cfg("enemyBarBgTexture") or "none"
+                            end,
+                            set = function(v)
+                                Set("enemyBarBgTexture", v)
+                                Refresh()
+                            end,
+                        },
+                    },
+                    disabled = _forcesOff,
+                    disabledTooltip = ModuleOr("Show Enemy Forces"),
+                }
+            )
+            _AttachInlineAccentSwatches(
+                row._rightRegion,
+                "enemyBarUseAccent",
+                "enemyBarColor",
+                0.35,
+                0.55,
+                0.8,
+                _forcesOff,
+                ModuleOr("Show Enemy Forces")
+            )
         end
         y = y - h
 
@@ -1087,7 +1934,9 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.ResolveActiveAccent()
             end
             local c = Cfg("enemyBarColor")
-            if c then return c.r or 0.35, c.g or 0.55, c.b or 0.8 end
+            if c then
+                return c.r or 0.35, c.g or 0.55, c.b or 0.8
+            end
             return 0.35, 0.55, 0.8
         end
         local function _pullBarOff()
@@ -1095,126 +1944,296 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Names whichever requirement actually disables the pull controls.
         local function _pullBarReq()
-            if Cfg("enabled") == false then return "the module" end
-            if Cfg("showEnemyBar") == false then return "Show Enemy Forces" end
+            if Cfg("enabled") == false then
+                return "the module"
+            end
+            if Cfg("showEnemyBar") == false then
+                return "Show Enemy Forces"
+            end
             return "Show Current Pull in Bar"
         end
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Current Pull in Bar",
-              disabled=_forcesOff,
-              disabledTooltip=ModuleOr("Show Enemy Forces"),
-              tooltip="Previews the forces of every enemy in combat with a visible nameplate on the enemy forces bar.",
-              getValue=function() return Cfg("showPullBar") == true end,
-              setValue=function(v) Set("showPullBar", v); Refresh(); CludesUI:RefreshPage() end },
-            { type="slider", text="Current Pull Color", min=0, max=100, step=5, isPercent=false, trackWidth=130,
-              disabled=_pullBarOff,
-              disabledTooltip=_pullBarReq,
-              tooltip="Opacity of the current pull on the enemy forces bar.",
-              -- Stored 0..1 internally; displayed 0..100 to the user.
-              getValue=function() return (Cfg("pullBarAlpha") or 0.35) * 100 end,
-              setValue=function(v) Set("pullBarAlpha", v / 100); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Current Pull in Bar",
+            disabled = _forcesOff,
+            disabledTooltip = ModuleOr("Show Enemy Forces"),
+            tooltip = "Previews the forces of every enemy in combat with a visible nameplate on the enemy forces bar.",
+            getValue = function()
+                return Cfg("showPullBar") == true
+            end,
+            setValue = function(v)
+                Set("showPullBar", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Current Pull Color",
+            min = 0,
+            max = 100,
+            step = 5,
+            isPercent = false,
+            trackWidth = 130,
+            disabled = _pullBarOff,
+            disabledTooltip = _pullBarReq,
+            tooltip = "Opacity of the current pull on the enemy forces bar.",
+            -- Stored 0..1 internally; displayed 0..100 to the user.
+            getValue = function()
+                return (Cfg("pullBarAlpha") or 0.35) * 100
+            end,
+            setValue = function(v)
+                Set("pullBarAlpha", v / 100)
+                Refresh()
+            end,
+        })
         if not CludesUI._prebuilding then
-        -- Pull color: follows the enemy bar color by default, or a custom color.
-        _AttachInlineAccentSwatches(row._rightRegion, "pullBarUseBarColor", "pullBarColor", 1, 0.55, 0.1,
-            _pullBarOff, _pullBarReq, "Enemy Bar Color", _enemyBarColor)
+            -- Pull color: follows the enemy bar color by default, or a custom color.
+            _AttachInlineAccentSwatches(
+                row._rightRegion,
+                "pullBarUseBarColor",
+                "pullBarColor",
+                1,
+                0.55,
+                0.1,
+                _pullBarOff,
+                _pullBarReq,
+                "Enemy Bar Color",
+                _enemyBarColor
+            )
         end
         y = y - h
 
-        _, h = W:SectionHeader(parent, "BOSS OBJECTIVES", y); y = y - h
+        _, h = W:SectionHeader(parent, "BOSS OBJECTIVES", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Boss Objectives",
-              disabled=function() return Cfg("enabled") == false end,
-              disabledTooltip="the module",
-              getValue=function() return Cfg("showObjectives") ~= false end,
-              setValue=function(v) Set("showObjectives", v); Refresh(); CludesUI:RefreshPage() end },
-            { type="slider", text="Objectives Size",
-              disabled=function() return Cfg("enabled") == false or Cfg("showObjectives") == false end,
-              disabledTooltip=ModuleOr("Show Boss Objectives"),
-              min=8, max=20, step=1, isPercent=false,
-              getValue=function() return Cfg("objectivesSize") or 12 end,
-              setValue=function(v) Set("objectivesSize", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Boss Objectives",
+            disabled = function()
+                return Cfg("enabled") == false
+            end,
+            disabledTooltip = "the module",
+            getValue = function()
+                return Cfg("showObjectives") ~= false
+            end,
+            setValue = function(v)
+                Set("showObjectives", v)
+                Refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Objectives Size",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showObjectives") == false
+            end,
+            disabledTooltip = ModuleOr("Show Boss Objectives"),
+            min = 8,
+            max = 20,
+            step = 1,
+            isPercent = false,
+            getValue = function()
+                return Cfg("objectivesSize") or 12
+            end,
+            setValue = function(v)
+                Set("objectivesSize", v)
+                Refresh()
+            end,
+        })
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._leftRegion, { title = "Boss Position", gap = 6, rows = {
-            { type="slider", label="Boss X", min=-80, max=80, step=1,
-              get=function() return Cfg("objectiveTextOffsetX") or 0 end,
-              set=function(v) Set("objectiveTextOffsetX", v); Refresh() end },
-            { type="slider", label="Boss Y", min=-40, max=40, step=1,
-              get=function() return Cfg("objectiveTextOffsetY") or 0 end,
-              set=function(v) Set("objectiveTextOffsetY", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showObjectives") == false end, disabledTooltip = ModuleOr("Show Boss Objectives") })
+            CludesUI.BuildInlineCog(row._leftRegion, {
+                title = "Boss Position",
+                gap = 6,
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Boss X",
+                        min = -80,
+                        max = 80,
+                        step = 1,
+                        get = function()
+                            return Cfg("objectiveTextOffsetX") or 0
+                        end,
+                        set = function(v)
+                            Set("objectiveTextOffsetX", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Boss Y",
+                        min = -40,
+                        max = 40,
+                        step = 1,
+                        get = function()
+                            return Cfg("objectiveTextOffsetY") or 0
+                        end,
+                        set = function(v)
+                            Set("objectiveTextOffsetY", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false or Cfg("showObjectives") == false
+                end,
+                disabledTooltip = ModuleOr("Show Boss Objectives"),
+            })
         end
         y = y - h
 
         -- Time Position also places the Split Compare text, so it stays usable
         -- while either the objective times or a compare mode is shown.
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Objective Times",
-              disabled=function() return Cfg("enabled") == false or Cfg("showObjectives") == false end,
-              disabledTooltip=ModuleOr("Show Boss Objectives"),
-              getValue=function() return Cfg("showObjectiveTimes") ~= false end,
-              setValue=function(v) Set("showObjectiveTimes", v); Refresh() end },
-            { type="dropdown", text="Time Position",
-              tooltip="Which side of each boss objective shows its split times and Split Compare text.",
-              disabled=function()
-                  return Cfg("enabled") == false or Cfg("showObjectives") == false
-                      or (Cfg("showObjectiveTimes") == false and (Cfg("objectiveCompareMode") or "NONE") == "NONE")
-              end,
-              disabledTooltip=function()
-                  if Cfg("enabled") == false then return "the module" end
-                  if Cfg("showObjectives") == false then return "Show Boss Objectives" end
-                  return "This option requires Show Objective Times or a Split Compare mode"
-              end,
-              values=objectiveTimePositionValues,
-              order=objectiveTimePositionOrder,
-              getValue=function() return Cfg("objectiveTimePosition") or "RIGHT" end,
-              setValue=function(v) Set("objectiveTimePosition", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Objective Times",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showObjectives") == false
+            end,
+            disabledTooltip = ModuleOr("Show Boss Objectives"),
+            getValue = function()
+                return Cfg("showObjectiveTimes") ~= false
+            end,
+            setValue = function(v)
+                Set("showObjectiveTimes", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Time Position",
+            tooltip = "Which side of each boss objective shows its split times and Split Compare text.",
+            disabled = function()
+                return Cfg("enabled") == false
+                    or Cfg("showObjectives") == false
+                    or (
+                        Cfg("showObjectiveTimes") == false
+                        and (Cfg("objectiveCompareMode") or "NONE") == "NONE"
+                    )
+            end,
+            disabledTooltip = function()
+                if Cfg("enabled") == false then
+                    return "the module"
+                end
+                if Cfg("showObjectives") == false then
+                    return "Show Boss Objectives"
+                end
+                return "This option requires Show Objective Times or a Split Compare mode"
+            end,
+            values = objectiveTimePositionValues,
+            order = objectiveTimePositionOrder,
+            getValue = function()
+                return Cfg("objectiveTimePosition") or "RIGHT"
+            end,
+            setValue = function(v)
+                Set("objectiveTimePosition", v)
+                Refresh()
+            end,
+        })
         y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="slider", pixel=true, text="Objective Spacing",
-              disabled=function() return Cfg("enabled") == false or Cfg("showObjectives") == false end,
-              disabledTooltip=ModuleOr("Show Boss Objectives"),
-              min=0, max=12, step=1, isPercent=false,
-              getValue=function() return Cfg("objectiveGap") or 4 end,
-              setValue=function(v) Set("objectiveGap", v); Refresh() end },
-            { type="dropdown", text="Split Compare",
-              disabled=function() return Cfg("enabled") == false or Cfg("showObjectives") == false end,
-              disabledTooltip=ModuleOr("Show Boss Objectives"),
-              values=compareModeValues,
-              order=compareModeOrder,
-              getValue=function() return Cfg("objectiveCompareMode") or "NONE" end,
-              setValue=function(v) Set("objectiveCompareMode", v); Refresh() end })
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            pixel = true,
+            text = "Objective Spacing",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showObjectives") == false
+            end,
+            disabledTooltip = ModuleOr("Show Boss Objectives"),
+            min = 0,
+            max = 12,
+            step = 1,
+            isPercent = false,
+            getValue = function()
+                return Cfg("objectiveGap") or 4
+            end,
+            setValue = function(v)
+                Set("objectiveGap", v)
+                Refresh()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Split Compare",
+            disabled = function()
+                return Cfg("enabled") == false or Cfg("showObjectives") == false
+            end,
+            disabledTooltip = ModuleOr("Show Boss Objectives"),
+            values = compareModeValues,
+            order = compareModeOrder,
+            getValue = function()
+                return Cfg("objectiveCompareMode") or "NONE"
+            end,
+            setValue = function(v)
+                Set("objectiveCompareMode", v)
+                Refresh()
+            end,
+        })
         -- Split Compare cog: strict scoping (only meaningful for the level scopes,
         -- since Per Dungeon is the fallback it removes) and the upcoming-split target.
         if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(row._rightRegion, { title = "Split Compare", gap = 6, rows = {
-            { type="toggle", label="Always Show Split Times",
-              tooltip="Shows your best split on upcoming bosses instead of only killed ones.",
-              disabled=function() return (Cfg("objectiveCompareMode") or "NONE") == "NONE" end,
-              disabledTooltip="This option requires a Split Compare mode",
-              get=function() return Cfg("showUpcomingSplitTargets") == true end,
-              set=function(v) Set("showUpcomingSplitTargets", v); Refresh() end },
-            { type="toggle", label="Strict Comparison Mode",
-              tooltip="Compare only against splits from the same key level (off: new key levels compare against your dungeon best).",
-              disabled=function()
-                  local mode = Cfg("objectiveCompareMode") or "NONE"
-                  return mode ~= "LEVEL" and mode ~= "LEVEL_AFFIX"
-              end,
-              disabledTooltip="This option requires Split Compare to include a key level",
-              get=function() return Cfg("objectiveCompareStrict") == true end,
-              set=function(v) Set("objectiveCompareStrict", v); Refresh() end },
-            { type="toggle", label="Fastest Run Splits",
-              tooltip="Compare against the splits of your fastest completed run instead of your best individual splits.",
-              disabled=function() return (Cfg("objectiveCompareMode") or "NONE") == "NONE" end,
-              disabledTooltip="This option requires a Split Compare mode",
-              get=function() return Cfg("showFastestRunSplits") == true end,
-              set=function(v) Set("showFastestRunSplits", v); Refresh() end },
-        }, disabled = function() return Cfg("enabled") == false or Cfg("showObjectives") == false end, disabledTooltip = ModuleOr("Show Boss Objectives") })
+            CludesUI.BuildInlineCog(row._rightRegion, {
+                title = "Split Compare",
+                gap = 6,
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Always Show Split Times",
+                        tooltip = "Shows your best split on upcoming bosses instead of only killed ones.",
+                        disabled = function()
+                            return (Cfg("objectiveCompareMode") or "NONE") == "NONE"
+                        end,
+                        disabledTooltip = "This option requires a Split Compare mode",
+                        get = function()
+                            return Cfg("showUpcomingSplitTargets") == true
+                        end,
+                        set = function(v)
+                            Set("showUpcomingSplitTargets", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Strict Comparison Mode",
+                        tooltip = "Compare only against splits from the same key level (off: new key levels compare against your dungeon best).",
+                        disabled = function()
+                            local mode = Cfg("objectiveCompareMode") or "NONE"
+                            return mode ~= "LEVEL" and mode ~= "LEVEL_AFFIX"
+                        end,
+                        disabledTooltip = "This option requires Split Compare to include a key level",
+                        get = function()
+                            return Cfg("objectiveCompareStrict") == true
+                        end,
+                        set = function(v)
+                            Set("objectiveCompareStrict", v)
+                            Refresh()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Fastest Run Splits",
+                        tooltip = "Compare against the splits of your fastest completed run instead of your best individual splits.",
+                        disabled = function()
+                            return (Cfg("objectiveCompareMode") or "NONE") == "NONE"
+                        end,
+                        disabledTooltip = "This option requires a Split Compare mode",
+                        get = function()
+                            return Cfg("showFastestRunSplits") == true
+                        end,
+                        set = function(v)
+                            Set("showFastestRunSplits", v)
+                            Refresh()
+                        end,
+                    },
+                },
+                disabled = function()
+                    return Cfg("enabled") == false or Cfg("showObjectives") == false
+                end,
+                disabledTooltip = ModuleOr("Show Boss Objectives"),
+            })
         end
         y = y - h
 
-        _, h = W:Spacer(parent, y, 20); y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
 
         parent:SetHeight(math.abs(y - yOffset))
     end
@@ -1236,11 +2255,15 @@ initFrame:SetScript("OnEvent", function(self)
     end
     -- The runtime restyles first, the header sample paints second.
     local function TSBRefresh()
-        if ns.TSB_Refresh then ns.TSB_Refresh() end
+        if ns.TSB_Refresh then
+            ns.TSB_Refresh()
+        end
         PvRepaint(tsbPv)
     end
     local function TFBRefresh()
-        if ns.TFB_Refresh then ns.TFB_Refresh() end
+        if ns.TFB_Refresh then
+            ns.TFB_Refresh()
+        end
         PvRepaint(tfbPv)
     end
 
@@ -1248,20 +2271,20 @@ initFrame:SetScript("OnEvent", function(self)
     -- table for every Where to Show list of the module (Targeted Spell Bars,
     -- Kick Tracker).
     local WHERE_LABELS = {
-        open_world        = "Open World",
-        raid_mythic       = "Mythic Raid",
-        raid_heroic       = "Heroic Raid",
-        raid_normal_lfr   = "Normal/LFR Raid",
-        dungeon_mythic    = "Mythic Dungeons",
+        open_world = "Open World",
+        raid_mythic = "Mythic Raid",
+        raid_heroic = "Heroic Raid",
+        raid_normal_lfr = "Normal/LFR Raid",
+        dungeon_mythic = "Mythic Dungeons",
         dungeon_nonmythic = "Non-Mythic Dungeons",
-        timewalking       = "Timewalking",
-        delve             = "Delve",
-        lair              = "Lair",
-        scenario          = "Scenario",
-        arena             = "Arena",
-        battleground      = "Battlegrounds",
-        in_combat         = "In Combat",
-        out_of_combat     = "Out of Combat",
+        timewalking = "Timewalking",
+        delve = "Delve",
+        lair = "Lair",
+        scenario = "Scenario",
+        arena = "Arena",
+        battleground = "Battlegrounds",
+        in_combat = "In Combat",
+        out_of_combat = "Out of Combat",
     }
     ns._MT_WHERE_LABELS = WHERE_LABELS
     -- The bar texture dropdown data, for the Kick Tracker page (its own file).
@@ -1271,15 +2294,29 @@ initFrame:SetScript("OnEvent", function(self)
     -- dropdown (CludesUI.BuildVisOptsCBDropdown) as AuraBuffReminders.
     local TSB_WHERE_ITEMS = {}
     do
-        local keys = { "open_world", "raid_mythic", "raid_heroic", "raid_normal_lfr",
-            "dungeon_mythic", "dungeon_nonmythic", "timewalking", "delve", "lair",
-            "scenario", "in_combat", "out_of_combat" }
+        local keys = {
+            "open_world",
+            "raid_mythic",
+            "raid_heroic",
+            "raid_normal_lfr",
+            "dungeon_mythic",
+            "dungeon_nonmythic",
+            "timewalking",
+            "delve",
+            "lair",
+            "scenario",
+            "in_combat",
+            "out_of_combat",
+        }
         for i = 1, #keys do
             TSB_WHERE_ITEMS[i] = { key = keys[i], label = WHERE_LABELS[keys[i]] }
         end
     end
     local function TSBWhere()
-        local c = TSB(); if not c then return nil end
+        local c = TSB()
+        if not c then
+            return nil
+        end
         c.whereToShow = c.whereToShow or {}
         return c.whereToShow
     end
@@ -1290,7 +2327,10 @@ initFrame:SetScript("OnEvent", function(self)
         return t and t[k] == true or false
     end
     local function TSBWhereSet(k, v)
-        local t = TSBWhere(); if not t then return end
+        local t = TSBWhere()
+        if not t then
+            return
+        end
         t[k] = v and true or nil
         TSBRefresh()
     end
@@ -1301,23 +2341,44 @@ initFrame:SetScript("OnEvent", function(self)
     -- two values, so the guard is a statement: an `and` chain would keep only
     -- the width.
     local tsbBuilder = PvBuilder(tsbPv, {
-        { title = "Cast Bars",
-          on = function() local c = TSB(); return c and c.enabled == true end,
-          paint = function(host)
-              if ns.TSB_PaintSample then return ns.TSB_PaintSample(host) end
-          end },
+        {
+            title = "Cast Bars",
+            on = function()
+                local c = TSB()
+                return c and c.enabled == true
+            end,
+            paint = function(host)
+                if ns.TSB_PaintSample then
+                    return ns.TSB_PaintSample(host)
+                end
+            end,
+        },
     })
     local tfbBuilder = PvBuilder(tfbPv, {
-        { title = "Target Cast Bar",
-          on = function() local c = TFBBar("target"); return c and c.enabled == true end,
-          paint = function(host)
-              if ns.TFB_PaintSample then return ns.TFB_PaintSample(host, "target") end
-          end },
-        { title = "Focus Cast Bar",
-          on = function() local c = TFBBar("focus"); return c and c.enabled == true end,
-          paint = function(host)
-              if ns.TFB_PaintSample then return ns.TFB_PaintSample(host, "focus") end
-          end },
+        {
+            title = "Target Cast Bar",
+            on = function()
+                local c = TFBBar("target")
+                return c and c.enabled == true
+            end,
+            paint = function(host)
+                if ns.TFB_PaintSample then
+                    return ns.TFB_PaintSample(host, "target")
+                end
+            end,
+        },
+        {
+            title = "Focus Cast Bar",
+            on = function()
+                local c = TFBBar("focus")
+                return c and c.enabled == true
+            end,
+            paint = function(host)
+                if ns.TFB_PaintSample then
+                    return ns.TFB_PaintSample(host, "focus")
+                end
+            end,
+        },
     })
 
     ---------------------------------------------------------------------------
@@ -1331,18 +2392,30 @@ initFrame:SetScript("OnEvent", function(self)
     local mtImpGlowDesc
     do
         local GO = CludesUI.GlowOptions
-        local function TsbOff() local c = TSB(); return not (c and c.enabled == true) end
+        local function TsbOff()
+            local c = TSB()
+            return not (c and c.enabled == true)
+        end
         mtImpGlowDesc = {
             host = "engine",
             caps = { mode = true, params = true, bg = true },
             defaultColor = { r = 1, g = 0.2, b = 0.2 },
-            disabled = TsbOff, disabledTooltip = "Enable Cast Bars",
-            isOff = function() local c = TSB(); return not (c and c.importantGlow == true) end,
+            disabled = TsbOff,
+            disabledTooltip = "Enable Cast Bars",
+            isOff = function()
+                local c = TSB()
+                return not (c and c.importantGlow == true)
+            end,
             onChange = TSBRefresh,
             get = function(f)
-                local c = TSB(); if not c then return nil end
-                if f == "style" then return c.importantGlowStyle or 1
-                elseif f == "mode" then return c.importantGlowColorMode or "custom"
+                local c = TSB()
+                if not c then
+                    return nil
+                end
+                if f == "style" then
+                    return c.importantGlowStyle or 1
+                elseif f == "mode" then
+                    return c.importantGlowColorMode or "custom"
                 elseif f == "color" then
                     local col = c.importantGlowColor
                     return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
@@ -1350,17 +2423,34 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.GlowOptions.FlatGet(c, "importantGlow", f)
             end,
             set = function(f, a, b2, c2)
-                local c = TSB(); if not c then return end
+                local c = TSB()
+                if not c then
+                    return
+                end
                 if f == "style" then
-                    if a == 0 then c.importantGlow = false else c.importantGlow = true; c.importantGlowStyle = a end
-                elseif f == "mode" then c.importantGlowColorMode = a
-                else CludesUI.GlowOptions.FlatSet(c, "importantGlow", f, a, b2, c2)
+                    if a == 0 then
+                        c.importantGlow = false
+                    else
+                        c.importantGlow = true
+                        c.importantGlowStyle = a
+                    end
+                elseif f == "mode" then
+                    c.importantGlowColorMode = a
+                else
+                    CludesUI.GlowOptions.FlatSet(c, "importantGlow", f, a, b2, c2)
                 end
             end,
         }
-        GO.RegisterSite({ id = "mt_importantcast", label = "Important Cast Glow", group = "module",
-            module = "CludesUIMythicTimer", page = PAGE_TSB, section = "INTERRUPT AND VISIBILITY",
-            highlight = "Important Cast Glow", desc = mtImpGlowDesc })
+        GO.RegisterSite({
+            id = "mt_importantcast",
+            label = "Important Cast Glow",
+            group = "module",
+            module = "CludesUIMythicTimer",
+            page = PAGE_TSB,
+            section = "INTERRUPT AND VISIBILITY",
+            highlight = "Important Cast Glow",
+            desc = mtImpGlowDesc,
+        })
     end
 
     local function BuildTSBPage(pageName, parent, yOffset)
@@ -1375,208 +2465,612 @@ initFrame:SetScript("OnEvent", function(self)
             local c = TSB()
             return c and c.enabled == true
         end
-        local function Off() return not On() end
+        local function Off()
+            return not On()
+        end
         local REQ = "Enable Cast Bars"
 
         local hdr
-        hdr, h = W:SectionHeader(parent, "CAST BARS", y); y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "EMT_TargetedSpellBars", disabled = Off, disabledTooltip = REQ })
+        hdr, h = W:SectionHeader(parent, "CAST BARS", y)
+        y = y - h
+        CludesUI.BuildSectionUnlockJump(
+            hdr,
+            { key = "EMT_TargetedSpellBars", disabled = Off, disabledTooltip = REQ }
+        )
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Cast Bars",
-              tooltip="Show one plain cast bar per enemy nameplate that is casting, gathered into a single movable group with the spell name, its target, and the cast timer.",
-              getValue=On,
-              setValue=function(v)
-                  local c = TSB(); if not c then return end
-                  c.enabled = v and true or false
-                  TSBRefresh(); CludesUI:RefreshPage()
-              end },
-            { type="dropdown", text="Where to Show",
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="Limit the bars to the selected content and combat states; nothing selected shows them everywhere.",
-              values={ _placeholder="..." }, order={ "_placeholder" },
-              getValue=function() return "_placeholder" end, setValue=function() end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Cast Bars",
+            tooltip = "Show one plain cast bar per enemy nameplate that is casting, gathered into a single movable group with the spell name, its target, and the cast timer.",
+            getValue = On,
+            setValue = function(v)
+                local c = TSB()
+                if not c then
+                    return
+                end
+                c.enabled = v and true or false
+                TSBRefresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Where to Show",
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "Limit the bars to the selected content and combat states; nothing selected shows them everywhere.",
+            values = { _placeholder = "..." },
+            order = { "_placeholder" },
+            getValue = function()
+                return "_placeholder"
+            end,
+            setValue = function() end,
+        })
+        y = y - h
         if not CludesUI._prebuilding then
             local rrgn = row._rightRegion
-            if rrgn._control then rrgn._control:Hide() end
+            if rrgn._control then
+                rrgn._control:Hide()
+            end
             local whereDD, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rrgn, 220, rrgn:GetFrameLevel() + 2, TSB_WHERE_ITEMS,
-                TSBWhereGet, TSBWhereSet,
-                nil, nil, nil, nil, nil, { disabled = Off, disabledTooltip = REQ, emptyLabel = "All" })
+                rrgn,
+                220,
+                rrgn:GetFrameLevel() + 2,
+                TSB_WHERE_ITEMS,
+                TSBWhereGet,
+                TSBWhereSet,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                { disabled = Off, disabledTooltip = REQ, emptyLabel = "All" }
+            )
             CludesUI.PanelPP.Point(whereDD, "RIGHT", rrgn, "RIGHT", -20, 0)
             rrgn._control = whereDD
             rrgn._lastInline = nil
             CludesUI.RegisterWidgetRefresh(whereRefresh)
         end
 
-        _, h = W:DualRow(parent, y,
-            { type="segmented", text="Grow Direction",
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="Which way new bars stack as more enemies start casting.",
-              values={ DOWN="Down", UP="Up" }, order={ "DOWN", "UP" },
-              getValue=function()
-                  local c = TSB()
-                  return (c and c.growUp) and "UP" or "DOWN"
-              end,
-              setValue=function(v)
-                  local c = TSB(); if not c then return end
-                  c.growUp = v == "UP"
-                  TSBRefresh()
-              end },
-            { type="slider", text="Width", min=80, max=600, step=1, pixel=true,
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return (c and c.width) or 240 end,
-              setValue=function(v) local c = TSB(); if c then c.width = v; TSBRefresh() end end });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "segmented",
+            text = "Grow Direction",
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "Which way new bars stack as more enemies start casting.",
+            values = { DOWN = "Down", UP = "Up" },
+            order = { "DOWN", "UP" },
+            getValue = function()
+                local c = TSB()
+                return (c and c.growUp) and "UP" or "DOWN"
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if not c then
+                    return
+                end
+                c.growUp = v == "UP"
+                TSBRefresh()
+            end,
+        }, {
+            type = "slider",
+            text = "Width",
+            min = 80,
+            max = 600,
+            step = 1,
+            pixel = true,
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return (c and c.width) or 240
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.width = v
+                    TSBRefresh()
+                end
+            end,
+        })
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Height", min=6, max=60, step=1, pixel=true,
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return (c and c.height) or 20 end,
-              setValue=function(v) local c = TSB(); if c then c.height = v; TSBRefresh() end end },
-            { type="slider", text="Bar Spacing", min=0, max=20, step=1, pixel=true,
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return (c and c.spacing) or 4 end,
-              setValue=function(v) local c = TSB(); if c then c.spacing = v; TSBRefresh() end end });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Height",
+            min = 6,
+            max = 60,
+            step = 1,
+            pixel = true,
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return (c and c.height) or 20
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.height = v
+                    TSBRefresh()
+                end
+            end,
+        }, {
+            type = "slider",
+            text = "Bar Spacing",
+            min = 0,
+            max = 20,
+            step = 1,
+            pixel = true,
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return (c and c.spacing) or 4
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.spacing = v
+                    TSBRefresh()
+                end
+            end,
+        })
+        y = y - h
 
         local texValues, texOrder = BuildBarTexDropdown()
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Max Bars", min=1, max=10, step=1,
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="The most cast bars shown at once. Extra casters take a bar as soon as one frees up.",
-              getValue=function() local c = TSB(); return (c and c.maxBars) or 5 end,
-              setValue=function(v) local c = TSB(); if c then c.maxBars = v; TSBRefresh() end end },
-            { type="dropdown", text="Bar Texture",
-              disabled=Off, disabledTooltip=REQ,
-              values=texValues, order=texOrder,
-              getValue=function() local c = TSB(); return (c and c.texture) or "none" end,
-              setValue=function(v) local c = TSB(); if c then c.texture = v; TSBRefresh() end end });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Max Bars",
+            min = 1,
+            max = 10,
+            step = 1,
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "The most cast bars shown at once. Extra casters take a bar as soon as one frees up.",
+            getValue = function()
+                local c = TSB()
+                return (c and c.maxBars) or 5
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.maxBars = v
+                    TSBRefresh()
+                end
+            end,
+        }, {
+            type = "dropdown",
+            text = "Bar Texture",
+            disabled = Off,
+            disabledTooltip = REQ,
+            values = texValues,
+            order = texOrder,
+            getValue = function()
+                local c = TSB()
+                return (c and c.texture) or "none"
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.texture = v
+                    TSBRefresh()
+                end
+            end,
+        })
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="multiSwatch", text="Background Color",
-              disabled=Off, disabledTooltip=REQ,
-              swatches = {
-                { tooltip = "Background Color", hasAlpha = true,
-                  getValue = function()
-                      local c = TSB()
-                      local col = c and c.bgColor
-                      return (col and col.r) or 0, (col and col.g) or 0, (col and col.b) or 0, (col and col.a) or 0.45
-                  end,
-                  setValue = function(r, g, b, a)
-                      local c = TSB(); if not c then return end
-                      c.bgColor = { r = r, g = g, b = b, a = a }
-                      TSBRefresh()
-                  end },
-              } },
-            { type="slider", text="Border Size", min=0, max=5, step=1, pixel=true,
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function()
-                  local c = TSB()
-                  local v = c and c.borderSize
-                  if v == nil then v = 1 end
-                  return v
-              end,
-              setValue=function(v) local c = TSB(); if c then c.borderSize = v; TSBRefresh() end end });  y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "multiSwatch",
+                text = "Background Color",
+                disabled = Off,
+                disabledTooltip = REQ,
+                swatches = {
+                    {
+                        tooltip = "Background Color",
+                        hasAlpha = true,
+                        getValue = function()
+                            local c = TSB()
+                            local col = c and c.bgColor
+                            return (col and col.r) or 0,
+                                (col and col.g) or 0,
+                                (col and col.b) or 0,
+                                (col and col.a) or 0.45
+                        end,
+                        setValue = function(r, g, b, a)
+                            local c = TSB()
+                            if not c then
+                                return
+                            end
+                            c.bgColor = { r = r, g = g, b = b, a = a }
+                            TSBRefresh()
+                        end,
+                    },
+                },
+            },
+            {
+                type = "slider",
+                text = "Border Size",
+                min = 0,
+                max = 5,
+                step = 1,
+                pixel = true,
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = TSB()
+                    local v = c and c.borderSize
+                    if v == nil then
+                        v = 1
+                    end
+                    return v
+                end,
+                setValue = function(v)
+                    local c = TSB()
+                    if c then
+                        c.borderSize = v
+                        TSBRefresh()
+                    end
+                end,
+            }
+        )
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Icon",
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return not c or c.showIcon ~= false end,
-              setValue=function(v) local c = TSB(); if c then c.showIcon = v and true or false; TSBRefresh() end end },
-            { type="toggle", text="Show Spell Name",
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return not c or c.showSpellName ~= false end,
-              setValue=function(v) local c = TSB(); if c then c.showSpellName = v and true or false; TSBRefresh() end end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Icon",
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return not c or c.showIcon ~= false
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.showIcon = v and true or false
+                    TSBRefresh()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Show Spell Name",
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return not c or c.showSpellName ~= false
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.showSpellName = v and true or false
+                    TSBRefresh()
+                end
+            end,
+        })
+        y = y - h
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Spell Icon Settings",
-                title = "Spell Icon Settings",
-                rows = {
-                    { type="toggle", label="Icon on Right",
-                      tooltip = "Attach the spell icon to the right of the cast bar instead of the left.",
-                      get=function() local c = TSB(); return c and c.iconOnRight end,
-                      set=function(v) local c = TSB(); if c then c.iconOnRight = v; TSBRefresh() end end },
-                    { type="toggle", label="Show Icon Divider",
-                      tooltip = "Draw a 1px divider between the spell icon and the cast bar, matching the border color.",
-                      get=function() local c = TSB(); return c and c.showIconDivider end,
-                      set=function(v) local c = TSB(); if c then c.showIconDivider = v; TSBRefresh() end end },
-                },
-            })
-            CludesUI.BuildInlineCog(row._rightRegion, { tip = "Spell Name Settings",
-                title = "Spell Name",
-                rows = {
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function() local c = TSB(); return (c and c.nameSize) or 10 end,
-                      set=function(v) local c = TSB(); if c then c.nameSize = v; TSBRefresh() end end },
-                    { type="slider", label="X Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.nameX) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.nameX = v; TSBRefresh() end end },
-                    { type="slider", label="Y Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.nameY) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.nameY = v; TSBRefresh() end end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Spell Icon Settings",
+                    title = "Spell Icon Settings",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Icon on Right",
+                            tooltip = "Attach the spell icon to the right of the cast bar instead of the left.",
+                            get = function()
+                                local c = TSB()
+                                return c and c.iconOnRight
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.iconOnRight = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Show Icon Divider",
+                            tooltip = "Draw a 1px divider between the spell icon and the cast bar, matching the border color.",
+                            get = function()
+                                local c = TSB()
+                                return c and c.showIconDivider
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.showIconDivider = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                    },
+                }
+            )
+            CludesUI.BuildInlineCog(
+                row._rightRegion,
+                {
+                    tip = "Spell Name Settings",
+                    title = "Spell Name",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Text Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.nameSize) or 10
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.nameSize = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.nameX) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.nameX = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.nameY) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.nameY = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                    },
+                }
+            )
         end
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Cast Timer",
-              disabled=Off, disabledTooltip=REQ,
-              getValue=function() local c = TSB(); return not c or c.showTimer ~= false end,
-              setValue=function(v) local c = TSB(); if c then c.showTimer = v and true or false; TSBRefresh() end end },
-            { type="toggle", text="Show Spell Target",
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="Show who each spell is being cast on, exactly like the nameplate cast bars.",
-              getValue=function() local c = TSB(); return not c or c.showTarget ~= false end,
-              setValue=function(v) local c = TSB(); if c then c.showTarget = v and true or false; TSBRefresh() end end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Cast Timer",
+            disabled = Off,
+            disabledTooltip = REQ,
+            getValue = function()
+                local c = TSB()
+                return not c or c.showTimer ~= false
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.showTimer = v and true or false
+                    TSBRefresh()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Show Spell Target",
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "Show who each spell is being cast on, exactly like the nameplate cast bars.",
+            getValue = function()
+                local c = TSB()
+                return not c or c.showTarget ~= false
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if c then
+                    c.showTarget = v and true or false
+                    TSBRefresh()
+                end
+            end,
+        })
+        y = y - h
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Cast Timer Settings",
-                title = "Cast Timer",
-                rows = {
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function() local c = TSB(); return (c and c.timerSize) or 10 end,
-                      set=function(v) local c = TSB(); if c then c.timerSize = v; TSBRefresh() end end },
-                    { type="slider", label="X Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.timerX) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.timerX = v; TSBRefresh() end end },
-                    { type="slider", label="Y Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.timerY) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.timerY = v; TSBRefresh() end end },
-                },
-            })
-            CludesUI.BuildInlineCog(row._rightRegion, { tip = "Spell Target Settings",
-                title = "Spell Target",
-                rows = {
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function() local c = TSB(); return (c and c.targetSize) or 10 end,
-                      set=function(v) local c = TSB(); if c then c.targetSize = v; TSBRefresh() end end },
-                    { type="slider", label="X Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.targetX) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.targetX = v; TSBRefresh() end end },
-                    { type="slider", label="Y Offset", min=-100, max=100, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.targetY) or 0 end,
-                      set=function(v) local c = TSB(); if c then c.targetY = v; TSBRefresh() end end },
-                    { type="toggle", label="Class Colored Names",
-                      get=function() local c = TSB(); return not c or c.targetClassColor ~= false end,
-                      set=function(v) local c = TSB(); if c then c.targetClassColor = v and true or false; TSBRefresh() end end },
-                    { type="colorpicker", label="Custom Color",
-                      disabled=function() local c = TSB(); return not c or c.targetClassColor ~= false end,
-                      disabledTooltip="Class Colored Names to be off",
-                      get=function()
-                          local c = TSB()
-                          local col = c and c.targetColor
-                          return (col and col.r) or 1, (col and col.g) or 1, (col and col.b) or 1
-                      end,
-                      set=function(r, g, b)
-                          local c = TSB(); if not c then return end
-                          c.targetColor = { r = r, g = g, b = b }
-                          TSBRefresh()
-                      end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Cast Timer Settings",
+                    title = "Cast Timer",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Text Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.timerSize) or 10
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.timerSize = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.timerX) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.timerX = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.timerY) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.timerY = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                    },
+                }
+            )
+            CludesUI.BuildInlineCog(
+                row._rightRegion,
+                {
+                    tip = "Spell Target Settings",
+                    title = "Spell Target",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Text Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.targetSize) or 10
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.targetSize = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.targetX) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.targetX = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.targetY) or 0
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.targetY = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Class Colored Names",
+                            get = function()
+                                local c = TSB()
+                                return not c or c.targetClassColor ~= false
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.targetClassColor = v and true or false
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "colorpicker",
+                            label = "Custom Color",
+                            disabled = function()
+                                local c = TSB()
+                                return not c or c.targetClassColor ~= false
+                            end,
+                            disabledTooltip = "Class Colored Names to be off",
+                            get = function()
+                                local c = TSB()
+                                local col = c and c.targetColor
+                                return (col and col.r) or 1, (col and col.g) or 1, (col and col.b) or 1
+                            end,
+                            set = function(r, g, b)
+                                local c = TSB()
+                                if not c then
+                                    return
+                                end
+                                c.targetColor = { r = r, g = g, b = b }
+                                TSBRefresh()
+                            end,
+                        },
+                    },
+                }
+            )
         end
 
         ---------------------------------------------------------------------
         --  Interrupt awareness and visibility
         ---------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "INTERRUPT AND VISIBILITY", y); y = y - h
+        _, h = W:SectionHeader(parent, "INTERRUPT AND VISIBILITY", y)
+        y = y - h
 
         local GO = CludesUI.GlowOptions
         local mtDesc = mtImpGlowDesc
@@ -1585,119 +3079,226 @@ initFrame:SetScript("OnEvent", function(self)
         -- off switch; 4 swatches + cog for the separate opt-in Important
         -- Cast tint) | Important Cast Glow (dropdown-as-enable + inline cog
         -- + glow-color swatches, same layout as the Nameplates module).
-        row, h = W:DualRow(parent, y,
-            { type="multiSwatch", text="Cast Colors",
-              disabled=Off, disabledTooltip=REQ,
-              swatches = {
-                { tooltip = "Interruptible Cast",
-                  getValue = function()
-                      local c = TSB()
-                      local col = c and c.barColor
-                      return (col and col.r) or 0.70, (col and col.g) or 0.40, (col and col.b) or 0.90
-                  end,
-                  setValue = function(r, g, b)
-                      local c = TSB(); if not c then return end
-                      c.barColor = { r = r, g = g, b = b }
-                      TSBRefresh()
-                  end },
-                { tooltip = "Interrupt on CD",
-                  getValue = function()
-                      local c = TSB()
-                      local col = c and c.interruptReady
-                      return (col and col.r) or 0.92, (col and col.g) or 0.35, (col and col.b) or 0.20
-                  end,
-                  setValue = function(r, g, b)
-                      local c = TSB(); if not c then return end
-                      c.interruptReady = { r = r, g = g, b = b }
-                      TSBRefresh()
-                  end },
-                { tooltip = "Uninterruptible Cast",
-                  getValue = function()
-                      local c = TSB()
-                      local col = c and c.uninterruptible
-                      return (col and col.r) or 0.45, (col and col.g) or 0.45, (col and col.b) or 0.45
-                  end,
-                  setValue = function(r, g, b)
-                      local c = TSB(); if not c then return end
-                      c.uninterruptible = { r = r, g = g, b = b }
-                      TSBRefresh()
-                  end },
-                { tooltip = "Important Cast",
-                  disabled = function() local c = TSB(); return not (c and c.importantEnabled == true) end,
-                  disabledTooltip = "Important Cast Color",
-                  getValue = function()
-                      local c = TSB()
-                      local col = c and c.importantColor
-                      return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
-                  end,
-                  setValue = function(r, g, b)
-                      local c = TSB(); if not c then return end
-                      c.importantColor = { r = r, g = g, b = b }
-                      TSBRefresh()
-                  end },
-              } },
-            GO.DropdownSpec(mtDesc, "Important Cast Glow",
-                "Glow the bar when the enemy casts a spell Blizzard flags as important."));  y = y - h
+        row, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "multiSwatch",
+                text = "Cast Colors",
+                disabled = Off,
+                disabledTooltip = REQ,
+                swatches = {
+                    {
+                        tooltip = "Interruptible Cast",
+                        getValue = function()
+                            local c = TSB()
+                            local col = c and c.barColor
+                            return (col and col.r) or 0.70, (col and col.g) or 0.40, (col and col.b) or 0.90
+                        end,
+                        setValue = function(r, g, b)
+                            local c = TSB()
+                            if not c then
+                                return
+                            end
+                            c.barColor = { r = r, g = g, b = b }
+                            TSBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Interrupt on CD",
+                        getValue = function()
+                            local c = TSB()
+                            local col = c and c.interruptReady
+                            return (col and col.r) or 0.92, (col and col.g) or 0.35, (col and col.b) or 0.20
+                        end,
+                        setValue = function(r, g, b)
+                            local c = TSB()
+                            if not c then
+                                return
+                            end
+                            c.interruptReady = { r = r, g = g, b = b }
+                            TSBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Uninterruptible Cast",
+                        getValue = function()
+                            local c = TSB()
+                            local col = c and c.uninterruptible
+                            return (col and col.r) or 0.45, (col and col.g) or 0.45, (col and col.b) or 0.45
+                        end,
+                        setValue = function(r, g, b)
+                            local c = TSB()
+                            if not c then
+                                return
+                            end
+                            c.uninterruptible = { r = r, g = g, b = b }
+                            TSBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Important Cast",
+                        disabled = function()
+                            local c = TSB()
+                            return not (c and c.importantEnabled == true)
+                        end,
+                        disabledTooltip = "Important Cast Color",
+                        getValue = function()
+                            local c = TSB()
+                            local col = c and c.importantColor
+                            return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
+                        end,
+                        setValue = function(r, g, b)
+                            local c = TSB()
+                            if not c then
+                                return
+                            end
+                            c.importantColor = { r = r, g = g, b = b }
+                            TSBRefresh()
+                        end,
+                    },
+                },
+            },
+            GO.DropdownSpec(
+                mtDesc,
+                "Important Cast Glow",
+                "Glow the bar when the enemy casts a spell Blizzard flags as important."
+            )
+        )
+        y = y - h
 
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Important Cast Color",
-                title = "Important Cast Color",
-                rows = {
-                    { type="toggle", label="Important Cast Color",
-                      tooltip="Tint the bar with the Important colour when the enemy casts a spell the game flags as important.",
-                      get=function() local c = TSB(); return c and c.importantEnabled == true end,
-                      set=function(v)
-                          local c = TSB(); if not c then return end
-                          c.importantEnabled = v and true or false
-                          TSBRefresh(); CludesUI:RefreshPage()
-                      end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Important Cast Color",
+                    title = "Important Cast Color",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Important Cast Color",
+                            tooltip = "Tint the bar with the Important colour when the enemy casts a spell the game flags as important.",
+                            get = function()
+                                local c = TSB()
+                                return c and c.importantEnabled == true
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if not c then
+                                    return
+                                end
+                                c.importantEnabled = v and true or false
+                                TSBRefresh()
+                                CludesUI:RefreshPage()
+                            end,
+                        },
+                    },
+                }
+            )
 
             GO.AttachInline(row._rightRegion, mtDesc)
         end
 
         -- Row: Fade Out of Interrupt Range | Show Raid Target Marker.
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Fade Out of Interrupt Range",
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="Fade a bar when the enemy is beyond your active interrupt spell's range. Has no effect for specs without an interrupt.",
-              getValue=function() local c = TSB(); return c and c.oorEnabled == true end,
-              setValue=function(v)
-                  local c = TSB(); if not c then return end
-                  c.oorEnabled = v and true or false
-                  TSBRefresh()
-              end },
-            { type="toggle", text="Show Raid Target Marker",
-              disabled=Off, disabledTooltip=REQ,
-              tooltip="Show the enemy's raid target marker to the left of the spell name.",
-              getValue=function() local c = TSB(); return c and c.showRaidMarker == true end,
-              setValue=function(v)
-                  local c = TSB(); if not c then return end
-                  c.showRaidMarker = v and true or false
-                  TSBRefresh()
-              end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Fade Out of Interrupt Range",
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "Fade a bar when the enemy is beyond your active interrupt spell's range. Has no effect for specs without an interrupt.",
+            getValue = function()
+                local c = TSB()
+                return c and c.oorEnabled == true
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if not c then
+                    return
+                end
+                c.oorEnabled = v and true or false
+                TSBRefresh()
+            end,
+        }, {
+            type = "toggle",
+            text = "Show Raid Target Marker",
+            disabled = Off,
+            disabledTooltip = REQ,
+            tooltip = "Show the enemy's raid target marker to the left of the spell name.",
+            getValue = function()
+                local c = TSB()
+                return c and c.showRaidMarker == true
+            end,
+            setValue = function(v)
+                local c = TSB()
+                if not c then
+                    return
+                end
+                c.showRaidMarker = v and true or false
+                TSBRefresh()
+            end,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Range Fade Settings",
-                title = "Fade Out of Interrupt Range",
-                rows = {
-                    { type="slider", label="Opacity", min=0, max=100, step=5,
-                      get=function() local c = TSB(); return math.floor(((c and c.oorAlpha) or 0.45) * 100 + 0.5) end,
-                      set=function(v) local c = TSB(); if c then c.oorAlpha = v / 100; TSBRefresh() end end },
-                },
-            })
-            CludesUI.BuildInlineCog(row._rightRegion, { tip = "Raid Marker Settings",
-                title = "Raid Target Marker",
-                rows = {
-                    { type="slider", label="Marker Size", min=6, max=30, step=1, pixel=true,
-                      get=function() local c = TSB(); return (c and c.raidMarkerSize) or 14 end,
-                      set=function(v) local c = TSB(); if c then c.raidMarkerSize = v; TSBRefresh() end end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Range Fade Settings",
+                    title = "Fade Out of Interrupt Range",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Opacity",
+                            min = 0,
+                            max = 100,
+                            step = 5,
+                            get = function()
+                                local c = TSB()
+                                return math.floor(((c and c.oorAlpha) or 0.45) * 100 + 0.5)
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.oorAlpha = v / 100
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                    },
+                }
+            )
+            CludesUI.BuildInlineCog(
+                row._rightRegion,
+                {
+                    tip = "Raid Marker Settings",
+                    title = "Raid Target Marker",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Marker Size",
+                            min = 6,
+                            max = 30,
+                            step = 1,
+                            pixel = true,
+                            get = function()
+                                local c = TSB()
+                                return (c and c.raidMarkerSize) or 14
+                            end,
+                            set = function(v)
+                                local c = TSB()
+                                if c then
+                                    c.raidMarkerSize = v
+                                    TSBRefresh()
+                                end
+                            end,
+                        },
+                    },
+                }
+            )
         end
 
-        _, h = W:Spacer(parent, y, 20); y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
         parent:SetHeight(math.abs(y - yOffset))
     end
 
@@ -1722,121 +3323,309 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- One section per bar; identical rows driven by `which`.
         local function BuildBarSection(which, header, enableLabel)
-            local function C() return TFBBar(which) end
+            local function C()
+                return TFBBar(which)
+            end
             local function On()
                 local c = C()
                 return c and c.enabled == true
             end
-            local function Off() return not On() end
+            local function Off()
+                return not On()
+            end
             local REQ = enableLabel
 
             local hdr
-            hdr, h = W:SectionHeader(parent, header, y); y = y - h
+            hdr, h = W:SectionHeader(parent, header, y)
+            y = y - h
             CludesUI.BuildSectionUnlockJump(hdr, {
                 key = (which == "target") and "EMT_TargetCastBar" or "EMT_FocusCastBar",
-                disabled = Off, disabledTooltip = REQ })
+                disabled = Off,
+                disabledTooltip = REQ,
+            })
 
-            row, h = W:DualRow(parent, y,
-                { type="toggle", text=enableLabel,
-                  tooltip="A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
-                  getValue=On,
-                  setValue=function(v)
-                      local c = C(); if not c then return end
-                      c.enabled = v and true or false
-                      TFBRefresh(); CludesUI:RefreshPage()
-                  end },
-                { type="dropdown", text="Bar Texture",
-                  disabled=Off, disabledTooltip=REQ,
-                  values=texValues, order=texOrder,
-                  getValue=function() local c = C(); return (c and c.texture) or "none" end,
-                  setValue=function(v) local c = C(); if c then c.texture = v; TFBRefresh() end end });  y = y - h
+            row, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = enableLabel,
+                tooltip = "A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
+                getValue = On,
+                setValue = function(v)
+                    local c = C()
+                    if not c then
+                        return
+                    end
+                    c.enabled = v and true or false
+                    TFBRefresh()
+                    CludesUI:RefreshPage()
+                end,
+            }, {
+                type = "dropdown",
+                text = "Bar Texture",
+                disabled = Off,
+                disabledTooltip = REQ,
+                values = texValues,
+                order = texOrder,
+                getValue = function()
+                    local c = C()
+                    return (c and c.texture) or "none"
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.texture = v
+                        TFBRefresh()
+                    end
+                end,
+            })
+            y = y - h
 
-            _, h = W:DualRow(parent, y,
-                { type="slider", text="Width", min=80, max=600, step=1, pixel=true,
-                  disabled=Off, disabledTooltip=REQ,
-                  getValue=function() local c = C(); return (c and c.width) or 260 end,
-                  setValue=function(v) local c = C(); if c then c.width = v; TFBRefresh() end end },
-                { type="slider", text="Height", min=6, max=60, step=1, pixel=true,
-                  disabled=Off, disabledTooltip=REQ,
-                  getValue=function() local c = C(); return (c and c.height) or 22 end,
-                  setValue=function(v) local c = C(); if c then c.height = v; TFBRefresh() end end });  y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "slider",
+                text = "Width",
+                min = 80,
+                max = 600,
+                step = 1,
+                pixel = true,
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = C()
+                    return (c and c.width) or 260
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.width = v
+                        TFBRefresh()
+                    end
+                end,
+            }, {
+                type = "slider",
+                text = "Height",
+                min = 6,
+                max = 60,
+                step = 1,
+                pixel = true,
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = C()
+                    return (c and c.height) or 22
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.height = v
+                        TFBRefresh()
+                    end
+                end,
+            })
+            y = y - h
 
-            row, h = W:DualRow(parent, y,
-                { type="toggle", text="Show Spell Name",
-                  disabled=Off, disabledTooltip=REQ,
-                  getValue=function() local c = C(); return not c or c.showSpellName ~= false end,
-                  setValue=function(v) local c = C(); if c then c.showSpellName = v and true or false; TFBRefresh() end end },
-                { type="toggle", text="Show Cast Timer",
-                  disabled=Off, disabledTooltip=REQ,
-                  getValue=function() local c = C(); return not c or c.showTimer ~= false end,
-                  setValue=function(v) local c = C(); if c then c.showTimer = v and true or false; TFBRefresh() end end });  y = y - h
+            row, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Show Spell Name",
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = C()
+                    return not c or c.showSpellName ~= false
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.showSpellName = v and true or false
+                        TFBRefresh()
+                    end
+                end,
+            }, {
+                type = "toggle",
+                text = "Show Cast Timer",
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = C()
+                    return not c or c.showTimer ~= false
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.showTimer = v and true or false
+                        TFBRefresh()
+                    end
+                end,
+            })
+            y = y - h
             if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(row._leftRegion, { tip = "Spell Name Settings",
-                    title = "Spell Name",
-                    disabled = Off, disabledTooltip = REQ,
-                    rows = {
-                        { type="slider", label="Text Size", min=6, max=22, step=1,
-                          get=function() local c = C(); return (c and c.nameSize) or 11 end,
-                          set=function(v) local c = C(); if c then c.nameSize = v; TFBRefresh() end end },
-                    },
-                })
-                CludesUI.BuildInlineCog(row._rightRegion, { tip = "Cast Timer Settings",
-                    title = "Cast Timer",
-                    disabled = Off, disabledTooltip = REQ,
-                    rows = {
-                        { type="slider", label="Text Size", min=6, max=22, step=1,
-                          get=function() local c = C(); return (c and c.timerSize) or 11 end,
-                          set=function(v) local c = C(); if c then c.timerSize = v; TFBRefresh() end end },
-                    },
-                })
+                CludesUI.BuildInlineCog(
+                    row._leftRegion,
+                    {
+                        tip = "Spell Name Settings",
+                        title = "Spell Name",
+                        disabled = Off,
+                        disabledTooltip = REQ,
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Text Size",
+                                min = 6,
+                                max = 22,
+                                step = 1,
+                                get = function()
+                                    local c = C()
+                                    return (c and c.nameSize) or 11
+                                end,
+                                set = function(v)
+                                    local c = C()
+                                    if c then
+                                        c.nameSize = v
+                                        TFBRefresh()
+                                    end
+                                end,
+                            },
+                        },
+                    }
+                )
+                CludesUI.BuildInlineCog(
+                    row._rightRegion,
+                    {
+                        tip = "Cast Timer Settings",
+                        title = "Cast Timer",
+                        disabled = Off,
+                        disabledTooltip = REQ,
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Text Size",
+                                min = 6,
+                                max = 22,
+                                step = 1,
+                                get = function()
+                                    local c = C()
+                                    return (c and c.timerSize) or 11
+                                end,
+                                set = function(v)
+                                    local c = C()
+                                    if c then
+                                        c.timerSize = v
+                                        TFBRefresh()
+                                    end
+                                end,
+                            },
+                        },
+                    }
+                )
             end
 
-            row, h = W:DualRow(parent, y,
-                { type="toggle", text="Show Icon",
-                  disabled=Off, disabledTooltip=REQ,
-                  getValue=function() local c = C(); return not c or c.showIcon ~= false end,
-                  setValue=function(v) local c = C(); if c then c.showIcon = v and true or false; TFBRefresh() end end },
-                { type="toggle", text="Show Spell Target",
-                  disabled=Off, disabledTooltip=REQ,
-                  tooltip="Show who the spell is being cast on, exactly like the nameplate cast bars.",
-                  -- Per bar; an unset bar inherits the former shared toggle.
-                  getValue=function()
-                      local c = C()
-                      local v = c and c.showTarget
-                      if v == nil then
-                          local t = TFB()
-                          v = not t or t.showTarget ~= false
-                      end
-                      return v
-                  end,
-                  setValue=function(v) local c = C(); if c then c.showTarget = v and true or false; TFBRefresh() end end });  y = y - h
+            row, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Show Icon",
+                disabled = Off,
+                disabledTooltip = REQ,
+                getValue = function()
+                    local c = C()
+                    return not c or c.showIcon ~= false
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.showIcon = v and true or false
+                        TFBRefresh()
+                    end
+                end,
+            }, {
+                type = "toggle",
+                text = "Show Spell Target",
+                disabled = Off,
+                disabledTooltip = REQ,
+                tooltip = "Show who the spell is being cast on, exactly like the nameplate cast bars.",
+                -- Per bar; an unset bar inherits the former shared toggle.
+                getValue = function()
+                    local c = C()
+                    local v = c and c.showTarget
+                    if v == nil then
+                        local t = TFB()
+                        v = not t or t.showTarget ~= false
+                    end
+                    return v
+                end,
+                setValue = function(v)
+                    local c = C()
+                    if c then
+                        c.showTarget = v and true or false
+                        TFBRefresh()
+                    end
+                end,
+            })
+            y = y - h
             if not CludesUI._prebuilding then
                 -- Colors are shared by both bars; only the text size is per bar.
-                CludesUI.BuildInlineCog(row._rightRegion, { tip = "Spell Target Settings",
-                    title = "Spell Target",
-                    disabled = Off, disabledTooltip = REQ,
-                    rows = {
-                        { type="toggle", label="Class Colored Names",
-                          get=function() local t = TFB(); return not t or t.targetClassColor ~= false end,
-                          set=function(v) local t = TFB(); if t then t.targetClassColor = v and true or false; TFBRefresh() end end },
-                        { type="colorpicker", label="Custom Color",
-                          disabled=function() local t = TFB(); return not t or t.targetClassColor ~= false end,
-                          disabledTooltip="Class Colored Names to be off",
-                          get=function()
-                              local t = TFB()
-                              local c = t and t.targetColor
-                              return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
-                          end,
-                          set=function(r, g, b)
-                              local t = TFB(); if not t then return end
-                              t.targetColor = { r = r, g = g, b = b }
-                              TFBRefresh()
-                          end },
-                        { type="slider", label=(which == "target") and "Text Size (Target)" or "Text Size (Focus)", min=6, max=20, step=1,
-                          get=function() local c = C(); return (c and c.targetSize) or 10 end,
-                          set=function(v) local c = C(); if c then c.targetSize = v; TFBRefresh() end end },
-                    },
-                })
+                CludesUI.BuildInlineCog(
+                    row._rightRegion,
+                    {
+                        tip = "Spell Target Settings",
+                        title = "Spell Target",
+                        disabled = Off,
+                        disabledTooltip = REQ,
+                        rows = {
+                            {
+                                type = "toggle",
+                                label = "Class Colored Names",
+                                get = function()
+                                    local t = TFB()
+                                    return not t or t.targetClassColor ~= false
+                                end,
+                                set = function(v)
+                                    local t = TFB()
+                                    if t then
+                                        t.targetClassColor = v and true or false
+                                        TFBRefresh()
+                                    end
+                                end,
+                            },
+                            {
+                                type = "colorpicker",
+                                label = "Custom Color",
+                                disabled = function()
+                                    local t = TFB()
+                                    return not t or t.targetClassColor ~= false
+                                end,
+                                disabledTooltip = "Class Colored Names to be off",
+                                get = function()
+                                    local t = TFB()
+                                    local c = t and t.targetColor
+                                    return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
+                                end,
+                                set = function(r, g, b)
+                                    local t = TFB()
+                                    if not t then
+                                        return
+                                    end
+                                    t.targetColor = { r = r, g = g, b = b }
+                                    TFBRefresh()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = (which == "target") and "Text Size (Target)" or "Text Size (Focus)",
+                                min = 6,
+                                max = 20,
+                                step = 1,
+                                get = function()
+                                    local c = C()
+                                    return (c and c.targetSize) or 10
+                                end,
+                                set = function(v)
+                                    local c = C()
+                                    if c then
+                                        c.targetSize = v
+                                        TFBRefresh()
+                                    end
+                                end,
+                            },
+                        },
+                    }
+                )
             end
         end
 
@@ -1844,173 +3633,298 @@ initFrame:SetScript("OnEvent", function(self)
         BuildBarSection("focus", "FOCUS CAST BAR", "Enable Focus Cast Bar")
 
         -- CAST COLORS AND EFFECTS (shared by both bars)
-        _, h = W:SectionHeader(parent, "CAST COLORS AND EFFECTS", y); y = y - h
+        _, h = W:SectionHeader(parent, "CAST COLORS AND EFFECTS", y)
+        y = y - h
 
-        local function SharedOff() return not AnyOn() end
+        local function SharedOff()
+            return not AnyOn()
+        end
         local SHARED_REQ = "a Target or Focus Cast Bar"
 
         local kickHintValues = { none = "None", tick = "Tick", tickbar = "Tick + Bar" }
         local kickHintOrder = { "none", "tick", "tickbar" }
 
-        row, h = W:DualRow(parent, y,
-            { type="multiSwatch", text="Cast Color",
-              disabled=SharedOff, disabledTooltip=SHARED_REQ,
-              swatches = {
-                { tooltip = "Interruptible Cast",
-                  getValue = function()
-                      local t = TFB()
-                      local c = t and t.castColor
-                      return (c and c.r) or 0.70, (c and c.g) or 0.40, (c and c.b) or 0.90
-                  end,
-                  setValue = function(r, g, b)
-                      local t = TFB(); if not t then return end
-                      t.castColor = { r = r, g = g, b = b }
-                      TFBRefresh()
-                  end },
-                { tooltip = "Interrupt on CD",
-                  getValue = function()
-                      local t = TFB()
-                      local c = t and t.interruptReady
-                      return (c and c.r) or 0.92, (c and c.g) or 0.35, (c and c.b) or 0.20
-                  end,
-                  setValue = function(r, g, b)
-                      local t = TFB(); if not t then return end
-                      t.interruptReady = { r = r, g = g, b = b }
-                      TFBRefresh()
-                  end },
-                { tooltip = "Uninterruptible Cast",
-                  getValue = function()
-                      local t = TFB()
-                      local c = t and t.uninterruptible
-                      return (c and c.r) or 0.45, (c and c.g) or 0.45, (c and c.b) or 0.45
-                  end,
-                  setValue = function(r, g, b)
-                      local t = TFB(); if not t then return end
-                      t.uninterruptible = { r = r, g = g, b = b }
-                      TFBRefresh()
-                  end },
-                { tooltip = "Important Cast",
-                  disabled = function()
-                      local t = TFB()
-                      return not (t and t.importantEnabled == true)
-                  end,
-                  disabledTooltip = "Important Cast Color",
-                  getValue = function()
-                      local t = TFB()
-                      local c = t and t.importantColor
-                      return (c and c.r) or 1, (c and c.g) or 0.2, (c and c.b) or 0.2
-                  end,
-                  setValue = function(r, g, b)
-                      local t = TFB(); if not t then return end
-                      t.importantColor = { r = r, g = g, b = b }
-                      TFBRefresh()
-                  end },
-              } },
-            { type="dropdown", text="Kick Ready Mid-Cast Hint",
-              disabled=SharedOff, disabledTooltip=SHARED_REQ,
-              tooltip="Shows where your interrupt will be ready during a cast. \"Tick\" marks the exact spot on the cast bar; \"Tick + Bar\" also colours the window during which your interrupt will be available.",
-              values=kickHintValues, order=kickHintOrder,
-              getValue=function()
-                  local t = TFB()
-                  if not t then return "tick" end
-                  if t.kickTickEnabled == false then return "none" end
-                  if t.midCastEnabled == true then return "tickbar" end
-                  return "tick"
-              end,
-              setValue=function(v)
-                  local t = TFB(); if not t then return end
-                  if v == "none" then
-                      t.kickTickEnabled = false
-                      t.midCastEnabled = false
-                  elseif v == "tick" then
-                      t.kickTickEnabled = true
-                      t.midCastEnabled = false
-                  else
-                      t.kickTickEnabled = true
-                      t.midCastEnabled = true
-                  end
-                  TFBRefresh()
-              end });  y = y - h
+        row, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "multiSwatch",
+                text = "Cast Color",
+                disabled = SharedOff,
+                disabledTooltip = SHARED_REQ,
+                swatches = {
+                    {
+                        tooltip = "Interruptible Cast",
+                        getValue = function()
+                            local t = TFB()
+                            local c = t and t.castColor
+                            return (c and c.r) or 0.70, (c and c.g) or 0.40, (c and c.b) or 0.90
+                        end,
+                        setValue = function(r, g, b)
+                            local t = TFB()
+                            if not t then
+                                return
+                            end
+                            t.castColor = { r = r, g = g, b = b }
+                            TFBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Interrupt on CD",
+                        getValue = function()
+                            local t = TFB()
+                            local c = t and t.interruptReady
+                            return (c and c.r) or 0.92, (c and c.g) or 0.35, (c and c.b) or 0.20
+                        end,
+                        setValue = function(r, g, b)
+                            local t = TFB()
+                            if not t then
+                                return
+                            end
+                            t.interruptReady = { r = r, g = g, b = b }
+                            TFBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Uninterruptible Cast",
+                        getValue = function()
+                            local t = TFB()
+                            local c = t and t.uninterruptible
+                            return (c and c.r) or 0.45, (c and c.g) or 0.45, (c and c.b) or 0.45
+                        end,
+                        setValue = function(r, g, b)
+                            local t = TFB()
+                            if not t then
+                                return
+                            end
+                            t.uninterruptible = { r = r, g = g, b = b }
+                            TFBRefresh()
+                        end,
+                    },
+                    {
+                        tooltip = "Important Cast",
+                        disabled = function()
+                            local t = TFB()
+                            return not (t and t.importantEnabled == true)
+                        end,
+                        disabledTooltip = "Important Cast Color",
+                        getValue = function()
+                            local t = TFB()
+                            local c = t and t.importantColor
+                            return (c and c.r) or 1, (c and c.g) or 0.2, (c and c.b) or 0.2
+                        end,
+                        setValue = function(r, g, b)
+                            local t = TFB()
+                            if not t then
+                                return
+                            end
+                            t.importantColor = { r = r, g = g, b = b }
+                            TFBRefresh()
+                        end,
+                    },
+                },
+            },
+            {
+                type = "dropdown",
+                text = "Kick Ready Mid-Cast Hint",
+                disabled = SharedOff,
+                disabledTooltip = SHARED_REQ,
+                tooltip = 'Shows where your interrupt will be ready during a cast. "Tick" marks the exact spot on the cast bar; "Tick + Bar" also colours the window during which your interrupt will be available.',
+                values = kickHintValues,
+                order = kickHintOrder,
+                getValue = function()
+                    local t = TFB()
+                    if not t then
+                        return "tick"
+                    end
+                    if t.kickTickEnabled == false then
+                        return "none"
+                    end
+                    if t.midCastEnabled == true then
+                        return "tickbar"
+                    end
+                    return "tick"
+                end,
+                setValue = function(v)
+                    local t = TFB()
+                    if not t then
+                        return
+                    end
+                    if v == "none" then
+                        t.kickTickEnabled = false
+                        t.midCastEnabled = false
+                    elseif v == "tick" then
+                        t.kickTickEnabled = true
+                        t.midCastEnabled = false
+                    else
+                        t.kickTickEnabled = true
+                        t.midCastEnabled = true
+                    end
+                    TFBRefresh()
+                end,
+            }
+        )
+        y = y - h
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Cast Color Settings",
-                title = "Cast Color",
-                rows = {
-                    { type="toggle", label="Show Shield Icon",
-                      tooltip="Show a shield icon on the cast bar when the cast cannot be interrupted.",
-                      get=function() local t = TFB(); return not t or t.showShield ~= false end,
-                      set=function(v) local t = TFB(); if t then t.showShield = v and true or false; TFBRefresh() end end },
-                    { type="toggle", label="Show Spark",
-                      tooltip="Show the bright spark at the leading edge of the cast bar fill.",
-                      get=function() local t = TFB(); return not t or t.showSpark ~= false end,
-                      set=function(v) local t = TFB(); if t then t.showSpark = v and true or false; TFBRefresh() end end },
-                    { type="toggle", label="Important Cast Color",
-                      tooltip="Tint the cast bar with the Important colour when the unit casts a spell the game flags as important. Your interrupt being on cooldown still takes priority.",
-                      get=function() local t = TFB(); return t and t.importantEnabled == true end,
-                      set=function(v)
-                          local t = TFB(); if not t then return end
-                          t.importantEnabled = v and true or false
-                          TFBRefresh(); CludesUI:RefreshPage()
-                      end },
-                },
-            })
-            CludesUI.BuildInlineCog(row._rightRegion, { tip = "Kick Hint Settings",
-                title = "Kick Ready Mid-Cast Hint",
-                rows = {
-                    { type="colorpicker", label="Mid-Cast Bar Color",
-                      disabled=function() local t = TFB(); return not (t and t.midCastEnabled == true) end,
-                      disabledTooltip="Tick + Bar",
-                      get=function()
-                          local t = TFB()
-                          local c = t and t.midCastColor
-                          return (c and c.r) or 0.318, (c and c.g) or 0.820, (c and c.b) or 0.357
-                      end,
-                      set=function(r, g, b)
-                          local t = TFB(); if not t then return end
-                          t.midCastColor = { r = r, g = g, b = b }
-                          TFBRefresh()
-                      end },
-                    { type="colorpicker", label="Tick Color",
-                      get=function()
-                          local t = TFB()
-                          local c = t and t.kickTickColor
-                          return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
-                      end,
-                      set=function(r, g, b)
-                          local t = TFB(); if not t then return end
-                          t.kickTickColor = { r = r, g = g, b = b }
-                          TFBRefresh()
-                      end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Cast Color Settings",
+                    title = "Cast Color",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Show Shield Icon",
+                            tooltip = "Show a shield icon on the cast bar when the cast cannot be interrupted.",
+                            get = function()
+                                local t = TFB()
+                                return not t or t.showShield ~= false
+                            end,
+                            set = function(v)
+                                local t = TFB()
+                                if t then
+                                    t.showShield = v and true or false
+                                    TFBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Show Spark",
+                            tooltip = "Show the bright spark at the leading edge of the cast bar fill.",
+                            get = function()
+                                local t = TFB()
+                                return not t or t.showSpark ~= false
+                            end,
+                            set = function(v)
+                                local t = TFB()
+                                if t then
+                                    t.showSpark = v and true or false
+                                    TFBRefresh()
+                                end
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Important Cast Color",
+                            tooltip = "Tint the cast bar with the Important colour when the unit casts a spell the game flags as important. Your interrupt being on cooldown still takes priority.",
+                            get = function()
+                                local t = TFB()
+                                return t and t.importantEnabled == true
+                            end,
+                            set = function(v)
+                                local t = TFB()
+                                if not t then
+                                    return
+                                end
+                                t.importantEnabled = v and true or false
+                                TFBRefresh()
+                                CludesUI:RefreshPage()
+                            end,
+                        },
+                    },
+                }
+            )
+            CludesUI.BuildInlineCog(
+                row._rightRegion,
+                {
+                    tip = "Kick Hint Settings",
+                    title = "Kick Ready Mid-Cast Hint",
+                    rows = {
+                        {
+                            type = "colorpicker",
+                            label = "Mid-Cast Bar Color",
+                            disabled = function()
+                                local t = TFB()
+                                return not (t and t.midCastEnabled == true)
+                            end,
+                            disabledTooltip = "Tick + Bar",
+                            get = function()
+                                local t = TFB()
+                                local c = t and t.midCastColor
+                                return (c and c.r) or 0.318, (c and c.g) or 0.820, (c and c.b) or 0.357
+                            end,
+                            set = function(r, g, b)
+                                local t = TFB()
+                                if not t then
+                                    return
+                                end
+                                t.midCastColor = { r = r, g = g, b = b }
+                                TFBRefresh()
+                            end,
+                        },
+                        {
+                            type = "colorpicker",
+                            label = "Tick Color",
+                            get = function()
+                                local t = TFB()
+                                local c = t and t.kickTickColor
+                                return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
+                            end,
+                            set = function(r, g, b)
+                                local t = TFB()
+                                if not t then
+                                    return
+                                end
+                                t.kickTickColor = { r = r, g = g, b = b }
+                                TFBRefresh()
+                            end,
+                        },
+                    },
+                }
+            )
         end
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Interrupted Flash Effect",
-              disabled=SharedOff, disabledTooltip=SHARED_REQ,
-              tooltip="Flash the cast bar and show \"Interrupted\" for a moment when the cast is interrupted.",
-              getValue=function() local t = TFB(); return not t or t.interruptedFlash ~= false end,
-              setValue=function(v) local t = TFB(); if t then t.interruptedFlash = v and true or false; TFBRefresh() end end },
-            { type="label", text="" });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Interrupted Flash Effect",
+            disabled = SharedOff,
+            disabledTooltip = SHARED_REQ,
+            tooltip = 'Flash the cast bar and show "Interrupted" for a moment when the cast is interrupted.',
+            getValue = function()
+                local t = TFB()
+                return not t or t.interruptedFlash ~= false
+            end,
+            setValue = function(v)
+                local t = TFB()
+                if t then
+                    t.interruptedFlash = v and true or false
+                    TFBRefresh()
+                end
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(row._leftRegion, { tip = "Interrupted Flash Settings",
-                title = "Interrupted Flash",
-                rows = {
-                    { type="colorpicker", label="Flash Color",
-                      get=function()
-                          local t = TFB()
-                          local c = t and t.interruptedColor
-                          return (c and c.r) or 0.8, (c and c.g) or 0, (c and c.b) or 0
-                      end,
-                      set=function(r, g, b)
-                          local t = TFB(); if not t then return end
-                          t.interruptedColor = { r = r, g = g, b = b }
-                          TFBRefresh()
-                      end },
-                },
-            })
+            CludesUI.BuildInlineCog(
+                row._leftRegion,
+                {
+                    tip = "Interrupted Flash Settings",
+                    title = "Interrupted Flash",
+                    rows = {
+                        {
+                            type = "colorpicker",
+                            label = "Flash Color",
+                            get = function()
+                                local t = TFB()
+                                local c = t and t.interruptedColor
+                                return (c and c.r) or 0.8, (c and c.g) or 0, (c and c.b) or 0
+                            end,
+                            set = function(r, g, b)
+                                local t = TFB()
+                                if not t then
+                                    return
+                                end
+                                t.interruptedColor = { r = r, g = g, b = b }
+                                TFBRefresh()
+                            end,
+                        },
+                    },
+                }
+            )
         end
 
-        _, h = W:Spacer(parent, y, 20); y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
         parent:SetHeight(math.abs(y - yOffset))
     end
 
@@ -2025,28 +3939,42 @@ initFrame:SetScript("OnEvent", function(self)
     local function RSGet(key, fallback)
         local c = RSCfg()
         local v = c and c[key]
-        if v == nil then return fallback end
+        if v == nil then
+            return fallback
+        end
         return v
     end
 
     local function RSSet(key, val)
         local c = RSCfg()
-        if c then c[key] = val end
-        if ns.RS_Apply then ns.RS_Apply() end
+        if c then
+            c[key] = val
+        end
+        if ns.RS_Apply then
+            ns.RS_Apply()
+        end
         -- Column toggles and the scale change how an already open panel looks,
         -- so repaint it instead of waiting for the next time it is opened.
-        if ns.RS_Refresh then ns.RS_Refresh() end
+        if ns.RS_Refresh then
+            ns.RS_Refresh()
+        end
     end
 
-    local function RSOn() return RSCfg() ~= nil and RSCfg().enabled == true end
-    local function RSOff() return not RSOn() end
+    local function RSOn()
+        return RSCfg() ~= nil and RSCfg().enabled == true
+    end
+    local function RSOff()
+        return not RSOn()
+    end
 
     local function BuildRSPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
         local row, h
 
-        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
+        if CludesUI.ClearContentHeader then
+            CludesUI:ClearContentHeader()
+        end
         parent._showRowDivider = true
 
         local REQ = "Enable Run Summary"
@@ -2070,117 +3998,226 @@ initFrame:SetScript("OnEvent", function(self)
             PPn.Size(previewBtn, BTN_W, BTN_H)
             PPn.Point(previewBtn, "RIGHT", rowFrame, "CENTER", -(GAP / 2), 0)
             previewBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-            CludesUI.MakeStyledButton(previewBtn, "Show Preview", 14,
-                CludesUI.WB_COLOURS, function()
-                    if ns.RS_ShowPreview then ns.RS_ShowPreview() end
-                end)
+            CludesUI.MakeStyledButton(previewBtn, "Show Preview", 14, CludesUI.WB_COLOURS, function()
+                if ns.RS_ShowPreview then
+                    ns.RS_ShowPreview()
+                end
+            end)
 
             local clearBtn = CreateFrame("Button", nil, rowFrame)
             PPn.Size(clearBtn, BTN_W, BTN_H)
             PPn.Point(clearBtn, "LEFT", rowFrame, "CENTER", GAP / 2, 0)
             clearBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-            CludesUI.MakeStyledButton(clearBtn, "Clear Run History", 14,
-                CludesUI.WB_COLOURS, function()
-                    CludesUI:ShowConfirmPopup({
-                        title = "Clear Run History",
-                        message = "Delete every recorded Mythic+ run for this character?",
-                        confirmText = "Delete",
-                        cancelText = "Cancel",
-                        onConfirm = function()
-                            if ns.RS_ClearHistory then ns.RS_ClearHistory() end
-                        end,
-                    })
-                end)
+            CludesUI.MakeStyledButton(clearBtn, "Clear Run History", 14, CludesUI.WB_COLOURS, function()
+                CludesUI:ShowConfirmPopup({
+                    title = "Clear Run History",
+                    message = "Delete every recorded Mythic+ run for this character?",
+                    confirmText = "Delete",
+                    cancelText = "Cancel",
+                    onConfirm = function()
+                        if ns.RS_ClearHistory then
+                            ns.RS_ClearHistory()
+                        end
+                    end,
+                })
+            end)
 
             y = y - ROW_H
         end
 
-        row, h = W:SectionHeader(parent, "RUN SUMMARY", y); y = y - h
+        row, h = W:SectionHeader(parent, "RUN SUMMARY", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Run Summary",
-              tooltip="Records every finished Mythic+ key and shows an overview of the group when the run ends. Nothing is registered or created while this is off.",
-              getValue=RSOn,
-              setValue=function(v) RSSet("enabled", v and true or false); CludesUI:RefreshPage() end },
-            { type="toggle", text="Show After Looting",
-              tooltip="Open the overview once the end of run chest has been looted. With this off it opens as soon as the key ends. /ov reopens it at any time.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("showAfterLoot", true) == true end,
-              setValue=function(v) RSSet("showAfterLoot", v and true or false) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Run Summary",
+            tooltip = "Records every finished Mythic+ key and shows an overview of the group when the run ends. Nothing is registered or created while this is off.",
+            getValue = RSOn,
+            setValue = function(v)
+                RSSet("enabled", v and true or false)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "toggle",
+            text = "Show After Looting",
+            tooltip = "Open the overview once the end of run chest has been looted. With this off it opens as soon as the key ends. /ov reopens it at any time.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("showAfterLoot", true) == true
+            end,
+            setValue = function(v)
+                RSSet("showAfterLoot", v and true or false)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="slider", text="History Size", min=5, max=50, step=1,
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("historySize", 20) end,
-              setValue=function(v) RSSet("historySize", v) end },
-            { type="slider", text="Panel Scale", min=0.5, max=2, step=0.05,
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("scale", 1) end,
-              setValue=function(v) RSSet("scale", v) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "History Size",
+            min = 5,
+            max = 50,
+            step = 1,
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("historySize", 20)
+            end,
+            setValue = function(v)
+                RSSet("historySize", v)
+            end,
+        }, {
+            type = "slider",
+            text = "Panel Scale",
+            min = 0.5,
+            max = 2,
+            step = 0.05,
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("scale", 1)
+            end,
+            setValue = function(v)
+                RSSet("scale", v)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="slider", text="Text Size", min=10, max=20, step=1,
-              tooltip="Size of the player rows. The title and column headers keep their own size.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("textSize", 14) end,
-              setValue=function(v) RSSet("textSize", v) end },
-            { type="label", text="" });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Text Size",
+            min = 10,
+            max = 20,
+            step = 1,
+            tooltip = "Size of the player rows. The title and column headers keep their own size.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("textSize", 14)
+            end,
+            setValue = function(v)
+                RSSet("textSize", v)
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
 
-        row, h = W:SectionHeader(parent, "COLUMNS", y); y = y - h
+        row, h = W:SectionHeader(parent, "COLUMNS", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Spec Icons",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("showSpecIcons", true) == true end,
-              setValue=function(v) RSSet("showSpecIcons", v and true or false) end },
-            { type="toggle", text="Item Level",
-              tooltip="Shown in grey next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colItemLevel", true) == true end,
-              setValue=function(v) RSSet("colItemLevel", v and true or false) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Spec Icons",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("showSpecIcons", true) == true
+            end,
+            setValue = function(v)
+                RSSet("showSpecIcons", v and true or false)
+            end,
+        }, {
+            type = "toggle",
+            text = "Item Level",
+            tooltip = "Shown in grey next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colItemLevel", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colItemLevel", v and true or false)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="M+ Score",
-              tooltip="Current season score plus the gain from this run. Your own gain is the exact value the server reports; for party members it is their score before the key subtracted from their score after it.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colScore", true) == true end,
-              setValue=function(v) RSSet("colScore", v and true or false) end },
-            { type="toggle", text="Loot",
-              tooltip="What each player looted. Your own chest reward always appears; other players' items only when the server announces the loot to the group, which it does not always do for the end of run chest.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colLoot", true) == true end,
-              setValue=function(v) RSSet("colLoot", v and true or false) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "M+ Score",
+            tooltip = "Current season score plus the gain from this run. Your own gain is the exact value the server reports; for party members it is their score before the key subtracted from their score after it.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colScore", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colScore", v and true or false)
+            end,
+        }, {
+            type = "toggle",
+            text = "Loot",
+            tooltip = "What each player looted. Your own chest reward always appears; other players' items only when the server announces the loot to the group, which it does not always do for the end of run chest.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colLoot", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colLoot", v and true or false)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="DPS",
-              tooltip="Read from Blizzard's own damage meter. With that meter switched off this column, Damage Taken and Interrupts stay empty.",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colDps", true) == true end,
-              setValue=function(v) RSSet("colDps", v and true or false) end },
-            { type="toggle", text="Damage Taken",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colDamageTaken", true) == true end,
-              setValue=function(v) RSSet("colDamageTaken", v and true or false) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "DPS",
+            tooltip = "Read from Blizzard's own damage meter. With that meter switched off this column, Damage Taken and Interrupts stay empty.",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colDps", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colDps", v and true or false)
+            end,
+        }, {
+            type = "toggle",
+            text = "Damage Taken",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colDamageTaken", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colDamageTaken", v and true or false)
+            end,
+        })
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Interrupts",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colInterrupts", true) == true end,
-              setValue=function(v) RSSet("colInterrupts", v and true or false) end },
-            { type="toggle", text="Deaths",
-              disabled=RSOff, disabledTooltip=REQ,
-              getValue=function() return RSGet("colDeaths", true) == true end,
-              setValue=function(v) RSSet("colDeaths", v and true or false) end });  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Interrupts",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colInterrupts", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colInterrupts", v and true or false)
+            end,
+        }, {
+            type = "toggle",
+            text = "Deaths",
+            disabled = RSOff,
+            disabledTooltip = REQ,
+            getValue = function()
+                return RSGet("colDeaths", true) == true
+            end,
+            setValue = function(v)
+                RSSet("colDeaths", v and true or false)
+            end,
+        })
+        y = y - h
 
-        row, h = W:Spacer(parent, y, 20); y = y - h
+        row, h = W:Spacer(parent, y, 20)
+        y = y - h
         parent:SetHeight(math.abs(y - yOffset))
     end
 
     -- RegisterModule
     CludesUI:RegisterModule("CludesUIMythicTimer", {
-        title       = "Mythic+ Tools",
+        title = "Mythic+ Tools",
         description = "Mythic+ timer, Kick Tracker, cast bars and target/focus bars.",
-        pages    = { PAGE_DISPLAY, PAGE_KT, PAGE_TSB, PAGE_TFB, PAGE_RS },
+        pages = { PAGE_DISPLAY, PAGE_KT, PAGE_TSB, PAGE_TFB, PAGE_RS },
         tabLabels = { [PAGE_TSB] = "Cast Bars" },
         buildPage = function(pageName, parent, yOffset)
             if pageName == PAGE_TSB then
@@ -2198,19 +4235,27 @@ initFrame:SetScript("OnEvent", function(self)
         -- The header previews of the Kick Tracker and cast bar pages (the
         -- same answer buildPage gave, so a kept page keeps its header).
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_TSB then return tsbBuilder
-            elseif pageName == PAGE_TFB then return tfbBuilder
-            elseif pageName == PAGE_KT then return ns._KT_HeaderBuilder end
+            if pageName == PAGE_TSB then
+                return tsbBuilder
+            elseif pageName == PAGE_TFB then
+                return tfbBuilder
+            elseif pageName == PAGE_KT then
+                return ns._KT_HeaderBuilder
+            end
             return nil
         end,
         -- A kept page shown again: its preview paints again (the Fonts and
         -- Textures pages and a profile switch write its keys from elsewhere).
         onPageCacheRestore = function(pageName)
-            if pageName == PAGE_TSB then PvUpdate(tsbPv, false)
-            elseif pageName == PAGE_TFB then PvUpdate(tfbPv, false)
-            elseif pageName == PAGE_KT and ns._KT_RestorePreview then ns._KT_RestorePreview() end
+            if pageName == PAGE_TSB then
+                PvUpdate(tsbPv, false)
+            elseif pageName == PAGE_TFB then
+                PvUpdate(tfbPv, false)
+            elseif pageName == PAGE_KT and ns._KT_RestorePreview then
+                ns._KT_RestorePreview()
+            end
         end,
-        onReset  = function()
+        onReset = function()
             -- Lite DB stores data at CludesUIDB.profiles[X].addons.CludesUIMythicTimer
             if CludesUIDB and CludesUIDB.profiles then
                 local profile = CludesUIDB.activeProfile or "Default"
@@ -2223,4 +4268,6 @@ initFrame:SetScript("OnEvent", function(self)
     })
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then initFrame:GetScript("OnEvent")(initFrame) end
+if IsLoggedIn() then
+    initFrame:GetScript("OnEvent")(initFrame)
+end

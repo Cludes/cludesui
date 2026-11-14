@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_View.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor, max = math.floor, math.max
@@ -32,7 +36,7 @@ local USABILITY_TINT = I.USABILITY_TINT
 --  ns.Open/ns.Close, and the preview installs its own scripts on the widgets it
 --  gets back from GetSlotWidget.
 -------------------------------------------------------------------------------
-local views = {}            -- every view, live and preview
+local views = {} -- every view, live and preview
 -- One secure button per BOUND palette, indexed the same way. Declared here
 -- rather than in the secure activation section: PaletteView:ArmedClaim reads a
 -- claim's armed state off a palette's own button, and that is defined long
@@ -132,7 +136,9 @@ local function ApplySlotVisual(widget, selected, armed)
     -- under the cursor.
     if widget.isPlaceholder then
         local ar, ag, ab = 0.298, 0.788, 0.941
-        if CludesUI.ResolveActiveAccent then ar, ag, ab = CludesUI.ResolveActiveAccent() end
+        if CludesUI.ResolveActiveAccent then
+            ar, ag, ab = CludesUI.ResolveActiveAccent()
+        end
         if selected then
             CludesUI.PP.UpdateBorder(widget.bhost, 2, ar, ag, ab, 1)
         else
@@ -140,7 +146,9 @@ local function ApplySlotVisual(widget, selected, armed)
         end
         widget.bg:SetVertexColor(0.08, 0.08, 0.08, 0.6)
         widget.plus:SetTextColor(ar, ag, ab, selected and 1 or 0.6)
-        if widget.baseSize then widget:SetSize(widget.baseSize, widget.baseSize) end
+        if widget.baseSize then
+            widget:SetSize(widget.baseSize, widget.baseSize)
+        end
         return
     end
 
@@ -149,7 +157,9 @@ local function ApplySlotVisual(widget, selected, armed)
     -- an out-of-range entry the cursor is on still reads as the selected one.
     local tint = USABILITY_TINT[widget.usability or ""]
     local ur, ug, ub = 1, 1, 1
-    if tint then ur, ug, ub = tint[1], tint[2], tint[3] end
+    if tint then
+        ur, ug, ub = tint[1], tint[2], tint[3]
+    end
     widget.icon:SetDesaturated(tint ~= nil and tint[4] or false)
     local t = armed and ARM_BORDER or selected and SEL_BORDER or IDLE_BORDER
     local base = widget.baseSize
@@ -194,7 +204,9 @@ local fontStrings = {}
 
 local function ApplyModuleFont(fs)
     local size = fs.eqdFontSize
-    if not size or not CludesUI.GetFontPath then return end
+    if not size or not CludesUI.GetFontPath then
+        return
+    end
     -- Snapped to whole physical pixels. A font height is given in the string's
     -- own units and drawn at that height TIMES its effective scale, so a
     -- palette scaled to anything but 1 asks for a fractional pixel height --
@@ -235,7 +247,9 @@ local function AdoptFontString(fs, iconText)
 end
 
 local function RefreshFonts()
-    for i = 1, #fontStrings do ApplyModuleFont(fontStrings[i]) end
+    for i = 1, #fontStrings do
+        ApplyModuleFont(fontStrings[i])
+    end
 end
 
 -- The icon crop, per PAINT rather than per widget: 8% per side (user-tuned
@@ -253,13 +267,17 @@ local function ApplyIconCrop(tex, icon)
         return
     end
 
-    if type(icon) == "string"
-       and (icon:find("RaidTargetingIcon", 1, true)
+    if
+        type(icon) == "string"
+        and (
+            icon:find("RaidTargetingIcon", 1, true)
             or icon:find("UI-GroupLoot-Pass-Up", 1, true)
-            -- The interface panel glyphs, which are drawn to the edge of their
-            -- own square the way the marker textures are. The crop is sized
-            -- for the border every spell icon carries and would cut into these.
-            or icon:find("micromenu", 1, true)) then
+            -- The interface panel glyphs, which are drawn to the edge of their
+            -- own square the way the marker textures are. The crop is sized
+            -- for the border every spell icon carries and would cut into these.
+            or icon:find("micromenu", 1, true)
+        )
+    then
         tex:SetTexCoord(0, 1, 0, 1)
     else
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -330,7 +348,9 @@ local function CreateSlotWidget(view, index)
     w.count:SetJustifyH("RIGHT")
     -- One line whatever it holds: a count wide enough to need the clamp above
     -- would otherwise wrap onto a second line and climb up the icon.
-    if w.count.SetWordWrap then w.count:SetWordWrap(false) end
+    if w.count.SetWordWrap then
+        w.count:SetWordWrap(false)
+    end
     w.count:Hide()
     AdoptFontString(w.count, true)
 
@@ -399,9 +419,13 @@ local PaletteViewMeta = { __index = PaletteView }
 -- view's own shownCount still describes whatever was laid out last. Same
 -- reason GridDims takes one.
 function PaletteView:Geom(shownOverride)
-    if self.opts.geom then return self.opts.geom() end
+    if self.opts.geom then
+        return self.opts.geom()
+    end
     local p = self:P()
-    if not p then return 100, 40, 24 end
+    if not p then
+        return 100, 40, 24
+    end
     local radius, iconSize = p.radius or 100, p.iconSize or 40
     if self:LayoutMode() == "ARC" then
         local shown = max(1, shownOverride or self.shownCount or 1)
@@ -441,12 +465,24 @@ function PaletteView:P()
     return PA(self.appIndex or self.paletteIndex)
 end
 
-function PaletteView:GetFrame()     return self.frame end
-function PaletteView:GetPaletteIndex() return self.paletteIndex end
-function PaletteView:GetSelection() return self.selection end
-function PaletteView:SlotCount()    return self.slotCount end
-function PaletteView:ShownCount()   return self.shownCount end
-function PaletteView:GetSlotWidget(index) return self.widgets[index] end
+function PaletteView:GetFrame()
+    return self.frame
+end
+function PaletteView:GetPaletteIndex()
+    return self.paletteIndex
+end
+function PaletteView:GetSelection()
+    return self.selection
+end
+function PaletteView:SlotCount()
+    return self.slotCount
+end
+function PaletteView:ShownCount()
+    return self.shownCount
+end
+function PaletteView:GetSlotWidget(index)
+    return self.widgets[index]
+end
 
 -- ARC | FAN | GRID. A view may pin its own mode (the options preview
 -- pins one so the page can show either without changing what the user plays

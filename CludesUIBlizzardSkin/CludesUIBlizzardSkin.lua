@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin.lua
 --  Umbrella addon for themed Blizzard UI frames. Hosts the Character Sheet
@@ -6,8 +8,25 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  context menu and static popup reskinning (CUI_BlizzardSkin_*.lua).
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.FriendsKit and CludesUI.FriendsList and CludesUI.CreateQuantityDialog and CludesUI.NewFrameData and CludesUI.GetFontFamily and CludesUI.SetFontFamily and CludesUI.BorderPlacement) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (FriendsForever reads the parent's friends kit and starts its custom friends list, Merchant Bulk Buy its quantity window; the tooltip lines, chat bubbles, mail alt list, the window packs' names and mail lines and the WoW Forever friends and Looking For Group texts that show other players' writing take the parent's font families, and the engine aura tooltip's border takes the parent's border placement)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.FriendsKit
+        and CludesUI.FriendsList
+        and CludesUI.CreateQuantityDialog
+        and CludesUI.NewFrameData
+        and CludesUI.GetFontFamily
+        and CludesUI.SetFontFamily
+        and CludesUI.BorderPlacement
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (FriendsForever reads the parent's friends kit and starts its custom friends list, Merchant Bulk Buy its quantity window; the tooltip lines, chat bubbles, mail alt list, the window packs' names and mail lines and the WoW Forever friends and Looking For Group texts that show other players' writing take the parent's font families, and the engine aura tooltip's border takes the parent's border placement)
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- External weak-keyed lookup table for frame state (prevents tainting Blizzard frames)
@@ -22,57 +41,57 @@ local FFD, GetFFD = CludesUI.NewFrameData()
 --  stats, slot text and socket panel. Its "off" leaves the sheet untouched.
 -------------------------------------------------------------------------------
 local WINDOW_ENABLE_KEYS = {
-    charsheet       = "themedCharacterSheet",
-    inspect         = "themedInspectSheet",
-    lfg             = "reskinLFGMenu",
-    greatvault      = "reskinGreatVault",
-    collections     = "reskinCollections",
-    playerspells    = "reskinPlayerSpells",
-    adventureguide  = "reskinAdventureGuide",
+    charsheet = "themedCharacterSheet",
+    inspect = "themedInspectSheet",
+    lfg = "reskinLFGMenu",
+    greatvault = "reskinGreatVault",
+    collections = "reskinCollections",
+    playerspells = "reskinPlayerSpells",
+    adventureguide = "reskinAdventureGuide",
     professionsbook = "reskinProfessionsBook",
-    guild           = "reskinGuild",
-    calendar        = "reskinCalendar",
-    achievements    = "reskinAchievements",
-    mail            = "reskinMail",
-    catalyst        = "reskinCatalyst",
-    socket          = "reskinSocket",
-    itemupgrade     = "reskinItemUpgrade",
-    loot            = "reskinLoot",
-    loottoast       = "reskinLootToast",
-    bnettoast       = "reskinBNetToast",
-    lootroll        = "reskinLootRoll",
-    loothistory     = "reskinLootHistory",
-    groupinvite     = "reskinGroupInvite",
-    readycheck      = "reskinReadyCheck",
-    micromenu       = "reskinMicroMenu",
-    housing         = "reskinHousing",
-    professions     = "reskinProfessions",
-    worldmap        = "reskinWorldMap",
-    dressup         = "reskinDressUp",
-    transmog        = "reskinTransmog",
-    merchant        = "reskinMerchant",
-    auctionhouse    = "reskinAuctionHouse",
-    macros          = "reskinMacros",
-    settings        = "reskinSettings",
-    addonlist       = "reskinAddonList",
-    craftorders     = "reskinCraftOrders",
-    trainer         = "reskinTrainer",
-    gossip          = "reskinGossip",
-    quest           = "reskinQuest",
-    inspectrecipe   = "reskinInspectRecipe",
-    delves          = "reskinDelves",
-    socialui        = "reskinSocialUI",
+    guild = "reskinGuild",
+    calendar = "reskinCalendar",
+    achievements = "reskinAchievements",
+    mail = "reskinMail",
+    catalyst = "reskinCatalyst",
+    socket = "reskinSocket",
+    itemupgrade = "reskinItemUpgrade",
+    loot = "reskinLoot",
+    loottoast = "reskinLootToast",
+    bnettoast = "reskinBNetToast",
+    lootroll = "reskinLootRoll",
+    loothistory = "reskinLootHistory",
+    groupinvite = "reskinGroupInvite",
+    readycheck = "reskinReadyCheck",
+    micromenu = "reskinMicroMenu",
+    housing = "reskinHousing",
+    professions = "reskinProfessions",
+    worldmap = "reskinWorldMap",
+    dressup = "reskinDressUp",
+    transmog = "reskinTransmog",
+    merchant = "reskinMerchant",
+    auctionhouse = "reskinAuctionHouse",
+    macros = "reskinMacros",
+    settings = "reskinSettings",
+    addonlist = "reskinAddonList",
+    craftorders = "reskinCraftOrders",
+    trainer = "reskinTrainer",
+    gossip = "reskinGossip",
+    quest = "reskinQuest",
+    inspectrecipe = "reskinInspectRecipe",
+    delves = "reskinDelves",
+    socialui = "reskinSocialUI",
     -- delvepicker is the Delves TIER PICKER, a separate frame from the
     -- companion configuration window that `delves` above covers.
-    queuestatus     = "reskinQueueStatus",
-    delvepicker     = "reskinDelvePicker",
-    playerchoice    = "reskinPlayerChoice",
-    trade           = "reskinTrade",
-    flagcarrier     = "reskinFlagCarriers",
+    queuestatus = "reskinQueueStatus",
+    delvepicker = "reskinDelvePicker",
+    playerchoice = "reskinPlayerChoice",
+    trade = "reskinTrade",
+    flagcarrier = "reskinFlagCarriers",
 }
 -- WoW Forever's own windows: the bag bar and Progress Legacy skins exist only there.
 if CludesUI.IS_FOREVER then
-    WINDOW_ENABLE_KEYS.bagbar       = "reskinBagBar"
+    WINDOW_ENABLE_KEYS.bagbar = "reskinBagBar"
     WINDOW_ENABLE_KEYS.legacysystem = "reskinLegacySystem"
 end
 
@@ -84,12 +103,16 @@ end
 -- written through EnabledValue / OnValue, never `~= false` / `= nil` directly.
 local STOCK_WINDOWS = { flagcarrier = true }
 local function EnabledValue(winKey, v)
-    if STOCK_WINDOWS[winKey] then return v == true end
+    if STOCK_WINDOWS[winKey] then
+        return v == true
+    end
     return v ~= false
 end
 -- What "on" is stored as: nil (the install default) or, for a stock window, true.
 local function OnValue(winKey)
-    if STOCK_WINDOWS[winKey] then return true end
+    if STOCK_WINDOWS[winKey] then
+        return true
+    end
     return nil
 end
 --- Master PER-PROFILE kill switch for ALL Blizzard window skinning: window engine
@@ -116,10 +139,12 @@ end
 -------------------------------------------------------------------------------
 do
     local BATCHES = {
-        { marker = "lootSkinStyleSeeded",  keys = { "lootroll", "loothistory", "groupinvite" } },
+        { marker = "lootSkinStyleSeeded", keys = { "lootroll", "loothistory", "groupinvite" } },
         { marker = "readyCheckStyleSeeded", keys = { "readycheck" } },
-        { marker = "queueChoiceTradeStyleSeeded",
-          keys = { "queuestatus", "delvepicker", "playerchoice", "trade" } },
+        {
+            marker = "queueChoiceTradeStyleSeeded",
+            keys = { "queuestatus", "delvepicker", "playerchoice", "trade" },
+        },
         { marker = "bnetToastStyleSeeded", keys = { "bnettoast" } },
     }
     -- Retail only: this shipment is when the Friends List card started
@@ -137,11 +162,15 @@ do
         BATCHES[#BATCHES + 1] = { marker = "foreverLegacySkinSeeded", keys = { "legacysystem" } }
     end
     local function SeedBatch(marker, newKeys)
-        if CludesUIDB[marker] then return end
+        if CludesUIDB[marker] then
+            return
+        end
         CludesUIDB[marker] = true
         local styles = CludesUIDB.blizzWindowSkinStyles
         local isNew = {}
-        for _, k in ipairs(newKeys) do isNew[k] = true end
+        for _, k in ipairs(newKeys) do
+            isNew[k] = true
+        end
         local off, modern, cui = 0, 0, 0
         for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
             -- A window that starts at Blizz Default says nothing of the
@@ -159,8 +188,7 @@ do
         end
         for _, winKey in ipairs(newKeys) do
             local ek = WINDOW_ENABLE_KEYS[winKey]
-            local touched = CludesUIDB[ek] ~= nil
-                or (styles and styles[winKey] ~= nil)
+            local touched = CludesUIDB[ek] ~= nil or (styles and styles[winKey] ~= nil)
             if not touched then
                 if off > cui and off > modern then
                     CludesUIDB[ek] = false
@@ -182,7 +210,9 @@ do
         local fonts = (name == (db.activeProfile or "Default")) and db.fonts or prof.fonts
         local fs = type(fonts) == "table" and fonts._styleSlots
         local look = type(fs) == "table" and fs.active
-        if look == "cui" or look == "blizzard" or look == "classic" then return look end
+        if look == "cui" or look == "blizzard" or look == "classic" then
+            return look
+        end
         return nil
     end
 
@@ -191,16 +221,24 @@ do
     -- never writes the latter) -- the active profile adopts the look its
     -- windows are on, so nothing moves.
     local function AdoptLegacyWindowLook(db)
-        if db.windowLookPerProfile then return end
+        if db.windowLookPerProfile then
+            return
+        end
         db.windowLookPerProfile = true
         local slots = db.windowSkinStyleSlots
         local live = type(slots) == "table" and slots.active
-        if not live or live == "cui" or type(db.profiles) ~= "table" then return end
+        if not live or live == "cui" or type(db.profiles) ~= "table" then
+            return
+        end
         for name, p in pairs(db.profiles) do
-            if type(p) == "table" and (p.windowSkinLook or FontLookOf(db, name, p)) then return end
+            if type(p) == "table" and (p.windowSkinLook or FontLookOf(db, name, p)) then
+                return
+            end
         end
         local p = db.profiles[db.activeProfile or "Default"]
-        if type(p) == "table" then p.windowSkinLook = live end
+        if type(p) == "table" then
+            p.windowSkinLook = live
+        end
     end
 
     -- Once per account: the Character Sheet's Blizz Default used to be the
@@ -213,27 +251,45 @@ do
     -- sheet wore before (CludesUI or Modern) is kept for the CludesUI
     -- look.
     local function AdoptCharSheetCardStyle(db)
-        if db.charSheetCardStyleAdopted then return end
+        if db.charSheetCardStyleAdopted then
+            return
+        end
         db.charSheetCardStyleAdopted = true
         local name = db.activeProfile or "Default"
         local p = type(db.profiles) == "table" and db.profiles[name]
-        if type(p) ~= "table" then p = nil end
-        local stock = db.charSheetUseBlizzardStyle or db.charSheetUseClassicStyle
+        if type(p) ~= "table" then
+            p = nil
+        end
+        local stock = db.charSheetUseBlizzardStyle
+            or db.charSheetUseClassicStyle
             or (p and (p.charSheetUseBlizzardStyle or p.charSheetUseClassicStyle))
-        if not stock and p and CludesUI.IS_FOREVER and not db.foreverCharSheetStyleAdopted
-           and p.charSheetUseBlizzardStyle == nil and p.charSheetUseClassicStyle == nil then
+        if
+            not stock
+            and p
+            and CludesUI.IS_FOREVER
+            and not db.foreverCharSheetStyleAdopted
+            and p.charSheetUseBlizzardStyle == nil
+            and p.charSheetUseClassicStyle == nil
+        then
             local look = p.windowSkinLook or FontLookOf(db, name, p)
             stock = look == "blizzard" or look == "classic"
         end
-        if not stock then return end
+        if not stock then
+            return
+        end
         local styles = db.blizzWindowSkinStyles
         if type(styles) ~= "table" then
             styles = {}
             db.blizzWindowSkinStyles = styles
         end
         local slots = db.windowSkinStyleSlots
-        if type(slots) == "table" and slots.active and slots.active ~= "cui"
-           and type(slots.cui) == "table" and slots.cui.charsheetStyle == nil then
+        if
+            type(slots) == "table"
+            and slots.active
+            and slots.active ~= "cui"
+            and type(slots.cui) == "table"
+            and slots.cui.charsheetStyle == nil
+        then
             slots.cui.charsheetStyle = styles.charsheet or "cui"
         end
         styles.charsheet = "blizzard"
@@ -251,10 +307,16 @@ do
             CludesUI.ReconcileWindowSkinLook()
             return
         end
-        if name ~= ADDON_NAME then return end
+        if name ~= ADDON_NAME then
+            return
+        end
         self:UnregisterEvent("ADDON_LOADED")
-        if not CludesUIDB then CludesUIDB = {} end
-        for _, batch in ipairs(BATCHES) do SeedBatch(batch.marker, batch.keys) end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
+        for _, batch in ipairs(BATCHES) do
+            SeedBatch(batch.marker, batch.keys)
+        end
         AdoptLegacyWindowLook(CludesUIDB)
         AdoptCharSheetCardStyle(CludesUIDB)
         CludesUI.ReconcileWindowSkinLook()
@@ -267,12 +329,18 @@ function CludesUI.GetBlizzWindowStyle(winKey)
     if type(winKey) == "string" and winKey:sub(1, 3) == "tp:" then
         return CludesUI.GetThirdPartySkinStyle()
     end
-    if CludesUI.BlizzWindowSkinsKilled() then return "off" end
+    if CludesUI.BlizzWindowSkinsKilled() then
+        return "off"
+    end
     local ek = WINDOW_ENABLE_KEYS[winKey]
-    if ek and not EnabledValue(winKey, CludesUIDB and CludesUIDB[ek]) then return "off" end
+    if ek and not EnabledValue(winKey, CludesUIDB and CludesUIDB[ek]) then
+        return "off"
+    end
     local styles = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
     local s = styles and styles[winKey]
-    if s == "modern" or s == "blizzard" then return s end
+    if s == "modern" or s == "blizzard" then
+        return s
+    end
     return "cui"
 end
 
@@ -288,8 +356,12 @@ function CludesUI.GetThirdPartySkinStyle()
     -- as it stands in the CludesUI look's slot, so switching the whole UI
     -- leaves the vote where it was.
     local slots = CludesUIDB and CludesUIDB.windowSkinStyleSlots
-    local cuiSlot = type(slots) == "table" and slots.active and slots.active ~= "cui"
-        and type(slots.cui) == "table" and slots.cui or nil
+    local cuiSlot = type(slots) == "table"
+            and slots.active
+            and slots.active ~= "cui"
+            and type(slots.cui) == "table"
+            and slots.cui
+        or nil
     local killed = CludesUI.BlizzWindowSkinsKilled()
     for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
         -- The inspect sheet renders in the character sheet's style: one vote.
@@ -297,12 +369,17 @@ function CludesUI.GetThirdPartySkinStyle()
             local s = CludesUI.GetBlizzWindowStyle(winKey)
             -- A Blizz Default character sheet wears no skin: it votes like
             -- a window that is off.
-            if s == "blizzard" then s = "off" end
+            if s == "blizzard" then
+                s = "off"
+            end
             if s == "off" and not killed and cuiSlot and EnabledValue(winKey, cuiSlot[ek]) then
                 s = (styles and styles[winKey] == "modern") and "modern" or "cui"
             end
-            if s == "modern" then modern = modern + 1
-            elseif s == "cui" then cui = cui + 1 end
+            if s == "modern" then
+                modern = modern + 1
+            elseif s == "cui" then
+                cui = cui + 1
+            end
         end
     end
     return (modern > cui) and "modern" or "cui"
@@ -311,7 +388,9 @@ end
 -- Turn off every window reskin at once (feature-intro popup's "Disable"). Writes explicit
 -- false to each enable key (GetBlizzWindowStyle -> "off"); blizzWindowSkinStyles is left intact so re-enable restores styles. Reskins install at load, so the caller must reload.
 function CludesUI.DisableAllBlizzWindowSkins()
-    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     for _, ek in pairs(WINDOW_ENABLE_KEYS) do
         CludesUIDB[ek] = false
     end
@@ -349,19 +428,30 @@ end
 -- every look a window that starts there.
 local FOREVER_STOCK = { micromenu = true, bagbar = true }
 local function LookSkinsWindows(look, winKey)
-    if winKey and STOCK_WINDOWS[winKey] then return false end
-    if look == "forever" then return not (winKey and FOREVER_STOCK[winKey]) end
+    if winKey and STOCK_WINDOWS[winKey] then
+        return false
+    end
+    if look == "forever" then
+        return not (winKey and FOREVER_STOCK[winKey])
+    end
     return look == "cui"
 end
 function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
-    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     local slots = CludesUIDB.windowSkinStyleSlots
-    if type(slots) ~= "table" then slots = nil end
+    if type(slots) ~= "table" then
+        slots = nil
+    end
     local rec = CludesUIDB.windowSkinsStockSeeded
-    local from = (slots and slots.active)
-        or (type(rec) == "table" and (legacyStock or "blizzard")) or "cui"
-    if from == to then return false end
-    if dryRun then return true end
+    local from = (slots and slots.active) or (type(rec) == "table" and (legacyStock or "blizzard")) or "cui"
+    if from == to then
+        return false
+    end
+    if dryRun then
+        return true
+    end
     if not slots then
         slots = {}
         if type(rec) == "table" then
@@ -377,23 +467,35 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     end
     CludesUIDB.windowSkinsStockSeeded = nil
     local styles = CludesUIDB.blizzWindowSkinStyles
-    if type(styles) ~= "table" then styles = nil end
+    if type(styles) ~= "table" then
+        styles = nil
+    end
     local out = {}
     for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
-        if WindowInSlots(winKey) then out[ek] = EnabledValue(winKey, CludesUIDB[ek]) end
+        if WindowInSlots(winKey) then
+            out[ek] = EnabledValue(winKey, CludesUIDB[ek])
+        end
     end
     out.charsheetStyle = (styles and styles.charsheet) or "cui"
     slots[from] = out
     local saved = slots[to]
-    if type(saved) ~= "table" then saved = nil end
+    if type(saved) ~= "table" then
+        saved = nil
+    end
     for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
         if WindowInSlots(winKey) then
             local v = saved and saved[ek]
-            if v == nil then v = LookSkinsWindows(to, winKey) end
+            if v == nil then
+                v = LookSkinsWindows(to, winKey)
+            end
             -- On = OnValue (nil, the install default, or true for a stock
             -- window), off = false. An explicit branch: `x and false or nil`
             -- can only ever yield nil.
-            if v then CludesUIDB[ek] = OnValue(winKey) else CludesUIDB[ek] = false end
+            if v then
+                CludesUIDB[ek] = OnValue(winKey)
+            else
+                CludesUIDB[ek] = false
+            end
         end
     end
     -- The character sheet's style. A look's first visit (or a slot saved
@@ -409,7 +511,9 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
         end
     end
     if cs == "cui" then
-        if styles then styles.charsheet = nil end
+        if styles then
+            styles.charsheet = nil
+        end
     elseif cs then
         if not styles then
             styles = {}
@@ -429,17 +533,27 @@ end
 -- is nothing to follow (nil). liveFonts: the live font store, for the
 -- active profile (its own snapshot is stale until the next switch).
 function CludesUI.ProfileWindowSkinLook(prof, liveFonts)
-    if type(prof) ~= "table" then return nil end
+    if type(prof) ~= "table" then
+        return nil
+    end
     local look = prof.windowSkinLook
     -- WoW Forever's own window look; a Forever profile imported on retail
     -- renders Blizzard Style there, so it takes that look's windows.
-    if look == "forever" then return CludesUI.IS_FOREVER and "forever" or "blizzard" end
-    if look == "cui" or look == "blizzard" or look == "classic" then return look end
+    if look == "forever" then
+        return CludesUI.IS_FOREVER and "forever" or "blizzard"
+    end
+    if look == "cui" or look == "blizzard" or look == "classic" then
+        return look
+    end
     local fonts = liveFonts or prof.fonts
     local fs = type(fonts) == "table" and fonts._styleSlots
     look = type(fs) == "table" and fs.active
-    if look == "cui" or look == "blizzard" or look == "classic" then return look end
-    if CludesUIDB and type(CludesUIDB.windowSkinStyleSlots) == "table" then return "cui" end
+    if look == "cui" or look == "blizzard" or look == "classic" then
+        return look
+    end
+    if CludesUIDB and type(CludesUIDB.windowSkinStyleSlots) == "table" then
+        return "cui"
+    end
     return nil
 end
 
@@ -451,10 +565,14 @@ end
 -- the look offers the reload (ProfileChangesWindowSkins).
 function CludesUI.ReconcileWindowSkinLook()
     local db = CludesUIDB
-    if type(db) ~= "table" then return end
+    if type(db) ~= "table" then
+        return
+    end
     local prof = CludesUI.GetActiveProfileData()
     local look = CludesUI.ProfileWindowSkinLook(prof, db.fonts)
-    if look then CludesUI.SwapWindowSkinStyle(look, false, look ~= "cui" and look or nil) end
+    if look then
+        CludesUI.SwapWindowSkinStyle(look, false, look ~= "cui" and look or nil)
+    end
 end
 
 -- Main-chunk locals the CUI_BlizzardSkin_*.lua files re-import by name.
@@ -463,6 +581,7 @@ end
 -- before it got there, so one that errors, does not compile or is missing
 -- stops the files behind it.
 CludesUI.NewInternals(ns, "_internals", {
-    FFD = FFD, GetFFD = GetFFD,
+    FFD = FFD,
+    GetFFD = GetFFD,
     last = "main",
 })

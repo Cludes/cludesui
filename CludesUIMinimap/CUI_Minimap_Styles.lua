@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Styles.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ADDON_NAME, EBS, GetFFD, PP = I.ADDON_NAME, I.EBS, I.GetFFD, I.PP
@@ -42,9 +46,13 @@ end
 
 function EBS._PositionAddonCompartment(btn)
     local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    if not mp or not Minimap then return end
+    if not mp or not Minimap then
+        return
+    end
     EBS._compartmentApplying = true
-    if btn:GetParent() ~= Minimap then btn:SetParent(Minimap) end
+    if btn:GetParent() ~= Minimap then
+        btn:SetParent(Minimap)
+    end
     btn:SetFrameStrata("HIGH")
     btn:SetFrameLevel((Minimap:GetFrameLevel() or 0) + 10)
     btn:SetScale(mp.addonCompartmentScale or 0.9)
@@ -83,7 +91,13 @@ function EBS._PositionAddonCompartment(btn)
         end
     end
     if not placed then
-        btn:SetPoint(corner, GetFFD(Minimap).layoutFrame or Minimap, corner, mp.addonCompartmentX or 0, mp.addonCompartmentY or 0)
+        btn:SetPoint(
+            corner,
+            GetFFD(Minimap).layoutFrame or Minimap,
+            corner,
+            mp.addonCompartmentX or 0,
+            mp.addonCompartmentY or 0
+        )
     end
     -- The cluster's alpha/mouse state does not follow the reparent, and the
     -- pre-fix sessions left it parked on a hidden frame -- re-assert both.
@@ -94,9 +108,13 @@ end
 
 function EBS._ApplyAddonCompartment()
     local btn = _G.AddonCompartmentFrame
-    if not btn then return end
+    if not btn then
+        return
+    end
     local mp = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-    if not mp then return end
+    if not mp then
+        return
+    end
 
     -- One-time persistent hooks, mirroring the folio's: Blizzard re-anchors and
     -- reparents this button on edit-mode relayouts and cluster updates, often
@@ -105,9 +123,13 @@ function EBS._ApplyAddonCompartment()
     if not EBS._compartmentHooked then
         EBS._compartmentHooked = true
         local function reassert(self)
-            if EBS._compartmentApplying then return end
+            if EBS._compartmentApplying then
+                return
+            end
             local m = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-            if not m then return end
+            if not m then
+                return
+            end
             if m.hideAddonCompartment then
                 EBS._ParkAddonCompartment(self)
             else
@@ -121,7 +143,9 @@ function EBS._ApplyAddonCompartment()
         -- Hovering the compartment counts as hovering the map region, so the
         -- hover-reveal elements stay alive while the cursor is on it.
         btn:HookScript("OnEnter", function()
-            if EBS._HVRevealMapHover then EBS._HVRevealMapHover() end
+            if EBS._HVRevealMapHover then
+                EBS._HVRevealMapHover()
+            end
         end)
     end
 
@@ -135,7 +159,9 @@ function EBS._ApplyAddonCompartment()
     -- an empty compartment is never forced on screen.
     if not btn:IsShown() then
         local reg = btn.registeredAddons
-        if reg and #reg > 0 then btn:Show() end
+        if reg and #reg > 0 then
+            btn:Show()
+        end
     end
 end
 
@@ -151,9 +177,12 @@ local cropMasks = {}
 -- bar's extra height each, so the whole frame, bar included, is a square (the
 -- nearest crop mask, and the crop that mask cuts). 0 keeps the canvas whole.
 EBS._MapCrop = function(p, mapSize)
-    if not p then return 0 end
+    if not p then
+        return 0
+    end
     if EBS._MapShape(p) == "rectangular" then
-        return mapSize * 32 / 256, "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-crop-mask.tga"
+        return mapSize * 32 / 256,
+            "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-crop-mask.tga"
     end
     if EBS._MinimapFvSquare() then
         local _, locationMode = GetElementModes(p)
@@ -205,13 +234,14 @@ EBS._MinimapStyle = function()
     local v = EBS._styleLatch
     if v == nil then
         local m = EBS.db and EBS.db.profile and EBS.db.profile.minimap
-        if not m then return "cui" end
+        if not m then
+            return "cui"
+        end
         v = (m.useClassicStyle and "classic") or (m.useBlizzardStyle and "blizzard") or "cui"
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
-        local fv = v == "blizzard" and CludesUI.IS_FOREVER == true
-            and m.useForeverStyle == true
+        local fv = v == "blizzard" and CludesUI.IS_FOREVER == true and m.useForeverStyle == true
         -- Its Border Style Forever Square (where the heavy bronze art
         -- exists): the CludesUI look's square map in that frame, so the
         -- module renders "cui" and every stock site stands down, the
@@ -219,7 +249,8 @@ EBS._MinimapStyle = function()
         -- variant as it is, Slim Square ("slim") the slim square below;
         -- anything else is Forever Square, the default.
         local fvSlim = fv and m.foreverBorder == "slim"
-        EBS._fvSquare = fv and not fvSlim and m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK() or false
+        EBS._fvSquare = fv and not fvSlim and m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK()
+            or false
         -- Plain Blizzard Style on the Forever client has a Border Style of
         -- its own (blizzBorder): Square, the default there, is the same
         -- square map in the slim bronze line (EBS._sqSlim) instead of the
@@ -227,15 +258,25 @@ EBS._MinimapStyle = function()
         -- (EBS._bzCircle: the variant's pieces render, while the published
         -- getters still name Blizzard Style). EBS._fvSquare reads true under
         -- either square. The variant's own Slim Square is that slim square.
-        EBS._sqSlim = (fvSlim or (v == "blizzard" and not fv and CludesUI.IS_FOREVER == true
-            and m.blizzBorder ~= "circle")) and CludesUI.ForeverBorderOK() or false
+        EBS._sqSlim = (
+            fvSlim
+            or (v == "blizzard" and not fv and CludesUI.IS_FOREVER == true and m.blizzBorder ~= "circle")
+        )
+                and CludesUI.ForeverBorderOK()
+            or false
         EBS._bzCircle = v == "blizzard" and not fv and CludesUI.IS_FOREVER == true and not EBS._sqSlim
         -- The look the profile's flags name (published MinimapForever), before
         -- a square renders it as the CludesUI layout.
         EBS._fvLook = fv
-        if EBS._bzCircle then fv = true end
-        if EBS._sqSlim then EBS._fvSquare = true end
-        if EBS._fvSquare then v, fv = "cui", false end
+        if EBS._bzCircle then
+            fv = true
+        end
+        if EBS._sqSlim then
+            EBS._fvSquare = true
+        end
+        if EBS._fvSquare then
+            v, fv = "cui", false
+        end
         EBS._foreverLatch = fv
         EBS._styleLatch = v
     end
@@ -243,35 +284,49 @@ EBS._MinimapStyle = function()
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and
 -- placement they share).
-EBS._MinimapBlizz = function() return EBS._MinimapStyle() ~= "cui" end
-EBS._MinimapClassic = function() return EBS._MinimapStyle() == "classic" end
+EBS._MinimapBlizz = function()
+    return EBS._MinimapStyle() ~= "cui"
+end
+EBS._MinimapClassic = function()
+    return EBS._MinimapStyle() == "classic"
+end
 -- WoW Forever variant: the style still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces, Blizzard Style's
 -- Circle on the Forever client included (it draws the variant's round map
 -- exactly). False off Forever, and under either square.
 EBS._MinimapForever = function()
-    if EBS._styleLatch == nil then EBS._MinimapStyle() end
+    if EBS._styleLatch == nil then
+        EBS._MinimapStyle()
+    end
     return EBS._foreverLatch == true
 end
 -- A square frame on the Forever client, latched above: the WoW Forever look's
 -- Forever Square or Blizzard Style's Square (EBS._sqSlim tells them apart).
 -- False under every other look and off Forever.
 EBS._MinimapFvSquare = function()
-    if EBS._styleLatch == nil then EBS._MinimapStyle() end
+    if EBS._styleLatch == nil then
+        EBS._MinimapStyle()
+    end
     return EBS._fvSquare == true
 end
 -- The shape the map renders: the stock styles' round map, Forever Square's
 -- square, else the stored Shape (read live).
 EBS._MapShape = function(p)
-    if EBS._MinimapBlizz() then return "circle" end
-    if EBS._MinimapFvSquare() then return "square" end
+    if EBS._MinimapBlizz() then
+        return "circle"
+    end
+    if EBS._MinimapFvSquare() then
+        return "square"
+    end
     return (p and p.shape) or "square"
 end
 -- SetAtlas for a stock-look texture: CludesUI.StockAtlas (retail art
 -- where the Forever client swaps the name), native under the WoW Forever
 -- look. Plain SetAtlas on retail.
 EBS._StockAtlas = function(tex, name, ...)
-    if EBS._MinimapForever() then return tex:SetAtlas(name, ...) end
+    if EBS._MinimapForever() then
+        return tex:SetAtlas(name, ...)
+    end
     return CludesUI.StockAtlas(tex, name, ...)
 end
 -- Published on the module ns for the Style page and the profile-switch check,
@@ -281,11 +336,15 @@ end
 CludesUI._ModuleNS[ADDON_NAME].MinimapBlizz = EBS._MinimapBlizz
 CludesUI._ModuleNS[ADDON_NAME].MinimapStyle = function()
     local v = EBS._MinimapStyle()
-    if EBS._fvSquare then return "blizzard" end
+    if EBS._fvSquare then
+        return "blizzard"
+    end
     return v
 end
 CludesUI._ModuleNS[ADDON_NAME].MinimapForever = function()
-    if EBS._styleLatch == nil then EBS._MinimapStyle() end
+    if EBS._styleLatch == nil then
+        EBS._MinimapStyle()
+    end
     return EBS._fvLook == true
 end
 -- The options page: a square frame renders this session, and the shape the
@@ -301,11 +360,17 @@ end
 -- unset Border Style is the square there too.
 CludesUI._ModuleNS[ADDON_NAME].MinimapFvBorderChanged = function(m)
     local sq = nil
-    if type(m) == "table" and not m.useClassicStyle and m.useBlizzardStyle
-       and CludesUI.IS_FOREVER == true then
+    if
+        type(m) == "table"
+        and not m.useClassicStyle
+        and m.useBlizzardStyle
+        and CludesUI.IS_FOREVER == true
+    then
         if m.useForeverStyle == true then
             if m.foreverBorder == "slim" then
-                if CludesUI.ForeverBorderOK() then sq = "slim" end
+                if CludesUI.ForeverBorderOK() then
+                    sq = "slim"
+                end
             elseif m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK() then
                 sq = "heavy"
             end
@@ -345,7 +410,9 @@ EBS._ZoomAnchor = function(btn, isIn, minimap)
         -- from the edges as the texts inside the map sit (EBS._FvInsideXY);
         -- the slim square's line leaves them where they are.
         local x, y = -2, isIn and 20 or 2
-        if EBS._fvSquare and not EBS._sqSlim then x, y = -6, isIn and 24 or 6 end
+        if EBS._fvSquare and not EBS._sqSlim then
+            x, y = -6, isIn and 24 or 6
+        end
         btn:SetPoint("BOTTOMRIGHT", GetFFD(minimap).layoutFrame or minimap, "BOTTOMRIGHT", x, y)
     end
 end
@@ -354,8 +421,13 @@ end
 -- radius r, angle t (radians, 0 = right, counter-clockwise), snapped to the
 -- physical grid at the row's effective scale.
 EBS._ArcPoint = function(btn, minimap, r, t, es)
-    btn:SetPoint("CENTER", minimap, "CENTER",
-        PP.SnapForES(r * math.cos(t), es), PP.SnapForES(r * math.sin(t), es))
+    btn:SetPoint(
+        "CENTER",
+        minimap,
+        "CENTER",
+        PP.SnapForES(r * math.cos(t), es),
+        PP.SnapForES(r * math.sin(t), es)
+    )
 end
 
 -- Compass ring + top border bar. The compass lives on MinimapBackdrop, the
@@ -386,7 +458,9 @@ EBS._ApplyBlizzMinimapChrome = function(minimap, mapSize)
     -- (and the landing page button, which this module positions itself).
     local backdrop = _G.MinimapBackdrop
     if backdrop and backdrop ~= minimap then
-        if backdrop:GetParent() ~= minimap then backdrop:SetParent(minimap) end
+        if backdrop:GetParent() ~= minimap then
+            backdrop:SetParent(minimap)
+        end
         backdrop:ClearAllPoints()
         if fv then
             backdrop:SetPoint("TOPLEFT", minimap, "CENTER", -hw, hh)
@@ -511,8 +585,12 @@ EBS.FV_SLIM_TITLE = 24
 EBS.FV_SLIM_BAND = 0.75
 -- The square frame's outer edge past the map's sides and bottom (and its
 -- top without the title bar), and past its top with the title bar.
-function EBS._SqOut() return EBS._sqSlim and EBS.FV_SLIM_OUT or EBS.FV_SQUARE_OUT end
-function EBS._SqTitle() return EBS._sqSlim and EBS.FV_SLIM_TITLE or EBS.FV_SQUARE_TITLE end
+function EBS._SqOut()
+    return EBS._sqSlim and EBS.FV_SLIM_OUT or EBS.FV_SQUARE_OUT
+end
+function EBS._SqTitle()
+    return EBS._sqSlim and EBS.FV_SLIM_TITLE or EBS.FV_SQUARE_TITLE
+end
 -- Rows outside the frame: the rim's outer shadow and 2px more past its outer
 -- edge (Distance from Map adds to it), and between two ring buttons' rings
 -- (Icon Spacing adds to it).
@@ -593,7 +671,9 @@ EBS._ApplyForeverSquare = function(minimap)
         d.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -o - 2, top - bar.bandEnd)
     end
     local ab = CludesUI._ModuleNS.CludesUIActionBars
-    if ab then ab.AB_ForeverEyeRelayout() end
+    if ab then
+        ab.AB_ForeverEyeRelayout()
+    end
 end
 
 -- WoW Forever: the queue eye's stock spot on the ring (Blizzard's Forever
@@ -605,9 +685,13 @@ end
 -- bottom-left corner (the 45px eye's top-right corner on the frame's outer
 -- corner), clear of the rows the CludesUI layout hangs along the edges.
 EBS._QueueEyeSpot = function()
-    if not CludesUI.IS_FOREVER then return nil end
+    if not CludesUI.IS_FOREVER then
+        return nil
+    end
     local sq = EBS._MinimapFvSquare()
-    if not sq and EBS._MinimapStyle() ~= "blizzard" then return nil end
+    if not sq and EBS._MinimapStyle() ~= "blizzard" then
+        return nil
+    end
     local size = EBS.db.profile.minimap.mapSize or 140
     if sq then
         local o = size / 2 + EBS._SqOut() + 22.5
@@ -632,7 +716,9 @@ EBS._ApplyForeverDiel = function(minimap, mapSize)
     local orb = d.foreverDiel
     if not orb then
         local rim = C_Texture.GetAtlasInfo("UI-HUD-Minimap-Frame-Cycle")
-        if not rim then return end
+        if not rim then
+            return
+        end
         orb = CreateFrame("Frame", nil, minimap)
         orb:SetSize(rim.width, rim.height)
         orb:EnableMouse(false)
@@ -645,7 +731,9 @@ EBS._ApplyForeverDiel = function(minimap, mapSize)
             disc:SetAtlas(isDay and "UI-HUD-Minimap-DayCycle" or "UI-HUD-Minimap-NightCycle", true)
         end
         orb:RegisterEvent("DIEL_CYCLE_CHANGED")
-        orb:SetScript("OnEvent", function(_, _, isDay) Paint(isDay) end)
+        orb:SetScript("OnEvent", function(_, _, isDay)
+            Paint(isDay)
+        end)
         Paint(C_DateAndTime.IsDayTime())
         d.foreverDiel = orb
     end
@@ -664,21 +752,34 @@ end
 EBS._ClassicZoomButton = function(btn, isIn, s)
     btn:SetSize(32 * s, 32 * s)
     local d = GetFFD(btn)
-    if d.classicSkin then return end
+    if d.classicSkin then
+        return
+    end
     d.classicSkin = true
-    local base = isIn and "Interface\\Minimap\\UI-Minimap-ZoomInButton-" or "Interface\\Minimap\\UI-Minimap-ZoomOutButton-"
+    local base = isIn and "Interface\\Minimap\\UI-Minimap-ZoomInButton-"
+        or "Interface\\Minimap\\UI-Minimap-ZoomOutButton-"
     btn:SetNormalTexture(base .. "Up")
     btn:SetPushedTexture(base .. "Down")
     btn:SetDisabledTexture(base .. "Disabled")
     btn:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
     local tex = btn:GetNormalTexture()
-    if tex then tex:SetTexCoord(0, 1, 0, 1) end
+    if tex then
+        tex:SetTexCoord(0, 1, 0, 1)
+    end
     tex = btn:GetPushedTexture()
-    if tex then tex:SetTexCoord(0, 1, 0, 1) end
+    if tex then
+        tex:SetTexCoord(0, 1, 0, 1)
+    end
     tex = btn:GetDisabledTexture()
-    if tex then tex:SetTexCoord(0, 1, 0, 1); tex:SetDesaturated(false) end
+    if tex then
+        tex:SetTexCoord(0, 1, 0, 1)
+        tex:SetDesaturated(false)
+    end
     tex = btn:GetHighlightTexture()
-    if tex then tex:SetTexCoord(0, 1, 0, 1); tex:SetBlendMode("ADD") end
+    if tex then
+        tex:SetTexCoord(0, 1, 0, 1)
+        tex:SetBlendMode("ADD")
+    end
 end
 
 -- Classic WoW UI chrome: the vanilla UI-Minimap-Border file on two frames of

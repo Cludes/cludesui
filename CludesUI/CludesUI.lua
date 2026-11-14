@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI.lua  -  Custom Options Panel, shared across the whole CUI suite.
 --  Scaffold: background, sidebar, header, content area, controls.
@@ -27,58 +29,76 @@ end
 -------------------------------------------------------------------------------
 -- Accent colour -- canonical default: #4CC9F0 teal. The Forever client opens
 -- on #DCA77F (soft bronze) instead; a chosen accent always wins over this.
-local DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 76/255, 201/255, 240/255
+local DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 76 / 255, 201 / 255, 240 / 255
 if CUI_CLIENT_FOREVER == true then
-    DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 220/255, 167/255, 127/255
+    DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 220 / 255, 167 / 255, 127 / 255
 end
 
 -- Theme presets: { accentR, accentG, accentB, bgFile }
 -- bgFile is relative to MEDIA_PATH (resolved later after MEDIA_PATH is defined)
 local THEME_PRESETS = {
-    ["CludesUI"]    = { r = 76/255,  g = 201/255, b = 240/255 },  -- #4CC9F0
-    ["CludesUI Original"] = { r = 76/255, g = 201/255, b = 240/255 },  -- #4CC9F0 (not listed; kept for saved settings)
-    ["CludesUI Forever"] = { r = 220/255, g = 167/255, b = 127/255 },  -- #DCA77F soft bronze
-    ["Horde"]          = { r = 255/255, g = 90/255,  b = 31/255  },  -- #FF5A1F
-    ["Alliance"]       = { r = 63/255,  g = 167/255, b = 255/255 },  -- #3FA7FF
-    ["Faction (Auto)"] = nil,  -- resolved at runtime to Horde or Alliance
-    ["Midnight"]       = { r = 120/255, g = 65/255,  b = 200/255 },  -- #7841C8  deep purple void
-    ["Dark"]           = { r = 1,       g = 1,       b = 1       },  -- white accent
-    ["Pixels"]         = { r = 1,       g = 1,       b = 1       },  -- white accent
-    ["Ember"]          = { r = 255/255, g = 122/255, b = 26/255  },  -- #FF7A1A warm orange
-    ["Blood"]          = { r = 215/255, g = 38/255,  b = 61/255  },  -- #D7263D crimson
-    ["Frost"]          = { r = 76/255,  g = 201/255, b = 240/255 },  -- #4CC9F0 ice blue (now the house colour; not listed, kept for saved settings)
-    ["Arcane"]         = { r = 155/255, g = 107/255, b = 255/255 },  -- #9B6BFF bright violet
-    ["Gold"]           = { r = 230/255, g = 180/255, b = 80/255  },  -- #E6B450 muted gold
-    ["Toxic"]          = { r = 166/255, g = 226/255, b = 46/255  },  -- #A6E22E lime green
-    ["Class Colored"]  = nil,  -- resolved at runtime from player class
-    ["Custom Color"]   = nil,  -- user-chosen via color picker
+    ["CludesUI"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0
+    ["CludesUI Original"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0 (not listed; kept for saved settings)
+    ["CludesUI Forever"] = { r = 220 / 255, g = 167 / 255, b = 127 / 255 }, -- #DCA77F soft bronze
+    ["Horde"] = { r = 255 / 255, g = 90 / 255, b = 31 / 255 }, -- #FF5A1F
+    ["Alliance"] = { r = 63 / 255, g = 167 / 255, b = 255 / 255 }, -- #3FA7FF
+    ["Faction (Auto)"] = nil, -- resolved at runtime to Horde or Alliance
+    ["Midnight"] = { r = 120 / 255, g = 65 / 255, b = 200 / 255 }, -- #7841C8  deep purple void
+    ["Dark"] = { r = 1, g = 1, b = 1 }, -- white accent
+    ["Pixels"] = { r = 1, g = 1, b = 1 }, -- white accent
+    ["Ember"] = { r = 255 / 255, g = 122 / 255, b = 26 / 255 }, -- #FF7A1A warm orange
+    ["Blood"] = { r = 215 / 255, g = 38 / 255, b = 61 / 255 }, -- #D7263D crimson
+    ["Frost"] = { r = 76 / 255, g = 201 / 255, b = 240 / 255 }, -- #4CC9F0 ice blue (now the house colour; not listed, kept for saved settings)
+    ["Arcane"] = { r = 155 / 255, g = 107 / 255, b = 255 / 255 }, -- #9B6BFF bright violet
+    ["Gold"] = { r = 230 / 255, g = 180 / 255, b = 80 / 255 }, -- #E6B450 muted gold
+    ["Toxic"] = { r = 166 / 255, g = 226 / 255, b = 46 / 255 }, -- #A6E22E lime green
+    ["Class Colored"] = nil, -- resolved at runtime from player class
+    ["Custom Color"] = nil, -- user-chosen via color picker
 }
-local THEME_ORDER = { "CludesUI", "CludesUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Ember", "Blood", "Arcane", "Gold", "Toxic", "Class Colored", "Custom Color" }
+local THEME_ORDER = {
+    "CludesUI",
+    "CludesUI Forever",
+    "Horde",
+    "Alliance",
+    "Faction (Auto)",
+    "Midnight",
+    "Dark",
+    "Pixels",
+    "Ember",
+    "Blood",
+    "Arcane",
+    "Gold",
+    "Toxic",
+    "Class Colored",
+    "Custom Color",
+}
 -- "CludesUI Forever" is the WoW Forever look: only that client lists it.
-if CUI_CLIENT_FOREVER ~= true then table.remove(THEME_ORDER, 2) end
+if CUI_CLIENT_FOREVER ~= true then
+    table.remove(THEME_ORDER, 2)
+end
 -- The theme in force when none was chosen: the Forever client opens on its own
 -- backdrop, every other client on the blue CludesUI theme. A chosen theme always wins.
 CludesUI.DEFAULT_THEME = (CUI_CLIENT_FOREVER == true) and "CludesUI Forever" or "CludesUI"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
 local THEME_BG_FILES = {
-    ["CludesUI"]   = "backgrounds\\cui-bg-new.png",
+    ["CludesUI"] = "backgrounds\\cui-bg-new.png",
     ["CludesUI Original"] = "backgrounds\\cui-bg-new.png",
     ["CludesUI Forever"] = "backgrounds\\cui-bg-forever-compressed.png",
-    ["Horde"]         = "backgrounds\\cui-bg-new.png",
-    ["Alliance"]      = "backgrounds\\cui-bg-new.png",
-    ["Midnight"]      = "backgrounds\\cui-bg-new.png",
-    ["Dark"]          = "backgrounds\\cui-bg-new.png",
-    ["Pixels"]        = "backgrounds\\cui-bg-new.png",
+    ["Horde"] = "backgrounds\\cui-bg-new.png",
+    ["Alliance"] = "backgrounds\\cui-bg-new.png",
+    ["Midnight"] = "backgrounds\\cui-bg-new.png",
+    ["Dark"] = "backgrounds\\cui-bg-new.png",
+    ["Pixels"] = "backgrounds\\cui-bg-new.png",
     -- The six colour schemes share the tintable art: the panel desaturates it
     -- and tints it to the scheme's accent, as it does for Class Colored.
-    ["Ember"]         = "backgrounds\\cui-bg-new.png",
-    ["Blood"]         = "backgrounds\\cui-bg-new.png",
-    ["Frost"]         = "backgrounds\\cui-bg-new.png",
-    ["Arcane"]        = "backgrounds\\cui-bg-new.png",
-    ["Gold"]          = "backgrounds\\cui-bg-new.png",
-    ["Toxic"]         = "backgrounds\\cui-bg-new.png",
+    ["Ember"] = "backgrounds\\cui-bg-new.png",
+    ["Blood"] = "backgrounds\\cui-bg-new.png",
+    ["Frost"] = "backgrounds\\cui-bg-new.png",
+    ["Arcane"] = "backgrounds\\cui-bg-new.png",
+    ["Gold"] = "backgrounds\\cui-bg-new.png",
+    ["Toxic"] = "backgrounds\\cui-bg-new.png",
     ["Class Colored"] = "backgrounds\\cui-bg-new.png",
-    ["Custom Color"]  = "backgrounds\\cui-bg-new.png",
+    ["Custom Color"] = "backgrounds\\cui-bg-new.png",
 }
 -- Theme art is not loaded at file load: each file is a 1500x1154 canvas, and
 -- holding every theme in VRAM costs tens of MB for a panel most sessions never
@@ -89,8 +109,7 @@ local THEME_BG_FILES = {
 -- as white art, cropped to their band of the 1500x1154 canvas (x, y = top-left
 -- offset; w, h = size, all in canvas units). Drawn above the theme art and tinted
 -- with the live UI accent; built on the theme's first apply (CreateMainFrame).
-CludesUI.THEME_ACCENT_OVERLAYS = {
-}
+CludesUI.THEME_ACCENT_OVERLAYS = {}
 -- The close box painted into each theme art file, in canvas units: x, y, w, h =
 -- tight rect around its border; bx, by, bw, bh = outer rect of the border line
 -- itself and bd = its depth (the hover glow lights only that ring); gx, gy =
@@ -101,12 +120,50 @@ CludesUI.THEME_ACCENT_OVERLAYS = {
 -- rb = the logo badge ring colour. The collapse button and the collapsed mini
 -- window rebuild their boxes and badge from these rects of the art on screen.
 CludesUI.THEME_CLOSE_BOX = {
-    ["backgrounds\\cui-bg-new.png"] = { x = 1345, y = 115, w = 44, h = 43, gx = 1367, gy = 136,
-        bx = 1346, by = 116, bw = 42, bh = 41, bd = 2,
-        r = 0.686, g = 0.718, b = 0.714, sh = 0.5, ex = 118, ey = 110, rr = 0.324, rg = 0.345, rb = 0.363 },
-    ["backgrounds\\cui-bg-forever-compressed.png"] = { x = 1346, y = 114, w = 43, h = 41, gx = 1368, gy = 134,
-        bx = 1348, by = 116, bw = 40, bh = 38, bd = 3,
-        r = 0.894, g = 0.788, b = 0.617, sh = 0.5, ex = 122, ey = 109, rr = 0.417, rg = 0.311, rb = 0.231 },
+    ["backgrounds\\cui-bg-new.png"] = {
+        x = 1345,
+        y = 115,
+        w = 44,
+        h = 43,
+        gx = 1367,
+        gy = 136,
+        bx = 1346,
+        by = 116,
+        bw = 42,
+        bh = 41,
+        bd = 2,
+        r = 0.686,
+        g = 0.718,
+        b = 0.714,
+        sh = 0.5,
+        ex = 118,
+        ey = 110,
+        rr = 0.324,
+        rg = 0.345,
+        rb = 0.363,
+    },
+    ["backgrounds\\cui-bg-forever-compressed.png"] = {
+        x = 1346,
+        y = 114,
+        w = 43,
+        h = 41,
+        gx = 1368,
+        gy = 134,
+        bx = 1348,
+        by = 116,
+        bw = 40,
+        bh = 38,
+        bd = 3,
+        r = 0.894,
+        g = 0.788,
+        b = 0.617,
+        sh = 0.5,
+        ex = 122,
+        ey = 109,
+        rr = 0.417,
+        rg = 0.311,
+        rb = 0.231,
+    },
 }
 
 --- Resolve "Faction (Auto)" to Horde/Alliance by player faction; other themes unchanged.
@@ -157,17 +214,27 @@ local STYLE = {
     -- slate tint, matching the panel art, each at its own lightness.
 
     -- Panel background
-    PANEL_BG_R = 0.069, PANEL_BG_G = 0.058, PANEL_BG_B = 0.047,
+    PANEL_BG_R = 0.069,
+    PANEL_BG_G = 0.058,
+    PANEL_BG_B = 0.047,
 
     -- Global border  (white + alpha -- adapts to any background tint)
-    BORDER_R = 1, BORDER_G = 1, BORDER_B = 1,
+    BORDER_R = 1,
+    BORDER_G = 1,
+    BORDER_B = 1,
     BORDER_A = 0.05,
 
     -- Text  (white + alpha -- adapts to any background tint)
-    TEXT_WHITE_R = 1, TEXT_WHITE_G = 1, TEXT_WHITE_B = 1,
-    TEXT_DIM_R = 1, TEXT_DIM_G = 1, TEXT_DIM_B = 1,
+    TEXT_WHITE_R = 1,
+    TEXT_WHITE_G = 1,
+    TEXT_WHITE_B = 1,
+    TEXT_DIM_R = 1,
+    TEXT_DIM_G = 1,
+    TEXT_DIM_B = 1,
     TEXT_DIM_A = 0.53,
-    TEXT_SECTION_R = 1, TEXT_SECTION_G = 1, TEXT_SECTION_B = 1,
+    TEXT_SECTION_R = 1,
+    TEXT_SECTION_G = 1,
+    TEXT_SECTION_B = 1,
     TEXT_SECTION_A = 0.41,
 
     -- Row alternating background alpha  (black overlay on option rows)
@@ -175,61 +242,83 @@ local STYLE = {
     ROW_BG_EVEN = 0.2,
 
     -- Slider  (white + alpha for track -- adapts to any background tint)
-    SL_TRACK_R = 1, SL_TRACK_G = 1, SL_TRACK_B = 1,        -- track bg (white + alpha)
-    SL_TRACK_A = 0.16,                                     -- track bg alpha
-    SL_FILL_A = 0.75,                                      -- filled portion alpha (colour = accent)
-    SL_INPUT_R = 0.030, SL_INPUT_G = 0.023, SL_INPUT_B = 0.018, -- input box background (darker than bg, stays as-is)
-    SL_INPUT_A = 0.25,                                     -- input box alpha (all sliders)
-    SL_INPUT_BRD_A = 0.12,                                 -- input box border alpha (white; a visible outline, dimmer than a dropdown's)
+    SL_TRACK_R = 1,
+    SL_TRACK_G = 1,
+    SL_TRACK_B = 1, -- track bg (white + alpha)
+    SL_TRACK_A = 0.16, -- track bg alpha
+    SL_FILL_A = 0.75, -- filled portion alpha (colour = accent)
+    SL_INPUT_R = 0.030,
+    SL_INPUT_G = 0.023,
+    SL_INPUT_B = 0.018, -- input box background (darker than bg, stays as-is)
+    SL_INPUT_A = 0.25, -- input box alpha (all sliders)
+    SL_INPUT_BRD_A = 0.12, -- input box border alpha (white; a visible outline, dimmer than a dropdown's)
 
     -- Multi-widget slider overrides  (applied additively in BuildSliderCore)
-    MW_INPUT_ALPHA_BOOST = 0.15,                           -- additive alpha boost for multi-widget input fields
-    MW_TRACK_ALPHA_BOOST = 0.06,                           -- additive alpha boost for multi-widget slider track
+    MW_INPUT_ALPHA_BOOST = 0.15, -- additive alpha boost for multi-widget input fields
+    MW_TRACK_ALPHA_BOOST = 0.06, -- additive alpha boost for multi-widget slider track
 
     -- Toggle  (white + alpha for off states -- adapts to any background tint)
-    TG_OFF_R = 0.267, TG_OFF_G = 0.267, TG_OFF_B = 0.267,  -- track when OFF (#444)
-    TG_OFF_A = 0.65,                                       -- track OFF alpha
-    TG_ON_A = 0.75,                                        -- track alpha at full ON (colour = accent)
-    TG_KNOB_OFF_R = 1, TG_KNOB_OFF_G = 1, TG_KNOB_OFF_B = 1, -- knob when OFF (white + alpha)
-    TG_KNOB_OFF_A = 0.5,                                   -- knob OFF alpha
-    TG_KNOB_ON_R = 1, TG_KNOB_ON_G = 1, TG_KNOB_ON_B = 1,  -- knob when ON
-    TG_KNOB_ON_A = 1,                                      -- knob ON alpha
+    TG_OFF_R = 0.267,
+    TG_OFF_G = 0.267,
+    TG_OFF_B = 0.267, -- track when OFF (#444)
+    TG_OFF_A = 0.65, -- track OFF alpha
+    TG_ON_A = 0.75, -- track alpha at full ON (colour = accent)
+    TG_KNOB_OFF_R = 1,
+    TG_KNOB_OFF_G = 1,
+    TG_KNOB_OFF_B = 1, -- knob when OFF (white + alpha)
+    TG_KNOB_OFF_A = 0.5, -- knob OFF alpha
+    TG_KNOB_ON_R = 1,
+    TG_KNOB_ON_G = 1,
+    TG_KNOB_ON_B = 1, -- knob when ON
+    TG_KNOB_ON_A = 1, -- knob ON alpha
 
     -- Checkbox
-    CB_BOX_R = 0.112, CB_BOX_G = 0.105, CB_BOX_B = 0.098,  -- box background
-    CB_BRD_A = 0.05, CB_ACT_BRD_A = 0.15,                  -- box border alpha / checked border alpha
+    CB_BOX_R = 0.112,
+    CB_BOX_G = 0.105,
+    CB_BOX_B = 0.098, -- box background
+    CB_BRD_A = 0.05,
+    CB_ACT_BRD_A = 0.15, -- box border alpha / checked border alpha
 
     -- Button / WideButton
-    BTN_BG_R = 0.089, BTN_BG_G = 0.080, BTN_BG_B = 0.072,  -- background
+    BTN_BG_R = 0.089,
+    BTN_BG_G = 0.080,
+    BTN_BG_B = 0.072, -- background
     BTN_BG_A = 0.6,
-    BTN_BG_HA = 0.65,                                      -- background alpha hovered
-    BTN_BRD_A = 0.3,                                       -- border alpha (colour = white)
-    BTN_BRD_HA = 0.45,                                     -- border alpha hovered
-    BTN_TXT_A = 0.55,                                      -- text alpha (colour = white)
-    BTN_TXT_HA = 0.70,                                     -- text alpha hovered
+    BTN_BG_HA = 0.65, -- background alpha hovered
+    BTN_BRD_A = 0.3, -- border alpha (colour = white)
+    BTN_BRD_HA = 0.45, -- border alpha hovered
+    BTN_TXT_A = 0.55, -- text alpha (colour = white)
+    BTN_TXT_HA = 0.70, -- text alpha hovered
 
     -- Dropdown
-    DD_BG_R = 0.103, DD_BG_G = 0.095, DD_BG_B = 0.088,     -- background
+    DD_BG_R = 0.103,
+    DD_BG_G = 0.095,
+    DD_BG_B = 0.088, -- background
     DD_BG_A = 0.9,
-    DD_BG_HA = 0.98,                                       -- background alpha hovered
-    DD_BRD_A = 0.20,                                       -- border alpha (colour = white)
-    DD_BRD_HA = 0.30,                                      -- border alpha hovered
-    DD_TXT_A = 0.50,                                       -- selected value text alpha (colour = white)
-    DD_TXT_HA = 0.60,                                      -- selected value text alpha hovered
-    DD_ITEM_HL_A = 0.12,                                   -- menu item highlight alpha (hover)
-    DD_ITEM_SEL_A = 0.08,                                  -- menu item highlight alpha (active selection)
+    DD_BG_HA = 0.98, -- background alpha hovered
+    DD_BRD_A = 0.20, -- border alpha (colour = white)
+    DD_BRD_HA = 0.30, -- border alpha hovered
+    DD_TXT_A = 0.50, -- selected value text alpha (colour = white)
+    DD_TXT_HA = 0.60, -- selected value text alpha hovered
+    DD_ITEM_HL_A = 0.12, -- menu item highlight alpha (hover)
+    DD_ITEM_SEL_A = 0.08, -- menu item highlight alpha (active selection)
 
     -- Multi-widget layout  (dual = 2-up, triple = 3-up -- shared by all widget types)
-    DUAL_ITEM_W = 350,                                     -- width of each item in a 2-up row
-    DUAL_GAP = 42,                                         -- gap between 2-up items
-    TRIPLE_ITEM_W = 180,                                   -- width of each item in a 3-up row
-    TRIPLE_GAP = 50,                                       -- gap between 3-up items
+    DUAL_ITEM_W = 350, -- width of each item in a 2-up row
+    DUAL_GAP = 42, -- gap between 2-up items
+    TRIPLE_ITEM_W = 180, -- width of each item in a 3-up row
+    TRIPLE_GAP = 50, -- gap between 3-up items
 }
 
 -- Color swatch border (packed into table)
 local CS = {
-    BRD_THICK = 1, SAT_THRESH = 0.25, CHROMA_MIN = 0.15,
-    SOLID_R = 1, SOLID_G = 1, SOLID_B = 1, SOLID_A = 1,
+    BRD_THICK = 1,
+    SAT_THRESH = 0.25,
+    CHROMA_MIN = 0.15,
+    SOLID_R = 1,
+    SOLID_G = 1,
+    SOLID_B = 1,
+    SOLID_A = 1,
 }
 
 -------------------------------------------------------------------------------
@@ -244,7 +333,8 @@ do
     local r, g, b
     if theme == "Custom Color" then
         local sa = db.accentColor
-        r, g, b = sa and sa.r or DEFAULT_ACCENT_R, sa and sa.g or DEFAULT_ACCENT_G, sa and sa.b or DEFAULT_ACCENT_B
+        r, g, b =
+            sa and sa.r or DEFAULT_ACCENT_R, sa and sa.g or DEFAULT_ACCENT_G, sa and sa.b or DEFAULT_ACCENT_B
     else
         local preset = THEME_PRESETS[theme]
         if preset then
@@ -258,26 +348,29 @@ end
 
 -- Registry of accent-colored elements (sidebar indicators, glows, tab underlines,
 -- footer buttons, popup confirm). Entry = { type="solid"|"gradient"|"font"|"callback", obj=... }
-local _accentElements = { _idx = {} }  -- _idx: obj -> index, prevents duplicates
+local _accentElements = { _idx = {} } -- _idx: obj -> index, prevents duplicates
 local function RegAccent(entry)
     local key = entry.obj or entry.fn
     if key and _accentElements._idx[key] then
         _accentElements[_accentElements._idx[key]] = entry
     else
         _accentElements[#_accentElements + 1] = entry
-        if key then _accentElements._idx[key] = #_accentElements end
+        if key then
+            _accentElements._idx[key] = #_accentElements
+        end
     end
 end
-local DARK_BG         = { r = STYLE.PANEL_BG_R, g = STYLE.PANEL_BG_G, b = STYLE.PANEL_BG_B }
-local BORDER_COLOR    = { r = STYLE.BORDER_R, g = STYLE.BORDER_G, b = STYLE.BORDER_B, a = STYLE.BORDER_A }
-local TEXT_WHITE      = { r = STYLE.TEXT_WHITE_R, g = STYLE.TEXT_WHITE_G, b = STYLE.TEXT_WHITE_B }
-local TEXT_DIM        = { r = STYLE.TEXT_DIM_R, g = STYLE.TEXT_DIM_G, b = STYLE.TEXT_DIM_B, a = STYLE.TEXT_DIM_A }
-local TEXT_SECTION    = { r = STYLE.TEXT_SECTION_R, g = STYLE.TEXT_SECTION_G, b = STYLE.TEXT_SECTION_B, a = STYLE.TEXT_SECTION_A }
+local DARK_BG = { r = STYLE.PANEL_BG_R, g = STYLE.PANEL_BG_G, b = STYLE.PANEL_BG_B }
+local BORDER_COLOR = { r = STYLE.BORDER_R, g = STYLE.BORDER_G, b = STYLE.BORDER_B, a = STYLE.BORDER_A }
+local TEXT_WHITE = { r = STYLE.TEXT_WHITE_R, g = STYLE.TEXT_WHITE_G, b = STYLE.TEXT_WHITE_B }
+local TEXT_DIM = { r = STYLE.TEXT_DIM_R, g = STYLE.TEXT_DIM_G, b = STYLE.TEXT_DIM_B, a = STYLE.TEXT_DIM_A }
+local TEXT_SECTION =
+    { r = STYLE.TEXT_SECTION_R, g = STYLE.TEXT_SECTION_G, b = STYLE.TEXT_SECTION_B, a = STYLE.TEXT_SECTION_A }
 
 -- Dropdown widget colours: widgets reference DD_BG_*, DD_BRD_*, DD_TXT_* directly
 
 local CONTENT_PAD = 45
-local CONTENT_HEADER_TOP_PAD = 10  -- extra top padding on scroll content when header is present
+local CONTENT_HEADER_TOP_PAD = 10 -- extra top padding on scroll content when header is present
 
 -- Paths  (media lives in CludesUI/media inside the parent addon folder)
 local ADDON_PATH = "Interface\\AddOns\\" .. CUI_HOST_ADDON .. "\\"
@@ -285,54 +378,54 @@ local MEDIA_PATH = "Interface\\AddOns\\CludesUI\\media\\"
 local _, playerClass = UnitClass("player")
 
 local CLASS_ART_MAP = {
-    DEATHKNIGHT  = "dk.png",
-    DEMONHUNTER  = "dh.png",
-    DRUID        = "druid.png",
-    EVOKER       = "evoker.png",
-    HUNTER       = "hunter.png",
-    MAGE         = "mage.png",
-    MONK         = "monk.png",
-    PALADIN      = "paladin.png",
-    PRIEST       = "priest.png",
-    ROGUE        = "rogue.png",
-    SHAMAN       = "shaman.png",
-    WARLOCK      = "warlock.png",
-    WARRIOR      = "warrior.png",
+    DEATHKNIGHT = "dk.png",
+    DEMONHUNTER = "dh.png",
+    DRUID = "druid.png",
+    EVOKER = "evoker.png",
+    HUNTER = "hunter.png",
+    MAGE = "mage.png",
+    MONK = "monk.png",
+    PALADIN = "paladin.png",
+    PRIEST = "priest.png",
+    ROGUE = "rogue.png",
+    SHAMAN = "shaman.png",
+    WARLOCK = "warlock.png",
+    WARRIOR = "warrior.png",
 }
 
 -- Official WoW class colors (from RAID_CLASS_COLORS)
 local CLASS_COLOR_MAP = {
-    DEATHKNIGHT  = { r = 0.77, g = 0.12, b = 0.23 },  -- #C41E3A
-    DEMONHUNTER  = { r = 0.64, g = 0.19, b = 0.79 },  -- #A330C9
-    DRUID        = { r = 1.00, g = 0.49, b = 0.04 },  -- #FF7C0A
-    EVOKER       = { r = 0.20, g = 0.58, b = 0.50 },  -- #33937F
-    HUNTER       = { r = 0.67, g = 0.83, b = 0.45 },  -- #AAD372
-    MAGE         = { r = 0.25, g = 0.78, b = 0.92 },  -- #3FC7EB
-    MONK         = { r = 0.00, g = 1.00, b = 0.60 },  -- #00FF98
-    PALADIN      = { r = 0.96, g = 0.55, b = 0.73 },  -- #F48CBA
-    PRIEST       = { r = 1.00, g = 1.00, b = 1.00 },  -- #FFFFFF
-    ROGUE        = { r = 1.00, g = 0.96, b = 0.41 },  -- #FFF468
-    SHAMAN       = { r = 0.00, g = 0.44, b = 0.87 },  -- #0070DD
-    WARLOCK      = { r = 0.53, g = 0.53, b = 0.93 },  -- #8788EE
-    WARRIOR      = { r = 0.78, g = 0.61, b = 0.43 },  -- #C69B6D
+    DEATHKNIGHT = { r = 0.77, g = 0.12, b = 0.23 }, -- #C41E3A
+    DEMONHUNTER = { r = 0.64, g = 0.19, b = 0.79 }, -- #A330C9
+    DRUID = { r = 1.00, g = 0.49, b = 0.04 }, -- #FF7C0A
+    EVOKER = { r = 0.20, g = 0.58, b = 0.50 }, -- #33937F
+    HUNTER = { r = 0.67, g = 0.83, b = 0.45 }, -- #AAD372
+    MAGE = { r = 0.25, g = 0.78, b = 0.92 }, -- #3FC7EB
+    MONK = { r = 0.00, g = 1.00, b = 0.60 }, -- #00FF98
+    PALADIN = { r = 0.96, g = 0.55, b = 0.73 }, -- #F48CBA
+    PRIEST = { r = 1.00, g = 1.00, b = 1.00 }, -- #FFFFFF
+    ROGUE = { r = 1.00, g = 0.96, b = 0.41 }, -- #FFF468
+    SHAMAN = { r = 0.00, g = 0.44, b = 0.87 }, -- #0070DD
+    WARLOCK = { r = 0.53, g = 0.53, b = 0.93 }, -- #8788EE
+    WARRIOR = { r = 0.78, g = 0.61, b = 0.43 }, -- #C69B6D
 }
 
 -- Class icon sprite-sheet UV grid (4-column sheet; left/right/top/bottom). Shared by
 -- every module's class-icon rendering; TEXTURE path stays per consumer. Read-only.
 CludesUI.CLASS_ICON_SPRITE_COORDS = {
-    WARRIOR     = { 0,     0.125, 0,     0.125 },
-    MAGE        = { 0.125, 0.25,  0,     0.125 },
-    ROGUE       = { 0.25,  0.375, 0,     0.125 },
-    DRUID       = { 0.375, 0.5,   0,     0.125 },
-    EVOKER      = { 0.5,   0.625, 0,     0.125 },
-    HUNTER      = { 0,     0.125, 0.125, 0.25  },
-    SHAMAN      = { 0.125, 0.25,  0.125, 0.25  },
-    PRIEST      = { 0.25,  0.375, 0.125, 0.25  },
-    WARLOCK     = { 0.375, 0.5,   0.125, 0.25  },
-    PALADIN     = { 0,     0.125, 0.25,  0.375 },
-    DEATHKNIGHT = { 0.125, 0.25,  0.25,  0.375 },
-    MONK        = { 0.25,  0.375, 0.25,  0.375 },
-    DEMONHUNTER = { 0.375, 0.5,   0.25,  0.375 },
+    WARRIOR = { 0, 0.125, 0, 0.125 },
+    MAGE = { 0.125, 0.25, 0, 0.125 },
+    ROGUE = { 0.25, 0.375, 0, 0.125 },
+    DRUID = { 0.375, 0.5, 0, 0.125 },
+    EVOKER = { 0.5, 0.625, 0, 0.125 },
+    HUNTER = { 0, 0.125, 0.125, 0.25 },
+    SHAMAN = { 0.125, 0.25, 0.125, 0.25 },
+    PRIEST = { 0.25, 0.375, 0.125, 0.25 },
+    WARLOCK = { 0.375, 0.5, 0.125, 0.25 },
+    PALADIN = { 0, 0.125, 0.25, 0.375 },
+    DEATHKNIGHT = { 0.125, 0.25, 0.25, 0.375 },
+    MONK = { 0.25, 0.375, 0.25, 0.375 },
+    DEMONHUNTER = { 0.375, 0.5, 0.25, 0.375 },
 }
 
 -- CUI LEGENDS event roster (PERMANENT): the event winners + team members who
@@ -345,33 +438,33 @@ CludesUI.CLASS_ICON_SPRITE_COORDS = {
 -- this suite up by. Kept in one place; the unit and raid frame name code
 -- reads them through ns.EXT_NICK.
 CludesUI.EXT_NICK = {
-    addon     = "Elles" .. "mereUI",                      -- TimelineReminders
-    nsKey     = "E" .. "UI",                              -- NSAPI.GetName
-    nsToggle  = "E" .. "UI_NICKNAME_TOGGLE",              -- NSAPI callback
-    liquidFn  = "GetNicknameFor" .. "Elles" .. "mereUI",  -- LiquidAPI
-    rgaModule = "elles" .. "mereui",                      -- RakGaming Aliases
+    addon = "Elles" .. "mereUI", -- TimelineReminders
+    nsKey = "E" .. "UI", -- NSAPI.GetName
+    nsToggle = "E" .. "UI_NICKNAME_TOGGLE", -- NSAPI callback
+    liquidFn = "GetNicknameFor" .. "Elles" .. "mereUI", -- LiquidAPI
+    rgaModule = "elles" .. "mereui", -- RakGaming Aliases
 }
 
 CludesUI.PREVIEW_ROSTER = {
-    { name = "Brannoc",       class = "MONK",        role = "TANK" },
-    { name = "Grimjaw",       class = "WARRIOR",     role = "TANK" },
-    { name = "Aldermere",     class = "PALADIN",     role = "HEALER", hpal = true },
-    { name = "Wenlai",        class = "MONK",        role = "HEALER" },
-    { name = "Thessaly",      class = "PALADIN",     role = "HEALER", hpal = true },
-    { name = "Oakhollow",     class = "DRUID",       role = "HEALER" },
-    { name = "Seraphine",     class = "PALADIN",     role = "HEALER", hpal = true },
-    { name = "Halvard",       class = "PALADIN",     role = "HEALER", hpal = true },
-    { name = "Velisande",     class = "PRIEST",      role = "DAMAGER" },
-    { name = "Tidecaller",    class = "SHAMAN",      role = "DAMAGER" },
-    { name = "Harrowind",     class = "HUNTER",      role = "DAMAGER" },
-    { name = "Morgath",       class = "DEATHKNIGHT", role = "DAMAGER" },
-    { name = "Drakmoor",      class = "DEMONHUNTER", role = "DAMAGER" },
-    { name = "Embertide",     class = "EVOKER",      role = "DAMAGER" },
-    { name = "Elyndra",       class = "MAGE",        role = "DAMAGER" },
-    { name = "Fenwick",       class = "ROGUE",       role = "DAMAGER" },
-    { name = "Zulkhar",       class = "WARLOCK",     role = "DAMAGER" },
-    { name = "Luneth",        class = "DRUID",       role = "DAMAGER" },
-    { name = "Stormhelm",     class = "SHAMAN",      role = "DAMAGER" },
+    { name = "Brannoc", class = "MONK", role = "TANK" },
+    { name = "Grimjaw", class = "WARRIOR", role = "TANK" },
+    { name = "Aldermere", class = "PALADIN", role = "HEALER", hpal = true },
+    { name = "Wenlai", class = "MONK", role = "HEALER" },
+    { name = "Thessaly", class = "PALADIN", role = "HEALER", hpal = true },
+    { name = "Oakhollow", class = "DRUID", role = "HEALER" },
+    { name = "Seraphine", class = "PALADIN", role = "HEALER", hpal = true },
+    { name = "Halvard", class = "PALADIN", role = "HEALER", hpal = true },
+    { name = "Velisande", class = "PRIEST", role = "DAMAGER" },
+    { name = "Tidecaller", class = "SHAMAN", role = "DAMAGER" },
+    { name = "Harrowind", class = "HUNTER", role = "DAMAGER" },
+    { name = "Morgath", class = "DEATHKNIGHT", role = "DAMAGER" },
+    { name = "Drakmoor", class = "DEMONHUNTER", role = "DAMAGER" },
+    { name = "Embertide", class = "EVOKER", role = "DAMAGER" },
+    { name = "Elyndra", class = "MAGE", role = "DAMAGER" },
+    { name = "Fenwick", class = "ROGUE", role = "DAMAGER" },
+    { name = "Zulkhar", class = "WARLOCK", role = "DAMAGER" },
+    { name = "Luneth", class = "DRUID", role = "DAMAGER" },
+    { name = "Stormhelm", class = "SHAMAN", role = "DAMAGER" },
 }
 
 -- Font (Expressway lives in CludesUI/media)
@@ -383,7 +476,7 @@ local LOCALE_FONT_FALLBACK = _G.CludesUI and _G.CludesUI._localeFont or nil
 -------------------------------------------------------------------------------
 --  Addon Roster  --  per-addon display name + search alias from CludesUI/media
 -------------------------------------------------------------------------------
-local ICONS_PATH    = MEDIA_PATH .. "icons\\"
+local ICONS_PATH = MEDIA_PATH .. "icons\\"
 
 -------------------------------------------------------------------------------
 --  Season M+ Portals -- single source of truth for every portal/teleport list in
@@ -397,14 +490,54 @@ local ICONS_PATH    = MEDIA_PATH .. "icons\\"
 --    altSpellIDs - optional variant teleport spell ids
 -------------------------------------------------------------------------------
 CludesUI.SEASON_PORTALS = {
-    { spellID = 1286801, short = "BV",  dungeonID = 3102, names = { "the blinding vale", "blinding vale", "слепящая долина" } },
-    { spellID = 1286804, short = "VA",  dungeonID = 3106, names = { "voidscar arena", "арена шрама бездны" } },
-    { spellID = 1286807, short = "DoN", dungeonID = 3051, names = { "den of nalorakk", "den of nalorak", "берлога налоракка" } },
-    { spellID = 1286809, short = "MR",  dungeonID = 3090, names = { "murder row", "закоулок душегубов" } },
-    { spellID = 1286812, short = "AoF", dungeonID = 3191, names = { "altar of fangs", "алтарь клыков" } },
-    { spellID = 393256,  short = "RLP", dungeonID = 2361, names = { "ruby life pools", "рубиновые омуты жизни" } },
-    { spellID = 1286828, short = "ToS", dungeonID = 1694, names = { "temple of sethraliss", "храм сетралисс" } },
-    { spellID = 1286831, short = "KR",  dungeonID = 1785, names = { "kings' rest", "king's rest", "гробница королей" } },
+    {
+        spellID = 1286801,
+        short = "BV",
+        dungeonID = 3102,
+        names = { "the blinding vale", "blinding vale", "слепящая долина" },
+    },
+    {
+        spellID = 1286804,
+        short = "VA",
+        dungeonID = 3106,
+        names = { "voidscar arena", "арена шрама бездны" },
+    },
+    {
+        spellID = 1286807,
+        short = "DoN",
+        dungeonID = 3051,
+        names = { "den of nalorakk", "den of nalorak", "берлога налоракка" },
+    },
+    {
+        spellID = 1286809,
+        short = "MR",
+        dungeonID = 3090,
+        names = { "murder row", "закоулок душегубов" },
+    },
+    {
+        spellID = 1286812,
+        short = "AoF",
+        dungeonID = 3191,
+        names = { "altar of fangs", "алтарь клыков" },
+    },
+    {
+        spellID = 393256,
+        short = "RLP",
+        dungeonID = 2361,
+        names = { "ruby life pools", "рубиновые омуты жизни" },
+    },
+    {
+        spellID = 1286828,
+        short = "ToS",
+        dungeonID = 1694,
+        names = { "temple of sethraliss", "храм сетралисс" },
+    },
+    {
+        spellID = 1286831,
+        short = "KR",
+        dungeonID = 1785,
+        names = { "kings' rest", "king's rest", "гробница королей" },
+    },
 }
 
 -- Great Vault shortcut (Minimap button, Data Bars block, character sheet
@@ -416,7 +549,9 @@ function CludesUI.ToggleGreatVault()
         C_AddOns.LoadAddOn("Blizzard_WeeklyRewards")
     end
     local vault = _G.WeeklyRewardsFrame
-    if vault then vault:SetShown(not vault:IsShown()) end
+    if vault then
+        vault:SetShown(not vault:IsShown())
+    end
 end
 
 -- Portal flyout (Chat sidebar and Minimap): SEASON_PORTALS spell buttons plus a
@@ -427,7 +562,9 @@ end
 -- anywhere else closes it; the caller names the button that toggles it before
 -- each Show (flyout._toggle = button), whose own click then closes it.
 function CludesUI.CreatePortalFlyout(opts)
-    if InCombatLockdown() then return nil end
+    if InCombatLockdown() then
+        return nil
+    end
     local floor = math.floor
     local PP = CludesUI.PP
 
@@ -447,7 +584,9 @@ function CludesUI.CreatePortalFlyout(opts)
     flyout:SetSize(flyW, flyH)
     flyout:SetFrameStrata("DIALOG")
     flyout:SetFrameLevel(100)
-    if opts.clamp then flyout:SetClampedToScreen(true) end
+    if opts.clamp then
+        flyout:SetClampedToScreen(true)
+    end
     flyout:Hide()
 
     local bg = flyout:CreateTexture(nil, "BACKGROUND")
@@ -461,14 +600,16 @@ function CludesUI.CreatePortalFlyout(opts)
     -- Close in combat
     local guard = CreateFrame("Frame")
     guard:RegisterEvent("PLAYER_REGEN_DISABLED")
-    guard:SetScript("OnEvent", function() flyout:Hide() end)
+    guard:SetScript("OnEvent", function()
+        flyout:Hide()
+    end)
 
     local function NewButton(name, size)
         local btn = CreateFrame("Button", name, flyout, "SecureActionButtonTemplate")
         btn:SetSize(size, size)
         local icon = btn:CreateTexture(nil, "ARTWORK")
         icon:SetAllPoints()
-        icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
+        icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
         btn.icon = icon
         if PP and PP.CreateBorder then
             PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 7)
@@ -501,12 +642,18 @@ function CludesUI.CreatePortalFlyout(opts)
         local col = (i - 1) % COLS
         local row = floor((i - 1) / COLS)
         local btn, cd = NewButton(opts.name .. "Portal" .. i, BTN_SIZE)
-        btn:SetPoint("TOPLEFT", flyout, "TOPLEFT",
+        btn:SetPoint(
+            "TOPLEFT",
+            flyout,
+            "TOPLEFT",
             PADDING + col * (BTN_SIZE + SPACING),
-            -(PADDING + row * (BTN_SIZE + SPACING)))
+            -(PADDING + row * (BTN_SIZE + SPACING))
+        )
         btn.spellID = spellID
         local spellInfo = C_Spell.GetSpellInfo(spellID)
-        if spellInfo then btn.icon:SetTexture(spellInfo.iconID) end
+        if spellInfo then
+            btn.icon:SetTexture(spellInfo.iconID)
+        end
 
         local short = e.short
         if short then
@@ -514,7 +661,9 @@ function CludesUI.CreatePortalFlyout(opts)
             labelFrame:SetAllPoints()
             labelFrame:SetFrameLevel(cd:GetFrameLevel() + 2)
             local label = labelFrame:CreateFontString(nil, "OVERLAY", nil)
-            if CludesUI.PrimeFontShadow then CludesUI.PrimeFontShadow(label, true) end
+            if CludesUI.PrimeFontShadow then
+                CludesUI.PrimeFontShadow(label, true)
+            end
             label:SetFont(opts.labelFont, 8, opts.labelFlags)
             label:SetPoint("BOTTOM", btn, "BOTTOM", 0, 2)
             label:SetTextColor(1, 1, 1, 0.9)
@@ -530,7 +679,9 @@ function CludesUI.CreatePortalFlyout(opts)
             GameTooltip:SetSpellByID(self.spellID)
             GameTooltip:Show()
         end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        btn:SetScript("OnLeave", function()
+            GameTooltip:Hide()
+        end)
         portalBtns[i] = btn
     end
 
@@ -538,9 +689,7 @@ function CludesUI.CreatePortalFlyout(opts)
     local hearthBtns = {}
     for i = 1, HS_COUNT do
         local btn = NewButton(opts.name .. "Hearth" .. i, HS_H)
-        btn:SetPoint("TOPLEFT", flyout, "TOPLEFT",
-            hsX,
-            -(PADDING + (i - 1) * (HS_H + SPACING)))
+        btn:SetPoint("TOPLEFT", flyout, "TOPLEFT", hsX, -(PADDING + (i - 1) * (HS_H + SPACING)))
         AddHighlights(btn)
         btn:RegisterForClicks("AnyUp", "AnyDown")
         btn:SetScript("OnEnter", function(self)
@@ -558,7 +707,9 @@ function CludesUI.CreatePortalFlyout(opts)
             end
             GameTooltip:Show()
         end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        btn:SetScript("OnLeave", function()
+            GameTooltip:Hide()
+        end)
         btn:HookScript("PostClick", function(self)
             if self._hsType == "housing" then
                 if HousingFramesUtil and HousingFramesUtil.ToggleHousingDashboard then
@@ -623,7 +774,9 @@ function CludesUI.CreatePortalFlyout(opts)
     -- Full resolve (random toy, icon/macro/attributes). Show only, never on
     -- cooldown events; attribute writes are combat-illegal, hence the gate.
     local function ResolveHearthButtons()
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         local resolvers = {
             CludesUI.ResolveHearthSlot,
             CludesUI.ResolveDalaranSlot,
@@ -634,10 +787,12 @@ function CludesUI.CreatePortalFlyout(opts)
             btn._hsType = aType
             btn._hsID = id
             btn.icon:SetTexture(iconTex)
-            btn.icon:SetTexCoord(aType == "housing" and 0 or 6/64,
-                                 aType == "housing" and 1 or 58/64,
-                                 aType == "housing" and 0 or 6/64,
-                                 aType == "housing" and 1 or 58/64)
+            btn.icon:SetTexCoord(
+                aType == "housing" and 0 or 6 / 64,
+                aType == "housing" and 1 or 58 / 64,
+                aType == "housing" and 0 or 6 / 64,
+                aType == "housing" and 1 or 58 / 64
+            )
             if aType == "housing" then
                 btn:SetAttribute("type", nil)
                 btn:SetAttribute("macrotext", nil)
@@ -665,26 +820,41 @@ function CludesUI.CreatePortalFlyout(opts)
 
     -- Events live only while shown: cooldown + cast highlight refresh, and the
     -- mouse press that closes it.
-    local CAST_EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_SUCCEEDED",
-                          "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED" }
+    local CAST_EVENTS = {
+        "UNIT_SPELLCAST_START",
+        "UNIT_SPELLCAST_STOP",
+        "UNIT_SPELLCAST_SUCCEEDED",
+        "UNIT_SPELLCAST_FAILED",
+        "UNIT_SPELLCAST_INTERRUPTED",
+    }
     flyout:SetScript("OnShow", function(self)
         self:RegisterEvent("SPELL_UPDATE_COOLDOWN")
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
         for _, ev in ipairs(CAST_EVENTS) do
-            if opts.unitEvents then self:RegisterUnitEvent(ev, "player") else self:RegisterEvent(ev) end
+            if opts.unitEvents then
+                self:RegisterUnitEvent(ev, "player")
+            else
+                self:RegisterEvent(ev)
+            end
         end
         RefreshPortalButtons()
         ResolveHearthButtons()
         -- Controller cursor: a window the player opened brings the gamepad pointer up.
-        if CludesUI.PadNative() then CludesUI.RaiseGamePadCursor() end
+        if CludesUI.PadNative() then
+            CludesUI.RaiseGamePadCursor()
+        end
     end)
     flyout:SetScript("OnHide", function(self)
         self:UnregisterAllEvents()
         for _, btn in ipairs(portalBtns) do
-            if btn._castHL then btn._castHL:Hide() end
+            if btn._castHL then
+                btn._castHL:Hide()
+            end
         end
         for _, btn in ipairs(hearthBtns) do
-            if btn._castHL then btn._castHL:Hide() end
+            if btn._castHL then
+                btn._castHL:Hide()
+            end
         end
     end)
     flyout:SetScript("OnEvent", function(self, event, unit, castGUID, spellID)
@@ -695,8 +865,12 @@ function CludesUI.CreatePortalFlyout(opts)
             -- A left click anywhere else closes it (unit is the mouse button here).
             -- A press on its toggle is left alone: that button's click closes it.
             local toggle = self._toggle
-            if unit == "LeftButton" and not InCombatLockdown() and not self:IsMouseOver()
-               and not (toggle and toggle:IsVisible() and toggle:IsMouseOver()) then
+            if
+                unit == "LeftButton"
+                and not InCombatLockdown()
+                and not self:IsMouseOver()
+                and not (toggle and toggle:IsVisible() and toggle:IsMouseOver())
+            then
                 self:Hide()
             end
         elseif unit == "player" then
@@ -709,7 +883,9 @@ function CludesUI.CreatePortalFlyout(opts)
             -- Cast end clears hearthstone highlights
             if not casting then
                 for _, btn in ipairs(hearthBtns) do
-                    if btn._castHL then btn._castHL:Hide() end
+                    if btn._castHL then
+                        btn._castHL:Hide()
+                    end
                 end
             end
         end
@@ -721,31 +897,133 @@ function CludesUI.CreatePortalFlyout(opts)
 end
 
 local ADDON_ROSTER = {
-    { folder = "CludesUIActionBars",        display = "Action Bars",          search_name = "CludesUI Action Bars"             },
-    { folder = "CludesUINameplates",        display = "Nameplates",           search_name = "CludesUI Nameplates"              },
-    { folder = "CludesUIUnitFrames",        display = "Unit Frames",          search_name = "CludesUI Unit Frames"             },
-    { folder = "CludesUIRaidFrames",        display = "Raid & Party Frames",  search_name = "CludesUI Raid & Party Frames"     },
-    { folder = "CludesUICooldownManager",   display = "Cooldown Manager",     search_name = "CludesUI Cooldown Manager"        },
-    { folder = "CludesUIResourceBars",      display = "Resource & Cast Bars", search_name = "CludesUI Resource Bars Cast Bars" },
-    { folder = "CludesUITank",              display = "Tank Kit",             search_name = "CludesUI Tank Kit Co-Tank Taunt" },
-    { folder = "CludesUIRaidLead",          display = "Raid Lead",            search_name = "CludesUI Raid Lead Setup Sort Split" },
-    { folder = "CludesUITitleLine",         display = "Title Line",           search_name = "CludesUI Title Line Mythic+ Rating Cutoff" },
-    { folder = "CludesUIAuraBuffReminders", display = "Buff Reminders",   search_name = "CludesUI Buff Reminders"      },
-    { folder = "CludesUIQoL",               display = "Utilities",      search_name = "CludesUI Utilities"         },
-    { folder = "CludesUIForeverEssentials", display = "Forever Tools",   search_name = "CludesUI Forever Tools"      },
-    { folder = "CludesUIBlizzardSkin",      display = "Window Skins",      search_name = "CludesUI Window Skins",      syncFolder = "CludesUIDragonRiding", syncDisplay = "Dragon Riding" },
-    { folder = "CludesUIFriends",           display = "Friends List",         search_name = "CludesUI Friends List"            },
-    { folder = "CludesUIMythicTimer",       display = "Mythic+ Tools",        search_name = "CludesUI Mythic+ Tools Timer"     },
-    { folder = "CludesUIQuestTracker",      display = "Quest Tracker",        search_name = "CludesUI Quest Tracker"           },
-    { folder = "CludesUIMinimap",           display = "Minimap",              search_name = "CludesUI Minimap"                 },
-    { folder = "CludesUIChat",              display = "Chat",                 search_name = "CludesUI Chat"                    },
-    { folder = "CludesUIDamageMeters",      display = "Damage Meters",        search_name = "CludesUI Damage Meters"           },
-    { folder = "CludesUIBags",              display = "Bags",                 search_name = "CludesUI Bags"                    },
-    { folder = "CludesUIDataBars",          display = "Info Bar",             search_name = "CludesUI Info Bar"                },
-    { folder = "CludesUIQuickdraw",         display = "Action Wheel",            search_name = "CludesUI Action Wheel"               },
-    { folder = "CludesUILoadoutManager",    display = "Loadout Manager",      search_name = "CludesUI Loadout Manager"         },
-    { folder = "CludesUIGroupFinder",       display = "Group Finder",         search_name = "CludesUI Group Finder Premade Groups" },
-    { folder = "CludesUISimpleLootCouncil", display = "Simple Loot Council",  search_name = "CludesUI Simple Loot Council Loot Council" },
+    {
+        folder = "CludesUIActionBars",
+        display = "Action Bars",
+        search_name = "CludesUI Action Bars",
+    },
+    {
+        folder = "CludesUINameplates",
+        display = "Nameplates",
+        search_name = "CludesUI Nameplates",
+    },
+    {
+        folder = "CludesUIUnitFrames",
+        display = "Unit Frames",
+        search_name = "CludesUI Unit Frames",
+    },
+    {
+        folder = "CludesUIRaidFrames",
+        display = "Raid & Party Frames",
+        search_name = "CludesUI Raid & Party Frames",
+    },
+    {
+        folder = "CludesUICooldownManager",
+        display = "Cooldown Manager",
+        search_name = "CludesUI Cooldown Manager",
+    },
+    {
+        folder = "CludesUIResourceBars",
+        display = "Resource & Cast Bars",
+        search_name = "CludesUI Resource Bars Cast Bars",
+    },
+    {
+        folder = "CludesUITank",
+        display = "Tank Kit",
+        search_name = "CludesUI Tank Kit Co-Tank Taunt",
+    },
+    {
+        folder = "CludesUIRaidLead",
+        display = "Raid Lead",
+        search_name = "CludesUI Raid Lead Setup Sort Split",
+    },
+    {
+        folder = "CludesUITitleLine",
+        display = "Title Line",
+        search_name = "CludesUI Title Line Mythic+ Rating Cutoff",
+    },
+    {
+        folder = "CludesUIAuraBuffReminders",
+        display = "Buff Reminders",
+        search_name = "CludesUI Buff Reminders",
+    },
+    {
+        folder = "CludesUIQoL",
+        display = "Utilities",
+        search_name = "CludesUI Utilities",
+    },
+    {
+        folder = "CludesUIForeverEssentials",
+        display = "Forever Tools",
+        search_name = "CludesUI Forever Tools",
+    },
+    {
+        folder = "CludesUIBlizzardSkin",
+        display = "Window Skins",
+        search_name = "CludesUI Window Skins",
+        syncFolder = "CludesUIDragonRiding",
+        syncDisplay = "Dragon Riding",
+    },
+    {
+        folder = "CludesUIFriends",
+        display = "Friends List",
+        search_name = "CludesUI Friends List",
+    },
+    {
+        folder = "CludesUIMythicTimer",
+        display = "Mythic+ Tools",
+        search_name = "CludesUI Mythic+ Tools Timer",
+    },
+    {
+        folder = "CludesUIQuestTracker",
+        display = "Quest Tracker",
+        search_name = "CludesUI Quest Tracker",
+    },
+    {
+        folder = "CludesUIMinimap",
+        display = "Minimap",
+        search_name = "CludesUI Minimap",
+    },
+    {
+        folder = "CludesUIChat",
+        display = "Chat",
+        search_name = "CludesUI Chat",
+    },
+    {
+        folder = "CludesUIDamageMeters",
+        display = "Damage Meters",
+        search_name = "CludesUI Damage Meters",
+    },
+    {
+        folder = "CludesUIBags",
+        display = "Bags",
+        search_name = "CludesUI Bags",
+    },
+    {
+        folder = "CludesUIDataBars",
+        display = "Info Bar",
+        search_name = "CludesUI Info Bar",
+    },
+    {
+        folder = "CludesUIQuickdraw",
+        display = "Action Wheel",
+        search_name = "CludesUI Action Wheel",
+    },
+    {
+        folder = "CludesUILoadoutManager",
+        display = "Loadout Manager",
+        search_name = "CludesUI Loadout Manager",
+    },
+    {
+        folder = "CludesUIGroupFinder",
+        display = "Group Finder",
+        search_name = "CludesUI Group Finder Premade Groups",
+    },
+    {
+        folder = "CludesUISimpleLootCouncil",
+        display = "Simple Loot Council",
+        search_name = "CludesUI Simple Loot Council Loot Council",
+    },
 }
 
 -------------------------------------------------------------------------------
@@ -758,8 +1036,8 @@ local ADDON_ROSTER = {
 -------------------------------------------------------------------------------
 CludesUI.ADDON_GROUPS = {
     {
-        key     = "combat",
-        label   = "Combat",
+        key = "combat",
+        label = "Combat",
         members = {
             "CludesUIActionBars",
             "CludesUIUnitFrames",
@@ -772,8 +1050,8 @@ CludesUI.ADDON_GROUPS = {
         },
     },
     {
-        key     = "group",
-        label   = "Raid & Dungeon",
+        key = "group",
+        label = "Raid & Dungeon",
         members = {
             "CludesUIMythicTimer",
             "CludesUIRaidLead",
@@ -785,8 +1063,8 @@ CludesUI.ADDON_GROUPS = {
         },
     },
     {
-        key     = "interface",
-        label   = "Interface",
+        key = "interface",
+        label = "Interface",
         members = {
             "CludesUIBlizzardSkin",
             "CludesUIMinimap",
@@ -798,8 +1076,8 @@ CludesUI.ADDON_GROUPS = {
         },
     },
     {
-        key     = "tools",
-        label   = "Tools",
+        key = "tools",
+        label = "Tools",
         members = {
             "CludesUIQoL",
             "CludesUIForeverEssentials",
@@ -830,8 +1108,8 @@ if IS_STANDALONE then
             end
         end
         table.insert(CludesUI.ADDON_GROUPS, 1, {
-            key     = "standalone",
-            label   = "Standalone",
+            key = "standalone",
+            label = "Standalone",
             members = { selfFolder },
         })
     end
@@ -842,7 +1120,10 @@ end
 -- and the groups -- sidebar, install picker, font and texture cards -- rather
 -- than sit in them disabled. Extend the set whenever a TOC gets that line.
 CludesUI.FOREVER_HIDDEN_ADDONS = {
-    CludesUIMythicTimer = true, CludesUIFriends = true, CludesUITitleLine = true, CludesUITank = true,
+    CludesUIMythicTimer = true,
+    CludesUIFriends = true,
+    CludesUITitleLine = true,
+    CludesUITank = true,
     CludesUIRaidLead = true,
     CludesUILoadoutManager = true,
     CludesUIGroupFinder = true,
@@ -872,32 +1153,43 @@ CludesUI.HELD_BACK_ADDONS = {
 -- The set the running client leaves out.
 do
     local hidden = {}
-    for folder in pairs((CUI_CLIENT_FOREVER == true) and CludesUI.FOREVER_HIDDEN_ADDONS
-            or CludesUI.FOREVER_ONLY_ADDONS) do
+    for folder in
+        pairs((CUI_CLIENT_FOREVER == true) and CludesUI.FOREVER_HIDDEN_ADDONS or CludesUI.FOREVER_ONLY_ADDONS)
+    do
         hidden[folder] = true
     end
-    for folder in pairs(CludesUI.HELD_BACK_ADDONS) do hidden[folder] = true end
+    for folder in pairs(CludesUI.HELD_BACK_ADDONS) do
+        hidden[folder] = true
+    end
     CludesUI._CLIENT_HIDDEN_ADDONS = hidden
 end
 -- The profile import/export checklists read the profile data map, which stays
 -- complete (it drives the data itself); they list through this view instead.
 function CludesUI.VisibleProfileAddons(map)
-    if type(map) ~= "table" then return map end
+    if type(map) ~= "table" then
+        return map
+    end
     local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
     local out = {}
     for _, entry in ipairs(map) do
-        if not hidden[entry.folder] then out[#out + 1] = entry end
+        if not hidden[entry.folder] then
+            out[#out + 1] = entry
+        end
     end
     return out
 end
 do
     local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
     for i = #ADDON_ROSTER, 1, -1 do
-        if hidden[ADDON_ROSTER[i].folder] then table.remove(ADDON_ROSTER, i) end
+        if hidden[ADDON_ROSTER[i].folder] then
+            table.remove(ADDON_ROSTER, i)
+        end
     end
     for _, group in ipairs(CludesUI.ADDON_GROUPS) do
         for mi = #group.members, 1, -1 do
-            if hidden[group.members[mi]] then table.remove(group.members, mi) end
+            if hidden[group.members[mi]] then
+                table.remove(group.members, mi)
+            end
         end
     end
 end
@@ -908,12 +1200,14 @@ end
 -- the default tables; every other client gets the id back as it is. Extend
 -- the map whenever a tester reports a green square.
 CludesUI._FOREVER_ICON = {
-    [7548911] = 133975,   -- Bags "Consumables" default: an apple
-    [7549094] = 136249,   -- Bags "Gear Enhancements": classic enchantment icon
-    [7548925] = 134332,   -- Bags "Professions": classic trade-skill icon
+    [7548911] = 133975, -- Bags "Consumables" default: an apple
+    [7549094] = 136249, -- Bags "Gear Enhancements": classic enchantment icon
+    [7548925] = 134332, -- Bags "Professions": classic trade-skill icon
 }
 function CludesUI.ClientIcon(icon)
-    if CUI_CLIENT_FOREVER ~= true then return icon end
+    if CUI_CLIENT_FOREVER ~= true then
+        return icon
+    end
     return CludesUI._FOREVER_ICON[icon] or icon
 end
 
@@ -952,20 +1246,24 @@ do
     local navInfo = {}
     for _, info in ipairs(ADDON_ROSTER) do
         local copy = {}
-        for k, v in pairs(info) do copy[k] = v end
+        for k, v in pairs(info) do
+            copy[k] = v
+        end
         navInfo[info.folder] = copy
     end
     local coreGroups = {}
     for _, group in ipairs(CludesUI.ADDON_GROUPS) do
         local members = {}
-        for i, folder in ipairs(group.members) do members[i] = folder end
+        for i, folder in ipairs(group.members) do
+            members[i] = folder
+        end
         coreGroups[#coreGroups + 1] = { key = group.key, label = group.label, members = members }
     end
-    CUI_NS.navInfo            = navInfo
-    CUI_NS.coreGroups         = coreGroups
-    CUI_NS.pluginGroupsTop    = {}
+    CUI_NS.navInfo = navInfo
+    CUI_NS.coreGroups = coreGroups
+    CUI_NS.pluginGroupsTop = {}
     CUI_NS.pluginGroupsBottom = {}
-    CUI_NS.navGroups          = {}
+    CUI_NS.navGroups = {}
     -- Sidebar group header frames, keyed by group key.
     CUI_NS.sidebarGroupButtons = {}
 
@@ -973,10 +1271,18 @@ do
     -- contiguous block, then bottom plugin sections.
     function CUI_NS.RebuildNavGroups()
         local out = CUI_NS.navGroups
-        for i = #out, 1, -1 do out[i] = nil end
-        for _, g in ipairs(CUI_NS.pluginGroupsTop)    do out[#out + 1] = g end
-        for _, g in ipairs(coreGroups)                do out[#out + 1] = g end
-        for _, g in ipairs(CUI_NS.pluginGroupsBottom) do out[#out + 1] = g end
+        for i = #out, 1, -1 do
+            out[i] = nil
+        end
+        for _, g in ipairs(CUI_NS.pluginGroupsTop) do
+            out[#out + 1] = g
+        end
+        for _, g in ipairs(coreGroups) do
+            out[#out + 1] = g
+        end
+        for _, g in ipairs(CUI_NS.pluginGroupsBottom) do
+            out[#out + 1] = g
+        end
     end
     CUI_NS.RebuildNavGroups()
 
@@ -995,7 +1301,9 @@ do
     local regDepth, loginWindow = 0, false
     local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
     function CUI_NS.CoreRegistrationOpen()
-        if regDepth > 0 or loginWindow then return true end
+        if regDepth > 0 or loginWindow then
+            return true
+        end
         local loadedOrLoading, loaded = IsAddOnLoaded("CludesUIOptions")
         return loadedOrLoading and not loaded
     end
@@ -1006,21 +1314,29 @@ do
     local rawget, rawset = rawget, rawset
     local function ReclaimRegisterModule()
         local real = CUI_NS.CoreRegisterModule
-        if not real or rawget(CludesUI, "RegisterModule") == real then return end
+        if not real or rawget(CludesUI, "RegisterModule") == real then
+            return
+        end
         local by = CUI_NS.WriterOf(CludesUI, "RegisterModule")
         rawset(CludesUI, "RegisterModule", real)
-        if by then CUI_NS.RecordLegacyOffender(by) end
+        if by then
+            CUI_NS.RecordLegacyOffender(by)
+        end
     end
     -- Errors are reported through the error handler (keeping their traceback)
     -- rather than rethrown, so a failing callee can never leave the window open.
-    local function ReportError(err) return geterrorhandler()(err) end
-    CUI_NS.ReportError = ReportError  -- shared with the plugin registry (CludesUI_Panel.lua)
+    local function ReportError(err)
+        return geterrorhandler()(err)
+    end
+    CUI_NS.ReportError = ReportError -- shared with the plugin registry (CludesUI_Panel.lua)
     function CUI_NS.RunCoreRegistration(fn, ...)
         ReclaimRegisterModule()
         regDepth = regDepth + 1
         local ok, a, b = xpcall(fn, ReportError, ...)
         regDepth = regDepth - 1
-        if ok then return a, b end
+        if ok then
+            return a, b
+        end
     end
     local f = CreateFrame("Frame")
     f:RegisterEvent("ADDON_LOADED")
@@ -1032,12 +1348,16 @@ do
             -- pre-login options load, standalone builds).
             ReclaimRegisterModule()
             if loginWindow then
-                C_Timer.After(0, function() loginWindow = false end)
+                C_Timer.After(0, function()
+                    loginWindow = false
+                end)
             end
         elseif name == "CludesUIOptions" then
             self:UnregisterEvent("ADDON_LOADED")
             -- Loaded before login: its files register from their PLAYER_LOGIN handlers.
-            if not IsLoggedIn() then loginWindow = true end
+            if not IsLoggedIn() then
+                loginWindow = true
+            end
         end
     end)
 end
@@ -1071,13 +1391,24 @@ end
 -- frame). Drops silently in protected instances (raid combat, active M+) to avoid tainting FCF_OpenTemporaryWindow's whisper chain.
 function CludesUI.Print(...)
     local f = DEFAULT_CHAT_FRAME
-    if not f then return end
+    if not f then
+        return
+    end
     local _, instanceType = IsInInstance()
-    if instanceType == "raid" and InCombatLockdown() then return end
-    if instanceType == "party" and C_ChallengeMode
-       and C_ChallengeMode.IsChallengeModeActive
-       and C_ChallengeMode.IsChallengeModeActive() then return end
-    if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then return end
+    if instanceType == "raid" and InCombatLockdown() then
+        return
+    end
+    if
+        instanceType == "party"
+        and C_ChallengeMode
+        and C_ChallengeMode.IsChallengeModeActive
+        and C_ChallengeMode.IsChallengeModeActive()
+    then
+        return
+    end
+    if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then
+        return
+    end
     f:AddMessage(strjoin(" ", tostringall(...)))
 end
 
@@ -1110,13 +1441,17 @@ function CludesUI.RunBudgeted(steps, msBudget, onDone)
         while idx <= n do
             local ok, err = pcall(steps[idx])
             idx = idx + 1
-            if not ok and err then geterrorhandler()(err) end
+            if not ok and err then
+                geterrorhandler()(err)
+            end
             if idx <= n and debugprofilestop() > deadline then
                 C_Timer.After(0, drain)
                 return
             end
         end
-        if onDone then onDone() end
+        if onDone then
+            onDone()
+        end
     end
     C_Timer.After(0, drain)
 end
@@ -1151,7 +1486,9 @@ end
 local function MakeFont(parent, size, flags, r, g, b, a)
     local fs = parent:CreateFontString(nil, "OVERLAY")
     fs:SetFont(LOCALE_FONT_FALLBACK or EXPRESSWAY, size, flags or "")
-    if r then fs:SetTextColor(r, g, b, a or 1) end
+    if r then
+        fs:SetTextColor(r, g, b, a or 1)
+    end
     return fs
 end
 
@@ -1180,8 +1517,8 @@ local function MakeDropdownArrow(parent, xPad, ppOverride)
     arrow:SetTexture(ICONS_PATH .. "cui-arrow.png")
     local pad = (xPad or 12) + 5
     local sz = 26
-    pp.Point(arrow, "TOPRIGHT", parent, "RIGHT", -(pad - sz/2), sz/2)
-    pp.Point(arrow, "BOTTOMLEFT", parent, "RIGHT", -(pad + sz/2), -sz/2)
+    pp.Point(arrow, "TOPRIGHT", parent, "RIGHT", -(pad - sz / 2), sz / 2)
+    pp.Point(arrow, "BOTTOMLEFT", parent, "RIGHT", -(pad + sz / 2), -sz / 2)
     return arrow
 end
 
@@ -1196,7 +1533,11 @@ CludesUI._reusePages = true
 -- same table in place. Read through this local, never the public slot.
 local POOL = CludesUI._Pool
 if type(POOL) ~= "table" then
-    POOL = { CreateFrame = function(...) return CreateFrame(...) end }
+    POOL = {
+        CreateFrame = function(...)
+            return CreateFrame(...)
+        end,
+    }
     CludesUI._Pool = POOL
 end
 
@@ -1204,7 +1545,9 @@ local function MakeBorder(parent, r, g, b, a, ppOverride)
     -- PP.CreateBorder wrapper returning the MakeBorder API. ppOverride: PanelPP for panel context, else real PP (game context).
     local pp = ppOverride or PP
     local alpha = a or 1
-    r = r or 0; g = g or 0; b = b or 0
+    r = r or 0
+    g = g or 0
+    b = b or 0
     -- On a page-pool host the border frame is pooled with it (PP.CreateBorder
     -- dresses its kept strips again); anywhere else a plain new frame.
     local bf = POOL.CreateFrame("Frame", nil, parent)
@@ -1229,7 +1572,9 @@ end
 -- a split column (parent._splitParent) the bg lives on splitParent so it spans full width, anchored to the widget frame's top/bottom edges.
 local rowCounters = {}
 local function RowBg(frame, parent)
-    if not rowCounters[parent] then rowCounters[parent] = 0 end
+    if not rowCounters[parent] then
+        rowCounters[parent] = 0
+    end
     rowCounters[parent] = rowCounters[parent] + 1
     local alpha = (rowCounters[parent] % 2 == 0) and STYLE.ROW_BG_EVEN or STYLE.ROW_BG_ODD
     local splitParent = parent._splitParent
@@ -1252,9 +1597,12 @@ local function RowBg(frame, parent)
     if parent._showRowDivider and not frame._skipRowDivider then
         local div = frame:CreateTexture(nil, "ARTWORK")
         div:SetColorTexture(1, 1, 1, 0.06)
-        if div.SetSnapToPixelGrid then div:SetSnapToPixelGrid(false); div:SetTexelSnappingBias(0) end
+        if div.SetSnapToPixelGrid then
+            div:SetSnapToPixelGrid(false)
+            div:SetTexelSnappingBias(0)
+        end
         div:SetWidth(1)
-        ppp.Point(div, "TOP",    frame, "TOP",    0, 0)
+        ppp.Point(div, "TOP", frame, "TOP", 0, 0)
         ppp.Point(div, "BOTTOM", frame, "BOTTOM", 0, 0)
     end
 end
@@ -1263,14 +1611,16 @@ local function ResetRowCounters()
     wipe(rowCounters)
 end
 
-local function lerp(a, b, t) return a + (b - a) * t end
+local function lerp(a, b, t)
+    return a + (b - a) * t
+end
 
 -- Shared /played: every module asks here, so modules share one request and its
 -- reply, and the game prints its two chat lines as rarely as possible. Returns
 -- total and this-level seconds when a reply for this level is known. Otherwise
 -- returns nothing and requests; the caller's own TIME_PLAYED_MSG gets the reply.
 do
-    local PENDING_SECONDS = 10  -- after this a reply counts as lost; a call asks again
+    local PENDING_SECONDS = 10 -- after this a reply counts as lost; a call asks again
     local frame, pendingAt, total, level, at, charLevel
 
     function CludesUI.RequestTimePlayed()
@@ -1278,11 +1628,15 @@ do
         if total and charLevel == UnitLevel("player") then
             return total + (now - at), level + (now - at)
         end
-        if not RequestTimePlayed or (pendingAt and now - pendingAt < PENDING_SECONDS) then return end
+        if not RequestTimePlayed or (pendingAt and now - pendingAt < PENDING_SECONDS) then
+            return
+        end
         if not frame then
             frame = CreateFrame("Frame")
             frame:SetScript("OnEvent", function(self, _, totalTime, levelTime)
-                if type(totalTime) ~= "number" or type(levelTime) ~= "number" then return end
+                if type(totalTime) ~= "number" or type(levelTime) ~= "number" then
+                    return
+                end
                 total, level, at, charLevel = totalTime, levelTime, GetTime(), UnitLevel("player")
                 pendingAt = nil
                 self:UnregisterEvent("TIME_PLAYED_MSG")
@@ -1309,14 +1663,26 @@ end
 
 -- Realm a character roster groups by. Forever is realmless: the ruleset name.
 function CludesUI.RealmGroupName()
-    if not CludesUI.IS_FOREVER then return GetRealmName() end
+    if not CludesUI.IS_FOREVER then
+        return GetRealmName()
+    end
     local R = Enum.GameRule
-    local function On(rule) return rule and C_GameRules.IsGameRuleActive(rule) end
-    if On(R.HardcoreRuleset) then return GUILD_PLAYSTYLE_HARDCORE end
+    local function On(rule)
+        return rule and C_GameRules.IsGameRuleActive(rule)
+    end
+    if On(R.HardcoreRuleset) then
+        return GUILD_PLAYSTYLE_HARDCORE
+    end
     local pvp, rp = On(R.PvPRuleset), On(R.RPRuleset)
-    if pvp and rp then return GDAPI_REALMTYPE_PVP_RP end
-    if pvp then return GDAPI_REALMTYPE_PVP end
-    if rp then return GDAPI_REALMTYPE_RP end
+    if pvp and rp then
+        return GDAPI_REALMTYPE_PVP_RP
+    end
+    if pvp then
+        return GDAPI_REALMTYPE_PVP
+    end
+    if rp then
+        return GDAPI_REALMTYPE_RP
+    end
     return GDAPI_REALMTYPE_NORMAL
 end
 
@@ -1324,7 +1690,9 @@ end
 -- either way.
 local function AdoptCharEntry(store, old, key)
     if store[old] ~= nil then
-        if store[key] == nil then store[key] = store[old] end
+        if store[key] == nil then
+            store[key] = store[old]
+        end
         store[old] = nil
     end
 end
@@ -1337,10 +1705,16 @@ end
 -- of them to log in.
 function CludesUI.CharKey(sep, ...)
     local name, group = UnitName("player"), CludesUI.RealmGroupName()
-    if not name or not group then return nil end
-    if not CludesUI.IS_FOREVER then return name .. sep .. group end
+    if not name or not group then
+        return nil
+    end
+    if not CludesUI.IS_FOREVER then
+        return name .. sep .. group
+    end
     local guid = UnitGUID("player")
-    if not guid or issecretvalue(guid) then return nil end
+    if not guid or issecretvalue(guid) then
+        return nil
+    end
     local byGroup, byRealm
     for i = 1, select("#", ...) do
         local store = select(i, ...)
@@ -1359,9 +1733,15 @@ end
 -- spaces stripped); with a finished name alone it only collapses a stacked realm.
 function CludesUI.BuildFullName(charName, realmName)
     -- type()/issecretvalue() before any comparison: `== ""` on a secret throws.
-    if type(charName) ~= "string" then return nil end
-    if issecretvalue and issecretvalue(charName) then return charName end
-    if charName == "" then return nil end
+    if type(charName) ~= "string" then
+        return nil
+    end
+    if issecretvalue and issecretvalue(charName) then
+        return charName
+    end
+    if charName == "" then
+        return nil
+    end
 
     -- Character names hold no hyphen, so the first one splits name from realm.
     local base, suffix = charName:match("^([^%-]+)%-(.+)$")
@@ -1369,21 +1749,30 @@ function CludesUI.BuildFullName(charName, realmName)
 
     if type(realmName) == "string" and not (issecretvalue and issecretvalue(realmName)) then
         local realm = (realmName:gsub("%s+", ""))
-        if realm ~= "" then return base .. "-" .. realm end
+        if realm ~= "" then
+            return base .. "-" .. realm
+        end
     end
-    if not suffix then return base end
+    if not suffix then
+        return base
+    end
 
     -- Collapse proven repetition only -- a realm may hold a hyphen ("Azjol-Nerub").
     local segs = {}
     for seg in suffix:gmatch("[^%-]+") do
-        if segs[#segs] ~= seg then segs[#segs + 1] = seg end
+        if segs[#segs] ~= seg then
+            segs[#segs + 1] = seg
+        end
     end
     suffix = table.concat(segs, "-")
     -- A doubled multi-word realm has no adjacent repeats; a half-split catches it.
     local half = (#suffix - 1) / 2
-    if half > 0 and half == math.floor(half)
+    if
+        half > 0
+        and half == math.floor(half)
         and suffix:sub(half + 1, half + 1) == "-"
-        and suffix:sub(1, half) == suffix:sub(half + 2) then
+        and suffix:sub(1, half) == suffix:sub(half + 2)
+    then
         suffix = suffix:sub(1, half)
     end
     return base .. "-" .. suffix
@@ -1393,11 +1782,15 @@ end
 -- into friend notes that was never removed: the text before it is kept, trailing
 -- space trimmed. nil for a non-string, secret or empty note.
 function CludesUI.StripFriendNoteTag(note)
-    if type(note) ~= "string" or issecretvalue(note) or note == "" then return nil end
+    if type(note) ~= "string" or issecretvalue(note) or note == "" then
+        return nil
+    end
     local s = note:find("||E" .. "UI:", 1, true)
     if s and note:find("||", s + 6, true) then
         note = note:sub(1, s - 1):match("^(.-)%s*$")
-        if note == "" then return nil end
+        if note == "" then
+            return nil
+        end
     end
     return note
 end
@@ -1407,39 +1800,43 @@ end
 -------------------------------------------------------------------------------
 -- Visual constants (tables)
 CludesUI.CLUDES_GREEN = CLUDES_GREEN
-CludesUI.DARK_BG         = DARK_BG
-CludesUI.BORDER_COLOR    = BORDER_COLOR
-CludesUI.TEXT_WHITE       = TEXT_WHITE
-CludesUI.TEXT_DIM         = TEXT_DIM
-CludesUI.TEXT_SECTION     = TEXT_SECTION
-CludesUI.CS              = CS
+CludesUI.DARK_BG = DARK_BG
+CludesUI.BORDER_COLOR = BORDER_COLOR
+CludesUI.TEXT_WHITE = TEXT_WHITE
+CludesUI.TEXT_DIM = TEXT_DIM
+CludesUI.TEXT_SECTION = TEXT_SECTION
+CludesUI.CS = CS
 
 -- Shared icon paths
 -- The settings cog (the inline cog's default, owner 2026-11-05); Unlock Mode's
 -- mover cog keeps the cogwheel art.
-CludesUI.COGS_ICON       = MEDIA_PATH .. "icons\\settings.png"
-CludesUI.UNDO_ICON       = MEDIA_PATH .. "icons\\undo.png"
-CludesUI.RESIZE_ICON     = MEDIA_PATH .. "icons\\cui-resize-5.png"
+CludesUI.COGS_ICON = MEDIA_PATH .. "icons\\settings.png"
+CludesUI.UNDO_ICON = MEDIA_PATH .. "icons\\undo.png"
+CludesUI.RESIZE_ICON = MEDIA_PATH .. "icons\\cui-resize-5.png"
 CludesUI.DIRECTIONS_ICON = MEDIA_PATH .. "icons\\cui-directions.png"
-CludesUI.SYNC_ICON       = MEDIA_PATH .. "icons\\sync.png"
-CludesUI.EYE_VISIBLE_ICON   = MEDIA_PATH .. "icons\\cui-visible.png"
+CludesUI.SYNC_ICON = MEDIA_PATH .. "icons\\sync.png"
+CludesUI.EYE_VISIBLE_ICON = MEDIA_PATH .. "icons\\cui-visible.png"
 CludesUI.EYE_INVISIBLE_ICON = MEDIA_PATH .. "icons\\cui-invisible.png"
-CludesUI.UNLOCK_ICON     = MEDIA_PATH .. "icons\\unlockmode.png"
+CludesUI.UNLOCK_ICON = MEDIA_PATH .. "icons\\unlockmode.png"
 
 -- Shared chat/tooltip colour escapes. Leave codes inside L()/Lf() literals alone:
 -- that text is the translation key.
 CludesUI.COLOR_CODES = {
     WHITE = "|cffffffff",
-    DIM   = "|cff888888",
-    BAD   = "|cffff5959",
+    DIM = "|cff888888",
+    BAD = "|cffff5959",
     ERROR = "|cffff6060",
-    BRAND = "|cff4cc9f0",  -- ADDON_COLORS["CludesUI"]
+    BRAND = "|cff4cc9f0", -- ADDON_COLORS["CludesUI"]
 }
 
 -- 0-1 r, g, b -> "|cffRRGGBB" (each channel rounded).
 function CludesUI.HexColor(r, g, b)
-    return string.format("|cff%02x%02x%02x", math.floor(r * 255 + 0.5),
-        math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
+    return string.format(
+        "|cff%02x%02x%02x",
+        math.floor(r * 255 + 0.5),
+        math.floor(g * 255 + 0.5),
+        math.floor(b * 255 + 0.5)
+    )
 end
 
 -- Red "[CludesUI]" chat line through Print (same combat/instance muting).
@@ -1451,62 +1848,106 @@ end
 -- lists, so a subset-order site may share the full labels dict. Never mutate these or feed
 -- them to the SharedMedia appenders (which mutate args in place); sites with a different sequence (none-first, bottomright-first, "same"-prefixed) keep local orders.
 CludesUI.POSITION_GRID_VALUES = {
-    ["topleft"]    = "Top Left",
-    ["top"]        = "Top",
-    ["topright"]   = "Top Right",
-    ["left"]       = "Left",
-    ["center"]     = "Center",
-    ["right"]      = "Right",
+    ["topleft"] = "Top Left",
+    ["top"] = "Top",
+    ["topright"] = "Top Right",
+    ["left"] = "Left",
+    ["center"] = "Center",
+    ["right"] = "Right",
     ["bottomleft"] = "Bottom Left",
-    ["bottom"]     = "Bottom",
+    ["bottom"] = "Bottom",
     ["bottomright"] = "Bottom Right",
 }
 CludesUI.POSITION_GRID_VALUES_NONE = {
-    ["topleft"]    = "Top Left",
-    ["top"]        = "Top",
-    ["topright"]   = "Top Right",
-    ["left"]       = "Left",
-    ["center"]     = "Center",
-    ["right"]      = "Right",
+    ["topleft"] = "Top Left",
+    ["top"] = "Top",
+    ["topright"] = "Top Right",
+    ["left"] = "Left",
+    ["center"] = "Center",
+    ["right"] = "Right",
     ["bottomleft"] = "Bottom Left",
-    ["bottom"]     = "Bottom",
+    ["bottom"] = "Bottom",
     ["bottomright"] = "Bottom Right",
-    ["none"]       = "None",
+    ["none"] = "None",
 }
-CludesUI.POSITION_GRID_ORDER = { "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
+CludesUI.POSITION_GRID_ORDER =
+    { "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
 CludesUI.FRAME_STRATA_LABELS = {
-    BACKGROUND = "Background", LOW = "Low", MEDIUM = "Medium",
-    HIGH = "High", DIALOG = "Dialog", FULLSCREEN = "Fullscreen",
-    FULLSCREEN_DIALOG = "Fullscreen Dialog", TOOLTIP = "Tooltip",
+    BACKGROUND = "Background",
+    LOW = "Low",
+    MEDIUM = "Medium",
+    HIGH = "High",
+    DIALOG = "Dialog",
+    FULLSCREEN = "Fullscreen",
+    FULLSCREEN_DIALOG = "Fullscreen Dialog",
+    TOOLTIP = "Tooltip",
 }
 CludesUI.FRAME_STRATA_ORDER_BASE = { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG" }
-CludesUI.FRAME_STRATA_ORDER_FULL = { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP" }
-CludesUI.GROW_DIR_VALUES_FULL = { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down", CENTER = "Center" }
-CludesUI.GROW_DIR_ORDER_FULL  = { "RIGHT", "LEFT", "UP", "DOWN", "CENTER" }
+CludesUI.FRAME_STRATA_ORDER_FULL =
+    { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP" }
+CludesUI.GROW_DIR_VALUES_FULL =
+    { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down", CENTER = "Center" }
+CludesUI.GROW_DIR_ORDER_FULL = { "RIGHT", "LEFT", "UP", "DOWN", "CENTER" }
 CludesUI.GROW_DIR_VALUES_BASE = { RIGHT = "Right", LEFT = "Left", UP = "Up", DOWN = "Down" }
-CludesUI.GROW_DIR_ORDER_BASE  = { "RIGHT", "LEFT", "UP", "DOWN" }
+CludesUI.GROW_DIR_ORDER_BASE = { "RIGHT", "LEFT", "UP", "DOWN" }
 
 -- Alert sound catalogue: shared LITERAL data only. Every consumer takes its OWN tables from
 -- BuildAlertSoundTables() -- SM appenders mutate in place and cache by table identity, so a shared table collapses two dropdowns into one and loses SM entries.
 CludesUI.ALERT_SOUND_FILES = {
-    airhorn = "AirHorn.ogg", banana = "BananaPeelSlip.ogg", bikehorn = "BikeHorn.ogg",
-    bite = "Bite.ogg", boxing = "BoxingArenaSound.ogg", catmeow = "CatMeow.ogg",
-    catmeow2 = "CatMeow2.ogg", gunshot = "FrontalsGunshot.wav", glass = "Glass.mp3",
-    kaching = "Kaching.ogg", phone = "Phone.ogg", robotblip = "RobotBlip.ogg",
-    sonar = "Sonar.ogg", siren = "WarningSiren.ogg", water = "WaterDrop.ogg",
+    airhorn = "AirHorn.ogg",
+    banana = "BananaPeelSlip.ogg",
+    bikehorn = "BikeHorn.ogg",
+    bite = "Bite.ogg",
+    boxing = "BoxingArenaSound.ogg",
+    catmeow = "CatMeow.ogg",
+    catmeow2 = "CatMeow2.ogg",
+    gunshot = "FrontalsGunshot.wav",
+    glass = "Glass.mp3",
+    kaching = "Kaching.ogg",
+    phone = "Phone.ogg",
+    robotblip = "RobotBlip.ogg",
+    sonar = "Sonar.ogg",
+    siren = "WarningSiren.ogg",
+    water = "WaterDrop.ogg",
     wilhelm = "Wilhelm.ogg",
 }
 CludesUI.ALERT_SOUND_NAMES = {
-    none = "None", airhorn = "Air Horn", banana = "Banana Peel Slip",
-    bikehorn = "Bike Horn", bite = "Bite", boxing = "Boxing Arena",
-    catmeow = "Cat Meow", catmeow2 = "Cat Meow 2", gunshot = "Frontals Gunshot",
-    glass = "Glass", kaching = "Kaching", phone = "Phone", robotblip = "Robot Blip",
-    sonar = "Sonar", siren = "Warning Siren", water = "Water Drop", wilhelm = "Wilhelm",
+    none = "None",
+    airhorn = "Air Horn",
+    banana = "Banana Peel Slip",
+    bikehorn = "Bike Horn",
+    bite = "Bite",
+    boxing = "Boxing Arena",
+    catmeow = "Cat Meow",
+    catmeow2 = "Cat Meow 2",
+    gunshot = "Frontals Gunshot",
+    glass = "Glass",
+    kaching = "Kaching",
+    phone = "Phone",
+    robotblip = "Robot Blip",
+    sonar = "Sonar",
+    siren = "Warning Siren",
+    water = "Water Drop",
+    wilhelm = "Wilhelm",
 }
 CludesUI.ALERT_SOUND_ORDER = {
-    "none", "airhorn", "banana", "bikehorn", "bite", "boxing", "catmeow",
-    "catmeow2", "gunshot", "glass", "kaching", "phone", "robotblip", "sonar",
-    "siren", "water", "wilhelm",
+    "none",
+    "airhorn",
+    "banana",
+    "bikehorn",
+    "bite",
+    "boxing",
+    "catmeow",
+    "catmeow2",
+    "gunshot",
+    "glass",
+    "kaching",
+    "phone",
+    "robotblip",
+    "sonar",
+    "siren",
+    "water",
+    "wilhelm",
 }
 -- FRESH paths/names/order tables from the catalogue ("none" = name-only, no path). Safe for the SM appenders.
 function CludesUI.BuildAlertSoundTables()
@@ -1516,7 +1957,9 @@ function CludesUI.BuildAlertSoundTables()
         order[i] = k
         names[k] = CludesUI.ALERT_SOUND_NAMES[k]
         local f = CludesUI.ALERT_SOUND_FILES[k]
-        if f then paths[k] = dir .. f end
+        if f then
+            paths[k] = dir .. f
+        end
     end
     return paths, names, order
 end
@@ -1537,40 +1980,75 @@ end
 
 -- Statusbar texture catalogue: same contract as the sound catalogue above.
 CludesUI.BAR_TEXTURE_FILES = {
-    melli = "melli.tga", beautiful = "beautiful.tga", plating = "plating.tga",
-    atrocity = "atrocity.tga", divide = "divide.tga", glass = "glass.tga",
-    ["fade-right"] = "fade-right.tga", ["thin-line-top"] = "thin-line-top.tga",
-    ["thin-line-bottom"] = "thin-line-bottom.tga", fade = "fade.tga",
-    ["gradient-lr"] = "gradient-lr.tga", ["gradient-rl"] = "gradient-rl.tga",
-    ["gradient-bt"] = "gradient-bt.tga", ["gradient-tb"] = "gradient-tb.tga",
-    matte = "matte.tga", sheer = "sheer.tga",
-    ["pixels-fill"] = "pixels-fill.tga", ["pixels-dark"] = "pixels-dark.tga",
+    melli = "melli.tga",
+    beautiful = "beautiful.tga",
+    plating = "plating.tga",
+    atrocity = "atrocity.tga",
+    divide = "divide.tga",
+    glass = "glass.tga",
+    ["fade-right"] = "fade-right.tga",
+    ["thin-line-top"] = "thin-line-top.tga",
+    ["thin-line-bottom"] = "thin-line-bottom.tga",
+    fade = "fade.tga",
+    ["gradient-lr"] = "gradient-lr.tga",
+    ["gradient-rl"] = "gradient-rl.tga",
+    ["gradient-bt"] = "gradient-bt.tga",
+    ["gradient-tb"] = "gradient-tb.tga",
+    matte = "matte.tga",
+    sheer = "sheer.tga",
+    ["pixels-fill"] = "pixels-fill.tga",
+    ["pixels-dark"] = "pixels-dark.tga",
     ["pixels-bg"] = "pixels-bg.tga",
     ["blinkii-diamonds"] = "blinkii-diamonds.tga",
     ["kringel-window"] = "kringel-window.tga",
 }
 CludesUI.BAR_TEXTURE_NAMES = {
-    none = "None", melli = "Melli (ElvUI)", beautiful = "Beautiful",
-    plating = "Plating", atrocity = "Atrocity", divide = "Divide",
-    glass = "Glass", ["fade-right"] = "Fade Right",
-    ["thin-line-top"] = "Thin Line Top", ["thin-line-bottom"] = "Thin Line Bottom",
-    fade = "Fade", ["gradient-lr"] = "Gradient Right",
-    ["gradient-rl"] = "Gradient Left", ["gradient-bt"] = "Gradient Up",
-    ["gradient-tb"] = "Gradient Down", matte = "Matte", sheer = "Sheer",
-    ["pixels-fill"] = "Pixels Fill", ["pixels-dark"] = "Pixels Dark",
+    none = "None",
+    melli = "Melli (ElvUI)",
+    beautiful = "Beautiful",
+    plating = "Plating",
+    atrocity = "Atrocity",
+    divide = "Divide",
+    glass = "Glass",
+    ["fade-right"] = "Fade Right",
+    ["thin-line-top"] = "Thin Line Top",
+    ["thin-line-bottom"] = "Thin Line Bottom",
+    fade = "Fade",
+    ["gradient-lr"] = "Gradient Right",
+    ["gradient-rl"] = "Gradient Left",
+    ["gradient-bt"] = "Gradient Up",
+    ["gradient-tb"] = "Gradient Down",
+    matte = "Matte",
+    sheer = "Sheer",
+    ["pixels-fill"] = "Pixels Fill",
+    ["pixels-dark"] = "Pixels Dark",
     ["pixels-bg"] = "Pixels Background",
-    ["blinkii-diamonds"] = "Blinkii Diamonds", ["kringel-window"] = "Kringel Window",
+    ["blinkii-diamonds"] = "Blinkii Diamonds",
+    ["kringel-window"] = "Kringel Window",
 }
 CludesUI.BAR_TEXTURE_ORDER = {
-    "none", "melli", "atrocity",
-    "fade", "fade-right",
-    "thin-line-top", "thin-line-bottom",
-    "beautiful", "plating",
-    "divide", "glass",
-    "gradient-lr", "gradient-rl", "gradient-bt", "gradient-tb",
-    "matte", "sheer",
-    "pixels-fill", "pixels-dark", "pixels-bg",
-    "blinkii-diamonds", "kringel-window",
+    "none",
+    "melli",
+    "atrocity",
+    "fade",
+    "fade-right",
+    "thin-line-top",
+    "thin-line-bottom",
+    "beautiful",
+    "plating",
+    "divide",
+    "glass",
+    "gradient-lr",
+    "gradient-rl",
+    "gradient-bt",
+    "gradient-tb",
+    "matte",
+    "sheer",
+    "pixels-fill",
+    "pixels-dark",
+    "pixels-bg",
+    "blinkii-diamonds",
+    "kringel-window",
 }
 -- FRESH textures/names/order tables. includeExtras=true = full 22-key set; else core set
 -- without the pattern textures (blinkii-diamonds, kringel-window). "none" is name-only.
@@ -1582,7 +2060,9 @@ function CludesUI.BuildBarTextureTables(includeExtras)
             order[#order + 1] = k
             names[k] = CludesUI.BAR_TEXTURE_NAMES[k]
             local f = CludesUI.BAR_TEXTURE_FILES[k]
-            if f then tex[k] = dir .. f end
+            if f then
+                tex[k] = dir .. f
+            end
         end
     end
     return tex, names, order
@@ -1594,44 +2074,74 @@ end
 -- names and the shield / heal absorb orders. Readers copy the names and orders
 -- before appending the SharedMedia tail; never mutate these.
 CludesUI.ABSORB_STYLE_TEX = {
-    striped         = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
+    striped = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
     stripedReversed = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-5-reversed.png",
-    stripedThick    = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-thick.png",
-    stripedThickR   = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-thick-r.png",
-    clean           = "Interface\\Buttons\\WHITE8X8",
-    blizzard        = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\blizzard.tga",
-    largeOutlinedStripes  = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-left.png",
+    stripedThick = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-thick.png",
+    stripedThickR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-thick-r.png",
+    clean = "Interface\\Buttons\\WHITE8X8",
+    blizzard = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\blizzard.tga",
+    largeOutlinedStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-left.png",
     largeOutlinedStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-right.png",
-    largeStripes          = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-left.png",
-    largeStripesR         = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-right.png",
-    pixelsShield          = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield.tga",
-    pixelsShieldEdge      = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-edge.tga",
-    pixelsShieldFill      = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-fill.tga",
+    largeStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-left.png",
+    largeStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-right.png",
+    pixelsShield = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield.tga",
+    pixelsShieldEdge = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-edge.tga",
+    pixelsShieldFill = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-shield-fill.tga",
 }
 CludesUI.ABSORB_TILED_STYLES = {
-    stripedReversed = true, stripedThick = true, stripedThickR = true,
-    largeStripes = true, largeStripesR = true,
-    largeOutlinedStripes = true, largeOutlinedStripesR = true,
+    stripedReversed = true,
+    stripedThick = true,
+    stripedThickR = true,
+    largeStripes = true,
+    largeStripesR = true,
+    largeOutlinedStripes = true,
+    largeOutlinedStripesR = true,
     pixelsShieldFill = true,
 }
 CludesUI.ABSORB_STYLE_NAMES = {
-    none            = "None",
-    striped         = "Striped",
+    none = "None",
+    striped = "Striped",
     stripedReversed = "Striped Reversed",
-    stripedThick    = "Striped Thick",
-    stripedThickR   = "Striped Thick Reversed",
-    clean           = "Clean (Flat)",
-    blizzard        = "Blizzard",
-    largeOutlinedStripes  = "Large Outlined Stripes",    -- heal absorb only
-    largeOutlinedStripesR = "Large Outlined Stripes R",  -- heal absorb only
-    largeStripes          = "Large Stripes",
-    largeStripesR         = "Large Stripes R",
-    pixelsShield          = "Pixels Shield",
-    pixelsShieldEdge      = "Pixels Shield Edge",        -- shield only
-    pixelsShieldFill      = "Pixels Shield Fill",        -- shield only
+    stripedThick = "Striped Thick",
+    stripedThickR = "Striped Thick Reversed",
+    clean = "Clean (Flat)",
+    blizzard = "Blizzard",
+    largeOutlinedStripes = "Large Outlined Stripes", -- heal absorb only
+    largeOutlinedStripesR = "Large Outlined Stripes R", -- heal absorb only
+    largeStripes = "Large Stripes",
+    largeStripesR = "Large Stripes R",
+    pixelsShield = "Pixels Shield",
+    pixelsShieldEdge = "Pixels Shield Edge", -- shield only
+    pixelsShieldFill = "Pixels Shield Fill", -- shield only
 }
-CludesUI.ABSORB_STYLE_ORDER = { "none", "striped", "stripedReversed", "stripedThick", "stripedThickR", "clean", "blizzard", "largeStripes", "largeStripesR", "pixelsShield", "pixelsShieldEdge", "pixelsShieldFill" }
-CludesUI.HEAL_ABSORB_STYLE_ORDER = { "none", "striped", "stripedReversed", "stripedThick", "stripedThickR", "clean", "blizzard", "largeOutlinedStripes", "largeOutlinedStripesR", "largeStripes", "largeStripesR", "pixelsShield" }
+CludesUI.ABSORB_STYLE_ORDER = {
+    "none",
+    "striped",
+    "stripedReversed",
+    "stripedThick",
+    "stripedThickR",
+    "clean",
+    "blizzard",
+    "largeStripes",
+    "largeStripesR",
+    "pixelsShield",
+    "pixelsShieldEdge",
+    "pixelsShieldFill",
+}
+CludesUI.HEAL_ABSORB_STYLE_ORDER = {
+    "none",
+    "striped",
+    "stripedReversed",
+    "stripedThick",
+    "stripedThickR",
+    "clean",
+    "blizzard",
+    "largeOutlinedStripes",
+    "largeOutlinedStripesR",
+    "largeStripes",
+    "largeStripesR",
+    "pixelsShield",
+}
 
 -- Max Health Style: the temporary max health loss overlay of the Raid & Party
 -- Frames and the Unit Frames. Its own stripes, or any style the calling module's
@@ -1652,10 +2162,16 @@ do
             tex = resolveTex(style, "Interface\\Buttons\\WHITE8X8")
             tiled = style == "striped" or CludesUI.ABSORB_TILED_STYLES[style] == true
         end
-        local mc = UNTINTED[style] and WHITE or (settings and settings.maxHealthColor) or CludesUI.MAX_HEALTH_COLOR
+        local mc = UNTINTED[style] and WHITE
+            or (settings and settings.maxHealthColor)
+            or CludesUI.MAX_HEALTH_COLOR
         bar:SetStatusBarTexture(tex)
-        bar:SetStatusBarColor(mc.r or 0.7, mc.g or 0.1, mc.b or 0.1,
-            settings and (settings.maxHealthOpacity or 100) / 100 or 1)
+        bar:SetStatusBarColor(
+            mc.r or 0.7,
+            mc.g or 0.1,
+            mc.b or 0.1,
+            settings and (settings.maxHealthOpacity or 100) / 100 or 1
+        )
         local fill = bar:GetStatusBarTexture()
         if fill then
             fill:SetDrawLayer("ARTWORK", 3)
@@ -1678,7 +2194,7 @@ CludesUI.TEXT_SECTION_R = STYLE.TEXT_SECTION_R
 CludesUI.TEXT_SECTION_G = STYLE.TEXT_SECTION_G
 CludesUI.TEXT_SECTION_B = STYLE.TEXT_SECTION_B
 CludesUI.TEXT_SECTION_A = STYLE.TEXT_SECTION_A
-CludesUI.ROW_BG_ODD  = STYLE.ROW_BG_ODD
+CludesUI.ROW_BG_ODD = STYLE.ROW_BG_ODD
 CludesUI.ROW_BG_EVEN = STYLE.ROW_BG_EVEN
 CludesUI.BORDER_R = STYLE.BORDER_R
 CludesUI.BORDER_G = STYLE.BORDER_G
@@ -1689,7 +2205,7 @@ CludesUI.SL_TRACK_R = STYLE.SL_TRACK_R
 CludesUI.SL_TRACK_G = STYLE.SL_TRACK_G
 CludesUI.SL_TRACK_B = STYLE.SL_TRACK_B
 CludesUI.SL_TRACK_A = STYLE.SL_TRACK_A
-CludesUI.SL_FILL_A  = STYLE.SL_FILL_A
+CludesUI.SL_FILL_A = STYLE.SL_FILL_A
 CludesUI.SL_INPUT_R = STYLE.SL_INPUT_R
 CludesUI.SL_INPUT_G = STYLE.SL_INPUT_G
 CludesUI.SL_INPUT_B = STYLE.SL_INPUT_B
@@ -1702,56 +2218,62 @@ CludesUI.TG_OFF_R = STYLE.TG_OFF_R
 CludesUI.TG_OFF_G = STYLE.TG_OFF_G
 CludesUI.TG_OFF_B = STYLE.TG_OFF_B
 CludesUI.TG_OFF_A = STYLE.TG_OFF_A
-CludesUI.TG_ON_A  = STYLE.TG_ON_A
+CludesUI.TG_ON_A = STYLE.TG_ON_A
 CludesUI.TG_KNOB_OFF_R = STYLE.TG_KNOB_OFF_R
 CludesUI.TG_KNOB_OFF_G = STYLE.TG_KNOB_OFF_G
 CludesUI.TG_KNOB_OFF_B = STYLE.TG_KNOB_OFF_B
 CludesUI.TG_KNOB_OFF_A = STYLE.TG_KNOB_OFF_A
-CludesUI.TG_KNOB_ON_R  = STYLE.TG_KNOB_ON_R
-CludesUI.TG_KNOB_ON_G  = STYLE.TG_KNOB_ON_G
-CludesUI.TG_KNOB_ON_B  = STYLE.TG_KNOB_ON_B
-CludesUI.TG_KNOB_ON_A  = STYLE.TG_KNOB_ON_A
+CludesUI.TG_KNOB_ON_R = STYLE.TG_KNOB_ON_R
+CludesUI.TG_KNOB_ON_G = STYLE.TG_KNOB_ON_G
+CludesUI.TG_KNOB_ON_B = STYLE.TG_KNOB_ON_B
+CludesUI.TG_KNOB_ON_A = STYLE.TG_KNOB_ON_A
 -- Checkbox
 CludesUI.CB_BOX_R = STYLE.CB_BOX_R
 CludesUI.CB_BOX_G = STYLE.CB_BOX_G
 CludesUI.CB_BOX_B = STYLE.CB_BOX_B
-CludesUI.CB_BRD_A     = STYLE.CB_BRD_A
+CludesUI.CB_BRD_A = STYLE.CB_BRD_A
 CludesUI.CB_ACT_BRD_A = STYLE.CB_ACT_BRD_A
 -- Button
-CludesUI.BTN_BG_R  = STYLE.BTN_BG_R
-CludesUI.BTN_BG_G  = STYLE.BTN_BG_G
-CludesUI.BTN_BG_B  = STYLE.BTN_BG_B
-CludesUI.BTN_BG_A  = STYLE.BTN_BG_A
+CludesUI.BTN_BG_R = STYLE.BTN_BG_R
+CludesUI.BTN_BG_G = STYLE.BTN_BG_G
+CludesUI.BTN_BG_B = STYLE.BTN_BG_B
+CludesUI.BTN_BG_A = STYLE.BTN_BG_A
 CludesUI.BTN_BG_HA = STYLE.BTN_BG_HA
-CludesUI.BTN_BRD_A  = STYLE.BTN_BRD_A
+CludesUI.BTN_BRD_A = STYLE.BTN_BRD_A
 CludesUI.BTN_BRD_HA = STYLE.BTN_BRD_HA
-CludesUI.BTN_TXT_A  = STYLE.BTN_TXT_A
+CludesUI.BTN_TXT_A = STYLE.BTN_TXT_A
 CludesUI.BTN_TXT_HA = STYLE.BTN_TXT_HA
 -- Dropdown
-CludesUI.DD_BG_R  = STYLE.DD_BG_R
-CludesUI.DD_BG_G  = STYLE.DD_BG_G
-CludesUI.DD_BG_B  = STYLE.DD_BG_B
-CludesUI.DD_BG_A  = STYLE.DD_BG_A
+CludesUI.DD_BG_R = STYLE.DD_BG_R
+CludesUI.DD_BG_G = STYLE.DD_BG_G
+CludesUI.DD_BG_B = STYLE.DD_BG_B
+CludesUI.DD_BG_A = STYLE.DD_BG_A
 CludesUI.DD_BG_HA = STYLE.DD_BG_HA
-CludesUI.DD_BRD_A  = STYLE.DD_BRD_A
+CludesUI.DD_BRD_A = STYLE.DD_BRD_A
 CludesUI.DD_BRD_HA = STYLE.DD_BRD_HA
-CludesUI.DD_TXT_A  = STYLE.DD_TXT_A
+CludesUI.DD_TXT_A = STYLE.DD_TXT_A
 CludesUI.DD_TXT_HA = STYLE.DD_TXT_HA
-CludesUI.DD_ITEM_HL_A  = STYLE.DD_ITEM_HL_A
+CludesUI.DD_ITEM_HL_A = STYLE.DD_ITEM_HL_A
 CludesUI.DD_ITEM_SEL_A = STYLE.DD_ITEM_SEL_A
 -- Blizzard reskin colors (tooltips, context menus, popups)
 CludesUI.RESKIN = {
-    BG_R = 0.067, BG_G = 0.067, BG_B = 0.067,
-    TT_ALPHA   = 0.92,   -- tooltip background alpha
-    CTX_ALPHA  = 0.95,   -- blizzard context menu background alpha
-    QT_ALPHA   = 0.97,   -- quest tracker right-click menu alpha
-    BRD_ALPHA  = 0.18,   -- border alpha (white)
+    BG_R = 0.067,
+    BG_G = 0.067,
+    BG_B = 0.067,
+    TT_ALPHA = 0.92, -- tooltip background alpha
+    CTX_ALPHA = 0.95, -- blizzard context menu background alpha
+    QT_ALPHA = 0.97, -- quest tracker right-click menu alpha
+    BRD_ALPHA = 0.18, -- border alpha (white)
 }
 
 -- LFG queue accept countdown defaults (shared by the skin and its options)
 CludesUI.QUEUE_TIMER = {
-    TEXT_R = 1, TEXT_G = 0.831, TEXT_B = 0,   -- #ffd400
-    TEXT_SIZE = 9, BAR_HEIGHT = 11, TEXT_OFFSET_Y = 0,
+    TEXT_R = 1,
+    TEXT_G = 0.831,
+    TEXT_B = 0, -- #ffd400
+    TEXT_SIZE = 9,
+    BAR_HEIGHT = 11,
+    TEXT_OFFSET_Y = 0,
 }
 
 -- Unified tooltip background for BOTH the Blizzard tooltip reskin and CUI widget tooltips.
@@ -1780,14 +2302,14 @@ function CludesUI.GetTooltipBorder()
     return r, g, b, a, size
 end
 -- Layout
-CludesUI.DUAL_ITEM_W  = STYLE.DUAL_ITEM_W
-CludesUI.DUAL_GAP     = STYLE.DUAL_GAP
+CludesUI.DUAL_ITEM_W = STYLE.DUAL_ITEM_W
+CludesUI.DUAL_GAP = STYLE.DUAL_GAP
 CludesUI.TRIPLE_ITEM_W = STYLE.TRIPLE_ITEM_W
-CludesUI.TRIPLE_GAP    = STYLE.TRIPLE_GAP
+CludesUI.TRIPLE_GAP = STYLE.TRIPLE_GAP
 
 -- Table constants
 CludesUI.CLASS_COLOR_MAP = CLASS_COLOR_MAP
-CludesUI.CLASS_ART_MAP   = CLASS_ART_MAP
+CludesUI.CLASS_ART_MAP = CLASS_ART_MAP
 
 -- Upgrade track identification (locale-agnostic). Deliberately NOT feature-gated: the QoL
 -- upgrade calculator needs it with skin/bag modules disabled. Tiny table, built once.
@@ -1795,22 +2317,41 @@ do
     -- Localized C_Item.GetItemUpgradeInfo().trackString -> canonical English key (the upgrade calculator's season tables key on these).
     local KEYS = {
         -- Explorer / Delve
-        Explorer = "Explorer", Expedicionario = "Explorer", Forscher = "Explorer",
-        Explorateur = "Explorer", Esploratore = "Explorer", Explorador = "Explorer",
+        Explorer = "Explorer",
+        Expedicionario = "Explorer",
+        Forscher = "Explorer",
+        Explorateur = "Explorer",
+        Esploratore = "Explorer",
+        Explorador = "Explorer",
         Delve = "Explorer",
         -- Adventurer
-        Adventurer = "Adventurer", Aventurero = "Adventurer", Abenteurer = "Adventurer",
-        Aventurier = "Adventurer", Avventuriero = "Adventurer", Aventureiro = "Adventurer",
+        Adventurer = "Adventurer",
+        Aventurero = "Adventurer",
+        Abenteurer = "Adventurer",
+        Aventurier = "Adventurer",
+        Avventuriero = "Adventurer",
+        Aventureiro = "Adventurer",
         -- Veteran
-        Veteran = "Veteran", Veterano = "Veteran", ["V\195\169t\195\169ran"] = "Veteran",
+        Veteran = "Veteran",
+        Veterano = "Veteran",
+        ["V\195\169t\195\169ran"] = "Veteran",
         -- Champion
-        Champion = "Champion", ["Campe\195\179n"] = "Champion", Campione = "Champion",
+        Champion = "Champion",
+        ["Campe\195\179n"] = "Champion",
+        Campione = "Champion",
         ["Campe\195\163o"] = "Champion",
         -- Hero
-        Hero = "Hero", ["H\195\169roe"] = "Hero", Held = "Hero",
-        ["H\195\169ros"] = "Hero", Eroe = "Hero", ["Hero\195\173"] = "Hero",
+        Hero = "Hero",
+        ["H\195\169roe"] = "Hero",
+        Held = "Hero",
+        ["H\195\169ros"] = "Hero",
+        Eroe = "Hero",
+        ["Hero\195\173"] = "Hero",
         -- Myth
-        Myth = "Myth", Mito = "Myth", Mythos = "Myth", Mythe = "Myth",
+        Myth = "Myth",
+        Mito = "Myth",
+        Mythos = "Myth",
+        Mythe = "Myth",
         -- ruRU
         ["\208\152\209\129\209\129\208\187\208\181\208\180\208\190\208\178\208\176\209\130\208\181\208\187\209\140"] = "Explorer",
         ["\208\152\209\129\208\186\208\176\209\130\208\181\208\187\209\140 \208\191\209\128\208\184\208\186\208\187\209\142\209\135\208\181\208\189\208\184\208\185"] = "Adventurer",
@@ -1819,16 +2360,24 @@ do
         ["\208\147\208\181\209\128\208\190\208\185"] = "Hero",
         ["\208\155\208\181\208\179\208\181\208\189\208\180\208\176"] = "Myth",
         -- koKR
-        ["\237\131\144\237\151\152\234\176\128"] = "Explorer", ["\235\170\168\237\151\152\234\176\128"] = "Adventurer",
-        ["\235\133\184\235\160\168\234\176\128"] = "Veteran", ["\236\177\148\237\148\188\236\150\184"] = "Champion",
-        ["\236\152\129\236\155\133"] = "Hero", ["\236\139\160\237\153\148"] = "Myth",
+        ["\237\131\144\237\151\152\234\176\128"] = "Explorer",
+        ["\235\170\168\237\151\152\234\176\128"] = "Adventurer",
+        ["\235\133\184\235\160\168\234\176\128"] = "Veteran",
+        ["\236\177\148\237\148\188\236\150\184"] = "Champion",
+        ["\236\152\129\236\155\133"] = "Hero",
+        ["\236\139\160\237\153\148"] = "Myth",
         -- zhCN
-        ["\230\142\162\231\180\162\232\128\133"] = "Explorer", ["\229\134\146\233\153\169\232\128\133"] = "Adventurer",
-        ["\232\128\129\229\133\181"] = "Veteran", ["\229\139\135\229\163\171"] = "Champion",
-        ["\232\139\177\233\155\132"] = "Hero", ["\231\165\158\232\175\157"] = "Myth",
+        ["\230\142\162\231\180\162\232\128\133"] = "Explorer",
+        ["\229\134\146\233\153\169\232\128\133"] = "Adventurer",
+        ["\232\128\129\229\133\181"] = "Veteran",
+        ["\229\139\135\229\163\171"] = "Champion",
+        ["\232\139\177\233\155\132"] = "Hero",
+        ["\231\165\158\232\175\157"] = "Myth",
         -- zhTW
-        ["\230\142\162\233\154\170\232\128\133"] = "Explorer", ["\229\134\146\233\154\170\232\128\133"] = "Adventurer",
-        ["\231\178\190\229\133\181"] = "Veteran", ["\231\165\158\232\169\177"] = "Myth",
+        ["\230\142\162\233\154\170\232\128\133"] = "Explorer",
+        ["\229\134\146\233\154\170\232\128\133"] = "Adventurer",
+        ["\231\178\190\229\133\181"] = "Veteran",
+        ["\231\165\158\232\169\177"] = "Myth",
     }
 
     CludesUI.UPGRADE_TRACK_KEYS = KEYS
@@ -1836,9 +2385,13 @@ do
     -- Returns trackKey (canonical English) | nil, currentLevel, maxLevel; nil trackKey means
     -- a no-track item (crafted, older) or an untranslated trackString.
     function CludesUI.GetUpgradeTrackKey(itemLink)
-        if not itemLink or not (C_Item and C_Item.GetItemUpgradeInfo) then return nil end
+        if not itemLink or not (C_Item and C_Item.GetItemUpgradeInfo) then
+            return nil
+        end
         local info = C_Item.GetItemUpgradeInfo(itemLink)
-        if not info then return nil end
+        if not info then
+            return nil
+        end
         return KEYS[info.trackString or ""], info.currentLevel, info.maxLevel
     end
 end
@@ -1847,15 +2400,20 @@ end
 -- initialized when a consumer feature is enabled.
 do
     local en = C_AddOns and C_AddOns.GetAddOnEnableState
-    local need = en and (
-        (en("CludesUIBags") or 0) > 0
-        or ((en("CludesUIBlizzardSkin") or 0) > 0
-            and (not CludesUIDB
-                 or CludesUIDB.themedCharacterSheet ~= false
-                 or CludesUIDB.themedInspectSheet ~= false))
-    )
+    local need = en
+        and (
+            (en("CludesUIBags") or 0) > 0
+            or (
+                (en("CludesUIBlizzardSkin") or 0) > 0
+                and (
+                    not CludesUIDB
+                    or CludesUIDB.themedCharacterSheet ~= false
+                    or CludesUIDB.themedInspectSheet ~= false
+                )
+            )
+        )
     if need then
-        local W  = { r = 1.00, g = 1.00, b = 1.00 }
+        local W = { r = 1.00, g = 1.00, b = 1.00 }
         local CH = { r = 0.00, g = 0.44, b = 0.87 }
         local MY = { r = 1.00, g = 0.50, b = 0.00 }
         local HE = { r = 1.00, g = 0.30, b = 1.00 }
@@ -1867,12 +2425,12 @@ do
 
         -- Canonical track key -> hue (localized translation lives ONLY in UPGRADE_TRACK_KEYS).
         local map = {
-            Explorer   = GR,
+            Explorer = GR,
             Adventurer = W,
-            Veteran    = VE,
-            Champion   = CH,
-            Hero       = HE,
-            Myth       = MY,
+            Veteran = VE,
+            Champion = CH,
+            Hero = HE,
+            Myth = MY,
         }
 
         function CludesUI.GetUpgradeTrack(itemLink)
@@ -1887,16 +2445,22 @@ do
         local craftedColors = { [13835] = HE, [13836] = MY }
         local function ParseCraftedTrackColor(itemLink)
             local payload = itemLink:match("item:([^|]+)")
-            if not payload then return nil end
+            if not payload then
+                return nil
+            end
             local index, lastBonus = 0, 13
             for field in (payload .. ":"):gmatch("([^:]*):") do
                 index = index + 1
                 if index == 13 then
                     lastBonus = 13 + (tonumber(field) or 0)
                 elseif index > 13 then
-                    if index > lastBonus then break end
+                    if index > lastBonus then
+                        break
+                    end
                     local color = craftedColors[tonumber(field)]
-                    if color then return color end
+                    if color then
+                        return color
+                    end
                 end
             end
             return nil
@@ -1908,11 +2472,18 @@ do
         -- `false` records a miss so the parse never repeats for one link.
         local craftedCache, craftedCacheN = {}, 0
         function CludesUI.GetCraftedTrackColor(itemLink)
-            if type(itemLink) ~= "string" then return nil end
+            if type(itemLink) ~= "string" then
+                return nil
+            end
             local hit = craftedCache[itemLink]
-            if hit ~= nil then return hit or nil end
+            if hit ~= nil then
+                return hit or nil
+            end
             local color = ParseCraftedTrackColor(itemLink)
-            if craftedCacheN >= 4000 then wipe(craftedCache); craftedCacheN = 0 end
+            if craftedCacheN >= 4000 then
+                wipe(craftedCache)
+                craftedCacheN = 0
+            end
             craftedCache[itemLink] = color or false
             craftedCacheN = craftedCacheN + 1
             return color
@@ -1922,8 +2493,11 @@ do
         -- item rarity > white. Shared by character sheet, inspect sheet, equipment flyout and
         -- merchant. upgradeText/upgradeColor: a GetUpgradeTrack result the caller already has.
         function CludesUI.GetItemLevelColor(itemLink, itemQuality, upgradeText, upgradeColor)
-            if CludesUIDB and CludesUIDB.charSheetItemLevelUseColor
-                and CludesUIDB.charSheetItemLevelColor then
+            if
+                CludesUIDB
+                and CludesUIDB.charSheetItemLevelUseColor
+                and CludesUIDB.charSheetItemLevelColor
+            then
                 return CludesUIDB.charSheetItemLevelColor
             end
             if upgradeText == nil then
@@ -1933,7 +2507,9 @@ do
                 return upgradeColor
             end
             local crafted = CludesUI.GetCraftedTrackColor(itemLink)
-            if crafted then return crafted end
+            if crafted then
+                return crafted
+            end
             if (not CludesUIDB or CludesUIDB.charSheetColorItemLevel ~= false) and itemQuality then
                 local r, g, b = C_Item.GetItemQualityColor(itemQuality)
                 return { r = r, g = g, b = b }
@@ -1953,30 +2529,36 @@ end
 -- (pending) is true while the client has not cached the item at all.
 do
     local SECONDARY = {
-        { "ITEM_MOD_CRIT_RATING_SHORT",    "C" },
-        { "ITEM_MOD_HASTE_RATING_SHORT",   "H" },
+        { "ITEM_MOD_CRIT_RATING_SHORT", "C" },
+        { "ITEM_MOD_HASTE_RATING_SHORT", "H" },
         { "ITEM_MOD_MASTERY_RATING_SHORT", "M" },
-        { "ITEM_MOD_VERSATILITY",          "V" },
+        { "ITEM_MOD_VERSATILITY", "V" },
     }
     local TERTIARY = {
         { "ITEM_MOD_CR_LIFESTEAL_SHORT", "L" },
         { "ITEM_MOD_CR_AVOIDANCE_SHORT", "A" },
-        { "ITEM_MOD_CR_SPEED_SHORT",     "S" },
+        { "ITEM_MOD_CR_SPEED_SHORT", "S" },
     }
 
     local function Letters(stats, list)
         local picked = {}
         for i = 1, #list do
             local v = stats[list[i][1]]
-            if type(v) == "number" and v > 0 then picked[#picked + 1] = i end
+            if type(v) == "number" and v > 0 then
+                picked[#picked + 1] = i
+            end
         end
         table.sort(picked, function(a, b)
             local va, vb = stats[list[a][1]], stats[list[b][1]]
-            if va ~= vb then return va > vb end
+            if va ~= vb then
+                return va > vb
+            end
             return a < b
         end)
         local out = ""
-        for n = 1, #picked do out = out .. list[picked[n]][2] end
+        for n = 1, #picked do
+            out = out .. list[picked[n]][2]
+        end
         return out
     end
 
@@ -2006,10 +2588,14 @@ do
         return NAMES
     end
     local function TooltipStats(itemLink)
-        if not (C_TooltipInfo and C_TooltipInfo.GetHyperlink) then return nil, false end
+        if not (C_TooltipInfo and C_TooltipInfo.GetHyperlink) then
+            return nil, false
+        end
         local data = C_TooltipInfo.GetHyperlink(itemLink)
         local lines = data and data.lines
-        if not lines then return nil, false end
+        if not lines then
+            return nil, false
+        end
         local names = StatNames()
         local stats
         for _, line in ipairs(lines) do
@@ -2037,9 +2623,13 @@ do
 
     local secCache, terCache, cacheN = {}, {}, 0
     function CludesUI.GetItemStatLetters(itemLink)
-        if type(itemLink) ~= "string" then return "", "", false end
+        if type(itemLink) ~= "string" then
+            return "", "", false
+        end
         local sec = secCache[itemLink]
-        if sec then return sec, terCache[itemLink], false end
+        if sec then
+            return sec, terCache[itemLink], false
+        end
         local stats = C_Item.GetItemStats and C_Item.GetItemStats(itemLink)
         local read = true
         if not stats or next(stats) == nil then
@@ -2047,16 +2637,24 @@ do
         end
         local ter = ""
         sec = ""
-        if stats then sec, ter = Letters(stats, SECONDARY), Letters(stats, TERTIARY) end
+        if stats then
+            sec, ter = Letters(stats, SECONDARY), Letters(stats, TERTIARY)
+        end
         -- A read made before the item's data loads can come back short: one
         -- that found no letters is recorded only once the client has the item
         -- and its tooltip was read (an item with no such stats then stops
         -- reading its tooltip).
         if sec == "" and ter == "" then
             local pending = C_Item.GetItemInfo(itemLink) == nil
-            if pending or not read then return sec, ter, pending end
+            if pending or not read then
+                return sec, ter, pending
+            end
         end
-        if cacheN >= 2000 then wipe(secCache); wipe(terCache); cacheN = 0 end
+        if cacheN >= 2000 then
+            wipe(secCache)
+            wipe(terCache)
+            cacheN = 0
+        end
         secCache[itemLink], terCache[itemLink] = sec, ter
         cacheN = cacheN + 1
         return sec, ter, false
@@ -2067,9 +2665,15 @@ do
     -- gives them for the main label; a nil link gives two empty strings.
     local function StatLetterPair(link, withTertiary)
         local sec, ter, pending = "", "", false
-        if link then sec, ter, pending = CludesUI.GetItemStatLetters(link) end
-        if not withTertiary then ter = "" end
-        if sec == "" then sec, ter = ter, "" end
+        if link then
+            sec, ter, pending = CludesUI.GetItemStatLetters(link)
+        end
+        if not withTertiary then
+            ter = ""
+        end
+        if sec == "" then
+            sec, ter = ter, ""
+        end
         return sec, ter, pending
     end
 
@@ -2089,7 +2693,9 @@ do
     -- At most two letters: three or more read as the first and "+" ("CHM"
     -- shows "C+").
     local function TwoLetters(s)
-        if #s > 2 then return s:sub(1, 1) .. "+" end
+        if #s > 2 then
+            return s:sub(1, 1) .. "+"
+        end
         return s
     end
 
@@ -2122,18 +2728,28 @@ do
     local foreverRangedHaste
 
     local function ForeverFallbackPick(kind)
-        if statPick[kind] then return statPick[kind] end
+        if statPick[kind] then
+            return statPick[kind]
+        end
         local _, cls = UnitClass("player")
         if not issecretvalue(cls) then
-            if FOREVER_CASTER[cls] then return "spell" end
-            if cls == "HUNTER" and (kind == "crit" or foreverRangedHaste) then return "ranged" end
+            if FOREVER_CASTER[cls] then
+                return "spell"
+            end
+            if cls == "HUNTER" and (kind == "crit" or foreverRangedHaste) then
+                return "ranged"
+            end
         end
         return "melee"
     end
 
     local function HighestPick(spell, ranged, melee)
-        if spell >= ranged and spell >= melee then return "spell" end
-        if ranged >= melee then return "ranged" end
+        if spell >= ranged and spell >= melee then
+            return "spell"
+        end
+        if ranged >= melee then
+            return "ranged"
+        end
         return "melee"
     end
 
@@ -2146,8 +2762,12 @@ do
             pick = HighestPick(spell, ranged, melee)
             statPick.crit = pick
         end
-        if pick == "spell" then return spell, CR_CRIT_SPELL end
-        if pick == "ranged" then return ranged, CR_CRIT_RANGED end
+        if pick == "spell" then
+            return spell, CR_CRIT_SPELL
+        end
+        if pick == "ranged" then
+            return ranged, CR_CRIT_RANGED
+        end
         return melee, CR_CRIT_MELEE
     end
 
@@ -2155,7 +2775,12 @@ do
         local spell, melee = UnitSpellHaste("player"), GetMeleeHaste()
         local rangedBase, quiver = GetRangedHaste()
         local ranged, pick
-        if issecretvalue(spell) or issecretvalue(melee) or issecretvalue(rangedBase) or issecretvalue(quiver) then
+        if
+            issecretvalue(spell)
+            or issecretvalue(melee)
+            or issecretvalue(rangedBase)
+            or issecretvalue(quiver)
+        then
             pick = ForeverFallbackPick("haste")
             -- The quiver bonus cannot be added to a secret; ranged shows the last readable total.
             ranged = foreverRangedHaste
@@ -2165,35 +2790,52 @@ do
             pick = HighestPick(spell, ranged, melee)
             statPick.haste = pick
         end
-        if pick == "spell" then return spell, CR_HASTE_SPELL end
-        if pick == "ranged" then return ranged, CR_HASTE_RANGED end
+        if pick == "spell" then
+            return spell, CR_HASTE_SPELL
+        end
+        if pick == "ranged" then
+            return ranged, CR_HASTE_RANGED
+        end
         return melee, CR_HASTE_MELEE
     end
 
     -- Crit for the running client: the Forever pick there, the retail rule here.
     -- Returns percent, rating index.
     function CludesUI.PlayerCritChance()
-        if CludesUI.IS_FOREVER then return CludesUI.ForeverCritChance() end
+        if CludesUI.IS_FOREVER then
+            return CludesUI.ForeverCritChance()
+        end
         local ranged, melee = GetRangedCritChance(), GetCritChance()
         local spell, school = GetSpellCritChance(2), 2
         local secret = issecretvalue(ranged) or issecretvalue(melee) or issecretvalue(spell)
         if not secret then
             for i = 3, MAX_SPELL_SCHOOLS or 7 do
                 local s = GetSpellCritChance(i)
-                if issecretvalue(s) then secret = true; break end
-                if s < spell then spell, school = s, i end
+                if issecretvalue(s) then
+                    secret = true
+                    break
+                end
+                if s < spell then
+                    spell, school = s, i
+                end
             end
         end
         local pick
         if secret then
             pick = statPick.crit or "spell"
-            if pick == "spell" then spell = GetSpellCritChance(statPick.critSchool or 2) end
+            if pick == "spell" then
+                spell = GetSpellCritChance(statPick.critSchool or 2)
+            end
         else
             pick = HighestPick(spell, ranged, melee)
             statPick.crit, statPick.critSchool = pick, school
         end
-        if pick == "spell" then return spell, CR_CRIT_SPELL end
-        if pick == "ranged" then return ranged, CR_CRIT_RANGED end
+        if pick == "spell" then
+            return spell, CR_CRIT_SPELL
+        end
+        if pick == "ranged" then
+            return ranged, CR_CRIT_RANGED
+        end
         return melee, CR_CRIT_MELEE
     end
 end
@@ -2213,10 +2855,14 @@ function CludesUI.UnitEffectiveRole(unit)
     if not issecretvalue(isPlayer) and isPlayer then
         local spec = GetSpecialization and GetSpecialization()
         local role = spec and GetSpecializationRole and GetSpecializationRole(spec)
-        if role then return role end
+        if role then
+            return role
+        end
     end
     local role = UnitGroupRolesAssigned(unit)
-    if issecretvalue(role) then return nil, true end
+    if issecretvalue(role) then
+        return nil, true
+    end
     return role
 end
 
@@ -2235,18 +2881,33 @@ end
 -- unsure; a tank found is always sure.
 do
     local raidTok, partyTok = {}, {}
-    for i = 1, 40 do raidTok[i] = "raid" .. i end
-    for i = 1, 4 do partyTok[i] = "party" .. i end
+    for i = 1, 40 do
+        raidTok[i] = "raid" .. i
+    end
+    for i = 1, 4 do
+        partyTok[i] = "party" .. i
+    end
     function CludesUI.GroupHasTankRole()
         local unsure = false
         local role = UnitGroupRolesAssigned("player")
-        if issecretvalue(role) then unsure = true elseif role == "TANK" then return true, false end
+        if issecretvalue(role) then
+            unsure = true
+        elseif role == "TANK" then
+            return true, false
+        end
         local tok, count = nil, 0
-        if IsInRaid() then tok, count = raidTok, GetNumGroupMembers()
-        elseif IsInGroup() then tok, count = partyTok, GetNumGroupMembers() - 1 end
+        if IsInRaid() then
+            tok, count = raidTok, GetNumGroupMembers()
+        elseif IsInGroup() then
+            tok, count = partyTok, GetNumGroupMembers() - 1
+        end
         for i = 1, tok and math.min(count, #tok) or 0 do
             role = UnitGroupRolesAssigned(tok[i])
-            if issecretvalue(role) then unsure = true elseif role == "TANK" then return true, false end
+            if issecretvalue(role) then
+                unsure = true
+            elseif role == "TANK" then
+                return true, false
+            end
         end
         return false, unsure
     end
@@ -2283,7 +2944,7 @@ CludesUI._specWatcher:SetScript("OnEvent", CludesUI._RefreshSpecID)
 
 function CludesUI.GetSoulFragments()
     local specID = CludesUI._specID
-    if not specID then           -- pre-login / not resolved yet: resolve once
+    if not specID then -- pre-login / not resolved yet: resolve once
         CludesUI._RefreshSpecID()
         specID = CludesUI._specID
     end
@@ -2301,7 +2962,8 @@ function CludesUI.GetSoulFragments()
             max = 40
         else
             aura = C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID(1225789)
-            max = (C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(1247534)) and 35 or 50
+            max = (C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(1247534)) and 35
+                or 50
             if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(1261423) then
                 max = max + 50
             end
@@ -2336,117 +2998,127 @@ CludesUI.RESOURCE_BAR_ANCHOR_KEYS = {
 }
 
 do
-local PARTY_FRAME_SOURCES = {
-    { addon = "ElvUI",  prefix = "ElvUF_PartyGroup1UnitButton", count = 5 },
-    { addon = "Cell",   prefix = "CellPartyFrameMember",        count = 5 },
-    { addon = nil,      prefix = "CompactPartyFrameMember",     count = 5 },
-    { addon = nil,      prefix = "CompactRaidFrame",            count = 40 },
-}
+    local PARTY_FRAME_SOURCES = {
+        { addon = "ElvUI", prefix = "ElvUF_PartyGroup1UnitButton", count = 5 },
+        { addon = "Cell", prefix = "CellPartyFrameMember", count = 5 },
+        { addon = nil, prefix = "CompactPartyFrameMember", count = 5 },
+        { addon = nil, prefix = "CompactRaidFrame", count = 40 },
+    }
 
-local PLAYER_FRAME_SOURCES = {
-    { addon = "CludesUIUnitFrames", global = "CludesUIUnitFrames_Player" },
-    { addon = "ElvUI",                 global = "ElvUF_Player" },
-}
+    local PLAYER_FRAME_SOURCES = {
+        { addon = "CludesUIUnitFrames", global = "CludesUIUnitFrames_Player" },
+        { addon = "ElvUI", global = "ElvUF_Player" },
+    }
 
-local _cachedPartyFrame   = nil
-local _cachedPlayerFrame  = nil
-local _cachedRosterToken  = -1
+    local _cachedPartyFrame = nil
+    local _cachedPlayerFrame = nil
+    local _cachedRosterToken = -1
 
-local function RosterToken()
-    return GetNumGroupMembers()
-end
-
-local function CacheValid()
-    return _cachedRosterToken == RosterToken()
-end
-
--- Invalidate both caches. Called by CDM and ResourceBars on GROUP_ROSTER_UPDATE
--- and PLAYER_SPECIALIZATION_CHANGED so the next lookup rescans.
-function CludesUI.InvalidateFrameCache()
-    _cachedPartyFrame  = nil
-    _cachedPlayerFrame = nil
-    _cachedRosterToken = -1
-end
-
-function CludesUI.FindPlayerPartyFrame()
-    if _cachedPartyFrame and CacheValid() and _cachedPartyFrame:IsVisible() then
-        return _cachedPartyFrame
+    local function RosterToken()
+        return GetNumGroupMembers()
     end
-    _cachedPartyFrame  = nil
-    _cachedRosterToken = RosterToken()
 
-    for _, src in ipairs(PARTY_FRAME_SOURCES) do
-        if not src.addon or C_AddOns.IsAddOnLoaded(src.addon) then
-            for i = 1, src.count do
-                local frame = _G[src.prefix .. i]
-                if frame and frame.GetAttribute and frame:GetAttribute("unit") == "player"
-                   and frame.IsVisible and frame:IsVisible() then
-                    _cachedPartyFrame = frame
+    local function CacheValid()
+        return _cachedRosterToken == RosterToken()
+    end
+
+    -- Invalidate both caches. Called by CDM and ResourceBars on GROUP_ROSTER_UPDATE
+    -- and PLAYER_SPECIALIZATION_CHANGED so the next lookup rescans.
+    function CludesUI.InvalidateFrameCache()
+        _cachedPartyFrame = nil
+        _cachedPlayerFrame = nil
+        _cachedRosterToken = -1
+    end
+
+    function CludesUI.FindPlayerPartyFrame()
+        if _cachedPartyFrame and CacheValid() and _cachedPartyFrame:IsVisible() then
+            return _cachedPartyFrame
+        end
+        _cachedPartyFrame = nil
+        _cachedRosterToken = RosterToken()
+
+        for _, src in ipairs(PARTY_FRAME_SOURCES) do
+            if not src.addon or C_AddOns.IsAddOnLoaded(src.addon) then
+                for i = 1, src.count do
+                    local frame = _G[src.prefix .. i]
+                    if
+                        frame
+                        and frame.GetAttribute
+                        and frame:GetAttribute("unit") == "player"
+                        and frame.IsVisible
+                        and frame:IsVisible()
+                    then
+                        _cachedPartyFrame = frame
+                        return frame
+                    end
+                end
+            end
+        end
+
+        if C_AddOns.IsAddOnLoaded("DandersFrames") then
+            local container = _G["DandersPartyContainer"]
+            if container and container.IsVisible and container:IsVisible() then
+                _cachedPartyFrame = container
+                return container
+            end
+        end
+
+        return nil
+    end
+
+    function CludesUI.FindPlayerUnitFrame()
+        if _cachedPlayerFrame and CacheValid() and _cachedPlayerFrame:IsVisible() then
+            local u = _cachedPlayerFrame.GetAttribute and _cachedPlayerFrame:GetAttribute("unit")
+            if not u or UnitIsUnit(u, "player") then
+                return _cachedPlayerFrame
+            end
+        end
+        _cachedPlayerFrame = nil
+        _cachedRosterToken = RosterToken()
+
+        for _, src in ipairs(PLAYER_FRAME_SOURCES) do
+            if C_AddOns.IsAddOnLoaded(src.addon) then
+                local frame = _G[src.global]
+                if frame and frame.IsVisible and frame:IsVisible() then
+                    _cachedPlayerFrame = frame
                     return frame
                 end
             end
         end
-    end
 
-    if C_AddOns.IsAddOnLoaded("DandersFrames") then
-        local container = _G["DandersPartyContainer"]
-        if container and container.IsVisible and container:IsVisible() then
-            _cachedPartyFrame = container
-            return container
-        end
-    end
-
-    return nil
-end
-
-function CludesUI.FindPlayerUnitFrame()
-    if _cachedPlayerFrame and CacheValid() and _cachedPlayerFrame:IsVisible() then
-        local u = _cachedPlayerFrame.GetAttribute and _cachedPlayerFrame:GetAttribute("unit")
-        if not u or UnitIsUnit(u, "player") then
-            return _cachedPlayerFrame
-        end
-    end
-    _cachedPlayerFrame = nil
-    _cachedRosterToken = RosterToken()
-
-    for _, src in ipairs(PLAYER_FRAME_SOURCES) do
-        if C_AddOns.IsAddOnLoaded(src.addon) then
-            local frame = _G[src.global]
-            if frame and frame.IsVisible and frame:IsVisible() then
-                _cachedPlayerFrame = frame
-                return frame
-            end
-        end
-    end
-
-    if C_AddOns.IsAddOnLoaded("DandersFrames") then
-        local header = _G["DandersPartyHeader"]
-        if header then
-            for i = 1, 5 do
-                local child = header:GetAttribute("child" .. i)
-                if child and child.GetAttribute and child:GetAttribute("unit") == "player"
-                   and child.IsVisible and child:IsVisible() then
-                    _cachedPlayerFrame = child
-                    return child
+        if C_AddOns.IsAddOnLoaded("DandersFrames") then
+            local header = _G["DandersPartyHeader"]
+            if header then
+                for i = 1, 5 do
+                    local child = header:GetAttribute("child" .. i)
+                    if
+                        child
+                        and child.GetAttribute
+                        and child:GetAttribute("unit") == "player"
+                        and child.IsVisible
+                        and child:IsVisible()
+                    then
+                        _cachedPlayerFrame = child
+                        return child
+                    end
                 end
             end
         end
-    end
 
-    local blizz = _G["PlayerFrame"]
-    if blizz and blizz.IsVisible and blizz:IsVisible() then
-        _cachedPlayerFrame = blizz
-        return blizz
-    end
+        local blizz = _G["PlayerFrame"]
+        if blizz and blizz.IsVisible and blizz:IsVisible() then
+            _cachedPlayerFrame = blizz
+            return blizz
+        end
 
-    return nil
-end
+        return nil
+    end
 end
 
 -- Tip of the Spear / Whirlwind Stacks: tracked manually above via UNIT_SPELLCAST_SUCCEEDED.
 
-CludesUI.THEME_PRESETS   = THEME_PRESETS
-CludesUI.THEME_ORDER     = THEME_ORDER
+CludesUI.THEME_PRESETS = THEME_PRESETS
+CludesUI.THEME_ORDER = THEME_ORDER
 
 -- Path strings Keep the locale glyph-font fallback: plain EXPRESSWAY here would drop it
 -- and render CJK/Cyrillic clients as boxes for every later consumer.
@@ -2460,10 +3132,10 @@ CludesUI.ICONS_PATH = ICONS_PATH
 -------------------------------------------------------------------------------
 do
     local HEARTH_TOYS = {
-        54452,  -- Ethereal Portal
-        64488,  -- The Innkeeper's Daughter
-        93672,  -- Dark Portal
-        28585,  -- Ruby Slippers
+        54452, -- Ethereal Portal
+        64488, -- The Innkeeper's Daughter
+        93672, -- Dark Portal
+        28585, -- Ruby Slippers
         142542, -- Tome of Town Portal
         163045, -- Headless Horseman's Hearthstone
         162973, -- Greatfather Winter's Hearthstone
@@ -2510,7 +3182,9 @@ do
     local function ToyIcon(id)
         if C_ToyBox and C_ToyBox.GetToyInfo then
             local _, _, icon = C_ToyBox.GetToyInfo(id)
-            if icon then return icon end
+            if icon then
+                return icon
+            end
         end
         return C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(id) or 134414
     end
@@ -2519,15 +3193,24 @@ do
     -- Dev mode counts as protected: /cuidev forces the addon*RestrictionsForced
     -- CVars, which create the same restricted/secret-value environment anywhere.
     local function InProtectedInstance()
-        if CludesUI.IsDevModeActive and CludesUI.IsDevModeActive() then return true end
-        local _, instanceType = IsInInstance()
-        if instanceType == "raid" and InCombatLockdown() then return true end
-        if instanceType == "party" and C_ChallengeMode
-            and C_ChallengeMode.IsChallengeModeActive
-            and C_ChallengeMode.IsChallengeModeActive() then
+        if CludesUI.IsDevModeActive and CludesUI.IsDevModeActive() then
             return true
         end
-        if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then return true end
+        local _, instanceType = IsInInstance()
+        if instanceType == "raid" and InCombatLockdown() then
+            return true
+        end
+        if
+            instanceType == "party"
+            and C_ChallengeMode
+            and C_ChallengeMode.IsChallengeModeActive
+            and C_ChallengeMode.IsChallengeModeActive()
+        then
+            return true
+        end
+        if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then
+            return true
+        end
         return false
     end
     CludesUI.InProtectedInstance = InProtectedInstance
@@ -2535,10 +3218,14 @@ do
     -- Check if a toy/item hearthstone is on cooldown.
     -- Skips in M+/raid combat to avoid secret value errors.
     local function IsHearthOnCD(id)
-        if InProtectedInstance() then return true end
+        if InProtectedInstance() then
+            return true
+        end
         if C_Container and C_Container.GetItemCooldown then
             local ok, start, dur = pcall(C_Container.GetItemCooldown, id)
-            if ok and start and dur and dur > 1.5 then return true end
+            if ok and start and dur and dur > 1.5 then
+                return true
+            end
         end
         return false
     end
@@ -2546,9 +3233,13 @@ do
     -- Hearthstone toys are account-wide, but the Draenic Hologem works only for
     -- draenei and lightforged draenei: owning it is not enough on other races.
     local function CanUseHearthToy(id)
-        if id ~= 210455 then return true end
+        if id ~= 210455 then
+            return true
+        end
         local _, race = UnitRace("player")
-        if issecretvalue(race) then return false end
+        if issecretvalue(race) then
+            return false
+        end
         return race == "Draenei" or race == "LightforgedDraenei"
     end
     CludesUI.CanUseHearthToy = CanUseHearthToy
@@ -2561,8 +3252,7 @@ do
     -- noAstralRecall: resolve as a non-Shaman (Quickdraw's Random Hearthstone).
     function CludesUI.ResolveHearthSlot(noAstralRecall)
         local _, cls = UnitClass("player")
-        local isShaman = not noAstralRecall
-            and cls == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
+        local isShaman = not noAstralRecall and cls == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
 
         if isShaman and InProtectedInstance() then
             local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(SHAMAN_ASTRAL_RECALL)
@@ -2581,7 +3271,10 @@ do
         if isShaman and #owned > 0 then
             local anyOnCD = false
             for _, id in ipairs(owned) do
-                if IsHearthOnCD(id) then anyOnCD = true; break end
+                if IsHearthOnCD(id) then
+                    anyOnCD = true
+                    break
+                end
             end
             if anyOnCD then
                 local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(SHAMAN_ASTRAL_RECALL)
@@ -2616,8 +3309,12 @@ function CludesUI.SafeScrollRange(sf)
     if ok and val then
         local ok2, n = pcall(tonumber, val)
         if ok2 and n then
-            local ok3, gt = pcall(function() return n > 0 end)
-            if ok3 and gt then return n end
+            local ok3, gt = pcall(function()
+                return n > 0
+            end)
+            if ok3 and gt then
+                return n
+            end
         end
     end
     return 0
@@ -2638,7 +3335,9 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
     local step, child, onScroll = opts.step or 45, opts.child, opts.onScroll
     local Pool = POOL
     local function MaxScroll()
-        if child then return math.max(0, child:GetHeight() - sf:GetHeight()) end
+        if child then
+            return math.max(0, child:GetHeight() - sf:GetHeight())
+        end
         return CludesUI.SafeScrollRange(sf)
     end
     local UpdateThumb = function() end
@@ -2665,7 +3364,10 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
         CludesUI.PadHint(thumb, "nodeignore")
         UpdateThumb = function()
             local maxScroll = MaxScroll()
-            if maxScroll <= 0 then track:Hide(); return end
+            if maxScroll <= 0 then
+                track:Hide()
+                return
+            end
             track:Show()
             local trackH = track:GetHeight()
             local visH = sf:GetHeight()
@@ -2676,7 +3378,9 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
             local ok, val = pcall(sf.GetVerticalScroll, sf)
             if ok and val then
                 local ok2, n = pcall(tonumber, val)
-                if ok2 and n then cur = n end
+                if ok2 and n then
+                    cur = n
+                end
             end
             thumb:ClearAllPoints()
             thumb:SetPoint("TOP", track, "TOP", 0, -(cur / maxScroll * (trackH - thumbH)))
@@ -2693,11 +3397,16 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
         smoothFrame = CreateFrame("Frame", nil, sf)
     end
     smoothFrame:Hide()
-    local function Stop() smoothing = false; smoothFrame:Hide() end
+    local function Stop()
+        smoothing = false
+        smoothFrame:Hide()
+    end
     local function Set(v)
         sf:SetVerticalScroll(v)
         UpdateThumb()
-        if onScroll then onScroll(v) end
+        if onScroll then
+            onScroll(v)
+        end
     end
     smoothFrame:SetScript("OnUpdate", function(_, elapsed)
         local cur = sf:GetVerticalScroll()
@@ -2705,7 +3414,8 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
         target = math.max(0, math.min(maxScroll, target))
         local diff = target - cur
         if math.abs(diff) < 0.3 then
-            Stop(); Set(target)
+            Stop()
+            Set(target)
             return
         end
         Set(math.max(0, math.min(maxScroll, cur + diff * math.min(1, 12 * elapsed))))
@@ -2713,17 +3423,24 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
     sf:EnableMouseWheel(true)
     local panelWheel, passWheel = opts.panelWheel, opts.passWheel
     sf:SetScript("OnMouseWheel", function(self, delta)
-        if panelWheel and CludesUI._ShiftWheelScale(delta) then return end
+        if panelWheel and CludesUI._ShiftWheelScale(delta) then
+            return
+        end
         local maxScroll = MaxScroll()
         if maxScroll <= 0 then
             local page = passWheel and CludesUI._scrollFrame
             local fn = page and page:GetScript("OnMouseWheel")
-            if fn then fn(page, delta) end
+            if fn then
+                fn(page, delta)
+            end
             return
         end
         local base = smoothing and target or self:GetVerticalScroll()
         target = math.max(0, math.min(maxScroll, base - delta * step))
-        if not smoothing then smoothing = true; smoothFrame:Show() end
+        if not smoothing then
+            smoothing = true
+            smoothFrame:Show()
+        end
     end)
 
     local function ScrollTo(v)
@@ -2731,14 +3448,20 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
         target = math.max(0, math.min(MaxScroll(), v))
         Set(target)
     end
-    if not thumb then return UpdateThumb, ScrollTo end
-    sf:SetScript("OnScrollRangeChanged", function() UpdateThumb() end)
+    if not thumb then
+        return UpdateThumb, ScrollTo
+    end
+    sf:SetScript("OnScrollRangeChanged", function()
+        UpdateThumb()
+    end)
 
     -- Controller cursor: it scrolls the frame itself to reach a control, so the
     -- thumb follows (the lerp and a thumb drag already paint their own frames).
     if CludesUI.PadCP() then
         sf:HookScript("OnVerticalScroll", function()
-            if not smoothing and not thumb:GetScript("OnUpdate") then UpdateThumb() end
+            if not smoothing and not thumb:GetScript("OnUpdate") then
+                UpdateThumb()
+            end
         end)
     end
 
@@ -2747,10 +3470,15 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
     local padSteps
     local function PadScrollBy(delta)
         local maxScroll = MaxScroll()
-        if maxScroll <= 0 then return end
+        if maxScroll <= 0 then
+            return
+        end
         local base = smoothing and target or sf:GetVerticalScroll()
         target = math.max(0, math.min(maxScroll, base + delta))
-        if not smoothing then smoothing = true; smoothFrame:Show() end
+        if not smoothing then
+            smoothing = true
+            smoothFrame:Show()
+        end
     end
     local function PadArrow(point, icon, delta)
         local b = Pool.CreateFrame("Button", nil, padSteps)
@@ -2763,13 +3491,21 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
         tex:SetSize(14, 14)
         tex:SetPoint("CENTER")
         tex:SetAlpha(0.6)
-        b:SetScript("OnEnter", function() tex:SetAlpha(1) end)
-        b:SetScript("OnLeave", function() tex:SetAlpha(0.6) end)
-        b:SetScript("OnClick", function() PadScrollBy(delta) end)
+        b:SetScript("OnEnter", function()
+            tex:SetAlpha(1)
+        end)
+        b:SetScript("OnLeave", function()
+            tex:SetAlpha(0.6)
+        end)
+        b:SetScript("OnClick", function()
+            PadScrollBy(delta)
+        end)
     end
     track:HookScript("OnShow", function()
         if not CludesUI.PadInUse() then
-            if padSteps then padSteps:Hide() end
+            if padSteps then
+                padSteps:Hide()
+            end
             return
         end
         if not padSteps then
@@ -2783,7 +3519,9 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
             strip:SetFrameLevel(track:GetFrameLevel())
             strip:SetScript("OnClick", function()
                 local _, ty = thumb:GetCenter()
-                if not ty then return end
+                if not ty then
+                    return
+                end
                 local _, cy = GetCursorPosition()
                 local amount = sf:GetHeight() * 0.9
                 PadScrollBy((cy / thumb:GetEffectiveScale() > ty) and -amount or amount)
@@ -2800,52 +3538,66 @@ function CludesUI.AttachSmoothScrollbar(sf, opts)
     end)
 
     thumb:SetScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" then return end
+        if button ~= "LeftButton" then
+            return
+        end
         Stop()
         local _, cy = GetCursorPosition()
         local startY = cy / self:GetEffectiveScale()
         local startScroll = sf:GetVerticalScroll()
         self:SetScript("OnUpdate", function(self2)
-            if not IsMouseButtonDown("LeftButton") then self2:SetScript("OnUpdate", nil); return end
+            if not IsMouseButtonDown("LeftButton") then
+                self2:SetScript("OnUpdate", nil)
+                return
+            end
             Stop()
             local _, cy2 = GetCursorPosition()
             local maxTravel = track:GetHeight() - self2:GetHeight()
-            if maxTravel <= 0 then return end
+            if maxTravel <= 0 then
+                return
+            end
             local maxScroll = MaxScroll()
-            target = math.max(0, math.min(maxScroll,
-                startScroll + ((startY - cy2 / self2:GetEffectiveScale()) / maxTravel) * maxScroll))
+            target = math.max(
+                0,
+                math.min(
+                    maxScroll,
+                    startScroll + ((startY - cy2 / self2:GetEffectiveScale()) / maxTravel) * maxScroll
+                )
+            )
             Set(target)
         end)
     end)
     thumb:SetScript("OnMouseUp", function(self, button)
-        if button == "LeftButton" then self:SetScript("OnUpdate", nil) end
+        if button == "LeftButton" then
+            self:SetScript("OnUpdate", nil)
+        end
     end)
     return UpdateThumb, ScrollTo
 end
 
 -- Utility functions
-CludesUI.SolidTex          = SolidTex
-CludesUI.MakeFont          = MakeFont
-CludesUI.MakeBorder        = MakeBorder
-CludesUI.DisablePixelSnap  = DisablePixelSnap
-CludesUI.RowBg             = RowBg
-CludesUI.ResetRowCounters  = ResetRowCounters
-CludesUI.lerp              = lerp
+CludesUI.SolidTex = SolidTex
+CludesUI.MakeFont = MakeFont
+CludesUI.MakeBorder = MakeBorder
+CludesUI.DisablePixelSnap = DisablePixelSnap
+CludesUI.RowBg = RowBg
+CludesUI.ResetRowCounters = ResetRowCounters
+CludesUI.lerp = lerp
 CludesUI.MakeDropdownArrow = MakeDropdownArrow
-CludesUI.RegAccent         = RegAccent
+CludesUI.RegAccent = RegAccent
 
 -- Internal references (needed by Widget Factory accent system)
 CludesUI.DEFAULT_ACCENT_R = DEFAULT_ACCENT_R
 CludesUI.DEFAULT_ACCENT_G = DEFAULT_ACCENT_G
 CludesUI.DEFAULT_ACCENT_B = DEFAULT_ACCENT_B
 CludesUI._ResolveFactionTheme = ResolveFactionTheme
-CludesUI._playerClass     = playerClass
-CludesUI._accentElements  = _accentElements
+CludesUI._playerClass = playerClass
+CludesUI._accentElements = _accentElements
 CludesUI._widgetRefreshList = _widgetRefreshList
-CludesUI._rowCounters     = rowCounters
-CludesUI._STYLE          = STYLE
+CludesUI._rowCounters = rowCounters
+CludesUI._STYLE = STYLE
 CludesUI._THEME_BG_FILES = THEME_BG_FILES
-CludesUI._IS_STANDALONE  = IS_STANDALONE
+CludesUI._IS_STANDALONE = IS_STANDALONE
 
 -------------------------------------------------------------------------------
 --  MakeUnlockElement  --  shared factory for unlock mode element tables.
@@ -2916,47 +3668,47 @@ CludesUI._IS_STANDALONE  = IS_STANDALONE
 -------------------------------------------------------------------------------
 function CludesUI.MakeUnlockElement(opts)
     return {
-        key           = opts.key,
-        label         = opts.label,
-        group         = opts.group,
-        order         = opts.order,
-        getFrame      = opts.getFrame,
-        getSize       = opts.getSize,
-        savePosition  = opts.savePos,
-        loadPosition  = opts.loadPos,
+        key = opts.key,
+        label = opts.label,
+        group = opts.group,
+        order = opts.order,
+        getFrame = opts.getFrame,
+        getSize = opts.getSize,
+        savePosition = opts.savePos,
+        loadPosition = opts.loadPos,
         clearPosition = opts.clearPos,
         applyPosition = opts.applyPos,
-        setWidth      = opts.setWidth,
-        setHeight     = opts.setHeight,
-        isHidden      = opts.isHidden,
-        isAnchored    = opts.isAnchored,
-        onLiveMove    = opts.onLiveMove,
-        ownsPosition  = opts.ownsPosition,
+        setWidth = opts.setWidth,
+        setHeight = opts.setHeight,
+        isHidden = opts.isHidden,
+        isAnchored = opts.isAnchored,
+        onLiveMove = opts.onLiveMove,
+        ownsPosition = opts.ownsPosition,
         getScreenPoint = opts.getScreenPoint,
         setScreenPoint = opts.setScreenPoint,
         isPositionHeld = opts.isPositionHeld,
-        noSpecLayout  = opts.noSpecLayout,
-        linkedKeys    = opts.linkedKeys,
-        noResize          = opts.noResize,
-        linkedDimensions  = opts.linkedDimensions,
+        noSpecLayout = opts.noSpecLayout,
+        linkedKeys = opts.linkedKeys,
+        noResize = opts.noResize,
+        linkedDimensions = opts.linkedDimensions,
         -- noInitHook: self-positioning element; ApplySavedPositions /
         -- NotifyElementResized (CUI_UnlockMode) must not re-apply its stored position.
-        noInitHook        = opts.noInitHook,
-        loadRawPosition   = opts.loadRawPos,
-        saveRawPosition   = opts.saveRawPos,
-        noAnchorTarget    = opts.noAnchorTarget,
-        noAnchorTo        = opts.noAnchorTo,
+        noInitHook = opts.noInitHook,
+        loadRawPosition = opts.loadRawPos,
+        saveRawPosition = opts.saveRawPos,
+        noAnchorTarget = opts.noAnchorTarget,
+        noAnchorTo = opts.noAnchorTo,
         -- allowMatchSource: show the width/height MATCH buttons even when resize is
         -- disabled (noResize), so the element can size-match TO another element.
         -- noSizeMatchTarget: other elements may NOT size-match TO this one.
-        allowMatchSource  = opts.allowMatchSource,
+        allowMatchSource = opts.allowMatchSource,
         noSizeMatchTarget = opts.noSizeMatchTarget,
-        sizeFixedByLook   = opts.sizeFixedByLook,
-        getSettingSize    = opts.getSettingSize,
+        sizeFixedByLook = opts.sizeFixedByLook,
+        getSettingSize = opts.getSettingSize,
         -- matchUnavailable: function(key) -> reason string when a NEW width/height match
         -- is impossible (action bars in Blizzard Style, where CUI does not control
         -- sizing). Clearing an existing match stays allowed.
-        matchUnavailable  = opts.matchUnavailable,
+        matchUnavailable = opts.matchUnavailable,
         -- keepMoverWhenAnchored: isAnchored() reflecting a module option (ERB "Anchor
         -- To") still gets a mover -- position-locked (no drag/nudge/anchor link), but
         -- resize and width/height matching stay available.
@@ -2965,17 +3717,17 @@ function CludesUI.MakeUnlockElement(opts)
         -- moverTooltip: optional hover tooltip (string or function) on the mover
         -- (first use: CDM's Additional Bar Offset marker).
         -- subtitle: optional dimmed helper line under the mover label.
-        moverBg           = opts.moverBg,
-        moverTooltip      = opts.moverTooltip,
-        subtitle          = opts.subtitle,
-        getBottomExtra    = opts.getBottomExtra,
-        getInsets         = opts.getInsets,
+        moverBg = opts.moverBg,
+        moverTooltip = opts.moverTooltip,
+        subtitle = opts.subtitle,
+        getBottomExtra = opts.getBottomExtra,
+        getInsets = opts.getInsets,
         -- getMatchPad: function(key) -> padW, padH the element draws OUTSIDE its
         -- own rect (chrome such as a classic resource bar's frame); width/height
         -- matching adds it on the target side and takes it off the source side so
         -- matches line up with what is on screen. nil = nothing outside the rect.
-        getMatchPad       = opts.getMatchPad,
-        detachedMover     = opts.detachedMover,
+        getMatchPad = opts.getMatchPad,
+        detachedMover = opts.detachedMover,
     }
 end
 
@@ -2987,15 +3739,22 @@ if not CludesUI.ResolveThemeColor then
     CludesUI.ResolveThemeColor = function(theme)
         theme = ResolveFactionTheme(theme)
         if theme == "Class Colored" then
-            local clr = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass)) or CLASS_COLOR_MAP[playerClass]
-            if clr then return clr.r, clr.g, clr.b end
+            local clr = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+                or CLASS_COLOR_MAP[playerClass]
+            if clr then
+                return clr.r, clr.g, clr.b
+            end
             return DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B
         elseif theme == "Custom Color" then
             local sa = CludesUIDB and CludesUIDB.accentColor
-            return sa and sa.r or DEFAULT_ACCENT_R, sa and sa.g or DEFAULT_ACCENT_G, sa and sa.b or DEFAULT_ACCENT_B
+            return sa and sa.r or DEFAULT_ACCENT_R,
+                sa and sa.g or DEFAULT_ACCENT_G,
+                sa and sa.b or DEFAULT_ACCENT_B
         else
             local preset = THEME_PRESETS[theme]
-            if preset then return preset.r, preset.g, preset.b end
+            if preset then
+                return preset.r, preset.g, preset.b
+            end
             return DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B
         end
     end
@@ -3025,8 +3784,11 @@ if not CludesUI.ResolveActiveAccent then
         local acc = p and p.cuiAccent
         -- 1) per-profile cuiAccent
         if acc and acc.useClass then
-            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass)) or CLASS_COLOR_MAP[playerClass]
-            if c then return c.r, c.g, c.b end
+            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+                or CLASS_COLOR_MAP[playerClass]
+            if c then
+                return c.r, c.g, c.b
+            end
         end
         if acc and acc.custom then
             local ca = acc.custom
@@ -3034,11 +3796,16 @@ if not CludesUI.ResolveActiveAccent then
         end
         -- 2) frozen global root (only when no explicit per-profile cuiAccent)
         if (not acc) and db and db.useClassAccentColor then
-            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass)) or CLASS_COLOR_MAP[playerClass]
-            if c then return c.r, c.g, c.b end
+            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+                or CLASS_COLOR_MAP[playerClass]
+            if c then
+                return c.r, c.g, c.b
+            end
         end
         local gca = db and db.customAccentColor
-        if gca then return gca.r or themeR, gca.g or themeG, gca.b or themeB end
+        if gca then
+            return gca.r or themeR, gca.g or themeG, gca.b or themeB
+        end
         -- 3) theme color
         return themeR, themeG, themeB
     end
@@ -3054,15 +3821,21 @@ end
 --   key       - the saved texture key ("sm:Some Pack" or "beautiful")
 --   fallback  - path to use if nothing resolves (optional)
 function CludesUI.ResolveTexturePath(texTable, key, fallback)
-    if not key then return fallback end
+    if not key then
+        return fallback
+    end
     local path = texTable and texTable[key]
-    if path then return path end
+    if path then
+        return path
+    end
     -- A non-string key is legacy data, not a lookup miss: some settings were boolean toggles
     -- before becoming style dropdowns (showPlayerAbsorb). Callers gate on truthiness, so a
     -- stored `true` reaches the :match below and raises inside unit frame init, aborting the
     -- whole build (white player frame, unopenable tab); treat it as unset. Deliberately AFTER
     -- the direct lookup: the raise is in the :match, so this stays a pure crash fix and can never turn a table hit into a fallback.
-    if type(key) ~= "string" then return fallback end
+    if type(key) ~= "string" then
+        return fallback
+    end
     local smName = key:match("^sm:(.+)")
     if smName then
         local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
@@ -3070,7 +3843,9 @@ function CludesUI.ResolveTexturePath(texTable, key, fallback)
             local fetched = LSM:Fetch("statusbar", smName)
             if fetched then
                 -- Cache it back into the table so future lookups are instant
-                if texTable then texTable[key] = fetched end
+                if texTable then
+                    texTable[key] = fetched
+                end
                 return fetched
             end
         end
@@ -3095,7 +3870,9 @@ CludesUI._smTexConsumers = CludesUI._smTexConsumers or {}
 
 function CludesUI.AppendSharedMediaTextures(names, order, castBarNames, textures)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-    if not LSM then return end
+    if not LSM then
+        return
+    end
 
     -- Icon textures some SM packs wrongly register as statusbar (cached once).
     local blacklist = CludesUI._smTexBlacklist
@@ -3107,22 +3884,30 @@ function CludesUI.AppendSharedMediaTextures(names, order, castBarNames, textures
     -- Append one SM texture (by LSM name) into a consumer's tables if absent; the "---"
     -- separator is added once, lazily, before the first SM key. Defined here (not file scope) and captured as an upvalue by the once-installed registration callback.
     local function AppendOne(c, name, path)
-        if not path then return end
+        if not path then
+            return
+        end
         local key = "sm:" .. name
-        if c.textures[key] or blacklist[name] then return end
+        if c.textures[key] or blacklist[name] then
+            return
+        end
         -- Drop only an exact duplicate: a native entry with the SAME display
         -- name AND the same file would otherwise list that texture twice,
         -- once in the module's own section and once in the SharedMedia tail.
         local nativePath = c.nativeNames and c.nativeNames[string.lower(name)]
-        if nativePath and nativePath == path then return end
+        if nativePath and nativePath == path then
+            return
+        end
         if not c.sepAdded then
             c.order[#c.order + 1] = "---"
             c.sepAdded = true
         end
-        c.textures[key]       = path
-        c.names[key]          = name
+        c.textures[key] = path
+        c.names[key] = name
         c.order[#c.order + 1] = key
-        if c.castBarNames then c.castBarNames[key] = name end
+        if c.castBarNames then
+            c.castBarNames[key] = name
+        end
     end
 
     -- Register this consumer (dedup by textures-table identity); sepAdded stays false so the first SM key adds exactly one "---" (the dedup guard prevents a second).
@@ -3139,9 +3924,17 @@ function CludesUI.AppendSharedMediaTextures(names, order, castBarNames, textures
         local native = {}
         for k, path in pairs(textures) do
             local nm = names and names[k]
-            if nm then native[string.lower(nm)] = path end
+            if nm then
+                native[string.lower(nm)] = path
+            end
         end
-        c = { names = names, order = order, castBarNames = castBarNames, textures = textures, nativeNames = native }
+        c = {
+            names = names,
+            order = order,
+            castBarNames = castBarNames,
+            textures = textures,
+            nativeNames = native,
+        }
         CludesUI._smTexConsumers[textures] = c
     end
 
@@ -3168,9 +3961,13 @@ function CludesUI.AppendSharedMediaTextures(names, order, castBarNames, textures
         CludesUI._smTexCallbackInstalled = true
         CludesUI._smTexCBOwner = CludesUI._smTexCBOwner or {}
         LSM.RegisterCallback(CludesUI._smTexCBOwner, "LibSharedMedia_Registered", function(_, mediatype, key)
-            if mediatype ~= "statusbar" then return end
+            if mediatype ~= "statusbar" then
+                return
+            end
             local path = LSM:Fetch("statusbar", key)
-            if not path then return end
+            if not path then
+                return
+            end
             for _, cc in pairs(CludesUI._smTexConsumers) do
                 AppendOne(cc, key, path)
             end
@@ -3188,9 +3985,13 @@ end
 -------------------------------------------------------------------------------
 function CludesUI.AppendSharedMediaSounds(paths, names, order)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-    if not LSM then return end
+    if not LSM then
+        return
+    end
     local smSounds = LSM:HashTable("sound")
-    if not smSounds then return end
+    if not smSounds then
+        return
+    end
 
     local sorted = {}
     for name in pairs(smSounds) do
@@ -3199,7 +4000,9 @@ function CludesUI.AppendSharedMediaSounds(paths, names, order)
             sorted[#sorted + 1] = name
         end
     end
-    if #sorted == 0 then return end
+    if #sorted == 0 then
+        return
+    end
     table.sort(sorted)
 
     order[#order + 1] = "---"
@@ -3221,12 +4024,18 @@ end
 -------------------------------------------------------------------------------
 function CludesUI.AppendSharedMediaFonts(values, order, opts)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-    if not LSM then return end
+    if not LSM then
+        return
+    end
     local smFonts = LSM:HashTable("font")
-    if not smFonts then return end
+    if not smFonts then
+        return
+    end
 
     -- Build the SM font path lookup so ResolveFontName can find SM fonts
-    if not CludesUI._smFontPaths then CludesUI._smFontPaths = {} end
+    if not CludesUI._smFontPaths then
+        CludesUI._smFontPaths = {}
+    end
     for name, path in pairs(smFonts) do
         CludesUI._smFontPaths[name] = path
     end
@@ -3239,7 +4048,9 @@ function CludesUI.AppendSharedMediaFonts(values, order, opts)
             sorted[#sorted + 1] = name
         end
     end
-    if #sorted == 0 then return end
+    if #sorted == 0 then
+        return
+    end
     table.sort(sorted)
 
     order[#order + 1] = "---"
@@ -3255,19 +4066,26 @@ end
 -- script: only user-installed SM fonts are offered, alongside System Default (bundled names are skipped -- LSM-registered too, but they would just show boxes).
 function CludesUI.AppendExternalSharedMediaFonts(values, order)
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-    if not LSM then return end
+    if not LSM then
+        return
+    end
     local smFonts = LSM:HashTable("font")
-    if not smFonts then return end
-    if not CludesUI._smFontPaths then CludesUI._smFontPaths = {} end
+    if not smFonts then
+        return
+    end
+    if not CludesUI._smFontPaths then
+        CludesUI._smFontPaths = {}
+    end
     local sorted = {}
     for name, path in pairs(smFonts) do
         CludesUI._smFontPaths[name] = path
-        if not CludesUI.FONT_FILES[name] and not CludesUI.FONT_BLIZZARD[name]
-           and not values[name] then
+        if not CludesUI.FONT_FILES[name] and not CludesUI.FONT_BLIZZARD[name] and not values[name] then
             sorted[#sorted + 1] = name
         end
     end
-    if #sorted == 0 then return end
+    if #sorted == 0 then
+        return
+    end
     table.sort(sorted)
     order[#order + 1] = "---"
     for _, name in ipairs(sorted) do
@@ -3296,11 +4114,13 @@ if IS_STANDALONE then
     -- Every core file has loaded by the first module publish: remove the
     -- hand-off slot before the shared table is published (see the top).
     local shared = select(2, ...)
-    setmetatable(CludesUI._ModuleNS, { __newindex = function(t, k, v)
-        shared.__cuiCoreNS = nil
-        setmetatable(t, nil)
-        rawset(t, k, v)
-    end })
+    setmetatable(CludesUI._ModuleNS, {
+        __newindex = function(t, k, v)
+            shared.__cuiCoreNS = nil
+            setmetatable(t, nil)
+            rawset(t, k, v)
+        end,
+    })
 end
 
 -- Login-critical deferred body: UnlockMode's position/anchor engine
@@ -3327,13 +4147,21 @@ function CludesUI.EnsureOptionsLoaded()
     -- nonexistent "<coreToken>Options", printing MISSING and dead-ending every
     -- options open). Loaded is simply true; EnsureLoaded's deferred-init drain
     -- does the rest, exactly like the pre-split resident options.
-    if IS_STANDALONE then return true end
-    if C_AddOns.IsAddOnLoaded("CludesUIOptions") then return true end
+    if IS_STANDALONE then
+        return true
+    end
+    if C_AddOns.IsAddOnLoaded("CludesUIOptions") then
+        return true
+    end
     -- Inside the suite registration window: the options files register the
     -- suite's module pages while they load (see RegisterModule).
     local ok, reason = CUI_NS.RunCoreRegistration(C_AddOns.LoadAddOn, "CludesUIOptions")
     if not ok then
-        CludesUI.PrintError("Options could not load (" .. tostring(reason) .. "). Enable the \"CludesUI Options\" addon in the AddOn List.")
+        CludesUI.PrintError(
+            "Options could not load ("
+                .. tostring(reason)
+                .. '). Enable the "CludesUI Options" addon in the AddOn List.'
+        )
     end
     return ok and true or false
 end
@@ -3349,19 +4177,19 @@ end
 -- pre-split not-loaded behavior.
 do
     local LOD_SLASH = {
-        { key = "EABR",                "/cabr", "/cbr" },
-        { key = "EBSK",                "/cbsk" },
-        { key = "ECMEOPT",             "/ccmeopt" },
-        { key = "EFR",                 "/cfr" },
-        { key = "EMM",                 "/cmm" },
+        { key = "EABR", "/cabr", "/cbr" },
+        { key = "EBSK", "/cbsk" },
+        { key = "ECMEOPT", "/ccmeopt" },
+        { key = "EFR", "/cfr" },
+        { key = "EMM", "/cmm" },
         { key = "CLUDESNAMEPLATES", "/cnp" },
-        { key = "EQOL",                "/qol" },
-        { key = "EQTOPTS",             "/cqtopts" },
-        { key = "CUIQUICKDRAW",        "/cqd", "/quickdraw" },
+        { key = "EQOL", "/qol" },
+        { key = "EQTOPTS", "/cqtopts" },
+        { key = "CUIQUICKDRAW", "/cqd", "/quickdraw" },
         { key = "CLUDESRAIDFRAMES", "/crf" },
-        { key = "ERBOPT",              "/crbopt" },
+        { key = "ERBOPT", "/crbopt" },
         { key = "CLUDESUNITFRAMES", "/cuf" },
-        { key = "CLUDESDATABARS",   "/cdb" },
+        { key = "CLUDESDATABARS", "/cdb" },
     }
     for _, e in ipairs(LOD_SLASH) do
         local key = e.key
@@ -3379,10 +4207,16 @@ do
             -- budget ("script ran too long"). A fresh timer execution owns
             -- its own budget.
             C_Timer.After(0, function()
-                if InCombatLockdown() then return end
-                if not CludesUI.EnsureOptionsLoaded() then return end
+                if InCombatLockdown() then
+                    return
+                end
+                if not CludesUI.EnsureOptionsLoaded() then
+                    return
+                end
                 local real = SlashCmdList[key]
-                if real and real ~= bootstrap then real(msg) end
+                if real and real ~= bootstrap then
+                    real(msg)
+                end
             end)
         end
         SlashCmdList[key] = bootstrap
@@ -3390,14 +4224,18 @@ do
 end
 
 function CludesUI:EnsureLoaded()
-    if self._deferredLoaded then return end
+    if self._deferredLoaded then
+        return
+    end
     -- Unlock core first (position/anchor engine), matching the pre-split order
     -- where UnlockMode's deferred body ran before Widgets'.
     self:EnsureUnlockCore()
     -- Load the options addon: its files append their deferred inits, which the
     -- loop below then runs. On failure keep _deferredLoaded false so a later
     -- open retries after the user re-enables the addon.
-    if not CludesUI.EnsureOptionsLoaded() then return end
+    if not CludesUI.EnsureOptionsLoaded() then
+        return
+    end
     self._deferredLoaded = true
     -- The page pool came with the options addon (CludesUI_FramePool.lua), which
     -- filled the core's own pool table: the panel's page path calls these captured
@@ -3422,7 +4260,9 @@ end
 CludesUI.VERSION = "1.1.0"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
-if not _G._CUI_AddonVersions then _G._CUI_AddonVersions = {} end
+if not _G._CUI_AddonVersions then
+    _G._CUI_AddonVersions = {}
+end
 _G._CUI_AddonVersions[CUI_HOST_ADDON] = CludesUI.VERSION
 
 -- Version-increase detection: stamp the account's last-seen version at login
@@ -3434,13 +4274,17 @@ do
     f:RegisterEvent("PLAYER_LOGIN")
     f:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local prev = CludesUIDB.lastLoginVersion
         if prev and prev ~= CludesUI.VERSION then
             CludesUIDB.patchDotPending = true
         end
         CludesUIDB.lastLoginVersion = CludesUI.VERSION
-        if CludesUI._UpdatePatchDot then CludesUI._UpdatePatchDot() end
+        if CludesUI._UpdatePatchDot then
+            CludesUI._UpdatePatchDot()
+        end
     end)
 end
 
@@ -3450,19 +4294,27 @@ do
     f:RegisterEvent("PLAYER_LOGIN")
     f:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
-        if _G._CUI_VersionChecked then return end
+        if _G._CUI_VersionChecked then
+            return
+        end
         _G._CUI_VersionChecked = true
         C_Timer.After(2, function()
             local versions = _G._CUI_AddonVersions
-            if not versions then return end
+            if not versions then
+                return
+            end
             local loaded = {}
             for name, ver in pairs(versions) do
                 loaded[#loaded + 1] = { name = name, version = ver }
             end
-            if #loaded < 2 then return end
+            if #loaded < 2 then
+                return
+            end
             local newest = loaded[1].version
             for i = 2, #loaded do
-                if loaded[i].version > newest then newest = loaded[i].version end
+                if loaded[i].version > newest then
+                    newest = loaded[i].version
+                end
             end
             local outdated = {}
             for _, info in ipairs(loaded) do
@@ -3470,13 +4322,15 @@ do
                     outdated[#outdated + 1] = info.name
                 end
             end
-            if #outdated == 0 then return end
+            if #outdated == 0 then
+                return
+            end
             local msg = "The following CludesUI addons are out of date. "
                 .. "Please update so all addons are the same version:\n\n"
                 .. table.concat(outdated, ", ")
             CludesUI:ShowConfirmPopup({
-                title       = "Out of Date",
-                message     = msg,
+                title = "Out of Date",
+                message = msg,
                 confirmText = "OK",
             })
         end)
@@ -3492,11 +4346,15 @@ end
 -- can defer it until after the user picks their initial addon list. The inline scheduler at the
 -- bottom of this block only runs it automatically if the first-install popup has already been shown in a prior session.
 CludesUI._RunConflictCheck = function()
-    if _G._CUI_ConflictCheckRan then return end
+    if _G._CUI_ConflictCheckRan then
+        return
+    end
     _G._CUI_ConflictCheckRan = true
     do
         local IsLoaded = C_AddOns and C_AddOns.IsAddOnLoaded
-        if not IsLoaded then return end
+        if not IsLoaded then
+            return
+        end
 
         -- conflict list: { addon, label, targets, message, moduleCheck }
         --   targets = "all" or a table of Cludes folder names
@@ -3506,124 +4364,362 @@ CludesUI._RunConflictCheck = function()
         --     skin), or a clashing option is on in the other addon
         -- Blizzard UI Enhanced has sub-features stored as flags on CludesUIDB; conflicts against a specific sub-feature only fire when that feature is actually enabled.
         local function BlizzardSkinSubEnabled(key)
-            if not CludesUIDB then return true end
+            if not CludesUIDB then
+                return true
+            end
             return CludesUIDB[key] ~= false
         end
         -- Another Mythic+ timer addon only clashes with the Mythic+ Timer window,
         -- so it is named only while that window is on, and the message points at
         -- its switch (the rest of Mythic+ Tools keeps running beside it).
         local function MPlusTimerOn()
-            return _G._EMT_IsTimerEnabled and _G._EMT_IsTimerEnabled()
+            return _G._CUMT_IsTimerEnabled and _G._CUMT_IsTimerEnabled()
         end
         local function MPlusTimerMsg(label)
-            return CludesUI.Lf("%1$s conflicts with CludesUI's Mythic+ Timer. Turn off Enable Mythic+ Timer on the Mythic+ Timer tab of Mythic+ Tools, or disable %1$s.", label)
+            return CludesUI.Lf(
+                "%1$s conflicts with CludesUI's Mythic+ Timer. Turn off Enable Mythic+ Timer on the Mythic+ Timer tab of Mythic+ Tools, or disable %1$s.",
+                label
+            )
         end
         -- Leatrix Plus only clashes through these options (LeaPlusDB holds "On"/"Off"),
         -- so it is named only while one is on for a loaded module, and the popup lists them.
         local function LeatrixOptionsOn()
             local db = _G.LeaPlusDB
-            if type(db) ~= "table" then return nil end
+            if type(db) ~= "table" then
+                return nil
+            end
             local on = {}
             for _, o in ipairs({
-                { "CludesUIChat",    "UseEasyChatResizing",  "Use easy resizing" },
-                { "CludesUIChat",    "NoCombatLogTab",       "Hide the combat log" },
-                { "CludesUIChat",    "NoChatButtons",        "Hide chat buttons" },
-                { "CludesUIChat",    "UnclampChat",          "Unclamp chat frame" },
-                { "CludesUIChat",    "MoveChatEditBoxToTop", "Move editbox to top" },
-                { "CludesUIChat",    "NoStickyChat",         "Disable sticky chat" },
-                { "CludesUIChat",    "UseArrowKeysInChat",   "Use arrow keys in chat" },
-                { "CludesUIChat",    "NoChatFade",           "Disable chat fade" },
-                { "CludesUIChat",    "RecentChatWindow",     "Recent chat window" },
-                { "CludesUIChat",    "RestoreChatMessages",  "Restore chat messages" },
-                { "CludesUIMinimap", "MinimapModder",        "Enhance minimap" },
+                { "CludesUIChat", "UseEasyChatResizing", "Use easy resizing" },
+                { "CludesUIChat", "NoCombatLogTab", "Hide the combat log" },
+                { "CludesUIChat", "NoChatButtons", "Hide chat buttons" },
+                { "CludesUIChat", "UnclampChat", "Unclamp chat frame" },
+                { "CludesUIChat", "MoveChatEditBoxToTop", "Move editbox to top" },
+                { "CludesUIChat", "NoStickyChat", "Disable sticky chat" },
+                { "CludesUIChat", "UseArrowKeysInChat", "Use arrow keys in chat" },
+                { "CludesUIChat", "NoChatFade", "Disable chat fade" },
+                { "CludesUIChat", "RecentChatWindow", "Recent chat window" },
+                { "CludesUIChat", "RestoreChatMessages", "Restore chat messages" },
+                { "CludesUIMinimap", "MinimapModder", "Enhance minimap" },
             }) do
-                if db[o[2]] == "On" and IsLoaded(o[1]) then on[#on + 1] = o[3] end
+                if db[o[2]] == "On" and IsLoaded(o[1]) then
+                    on[#on + 1] = o[3]
+                end
             end
             return #on > 0 and table.concat(on, ", ") or nil
         end
         local leatrixOn = LeatrixOptionsOn()
         local conflicts = {
-            { addon = "ElvUI",                    label = "ElvUI",                      targets = "all",                              message = "Many of ElvUI's modules are incompatible with CludesUI. Make sure to disable any conflicting modules." },
-            { addon = "DandersFrames",            label = "Danders Frames",             targets = { "CludesUIRaidFrames" } },
-            { addon = "HarreksAdvancedRaidFrames", label = "Harreks Advanced Raid Frames", targets = { "CludesUIRaidFrames" } },
-            { addon = "Grid2",                    label = "Grid2",                      targets = { "CludesUIRaidFrames" } },
+            {
+                addon = "ElvUI",
+                label = "ElvUI",
+                targets = "all",
+                message = "Many of ElvUI's modules are incompatible with CludesUI. Make sure to disable any conflicting modules.",
+            },
+            {
+                addon = "DandersFrames",
+                label = "Danders Frames",
+                targets = { "CludesUIRaidFrames" },
+            },
+            {
+                addon = "HarreksAdvancedRaidFrames",
+                label = "Harreks Advanced Raid Frames",
+                targets = { "CludesUIRaidFrames" },
+            },
+            {
+                addon = "Grid2",
+                label = "Grid2",
+                targets = { "CludesUIRaidFrames" },
+            },
             -- Clique is special: it only conflicts when Raid Frames is enabled AND
             -- HoverCast (click-casting) is turned on -- with HoverCast off, Clique
             -- coexists fine (it owns the frames). targets handles the RF-enabled
             -- check; moduleCheck adds the HoverCast-enabled check.
-            { addon = "Clique",                   label = "Clique",                     targets = { "CludesUIRaidFrames" },
-              moduleCheck = function() return _G._ERF_IsHoverCastEnabled and _G._ERF_IsHoverCastEnabled() end,
-              message = "Clique controls click-casting on the same Raid & Party Frames as CludesUI's Frame Bindings, so they conflict. Disable the Clique addon to use Frame Bindings." },
-            { addon = "TellMeWhen",               label = "TellMeWhen",                 targets = "all",                              message = "TellMeWhen overlaps with CludesUI's core positional architecture. If you ONLY use for sound alerts it should be okay but may still cause issues." },
-            { addon = "Bartender4",               label = "Bartender4",                 targets = { "CludesUIActionBars" } },
-            { addon = "Dominos",                  label = "Dominos",                    targets = { "CludesUIActionBars" } },
-            { addon = "ImprovedTalentLoadouts",   label = "Improved Talent Loadouts",   targets = { "CludesUIActionBars" } },
-            { addon = "UnhaltedUnitFrames",       label = "Unhalted Unit Frames",       targets = { "CludesUIUnitFrames" } },
-            { addon = "Platynator",               label = "Platynator",                 targets = { "CludesUINameplates" } },
-            { addon = "Plater",                   label = "Plater Nameplates",          targets = { "CludesUINameplates" } },
-            { addon = "Kui_Nameplates",            label = "KUI Nameplates",             targets = { "CludesUINameplates" } },
-            { addon = "TidyPlates",               label = "TidyPlates",                 targets = { "CludesUINameplates" } },
-            { addon = "TidyPlates_ThreatPlates",  label = "TidyPlates ThreatPlates",    targets = { "CludesUINameplates" } },
-            { addon = "Healers-Have-To-Die",      label = "Healers Have To Die",        targets = { "CludesUINameplates" } },
-            { addon = "Aloft",                    label = "Aloft",                      targets = { "CludesUINameplates" } },
-            { addon = "SenseiClassResourceBar",   label = "Sensei Class Resource Bar",  targets = { "CludesUIResourceBars" } },
-            { addon = "EditModeExpanded",     label = "Edit Mode Expanded",         targets = { "CludesUIQuestTracker", "CludesUIChat" } },
-            { addon = "SexyMap",                  label = "SexyMap",                    targets = { "CludesUIMinimap" }, },
-            { addon = "MinimapButtonButton",      label = "MinimapButtonButton",        targets = { "CludesUIMinimap" }, },
-            { addon = "Leatrix_Plus",              label = "Leatrix",                    targets = { "CludesUIChat", "CludesUIMinimap" },
-              moduleCheck = function() return leatrixOn ~= nil end,
-              message = CludesUI.L("Leatrix Plus has chat and minimap features that conflict with CludesUI. Disable any chat or minimap related options within Leatrix Plus to stay compatible.")
-                  .. "\n" .. CludesUI.L("Leatrix Plus options that are on:") .. " " .. (leatrixOn or "") },
-            { addon = "Prat-3.0",                 label = "Prat",                       targets = { "CludesUIChat" } },
-            { addon = "Chatter",                  label = "Chatter",                    targets = { "CludesUIChat" } },
-            { addon = "Chattynator",              label = "Chattynator",                targets = { "CludesUIChat" } },
-            { addon = "Glass",                    label = "Glass",                      targets = { "CludesUIChat" } },
-            { addon = "AdiBags",                  label = "AdiBags",                    targets = { "CludesUIBags" } },
-            { addon = "ArkInventory",             label = "ArkInventory",               targets = { "CludesUIBags" } },
-            { addon = "Baganator",                label = "Baganator",                  targets = { "CludesUIBags" } },
-            { addon = "Bagnon",                   label = "Bagnon",                     targets = { "CludesUIBags" } },
-            { addon = "BetterBags",               label = "BetterBags",                 targets = { "CludesUIBags" } },
-            { addon = "Sorted",                   label = "Sorted",                     targets = { "CludesUIBags" } },
-            { addon = "UltimateMouseCursor",      label = "Ultimate Mouse Cursor",      targets = { "CludesUIQoL" } },
-            { addon = "BetterCooldownManager",    label = "Better Cooldown Manager",    targets = { "CludesUICooldownManager", "CludesUIResourceBars" } },
-            { addon = "CooldownManagerCentered",    label = "Cooldown Manager Centered",    targets = { "CludesUICooldownManager" } },
-            { addon = "SkironCooldownManager",    label = "Skiron Cooldown Manager",    targets = { "CludesUICooldownManager" } },
-            { addon = "ArcUI",                    label = "ArcUI",                      targets = { "CludesUICooldownManager", } },
-            { addon = "Ayije_CDM",                label = "Ayije CDM",                  targets = { "CludesUICooldownManager", "CludesUIResourceBars" } },
-            { addon = "MythicPlusTimer",          label = "Mythic Plus Timer",          targets = { "CludesUIMythicTimer" },
-              moduleCheck = MPlusTimerOn, message = MPlusTimerMsg("Mythic Plus Timer") },
-            { addon = "WarpDeplete",              label = "WarpDeplete",                targets = { "CludesUIMythicTimer" },
-              moduleCheck = MPlusTimerOn, message = MPlusTimerMsg("WarpDeplete") },
-            { addon = "MPlusTimer",               label = "MPlusTimer",                 targets = { "CludesUIMythicTimer" },
-              moduleCheck = MPlusTimerOn, message = MPlusTimerMsg("MPlusTimer") },
-            { addon = "ChonkyCharacterSheet",     label = "Chonky Character Sheet",     targets = { "CludesUIBlizzardSkin" },
-              moduleCheck = function() return BlizzardSkinSubEnabled("themedCharacterSheet") end,
-              message = "Chonky Character Sheet conflicts with the CludesUI's Character Sheet. Disable either Chonky or the Character Sheet skin in Blizzard UI Enhanced settings." },
-            { addon = "DejaCharacterStats",       label = "Deja Character Stats",       targets = { "CludesUIBlizzardSkin" },
-              moduleCheck = function() return BlizzardSkinSubEnabled("themedCharacterSheet") end,
-              message = "Deja Character Stats conflicts with the CludesUI's Character Sheet. Disable either Deja or the Character Sheet skin in Blizzard UI Enhanced settings." },
-            { addon = "BetterCharacterPanel",     label = "Better Character Panel",     targets = { "CludesUIBlizzardSkin" },
-              moduleCheck = function() return BlizzardSkinSubEnabled("themedCharacterSheet") end,
-              message = "Better Character Panel conflicts with the CludesUI's Character Sheet. Disable either Better Character Panel or the Character Sheet skin in Blizzard UI Enhanced settings." },
-            { addon = "idTip",                    label = "idTip",                      targets = "all",
-              message = "idTip conflicts with CludesUI's tooltip systems. Disable the idTip addon to stay compatible." },
+            {
+                addon = "Clique",
+                label = "Clique",
+                targets = { "CludesUIRaidFrames" },
+                moduleCheck = function()
+                    return _G._CURF_IsHoverCastEnabled and _G._CURF_IsHoverCastEnabled()
+                end,
+                message = "Clique controls click-casting on the same Raid & Party Frames as CludesUI's Frame Bindings, so they conflict. Disable the Clique addon to use Frame Bindings.",
+            },
+            {
+                addon = "TellMeWhen",
+                label = "TellMeWhen",
+                targets = "all",
+                message = "TellMeWhen overlaps with CludesUI's core positional architecture. If you ONLY use for sound alerts it should be okay but may still cause issues.",
+            },
+            {
+                addon = "Bartender4",
+                label = "Bartender4",
+                targets = { "CludesUIActionBars" },
+            },
+            {
+                addon = "Dominos",
+                label = "Dominos",
+                targets = { "CludesUIActionBars" },
+            },
+            {
+                addon = "ImprovedTalentLoadouts",
+                label = "Improved Talent Loadouts",
+                targets = { "CludesUIActionBars" },
+            },
+            {
+                addon = "UnhaltedUnitFrames",
+                label = "Unhalted Unit Frames",
+                targets = { "CludesUIUnitFrames" },
+            },
+            {
+                addon = "Platynator",
+                label = "Platynator",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "Plater",
+                label = "Plater Nameplates",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "Kui_Nameplates",
+                label = "KUI Nameplates",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "TidyPlates",
+                label = "TidyPlates",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "TidyPlates_ThreatPlates",
+                label = "TidyPlates ThreatPlates",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "Healers-Have-To-Die",
+                label = "Healers Have To Die",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "Aloft",
+                label = "Aloft",
+                targets = { "CludesUINameplates" },
+            },
+            {
+                addon = "SenseiClassResourceBar",
+                label = "Sensei Class Resource Bar",
+                targets = { "CludesUIResourceBars" },
+            },
+            {
+                addon = "EditModeExpanded",
+                label = "Edit Mode Expanded",
+                targets = { "CludesUIQuestTracker", "CludesUIChat" },
+            },
+            {
+                addon = "SexyMap",
+                label = "SexyMap",
+                targets = { "CludesUIMinimap" },
+            },
+            {
+                addon = "MinimapButtonButton",
+                label = "MinimapButtonButton",
+                targets = { "CludesUIMinimap" },
+            },
+            {
+                addon = "Leatrix_Plus",
+                label = "Leatrix",
+                targets = { "CludesUIChat", "CludesUIMinimap" },
+                moduleCheck = function()
+                    return leatrixOn ~= nil
+                end,
+                message = CludesUI.L(
+                    "Leatrix Plus has chat and minimap features that conflict with CludesUI. Disable any chat or minimap related options within Leatrix Plus to stay compatible."
+                )
+                    .. "\n"
+                    .. CludesUI.L("Leatrix Plus options that are on:")
+                    .. " "
+                    .. (leatrixOn or ""),
+            },
+            {
+                addon = "Prat-3.0",
+                label = "Prat",
+                targets = { "CludesUIChat" },
+            },
+            {
+                addon = "Chatter",
+                label = "Chatter",
+                targets = { "CludesUIChat" },
+            },
+            {
+                addon = "Chattynator",
+                label = "Chattynator",
+                targets = { "CludesUIChat" },
+            },
+            {
+                addon = "Glass",
+                label = "Glass",
+                targets = { "CludesUIChat" },
+            },
+            {
+                addon = "AdiBags",
+                label = "AdiBags",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "ArkInventory",
+                label = "ArkInventory",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "Baganator",
+                label = "Baganator",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "Bagnon",
+                label = "Bagnon",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "BetterBags",
+                label = "BetterBags",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "Sorted",
+                label = "Sorted",
+                targets = { "CludesUIBags" },
+            },
+            {
+                addon = "UltimateMouseCursor",
+                label = "Ultimate Mouse Cursor",
+                targets = { "CludesUIQoL" },
+            },
+            {
+                addon = "BetterCooldownManager",
+                label = "Better Cooldown Manager",
+                targets = { "CludesUICooldownManager", "CludesUIResourceBars" },
+            },
+            {
+                addon = "CooldownManagerCentered",
+                label = "Cooldown Manager Centered",
+                targets = { "CludesUICooldownManager" },
+            },
+            {
+                addon = "SkironCooldownManager",
+                label = "Skiron Cooldown Manager",
+                targets = { "CludesUICooldownManager" },
+            },
+            {
+                addon = "ArcUI",
+                label = "ArcUI",
+                targets = { "CludesUICooldownManager" },
+            },
+            {
+                addon = "Ayije_CDM",
+                label = "Ayije CDM",
+                targets = { "CludesUICooldownManager", "CludesUIResourceBars" },
+            },
+            {
+                addon = "MythicPlusTimer",
+                label = "Mythic Plus Timer",
+                targets = { "CludesUIMythicTimer" },
+                moduleCheck = MPlusTimerOn,
+                message = MPlusTimerMsg("Mythic Plus Timer"),
+            },
+            {
+                addon = "WarpDeplete",
+                label = "WarpDeplete",
+                targets = { "CludesUIMythicTimer" },
+                moduleCheck = MPlusTimerOn,
+                message = MPlusTimerMsg("WarpDeplete"),
+            },
+            {
+                addon = "MPlusTimer",
+                label = "MPlusTimer",
+                targets = { "CludesUIMythicTimer" },
+                moduleCheck = MPlusTimerOn,
+                message = MPlusTimerMsg("MPlusTimer"),
+            },
+            {
+                addon = "ChonkyCharacterSheet",
+                label = "Chonky Character Sheet",
+                targets = { "CludesUIBlizzardSkin" },
+                moduleCheck = function()
+                    return BlizzardSkinSubEnabled("themedCharacterSheet")
+                end,
+                message = "Chonky Character Sheet conflicts with the CludesUI's Character Sheet. Disable either Chonky or the Character Sheet skin in Blizzard UI Enhanced settings.",
+            },
+            {
+                addon = "DejaCharacterStats",
+                label = "Deja Character Stats",
+                targets = { "CludesUIBlizzardSkin" },
+                moduleCheck = function()
+                    return BlizzardSkinSubEnabled("themedCharacterSheet")
+                end,
+                message = "Deja Character Stats conflicts with the CludesUI's Character Sheet. Disable either Deja or the Character Sheet skin in Blizzard UI Enhanced settings.",
+            },
+            {
+                addon = "BetterCharacterPanel",
+                label = "Better Character Panel",
+                targets = { "CludesUIBlizzardSkin" },
+                moduleCheck = function()
+                    return BlizzardSkinSubEnabled("themedCharacterSheet")
+                end,
+                message = "Better Character Panel conflicts with the CludesUI's Character Sheet. Disable either Better Character Panel or the Character Sheet skin in Blizzard UI Enhanced settings.",
+            },
+            {
+                addon = "idTip",
+                label = "idTip",
+                targets = "all",
+                message = "idTip conflicts with CludesUI's tooltip systems. Disable the idTip addon to stay compatible.",
+            },
             -- The suite this one shares its frames with: both running at once
             -- fight over the same parts of the interface.
-            { addon = "Elles" .. "mereUI", label = "Elles" .. "mereUI", targets = "all",
-              message = ("Elles" .. "mereUI") .. " and CludesUI change the same parts of the interface and cannot run together. Disable one of them in the AddOn list, then reload." },
+            {
+                addon = "Elles" .. "mereUI",
+                label = "Elles" .. "mereUI",
+                targets = "all",
+                message = ("Elles" .. "mereUI")
+                    .. " and CludesUI change the same parts of the interface and cannot run together. Disable one of them in the AddOn list, then reload.",
+            },
             -- The same author's older single-purpose addons, and the old name of
             -- the DataBars addon: each still draws what one of our modules draws.
-            { addon = "Elles" .. "mereUIWonderBar", label = "Elles" .. "mereUI WonderBar", targets = { "CludesUIDataBars" } },
-            { addon = "Elles" .. "mereBarGlows",    label = "Elles" .. "mere's CDM Bar Glows", targets = "all" },
-            { addon = "Elles" .. "mereNameplates",  label = "Elles" .. "mere's Nameplates",    targets = "all" },
-            { addon = "Elles" .. "mereActionBars",  label = "Elles" .. "mere's Action Bars",   targets = "all" },
-            { addon = "Elles" .. "mereUnitFrames",  label = "Elles" .. "mere's Unit Frames",   targets = "all" },
+            {
+                addon = "Elles" .. "mereUIWonderBar",
+                label = "Elles" .. "mereUI WonderBar",
+                targets = { "CludesUIDataBars" },
+            },
+            {
+                addon = "Elles" .. "mereBarGlows",
+                label = "Elles" .. "mere's CDM Bar Glows",
+                targets = "all",
+            },
+            {
+                addon = "Elles" .. "mereNameplates",
+                label = "Elles" .. "mere's Nameplates",
+                targets = "all",
+            },
+            {
+                addon = "Elles" .. "mereActionBars",
+                label = "Elles" .. "mere's Action Bars",
+                targets = "all",
+            },
+            {
+                addon = "Elles" .. "mereUnitFrames",
+                label = "Elles" .. "mere's Unit Frames",
+                targets = "all",
+            },
         }
 
         local exempt = { CludesUIPartyMode = true }
 
-        if not CludesUIDB then CludesUIDB = {} end
-        if not CludesUIDB.dismissedConflicts then CludesUIDB.dismissedConflicts = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
+        if not CludesUIDB.dismissedConflicts then
+            CludesUIDB.dismissedConflicts = {}
+        end
         local dismissed = CludesUIDB.dismissedConflicts
 
         -- Collect all active conflicts. ElvUI is filtered out if it has been permanently dismissed AND it would be the only conflict showing (i.e. no other conflicts exist).
@@ -3634,8 +4730,12 @@ CludesUI._RunConflictCheck = function()
                 local affected = {}
                 if entry.targets == "all" then
                     local allTargets = {
-                        "CludesUIActionBars", "CludesUIUnitFrames", "CludesUINameplates",
-                        "CludesUIResourceBars", "CludesUIAuraBuffReminders", "CludesUICooldownManager",
+                        "CludesUIActionBars",
+                        "CludesUIUnitFrames",
+                        "CludesUINameplates",
+                        "CludesUIResourceBars",
+                        "CludesUIAuraBuffReminders",
+                        "CludesUICooldownManager",
                         "CludesUIRaidFrames",
                     }
                     for _, name in ipairs(allTargets) do
@@ -3668,7 +4768,9 @@ CludesUI._RunConflictCheck = function()
         local function ShowNextConflict()
             pendingIndex = pendingIndex + 1
             local item = pending[pendingIndex]
-            if not item then return end
+            if not item then
+                return
+            end
             local entry, affected = item.entry, item.affected
             -- Skip any conflict the user permanently dismissed previously.
             if dismissed[entry.addon] then
@@ -3678,27 +4780,31 @@ CludesUI._RunConflictCheck = function()
             local names = {}
             for _, a in ipairs(affected) do
                 -- Prefer the module's registered display title; fall back to stripping the CludesUI prefix from the folder name.
-                local displayName = (modules[a] and modules[a].title)
-                    or a:gsub("^CludesUI", "")
+                local displayName = (modules[a] and modules[a].title) or a:gsub("^CludesUI", "")
                 names[#names + 1] = displayName
             end
-            local msg = entry.message or (
-                entry.label .. " is not compatible with CludesUI's " .. table.concat(names, ", ")
-                .. ". Running both at the same time may cause errors or unexpected behavior."
-                .. "\n\nPlease disable one of them."
-            )
+            local msg = entry.message
+                or (
+                    entry.label
+                    .. " is not compatible with CludesUI's "
+                    .. table.concat(names, ", ")
+                    .. ". Running both at the same time may cause errors or unexpected behavior."
+                    .. "\n\nPlease disable one of them."
+                )
             if CludesUI.ShowConfirmPopup then
                 CludesUI:ShowConfirmPopup({
-                    title       = "Incompatible Addon Detected",
-                    message     = msg,
+                    title = "Incompatible Addon Detected",
+                    message = msg,
                     confirmText = "Okay",
-                    cancelText  = "Don't show again",
-                    onConfirm   = function() ShowNextConflict() end,
-                    onCancel    = function()
+                    cancelText = "Don't show again",
+                    onConfirm = function()
+                        ShowNextConflict()
+                    end,
+                    onCancel = function()
                         dismissed[entry.addon] = true
                         ShowNextConflict()
                     end,
-                    modal       = true,
+                    modal = true,
                 })
             else
                 CludesUI.PrintError(msg:gsub("\n", " "))
@@ -3715,7 +4821,9 @@ C_Timer.After(2, function()
     if CludesUIDB and CludesUIDB.firstInstallPopupShown then
         -- Defer while the style choice popup is still pending/open; it runs the
         -- conflict check itself when dismissed.
-        if CludesUI._styleChoicePending then return end
+        if CludesUI._styleChoicePending then
+            return
+        end
         CludesUI._RunConflictCheck()
     end
 end)
@@ -3736,21 +4844,36 @@ SlashCmdList.CUIPERF = function()
         local name = C_AddOns.GetAddOnInfo(i)
         if type(name) == "string" and name:find("^CludesUI") and C_AddOns.IsAddOnLoaded(name) then
             local recent = P.GetAddOnMetric(name, M.RecentAverageTime) or 0
-            rows[#rows + 1] = { name = name, recent = recent,
+            rows[#rows + 1] = {
+                name = name,
+                recent = recent,
                 peak = P.GetAddOnMetric(name, M.PeakTime) or 0,
-                session = P.GetAddOnMetric(name, M.SessionAverageTime) or 0 }
+                session = P.GetAddOnMetric(name, M.SessionAverageTime) or 0,
+            }
             totalRecent = totalRecent + recent
         end
     end
-    table.sort(rows, function(x, y) return x.recent > y.recent end)
+    table.sort(rows, function(x, y)
+        return x.recent > y.recent
+    end)
     local fps = GetFramerate() or 0
-    CludesUI.Print(("CPU per frame, %d addons, %.3f ms recent total (a frame at %d fps is %.1f ms):"):format(
-        #rows, totalRecent, fps, fps > 0 and 1000 / fps or 0))
+    CludesUI.Print(
+        ("CPU per frame, %d addons, %.3f ms recent total (a frame at %d fps is %.1f ms):"):format(
+            #rows,
+            totalRecent,
+            fps,
+            fps > 0 and 1000 / fps or 0
+        )
+    )
     for i = 1, math.min(10, #rows) do
         local r = rows[i]
         local label = r.name:gsub("^CludesUI", "")
-        if label == "" then label = "Core" end
-        print(("  %s: recent %.3f ms, session %.3f ms, peak %.1f ms"):format(label, r.recent, r.session, r.peak))
+        if label == "" then
+            label = "Core"
+        end
+        print(
+            ("  %s: recent %.3f ms, session %.3f ms, peak %.1f ms"):format(label, r.recent, r.session, r.peak)
+        )
     end
 end
 
@@ -3828,7 +4951,11 @@ SlashCmdList.CUIRESETSCALE = function()
             CludesUIDB.ppUIScale = nil
             CludesUIDB.ppUIScaleAuto = nil
         end
-        CludesUI.Print(CludesUI.L("|cff00ff00[CludesUI]|r UI scale reset. /reload to re-snapshot from your Blizzard scale."))
+        CludesUI.Print(
+            CludesUI.L(
+                "|cff00ff00[CludesUI]|r UI scale reset. /reload to re-snapshot from your Blizzard scale."
+            )
+        )
     end)
 end
 
@@ -3849,7 +4976,9 @@ SlashCmdList.CUIDEV = function()
     end
     local state = newVal == "1" and "ON" or "OFF"
     CludesUI.Print("|cff00ff00[CludesUI]|r Dev mode: all addon restriction CVars " .. state .. ".")
-    if CludesUI.UpdateDevModeIndicator then CludesUI.UpdateDevModeIndicator() end
+    if CludesUI.UpdateDevModeIndicator then
+        CludesUI.UpdateDevModeIndicator()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -3884,8 +5013,7 @@ function CludesUI.BuildStatusBadge(parent, text, name, opts)
     PP.CreateBorder(f, accent.r, accent.g, accent.b, 0.9, 1, "OVERLAY", 7)
 
     local label = f:CreateFontString(nil, "OVERLAY")
-    label:SetFont(CludesUI.EXPRESSWAY, 11,
-        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE")
+    label:SetFont(CludesUI.EXPRESSWAY, 11, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE")
     label:SetText(text)
     label:SetTextColor(accent.r, accent.g, accent.b, 1)
 
@@ -3900,10 +5028,16 @@ function CludesUI.BuildStatusBadge(parent, text, name, opts)
         local ag = dot:CreateAnimationGroup()
         ag:SetLooping("BOUNCE")
         local pulse = ag:CreateAnimation("Alpha")
-        pulse:SetFromAlpha(1); pulse:SetToAlpha(0.1)
-        pulse:SetDuration(0.7); pulse:SetSmoothing("IN_OUT")
-        f:SetScript("OnShow", function() ag:Play() end)
-        f:SetScript("OnHide", function() ag:Stop() end)
+        pulse:SetFromAlpha(1)
+        pulse:SetToAlpha(0.1)
+        pulse:SetDuration(0.7)
+        pulse:SetSmoothing("IN_OUT")
+        f:SetScript("OnShow", function()
+            ag:Play()
+        end)
+        f:SetScript("OnHide", function()
+            ag:Stop()
+        end)
         label:SetPoint("LEFT", dot, "RIGHT", 8, 0)
         -- Size to content: dotPad(9) + dot(7) + gap(8) + text + rightPad(12)
         f:SetWidth(9 + 7 + 8 + label:GetStringWidth() + 12)
@@ -3917,8 +5051,12 @@ function CludesUI.BuildStatusBadge(parent, text, name, opts)
         f:SetScript("OnEnter", function(self)
             wash:SetColorTexture(accent.r, accent.g, accent.b, 0.16)
             local tip = tooltip
-            if type(tip) == "function" then tip = tip() end
-            if tip then CludesUI.ShowWidgetTooltip(self, tip) end
+            if type(tip) == "function" then
+                tip = tip()
+            end
+            if tip then
+                CludesUI.ShowWidgetTooltip(self, tip)
+            end
         end)
         f:SetScript("OnLeave", function()
             wash:SetColorTexture(accent.r, accent.g, accent.b, 0.06)
@@ -3949,7 +5087,9 @@ do
 
     function CludesUI.UpdateDevModeIndicator()
         if not CludesUI.IsDevModeActive() then
-            if badge then badge:Hide() end
+            if badge then
+                badge:Hide()
+            end
             return
         end
         if not badge then
@@ -3971,7 +5111,6 @@ do
     end)
 end
 
-
 -------------------------------------------------------------------------------
 --  Minimap Button: a LibDBIcon button (LibDBIcon10_CludesUI), so minimap
 --  button bins and the addon compartment handle it like any other addon's.
@@ -3984,7 +5123,9 @@ do
     local LDBIcon
 
     local function IconDB()
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local db = CludesUIDB.minimapIcon
         if type(db) ~= "table" then
             -- First run on LibDBIcon: carry over the old button's angle.
@@ -3996,28 +5137,38 @@ do
     end
 
     function CludesUI.CreateMinimapButton()
-        if LDBIcon then return LDBIcon:GetMinimapButton(NAME) end
+        if LDBIcon then
+            return LDBIcon:GetMinimapButton(NAME)
+        end
         local LDB = LibStub and LibStub("LibDataBroker-1.1", true)
         LDBIcon = LibStub and LibStub("LibDBIcon-1.0", true)
-        if not (LDB and LDBIcon) then return end
+        if not (LDB and LDBIcon) then
+            return
+        end
 
         local launcher = LDB:NewDataObject(NAME, {
             type = "launcher",
             text = NAME,
             icon = ICON_PATH,
             OnClick = function(_, button)
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
                 if button == "LeftButton" then
                     CludesUI:Toggle()
                 elseif button == "RightButton" then
                     CludesUI:EnsureUnlockCore()
-                    if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+                    if CludesUI._openUnlockMode then
+                        CludesUI._openUnlockMode()
+                    end
                 elseif button == "MiddleButton" then
                     CludesUIDB.showMinimapButton = false
                     CludesUI.HideMinimapButton()
                     -- an open page re-reads its rows (a closed panel catches up when it next shows)
                     local rl = CludesUI._widgetRefreshList
-                    if rl and #rl > 0 then CludesUI:RefreshPage() end
+                    if rl and #rl > 0 then
+                        CludesUI:RefreshPage()
+                    end
                 end
             end,
             OnTooltipShow = function(tt)
@@ -4032,12 +5183,20 @@ do
     end
 
     function CludesUI.ShowMinimapButton()
-        if not LDBIcon then CludesUI.CreateMinimapButton() end
-        if LDBIcon then IconDB(); LDBIcon:Show(NAME) end
+        if not LDBIcon then
+            CludesUI.CreateMinimapButton()
+        end
+        if LDBIcon then
+            IconDB()
+            LDBIcon:Show(NAME)
+        end
     end
 
     function CludesUI.HideMinimapButton()
-        if LDBIcon then IconDB(); LDBIcon:Hide(NAME) end
+        if LDBIcon then
+            IconDB()
+            LDBIcon:Hide(NAME)
+        end
     end
 end
 
@@ -4095,10 +5254,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     ---------------------------------------------------------------------------
     do
         local escFrames = {}
-        local escOpts = {}      -- [frame] = its opts (a shared empty table when none)
-        local escModal = {}     -- registered non-padOnly frames with a modal opt
-        local padOpen = {}      -- padOnly frames that count, in show order
-        local closeList = {}    -- reused by the controller close-all pass
+        local escOpts = {} -- [frame] = its opts (a shared empty table when none)
+        local escModal = {} -- registered non-padOnly frames with a modal opt
+        local padOpen = {} -- padOnly frames that count, in show order
+        local closeList = {} -- reused by the controller close-all pass
         local closing = false
         local NO_OPTS = {}
         local PadNative, PadInUse = CludesUI.PadNative, CludesUI.PadInUse
@@ -4108,19 +5267,27 @@ initFrame:SetScript("OnEvent", function(self, event)
 
         local function IsModal(f)
             local m = escOpts[f].modal
-            if not m then return false end
-            if m == true then return true end
+            if not m then
+                return false
+            end
+            if m == true then
+                return true
+            end
             return m(f) and true or false
         end
 
         local function AnyOpen()
             for i = 1, #escFrames do
                 local f = escFrames[i]
-                if f:IsShown() and not IsModal(f) then return true end
+                if f:IsShown() and not IsModal(f) then
+                    return true
+                end
             end
             for i = 1, #padOpen do
                 local f = padOpen[i]
-                if f:IsShown() and not IsModal(f) then return true end
+                if f:IsShown() and not IsModal(f) then
+                    return true
+                end
             end
             return false
         end
@@ -4128,47 +5295,74 @@ initFrame:SetScript("OnEvent", function(self, event)
         local function ModalOpen()
             for i = 1, #escModal do
                 local f = escModal[i]
-                if f:IsShown() and IsModal(f) then return true end
+                if f:IsShown() and IsModal(f) then
+                    return true
+                end
             end
             for i = 1, #padOpen do
                 local f = padOpen[i]
-                if f:IsShown() and IsModal(f) then return true end
+                if f:IsShown() and IsModal(f) then
+                    return true
+                end
             end
             return false
         end
 
         local function RefreshProxy()
-            if closing then return end
-            if AnyOpen() then proxy:Show() else proxy:Hide() end
+            if closing then
+                return
+            end
+            if AnyOpen() then
+                proxy:Show()
+            else
+                proxy:Hide()
+            end
         end
 
         local function CloseOne(f)
             local onEscape = escOpts[f].onEscape
-            if onEscape then onEscape(f) else f:Hide() end
+            if onEscape then
+                onEscape(f)
+            else
+                f:Hide()
+            end
         end
 
         -- Controller close-all pass over the snapshot in closeList.
         local function CloseListed(n)
             for i = 1, n do
                 local f = closeList[i]
-                if f:IsShown() then CloseOne(f) end
+                if f:IsShown() then
+                    CloseOne(f)
+                end
             end
         end
 
         proxy:SetScript("OnHide", function(self)
-            if closing then return end
-            if ModalOpen() then RefreshProxy(); return end
+            if closing then
+                return
+            end
+            if ModalOpen() then
+                RefreshProxy()
+                return
+            end
             -- Controller Back (a real Hide, the gamepad pointer in control):
             -- close everything now, newest controller-counted window first.
             if not self:IsShown() and PadNative() and CanAutoSetGamePadCursorControl(false) then
                 local n = 0
                 for i = #padOpen, 1, -1 do
                     local f = padOpen[i]
-                    if f:IsShown() and not IsModal(f) then n = n + 1; closeList[n] = f end
+                    if f:IsShown() and not IsModal(f) then
+                        n = n + 1
+                        closeList[n] = f
+                    end
                 end
                 for i = #escFrames, 1, -1 do
                     local f = escFrames[i]
-                    if f:IsShown() and not IsModal(f) then n = n + 1; closeList[n] = f end
+                    if f:IsShown() and not IsModal(f) then
+                        n = n + 1
+                        closeList[n] = f
+                    end
                 end
                 -- A failing onEscape must not leave the proxy stuck in `closing`.
                 closing = true
@@ -4176,7 +5370,9 @@ initFrame:SetScript("OnEvent", function(self, event)
                 closing = false
                 wipe(closeList)
                 RefreshProxy()
-                if not ok then geterrorhandler()(err) end
+                if not ok then
+                    geterrorhandler()(err)
+                end
                 return
             end
             -- One window per press: a controller-counted window first (only
@@ -4185,7 +5381,9 @@ initFrame:SetScript("OnEvent", function(self, event)
                 local f = padOpen[i]
                 if f:IsShown() and not IsModal(f) then
                     CloseOne(f)
-                    if AnyOpen() then self:Show() end
+                    if AnyOpen() then
+                        self:Show()
+                    end
                     return
                 end
             end
@@ -4193,7 +5391,9 @@ initFrame:SetScript("OnEvent", function(self, event)
                 local f = escFrames[i]
                 if f:IsShown() and not IsModal(f) then
                     CloseOne(f)
-                    if AnyOpen() then self:Show() end
+                    if AnyOpen() then
+                        self:Show()
+                    end
                     return
                 end
             end
@@ -4202,9 +5402,13 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- padOnly: one controller check at the show edge; the hide edge only
         -- walks the counted list, which stays empty for mouse/keyboard players.
         local function PadOnlyShown(f)
-            if not PadInUse() then return end
+            if not PadInUse() then
+                return
+            end
             for i = #padOpen, 1, -1 do
-                if padOpen[i] == f then table.remove(padOpen, i) end
+                if padOpen[i] == f then
+                    table.remove(padOpen, i)
+                end
             end
             padOpen[#padOpen + 1] = f
             RefreshProxy()
@@ -4221,17 +5425,25 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
 
         function CludesUI.RegisterEscapeClose(frame, opts)
-            if escOpts[frame] then return end
+            if escOpts[frame] then
+                return
+            end
             opts = opts or NO_OPTS
             escOpts[frame] = opts
-            if not opts.notOwned then CludesUI.RegisterPadFrame(frame) end
-            if opts.cursor then frame:HookScript("OnShow", CludesUI.RaiseGamePadCursor) end
+            if not opts.notOwned then
+                CludesUI.RegisterPadFrame(frame)
+            end
+            if opts.cursor then
+                frame:HookScript("OnShow", CludesUI.RaiseGamePadCursor)
+            end
             if opts.padOnly then
                 frame:HookScript("OnShow", PadOnlyShown)
                 frame:HookScript("OnHide", PadOnlyHidden)
                 return
             end
-            if opts.modal then escModal[#escModal + 1] = frame end
+            if opts.modal then
+                escModal[#escModal + 1] = frame
+            end
             escFrames[#escFrames + 1] = frame
             frame:HookScript("OnShow", RefreshProxy)
             frame:HookScript("OnHide", RefreshProxy)
@@ -4242,16 +5454,24 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- registration goes with them, so the code that dresses the frame again
         -- registers it again, exactly as it registered the new frame.
         function CludesUI._ForgetEscapeClose(frame)
-            if not escOpts[frame] then return end
+            if not escOpts[frame] then
+                return
+            end
             escOpts[frame] = nil
             for i = #escFrames, 1, -1 do
-                if escFrames[i] == frame then table.remove(escFrames, i) end
+                if escFrames[i] == frame then
+                    table.remove(escFrames, i)
+                end
             end
             for i = #escModal, 1, -1 do
-                if escModal[i] == frame then table.remove(escModal, i) end
+                if escModal[i] == frame then
+                    table.remove(escModal, i)
+                end
             end
             for i = #padOpen, 1, -1 do
-                if padOpen[i] == frame then table.remove(padOpen, i) end
+                if padOpen[i] == frame then
+                    table.remove(padOpen, i)
+                end
             end
             RefreshProxy()
         end
@@ -4259,7 +5479,9 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- Register the Vault once, regardless of which shortcut opens it.
         -- Blizzard's frame: never handed to the controller cursor.
         local function RegisterVaultEscapeClose()
-            if not WeeklyRewardsFrame then return false end
+            if not WeeklyRewardsFrame then
+                return false
+            end
             CludesUI.RegisterEscapeClose(WeeklyRewardsFrame, { notOwned = true })
             RefreshProxy()
             return true
@@ -4283,11 +5505,14 @@ initFrame:SetScript("OnEvent", function(self, event)
     if GameMenuFrame and not CludesUI._GetFFD(GameMenuFrame).cuiBtn then
         -- Game menu frame+button skinning lives in CludesUIBlizzardSkin (CUI_BlizzardSkin_Dialogs.lua) so it only
         -- applies when that addon is enabled; detect whether the skin is active so CUI's own buttons match the skinned menu style.
-        local _blizzSkinLoaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
+        local _blizzSkinLoaded = C_AddOns
+            and C_AddOns.IsAddOnLoaded
+            and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
         -- "Reskin Pause Menu" is an independent toggle (default on); the migration blizzskin_reskin_master_split_v1 seeds reskinGameMenu for existing users.
         local _reskinMenu = _blizzSkinLoaded and (not CludesUIDB or CludesUIDB.reskinGameMenu ~= false)
 
-        local btn = CreateFrame("Button", "CludesUI_GameMenuButton", GameMenuFrame, "MainMenuFrameButtonTemplate")
+        local btn =
+            CreateFrame("Button", "CludesUI_GameMenuButton", GameMenuFrame, "MainMenuFrameButtonTemplate")
         btn:SetSize(200, 35)
         btn:SetScript("OnClick", function()
             if InCombatLockdown() then
@@ -4304,7 +5529,8 @@ initFrame:SetScript("OnEvent", function(self, event)
         end)
         CludesUI._GetFFD(GameMenuFrame).cuiBtn = btn
 
-        local unlockBtn = CreateFrame("Button", "CludesUI_UnlockMenuButton", GameMenuFrame, "MainMenuFrameButtonTemplate")
+        local unlockBtn =
+            CreateFrame("Button", "CludesUI_UnlockMenuButton", GameMenuFrame, "MainMenuFrameButtonTemplate")
         unlockBtn:SetSize(200, 35)
         unlockBtn:SetScript("OnClick", function()
             if InCombatLockdown() then
@@ -4332,14 +5558,22 @@ initFrame:SetScript("OnEvent", function(self, event)
                         r:SetAlpha(0)
                     end
                 end
-                if customBtn.Left then customBtn.Left:SetAlpha(0) end
-                if customBtn.Middle then customBtn.Middle:SetAlpha(0) end
-                if customBtn.Right then customBtn.Right:SetAlpha(0) end
+                if customBtn.Left then
+                    customBtn.Left:SetAlpha(0)
+                end
+                if customBtn.Middle then
+                    customBtn.Middle:SetAlpha(0)
+                end
+                if customBtn.Right then
+                    customBtn.Right:SetAlpha(0)
+                end
                 for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
                     local tex = customBtn[texKey]
                     if tex and tex.SetAlpha then
                         hooksecurefunc(tex, "SetAlpha", function(self, a)
-                            if a > 0 then self:SetAlpha(0) end
+                            if a > 0 then
+                                self:SetAlpha(0)
+                            end
                         end)
                     end
                 end
@@ -4349,11 +5583,14 @@ initFrame:SetScript("OnEvent", function(self, event)
                 inset:SetFrameLevel(customBtn:GetFrameLevel())
                 local cBg = inset:CreateTexture(nil, "BACKGROUND", nil, -6)
                 cBg:SetAllPoints()
-                local c=CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor or {r=.1,g=.1,b=.1,a=.8}
-                cBg:SetColorTexture(c.r,c.g,c.b,c.a == nil and .8 or c.a)
-                CludesUI._GetFFD(customBtn).gameMenuInset=inset
-                CludesUI._GetFFD(customBtn).gameMenuButtonBg=cBg
-                if CludesUI._applyBlizzardConfiguredBorder then CludesUI._applyBlizzardConfiguredBorder(inset,"popupMenuButton",1) end
+                local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+                    or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
+                cBg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                CludesUI._GetFFD(customBtn).gameMenuInset = inset
+                CludesUI._GetFFD(customBtn).gameMenuButtonBg = cBg
+                if CludesUI._applyBlizzardConfiguredBorder then
+                    CludesUI._applyBlizzardConfiguredBorder(inset, "popupMenuButton", 1)
+                end
                 local hl = customBtn:CreateTexture(nil, "HIGHLIGHT")
                 hl:SetAllPoints(inset)
                 hl:SetColorTexture(1, 1, 1, 0.1)
@@ -4364,11 +5601,13 @@ initFrame:SetScript("OnEvent", function(self, event)
                     cfs:SetFont(cuiFont or "Fonts\\FRIZQT__.TTF", (size or 14) - 2, flags or "")
                     -- Native mode keeps the branded inline-code labels set by
                     -- the Layout hook; only explicit modes flat-recolor.
-                    if CludesUI._getPopupMenuElementMode
-                       and CludesUI._getPopupMenuElementMode() ~= "native"
-                       and CludesUI._getPopupMenuButtonTextColor then
-                        local r,g,b=CludesUI._getPopupMenuButtonTextColor()
-                        cfs:SetTextColor(r,g,b,1)
+                    if
+                        CludesUI._getPopupMenuElementMode
+                        and CludesUI._getPopupMenuElementMode() ~= "native"
+                        and CludesUI._getPopupMenuButtonTextColor
+                    then
+                        local r, g, b = CludesUI._getPopupMenuButtonTextColor()
+                        cfs:SetTextColor(r, g, b, 1)
                     end
                 end
             end
@@ -4389,8 +5628,8 @@ initFrame:SetScript("OnEvent", function(self, event)
                     local headerText = header.Text
                     if headerText and headerText.SetTextColor then
                         if CludesUI._getPopupMenuButtonTextColor then
-                            local r,g,b=CludesUI._getPopupMenuButtonTextColor()
-                            headerText:SetTextColor(r,g,b,1)
+                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
+                            headerText:SetTextColor(r, g, b, 1)
                         end
                     end
                 end
@@ -4400,9 +5639,15 @@ initFrame:SetScript("OnEvent", function(self, event)
             local showCUI = not (CludesUIDB and CludesUIDB.hideGameMenuButton)
             local showUnlock = CludesUIDB and CludesUIDB.hideUnlockMenuButton == false
 
-            if not showCUI then btn:Hide() end
-            if not showUnlock then unlockBtn:Hide() end
-            if not showCUI and not showUnlock then return end
+            if not showCUI then
+                btn:Hide()
+            end
+            if not showUnlock then
+                unlockBtn:Hide()
+            end
+            if not showCUI and not showUnlock then
+                return
+            end
 
             -- Find the Shop button to anchor below (fall back to Options)
             local anchorBtn
@@ -4415,7 +5660,9 @@ initFrame:SetScript("OnEvent", function(self, event)
                     anchorBtn = menuBtn
                 end
             end
-            if not anchorBtn then return end
+            if not anchorBtn then
+                return
+            end
 
             -- Match our buttons to the Blizzard button size
             local anchorW, anchorH = anchorBtn:GetWidth(), anchorBtn:GetHeight()
@@ -4432,11 +5679,11 @@ initFrame:SetScript("OnEvent", function(self, event)
             -- Branded two-tone labels are the default (native mode, or when BlizzardSkin is not
             -- loaded) -- applied via inline color codes in SetText, which works with the
             -- pause-menu reskin off too. Only an explicitly chosen Element & Text Color mode switches to a plain label + whole-string recolor (inline codes would override SetTextColor otherwise).
-            local elemMode = CludesUI._getPopupMenuElementMode
-                and CludesUI._getPopupMenuElementMode() or "native"
+            local elemMode = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                or "native"
             local brandHex
             if elemMode == "native" then
-                local EG = CludesUI.CLUDES_GREEN or { r = .27, g = .86, b = .49 }
+                local EG = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
                 brandHex = CludesUI.HexColor(EG.r, EG.g, EG.b)
             end
 
@@ -4449,7 +5696,13 @@ initFrame:SetScript("OnEvent", function(self, event)
                 end
                 if _reskinMenu then
                     local fs = btn:GetFontString()
-                    if fs then fs:SetFont(cuiFont, btnFontSize, ""); if not brandHex and CludesUI._getPopupMenuButtonTextColor then local r,g,b=CludesUI._getPopupMenuButtonTextColor(); fs:SetTextColor(r,g,b,1) end end
+                    if fs then
+                        fs:SetFont(cuiFont, btnFontSize, "")
+                        if not brandHex and CludesUI._getPopupMenuButtonTextColor then
+                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
+                            fs:SetTextColor(r, g, b, 1)
+                        end
+                    end
                 end
                 btn:ClearAllPoints()
                 btn:SetPoint("TOP", lastBtn, "BOTTOM", 0, -12)
@@ -4465,7 +5718,13 @@ initFrame:SetScript("OnEvent", function(self, event)
                 end
                 if _reskinMenu then
                     local fs2 = unlockBtn:GetFontString()
-                    if fs2 then fs2:SetFont(cuiFont, btnFontSize, ""); if not brandHex and CludesUI._getPopupMenuButtonTextColor then local r,g,b=CludesUI._getPopupMenuButtonTextColor(); fs2:SetTextColor(r,g,b,1) end end
+                    if fs2 then
+                        fs2:SetFont(cuiFont, btnFontSize, "")
+                        if not brandHex and CludesUI._getPopupMenuButtonTextColor then
+                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
+                            fs2:SetTextColor(r, g, b, 1)
+                        end
+                    end
                 end
                 unlockBtn:ClearAllPoints()
                 unlockBtn:SetPoint("TOP", lastBtn, "BOTTOM", 0, showCUI and -4 or -12)
@@ -4526,16 +5785,22 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Spell ID / Item ID + Icon ID / Max Item Stack on Tooltip (developer option)
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         -- Register per-type callbacks instead of AllTypes to avoid firing on every unit/currency tooltip in the game (major CPU savings).
-        local _isSecret = issecretvalue  -- cache global once
+        local _isSecret = issecretvalue -- cache global once
 
         -- The spell/item/icon ID lines can be gated behind a held modifier (the "Use Modifier"
         -- cog: none | shift | control | alt, default none). "none" shows them whenever Show
         -- Spell ID is on (the original behavior); the others only surface the lines while that key is held.
         local function IsSpellIDModifierHeld()
             local mod = (CludesUIDB and CludesUIDB.spellIDModifier) or "none"
-            if mod == "none" then return true end
-            if mod == "control" then return IsControlKeyDown() end
-            if mod == "alt" then return IsAltKeyDown() end
+            if mod == "none" then
+                return true
+            end
+            if mod == "control" then
+                return IsControlKeyDown()
+            end
+            if mod == "alt" then
+                return IsAltKeyDown()
+            end
             return IsShiftKeyDown()
         end
 
@@ -4544,9 +5809,15 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- for items is on (the original behavior); the others only surface the lines while that key is held.
         local function IsItemStackModifierHeld()
             local mod = (CludesUIDB and CludesUIDB.itemStackModifier) or "none"
-            if mod == "none" then return true end
-            if mod == "control" then return IsControlKeyDown() end
-            if mod == "alt" then return IsAltKeyDown() end
+            if mod == "none" then
+                return true
+            end
+            if mod == "control" then
+                return IsControlKeyDown()
+            end
+            if mod == "alt" then
+                return IsAltKeyDown()
+            end
             return IsShiftKeyDown()
         end
 
@@ -4554,14 +5825,20 @@ initFrame:SetScript("OnEvent", function(self, event)
         local function hasDupLine(tooltip, name, tag)
             local n = tooltip:NumLines()
             local start = n - 4
-            if start < 1 then start = 1 end
+            if start < 1 then
+                start = 1
+            end
             for i = n, start, -1 do
                 local fs = _G[name .. "TextLeft" .. i]
                 if fs then
                     local txt = fs:GetText()
                     if txt then
-                        if _isSecret and _isSecret(txt) then return true end
-                        if txt:find(tag) then return true end
+                        if _isSecret and _isSecret(txt) then
+                            return true
+                        end
+                        if txt:find(tag) then
+                            return true
+                        end
                     end
                 end
             end
@@ -4575,8 +5852,7 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- it re-asserts every login and on toggle edits. Modifier-gated configs skip it: the engine renders always-on, which would override the user's hold-a-modifier preference (their combat aura IDs stay unavailable -- inherent trade).
         function CludesUI.SyncAuraSpellIDCVar()
             local db = CludesUIDB
-            local on = CludesUI.SpellIDOn()
-                and (db.spellIDModifier or "none") == "none"
+            local on = CludesUI.SpellIDOn() and (db.spellIDModifier or "none") == "none"
             pcall(CludesUI.SetCVar, "tooltipShowAuraSpellIDs", on and "1" or "0")
         end
         do
@@ -4596,10 +5872,14 @@ initFrame:SetScript("OnEvent", function(self, event)
             local perfPromptShown = false
             cvarBoot:SetScript("OnEvent", function()
                 CludesUI.SyncAuraSpellIDCVar()
-                if perfPromptShown or not IsInInstance() then return end
+                if perfPromptShown or not IsInInstance() then
+                    return
+                end
                 local taintOn = (tonumber(GetCVar("taintLog") or 0) or 0) > 0
-                local profOn  = (tonumber(GetCVar("scriptProfile") or 0) or 0) > 0
-                if not (taintOn or profOn) then return end
+                local profOn = (tonumber(GetCVar("scriptProfile") or 0) or 0) > 0
+                if not (taintOn or profOn) then
+                    return
+                end
                 perfPromptShown = true
                 local which
                 if taintOn and profOn then
@@ -4610,12 +5890,16 @@ initFrame:SetScript("OnEvent", function(self, event)
                     which = CludesUI.L("The scriptProfile CVar is enabled.")
                 end
                 CludesUI:ShowConfirmPopup({
-                    title       = CludesUI.L("Performance Reminder"),
-                    message     = which .. " " .. CludesUI.L("It reduces performance and should be off unless you are capturing a bug report."),
+                    title = CludesUI.L("Performance Reminder"),
+                    message = which
+                        .. " "
+                        .. CludesUI.L(
+                            "It reduces performance and should be off unless you are capturing a bug report."
+                        ),
                     confirmText = CludesUI.L("Disable and Reload"),
-                    cancelText  = CludesUI.L("Ignore"),
-                    reload      = true,
-                    onConfirm   = function()
+                    cancelText = CludesUI.L("Ignore"),
+                    reload = true,
+                    onConfirm = function()
                         -- The player's own fix, which Uninstall CUI must not
                         -- undo: plain SetCVar, not CludesUI.SetCVar.
                         pcall(C_CVar.SetCVar, "taintLog", "0")
@@ -4626,21 +5910,37 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
 
         local function SpellIDTooltipHook(tooltip, data)
-            if not CludesUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
-            if not data or not data.id then return end
-            if _isSecret and _isSecret(data.id) then return end
-            -- 12.1 no-modifier configs render aura IDs engine-side via the tooltipShowAuraSpellIDs
-            -- CVar (see SyncAuraSpellIDCVar); adding the Lua line too would show the ID twice on aura tooltips.
-            if Enum.TooltipDataType
-                and data.type == Enum.TooltipDataType.UnitAura
-                and (CludesUIDB.spellIDModifier or "none") == "none" then
+            if not CludesUI.SpellIDOn() then
                 return
             end
-            if not tooltip or not tooltip.GetName then return end
+            if not IsSpellIDModifierHeld() then
+                return
+            end
+            if not data or not data.id then
+                return
+            end
+            if _isSecret and _isSecret(data.id) then
+                return
+            end
+            -- 12.1 no-modifier configs render aura IDs engine-side via the tooltipShowAuraSpellIDs
+            -- CVar (see SyncAuraSpellIDCVar); adding the Lua line too would show the ID twice on aura tooltips.
+            if
+                Enum.TooltipDataType
+                and data.type == Enum.TooltipDataType.UnitAura
+                and (CludesUIDB.spellIDModifier or "none") == "none"
+            then
+                return
+            end
+            if not tooltip or not tooltip.GetName then
+                return
+            end
             local ok, name = pcall(tooltip.GetName, tooltip)
-            if not ok or not name then return end
-            if hasDupLine(tooltip, name, "SpellID") then return end
+            if not ok or not name then
+                return
+            end
+            if hasDupLine(tooltip, name, "SpellID") then
+                return
+            end
             tooltip:AddDoubleLine("SpellID", tostring(data.id), 1, 1, 1, 1, 1, 1)
             if CludesUIDB.showIconID ~= false then
                 local iconID = C_Spell.GetSpellTexture(data.id)
@@ -4652,19 +5952,37 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
 
         local function ItemIDTooltipHook(tooltip, data)
-            if not CludesUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
-            if not data or not data.id then return end
-            if _isSecret and _isSecret(data.id) then return end
-            if not tooltip or not tooltip.GetName then return end
+            if not CludesUI.SpellIDOn() then
+                return
+            end
+            if not IsSpellIDModifierHeld() then
+                return
+            end
+            if not data or not data.id then
+                return
+            end
+            if _isSecret and _isSecret(data.id) then
+                return
+            end
+            if not tooltip or not tooltip.GetName then
+                return
+            end
             local ok, name = pcall(tooltip.GetName, tooltip)
-            if not ok or not name then return end
+            if not ok or not name then
+                return
+            end
             -- The gem-socketing window's item text is a tooltip-data frame; ID lines do not belong inside that window.
-            if name == "ItemSocketingDescription" then return end
-            if hasDupLine(tooltip, name, "ItemID") then return end
+            if name == "ItemSocketingDescription" then
+                return
+            end
+            if hasDupLine(tooltip, name, "ItemID") then
+                return
+            end
             local showItem = CludesUIDB.showItemID ~= false
             local showIcon = CludesUIDB.showIconID ~= false
-            if not showItem and not showIcon then return end
+            if not showItem and not showIcon then
+                return
+            end
             if showItem then
                 tooltip:AddDoubleLine("ItemID", tostring(data.id), 1, 1, 1, 1, 1, 1)
             end
@@ -4679,15 +5997,31 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
 
         local function ItemIdMaxStackHook(tooltip, data)
-            if not (CludesUIDB and CludesUIDB.showItemMaxStacks) then return end
-            if not IsItemStackModifierHeld() then return end
-            if not data or not data.id then return end
-            if _isSecret and _isSecret(data.id) then return end
-            if not tooltip or not tooltip.GetName then return end
+            if not (CludesUIDB and CludesUIDB.showItemMaxStacks) then
+                return
+            end
+            if not IsItemStackModifierHeld() then
+                return
+            end
+            if not data or not data.id then
+                return
+            end
+            if _isSecret and _isSecret(data.id) then
+                return
+            end
+            if not tooltip or not tooltip.GetName then
+                return
+            end
             local ok, name = pcall(tooltip.GetName, tooltip)
-            if not ok or not name then return end
-            if name == "ItemSocketingDescription" then return end
-            if hasDupLine(tooltip, name, "Max Stack") then return end
+            if not ok or not name then
+                return
+            end
+            if name == "ItemSocketingDescription" then
+                return
+            end
+            if hasDupLine(tooltip, name, "Max Stack") then
+                return
+            end
 
             -- 8th return of GetItemInfo is the native max stack size; nil while the item is uncached (the line then appears on the next hover).
             local _, _, _, _, _, _, _, maxStack = C_Item.GetItemInfo(data.id)
@@ -4701,18 +6035,34 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- them (GetSpell() also returns nil on a macro tooltip). The spell #showtooltip resolved
         -- to (honoring conditionals) is exposed as the FIRST tooltip line's tooltipID, read from the tooltip data.
         local function MacroSpellIDTooltipHook(tooltip, _data)
-            if not CludesUI.SpellIDOn() then return end
-            if not IsSpellIDModifierHeld() then return end
-            if not tooltip or not tooltip.GetName or not tooltip.GetTooltipData then return end
+            if not CludesUI.SpellIDOn() then
+                return
+            end
+            if not IsSpellIDModifierHeld() then
+                return
+            end
+            if not tooltip or not tooltip.GetName or not tooltip.GetTooltipData then
+                return
+            end
             local ok, info = pcall(tooltip.GetTooltipData, tooltip)
-            if not ok or type(info) ~= "table" or not info.lines then return end
+            if not ok or type(info) ~= "table" or not info.lines then
+                return
+            end
             local line = info.lines[1]
             local spellID = line and line.tooltipID
-            if not spellID then return end  -- item-only macro / nothing castable
-            if _isSecret and _isSecret(spellID) then return end
+            if not spellID then
+                return
+            end -- item-only macro / nothing castable
+            if _isSecret and _isSecret(spellID) then
+                return
+            end
             local okN, name = pcall(tooltip.GetName, tooltip)
-            if not okN or not name then return end
-            if hasDupLine(tooltip, name, "SpellID") then return end
+            if not okN or not name then
+                return
+            end
+            if hasDupLine(tooltip, name, "SpellID") then
+                return
+            end
             tooltip:AddDoubleLine("SpellID", tostring(spellID), 1, 1, 1, 1, 1, 1)
             if CludesUIDB.showIconID ~= false then
                 local iconID = C_Spell.GetSpellTexture(spellID)
@@ -4739,19 +6089,22 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- re-hovering. RefreshData re-runs the post-calls above (which then add or skip their
         -- lines per their own modifier checks). Only fires when a feature is on and its chosen modifier actually changed.
         local function KeyMatchesModifier(key, mod)
-            return (mod == "shift"   and (key == "LSHIFT" or key == "RSHIFT"))
-                or (mod == "control" and (key == "LCTRL"  or key == "RCTRL"))
-                or (mod == "alt"     and (key == "LALT"   or key == "RALT"))
+            return (mod == "shift" and (key == "LSHIFT" or key == "RSHIFT"))
+                or (mod == "control" and (key == "LCTRL" or key == "RCTRL"))
+                or (mod == "alt" and (key == "LALT" or key == "RALT"))
         end
         local modWatcher = CreateFrame("Frame")
         modWatcher:RegisterEvent("MODIFIER_STATE_CHANGED")
         modWatcher:SetScript("OnEvent", function(_, key)
             local db = CludesUIDB
-            if not db then return end
-            local relevant =
-                (CludesUI.SpellIDOn() and KeyMatchesModifier(key, db.spellIDModifier or "none"))
+            if not db then
+                return
+            end
+            local relevant = (CludesUI.SpellIDOn() and KeyMatchesModifier(key, db.spellIDModifier or "none"))
                 or (db.showItemMaxStacks and KeyMatchesModifier(key, db.itemStackModifier or "none"))
-            if not relevant then return end
+            if not relevant then
+                return
+            end
             if GameTooltip and GameTooltip:IsShown() and GameTooltip.RefreshData then
                 GameTooltip:RefreshData()
             end
@@ -4775,7 +6128,9 @@ initFrame:SetScript("OnEvent", function(self, event)
             HideUIPanel(SettingsPanel)
         end
         C_Timer.After(0, function()
-            if CludesUI then CludesUI:Show() end
+            if CludesUI then
+                CludesUI:Show()
+            end
         end)
     end)
     local category = Settings.RegisterCanvasLayoutCategory(panel, "CludesUI")
@@ -4785,114 +6140,245 @@ initFrame:SetScript("OnEvent", function(self, event)
     local demoConfigs = {
         -- Only list addons that do NOT have their own CUI_*_Options.lua yet. Addons with real
         -- options files register via PLAYER_LOGIN and must NOT appear here -- the demo would race and win due to page caching.
-        { folder = "CludesBeaconReminder",     title = "Beacon Reminders", desc = "Configure alerts for missing Beacon of Light or Faith.",  pages = { "General", "Alerts" } },
-        { folder = "CludesConsumablesTracker", title = "Consumables",      desc = "Track consumables and raid buffs for instanced content.", pages = { "General", "Tracking" } },
+        {
+            folder = "CludesBeaconReminder",
+            title = "Beacon Reminders",
+            desc = "Configure alerts for missing Beacon of Light or Faith.",
+            pages = { "General", "Alerts" },
+        },
+        {
+            folder = "CludesConsumablesTracker",
+            title = "Consumables",
+            desc = "Track consumables and raid buffs for instanced content.",
+            pages = { "General", "Tracking" },
+        },
     }
 
     for _, cfg in ipairs(demoConfigs) do
         if IsAddonLoaded(cfg.folder) and not modules[cfg.folder] then
             local k = cfg.folder
-            dT[k] = { opt1 = true, opt2 = false, opt3 = true, opt4 = false, opt5 = true, opt6 = false, opt7 = true }
+            dT[k] = {
+                opt1 = true,
+                opt2 = false,
+                opt3 = true,
+                opt4 = false,
+                opt5 = true,
+                opt6 = false,
+                opt7 = true,
+            }
             dS[k] = { size = 36, font = 14, opacity = 80, spacing = 4, scale = 100, thickness = 2 }
             dD[k] = { effect = "pulse", position = "center", style = "modern" }
-            local dC = { showInRaid = true, showInDungeon = true, showInArena = false, showInBG = false, showInWorld = true, showWhileMounted = false }
+            local dC = {
+                showInRaid = true,
+                showInDungeon = true,
+                showInArena = false,
+                showInBG = false,
+                showInWorld = true,
+                showWhileMounted = false,
+            }
 
             CUI_NS.RegisterCoreModule(cfg.folder, {
-                title       = cfg.title,
+                title = cfg.title,
                 description = cfg.desc,
-                pages       = cfg.pages,
-                buildPage   = function(pageName, parent, yOffset)
+                pages = cfg.pages,
+                buildPage = function(pageName, parent, yOffset)
                     local W = CludesUI.Widgets
                     local y = yOffset
                     local _, h
 
-                    _, h = W:SectionHeader(parent, "APPEARANCE", y);                                     y = y - h
-                    _, h = W:Toggle(parent, "Enable Modern Styling", y,
-                        function() return dT[k].opt1 end,
-                        function(v) dT[k].opt1 = v end);                                                 y = y - h
-                    _, h = W:Slider(parent, "Icon Size", y, 16, 64, 1,
-                        function() return dS[k].size end,
-                        function(v) dS[k].size = v end);                                                 y = y - h
-                    _, h = W:Dropdown(parent, "Proc Glow Effect", y,
+                    _, h = W:SectionHeader(parent, "APPEARANCE", y)
+                    y = y - h
+                    _, h = W:Toggle(parent, "Enable Modern Styling", y, function()
+                        return dT[k].opt1
+                    end, function(v)
+                        dT[k].opt1 = v
+                    end)
+                    y = y - h
+                    _, h = W:Slider(parent, "Icon Size", y, 16, 64, 1, function()
+                        return dS[k].size
+                    end, function(v)
+                        dS[k].size = v
+                    end)
+                    y = y - h
+                    _, h = W:Dropdown(
+                        parent,
+                        "Proc Glow Effect",
+                        y,
                         { pulse = "Pulse", flash = "Flash", none = "None" },
-                        function() return dD[k].effect end,
-                        function(v) dD[k].effect = v end);                                               y = y - h
-                    _, h = W:Toggle(parent, "Show Border", y,
-                        function() return dT[k].opt3 end,
-                        function(v) dT[k].opt3 = v end);                                                 y = y - h
-                    _, h = W:Slider(parent, "Border Opacity", y, 0, 100, 5,
-                        function() return dS[k].opacity end,
-                        function(v) dS[k].opacity = v end);                                              y = y - h
-                    _, h = W:Spacer(parent, y, 20);                                                       y = y - h
+                        function()
+                            return dD[k].effect
+                        end,
+                        function(v)
+                            dD[k].effect = v
+                        end
+                    )
+                    y = y - h
+                    _, h = W:Toggle(parent, "Show Border", y, function()
+                        return dT[k].opt3
+                    end, function(v)
+                        dT[k].opt3 = v
+                    end)
+                    y = y - h
+                    _, h = W:Slider(parent, "Border Opacity", y, 0, 100, 5, function()
+                        return dS[k].opacity
+                    end, function(v)
+                        dS[k].opacity = v
+                    end)
+                    y = y - h
+                    _, h = W:Spacer(parent, y, 20)
+                    y = y - h
 
-                    _, h = W:SectionHeader(parent, "KEY BINDING TEXT", y);                                y = y - h
-                    _, h = W:Toggle(parent, "Show Keybind Text", y,
-                        function() return dT[k].opt2 end,
-                        function(v) dT[k].opt2 = v end);                                                 y = y - h
-                    _, h = W:Slider(parent, "Font Size", y, 8, 24, 1,
-                        function() return dS[k].font end,
-                        function(v) dS[k].font = v end);                                                 y = y - h
-                    _, h = W:Dropdown(parent, "Text Position", y,
-                        { center = "Center", topleft = "Top Left", topright = "Top Right", bottomright = "Bottom Right" },
-                        function() return dD[k].position end,
-                        function(v) dD[k].position = v end);                                             y = y - h
-                    _, h = W:Toggle(parent, "Abbreviate Text", y,
-                        function() return dT[k].opt4 end,
-                        function(v) dT[k].opt4 = v end);                                                 y = y - h
-                    _, h = W:Spacer(parent, y, 20);                                                       y = y - h
+                    _, h = W:SectionHeader(parent, "KEY BINDING TEXT", y)
+                    y = y - h
+                    _, h = W:Toggle(parent, "Show Keybind Text", y, function()
+                        return dT[k].opt2
+                    end, function(v)
+                        dT[k].opt2 = v
+                    end)
+                    y = y - h
+                    _, h = W:Slider(parent, "Font Size", y, 8, 24, 1, function()
+                        return dS[k].font
+                    end, function(v)
+                        dS[k].font = v
+                    end)
+                    y = y - h
+                    _, h = W:Dropdown(
+                        parent,
+                        "Text Position",
+                        y,
+                        {
+                            center = "Center",
+                            topleft = "Top Left",
+                            topright = "Top Right",
+                            bottomright = "Bottom Right",
+                        },
+                        function()
+                            return dD[k].position
+                        end,
+                        function(v)
+                            dD[k].position = v
+                        end
+                    )
+                    y = y - h
+                    _, h = W:Toggle(parent, "Abbreviate Text", y, function()
+                        return dT[k].opt4
+                    end, function(v)
+                        dT[k].opt4 = v
+                    end)
+                    y = y - h
+                    _, h = W:Spacer(parent, y, 20)
+                    y = y - h
 
-                    _, h = W:SectionHeader(parent, "LAYOUT", y);                                          y = y - h
-                    _, h = W:Slider(parent, "Button Spacing", y, 0, 12, 1,
-                        function() return dS[k].spacing end,
-                        function(v) dS[k].spacing = v end, nil, true);                                   y = y - h
-                    _, h = W:Slider(parent, "Global Scale", y, 50, 200, 5,
-                        function() return dS[k].scale end,
-                        function(v) dS[k].scale = v end);                                                y = y - h
-                    _, h = W:Toggle(parent, "Lock Position", y,
-                        function() return dT[k].opt5 end,
-                        function(v) dT[k].opt5 = v end);                                                 y = y - h
-                    _, h = W:Dropdown(parent, "Frame Style", y,
+                    _, h = W:SectionHeader(parent, "LAYOUT", y)
+                    y = y - h
+                    _, h = W:Slider(parent, "Button Spacing", y, 0, 12, 1, function()
+                        return dS[k].spacing
+                    end, function(v)
+                        dS[k].spacing = v
+                    end, nil, true)
+                    y = y - h
+                    _, h = W:Slider(parent, "Global Scale", y, 50, 200, 5, function()
+                        return dS[k].scale
+                    end, function(v)
+                        dS[k].scale = v
+                    end)
+                    y = y - h
+                    _, h = W:Toggle(parent, "Lock Position", y, function()
+                        return dT[k].opt5
+                    end, function(v)
+                        dT[k].opt5 = v
+                    end)
+                    y = y - h
+                    _, h = W:Dropdown(
+                        parent,
+                        "Frame Style",
+                        y,
                         { modern = "Modern", classic = "Classic", minimal = "Minimal" },
-                        function() return dD[k].style end,
-                        function(v) dD[k].style = v end);                                                y = y - h
-                    _, h = W:Toggle(parent, "Show in Combat", y,
-                        function() return dT[k].opt6 end,
-                        function(v) dT[k].opt6 = v end);                                                 y = y - h
-                    _, h = W:Spacer(parent, y, 20);                                                       y = y - h
+                        function()
+                            return dD[k].style
+                        end,
+                        function(v)
+                            dD[k].style = v
+                        end
+                    )
+                    y = y - h
+                    _, h = W:Toggle(parent, "Show in Combat", y, function()
+                        return dT[k].opt6
+                    end, function(v)
+                        dT[k].opt6 = v
+                    end)
+                    y = y - h
+                    _, h = W:Spacer(parent, y, 20)
+                    y = y - h
 
-                    _, h = W:SectionHeader(parent, "ADVANCED", y);                                        y = y - h
-                    _, h = W:Toggle(parent, "Enable Mouseover Mode", y,
-                        function() return dT[k].opt7 end,
-                        function(v) dT[k].opt7 = v end);                                                 y = y - h
-                    _, h = W:Slider(parent, "Border Thickness", y, 1, 6, 1,
-                        function() return dS[k].thickness end,
-                        function(v) dS[k].thickness = v end);                                            y = y - h
-                    _, h = W:Spacer(parent, y, 20);                                                       y = y - h
+                    _, h = W:SectionHeader(parent, "ADVANCED", y)
+                    y = y - h
+                    _, h = W:Toggle(parent, "Enable Mouseover Mode", y, function()
+                        return dT[k].opt7
+                    end, function(v)
+                        dT[k].opt7 = v
+                    end)
+                    y = y - h
+                    _, h = W:Slider(parent, "Border Thickness", y, 1, 6, 1, function()
+                        return dS[k].thickness
+                    end, function(v)
+                        dS[k].thickness = v
+                    end)
+                    y = y - h
+                    _, h = W:Spacer(parent, y, 20)
+                    y = y - h
 
-                    _, h = W:SectionHeader(parent, "VISIBILITY", y);                                      y = y - h
-                    _, h = W:Checkbox(parent, "Show in Raids", y,
-                        function() return dC.showInRaid end,
-                        function(v) dC.showInRaid = v end);                                               y = y - h
-                    _, h = W:Checkbox(parent, "Show in Dungeons", y,
-                        function() return dC.showInDungeon end,
-                        function(v) dC.showInDungeon = v end);                                            y = y - h
-                    _, h = W:Checkbox(parent, "Show in Arena", y,
-                        function() return dC.showInArena end,
-                        function(v) dC.showInArena = v end);                                              y = y - h
-                    _, h = W:Checkbox(parent, "Show in Battlegrounds", y,
-                        function() return dC.showInBG end,
-                        function(v) dC.showInBG = v end);                                                 y = y - h
-                    _, h = W:Checkbox(parent, "Show in Open World", y,
-                        function() return dC.showInWorld end,
-                        function(v) dC.showInWorld = v end);                                              y = y - h
-                    _, h = W:Checkbox(parent, "Show While Mounted", y,
-                        function() return dC.showWhileMounted end,
-                        function(v) dC.showWhileMounted = v end);                                         y = y - h
+                    _, h = W:SectionHeader(parent, "VISIBILITY", y)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show in Raids", y, function()
+                        return dC.showInRaid
+                    end, function(v)
+                        dC.showInRaid = v
+                    end)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show in Dungeons", y, function()
+                        return dC.showInDungeon
+                    end, function(v)
+                        dC.showInDungeon = v
+                    end)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show in Arena", y, function()
+                        return dC.showInArena
+                    end, function(v)
+                        dC.showInArena = v
+                    end)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show in Battlegrounds", y, function()
+                        return dC.showInBG
+                    end, function(v)
+                        dC.showInBG = v
+                    end)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show in Open World", y, function()
+                        return dC.showInWorld
+                    end, function(v)
+                        dC.showInWorld = v
+                    end)
+                    y = y - h
+                    _, h = W:Checkbox(parent, "Show While Mounted", y, function()
+                        return dC.showWhileMounted
+                    end, function(v)
+                        dC.showWhileMounted = v
+                    end)
+                    y = y - h
 
                     return math.abs(y)
                 end,
                 onReset = function()
-                    dT[k] = { opt1 = true, opt2 = false, opt3 = true, opt4 = false, opt5 = true, opt6 = false, opt7 = true }
+                    dT[k] = {
+                        opt1 = true,
+                        opt2 = false,
+                        opt3 = true,
+                        opt4 = false,
+                        opt5 = true,
+                        opt6 = false,
+                        opt7 = true,
+                    }
                     dS[k] = { size = 36, font = 14, opacity = 80, spacing = 4, scale = 100, thickness = 2 }
                     dD[k] = { effect = "pulse", position = "center", style = "modern" }
                     CludesUI:SelectPage(CludesUI:GetActivePage())

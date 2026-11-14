@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_DataBars.lua
 --
@@ -30,17 +32,17 @@ ns.dataBarFrames = dataBarFrames
 -- Reputation and House Favor bar colors (the XP bar's are in
 -- CUI_ActionBars_XPBar.lua)
 local DATA_BAR_COLORS = {
-    favor = { r = 0.85, g = 0.64, b = 0.22 },   -- warm gold (house favor)
+    favor = { r = 0.85, g = 0.64, b = 0.22 }, -- warm gold (house favor)
     rep = {
-        [1] = { r = 0.80, g = 0.20, b = 0.20 },  -- Hated
-        [2] = { r = 0.75, g = 0.30, b = 0.15 },  -- Hostile
-        [3] = { r = 0.75, g = 0.45, b = 0.15 },  -- Unfriendly
-        [4] = { r = 0.80, g = 0.70, b = 0.20 },  -- Neutral
-        [5] = { r = 0.30, g = 0.70, b = 0.25 },  -- Friendly
-        [6] = { r = 0.25, g = 0.65, b = 0.50 },  -- Honored
-        [7] = { r = 0.25, g = 0.50, b = 0.75 },  -- Revered
-        [8] = { r = 0.35, g = 0.30, b = 0.80 },  -- Exalted
-        [9] = { r = 0.80, g = 0.65, b = 0.20 },  -- Paragon
+        [1] = { r = 0.80, g = 0.20, b = 0.20 }, -- Hated
+        [2] = { r = 0.75, g = 0.30, b = 0.15 }, -- Hostile
+        [3] = { r = 0.75, g = 0.45, b = 0.15 }, -- Unfriendly
+        [4] = { r = 0.80, g = 0.70, b = 0.20 }, -- Neutral
+        [5] = { r = 0.30, g = 0.70, b = 0.25 }, -- Friendly
+        [6] = { r = 0.25, g = 0.65, b = 0.50 }, -- Honored
+        [7] = { r = 0.25, g = 0.50, b = 0.75 }, -- Revered
+        [8] = { r = 0.35, g = 0.30, b = 0.80 }, -- Exalted
+        [9] = { r = 0.80, g = 0.65, b = 0.20 }, -- Paragon
         [10] = { r = 0.20, g = 0.70, b = 0.85 }, -- Renown
     },
 }
@@ -57,7 +59,9 @@ end
 function ns.ResolveDataBarTexture(key)
     if key and key ~= "none" then
         local path = CludesUI.ResolveTexturePath(ns.dataBarTextures, key, nil)
-        if path then return path end
+        if path then
+            return path
+        end
     end
     return "Interface\\BUTTONS\\WHITE8X8"
 end
@@ -68,22 +72,31 @@ function ns.ResolveDataBarColor(s, r, g, b)
     local mode = s and s.colorMode
     if mode == "accent" then
         local EG = CludesUI.CLUDES_GREEN
-        if EG then return EG.r or r, EG.g or g, EG.b or b end
+        if EG then
+            return EG.r or r, EG.g or g, EG.b or b
+        end
     elseif mode == "custom" then
         local c = s.customColor
-        if c then return c.r or 1, c.g or 1, c.b or 1 end
+        if c then
+            return c.r or 1, c.g or 1, c.b or 1
+        end
         return 1, 1, 1
     end
     return r, g, b
 end
 
 -- Accent-mode bars repaint live when the user changes the accent color.
-CludesUI.RegAccent({ type = "callback", fn = function()
-    for _, bk in ipairs({ "XPBar", "RepBar", "FavorBar" }) do
-        local f = dataBarFrames[bk]
-        if f and f._updateFunc then f._updateFunc() end
-    end
-end })
+CludesUI.RegAccent({
+    type = "callback",
+    fn = function()
+        for _, bk in ipairs({ "XPBar", "RepBar", "FavorBar" }) do
+            local f = dataBarFrames[bk]
+            if f and f._updateFunc then
+                f._updateFunc()
+            end
+        end
+    end,
+})
 
 -- Custom Border (the data-bar sections' opt-in). Off: the MakeBorder 1px line
 -- stays and nothing here runs past one boolean read. On: an owned host (a
@@ -107,7 +120,9 @@ ns.ApplyDataBarBorder = function(holder, s)
             CludesUI.HideBorderStyle(host)
             host:Hide()
             -- An XP bar art frame keeps the line hidden.
-            if line and not holder._xpArtOn then line:Show() end
+            if line and not holder._xpArtOn then
+                line:Show()
+            end
         end
         return
     end
@@ -121,26 +136,46 @@ ns.ApplyDataBarBorder = function(holder, s)
     host:SetFrameLevel(lvl + 1)
     if not holder._cbOn then
         holder._cbOn = true
-        if line then line:Hide() end
+        if line then
+            line:Hide()
+        end
     end
     local tex = s.borderTexture or "solid"
     local c = s.borderColor
     local sz, px = ResolveBorderThickness(s)
-    CludesUI.ApplyBorderStyle(host, sz, c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 1,
-        tex, s.borderTextureOffset, s.borderTextureOffsetY, s.borderTextureShiftX, s.borderTextureShiftY,
-        "actionbars", s.borderThickness or "thin", nil, px)
+    CludesUI.ApplyBorderStyle(
+        host,
+        sz,
+        c and c.r or 0,
+        c and c.g or 0,
+        c and c.b or 0,
+        c and c.a or 1,
+        tex,
+        s.borderTextureOffset,
+        s.borderTextureOffsetY,
+        s.borderTextureShiftX,
+        s.borderTextureShiftY,
+        "actionbars",
+        s.borderThickness or "thin",
+        nil,
+        px
+    )
     local top = lvl + 2
     if tex ~= "" and tex ~= "solid" then
         local bd = CludesUI._bdBorderData[host]
         if bd then
-            if s.borderBehind then top = lvl end
+            if s.borderBehind then
+                top = lvl
+            end
             bd:SetFrameLevel(top)
         end
     end
     local textHost = holder._textHost
     if textHost then
         local want = max(lvl + 3, top + 1)
-        if textHost:GetFrameLevel() ~= want then textHost:SetFrameLevel(want) end
+        if textHost:GetFrameLevel() ~= want then
+            textHost:SetFrameLevel(want)
+        end
     end
 end
 
@@ -176,10 +211,15 @@ function ns.DataBarPlaceText(frame, s)
     text:ClearAllPoints()
     if rot == 0 then
         local ap, padX = "CENTER", 0
-        if anchor == "top" then ap = "TOP"
-        elseif anchor == "bottom" then ap = "BOTTOM"
-        elseif anchor == "left" then ap, padX = "LEFT", 4
-        elseif anchor == "right" then ap, padX = "RIGHT", -4 end
+        if anchor == "top" then
+            ap = "TOP"
+        elseif anchor == "bottom" then
+            ap = "BOTTOM"
+        elseif anchor == "left" then
+            ap, padX = "LEFT", 4
+        elseif anchor == "right" then
+            ap, padX = "RIGHT", -4
+        end
         text:SetPoint(ap, frame._textHost, ap, ox + padX, oy)
         if bgOn then
             -- 3 past the text's ends and 1 above and below it, none past the
@@ -194,15 +234,23 @@ function ns.DataBarPlaceText(frame, s)
         -- from the holder's centre, inside the border.
         local sw = text:GetStringWidth()
         local sh = text:GetStringHeight()
-        if not sh or sh <= 0 then sh = text:GetLineHeight() end
-        if not sh or sh <= 0 then sh = s.textSize or 9 end
+        if not sh or sh <= 0 then
+            sh = text:GetLineHeight()
+        end
+        if not sh or sh <= 0 then
+            sh = s.textSize or 9
+        end
         local vx, vy = 0, 0
         if anchor == "top" or anchor == "bottom" then
             vy = max(0, (s.height or 18) / 2 - 1 - 4 - sw / 2)
-            if anchor == "bottom" then vy = -vy end
+            if anchor == "bottom" then
+                vy = -vy
+            end
         elseif anchor == "left" or anchor == "right" then
             vx = max(0, (s.width or 400) / 2 - 1 - sh / 2)
-            if anchor == "left" then vx = -vx end
+            if anchor == "left" then
+                vx = -vx
+            end
         end
         local cs, sn = math.cos(rot), math.sin(rot)
         vx = vx + ox * cs - oy * sn
@@ -263,7 +311,9 @@ function ns.StyleDataBarFrame(frame, s)
     end
 
     -- XP bar art style and profession fill (both opt-in; CUI_ActionBars_XPBar.lua).
-    if frame._isXP then ns.ApplyXPBarStyle(frame, s) end
+    if frame._isXP then
+        ns.ApplyXPBarStyle(frame, s)
+    end
 
     -- Per-bar Text Size (default 9) and the readout's placement (anchor,
     -- offsets, rotation, background). Re-applied here so the options take
@@ -271,9 +321,15 @@ function ns.StyleDataBarFrame(frame, s)
     if frame._text then
         -- Read live, not FONT_PATH: that load-time capture misses a standalone's
         -- saved fonts and a login spec-profile switch.
-        frame._text:SetFont(CludesUI.GetFontPath("actionBars"), s.textSize or 9, CludesUI.GetFontOutlineFlag("actionBars"))
+        frame._text:SetFont(
+            CludesUI.GetFontPath("actionBars"),
+            s.textSize or 9,
+            CludesUI.GetFontOutlineFlag("actionBars")
+        )
         ns.DataBarPlaceText(frame, s)
-        if frame._isXP then ns.XPBarTextSlots(frame, s) end
+        if frame._isXP then
+            ns.XPBarTextSlots(frame, s)
+        end
     end
 
     -- Dividers (CUI_ActionBars_XPBar.lua): one boolean read while off; a
@@ -294,7 +350,9 @@ local function ApplyDataBarLayout(barKey)
         -- The Custom Border's reach for width / height matching (value-compared
         -- and deferred; a no-op in unlock mode and before the bar is registered).
         CludesUI.MatchPadChanged(barKey)
-        if frame._updateFunc then frame._updateFunc() end
+        if frame._updateFunc then
+            frame._updateFunc()
+        end
     end
     ns.RefreshDataBarPreview(barKey)
 end
@@ -308,7 +366,9 @@ ns.ApplyDataBarLayout = ApplyDataBarLayout
 function ns.RefreshDataBarPreview(barKey, valueOnly)
     local pv = ns._dataBarPreview
     local hook = pv and pv[barKey]
-    if hook then hook(valueOnly) end
+    if hook then
+        hook(valueOnly)
+    end
 end
 
 -- parent: a preview frame for the options (its own parent, no global names,
@@ -316,7 +376,9 @@ end
 local function CreateDataBarFrame(barKey, updateFunc, parent)
     local holder = CreateFrame("Frame", not parent and "CludesEAB_" .. barKey or nil, parent or UIParent)
     holder:SetSize(400, 18)
-    if not parent then holder:SetClampedToScreen(true) end
+    if not parent then
+        holder:SetClampedToScreen(true)
+    end
     holder._preview = parent and true or nil
     holder._isXP = (barKey == "XPBar") or nil
 
@@ -356,17 +418,21 @@ local function CreateDataBarFrame(barKey, updateFunc, parent)
     local textHost = CreateFrame("Frame", nil, bar)
     textHost:SetAllPoints(bar)
     local edges = holder._border and holder._border.edges
-    textHost:SetFrameLevel(((edges and edges.GetFrameLevel and edges:GetFrameLevel())
-        or holder:GetFrameLevel() + 2) + 1)
+    textHost:SetFrameLevel(
+        ((edges and edges.GetFrameLevel and edges:GetFrameLevel()) or holder:GetFrameLevel() + 2) + 1
+    )
 
     -- Kept for Custom Border, which holds it above its own backdrop.
     holder._textHost = textHost
 
     local text = textHost:CreateFontString(nil, "OVERLAY")
     CludesUI.PrimeFontShadow(text, CludesUI.GetFontUseShadow("actionBars"))
-    local sInit = EAB.db and EAB.db.profile and EAB.db.profile.bars
-        and EAB.db.profile.bars[barKey]
-    text:SetFont(CludesUI.GetFontPath("actionBars"), sInit and sInit.textSize or 9, CludesUI.GetFontOutlineFlag("actionBars"))
+    local sInit = EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars[barKey]
+    text:SetFont(
+        CludesUI.GetFontPath("actionBars"),
+        sInit and sInit.textSize or 9,
+        CludesUI.GetFontOutlineFlag("actionBars")
+    )
     text:SetPoint("CENTER", sInit and sInit.textOffsetX or 0, sInit and sInit.textOffsetY or 0)
     text:SetTextColor(1, 1, 1, 1)
 
@@ -374,7 +440,9 @@ local function CreateDataBarFrame(barKey, updateFunc, parent)
     holder._text = text
     holder._updateFunc = updateFunc
 
-    if not parent then dataBarFrames[barKey] = holder end
+    if not parent then
+        dataBarFrames[barKey] = holder
+    end
     return holder
 end
 -- The XP bar (CUI_ActionBars_XPBar.lua) builds its frame through this too.
@@ -386,11 +454,19 @@ ns.CreateDataBarFrame = CreateDataBarFrame
 -- already hidden (for example `solo` while grouped).
 function EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate(barKey)
     local frame = dataBarFrames[barKey]
-    if not frame then return nil, nil end
+    if not frame then
+        return nil, nil
+    end
     local info = BAR_LOOKUP[barKey]
     if EAB.db.profile.useBlizzardDataBars then
         if info then
-            EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(info, frame, EAB.db.profile.bars[barKey], false, true)
+            EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(
+                info,
+                frame,
+                EAB.db.profile.bars[barKey],
+                false,
+                true
+            )
         else
             frame:Hide()
         end
@@ -398,7 +474,9 @@ function EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate(barKey)
     end
 
     local s = EAB.db.profile.bars[barKey]
-    if not s then return nil, nil end
+    if not s then
+        return nil, nil
+    end
     if not EAB_VTABLE.ExtraBars.ShouldShowManagedNonSecureBar(s) then
         if info then
             EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(info, frame, s, false, true)
@@ -412,7 +490,9 @@ function EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate(barKey)
 end
 
 function EAB_VTABLE.ExtraBars.FinishManagedDataBarUpdate(barKey, frame, s)
-    if not frame or not s then return end
+    if not frame or not s then
+        return
+    end
 
     local info = BAR_LOOKUP[barKey]
     if info then
@@ -427,7 +507,9 @@ end
 -------------------------------------------------------------------------------
 local function UpdateRepBar()
     local frame, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("RepBar")
-    if not frame then return end
+    if not frame then
+        return
+    end
 
     local bar = frame._bar
     local text = frame._text
@@ -449,7 +531,9 @@ local function UpdateRepBar()
     -- Friendship handling (check first friendships override normal standing)
     local isFriendship = false
     if factionID then
-        local friendInfo = C_GossipInfo and C_GossipInfo.GetFriendshipReputation and C_GossipInfo.GetFriendshipReputation(factionID)
+        local friendInfo = C_GossipInfo
+            and C_GossipInfo.GetFriendshipReputation
+            and C_GossipInfo.GetFriendshipReputation(factionID)
         if friendInfo and friendInfo.friendshipFactionID and friendInfo.friendshipFactionID > 0 then
             isFriendship = true
             standing = friendInfo.reaction
@@ -461,7 +545,11 @@ local function UpdateRepBar()
 
     -- Paragon handling (check before renown max-renown factions become paragon)
     local isParagon = false
-    if factionID and C_Reputation.IsFactionParagonForCurrentPlayer and C_Reputation.IsFactionParagonForCurrentPlayer(factionID) then
+    if
+        factionID
+        and C_Reputation.IsFactionParagonForCurrentPlayer
+        and C_Reputation.IsFactionParagonForCurrentPlayer(factionID)
+    then
         local paragonVal, paragonThreshold = C_Reputation.GetFactionParagonInfo(factionID)
         if paragonVal and paragonThreshold then
             isParagon = true
@@ -474,12 +562,26 @@ local function UpdateRepBar()
     end
 
     -- Renown handling (only if not already paragon or friendship)
-    if not isParagon and not isFriendship and factionID and C_Reputation.IsMajorFaction and C_Reputation.IsMajorFaction(factionID) then
-        local majorData = C_MajorFactions and C_MajorFactions.GetMajorFactionData and C_MajorFactions.GetMajorFactionData(factionID)
+    if
+        not isParagon
+        and not isFriendship
+        and factionID
+        and C_Reputation.IsMajorFaction
+        and C_Reputation.IsMajorFaction(factionID)
+    then
+        local majorData = C_MajorFactions
+            and C_MajorFactions.GetMajorFactionData
+            and C_MajorFactions.GetMajorFactionData(factionID)
         if majorData then
             local hasMax = C_MajorFactions.HasMaximumRenown and C_MajorFactions.HasMaximumRenown(factionID)
             if hasMax then
-                EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(BAR_LOOKUP["RepBar"], frame, s, false, true)
+                EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(
+                    BAR_LOOKUP["RepBar"],
+                    frame,
+                    s,
+                    false,
+                    true
+                )
                 return
             end
             reaction = 10
@@ -505,7 +607,9 @@ local function UpdateRepBar()
 
     local current = currentStanding - currentReactionThreshold
     local maximum = nextReactionThreshold - currentReactionThreshold
-    if maximum <= 0 then maximum = 1 end
+    if maximum <= 0 then
+        maximum = 1
+    end
 
     bar:SetMinMaxValues(0, maximum)
     bar:SetValue(current)
@@ -524,7 +628,9 @@ local function UpdateRepBar()
     if text:GetStringWidth() > room - 4 then
         text:SetText(format("%.0f%%", pct))
     end
-    if frame._textPost then ns.DataBarPlaceText(frame, s) end
+    if frame._textPost then
+        ns.DataBarPlaceText(frame, s)
+    end
 
     EAB_VTABLE.ExtraBars.FinishManagedDataBarUpdate("RepBar", frame, s)
 end
@@ -536,10 +642,20 @@ local function CreateRepBar()
     -- Tooltip (suppressed under Click Through, as on the XP bar)
     holder:EnableMouse(true)
     holder:SetScript("OnEnter", function(self)
-        local cfg = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars["RepBar"]
-        if cfg and cfg.clickThrough then return end
-        local data = C_Reputation and C_Reputation.GetWatchedFactionData and C_Reputation.GetWatchedFactionData()
-        if not data or not data.name then return end
+        local cfg = EAB
+            and EAB.db
+            and EAB.db.profile
+            and EAB.db.profile.bars
+            and EAB.db.profile.bars["RepBar"]
+        if cfg and cfg.clickThrough then
+            return
+        end
+        local data = C_Reputation
+            and C_Reputation.GetWatchedFactionData
+            and C_Reputation.GetWatchedFactionData()
+        if not data or not data.name then
+            return
+        end
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
         GameTooltip:ClearLines()
         GameTooltip:AddLine(data.name, 1, 1, 1)
@@ -554,12 +670,27 @@ local function CreateRepBar()
             or ((data.currentStanding or 0) - (data.currentReactionThreshold or 0))
         local maximum = self._tipMaximum
             or ((data.nextReactionThreshold or 1) - (data.currentReactionThreshold or 0))
-        if maximum <= 0 then maximum = 1 end
+        if maximum <= 0 then
+            maximum = 1
+        end
         local pct = (current / maximum) * 100
-        GameTooltip:AddDoubleLine(CludesUI.L("Reputation"), format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(maximum), pct), 1, 1, 1, 1, 1, 1)
+        GameTooltip:AddDoubleLine(
+            CludesUI.L("Reputation"),
+            format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(maximum), pct),
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+        )
         GameTooltip:Show()
     end)
-    holder:SetScript("OnLeave", function(self) if GameTooltip:IsOwned(self) then GameTooltip:Hide() end end)
+    holder:SetScript("OnLeave", function(self)
+        if GameTooltip:IsOwned(self) then
+            GameTooltip:Hide()
+        end
+    end)
 
     -- Events
     local evFrame = ns.TakeShell()
@@ -588,148 +719,221 @@ end
 -- Lua 5.1 200 cap. WoW Forever has no housing: there the block never runs,
 -- so no bar is built, nothing registers and ns._CreateFavorBar stays nil.
 if not CludesUI.IS_FOREVER then
-local favorState  -- { level, displayLevel, favor, needed } from the last payload
-local favorEv, favorArmed
-local ArmFavorEvents  -- forward: mutual recursion with UpdateFavorBar
+    local favorState -- { level, displayLevel, favor, needed } from the last payload
+    local favorEv, favorArmed
+    local ArmFavorEvents -- forward: mutual recursion with UpdateFavorBar
 
--- No favor requests or repaints inside an active keystone or a raid instance.
-local function FavorBlocked()
-    if C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive
-        and C_ChallengeMode.IsChallengeModeActive() then
-        return true
-    end
-    local inInst, instType = IsInInstance()
-    return (inInst and instType == "raid") and true or false
-end
-
--- Zero cost while hidden: events stay unregistered unless the bar can actually show.
-local function FavorWanted()
-    if not (C_Housing and C_Housing.GetPlayerOwnedHouses) then return false end
-    local p = EAB.db and EAB.db.profile
-    if not p or p.useBlizzardDataBars then return false end
-    local s = p.bars and p.bars.FavorBar
-    return (s and not EAB.VisibilityCompat.IsNever(s)) and true or false
-end
-
-local function UpdateFavorBar()
-    if ArmFavorEvents then ArmFavorEvents() end
-    local frame, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("FavorBar")
-    if not frame then return end
-
-    local bar = frame._bar
-    local text = frame._text
-
-    -- No house / no data yet / max house level (no next-level requirement).
-    local st = favorState
-    if not st or not st.needed or st.needed <= 0 then
-        EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(BAR_LOOKUP["FavorBar"], frame, s, false, true)
-        return
+    -- No favor requests or repaints inside an active keystone or a raid instance.
+    local function FavorBlocked()
+        if
+            C_ChallengeMode
+            and C_ChallengeMode.IsChallengeModeActive
+            and C_ChallengeMode.IsChallengeModeActive()
+        then
+            return true
+        end
+        local inInst, instType = IsInInstance()
+        return (inInst and instType == "raid") and true or false
     end
 
-    local current = st.favor or 0
-    if current > st.needed then current = st.needed end
-    bar:SetMinMaxValues(0, st.needed)
-    bar:SetValue(current)
-    bar:SetStatusBarColor(ns.ResolveDataBarColor(s, DATA_BAR_COLORS.favor.r, DATA_BAR_COLORS.favor.g, DATA_BAR_COLORS.favor.b))
-
-    local pct = (current / st.needed) * 100
-    text:SetText(format(CludesUI.L("House Level %d: %d / %d"), st.displayLevel or 1, current, st.needed))
-
-    -- Auto-size text if bar is too narrow (too short, for text rotated to
-    -- run along a vertical bar)
-    local room = (s.rotateText and s.orientation == "VERTICAL") and frame:GetHeight() or frame:GetWidth()
-    if text:GetStringWidth() > room - 4 then
-        text:SetText(format("%.0f%%", pct))
+    -- Zero cost while hidden: events stay unregistered unless the bar can actually show.
+    local function FavorWanted()
+        if not (C_Housing and C_Housing.GetPlayerOwnedHouses) then
+            return false
+        end
+        local p = EAB.db and EAB.db.profile
+        if not p or p.useBlizzardDataBars then
+            return false
+        end
+        local s = p.bars and p.bars.FavorBar
+        return (s and not EAB.VisibilityCompat.IsNever(s)) and true or false
     end
-    if frame._textPost then ns.DataBarPlaceText(frame, s) end
 
-    EAB_VTABLE.ExtraBars.FinishManagedDataBarUpdate("FavorBar", frame, s)
-end
+    local function UpdateFavorBar()
+        if ArmFavorEvents then
+            ArmFavorEvents()
+        end
+        local frame, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("FavorBar")
+        if not frame then
+            return
+        end
 
-local function OnFavorEvent(_, event, arg1)
-    if FavorBlocked() then return end
-    if not (C_Housing and C_Housing.GetPlayerOwnedHouses) then return end
-    if event == "PLAYER_ENTERING_WORLD" then
-        C_Housing.GetPlayerOwnedHouses()
-    elseif event == "PLAYER_HOUSE_LIST_UPDATED" then
-        local info = type(arg1) == "table" and arg1[1]
-        local guid = info and info.houseGUID
-        if guid and C_Housing.GetCurrentHouseLevelFavor then
-            C_Housing.GetCurrentHouseLevelFavor(guid)
-        else
-            favorState = nil
+        local bar = frame._bar
+        local text = frame._text
+
+        -- No house / no data yet / max house level (no next-level requirement).
+        local st = favorState
+        if not st or not st.needed or st.needed <= 0 then
+            EAB_VTABLE.ExtraBars.ApplyManagedNonSecurePresentation(
+                BAR_LOOKUP["FavorBar"],
+                frame,
+                s,
+                false,
+                true
+            )
+            return
+        end
+
+        local current = st.favor or 0
+        if current > st.needed then
+            current = st.needed
+        end
+        bar:SetMinMaxValues(0, st.needed)
+        bar:SetValue(current)
+        bar:SetStatusBarColor(
+            ns.ResolveDataBarColor(
+                s,
+                DATA_BAR_COLORS.favor.r,
+                DATA_BAR_COLORS.favor.g,
+                DATA_BAR_COLORS.favor.b
+            )
+        )
+
+        local pct = (current / st.needed) * 100
+        text:SetText(format(CludesUI.L("House Level %d: %d / %d"), st.displayLevel or 1, current, st.needed))
+
+        -- Auto-size text if bar is too narrow (too short, for text rotated to
+        -- run along a vertical bar)
+        local room = (s.rotateText and s.orientation == "VERTICAL") and frame:GetHeight() or frame:GetWidth()
+        if text:GetStringWidth() > room - 4 then
+            text:SetText(format("%.0f%%", pct))
+        end
+        if frame._textPost then
+            ns.DataBarPlaceText(frame, s)
+        end
+
+        EAB_VTABLE.ExtraBars.FinishManagedDataBarUpdate("FavorBar", frame, s)
+    end
+
+    local function OnFavorEvent(_, event, arg1)
+        if FavorBlocked() then
+            return
+        end
+        if not (C_Housing and C_Housing.GetPlayerOwnedHouses) then
+            return
+        end
+        if event == "PLAYER_ENTERING_WORLD" then
+            C_Housing.GetPlayerOwnedHouses()
+        elseif event == "PLAYER_HOUSE_LIST_UPDATED" then
+            local info = type(arg1) == "table" and arg1[1]
+            local guid = info and info.houseGUID
+            if guid and C_Housing.GetCurrentHouseLevelFavor then
+                C_Housing.GetCurrentHouseLevelFavor(guid)
+            else
+                favorState = nil
+                UpdateFavorBar()
+            end
+        elseif event == "HOUSE_LEVEL_FAVOR_UPDATED" then
+            if type(arg1) == "table" and arg1.houseLevel ~= nil then
+                local level = arg1.houseLevel or 0
+                local needed = C_Housing.GetHouseLevelFavorForLevel
+                    and C_Housing.GetHouseLevelFavorForLevel(level + 1)
+                favorState = {
+                    level = level,
+                    displayLevel = level + 1,
+                    favor = arg1.houseFavor or 0,
+                    needed = needed or 0,
+                }
+            else
+                favorState = nil
+            end
             UpdateFavorBar()
         end
-    elseif event == "HOUSE_LEVEL_FAVOR_UPDATED" then
-        if type(arg1) == "table" and arg1.houseLevel ~= nil then
-            local level = arg1.houseLevel or 0
-            local needed = C_Housing.GetHouseLevelFavorForLevel
-                and C_Housing.GetHouseLevelFavorForLevel(level + 1)
-            favorState = {
-                level = level,
-                displayLevel = level + 1,
-                favor = arg1.houseFavor or 0,
-                needed = needed or 0,
-            }
-        else
-            favorState = nil
+    end
+
+    ArmFavorEvents = function()
+        local want = FavorWanted()
+        if want and not favorArmed then
+            favorArmed = true
+            if not favorEv then
+                favorEv = ns.TakeShell()
+                favorEv:SetScript("OnEvent", OnFavorEvent)
+            end
+            favorEv:RegisterEvent("PLAYER_ENTERING_WORLD")
+            favorEv:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
+            favorEv:RegisterEvent("HOUSE_LEVEL_FAVOR_UPDATED")
+            -- Kick the async chain now; if inside blocked content the next
+            -- world-enter re-kicks instead.
+            if not FavorBlocked() then
+                C_Housing.GetPlayerOwnedHouses()
+            end
+        elseif not want and favorArmed then
+            favorArmed = false
+            if favorEv then
+                favorEv:UnregisterAllEvents()
+            end
         end
+    end
+
+    local function CreateFavorBar()
+        local holder = CreateDataBarFrame("FavorBar", UpdateFavorBar)
+        holder:SetPoint("TOP", UIParent, "TOP", 0, -68)
+
+        -- Tooltip (suppressed under Click Through, as on the XP bar)
+        holder:EnableMouse(true)
+        holder:SetScript("OnEnter", function(self)
+            local cfg = EAB
+                and EAB.db
+                and EAB.db.profile
+                and EAB.db.profile.bars
+                and EAB.db.profile.bars["FavorBar"]
+            if cfg and cfg.clickThrough then
+                return
+            end
+            local st = favorState
+            if not st or not st.needed or st.needed <= 0 then
+                return
+            end
+            GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(CludesUI.L("House Favor"), 1, 1, 1)
+            GameTooltip:AddDoubleLine(
+                CludesUI.L("House Level"),
+                tostring(st.displayLevel or 1),
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            )
+            local current = math.min(st.favor or 0, st.needed)
+            local pct = (current / st.needed) * 100
+            GameTooltip:AddDoubleLine(
+                CludesUI.L("Favor"),
+                format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(st.needed), pct),
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            )
+            GameTooltip:AddDoubleLine(
+                CludesUI.L("Remaining"),
+                BreakUpLargeNumbers(st.needed - current),
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            )
+            GameTooltip:Show()
+        end)
+        holder:SetScript("OnLeave", function(self)
+            if GameTooltip:IsOwned(self) then
+                GameTooltip:Hide()
+            end
+        end)
+
+        -- Event registration is handled by ArmFavorEvents (via UpdateFavorBar):
+        -- nothing is registered while the bar is hidden.
+        ApplyDataBarLayout("FavorBar")
         UpdateFavorBar()
     end
-end
 
-ArmFavorEvents = function()
-    local want = FavorWanted()
-    if want and not favorArmed then
-        favorArmed = true
-        if not favorEv then
-            favorEv = ns.TakeShell()
-            favorEv:SetScript("OnEvent", OnFavorEvent)
-        end
-        favorEv:RegisterEvent("PLAYER_ENTERING_WORLD")
-        favorEv:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
-        favorEv:RegisterEvent("HOUSE_LEVEL_FAVOR_UPDATED")
-        -- Kick the async chain now; if inside blocked content the next
-        -- world-enter re-kicks instead.
-        if not FavorBlocked() then
-            C_Housing.GetPlayerOwnedHouses()
-        end
-    elseif not want and favorArmed then
-        favorArmed = false
-        if favorEv then favorEv:UnregisterAllEvents() end
-    end
-end
-
-local function CreateFavorBar()
-    local holder = CreateDataBarFrame("FavorBar", UpdateFavorBar)
-    holder:SetPoint("TOP", UIParent, "TOP", 0, -68)
-
-    -- Tooltip (suppressed under Click Through, as on the XP bar)
-    holder:EnableMouse(true)
-    holder:SetScript("OnEnter", function(self)
-        local cfg = EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars["FavorBar"]
-        if cfg and cfg.clickThrough then return end
-        local st = favorState
-        if not st or not st.needed or st.needed <= 0 then return end
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:ClearLines()
-        GameTooltip:AddLine(CludesUI.L("House Favor"), 1, 1, 1)
-        GameTooltip:AddDoubleLine(CludesUI.L("House Level"), tostring(st.displayLevel or 1), 1, 1, 1, 1, 1, 1)
-        local current = math.min(st.favor or 0, st.needed)
-        local pct = (current / st.needed) * 100
-        GameTooltip:AddDoubleLine(CludesUI.L("Favor"), format("%s / %s (%.1f%%)", BreakUpLargeNumbers(current), BreakUpLargeNumbers(st.needed), pct), 1, 1, 1, 1, 1, 1)
-        GameTooltip:AddDoubleLine(CludesUI.L("Remaining"), BreakUpLargeNumbers(st.needed - current), 1, 1, 1, 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    holder:SetScript("OnLeave", function(self) if GameTooltip:IsOwned(self) then GameTooltip:Hide() end end)
-
-    -- Event registration is handled by ArmFavorEvents (via UpdateFavorBar):
-    -- nothing is registered while the bar is hidden.
-    ApplyDataBarLayout("FavorBar")
-    UpdateFavorBar()
-end
-
-ns._CreateFavorBar = CreateFavorBar
+    ns._CreateFavorBar = CreateFavorBar
 end -- not IS_FOREVER
 
 -------------------------------------------------------------------------------
@@ -738,7 +942,9 @@ end -- not IS_FOREVER
 --  clearPosition callbacks.
 -------------------------------------------------------------------------------
 local function RegisterDataBarsWithUnlockMode()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
+    if not CludesUI or not CludesUI.RegisterUnlockElements then
+        return
+    end
     local MK = CludesUI.MakeUnlockElement
     local elements = {}
     local orderBase = 300
@@ -748,16 +954,20 @@ local function RegisterDataBarsWithUnlockMode()
         if info.isDataBar and dataBarFrames[info.key] then
             local bk = info.key
             elements[#elements + 1] = MK({
-                key   = bk,
+                key = bk,
                 label = info.label,
                 group = "Action Bars",
                 order = orderBase + idx,
-                getFrame = function() return dataBarFrames[bk] end,
+                getFrame = function()
+                    return dataBarFrames[bk]
+                end,
                 getSize = function()
                     -- Return stored DB values so cog menu shows what the
                     -- user typed, not the pixel-snapped frame size.
                     local s = EAB.db.profile.bars[bk]
-                    if s then return s.width or 400, s.height or 18 end
+                    if s then
+                        return s.width or 400, s.height or 18
+                    end
                     return 400, 18
                 end,
                 -- A Custom Border's textured reach past the bar's edges counts
@@ -766,29 +976,48 @@ local function RegisterDataBarsWithUnlockMode()
                 -- line and solid strips sit inside the frame.
                 getMatchPad = function()
                     local s = EAB.db and EAB.db.profile and EAB.db.profile.bars[bk]
-                    if not (s and s.customBorder) then return nil end
+                    if not (s and s.customBorder) then
+                        return nil
+                    end
                     local sz, px = ResolveBorderThickness(s)
                     local c = s.borderColor
-                    return CludesUI.BorderMatchPad(sz, s.borderTexture or "solid",
-                        s.borderTextureOffset, s.borderTextureOffsetY, s.borderTextureShiftX, s.borderTextureShiftY,
-                        "actionbars", s.borderThickness or "thin", px, nil, c and c.a or 1)
+                    return CludesUI.BorderMatchPad(
+                        sz,
+                        s.borderTexture or "solid",
+                        s.borderTextureOffset,
+                        s.borderTextureOffsetY,
+                        s.borderTextureShiftX,
+                        s.borderTextureShiftY,
+                        "actionbars",
+                        s.borderThickness or "thin",
+                        px,
+                        nil,
+                        c and c.a or 1
+                    )
                 end,
                 setWidth = function(_, w)
                     local s = EAB.db.profile.bars[bk]
                     local PPab = CludesUI and CludesUI.PP
-                    if s then s.width = PPab and PPab.Snap(w) or math.floor(w + 0.5) end
+                    if s then
+                        s.width = PPab and PPab.Snap(w) or math.floor(w + 0.5)
+                    end
                     ApplyDataBarLayout(bk)
                 end,
                 setHeight = function(_, h)
                     local s = EAB.db.profile.bars[bk]
                     local PPab = CludesUI and CludesUI.PP
-                    if s then s.height = PPab and PPab.Snap(h) or math.floor(h + 0.5) end
+                    if s then
+                        s.height = PPab and PPab.Snap(h) or math.floor(h + 0.5)
+                    end
                     ApplyDataBarLayout(bk)
                 end,
                 savePos = function(_, point, relPoint, x, y)
                     if point and x and y then
                         EAB.db.profile.barPositions[bk] = {
-                            point = point, relPoint = relPoint or point, x = x, y = y,
+                            point = point,
+                            relPoint = relPoint or point,
+                            x = x,
+                            y = y,
                         }
                     end
                     if not CludesUI._unlockActive then
@@ -801,7 +1030,9 @@ local function RegisterDataBarsWithUnlockMode()
                 end,
                 loadPos = function()
                     local pos = EAB.db.profile.barPositions[bk]
-                    if not pos then return nil end
+                    if not pos then
+                        return nil
+                    end
                     local pt = pos.point
                     return { point = pt, relPoint = pos.relPoint or pt, x = pos.x, y = pos.y }
                 end,
@@ -811,7 +1042,9 @@ local function RegisterDataBarsWithUnlockMode()
                 applyPos = function()
                     local pos = EAB.db.profile.barPositions[bk]
                     local frame = dataBarFrames[bk]
-                    if not frame then return end
+                    if not frame then
+                        return
+                    end
                     frame:ClearAllPoints()
                     if pos and pos.point then
                         local pt, rpt = pos.point, pos.relPoint or pos.point
@@ -848,7 +1081,9 @@ end
 function EAB_VTABLE.ExtraBars.CreateManagedDataBarFrames()
     ns.CreateXPBar()
     CreateRepBar()
-    if ns._CreateFavorBar then ns._CreateFavorBar() end
+    if ns._CreateFavorBar then
+        ns._CreateFavorBar()
+    end
 end
 
 function EAB_VTABLE.ExtraBars.InitializeDataBarHoverState()
@@ -861,7 +1096,9 @@ end
 
 function EAB_VTABLE.ExtraBars.RestoreSavedDataBarPositions()
     local positions = EAB.db.profile.barPositions
-    if not positions then return end
+    if not positions then
+        return
+    end
 
     for _, info in ipairs(EXTRA_BARS) do
         if info.isDataBar then
@@ -895,7 +1132,9 @@ function EAB_VTABLE.ExtraBars.EnsureManagedDataBarRuntimeState()
     EAB_VTABLE.ExtraBars._managedNonSecureInCombat = InCombatLockdown()
     EAB_VTABLE.ExtraBars.RefreshManagedNonSecureVisibility()
 
-    if EAB_VTABLE.ExtraBars._managedDataBarCombatFrame then return end
+    if EAB_VTABLE.ExtraBars._managedDataBarCombatFrame then
+        return
+    end
 
     -- Managed non-secure bars need a runtime combat refresh because secure
     -- state drivers are not available for these frames.
@@ -913,7 +1152,9 @@ end
 
 local function SetupDataBars()
     -- Skip creating custom bars entirely if user wants Blizzard to control them
-    if EAB.db.profile.useBlizzardDataBars then return end
+    if EAB.db.profile.useBlizzardDataBars then
+        return
+    end
 
     -- Phase 1: create the frames and their update callbacks.
     EAB_VTABLE.ExtraBars.CreateManagedDataBarFrames()
@@ -951,15 +1192,21 @@ function ns.SetUseBlizzardDataBars(v)
         if info.isDataBar and not (k == "FavorBar" and CludesUI.IS_FOREVER) then
             local frame = dataBarFrames[k]
             if not frame then
-                if not v then needsReload = true end
+                if not v then
+                    needsReload = true
+                end
             elseif v then
                 frame:Hide()
-                if frame._updateFunc then frame._updateFunc() end
+                if frame._updateFunc then
+                    frame._updateFunc()
+                end
             else
                 local s = p.bars[k]
                 if not s or not EAB.VisibilityCompat.IsNever(s) then
                     frame:Show()
-                    if frame._updateFunc then frame._updateFunc() end
+                    if frame._updateFunc then
+                        frame._updateFunc()
+                    end
                 end
             end
         end
@@ -970,7 +1217,9 @@ function ns.SetUseBlizzardDataBars(v)
             -- Dropped events come back only with a reload: a registration made
             -- from here would run every one of them, and the bottom bar stack
             -- pass a shown or hidden bar starts, under our taint.
-            if ns._eabBlizzDataBarsDropped then needsReload = true end
+            if ns._eabBlizzDataBarsDropped then
+                needsReload = true
+            end
         else
             StatusTrackingBarManager:UnregisterAllEvents()
             StatusTrackingBarManager:Hide()

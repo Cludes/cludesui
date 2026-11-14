@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Gold.lua
 -- Gold block factory and the shared session/character ledger.
 
@@ -8,28 +10,28 @@ local K = ns.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
-local C_Timer     = C_Timer
-local pairs       = pairs
-local ipairs      = ipairs
-local type        = type
-local format      = string.format
-local tinsert     = table.insert
-local tconcat     = table.concat
-local tsort       = table.sort
-local floor       = math.floor
-local max         = math.max
-local min         = math.min
-local abs         = math.abs
+local C_Timer = C_Timer
+local pairs = pairs
+local ipairs = ipairs
+local type = type
+local format = string.format
+local tinsert = table.insert
+local tconcat = table.concat
+local tsort = table.sort
+local floor = math.floor
+local max = math.max
+local min = math.min
+local abs = math.abs
 
-local ICON_GAP         = K.ICON_GAP
-local CONTENT_BASE     = K.CONTENT_BASE
-local InstKey          = K.InstKey
-local HBudget          = K.HBudget
-local VSlotW           = K.VSlotW
-local MaybeRelayout    = K.MaybeRelayout
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
 local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf     = K.BlockColorOf
-local IconColorOf      = K.IconColorOf
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  GOLD (engine-level session ledger + cross-character store)
@@ -45,7 +47,9 @@ local GL = CludesUI.GetGoldLedger()
 -- Drop a character the player no longer has (renamed, deleted, transferred).
 local function GoldForgetCharacter(key)
     GL.Forget(key)
-    for gi in pairs(goldInstances) do gi:QueueRefresh() end
+    for gi in pairs(goldInstances) do
+        gi:QueueRefresh()
+    end
 end
 
 -- The tooltip roster: `keys` holds store keys sorted richest first. Past
@@ -84,17 +88,24 @@ local function GoldResetAll()
     GL.Reset()
     GL.RecordCharacter()
     GL.RecordWarband()
-    for gi in pairs(goldInstances) do gi:QueueRefresh() end
+    for gi in pairs(goldInstances) do
+        gi:QueueRefresh()
+    end
 end
 
 -- Ledger callback, after it recorded. `money` is the live balance for character events (nil for warband ones or an unusable read, which the ledger refuses, so session math only ever sees numbers).
 local function GoldOnMoney(_, money)
     if money and goldLedger.lastMoney then
         local diff = money - goldLedger.lastMoney
-        if diff > 0 then goldLedger.profit = goldLedger.profit + diff
-        elseif diff < 0 then goldLedger.spent = goldLedger.spent + (-diff) end
+        if diff > 0 then
+            goldLedger.profit = goldLedger.profit + diff
+        elseif diff < 0 then
+            goldLedger.spent = goldLedger.spent + -diff
+        end
     end
-    if money then goldLedger.lastMoney = money end
+    if money then
+        goldLedger.lastMoney = money
+    end
     for gi in pairs(goldInstances) do
         gi:QueueRefresh()
     end
@@ -104,7 +115,9 @@ local function GoldOnEvent(_, event)
     if event == "TOKEN_MARKET_PRICE_UPDATED" then
         if C_WowTokenPublic and C_WowTokenPublic.GetCurrentMarketPrice then
             local price = C_WowTokenPublic.GetCurrentMarketPrice()
-            if issecretvalue and issecretvalue(price) then price = nil end
+            if issecretvalue and issecretvalue(price) then
+                price = nil
+            end
             goldLedger.tokenPrice = price
         end
         return
@@ -124,7 +137,9 @@ local function UpdateGoldEvents()
         goldEventFrame:RegisterEvent("TOKEN_MARKET_PRICE_UPDATED")
         GL.Register("databars-gold", GoldOnMoney)
     else
-        if goldEventFrame then goldEventFrame:UnregisterAllEvents() end
+        if goldEventFrame then
+            goldEventFrame:UnregisterAllEvents()
+        end
         GL.Unregister("databars-gold")
     end
 end
@@ -135,7 +150,9 @@ local function GetFreeBagSlots()
     local free = 0
     for i = 0, 4 do
         local n, family = C_Container.GetContainerNumFreeSlots(i)
-        if n and (not family or family == 0) then free = free + n end
+        if n and (not family or family == 0) then
+            free = free + n
+        end
     end
     return free
 end
@@ -158,17 +175,23 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
         blockCfg.useAccentColor = nil
     end
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local goldButton = CreateFrame("Button", nil, content)
-    goldButton:SetSize(120, 20); goldButton:SetPoint("CENTER")
-    goldButton:EnableMouse(true); goldButton:RegisterForClicks("AnyUp")
+    goldButton:SetSize(120, 20)
+    goldButton:SetPoint("CENTER")
+    goldButton:EnableMouse(true)
+    goldButton:RegisterForClicks("AnyUp")
 
     local goldIcon = goldButton:CreateTexture(nil, "OVERLAY")
     local goldText = goldButton:CreateFontString(nil, "OVERLAY")
-    local bagText  = goldButton:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, goldText)   -- bagText chains to goldText
+    local bagText = goldButton:CreateFontString(nil, "OVERLAY")
+    AttachTextOffset(inst, goldText) -- bagText chains to goldText
 
     function inst:Refresh()
         local dg = D()
@@ -179,7 +202,9 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
         local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local iconSz = 0
         -- +4: the bag icon runs bigger than the text size (user-tuned).
-        if dg.showIcons ~= false then iconSz = fontSize + 4 end
+        if dg.showIcons ~= false then
+            iconSz = fontSize + 4
+        end
         -- -2: the coin icon sits tighter to its text than the shared default.
         local gap = ICON_GAP - 2
         local isSide = barCtx.IsVertical()
@@ -196,23 +221,35 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             local innerW = max(30, slotW - 8)
             -- One token per coin, one coin per line. Coin Colored tints the suffix letters
             -- (nothing to tint once Coin Icons is on, so the two compose); hovering drops it so the accent wash reads.
-            local lines = ns.MoneyTokens(money, dg.showSmall == true, ci,
-                blockCfg.useCoinColor == true and not mouseOver, ab, fe)
+            local lines = ns.MoneyTokens(
+                money,
+                dg.showSmall == true,
+                ci,
+                blockCfg.useCoinColor == true and not mouseOver,
+                ab,
+                fe
+            )
             local startSize = min(fontSize, max(10, floor(CONTENT_BASE * 0.52 + 0.5)))
             local goldFontSize = startSize
             ns.SetFont(goldText, goldFontSize, barCfg)
             goldText:SetText(tconcat(lines, "\n"))
             local r, g, b
-            if mouseOver then r, g, b = ns.GetAccent()
-            elseif blockCfg.useCoinColor then r, g, b = 1, 1, 1
-            else r, g, b = BlockColorOf(blockCfg) end
+            if mouseOver then
+                r, g, b = ns.GetAccent()
+            elseif blockCfg.useCoinColor then
+                r, g, b = 1, 1, 1
+            else
+                r, g, b = BlockColorOf(blockCfg)
+            end
             goldText:SetTextColor(r, g, b, 1)
         elseif mouseOver then
             goldText:SetText(ns.FormatMoney(money, false, dg.showSmall == true, ci, ab, fe))
             local r, g, b = ns.GetAccent()
             goldText:SetTextColor(r, g, b, 1)
         else
-            goldText:SetText(ns.FormatMoney(money, blockCfg.useCoinColor == true, dg.showSmall == true, ci, ab, fe))
+            goldText:SetText(
+                ns.FormatMoney(money, blockCfg.useCoinColor == true, dg.showSmall == true, ci, ab, fe)
+            )
             if blockCfg.useCoinColor then
                 goldText:SetTextColor(1, 1, 1, 1)
             else
@@ -221,15 +258,20 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
         end
 
         if dg.showBagSpace == true then
-            bagText:SetText("(" .. GetFreeBagSlots() .. ")"); bagText:Show()
+            bagText:SetText("(" .. GetFreeBagSlots() .. ")")
+            bagText:Show()
         else
             bagText:Hide()
         end
 
         local r, g, b
-        if mouseOver then r, g, b = ns.GetAccent()
-        elseif blockCfg.useCoinColor then r, g, b = 1, 1, 1
-        else r, g, b = BlockColorOf(blockCfg) end
+        if mouseOver then
+            r, g, b = ns.GetAccent()
+        elseif blockCfg.useCoinColor then
+            r, g, b = 1, 1, 1
+        else
+            r, g, b = BlockColorOf(blockCfg)
+        end
         bagText:SetTextColor(r, g, b, 1)
 
         if dg.showIcons ~= false and iconSz > 0 then
@@ -242,7 +284,8 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             end
             goldIcon:Show()
         else
-            goldIcon:Hide(); iconSz = 0
+            goldIcon:Hide()
+            iconSz = 0
         end
 
         if isSide then
@@ -275,36 +318,57 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             totalH = max(totalH, barH)
             goldButton:SetSize(slotW, totalH)
             content:SetSize(slotW, totalH)
-            goldButton:ClearAllPoints(); goldButton:SetPoint("CENTER", content, "CENTER", 0, 0)
+            goldButton:ClearAllPoints()
+            goldButton:SetPoint("CENTER", content, "CENTER", 0, 0)
         else
             local slotW = HBudget(inst, 100)
             -- Fit against BOTH money formats so font/icon size and frame width stay identical hovered or not; otherwise it resizes on mouseover.
             local plainText = ns.FormatMoney(money, false, dg.showSmall == true, ci, ab, fe)
-            local fancyText = ns.FormatMoney(money, blockCfg.useCoinColor == true, dg.showSmall == true, ci, ab, fe)
+            local fancyText =
+                ns.FormatMoney(money, blockCfg.useCoinColor == true, dg.showSmall == true, ci, ab, fe)
             local moneyText
-            if mouseOver then moneyText = plainText else moneyText = fancyText end
+            if mouseOver then
+                moneyText = plainText
+            else
+                moneyText = fancyText
+            end
             local bagTextValue = ""
-            if dg.showBagSpace == true then bagTextValue = "(" .. GetFreeBagSlots() .. ")" end
+            if dg.showBagSpace == true then
+                bagTextValue = "(" .. GetFreeBagSlots() .. ")"
+            end
             local bagPad = 8
-            if bagTextValue ~= "" then bagPad = 26 end
+            if bagTextValue ~= "" then
+                bagPad = 26
+            end
             local textBudget = max(24, slotW - iconSz - bagPad)
-            _goldFitBuf[1] = plainText; _goldFitBuf[2] = fancyText; _goldFitBuf[3] = bagTextValue
+            _goldFitBuf[1] = plainText
+            _goldFitBuf[2] = fancyText
+            _goldFitBuf[3] = bagTextValue
             local fitSize = fontSize
             ns.SetFont(goldText, fitSize, barCfg)
             ns.SetFont(bagText, fitSize, barCfg)
             goldText:SetText(moneyText)
-            if bagTextValue ~= "" then bagText:SetText(bagTextValue) end
+            if bagTextValue ~= "" then
+                bagText:SetText(bagTextValue)
+            end
             ns.ResetInlineText(goldText, "LEFT")
             ns.ResetInlineText(bagText, "LEFT")
             iconSz = 0
             -- +4: matches the vertical branch (user-tuned bag icon size).
-            if dg.showIcons ~= false then iconSz = fitSize + 4 end
+            if dg.showIcons ~= false then
+                iconSz = fitSize + 4
+            end
             goldIcon:SetSize(iconSz, iconSz)
-            goldIcon:ClearAllPoints(); goldIcon:SetPoint("LEFT", goldButton, "LEFT", 0, 0)
-            goldText:ClearAllPoints(); goldText:SetPoint("LEFT", goldButton, "LEFT", iconSz + gap, 0)
+            goldIcon:ClearAllPoints()
+            goldIcon:SetPoint("LEFT", goldButton, "LEFT", 0, 0)
+            goldText:ClearAllPoints()
+            goldText:SetPoint("LEFT", goldButton, "LEFT", iconSz + gap, 0)
             local bagW = 0
-            if dg.showBagSpace == true then bagW = (bagText:GetStringWidth() or 0) + 4 end
-            bagText:ClearAllPoints(); bagText:SetPoint("LEFT", goldText, "RIGHT", 4, 0)
+            if dg.showBagSpace == true then
+                bagW = (bagText:GetStringWidth() or 0) + 4
+            end
+            bagText:ClearAllPoints()
+            bagText:SetPoint("LEFT", goldText, "RIGHT", 4, 0)
 
             -- Width from the wider format so the frame never grows on hover.
             local moneyW = goldText:GetStringWidth() or 0
@@ -312,24 +376,33 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             if measureFS then
                 ns.SetFont(measureFS, fitSize, barCfg)
                 local other
-                if mouseOver then other = fancyText else other = plainText end
+                if mouseOver then
+                    other = fancyText
+                else
+                    other = plainText
+                end
                 measureFS:SetText(other)
                 moneyW = max(moneyW, measureFS:GetStringWidth() or 0)
             end
             local textW = min(slotW, iconSz + gap + moneyW + bagW + 4)
             goldButton:SetSize(textW, barH)
             content:SetSize(textW, barH)
-            goldButton:ClearAllPoints(); goldButton:SetPoint("CENTER", content, "CENTER", 0, 0)
+            goldButton:ClearAllPoints()
+            goldButton:SetPoint("CENTER", content, "CENTER", 0, 0)
         end
         MaybeRelayout(inst)
     end
 
     function inst:QueueRefresh()
-        if self._refreshQueued then return end
+        if self._refreshQueued then
+            return
+        end
         self._refreshQueued = true
         C_Timer.After(0, function()
             inst._refreshQueued = false
-            if goldInstances[inst] then inst:Refresh() end
+            if goldInstances[inst] then
+                inst:Refresh()
+            end
         end)
     end
 
@@ -342,23 +415,47 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
         -- Show Tooltip Data checklist: each section defaults ON.
         local showSession = D().tipSession ~= false
         -- Account gold tracking (Bags options) only covers the character roster and warbank; the session record needs no ledger writes.
-        local tracking    = GL.IsTracking()
-        local showChars   = D().tipCharacters ~= false and tracking
-        local showToken   = D().tipToken ~= false
+        local tracking = GL.IsTracking()
+        local showChars = D().tipCharacters ~= false and tracking
+        local showToken = D().tipToken ~= false
         local ar, ag, ab = 1, 1, 1
         ns.Tip_Begin(goldButton)
         ns.Tip_AddLine(L["GOLD"], ar, ag, ab)
         if showSession then
             ns.Tip_AddLine(" ")
             ns.Tip_AddLine(L["SESSION"], 0.8, 0.8, 0.8)
-            ns.Tip_AddDouble(L["EARNED"], ns.FormatMoney(goldLedger.profit, true, sm, ci), 0.6, 0.6, 0.6, 0, 1, 0)
-            ns.Tip_AddDouble(L["SPENT"],  ns.FormatMoney(goldLedger.spent,  true, sm, ci), 0.6, 0.6, 0.6, 1, 0.3, 0.3)
+            ns.Tip_AddDouble(
+                L["EARNED"],
+                ns.FormatMoney(goldLedger.profit, true, sm, ci),
+                0.6,
+                0.6,
+                0.6,
+                0,
+                1,
+                0
+            )
+            ns.Tip_AddDouble(
+                L["SPENT"],
+                ns.FormatMoney(goldLedger.spent, true, sm, ci),
+                0.6,
+                0.6,
+                0.6,
+                1,
+                0.3,
+                0.3
+            )
             local net = goldLedger.profit - goldLedger.spent
             if net ~= 0 then
                 local label
-                if net > 0 then label = L["PROFIT"] else label = L["DEFICIT"] end
+                if net > 0 then
+                    label = L["PROFIT"]
+                else
+                    label = L["DEFICIT"]
+                end
                 local nr, ngr = 1, 0.3
-                if net > 0 then nr, ngr = 0, 1 end
+                if net > 0 then
+                    nr, ngr = 0, 1
+                end
                 ns.Tip_AddDouble(label, ns.FormatMoney(abs(net), true, sm, ci), 0.6, 0.6, 0.6, nr, ngr, 0.3)
             end
         end
@@ -406,16 +503,23 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
                         local char = store[key]
                         local cr, cg, cb = 1, 1, 1
                         if char.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[char.class] then
-                            local cc = RAID_CLASS_COLORS[char.class]; cr, cg, cb = cc.r, cc.g, cc.b
+                            local cc = RAID_CLASS_COLORS[char.class]
+                            cr, cg, cb = cc.r, cc.g, cc.b
                         end
                         local label = char.name or "?"
                         local tokens = ns.MoneyTokens(char.money, sm, ci, true)
                         -- Every row gets the same hover affordance; the live character's
                         -- click is inert (it re-saves on every money event, so a delete returns instantly).
                         ns.Tip_AddClickableColumns(label, tokens, function(mouseButton)
-                            if key == selfKey then return end
-                            if mouseButton ~= "LeftButton" then return end
-                            if not (IsControlKeyDown() and IsAltKeyDown()) then return end
+                            if key == selfKey then
+                                return
+                            end
+                            if mouseButton ~= "LeftButton" then
+                                return
+                            end
+                            if not (IsControlKeyDown() and IsAltKeyDown()) then
+                                return
+                            end
                             GoldForgetCharacter(key)
                             ns.Tip_Hide(goldButton)
                         end, cr, cg, cb)
@@ -433,7 +537,9 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             local wband = GL.Data().warband
             local wbank = wband and wband.money
             if wbank and wbank > 0 then
-                if realmCount > 1 then ns.Tip_AddLine(" ") end
+                if realmCount > 1 then
+                    ns.Tip_AddLine(" ")
+                end
                 ns.Tip_AddColumns(CludesUI.L("Warbank"), ns.MoneyTokens(wbank, sm, ci, true), 1, 0.82, 0)
                 total = total + wbank
             end
@@ -445,12 +551,21 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
         end
         if showToken and goldLedger.tokenPrice and goldLedger.tokenPrice > 0 then
             ns.Tip_AddLine(" ")
-            ns.Tip_AddDouble(L["WOW_TOKEN"], ns.FormatMoney(goldLedger.tokenPrice, true, sm, ci), 0, 0.8, 1, 1, 1, 1)
+            ns.Tip_AddDouble(
+                L["WOW_TOKEN"],
+                ns.FormatMoney(goldLedger.tokenPrice, true, sm, ci),
+                0,
+                0.8,
+                1,
+                1,
+                1,
+                1
+            )
         end
         ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(L["LEFT_CLICK"],       L["OPEN_BAGS"],       1, 1, 1, ar, ag, ab)
-        ns.Tip_AddDouble(L["RIGHT_CLICK"],      L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
-        ns.Tip_AddDouble(L["CTRL_RIGHT_CLICK"], L["RESET_SESSION"],   1, 1, 1, ar, ag, ab)
+        ns.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, ar, ag, ab)
+        ns.Tip_AddDouble(L["RIGHT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
+        ns.Tip_AddDouble(L["CTRL_RIGHT_CLICK"], L["RESET_SESSION"], 1, 1, 1, ar, ag, ab)
         if showChars then
             ns.Tip_AddDouble(L["CTRL_SHIFT_RIGHT_CLICK"], L["RESET_ALL_DATA"], 1, 1, 1, ar, ag, ab)
         end
@@ -479,11 +594,14 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
                 onConfirm = GoldResetAll,
             })
         elseif IsControlKeyDown() and button == "RightButton" then
-            goldLedger.profit = 0; goldLedger.spent = 0
+            goldLedger.profit = 0
+            goldLedger.spent = 0
             inst:Refresh()
             -- The tooltip stays up through the click: drawn again, it shows the
             -- session at zero.
-            if mouseOver then goldButton:GetScript("OnEnter")(goldButton) end
+            if mouseOver then
+                goldButton:GetScript("OnEnter")(goldButton)
+            end
         elseif button == "RightButton" then
             if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
                 C_CurrencyInfo.OpenCurrencyPanel()
@@ -522,10 +640,14 @@ ns.BlockFactories.gold = function(blockCfg, slot, content, barCtx)
             -- Mirror Refresh: no icon budget when Show Icons is off, else the segment measures taller than its rendered content.
             local iconTerm = 0
             local dg = blockCfg.settings
-            if not dg or dg.showIcons ~= false then iconTerm = fontSize + 2 end
+            if not dg or dg.showIcons ~= false then
+                iconTerm = fontSize + 2
+            end
             local textH = goldText:GetStringHeight() or fontSize
             local bagH = 0
-            if bagText:IsShown() then bagH = (bagText:GetStringHeight() or 0) + 2 end
+            if bagText:IsShown() then
+                bagH = (bagText:GetStringHeight() or 0) + 2
+            end
             return max(8 + iconTerm + textH + bagH + 4, barH, 50)
         end
         return max(content:GetWidth() or 100, 40)

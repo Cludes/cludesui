@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_ProfileSync.lua
 --  Profile sync mirror groups, per-module sync exclusions, and the sync
@@ -7,7 +9,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local CludesUI = _G.CludesUI
 -- Private namespace shared with CludesUI.lua (sidebar buttons).
 local _, CUI_NS = ...
-CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own table (CludesUI.lua)
+CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 
 -------------------------------------------------------------------------------
 --  Profile Sync System (mirror groups)
@@ -20,8 +22,8 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own tabl
 do
     -- Modules that should NOT get a sync icon (no per-profile settings; Loadout
     -- Manager and Simple Loot Council keep stores of their own)
-    local SYNC_EXEMPT = { CludesUIPartyMode = true, CludesUILoadoutManager = true,
-        CludesUISimpleLootCouncil = true }
+    local SYNC_EXEMPT =
+        { CludesUIPartyMode = true, CludesUILoadoutManager = true, CludesUISimpleLootCouncil = true }
     CludesUI._syncExempt = SYNC_EXEMPT
 
     -- Modules with a sync icon but no per-profile data (always "synced"). BlizzardSkin hosts
@@ -34,7 +36,9 @@ do
     CludesUI._syncExclusions = syncExclusions
 
     function CludesUI.RegisterSyncExclusions(folder, keys)
-        if not syncExclusions[folder] then syncExclusions[folder] = {} end
+        if not syncExclusions[folder] then
+            syncExclusions[folder] = {}
+        end
         local ex = syncExclusions[folder]
         for _, k in ipairs(keys) do
             ex[k] = true
@@ -54,15 +58,21 @@ do
         local function ensure()
             if not merged then
                 merged = {}
-                if staticEx then for k in pairs(staticEx) do merged[k] = true end end
+                if staticEx then
+                    for k in pairs(staticEx) do
+                        merged[k] = true
+                    end
+                end
             end
         end
         local function addStore(store)
-            if type(store) ~= "table" then return end
+            if type(store) ~= "table" then
+                return
+            end
             for _, entry in ipairs(store) do
                 local vals = type(entry) == "table" and entry.values
                 if type(vals) == "table" then
-                    for _, m in pairs(vals) do  -- default map + every spec/gid map
+                    for _, m in pairs(vals) do -- default map + every spec/gid map
                         if type(m) == "table" then
                             for fkey in pairs(m) do
                                 if type(fkey) == "string" then
@@ -79,7 +89,9 @@ do
             end
         end
         local function addProf(prof)
-            if type(prof) ~= "table" then return end
+            if type(prof) ~= "table" then
+                return
+            end
             addStore(prof.specOverrides)
             addStore(prof.condOverrides)
             if folder == "CludesUIRaidFrames" then
@@ -88,23 +100,33 @@ do
                 -- so if EITHER profile carries ANY BM layer, those keys are fork territory and
                 -- must not sync (emptiness check mirrors the BM harvest's zero-cost gate).
                 local s, c = prof.specBmOverrides, prof.condBmOverrides
-                if (type(s) == "table" and (s.active or s.baselineLayout
-                        or (type(s.layouts) == "table" and next(s.layouts))))
-                   or (type(c) == "table" and type(c.layouts) == "table"
-                        and next(c.layouts)) then
+                if
+                    (
+                        type(s) == "table"
+                        and (s.active or s.baselineLayout or (type(s.layouts) == "table" and next(s.layouts)))
+                    )
+                    or (type(c) == "table" and type(c.layouts) == "table" and next(c.layouts))
+                then
                     ensure()
-                    merged.bmIndicators  = true
-                    merged.bmSimple      = true
+                    merged.bmIndicators = true
+                    merged.bmSimple = true
                     merged.bmDisplayMode = true
-                    merged.bmIconZoom    = true
-                    merged.bm2           = true   -- v2 payload rides BM layers
+                    merged.bmIconZoom = true
+                    merged.bm2 = true -- v2 payload rides BM layers
                 end
                 -- Debuff Manager forks own the dmDebuff subtree the same way.
                 local ds, dc = prof.specDmOverrides, prof.condDmOverrides
-                if (type(ds) == "table" and (ds.active or ds.baselineLayout
-                        or (type(ds.layouts) == "table" and next(ds.layouts))))
-                   or (type(dc) == "table" and type(dc.layouts) == "table"
-                        and next(dc.layouts)) then
+                if
+                    (
+                        type(ds) == "table"
+                        and (
+                            ds.active
+                            or ds.baselineLayout
+                            or (type(ds.layouts) == "table" and next(ds.layouts))
+                        )
+                    )
+                    or (type(dc) == "table" and type(dc.layouts) == "table" and next(dc.layouts))
+                then
                     ensure()
                     merged.dmDebuff = true
                 end
@@ -118,7 +140,9 @@ do
     -- Selective deep-copy: src minus excluded keys (flat "barPositions" or wildcard
     -- "bars.*.growDirection" = skip that key in any sub-table of "bars").
     local function SelectiveCopy(src, exclusions, parentPath)
-        if type(src) ~= "table" then return src end
+        if type(src) ~= "table" then
+            return src
+        end
         local copy = {}
         for k, v in pairs(src) do
             local keyStr = tostring(k)
@@ -133,7 +157,9 @@ do
                         -- Full-path match only (a bare-name collision is not a wildcard parent)
                         if prefix and fullKey == prefix then
                             isWildcardParent = true
-                            if not childExclusions then childExclusions = {} end
+                            if not childExclusions then
+                                childExclusions = {}
+                            end
                             childExclusions[childKey] = true
                         end
                     end
@@ -176,10 +202,14 @@ do
     -- wildcard only counts above its '*', so a removed list entry goes with its
     -- wildcard-excluded leaves.
     local function HoldsExclusion(exclusions, fullKey)
-        if exclusions[fullKey] then return true end
+        if exclusions[fullKey] then
+            return true
+        end
         local pre = fullKey .. "."
         for exKey in pairs(exclusions) do
-            if exKey:sub(1, #pre) == pre then return true end
+            if exKey:sub(1, #pre) == pre then
+                return true
+            end
         end
         return false
     end
@@ -193,7 +223,9 @@ do
         for k in pairs(dst) do
             if src[k] == nil then
                 local fullKey = parentPath and (parentPath .. "." .. tostring(k)) or tostring(k)
-                if not HoldsExclusion(exclusions, fullKey) then dst[k] = nil end
+                if not HoldsExclusion(exclusions, fullKey) then
+                    dst[k] = nil
+                end
             end
         end
         for k, v in pairs(src) do
@@ -208,7 +240,9 @@ do
                         local prefix, childKey = exKey:match("^(.-)%.%*%.(.+)$")
                         -- Full-path match only (same rule as SelectiveCopy)
                         if prefix and fullKey == prefix then
-                            if not childExclusions then childExclusions = {} end
+                            if not childExclusions then
+                                childExclusions = {}
+                            end
                             childExclusions[childKey] = true
                         elseif exKey:sub(1, #fullKey + 1) == (fullKey .. ".") then
                             hasNested = true
@@ -216,24 +250,33 @@ do
                     end
                     if childExclusions then
                         -- Merge each sub-table, preserving excluded child keys
-                        if type(dst[k]) ~= "table" then dst[k] = {} end
+                        if type(dst[k]) ~= "table" then
+                            dst[k] = {}
+                        end
                         local dstContainer = dst[k]
                         for ck in pairs(dstContainer) do
-                            if v[ck] == nil
-                               and not HoldsExclusion(exclusions, fullKey .. "." .. tostring(ck)) then
+                            if
+                                v[ck] == nil
+                                and not HoldsExclusion(exclusions, fullKey .. "." .. tostring(ck))
+                            then
                                 dstContainer[ck] = nil
                             end
                         end
                         for ck, cv in pairs(v) do
                             if type(cv) == "table" then
-                                if type(dstContainer[ck]) ~= "table" then dstContainer[ck] = {} end
+                                if type(dstContainer[ck]) ~= "table" then
+                                    dstContainer[ck] = {}
+                                end
                                 local dstSub = dstContainer[ck]
                                 local subPath = fullKey .. "." .. tostring(ck)
                                 -- Exact paths below the wildcard (override-owned keys) are
                                 -- excluded too, not only the wildcard child names.
                                 for sk in pairs(dstSub) do
-                                    if cv[sk] == nil and not childExclusions[tostring(sk)]
-                                       and not HoldsExclusion(exclusions, subPath .. "." .. tostring(sk)) then
+                                    if
+                                        cv[sk] == nil
+                                        and not childExclusions[tostring(sk)]
+                                        and not HoldsExclusion(exclusions, subPath .. "." .. tostring(sk))
+                                    then
                                         dstSub[sk] = nil
                                     end
                                 end
@@ -241,8 +284,16 @@ do
                                     local leafPath = subPath .. "." .. tostring(sk)
                                     if not childExclusions[tostring(sk)] and not exclusions[leafPath] then
                                         if type(sv) == "table" and HoldsExclusion(exclusions, leafPath) then
-                                            if type(dstSub[sk]) ~= "table" then dstSub[sk] = {} end
-                                            CludesUI._SelectiveOverlay(sv, dstSub[sk], exclusions, deepCopy, leafPath)
+                                            if type(dstSub[sk]) ~= "table" then
+                                                dstSub[sk] = {}
+                                            end
+                                            CludesUI._SelectiveOverlay(
+                                                sv,
+                                                dstSub[sk],
+                                                exclusions,
+                                                deepCopy,
+                                                leafPath
+                                            )
                                         else
                                             dstSub[sk] = type(sv) == "table" and deepCopy(sv) or sv
                                         end
@@ -253,7 +304,9 @@ do
                             end
                         end
                     elseif hasNested then
-                        if type(dst[k]) ~= "table" then dst[k] = {} end
+                        if type(dst[k]) ~= "table" then
+                            dst[k] = {}
+                        end
                         CludesUI._SelectiveOverlay(v, dst[k], exclusions, deepCopy, fullKey)
                     else
                         dst[k] = deepCopy(v)
@@ -266,37 +319,59 @@ do
     end
 
     function CludesUI.IsProfileSynced(folder, profileName)
-        if not CludesUIDB then return false end
+        if not CludesUIDB then
+            return false
+        end
         local sm = CludesUIDB.syncedModules
-        if not sm or not sm[folder] then return false end
+        if not sm or not sm[folder] then
+            return false
+        end
         local targets = sm[folder]
         return type(targets) == "table" and targets[profileName] == true
     end
 
     function CludesUI.GetSyncedProfiles(folder)
-        if not CludesUIDB or not CludesUIDB.syncedModules then return {} end
+        if not CludesUIDB or not CludesUIDB.syncedModules then
+            return {}
+        end
         local targets = CludesUIDB.syncedModules[folder]
-        if type(targets) == "table" then return targets end
+        if type(targets) == "table" then
+            return targets
+        end
         return {}
     end
 
     -- Check if ANY profile is synced for a module (for icon state)
     function CludesUI.IsModuleSynced(folder)
-        if not CludesUIDB or not CludesUIDB.syncedModules then return false end
+        if not CludesUIDB or not CludesUIDB.syncedModules then
+            return false
+        end
         local targets = CludesUIDB.syncedModules[folder]
-        if type(targets) ~= "table" then return false end
-        for _, v in pairs(targets) do if v then return true end end
+        if type(targets) ~= "table" then
+            return false
+        end
+        for _, v in pairs(targets) do
+            if v then
+                return true
+            end
+        end
         return false
     end
 
     -- Sync one module from active profile to specific target profiles
     function CludesUI.SyncModuleToProfiles(folder, targetProfiles)
-        if not CludesUIDB or not CludesUIDB.profiles then return end
+        if not CludesUIDB or not CludesUIDB.profiles then
+            return
+        end
         local active = CludesUIDB.activeProfile or "Default"
         local src = CludesUIDB.profiles[active]
-        if not src or not src.addons or not src.addons[folder] then return end
+        if not src or not src.addons or not src.addons[folder] then
+            return
+        end
         local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
-        if not DeepCopy then return end
+        if not DeepCopy then
+            return
+        end
 
         local staticEx = syncExclusions[folder]
         local exFn = CludesUI._SyncExclusionsWithOverrides
@@ -304,13 +379,17 @@ do
             if profName ~= active then
                 local prof = CludesUIDB.profiles[profName]
                 if prof then
-                    if not prof.addons then prof.addons = {} end
+                    if not prof.addons then
+                        prof.addons = {}
+                    end
                     -- Merge both profiles' override-entry paths into the static set
                     -- (fail-open: any derive error keeps static-only behavior).
                     local exclusions = staticEx
                     if exFn then
                         local ok, m = pcall(exFn, folder, staticEx, src, prof)
-                        if ok and m then exclusions = m end
+                        if ok and m then
+                            exclusions = m
+                        end
                     end
                     if exclusions and next(exclusions) then
                         local dst = prof.addons[folder]
@@ -334,17 +413,23 @@ do
     -- get a selective copy; an ACTIVE dest is written IN PLACE (live db.profile refs stay valid),
     -- defaults re-merged (stored blobs are sparse), then UI refreshed. Excluded (layout) keys keep each dest's values.
     function CludesUI.SyncModuleFromProfile(folder, srcName, targets)
-        if not CludesUIDB or not CludesUIDB.profiles then return end
+        if not CludesUIDB or not CludesUIDB.profiles then
+            return
+        end
         local active = CludesUIDB.activeProfile or "Default"
         if srcName == active then
             CludesUI.SyncModuleToProfiles(folder, targets)
             return
         end
         local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
-        if not DeepCopy then return end
+        if not DeepCopy then
+            return
+        end
         local srcProf = CludesUIDB.profiles[srcName]
         local srcData = srcProf and srcProf.addons and srcProf.addons[folder]
-        if not srcData then return end
+        if not srcData then
+            return
+        end
 
         local staticEx = syncExclusions[folder]
         local exFn = CludesUI._SyncExclusionsWithOverrides
@@ -352,12 +437,16 @@ do
             if profName ~= srcName then
                 local prof = CludesUIDB.profiles[profName]
                 if prof then
-                    if not prof.addons then prof.addons = {} end
+                    if not prof.addons then
+                        prof.addons = {}
+                    end
                     -- Same override-ownership exclusions as SyncModuleToProfiles.
                     local exclusions = staticEx
                     if exFn then
                         local ok, m = pcall(exFn, folder, staticEx, srcProf, prof)
-                        if ok and m then exclusions = m end
+                        if ok and m then
+                            exclusions = m
+                        end
                     end
                     local dst = prof.addons[folder]
                     if profName == active then
@@ -415,7 +504,9 @@ do
         self:UnregisterAllEvents()
         if CludesUI.Lite and CludesUI.Lite.RegisterPreLogout then
             CludesUI.Lite.RegisterPreLogout(function()
-                if not CludesUIDB or not CludesUIDB.syncedModules then return end
+                if not CludesUIDB or not CludesUIDB.syncedModules then
+                    return
+                end
                 local active = CludesUIDB.activeProfile or "Default"
                 for folder, targets in pairs(CludesUIDB.syncedModules) do
                     if type(targets) == "table" and targets[active] then
@@ -426,7 +517,6 @@ do
         end
     end)
 end
-
 
 -------------------------------------------------------------------------------
 --  Sync Exclusions per Module -- keys listed here are NOT copied when syncing between profiles.
@@ -449,14 +539,22 @@ CludesUI.RegisterSyncExclusions("CludesUIActionBars", {
 
 CludesUI.RegisterSyncExclusions("CludesUIUnitFrames", {
     "positions",
-    "player.frameWidth", "player.healthHeight",
-    "target.frameWidth", "target.healthHeight",
-    "playerTarget.frameWidth", "playerTarget.healthHeight",
-    "targettarget.frameWidth", "targettarget.healthHeight",
-    "focustarget.frameWidth", "focustarget.healthHeight",
-    "pet.frameWidth", "pet.healthHeight",
-    "focus.frameWidth", "focus.healthHeight",
-    "boss.frameWidth", "boss.healthHeight",
+    "player.frameWidth",
+    "player.healthHeight",
+    "target.frameWidth",
+    "target.healthHeight",
+    "playerTarget.frameWidth",
+    "playerTarget.healthHeight",
+    "targettarget.frameWidth",
+    "targettarget.healthHeight",
+    "focustarget.frameWidth",
+    "focustarget.healthHeight",
+    "pet.frameWidth",
+    "pet.healthHeight",
+    "focus.frameWidth",
+    "focus.healthHeight",
+    "boss.frameWidth",
+    "boss.healthHeight",
 })
 
 CludesUI.RegisterSyncExclusions("CludesUICooldownManager", {
@@ -483,19 +581,42 @@ CludesUI.RegisterSyncExclusions("CludesUICooldownManager", {
 })
 
 CludesUI.RegisterSyncExclusions("CludesUIResourceBars", {
-    "health.width", "health.height", "health.offsetX", "health.offsetY", "health.orientation",
-    "primary.width", "primary.height", "primary.offsetX", "primary.offsetY", "primary.orientation",
-    "secondary.pipWidth", "secondary.pipHeight", "secondary.pipSpacing", "secondary.pipOrientation",
-    "secondary.offsetX", "secondary.offsetY",
-    "castBar.width", "castBar.height", "castBar.anchorX", "castBar.anchorY", "castBar.unlockPos",
-    "totemBar.iconSize", "totemBar.spacing", "totemBar.unlockPos",
-    "callTotemBar.iconSize", "callTotemBar.spacing", "callTotemBar.unlockPos",
-    "general.anchorX", "general.anchorY", "general.orientation",
+    "health.width",
+    "health.height",
+    "health.offsetX",
+    "health.offsetY",
+    "health.orientation",
+    "primary.width",
+    "primary.height",
+    "primary.offsetX",
+    "primary.offsetY",
+    "primary.orientation",
+    "secondary.pipWidth",
+    "secondary.pipHeight",
+    "secondary.pipSpacing",
+    "secondary.pipOrientation",
+    "secondary.offsetX",
+    "secondary.offsetY",
+    "castBar.width",
+    "castBar.height",
+    "castBar.anchorX",
+    "castBar.anchorY",
+    "castBar.unlockPos",
+    "totemBar.iconSize",
+    "totemBar.spacing",
+    "totemBar.unlockPos",
+    "callTotemBar.iconSize",
+    "callTotemBar.spacing",
+    "callTotemBar.unlockPos",
+    "general.anchorX",
+    "general.anchorY",
+    "general.orientation",
 })
 
 CludesUI.RegisterSyncExclusions("CludesUIAuraBuffReminders", {
     "unlockPos",
-    "display.xOffset", "display.yOffset",
+    "display.xOffset",
+    "display.yOffset",
 })
 
 CludesUI.RegisterSyncExclusions("CludesUIRaidFrames", {
@@ -527,39 +648,39 @@ CludesUI.RegisterSyncExclusions("CludesUIQoL", {
 
 -- Minimap settings nest under profile.minimap.
 CludesUI.RegisterSyncExclusions("CludesUIMinimap", {
-    "minimap.position",      -- unlock-element drag position
-    "minimap.btnPositions",  -- per-button shift-drag offsets
+    "minimap.position", -- unlock-element drag position
+    "minimap.btnPositions", -- per-button shift-drag offsets
 })
 
 -- Chat settings nest under profile.chat.
 CludesUI.RegisterSyncExclusions("CludesUIChat", {
-    "chat.chatPosition",   -- unlock drag position
+    "chat.chatPosition", -- unlock drag position
     "chat.chatScreenPoint", -- the screen point that position is measured from
-    "chat.chatWidth",      -- unlock resize-handle width
-    "chat.chatHeight",     -- unlock resize-handle height
-    "chat.toastPosition",  -- BNet toast unlock position
-    "chat.iconPositions",  -- per-sidebar-icon shift-drag offsets
+    "chat.chatWidth", -- unlock resize-handle width
+    "chat.chatHeight", -- unlock resize-handle height
+    "chat.toastPosition", -- BNet toast unlock position
+    "chat.iconPositions", -- per-sidebar-icon shift-drag offsets
 })
 
 -- Damage Meters settings nest under profile.dm.
 CludesUI.RegisterSyncExclusions("CludesUIDamageMeters", {
-    "dm.standaloneTimerPos",  -- drag-written standalone timer position
-    "dm.windows.*.position",  -- per-window drag position
-    "dm.windows.*.width",     -- per-window drag-resize width
-    "dm.windows.*.height",    -- per-window drag-resize height
+    "dm.standaloneTimerPos", -- drag-written standalone timer position
+    "dm.windows.*.position", -- per-window drag position
+    "dm.windows.*.width", -- per-window drag-resize width
+    "dm.windows.*.height", -- per-window drag-resize height
 })
 
 -- DataBars per-bar geometry lives in the top-level bars array (wildcard shape as ActionBars).
 CludesUI.RegisterSyncExclusions("CludesUIDataBars", {
-    "bars.*.savedPos",   -- unlock drag position
-    "bars.*.length",     -- unlock resize owned
-    "bars.*.thickness",  -- unlock resize owned
-    "bars.*.snapEdge",   -- mutated by the drag save itself
+    "bars.*.savedPos", -- unlock drag position
+    "bars.*.length", -- unlock resize owned
+    "bars.*.thickness", -- unlock resize owned
+    "bars.*.snapEdge", -- mutated by the drag save itself
 })
 
 -- Bags is the one auto-synced module: without this the bank position mirrors across profiles.
 CludesUI.RegisterSyncExclusions("CludesUIBags", {
-    "bankPosition",  -- bank window drag position
+    "bankPosition", -- bank window drag position
 })
 
 -------------------------------------------------------------------------------
@@ -570,8 +691,12 @@ do
     local _syncPopup = nil
 
     function CludesUI.CloseSyncPopup()
-        if _syncPopup then _syncPopup:Hide() end
-        if CludesUI._syncConfirmFrame then CludesUI._syncConfirmFrame:Hide() end
+        if _syncPopup then
+            _syncPopup:Hide()
+        end
+        if CludesUI._syncConfirmFrame then
+            CludesUI._syncConfirmFrame:Hide()
+        end
     end
 
     -- Seed-picker confirm for create/update: user picks which member's settings the
@@ -591,7 +716,8 @@ do
             nf:SetFrameLevel(150)
             nf:EnableMouse(true)
             local bg = nf:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints(); bg:SetColorTexture(17/255, 15/255, 12/255, 1)
+            bg:SetAllPoints()
+            bg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 1)
             nf._bg = bg
             -- Fullscreen dimmer: darkens and click-blocks everything behind
             local dim = CreateFrame("Frame", nil, overlayParent)
@@ -601,9 +727,12 @@ do
             dim:EnableMouse(true)
             dim:Hide()
             local dimTex = dim:CreateTexture(nil, "BACKGROUND")
-            dimTex:SetAllPoints(); dimTex:SetColorTexture(0, 0, 0, 0.55)
+            dimTex:SetAllPoints()
+            dimTex:SetColorTexture(0, 0, 0, 0.55)
             nf._dimmer = dim
-            nf:SetScript("OnHide", function(self) self._dimmer:Hide() end)
+            nf:SetScript("OnHide", function(self)
+                self._dimmer:Hide()
+            end)
             CludesUI._syncConfirmFrame = nf
             -- Controller cursor: the dimmer and the panel block what is under
             -- them without being stops.
@@ -616,7 +745,9 @@ do
 
         local function MakeFont(parent, size, r, g, b, a)
             local fs = parent:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then CludesUI.PrimeFontShadow(fs, true) end
+            if CludesUI and CludesUI.PrimeFontShadow then
+                CludesUI.PrimeFontShadow(fs, true)
+            end
             fs:SetFont(fontPath, size, "")
             fs:SetTextColor(r or 1, g or 1, b or 1, a or 1)
             return fs
@@ -627,13 +758,22 @@ do
             btn:SetSize(120, 26)
             btn:SetFrameLevel(f:GetFrameLevel() + 1)
             local bgT = btn:CreateTexture(nil, "BACKGROUND")
-            bgT:SetAllPoints(); bgT:SetColorTexture(r, g, b, a)
+            bgT:SetAllPoints()
+            bgT:SetColorTexture(r, g, b, a)
             local lbl = btn:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then CludesUI.PrimeFontShadow(lbl, false) end
+            if CludesUI and CludesUI.PrimeFontShadow then
+                CludesUI.PrimeFontShadow(lbl, false)
+            end
             lbl:SetFont(fontPath, 10, "")
-            lbl:SetTextColor(1, 1, 1, 1); lbl:SetPoint("CENTER"); lbl:SetText(label)
-            btn:SetScript("OnEnter", function() bgT:SetColorTexture(hr, hg, hb, 1) end)
-            btn:SetScript("OnLeave", function() bgT:SetColorTexture(r, g, b, a) end)
+            lbl:SetTextColor(1, 1, 1, 1)
+            lbl:SetPoint("CENTER")
+            lbl:SetText(label)
+            btn:SetScript("OnEnter", function()
+                bgT:SetColorTexture(hr, hg, hb, 1)
+            end)
+            btn:SetScript("OnLeave", function()
+                bgT:SetColorTexture(r, g, b, a)
+            end)
             -- Back to rest (each show starts un-hovered), in the font path given.
             btn._reset = function(fp)
                 bgT:SetColorTexture(r, g, b, a)
@@ -650,17 +790,21 @@ do
         -- The dropdown lists this call's members. Its values and order tables are the
         -- same ones every call, so the built control keeps reading them.
         local ui = f._ui
-        local ddValues = ui and ui.ddValues or { _noLoc = true }  -- profile names: never translate
+        local ddValues = ui and ui.ddValues or { _noLoc = true } -- profile names: never translate
         local ddOrder = ui and ui.ddOrder or {}
         local members = opts.memberOrder
         local sameMembers = ui and #ddOrder == #members
         if sameMembers then
             for i = 1, #members do
-                if ddOrder[i] ~= members[i] then sameMembers = false; break end
+                if ddOrder[i] ~= members[i] then
+                    sameMembers = false
+                    break
+                end
             end
         end
         if not sameMembers then
-            wipe(ddValues); wipe(ddOrder)
+            wipe(ddValues)
+            wipe(ddOrder)
             ddValues._noLoc = true
             for i, name in ipairs(members) do
                 ddOrder[i] = name
@@ -673,7 +817,9 @@ do
         if not ui then
             ui = { ddValues = ddValues, ddOrder = ddOrder }
             f._ui = ui
-            if PP then CludesUI.MakeRoundedBorder(f, 1, 1, 1, 0.15, f._bg) end
+            if PP then
+                CludesUI.MakeRoundedBorder(f, 1, 1, 1, 0.15, f._bg)
+            end
             ui.title = MakeFont(f, 14, 1, 1, 1, 0.9)
             ui.msg = MakeFont(f, 11, 1, 1, 1, 0.6)
             ui.msg:SetWidth(W - PAD * 2)
@@ -684,10 +830,19 @@ do
             local ddHolder = CreateFrame("Frame", nil, f)
             ddHolder:SetSize(ddVisW, ddVisH)
             ddHolder:SetFrameLevel(f:GetFrameLevel() + 1)
-            local ddBtn = CludesUI.BuildDropdownControl(ddHolder, DD_W, ddHolder:GetFrameLevel() + 1,
-                ddValues, ddOrder,
-                function() return ui.seedChoice end,
-                function(v) ui.seedChoice = v end)
+            local ddBtn = CludesUI.BuildDropdownControl(
+                ddHolder,
+                DD_W,
+                ddHolder:GetFrameLevel() + 1,
+                ddValues,
+                ddOrder,
+                function()
+                    return ui.seedChoice
+                end,
+                function(v)
+                    ui.seedChoice = v
+                end
+            )
             ddBtn:SetScale(DD_SCALE)
             ddBtn:SetPoint("TOPLEFT", ddHolder, "TOPLEFT", 0, 0)
             -- Menu is created lazily at UIParent scale; match it to the scaled button once it exists
@@ -701,7 +856,9 @@ do
             ui.warn = MakeFont(f, 10, 0.92, 0.3, 0.3, 1)
             ui.warn:SetWidth(W - PAD * 2)
             ui.warn:SetJustifyH("CENTER")
-            ui.warn:SetText(CludesUI.L("Position and size settings are not synced and keep each profile's own values."))
+            ui.warn:SetText(
+                CludesUI.L("Position and size settings are not synced and keep each profile's own values.")
+            )
 
             ui.cancelBtn = MakeBtn(CludesUI.L("Cancel"), 0.172, 0.164, 0.156, 0.9, 0.231, 0.222, 0.215)
             ui.confirmBtn = MakeBtn(CludesUI.L("Sync"), 0.05, 0.52, 0.39, 0.8, 0.07, 0.62, 0.49)
@@ -731,7 +888,12 @@ do
         msg:SetFont(fontPath, 11, "")
         msg:ClearAllPoints()
         msg:SetPoint("TOP", f, "TOP", 0, cy)
-        msg:SetText(CludesUI.Lf("All selected profiles will keep their %1$s settings in sync: changes made on any of them carry over to the others. Choose which profile's settings the group starts from.", CludesUI.L(opts.displayName)))
+        msg:SetText(
+            CludesUI.Lf(
+                "All selected profiles will keep their %1$s settings in sync: changes made on any of them carry over to the others. Choose which profile's settings the group starts from.",
+                CludesUI.L(opts.displayName)
+            )
+        )
         cy = cy - (msg:GetStringHeight() or 42) - 14
 
         local ddLabel = ui.ddLabel
@@ -769,20 +931,28 @@ do
 
         confirmBtn:SetScript("OnClick", function()
             f:Hide()
-            if not CludesUIDB.syncedModules then CludesUIDB.syncedModules = {} end
+            if not CludesUIDB.syncedModules then
+                CludesUIDB.syncedModules = {}
+            end
             CludesUIDB.syncedModules[opts.folder] = opts.targets
             local seedChoice = ui.seedChoice
             if seedChoice then
                 CludesUI.SyncModuleFromProfile(opts.folder, seedChoice, opts.targets)
             end
-            if opts.onDone then opts.onDone() end
+            if opts.onDone then
+                opts.onDone()
+            end
         end)
         cancelBtn:SetScript("OnClick", function()
             f:Hide()
-            if opts.onCancel then opts.onCancel() end
+            if opts.onCancel then
+                opts.onCancel()
+            end
         end)
         -- Controller cursor: its cancel press backs out through Cancel.
-        if CludesUI.PadCP() then f.CloseButton = cancelBtn end
+        if CludesUI.PadCP() then
+            f.CloseButton = cancelBtn
+        end
 
         f._dimmer:Show()
         f:Show()
@@ -791,14 +961,18 @@ do
     end
 
     function CludesUI.OpenSyncPopup(folder, displayName, anchorBtn)
-        if CludesUI._syncConfirmFrame then CludesUI._syncConfirmFrame:Hide() end
+        if CludesUI._syncConfirmFrame then
+            CludesUI._syncConfirmFrame:Hide()
+        end
         -- Toggle off if already open for this module
         if _syncPopup and _syncPopup:IsShown() and _syncPopup._folder == folder then
             _syncPopup:Hide()
             return
         end
 
-        if not CludesUIDB or not CludesUIDB.profiles then return end
+        if not CludesUIDB or not CludesUIDB.profiles then
+            return
+        end
         local active = CludesUIDB.activeProfile or "Default"
         local profileOrder = CludesUIDB.profileOrder or {}
 
@@ -811,14 +985,23 @@ do
         end
         for name in pairs(CludesUIDB.profiles) do
             local found = false
-            for _, n in ipairs(allProfiles) do if n == name then found = true; break end end
-            if not found then allProfiles[#allProfiles + 1] = name end
+            for _, n in ipairs(allProfiles) do
+                if n == name then
+                    found = true
+                    break
+                end
+            end
+            if not found then
+                allProfiles[#allProfiles + 1] = name
+            end
         end
 
         if #allProfiles <= 1 then
             if CludesUI.ShowWidgetTooltip then
                 CludesUI.ShowWidgetTooltip(anchorBtn, "No other profiles to sync to")
-                C_Timer.After(1.5, function() CludesUI.HideWidgetTooltip() end)
+                C_Timer.After(1.5, function()
+                    CludesUI.HideWidgetTooltip()
+                end)
             end
             return
         end
@@ -843,8 +1026,16 @@ do
         }
         local hasWarning = WARN_MODULES[folder]
         local SUBTITLE_H = 30
-        local popupH = PAD + HEADER_H + 7 + SUBTITLE_H + 14
-            + #allProfiles * (ROW_H + ROW_GAP) - ROW_GAP + 16 + 30 + PAD
+        local popupH = PAD
+            + HEADER_H
+            + 7
+            + SUBTITLE_H
+            + 14
+            + #allProfiles * (ROW_H + ROW_GAP)
+            - ROW_GAP
+            + 16
+            + 30
+            + PAD
 
         if not _syncPopup then
             -- Controller cursor: overlay parent (UIParent unless a controller cursor is loaded).
@@ -853,7 +1044,8 @@ do
             _syncPopup:SetFrameLevel(200)
             _syncPopup:EnableMouse(true)
             local bg = _syncPopup:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints(); bg:SetColorTexture(17/255, 15/255, 12/255, 1)
+            bg:SetAllPoints()
+            bg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 1)
             _syncPopup._bg = bg
             -- Born hidden, so the Show below runs its OnShow (the click-away)
             -- on the first open too.
@@ -889,7 +1081,9 @@ do
             if root then
                 local rootBot = root:GetBottom() or 0
                 local popupBot = btnMidY - popupH / 2
-                if popupBot < rootBot then offsetY = offsetY + (rootBot - popupBot) end
+                if popupBot < rootBot then
+                    offsetY = offsetY + (rootBot - popupBot)
+                end
             end
             popup:ClearAllPoints()
             popup:SetPoint("LEFT", sidebar, "RIGHT", 0, offsetY)
@@ -900,7 +1094,9 @@ do
 
         local function MakeFont(parent, size, r, g, b, a)
             local fs = parent:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then CludesUI.PrimeFontShadow(fs, true) end
+            if CludesUI and CludesUI.PrimeFontShadow then
+                CludesUI.PrimeFontShadow(fs, true)
+            end
             fs:SetFont(fontPath, size, "")
             fs:SetTextColor(r or 1, g or 1, b or 1, a or 1)
             return fs
@@ -918,7 +1114,11 @@ do
             local subtitle = MakeFont(popup, 10, 1, 1, 1, 0.45)
             subtitle:SetWidth(POPUP_W - PAD * 2)
             subtitle:SetJustifyH("CENTER")
-            subtitle:SetText(CludesUI.L("Syncing allows you to auto update all profiles whenever you change settings. This can be enabled per module."))
+            subtitle:SetText(
+                CludesUI.L(
+                    "Syncing allows you to auto update all profiles whenever you change settings. This can be enabled per module."
+                )
+            )
             ui.subtitle = subtitle
         end
         local iconTex = ui.iconTex
@@ -948,15 +1148,17 @@ do
         local currentSynced = CludesUI.GetSyncedProfiles(folder)
         local toggleState = {}
         local hadGroup = next(currentSynced) ~= nil
-        local refreshSyncBtnLabel  -- defined with the button below
+        local refreshSyncBtnLabel -- defined with the button below
         -- The pooled rows' toggles and clicks read and write this open's state.
         popup._toggleState = toggleState
         popup._refreshLabel = nil
 
-        local accentHex = string.format("%02x%02x%02x",
+        local accentHex = string.format(
+            "%02x%02x%02x",
             math.floor(accentColor.r * 255 + 0.5),
             math.floor(accentColor.g * 255 + 0.5),
-            math.floor(accentColor.b * 255 + 0.5))
+            math.floor(accentColor.b * 255 + 0.5)
+        )
 
         local BuildToggleControl = CludesUI.BuildToggleControl
         local rows = ui.rows
@@ -975,13 +1177,14 @@ do
                 row._bg = rowBg
                 row._profName = profName
 
-                local tg, _, tgSnap = BuildToggleControl(row, row:GetFrameLevel() + 1,
-                    function() return popup._toggleState[row._profName] end,
-                    function(v)
-                        popup._toggleState[row._profName] = v
-                        if popup._refreshLabel then popup._refreshLabel() end
-                    end,
-                    { sizeRatio = 0.75 })
+                local tg, _, tgSnap = BuildToggleControl(row, row:GetFrameLevel() + 1, function()
+                    return popup._toggleState[row._profName]
+                end, function(v)
+                    popup._toggleState[row._profName] = v
+                    if popup._refreshLabel then
+                        popup._refreshLabel()
+                    end
+                end, { sizeRatio = 0.75 })
                 tg:SetPoint("RIGHT", row, "RIGHT", -10, 0)
                 row._tg, row._tgSnap = tg, tgSnap
 
@@ -989,13 +1192,23 @@ do
                     local state = popup._toggleState
                     state[self._profName] = not state[self._profName]
                     self._tgSnap()
-                    if popup._refreshLabel then popup._refreshLabel() end
+                    if popup._refreshLabel then
+                        popup._refreshLabel()
+                    end
                 end)
-                row:SetScript("OnEnter", function() rowBg:SetColorTexture(1, 1, 1, 0.08) end)
-                row:SetScript("OnLeave", function() rowBg:SetColorTexture(1, 1, 1, 0.05) end)
+                row:SetScript("OnEnter", function()
+                    rowBg:SetColorTexture(1, 1, 1, 0.08)
+                end)
+                row:SetScript("OnLeave", function()
+                    rowBg:SetColorTexture(1, 1, 1, 0.05)
+                end)
                 -- Toggle hover fires the row's OnLeave (child frame); keep the card lit
-                tg:HookScript("OnEnter", function() rowBg:SetColorTexture(1, 1, 1, 0.08) end)
-                tg:HookScript("OnLeave", function() rowBg:SetColorTexture(1, 1, 1, 0.05) end)
+                tg:HookScript("OnEnter", function()
+                    rowBg:SetColorTexture(1, 1, 1, 0.08)
+                end)
+                tg:HookScript("OnLeave", function()
+                    rowBg:SetColorTexture(1, 1, 1, 0.05)
+                end)
 
                 local lblText = MakeFont(row, 12, 1, 1, 1, 0.85)
                 lblText:SetPoint("LEFT", row, "LEFT", 10, 0)
@@ -1022,7 +1235,9 @@ do
 
             cy = cy - ROW_H - ROW_GAP
         end
-        for i = #allProfiles + 1, #rows do rows[i]:Hide() end
+        for i = #allProfiles + 1, #rows do
+            rows[i]:Hide()
+        end
 
         cy = cy - (16 - ROW_GAP)
 
@@ -1034,10 +1249,13 @@ do
             sBg:SetAllPoints()
             local sBrd
             if PP then
-                sBrd = CludesUI.MakeRoundedBorder(syncBtn, accentColor.r, accentColor.g, accentColor.b, 0.7, sBg)
+                sBrd =
+                    CludesUI.MakeRoundedBorder(syncBtn, accentColor.r, accentColor.g, accentColor.b, 0.7, sBg)
             end
             local sLbl = syncBtn:CreateFontString(nil, "OVERLAY")
-            if CludesUI and CludesUI.PrimeFontShadow then CludesUI.PrimeFontShadow(sLbl, false) end
+            if CludesUI and CludesUI.PrimeFontShadow then
+                CludesUI.PrimeFontShadow(sLbl, false)
+            end
             sLbl:SetPoint("CENTER")
             ui.syncBtn, ui.sBg, ui.sBrd, ui.sLbl = syncBtn, sBg, sBrd, sLbl
         end
@@ -1053,16 +1271,22 @@ do
             syncBtn._dirty = dirty
             if dirty then
                 sBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.08)
-                if sBrd then sBrd:SetColor(accentColor.r, accentColor.g, accentColor.b, 0.7) end
+                if sBrd then
+                    sBrd:SetColor(accentColor.r, accentColor.g, accentColor.b, 0.7)
+                end
                 sLbl:SetTextColor(accentColor.r, accentColor.g, accentColor.b, 1)
             else
                 sBg:SetColorTexture(1, 1, 1, 0.03)
-                if sBrd then sBrd:SetColor(1, 1, 1, 0.15) end
+                if sBrd then
+                    sBrd:SetColor(1, 1, 1, 0.15)
+                end
                 sLbl:SetTextColor(1, 1, 1, 0.35)
             end
         end
         syncBtn:SetScript("OnEnter", function()
-            if not syncBtn._dirty then return end
+            if not syncBtn._dirty then
+                return
+            end
             sBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.18)
         end)
         syncBtn:SetScript("OnLeave", function()
@@ -1073,8 +1297,12 @@ do
             local count = 0
             local dirty = false
             for profName, v in pairs(toggleState) do
-                if v then count = count + 1 end
-                if v ~= (currentSynced[profName] == true) then dirty = true end
+                if v then
+                    count = count + 1
+                end
+                if v ~= (currentSynced[profName] == true) then
+                    dirty = true
+                end
             end
             if hadGroup and count == 0 then
                 sLbl:SetText(CludesUI.L("Disband Sync Group"))
@@ -1092,12 +1320,16 @@ do
             local sidebarBtns = CUI_NS.sidebarButtons
             if sidebarBtns and sidebarBtns[folder] and sidebarBtns[folder]._syncBtn then
                 local sb = sidebarBtns[folder]._syncBtn
-                if sb._refreshAlpha then sb._refreshAlpha() end
+                if sb._refreshAlpha then
+                    sb._refreshAlpha()
+                end
             end
         end
 
         syncBtn:SetScript("OnClick", function()
-            if not syncBtn._dirty then return end
+            if not syncBtn._dirty then
+                return
+            end
             -- The group is exactly the toggled-on profiles
             local targets = {}
             local count = 0
@@ -1106,13 +1338,17 @@ do
                 if checked then
                     targets[profName] = true
                     count = count + 1
-                    if not currentSynced[profName] then anyNew = true end
+                    if not currentSynced[profName] then
+                        anyNew = true
+                    end
                 end
             end
 
             if count == 0 then
                 -- Disband (or nothing was ever configured)
-                if not CludesUIDB.syncedModules then CludesUIDB.syncedModules = {} end
+                if not CludesUIDB.syncedModules then
+                    CludesUIDB.syncedModules = {}
+                end
                 CludesUIDB.syncedModules[folder] = {}
                 popup:Hide()
                 RefreshSidebarSyncIcon()
@@ -1122,14 +1358,18 @@ do
             if count == 1 then
                 if CludesUI.ShowWidgetTooltip then
                     CludesUI.ShowWidgetTooltip(syncBtn, "A sync group needs at least two profiles")
-                    C_Timer.After(1.5, function() CludesUI.HideWidgetTooltip() end)
+                    C_Timer.After(1.5, function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
                 end
                 return
             end
 
             if not anyNew then
                 -- Pure removal / no change: nothing overwritten, save without confirmation
-                if not CludesUIDB.syncedModules then CludesUIDB.syncedModules = {} end
+                if not CludesUIDB.syncedModules then
+                    CludesUIDB.syncedModules = {}
+                end
                 CludesUIDB.syncedModules[folder] = targets
                 popup:Hide()
                 RefreshSidebarSyncIcon()
@@ -1140,12 +1380,17 @@ do
             -- on update (newcomers adopt group settings), active on create.
             local memberOrder = {}
             for _, name in ipairs(allProfiles) do
-                if targets[name] then memberOrder[#memberOrder + 1] = name end
+                if targets[name] then
+                    memberOrder[#memberOrder + 1] = name
+                end
             end
             local defaultSeed
             if hadGroup then
                 for _, name in ipairs(memberOrder) do
-                    if currentSynced[name] then defaultSeed = name; break end
+                    if currentSynced[name] then
+                        defaultSeed = name
+                        break
+                    end
                 end
             end
             if not defaultSeed then
@@ -1189,7 +1434,9 @@ do
 
         -- Controller cursor: its cancel press clicks the sync icon, which
         -- toggles this popup off.
-        if CludesUI.PadCP() then popup.CloseButton = anchorBtn end
+        if CludesUI.PadCP() then
+            popup.CloseButton = anchorBtn
+        end
         popup:Show()
         -- Controller cursor: move it into the popup (its first row).
         CludesUI.PadFocus(popup)

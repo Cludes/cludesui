@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\ItemLevel.lua
 -- Item level block factory.
 
@@ -7,27 +9,27 @@ local L = ns.L
 local K = ns.BlockKit
 
 -- Upvalues
-local _G               = _G
-local CreateFrame      = CreateFrame
+local _G = _G
+local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local format           = string.format
-local floor            = math.floor
-local max              = math.max
-local min              = math.min
+local format = string.format
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
-local IconColorOf          = K.IconColorOf
-local ParkSecureFrame      = K.ParkSecureFrame
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
+local ParkSecureFrame = K.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  ITEM LEVEL (equipped / total, with an optional prefix)
@@ -36,13 +38,21 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
     inst.key = InstKey(barCtx, blockCfg)
     -- PLAYER_REGEN_ENABLED: geometry and the secure click overlay both wait for regen, so the block needs a pass there.
-    inst.events = { "PLAYER_AVG_ITEM_LEVEL_UPDATE", "PLAYER_EQUIPMENT_CHANGED",
-                    "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED" }
+    inst.events = {
+        "PLAYER_AVG_ITEM_LEVEL_UPDATE",
+        "PLAYER_EQUIPMENT_CHANGED",
+        "PLAYER_ENTERING_WORLD",
+        "PLAYER_REGEN_ENABLED",
+    }
 
     local mouseOver = false
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local button = CreateFrame("Button", nil, content)
     button:SetAllPoints()
@@ -62,15 +72,23 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
     local function AvgIlvl()
         local total, equipped, pvp = GetAverageItemLevel()
         if issecretvalue then
-            if issecretvalue(total) then total = nil end
-            if issecretvalue(equipped) then equipped = nil end
-            if issecretvalue(pvp) then pvp = nil end
+            if issecretvalue(total) then
+                total = nil
+            end
+            if issecretvalue(equipped) then
+                equipped = nil
+            end
+            if issecretvalue(pvp) then
+                pvp = nil
+            end
         end
         return total, equipped, pvp
     end
 
     local function Fmt(v, p)
-        if not v then return "-" end
+        if not v then
+            return "-"
+        end
         return format("%." .. p .. "f", v)
     end
 
@@ -94,7 +112,9 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
         K.lastAvgIlvl = equipped or total
 
         local p = s.precision
-        if p == nil then p = 0 end
+        if p == nil then
+            p = 0
+        end
         local mode = s.value or "equipped"
         local body
         if mode == "total" then
@@ -174,7 +194,9 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
             end
             ilvlText:ClearAllPoints()
             local xOff = 0
-            if iconSz > 0 then xOff = iconSz + gap end
+            if iconSz > 0 then
+                xOff = iconSz + gap
+            end
             ilvlText:SetPoint("LEFT", button, "LEFT", xOff, 0)
             local tw = ns.SnapToPixelGrid(ilvlText:GetStringWidth())
             local totalW = min(slotW, xOff + tw + 4)
@@ -230,11 +252,19 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
     -- handler, so the character sheet opens untainted. Created lazily, never in
     -- lockdown; PLAYER_REGEN_ENABLED drives Refresh's retry.
     EnsureClickButton = function()
-        if clickBtn or InCombatLockdown() then return clickBtn end
+        if clickBtn or InCombatLockdown() then
+            return clickBtn
+        end
         local micro = _G.CharacterMicroButton
-        if not micro then return nil end
-        clickBtn = CreateFrame("Button", "EWB_ILVL_" .. inst.key, button,
-            "SecureActionButtonTemplate,SecureHandlerStateTemplate")
+        if not micro then
+            return nil
+        end
+        clickBtn = CreateFrame(
+            "Button",
+            "EWB_ILVL_" .. inst.key,
+            button,
+            "SecureActionButtonTemplate,SecureHandlerStateTemplate"
+        )
         clickBtn:SetAllPoints(button)
         clickBtn:SetAttribute("*clickbutton1", micro)
         -- Without this, the ActionButtonUseKeyDown CVar makes the secure handler act on key-down only, discarding our "AnyUp" clicks.
@@ -244,13 +274,16 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
         clickBtn:RegisterForClicks("AnyUp")
         -- Combat: drop the click ACTION only, from inside the secure env. Stays mouse-enabled so hover works; a click while *type1 is nil does nothing.
         RegisterStateDriver(clickBtn, "combatlock", "[combat] combat; nocombat")
-        clickBtn:SetAttribute("_onstate-combatlock", [[
+        clickBtn:SetAttribute(
+            "_onstate-combatlock",
+            [[
             if newstate == 'combat' then
                 self:SetAttribute('*type1', nil)
             else
                 self:SetAttribute('*type1', 'click')
             end
-        ]])
+        ]]
+        )
         -- Overlay covers the block and owns hover from here.
         clickBtn:SetScript("OnEnter", button:GetScript("OnEnter"))
         clickBtn:SetScript("OnLeave", button:GetScript("OnLeave"))
@@ -262,7 +295,9 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
     end)
 
     function inst:Enable()
-        if not content:IsShown() and not InCombatLockdown() then content:Show() end
+        if not content:IsShown() and not InCombatLockdown() then
+            content:Show()
+        end
         EnsureClickButton()
         RegisterInstEvents(self)
     end
@@ -270,7 +305,9 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
     function inst:Disable()
         UnregisterInstEvents(self)
         -- Protected once the secure click overlay exists.
-        if not InCombatLockdown() then content:Hide() end
+        if not InCombatLockdown() then
+            content:Hide()
+        end
     end
 
     function inst:GetAutoLength()
@@ -286,7 +323,9 @@ ns.BlockFactories.ilvl = function(blockCfg, slot, content, barCtx)
             ParkSecureFrame(clickBtn, self.key .. "_ilvl")
             clickBtn = nil
         end
-        if not InCombatLockdown() then content:Hide() end
+        if not InCombatLockdown() then
+            content:Hide()
+        end
     end
 
     return inst

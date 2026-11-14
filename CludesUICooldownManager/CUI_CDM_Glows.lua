@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Glows.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- The main file or an earlier CDM file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CDM_SHAPES, ECME, EffectiveBarAlpha, FC = I.CDM_SHAPES, I.ECME, I.EffectiveBarAlpha, I.FC
@@ -19,7 +23,9 @@ local ResolveInfoSpellID = I.ResolveInfoSpellID
 local StartNativeGlow, StopNativeGlow
 
 local _inCombat = false
-I.inCombatSetters[#I.inCombatSetters + 1] = function(v) _inCombat = v end
+I.inCombatSetters[#I.inCombatSetters + 1] = function(v)
+    _inCombat = v
+end
 
 -------------------------------------------------------------------------------
 --  Native Glow System -- engines provided by shared CludesUI_Glows.lua
@@ -49,35 +55,47 @@ local PG_NP_BLIZZ = _G_Glows.PANDEMIC_BORDER
 
 -- CDM icon-bar style index <-> canonical name
 local function PG_CdmNameFromIndex(idx)
-    if idx == -1 then return PG_BLIZZ_NAME end
+    if idx == -1 then
+        return PG_BLIZZ_NAME
+    end
     local e = GLOW_STYLES[idx]
     return (e and e.name) or "Pixel Glow"
 end
 local function PG_CdmIndexFromName(name)
-    if name == PG_BLIZZ_NAME then return -1 end
-    for i = 1, #GLOW_STYLES do
-        if GLOW_STYLES[i].name == name then return i end
+    if name == PG_BLIZZ_NAME then
+        return -1
     end
-    return 1  -- Pixel Glow
+    for i = 1, #GLOW_STYLES do
+        if GLOW_STYLES[i].name == name then
+            return i
+        end
+    end
+    return 1 -- Pixel Glow
 end
 
 -- Nameplate style index <-> canonical name (Blizzard Default = Blizzard
 -- Pandemic Border; anything unsupported coerces to Pixel)
 local function PG_NameplateNameFromIndex(idx)
-    if idx == PG_NP_BLIZZ then return PG_BLIZZ_NAME end
+    if idx == PG_NP_BLIZZ then
+        return PG_BLIZZ_NAME
+    end
     local list = CludesUI.NameplatePandemicGlowStyles
     local e = list and list[idx]
     return (e and e.name) or "Pixel Glow"
 end
 local function PG_NameplateIndexFromName(name)
-    if name == PG_BLIZZ_NAME then return PG_NP_BLIZZ end
+    if name == PG_BLIZZ_NAME then
+        return PG_NP_BLIZZ
+    end
     local list = CludesUI.NameplatePandemicGlowStyles
     if name and list then
         for i = 1, #list do
-            if list[i].name == name then return i end
+            if list[i].name == name then
+                return i
+            end
         end
     end
-    return 1  -- Pixel Glow (anything unsupported)
+    return 1 -- Pixel Glow (anything unsupported)
 end
 -- The style a nameplate profile shows: the Nameplates' own view over its
 -- saved keys (the 9.6 pick, else the older key), exported by Nameplates;
@@ -100,7 +118,9 @@ end
 ns.PG_TbbEffectiveStyle = PG_TbbEffectiveStyle
 
 local function PG_GetNPProfile()
-    if not CludesUIDB or not CludesUIDB.profiles then return nil end
+    if not CludesUIDB or not CludesUIDB.profiles then
+        return nil
+    end
     local pName = CludesUIDB.activeProfile or "Default"
     local prof = CludesUIDB.profiles[pName]
     return prof and prof.addons and prof.addons.CludesUINameplates
@@ -109,14 +129,14 @@ end
 -- Write a canonical payload into a destination, coercing the style through the destination's own name->index resolver (so the stored index is renderable).
 -- styleKey: where the destination keeps its style (Nameplates: pandemicGlowPick); default pandemicGlowStyle.
 local function PG_Write(dst, payload, indexFromName, styleKey)
-    dst.pandemicGlow          = payload.on
+    dst.pandemicGlow = payload.on
     dst[styleKey or "pandemicGlowStyle"] = indexFromName(payload.styleName or "Pixel Glow")
-    dst.pandemicGlowColor     = payload.color and CopyTable(payload.color) or nil
+    dst.pandemicGlowColor = payload.color and CopyTable(payload.color) or nil
     -- Color mode travels with the color (Default/Custom/Class); nil = Default.
-    dst.pandemicGlowMode      = payload.mode
-    dst.pandemicGlowLines     = payload.lines
+    dst.pandemicGlowMode = payload.mode
+    dst.pandemicGlowLines = payload.lines
     dst.pandemicGlowThickness = payload.thickness
-    dst.pandemicGlowSpeed     = payload.speed
+    dst.pandemicGlowSpeed = payload.speed
     dst.pandemicGlowBackground = payload.background and true or nil
     dst.pandemicGlowBackgroundColor = payload.backgroundColor and CopyTable(payload.backgroundColor) or nil
 end
@@ -126,22 +146,42 @@ end
 -- its EFFECTIVE (displayed) style when that differs from the raw stored value (e.g. rectangle TBBs); defaults to stored.
 -- unsetMode: the color mode an unset key means there (Nameplates: Custom); defaults to Default.
 local function PG_Matches(dst, payload, indexFromName, actualStyleFn, unsetMode)
-    if (dst.pandemicGlow or false) ~= (payload.on or false) then return false end
-    if not payload.on then return true end
+    if (dst.pandemicGlow or false) ~= (payload.on or false) then
+        return false
+    end
+    if not payload.on then
+        return true
+    end
     local actual = actualStyleFn and actualStyleFn(dst) or (dst.pandemicGlowStyle or 1)
-    if actual ~= indexFromName(payload.styleName or "Pixel Glow") then return false end
-    if (dst.pandemicGlowMode or unsetMode or "default") ~= (payload.mode or "default") then return false end
+    if actual ~= indexFromName(payload.styleName or "Pixel Glow") then
+        return false
+    end
+    if (dst.pandemicGlowMode or unsetMode or "default") ~= (payload.mode or "default") then
+        return false
+    end
     local dc = dst.pandemicGlowColor or {}
     local pc = payload.color or {}
-    if (dc.r or 1) ~= (pc.r or 1) or (dc.g or 1) ~= (pc.g or 1) or (dc.b or 0) ~= (pc.b or 0) then return false end
-    if (dst.pandemicGlowLines or 8) ~= (payload.lines or 8) then return false end
-    if (dst.pandemicGlowThickness or 2) ~= (payload.thickness or 2) then return false end
-    if (dst.pandemicGlowSpeed or 4) ~= (payload.speed or 4) then return false end
-    if (dst.pandemicGlowBackground == true) ~= (payload.background == true) then return false end
+    if (dc.r or 1) ~= (pc.r or 1) or (dc.g or 1) ~= (pc.g or 1) or (dc.b or 0) ~= (pc.b or 0) then
+        return false
+    end
+    if (dst.pandemicGlowLines or 8) ~= (payload.lines or 8) then
+        return false
+    end
+    if (dst.pandemicGlowThickness or 2) ~= (payload.thickness or 2) then
+        return false
+    end
+    if (dst.pandemicGlowSpeed or 4) ~= (payload.speed or 4) then
+        return false
+    end
+    if (dst.pandemicGlowBackground == true) ~= (payload.background == true) then
+        return false
+    end
     if payload.background then
         local dc = dst.pandemicGlowBackgroundColor or {}
         local pc = payload.backgroundColor or {}
-        if (dc.r or 0) ~= (pc.r or 0) or (dc.g or 0) ~= (pc.g or 0) or (dc.b or 0) ~= (pc.b or 0) then return false end
+        if (dc.r or 0) ~= (pc.r or 0) or (dc.g or 0) ~= (pc.g or 0) or (dc.b or 0) ~= (pc.b or 0) then
+            return false
+        end
     end
     return true
 end
@@ -149,13 +189,13 @@ end
 -- Build a canonical payload from a CDM icon bar.
 function CludesUI.PandemicPayloadFromCdmBar(bd)
     return {
-        on        = bd.pandemicGlow == true,
+        on = bd.pandemicGlow == true,
         styleName = PG_CdmNameFromIndex(bd.pandemicGlowStyle or 1),
-        color     = bd.pandemicGlowColor,
-        mode      = bd.pandemicGlowMode,
-        lines     = bd.pandemicGlowLines,
+        color = bd.pandemicGlowColor,
+        mode = bd.pandemicGlowMode,
+        lines = bd.pandemicGlowLines,
         thickness = bd.pandemicGlowThickness,
-        speed     = bd.pandemicGlowSpeed,
+        speed = bd.pandemicGlowSpeed,
         background = bd.pandemicGlowBackground == true,
         backgroundColor = bd.pandemicGlowBackgroundColor,
     }
@@ -165,13 +205,13 @@ end
 -- report the EFFECTIVE displayed style, not the raw stored one (which may be e.g. -1 "Blizzard Default", shown there as Pixel).
 function CludesUI.PandemicPayloadFromRectBar(bd)
     return {
-        on        = bd.pandemicGlow == true,
+        on = bd.pandemicGlow == true,
         styleName = GLOW_STYLES[PG_TbbEffectiveStyle(bd)].name,
-        color     = bd.pandemicGlowColor,
-        mode      = bd.pandemicGlowMode,
-        lines     = bd.pandemicGlowLines,
+        color = bd.pandemicGlowColor,
+        mode = bd.pandemicGlowMode,
+        lines = bd.pandemicGlowLines,
         thickness = bd.pandemicGlowThickness,
-        speed     = bd.pandemicGlowSpeed,
+        speed = bd.pandemicGlowSpeed,
         background = bd.pandemicGlowBackground == true,
         backgroundColor = bd.pandemicGlowBackgroundColor,
     }
@@ -181,13 +221,13 @@ end
 -- there (the swatch color the nameplate glow always drew).
 function CludesUI.PandemicPayloadFromNameplate(np)
     return {
-        on        = np.pandemicGlow == true,
+        on = np.pandemicGlow == true,
         styleName = PG_NameplateNameFromIndex(PG_NameplateStyle(np)),
-        color     = np.pandemicGlowColor,
-        mode      = np.pandemicGlowMode or "custom",
-        lines     = np.pandemicGlowLines,
+        color = np.pandemicGlowColor,
+        mode = np.pandemicGlowMode or "custom",
+        lines = np.pandemicGlowLines,
         thickness = np.pandemicGlowThickness,
-        speed     = np.pandemicGlowSpeed,
+        speed = np.pandemicGlowSpeed,
         background = np.pandemicGlowBackground == true,
         backgroundColor = np.pandemicGlowBackgroundColor,
     }
@@ -222,9 +262,15 @@ function CludesUI.ApplyPandemicGlowToAll(payload, opts)
             end
         end
     end
-    if ns.BuildAllCDMBars then ns.BuildAllCDMBars() end
-    if ns.BuildTrackedBuffBars then ns.BuildTrackedBuffBars() end
-    if _G._ENP_RefreshAllSettings then _G._ENP_RefreshAllSettings() end
+    if ns.BuildAllCDMBars then
+        ns.BuildAllCDMBars()
+    end
+    if ns.BuildTrackedBuffBars then
+        ns.BuildTrackedBuffBars()
+    end
+    if _G._CUNP_RefreshAllSettings then
+        _G._CUNP_RefreshAllSettings()
+    end
 end
 
 -- True when every (non-skipped) surface already matches the payload.
@@ -232,16 +278,23 @@ function CludesUI.IsPandemicGlowSyncedToAll(payload, opts)
     opts = opts or {}
     if not opts.skipNameplates then
         local np = PG_GetNPProfile()
-        if np and CludesUI.NameplatePandemicGlowStyles
-           and not PG_Matches(np, payload, PG_NameplateIndexFromName, PG_NameplateStyle, "custom") then
+        if
+            np
+            and CludesUI.NameplatePandemicGlowStyles
+            and not PG_Matches(np, payload, PG_NameplateIndexFromName, PG_NameplateStyle, "custom")
+        then
             return false
         end
     end
     local p = ECME.db and ECME.db.profile
     if p and p.cdmBars and p.cdmBars.bars then
         for _, b in ipairs(p.cdmBars.bars) do
-            if b.key ~= opts.skipCdmKey and not b.isGhostBar and b.barType ~= "custom_buff"
-               and not PG_Matches(b, payload, PG_CdmIndexFromName) then
+            if
+                b.key ~= opts.skipCdmKey
+                and not b.isGhostBar
+                and b.barType ~= "custom_buff"
+                and not PG_Matches(b, payload, PG_CdmIndexFromName)
+            then
                 return false
             end
         end
@@ -249,8 +302,10 @@ function CludesUI.IsPandemicGlowSyncedToAll(payload, opts)
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
     if tbb and tbb.bars then
         for _, b in ipairs(tbb.bars) do
-            if b ~= opts.skipTbbBar
-               and not PG_Matches(b, payload, PG_TbbIndexFromName, PG_TbbEffectiveStyle) then
+            if
+                b ~= opts.skipTbbBar
+                and not PG_Matches(b, payload, PG_TbbIndexFromName, PG_TbbEffectiveStyle)
+            then
                 return false
             end
         end
@@ -278,13 +333,19 @@ function ns.RefreshGlowCombatGate()
     ns._cdmGlowOOCGate = on
     -- Sticky: once the gate has been on there may be suppressed glows left to
     -- release, so the sweep has to stay reachable after it goes off again.
-    if on then ns._cdmGlowGateEverOn = true end
+    if on then
+        ns._cdmGlowGateEverOn = true
+    end
 end
 
 StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
-    if not overlay then return end
+    if not overlay then
+        return
+    end
     local styleIdx = tonumber(style) or 1
-    if styleIdx < 1 or styleIdx > #GLOW_STYLES then styleIdx = 1 end
+    if styleIdx < 1 or styleIdx > #GLOW_STYLES then
+        styleIdx = 1
+    end
     local entry = GLOW_STYLES[styleIdx]
 
     _G_Glows.StopAllGlows(overlay)
@@ -312,7 +373,10 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
     -- overlay out again for other uses, which a record keyed by it outlives.
     if ns._cdmGlowGateEverOn and not overlay._cuiGlowPreview then
         local rec = ns._cdmGlowRec[overlay]
-        if not rec then rec = {}; ns._cdmGlowRec[overlay] = rec end
+        if not rec then
+            rec = {}
+            ns._cdmGlowRec[overlay] = rec
+        end
         local ownerFC = parent and _ecmeFC[parent]
         rec.style, rec.r, rec.g, rec.b, rec.opts = styleIdx, cr, cg, cb, opts
         rec.owner, rec.sid = parent, ownerFC and ownerFC.spellID or nil
@@ -330,14 +394,24 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
         rec.suppressed = false
     end
 
-    if not parent then return end
+    if not parent then
+        return
+    end
     local pW = (opts and opts.width) or parent:GetWidth()
     local pH = (opts and opts.height) or parent:GetHeight()
-    if pW < 5 then pW = 36 end
-    if pH < 5 then pH = 36 end
+    if pW < 5 then
+        pW = 36
+    end
+    if pH < 5 then
+        pH = 36
+    end
     local noColor = (cr == nil)
-    if noColor then cr, cg, cb = 1.0, 0.788, 0.137 end
-    cr = cr or 1; cg = cg or 1; cb = cb or 1
+    if noColor then
+        cr, cg, cb = 1.0, 0.788, 0.137
+    end
+    cr = cr or 1
+    cg = cg or 1
+    cb = cb or 1
 
     if entry.shapeGlow then
         -- CDM-specific: read shape mask/border from the icon frame
@@ -349,13 +423,16 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
         -- the pulse hugs the icon edges instead of filling a solid additive block (no live mask
         -- object here, so the texture alone defines the shape). Skip the shape border overlay -- the icon keeps its own border, so it would just add a stray line.
         local noShape = not shape
-        if noShape then shape = "square"; shapeMask = nil end
-        local maskPath   = CDM_SHAPES.masks[shape]
+        if noShape then
+            shape = "square"
+            shapeMask = nil
+        end
+        local maskPath = CDM_SHAPES.masks[shape]
         local borderPath = (not noShape) and CDM_SHAPES.borders[shape] or nil
         _G_Glows.StartShapeGlow(overlay, math.min(pW, pH), cr, cg, cb, 1.20, {
-            maskPath   = maskPath,
+            maskPath = maskPath,
             borderPath = borderPath,
-            shapeMask  = shapeMask,
+            shapeMask = shapeMask,
             -- Gated (threshold) glows only: ApplyMaskWith below can bind only the
             -- textures ON the wrapper, and this is the one engine that creates
             -- them on the anchor frame instead -- unmasked, its pulse showed
@@ -372,7 +449,9 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
         -- defaulting for action-bar overlays and bars that never set the values.
         local N, th, period, bgR, bgG, bgB, bgA
         if opts and (opts.N or opts.th or opts.period or opts.bg) then
-            N = opts.N or 8; th = opts.th or 2; period = opts.period or 4
+            N = opts.N or 8
+            th = opts.th or 2
+            period = opts.period or 4
             if opts.bg then
                 bgR, bgG, bgB, bgA = opts.bg.r or 0, opts.bg.g or 0, opts.bg.b or 0, opts.bg.a or 1
             end
@@ -386,24 +465,40 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
                 th = pbd.buffGlowThickness or pbd.pixelGlowThickness or 2
                 period = pbd.buffGlowSpeed or pbd.pixelGlowSpeed or 4
                 if pbd.buffGlowBackground then
-                    bgR, bgG, bgB, bgA = pbd.buffGlowBackgroundR or 0, pbd.buffGlowBackgroundG or 0, pbd.buffGlowBackgroundB or 0, 1
+                    bgR, bgG, bgB, bgA =
+                        pbd.buffGlowBackgroundR or 0,
+                        pbd.buffGlowBackgroundG or 0,
+                        pbd.buffGlowBackgroundB or 0,
+                        1
                 elseif pbd.pixelGlowBackground then
-                    bgR, bgG, bgB, bgA = pbd.pixelGlowBackgroundR or 0, pbd.pixelGlowBackgroundG or 0, pbd.pixelGlowBackgroundB or 0, 1
+                    bgR, bgG, bgB, bgA =
+                        pbd.pixelGlowBackgroundR or 0,
+                        pbd.pixelGlowBackgroundG or 0,
+                        pbd.pixelGlowBackgroundB or 0,
+                        1
                 end
             else
                 N = (pbd and pbd.pixelGlowLines) or 8
                 th = (pbd and pbd.pixelGlowThickness) or 2
                 period = (pbd and pbd.pixelGlowSpeed) or 4
                 if pbd and pbd.pixelGlowBackground then
-                    bgR, bgG, bgB, bgA = pbd.pixelGlowBackgroundR or 0, pbd.pixelGlowBackgroundG or 0, pbd.pixelGlowBackgroundB or 0, 1
+                    bgR, bgG, bgB, bgA =
+                        pbd.pixelGlowBackgroundR or 0,
+                        pbd.pixelGlowBackgroundG or 0,
+                        pbd.pixelGlowBackgroundB or 0,
+                        1
                 end
             end
         end
         -- Options previews (opts.panel): draw the pixels the live glow shows.
-        if opts and opts.panel then th = _G_Glows.PanelThickness(th) end
+        if opts and opts.panel then
+            th = _G_Glows.PanelThickness(th)
+        end
         local lineLen = math.floor((pW + pH) * (2 / N - 0.1))
         lineLen = math.min(lineLen, math.min(pW, pH))
-        if lineLen < 1 then lineLen = 1 end
+        if lineLen < 1 then
+            lineLen = 1
+        end
         _G_Glows.StartProceduralAnts(overlay, N, th, period, lineLen, cr, cg, cb, pW, pH, bgR, bgG, bgB, bgA)
     elseif entry.buttonGlow then
         _G_Glows.StartButtonGlow(overlay, pW, cr, cg, cb, nil, pH)
@@ -420,10 +515,17 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
         if not shapeMask and ifc2 and ns.CdmBlizzIcons() then
             shapeMask = ns.CdmBlizzIconMask(parent)
         end
-        _G_Glows.StartSolidFill(overlay, noColor and 0 or cr, noColor and 0 or cg, noColor and 0 or cb,
-            { alpha = opts and opts.alpha, shapeMask = shapeMask })
+        _G_Glows.StartSolidFill(
+            overlay,
+            noColor and 0 or cr,
+            noColor and 0 or cg,
+            noColor and 0 or cb,
+            { alpha = opts and opts.alpha, shapeMask = shapeMask }
+        )
     else
-        if noColor then cr, cg, cb = nil, nil, nil end
+        if noColor then
+            cr, cg, cb = nil, nil, nil
+        end
         _G_Glows.StartFlipBookGlow(overlay, pW, entry, cr, cg, cb, pH)
     end
 
@@ -453,12 +555,17 @@ StartNativeGlow = function(overlay, style, cr, cg, cb, opts)
 end
 
 StopNativeGlow = function(overlay)
-    if not overlay then return end
+    if not overlay then
+        return
+    end
     _G_Glows.StopAllGlows(overlay)
     overlay._glowActive = false
     overlay:SetAlpha(0)
     local rec = ns._cdmGlowRec[overlay]
-    if rec then rec.active = false; rec.suppressed = false end
+    if rec then
+        rec.active = false
+        rec.suppressed = false
+    end
     -- No Hide() -- just alpha 0. Same reason as above.
 end
 ns.StartNativeGlow = StartNativeGlow
@@ -479,7 +586,9 @@ ns.StopNativeGlow = StopNativeGlow
 -- (ns.CdGlowKick). Returns the overlay lit. alpha is the Blackout fill
 -- opacity (nil = opaque); the other styles take no opts at all.
 function ns.StartCdGlow(fd, style, cr, cg, cb, alpha)
-    if not fd then return end
+    if not fd then
+        return
+    end
     local e = ns.GLOW_STYLES[style]
     local busy = fd._activeGlowOn or fd.procGlowActive or fd._faActiveGlow
     local overlay, other, opts
@@ -500,13 +609,22 @@ function ns.StartCdGlow(fd, style, cr, cg, cb, alpha)
         -- A fresh table per start: StartNativeGlow keeps opts by reference in
         -- its Show Glows Only in Combat record, which the replay restarts from.
         overlay, opts = bo, { alpha = alpha }
-        if not busy then other = fd.glowOverlay end
+        if not busy then
+            other = fd.glowOverlay
+        end
     else
         overlay, other = fd.glowOverlay, fd.blackoutOverlay
-        if busy then overlay = nil; fd._cdGlowOwed = true end
+        if busy then
+            overlay = nil
+            fd._cdGlowOwed = true
+        end
     end
-    if other and other._glowActive then StopNativeGlow(other) end
-    if overlay then StartNativeGlow(overlay, style, cr, cg, cb, opts) end
+    if other and other._glowActive then
+        StopNativeGlow(other)
+    end
+    if overlay then
+        StartNativeGlow(overlay, style, cr, cg, cb, opts)
+    end
     return overlay
 end
 
@@ -518,11 +636,17 @@ end
 -- Blackout ending with its cooldown never takes the proc or active glow down
 -- with it.
 function ns.StopCdGlow(fd)
-    if not fd then return end
+    if not fd then
+        return
+    end
     local go = fd.glowOverlay
-    if go and not (fd.procGlowActive or fd._activeGlowOn) then StopNativeGlow(go) end
+    if go and not (fd.procGlowActive or fd._activeGlowOn) then
+        StopNativeGlow(go)
+    end
     local bo = fd.blackoutOverlay
-    if bo and bo._glowActive then StopNativeGlow(bo) end
+    if bo and bo._glowActive then
+        StopNativeGlow(bo)
+    end
 end
 
 -- Combat edges for Show Glows Only in Combat. Entering combat replays what was
@@ -532,14 +656,19 @@ end
 -- re-reading the gate, so a change takes effect at once. Never having had the
 -- gate on makes this two reads and a return for the whole session.
 function ns.CDMGlowCombatSync()
-    if not ns._cdmGlowOOCGate and not ns._cdmGlowGateEverOn then return end
+    if not ns._cdmGlowOOCGate and not ns._cdmGlowGateEverOn then
+        return
+    end
     local show = _inCombat or not ns._cdmGlowOOCGate
     -- Replays are collected here and run after the traversal: StartNativeGlow
     -- writes into _cdmGlowRec, and inserting a key during pairs() is undefined
     -- in Lua 5.1. It only ever rewrites an existing key today, but that is not
     -- a property this loop should rest on.
     local queue = ns._cdmGlowSyncScratch
-    if not queue then queue = {}; ns._cdmGlowSyncScratch = queue end
+    if not queue then
+        queue = {}
+        ns._cdmGlowSyncScratch = queue
+    end
     local n = 0
     for overlay, rec in pairs(ns._cdmGlowRec) do
         if rec.active and not overlay._cuiGlowPreview then
@@ -600,22 +729,24 @@ ns._cdmResGen = 0
 local function IconShownAlpha(fc, barData)
     local bk = fc and (fc._overflowLayoutBar or fc.barKey)
     local bf = bk and cdmBarFrames[bk]
-    if bf and bf._visHidden then return 0 end
+    if bf and bf._visHidden then
+        return 0
+    end
     return EffectiveBarAlpha(barData or (bk and barDataByKey[bk]))
 end
 ns.IconShownAlpha = IconShownAlpha
 
 -- Global accessor for cross-addon frame lookups
-_G._ECME_GetBarFrame = function(barKey)
+_G._CUCME_GetBarFrame = function(barKey)
     return cdmBarFrames[barKey]
 end
 -- Global accessor: apply a spec profile to the live bars (profile import). All consumers
 -- read spell data from the global store, so this only needs to trigger a rebuild against the (now-active) spec.
-_G._ECME_LoadSpecProfile = function(specKey)
+_G._CUCME_LoadSpecProfile = function(specKey)
     ns.FullCDMRebuild("profile_import")
 end
 -- Global accessor: get the current spec key string (e.g. "250"), or nil if the spec API isn't ready yet.
-_G._ECME_GetCurrentSpecKey = function()
+_G._CUCME_GetCurrentSpecKey = function()
     return ns.GetActiveSpecKey()
 end
 
@@ -624,27 +755,33 @@ end
 --  on our CDM icons when Blizzard fires ShowAlert/HideAlert on CDM children.
 --  Custom bars use SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE events instead.
 -------------------------------------------------------------------------------
-local PROC_GLOW_STYLE = 6  -- "Modern WoW Glow" flipbook
+local PROC_GLOW_STYLE = 6 -- "Modern WoW Glow" flipbook
 
 -- Reverse lookup: Blizzard CDM viewer frame name -> our bar key
 local _blizzViewerToBarKey = {
     EssentialCooldownViewer = "cooldowns",
-    UtilityCooldownViewer   = "utility",
-    BuffIconCooldownViewer  = "buffs",
+    UtilityCooldownViewer = "utility",
+    BuffIconCooldownViewer = "buffs",
 }
 
 -- Walk up from a frame to find which Blizzard CDM viewer it belongs to; also handles reparented frames (hook system) via the _barKey field.
 local function GetBarKeyForBlizzChild(frame)
     -- Fast path: barKey set by the hook system (external cache) or CDM frame
     local fc = _ecmeFC[frame]
-    if (fc and fc.barKey) or frame._barKey then return (fc and fc.barKey) or frame._barKey, frame end
+    if (fc and fc.barKey) or frame._barKey then
+        return (fc and fc.barKey) or frame._barKey, frame
+    end
     local current = frame
     while current do
         local parent = current:GetParent()
-        if not parent then return nil end
+        if not parent then
+            return nil
+        end
         -- Parent one of our CDM bar containers? (external cache or direct)
         local pfc = _ecmeFC[parent]
-        if (pfc and pfc.barKey) or parent._barKey then return (pfc and pfc.barKey) or parent._barKey, current end
+        if (pfc and pfc.barKey) or parent._barKey then
+            return (pfc and pfc.barKey) or parent._barKey, current
+        end
         local name = parent.GetName and parent:GetName()
         if name and _blizzViewerToBarKey[name] then
             return _blizzViewerToBarKey[name], current
@@ -654,7 +791,7 @@ local function GetBarKeyForBlizzChild(frame)
     return nil
 end
 
-local ResolveBlizzChildSpellID  -- forward-declare (defined below)
+local ResolveBlizzChildSpellID -- forward-declare (defined below)
 
 -- Find our icon mirroring a given Blizzard CDM child. In hook mode the icon IS the Blizzard
 -- child (identity check); falls back to spellID + override matching for proc glows on transformed spells.
@@ -666,17 +803,25 @@ local function FindOurIconForBlizzChild(barKey, blizzChild)
     if not m or m.gen ~= ns._cdmClaimGen then
         m = setmetatable({ gen = ns._cdmClaimGen }, { __mode = "k" })
         for bk, list in pairs(cdmBarIcons) do
-            for i = 1, #list do m[list[i]] = bk end
+            for i = 1, #list do
+                m[list[i]] = bk
+            end
         end
         ns._cdmChildClaimMap = m
     end
-    if m[blizzChild] == barKey then return blizzChild end
+    if m[blizzChild] == barKey then
+        return blizzChild
+    end
     local icons = cdmBarIcons[barKey]
-    if not icons then return nil end
+    if not icons then
+        return nil
+    end
     for _, icon in ipairs(icons) do
         local iifc = _ecmeFC[icon]
         local bc = iifc and iifc.blizzChild
-        if icon == blizzChild or bc == blizzChild then return icon end
+        if icon == blizzChild or bc == blizzChild then
+            return icon
+        end
     end
     -- Fallback: match by spellID (covers override spells like HST -> Storm Stream)
     local alertSid, alertBase = ResolveBlizzChildSpellID(blizzChild)
@@ -686,7 +831,9 @@ local function FindOurIconForBlizzChild(barKey, blizzChild)
             local isid = ifc and ifc.spellID
             -- Second compare: the alert child's cooldownInfo carries its BASE id, so an icon
             -- assigned the base of a transformed spell matches on a plain field compare -- no per-icon API translation.
-            if isid == alertSid or (alertBase and isid == alertBase) then return icon end
+            if isid == alertSid or (alertBase and isid == alertBase) then
+                return icon
+            end
         end
         -- Override mapping (base <-> override). Last resort: only reachable when the icon's assigned id and the alert's base id differ yet still override-resolve to the alert spell.
         for _, icon in ipairs(icons) do
@@ -694,7 +841,9 @@ local function FindOurIconForBlizzChild(barKey, blizzChild)
             local iconSid = ifc and ifc.spellID
             if iconSid and C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                 local ovr = C_SpellBook.FindSpellOverrideByID(iconSid)
-                if ovr and ovr == alertSid then return icon end
+                if ovr and ovr == alertSid then
+                    return icon
+                end
             end
         end
     end
@@ -710,7 +859,9 @@ ResolveBlizzChildSpellID = function(blizzChild)
     if not cdID and blizzChild.cooldownInfo then
         cdID = blizzChild.cooldownInfo.cooldownID
     end
-    if type(cdID) ~= "number" then return nil end
+    if type(cdID) ~= "number" then
+        return nil
+    end
     local m = ns._cdidSidMemo
     if not m or m.gen ~= ns._cdmResGen then
         m = { gen = ns._cdmResGen }
@@ -718,10 +869,13 @@ ResolveBlizzChildSpellID = function(blizzChild)
     end
     local hit = m[cdID]
     if hit ~= nil then
-        if hit == false then return nil end
+        if hit == false then
+            return nil
+        end
         return hit[1], hit[2]
     end
-    local info = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+    local info = C_CooldownViewer
+        and C_CooldownViewer.GetCooldownViewerCooldownInfo
         and C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
     if info then
         local sid = ResolveInfoSpellID(info)
@@ -737,12 +891,16 @@ end
 
 -- Unified glow color for a spell: r,g,b or nil for default. ss.glowColor "class" -> class color, "custom" -> ss.glowColorR/G/B.
 local function ResolveGlowColor(ss)
-    if not ss or not ss.glowColor then return nil end
+    if not ss or not ss.glowColor then
+        return nil
+    end
     if ss.glowColor == "class" then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
-            if cc then return cc.r, cc.g, cc.b end
+            if cc then
+                return cc.r, cc.g, cc.b
+            end
         end
     elseif ss.glowColor == "custom" and ss.glowColorR ~= nil then
         return ss.glowColorR, ss.glowColorG or 0.788, ss.glowColorB or 0.137
@@ -754,11 +912,17 @@ ns.ResolveGlowColor = ResolveGlowColor
 
 -- Show proc glow on one of our icons. Uses per-spell settings if available.
 local function ShowProcGlow(icon, cr, cg, cb)
-    if not icon then return end
+    if not icon then
+        return
+    end
     local fd = _getFD(icon)
     local glow = fd and fd.glowOverlay or icon._glowOverlay
-    if not glow then return end
-    if fd and fd.procGlowActive then return end
+    if not glow then
+        return
+    end
+    if fd and fd.procGlowActive then
+        return
+    end
 
     local fc = _ecmeFC[icon]
     -- Force Shape Glow (style 2) for custom-shaped icons (any but none/cropped)
@@ -779,8 +943,12 @@ local function ShowProcGlow(icon, cr, cg, cb)
             -- Custom shapes are locked to Shape Glow: ignore the per-spell glow
             -- type (incl. "None"). The per-spell glow COLOR below still applies.
             if not isCustomShape then
-                if ss.procGlow == 0 then return end -- proc glow disabled
-                if ss.procGlow and ss.procGlow > 0 then style = ss.procGlow end
+                if ss.procGlow == 0 then
+                    return
+                end -- proc glow disabled
+                if ss.procGlow and ss.procGlow > 0 then
+                    style = ss.procGlow
+                end
             end
             -- Unified glow color takes priority over per-type settings
             local ur, ug, ub = ResolveGlowColor(ss)
@@ -790,7 +958,9 @@ local function ShowProcGlow(icon, cr, cg, cb)
                 local _, ct = UnitClass("player")
                 if ct then
                     local cc = RAID_CLASS_COLORS[ct]
-                    if cc then cr, cg, cb = cc.r, cc.g, cc.b end
+                    if cc then
+                        cr, cg, cb = cc.r, cc.g, cc.b
+                    end
                 end
             elseif ss.procGlowR ~= nil then
                 cr, cg, cb = ss.procGlowR, ss.procGlowG or 0.788, ss.procGlowB or 0.137
@@ -809,24 +979,34 @@ local function ShowProcGlow(icon, cr, cg, cb)
     -- the proc glow does not replace: it stays lit beside the proc and keeps its
     -- memo, so the memo-gated stop sites still take it down when its cooldown
     -- ends, proc or not.
-    if glow._glowActive then StopNativeGlow(glow) end
+    if glow._glowActive then
+        StopNativeGlow(glow)
+    end
     if fd then
         local bo = fd.blackoutOverlay
         if not (bo and bo._glowActive) then
-            if fd._cdStateGlowOn or fd._presetCdGlowOn then fd._cdGlowOwed = true end
+            if fd._cdStateGlowOn or fd._presetCdGlowOn then
+                fd._cdGlowOwed = true
+            end
             fd._cdStateGlowOn = false
         end
     end
     StartNativeGlow(glow, style, cr, cg, cb)
-    if fd then fd.procGlowActive = true end
+    if fd then
+        fd.procGlowActive = true
+    end
 end
 
 local function StopProcGlow(icon)
     local fd = icon and _getFD(icon)
-    if not icon or not (fd and fd.procGlowActive) then return end
+    if not icon or not (fd and fd.procGlowActive) then
+        return
+    end
     local glow = fd and fd.glowOverlay or icon._glowOverlay
     StopNativeGlow(glow)
-    if fd then fd.procGlowActive = false end
+    if fd then
+        fd.procGlowActive = false
+    end
     -- The proc stomped any CD-state glow on this shared overlay; re-evaluate on the next frame
     -- so the glow comes straight back instead of waiting for the next cooldown/power edge:
     -- this icon alone when a CD-state glow is owed to it (replaced or held back by the proc),
@@ -843,13 +1023,21 @@ end
 -- Install hooks on ActionButtonSpellAlertManager (called once during init)
 local _procGlowHooksInstalled = false
 local function InstallProcGlowHooks()
-    if _procGlowHooksInstalled then return end
-    if not ActionButtonSpellAlertManager then return end
+    if _procGlowHooksInstalled then
+        return
+    end
+    if not ActionButtonSpellAlertManager then
+        return
+    end
 
     hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(_, frame)
-        if not frame then return end
+        if not frame then
+            return
+        end
         local barKey, cdmChild = GetBarKeyForBlizzChild(frame)
-        if not barKey or not cdmChild then return end
+        if not barKey or not cdmChild then
+            return
+        end
 
         -- Hide Blizzard's built-in SpellActivationAlert on the CDM child
         if cdmChild.SpellActivationAlert then
@@ -859,19 +1047,27 @@ local function InstallProcGlowHooks()
 
         -- Apply immediately: no defer needed, icon mapping is current from the last reanchor.
         local ourIcon = FindOurIconForBlizzChild(barKey, cdmChild)
-        if not ourIcon then return end
+        if not ourIcon then
+            return
+        end
         ShowProcGlow(ourIcon)
         -- Force texture re-evaluation so override textures apply immediately
         FC(ourIcon).lastTex = nil
     end)
 
     hooksecurefunc(ActionButtonSpellAlertManager, "HideAlert", function(_, frame)
-        if not frame then return end
+        if not frame then
+            return
+        end
         local barKey, cdmChild = GetBarKeyForBlizzChild(frame)
-        if not barKey or not cdmChild then return end
+        if not barKey or not cdmChild then
+            return
+        end
         local ourIcon = FindOurIconForBlizzChild(barKey, cdmChild)
         local fd = ourIcon and _getFD(ourIcon)
-        if not ourIcon or not (fd and fd.procGlowActive) then return end
+        if not ourIcon or not (fd and fd.procGlowActive) then
+            return
+        end
 
         -- Trust Blizzard's HideAlert: stop immediately. A re-fired ShowAlert during an internal refresh restarts the glow next frame.
         StopProcGlow(ourIcon)
@@ -883,8 +1079,7 @@ local function InstallProcGlowHooks()
 end
 
 -- No-ops kept so existing call sites don't error: proc glows are fully hook-driven for every bar, and the ShowAlert hooks installed at file load catch Blizzard's login re-fire.
-local function ScanExistingProcGlows()
-end
+local function ScanExistingProcGlows() end
 ns.ScanExistingProcGlows = ScanExistingProcGlows
 
 local function OnProcGlowEvent() end
@@ -892,7 +1087,6 @@ ns.OnProcGlowEvent = OnProcGlowEvent
 
 -- Install at file-load time: Blizzard re-fires ShowAlert during PLAYER_LOGIN for active procs, and the hooks MUST precede that.
 InstallProcGlowHooks()
-
 
 I.barDataByKey, I.cdmBarFrames, I.cdmBarIcons = barDataByKey, cdmBarFrames, cdmBarIcons
 I.IconShownAlpha, I.InstallProcGlowHooks = IconShownAlpha, InstallProcGlowHooks

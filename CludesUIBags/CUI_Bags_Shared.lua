@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Shared.lua
 --
@@ -10,7 +12,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ns = select(2, ...)
 local I = ns._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
@@ -21,7 +25,9 @@ local BP, GetFont, SetBagFont = I.BP, I.GetFont, I.SetBagFont
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
 local selectedCategoryIndex = I.selectedCategoryIndex
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v) selectedCategoryIndex = v end
+I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
+    selectedCategoryIndex = v
+end
 
 -------------------------------------------------------------------------------
 --  Inset border helper (1 physical pixel inside frame edge)
@@ -40,7 +46,11 @@ local function CreateInsetBorder(btn, isSlot, icon)
         if not mask then
             mask = btn:CreateMaskTexture()
             mask:SetAllPoints(btn)
-            mask:SetTexture("Interface\\Common\\common-iconmask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            mask:SetTexture(
+                "Interface\\Common\\common-iconmask",
+                "CLAMPTOBLACKADDITIVE",
+                "CLAMPTOBLACKADDITIVE"
+            )
         end
         frame:AddMaskTexture(mask)
         if icon then
@@ -55,19 +65,23 @@ local function CreateInsetBorder(btn, isSlot, icon)
     local PP = CUI and CUI.PP
     local px = (PP and PP.mult) or 1
     local WHITE = "Interface\\Buttons\\WHITE8X8"
-    local t = btn:CreateTexture(nil, "OVERLAY", nil, 2); t:SetTexture(WHITE)
+    local t = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+    t:SetTexture(WHITE)
     t:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
     t:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
     t:SetHeight(px)
-    local b = btn:CreateTexture(nil, "OVERLAY", nil, 2); b:SetTexture(WHITE)
+    local b = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+    b:SetTexture(WHITE)
     b:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
     b:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
     b:SetHeight(px)
-    local l = btn:CreateTexture(nil, "OVERLAY", nil, 2); l:SetTexture(WHITE)
+    local l = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+    l:SetTexture(WHITE)
     l:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
     l:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
     l:SetWidth(px)
-    local r = btn:CreateTexture(nil, "OVERLAY", nil, 2); r:SetTexture(WHITE)
+    local r = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+    r:SetTexture(WHITE)
     r:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
     r:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
     r:SetWidth(px)
@@ -90,7 +104,9 @@ local function SetInsetBorderColor(btn, cr, cg, cb, ca)
         end
         if glow then
             glow:SetShown(color)
-            if color then glow:SetVertexColor(cr, cg, cb, ca) end
+            if color then
+                glow:SetVertexColor(cr, cg, cb, ca)
+            end
         end
     elseif btn._brdT then
         btn._brdT:SetColorTexture(cr, cg, cb, ca)
@@ -102,9 +118,13 @@ end
 
 local function GetInsetBorderStyle(btn)
     local frame = btn._fvSlotBorder
-    if frame then return frame.r, frame.g, frame.b, frame.a end
+    if frame then
+        return frame.r, frame.g, frame.b, frame.a
+    end
     local top = btn._brdT
-    if not top then return end
+    if not top then
+        return
+    end
     local r, g, b, a = top:GetVertexColor()
     return r, g, b, a, top:GetHeight()
 end
@@ -161,14 +181,20 @@ end
 -- cooldown swipe) and the warbank dim (+6) are fixed levels too and move with it.
 local function PinItemButtonLevel(btn, level)
     btn:SetFrameLevel(level)
-    if btn._textOverlay then btn._textOverlay:SetFrameLevel(level + 3) end
-    if btn._warbankDim then btn._warbankDim:SetFrameLevel(level + 6) end
+    if btn._textOverlay then
+        btn._textOverlay:SetFrameLevel(level + 3)
+    end
+    if btn._warbankDim then
+        btn._warbankDim:SetFrameLevel(level + 6)
+    end
 end
 
 -- background color/opacity for bags and bank: the texture fades with the
 -- opacity, the tint on top takes the color
 function ns.ApplyWindowBackground(bg, overlay)
-    if not (bg and overlay) then return end
+    if not (bg and overlay) then
+        return
+    end
     local p = BP()
     local o = (p.bagBgOpacity or 100) / 100
     local c = p.bagBgColor
@@ -180,7 +206,9 @@ end
 local slotBackgroundAtlases
 function ns.SetSlotBackgroundTexture(tex, interactive)
     if ns.BagsForever() then
-        if not slotBackgroundAtlases then slotBackgroundAtlases = {} end
+        if not slotBackgroundAtlases then
+            slotBackgroundAtlases = {}
+        end
         local atlas = interactive and "bags-item-slot64" or "bags-item-slot-blank"
         local exists = slotBackgroundAtlases[atlas]
         if exists == nil then
@@ -214,7 +242,9 @@ end
 -- the slot background picker: just the shown ones (hidden ones get painted when they show)
 function ns.RetintSlotBackgrounds()
     for tex in pairs(slotBgs) do
-        if tex:IsVisible() then ns.PaintSlotBackground(tex, tex._slotBgAlpha) end
+        if tex:IsVisible() then
+            ns.PaintSlotBackground(tex, tex._slotBgAlpha)
+        end
     end
 end
 
@@ -227,23 +257,33 @@ end
 -- else moves these buttons, and new ones are pinned at creation from the live level.
 function ns.PinItemPool(pool, window, memoKey)
     local level = window:GetFrameLevel() + 9
-    if window[memoKey] == level then return end
+    if window[memoKey] == level then
+        return
+    end
     window[memoKey] = level
-    for _, btn in pairs(pool) do PinItemButtonLevel(btn, level) end
+    for _, btn in pairs(pool) do
+        PinItemButtonLevel(btn, level)
+    end
 end
 
 -- WoW Forever's item buttons round the icon and the pushed art with the
 -- button's own Mask (retail's templates carry IconMask, stripped where the
 -- slots are skinned). The bags draw both square.
 local function DropMask(tex, m)
-    if not tex then return end
+    if not tex then
+        return
+    end
     for i = tex:GetNumMaskTextures(), 1, -1 do
-        if tex:GetMaskTexture(i) == m then tex:RemoveMaskTexture(m) end
+        if tex:GetMaskTexture(i) == m then
+            tex:RemoveMaskTexture(m)
+        end
     end
 end
 function ns.UnmaskItemButton(btn)
     local m = btn.Mask
-    if not m then return end
+    if not m then
+        return
+    end
     DropMask(btn.icon, m)
     DropMask(btn:GetPushedTexture(), m)
 end
@@ -263,10 +303,21 @@ end
 -- cooldown text), flatHighlight (bank: 8% white highlight, with highlight and
 -- pushed textures looked up by template field first). Returns the overlay.
 function ns.SkinItemButton(btn, opts)
-    if btn.NewItemTexture then btn.NewItemTexture:Hide(); btn.NewItemTexture:SetAlpha(0) end
-    if btn.BattlepayItemTexture then btn.BattlepayItemTexture:Hide(); btn.BattlepayItemTexture:SetAlpha(0) end
-    if btn.flash then btn.flash:Hide(); btn.flash:SetAlpha(0) end
-    if btn.newitemglowAnim then btn.newitemglowAnim:Stop() end
+    if btn.NewItemTexture then
+        btn.NewItemTexture:Hide()
+        btn.NewItemTexture:SetAlpha(0)
+    end
+    if btn.BattlepayItemTexture then
+        btn.BattlepayItemTexture:Hide()
+        btn.BattlepayItemTexture:SetAlpha(0)
+    end
+    if btn.flash then
+        btn.flash:Hide()
+        btn.flash:SetAlpha(0)
+    end
+    if btn.newitemglowAnim then
+        btn.newitemglowAnim:Stop()
+    end
 
     ns.SizeSlot(btn)
     if btn.icon then
@@ -281,23 +332,34 @@ function ns.SkinItemButton(btn, opts)
     local ht, pt
     if opts.flatHighlight then
         ht = btn.HighlightTexture or btn:GetHighlightTexture()
-        if ht then ht:SetTexture(nil); ht:SetColorTexture(1, 1, 1, 0.08) end
+        if ht then
+            ht:SetTexture(nil)
+            ht:SetColorTexture(1, 1, 1, 0.08)
+        end
         pt = btn.PushedTexture or btn:GetPushedTexture()
     else
         ht = btn:GetHighlightTexture()
         pt = btn:GetPushedTexture()
     end
-    if ht then ht:ClearAllPoints(); ht:SetAllPoints(btn) end
+    if ht then
+        ht:ClearAllPoints()
+        ht:SetAllPoints(btn)
+    end
     if pt then
         pt:SetAtlas(nil)
         pt:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\highlight-3.png")
         pt:SetTexCoord(0, 1, 0, 1)
-        pt:ClearAllPoints(); pt:SetAllPoints(btn)
+        pt:ClearAllPoints()
+        pt:SetAllPoints(btn)
         pt:SetVertexColor(0.973, 0.839, 0.604, 1)
     end
 
-    if btn.NormalTexture then btn.NormalTexture:SetAlpha(0) end
-    if btn.IconBorder then btn.IconBorder:SetAlpha(0) end
+    if btn.NormalTexture then
+        btn.NormalTexture:SetAlpha(0)
+    end
+    if btn.IconBorder then
+        btn.IconBorder:SetAlpha(0)
+    end
 
     if btn.icon and btn.IconMask then
         btn.icon:RemoveMaskTexture(btn.IconMask)
@@ -360,7 +422,9 @@ do
     local function ArrowOnEnter(self)
         self._icon:SetAlpha(0.9)
         local tip = self._tip
-        if type(tip) == "function" then tip = tip() end
+        if type(tip) == "function" then
+            tip = tip()
+        end
         CUI.ShowWidgetTooltip(self, tip)
     end
     local function ArrowOnLeave(self)
@@ -418,11 +482,11 @@ end
 -- clamp: pull the scroll back into range on every update (content may have
 -- shrunk). rawWheel: the wheel reads sf's scroll range directly rather than the
 -- thumb metrics, which give up when the track is too short for a thumb.
-local SCROLLBAR_HIT_W = 16  -- invisible hit area width
+local SCROLLBAR_HIT_W = 16 -- invisible hit area width
 function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
-    local SCROLLBAR_W = 4   -- thumb width
-    local SCROLL_STEP = 40  -- pixels per mouse wheel tick
-    local THUMB_MIN_H = 20  -- minimum thumb height
+    local SCROLLBAR_W = 4 -- thumb width
+    local SCROLL_STEP = 40 -- pixels per mouse wheel tick
+    local THUMB_MIN_H = 20 -- minimum thumb height
 
     local track = CreateFrame("Button", nil, host)
     track:SetWidth(SCROLLBAR_HIT_W)
@@ -446,12 +510,16 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
 
     local function GetScrollMetrics()
         local scrollRange = sf:GetVerticalScrollRange()
-        if not scrollRange or scrollRange <= 0 then return nil end
+        if not scrollRange or scrollRange <= 0 then
+            return nil
+        end
         local trackH = track:GetHeight()
         local ext = sf:GetHeight() / (sf:GetHeight() + scrollRange)
         local thumbH = math.max(THUMB_MIN_H, trackH * ext)
         local maxTravel = trackH - thumbH
-        if maxTravel <= 0 then return nil end
+        if maxTravel <= 0 then
+            return nil
+        end
         local pct = sf:GetVerticalScroll() / scrollRange
         return pct, thumbH, maxTravel, scrollRange
     end
@@ -460,7 +528,9 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
         if clamp then
             local range = sf:GetVerticalScrollRange() or 0
             local cur = sf:GetVerticalScroll()
-            if cur > range then sf:SetVerticalScroll(range) end
+            if cur > range then
+                sf:SetVerticalScroll(range)
+            end
         end
         local pct, thumbH, maxTravel = GetScrollMetrics()
         if not pct then
@@ -480,11 +550,15 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
         local scrollRange
         if rawWheel then
             scrollRange = sf:GetVerticalScrollRange()
-            if scrollRange and scrollRange <= 0 then scrollRange = nil end
+            if scrollRange and scrollRange <= 0 then
+                scrollRange = nil
+            end
         else
             scrollRange = select(4, GetScrollMetrics())
         end
-        if not scrollRange then return end
+        if not scrollRange then
+            return
+        end
         local cur = sf:GetVerticalScroll()
         local newVal = math.max(0, math.min(scrollRange, cur - delta * SCROLL_STEP))
         sf:SetVerticalScroll(newVal)
@@ -498,14 +572,22 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
     local dragUpdate = CreateFrame("Frame")
     dragUpdate:Hide()
     dragUpdate:SetScript("OnUpdate", function(self)
-        if not _isDragging then self:Hide(); return end
+        if not _isDragging then
+            self:Hide()
+            return
+        end
         if not IsMouseButtonDown("LeftButton") then
-            _isDragging = false; self:Hide()
+            _isDragging = false
+            self:Hide()
             thumb:SetColorTexture(1, 1, 1, 0.25)
             return
         end
         local pct, thumbH, maxTravel, scrollRange = GetScrollMetrics()
-        if not pct then _isDragging = false; self:Hide(); return end
+        if not pct then
+            _isDragging = false
+            self:Hide()
+            return
+        end
         local scale = track:GetEffectiveScale()
         local _, cy = GetCursorPosition()
         local deltaY = (_dragStartY - cy / scale)
@@ -517,9 +599,13 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
 
     track:RegisterForDrag("LeftButton")
     track:SetScript("OnMouseDown", function(_, button)
-        if button ~= "LeftButton" then return end
+        if button ~= "LeftButton" then
+            return
+        end
         local pct, thumbH, maxTravel, scrollRange = GetScrollMetrics()
-        if not pct then return end
+        if not pct then
+            return
+        end
 
         local scale = track:GetEffectiveScale()
         local _, cy = GetCursorPosition()
@@ -550,9 +636,13 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
         _isDragging = false
     end)
 
-    track:SetScript("OnEnter", function() thumb:SetColorTexture(1, 1, 1, 0.4) end)
+    track:SetScript("OnEnter", function()
+        thumb:SetColorTexture(1, 1, 1, 0.4)
+    end)
     track:SetScript("OnLeave", function()
-        if not _isDragging then thumb:SetColorTexture(1, 1, 1, 0.25) end
+        if not _isDragging then
+            thumb:SetColorTexture(1, 1, 1, 0.25)
+        end
     end)
 
     -- Controller cursor (a pad has no wheel): one-notch step buttons at the
@@ -570,18 +660,26 @@ function ns.AttachGridScrollbar(host, sf, clamp, rawWheel)
     function track.PadSync(on)
         on = on and true or false
         if not padUp then
-            if not on then return end
-            padUp, padDown = ns.PadStepButtons(host, SCROLLBAR_HIT_W, function(delta) OnWheel(nil, delta) end)
+            if not on then
+                return
+            end
+            padUp, padDown = ns.PadStepButtons(host, SCROLLBAR_HIT_W, function(delta)
+                OnWheel(nil, delta)
+            end)
             padUp:SetFrameLevel(track:GetFrameLevel() + 1)
             padDown:SetFrameLevel(track:GetFrameLevel() + 1)
             padUp:SetPoint("TOP", track, "TOP", 0, 0)
             padDown:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
             hooksecurefunc(trackBg, "Show", PadSteps)
             hooksecurefunc(trackBg, "Hide", PadSteps)
-            sf:HookScript("OnVerticalScroll", function() UpdateThumb() end)
+            sf:HookScript("OnVerticalScroll", function()
+                UpdateThumb()
+            end)
             CUI.PadHint(track, "nodeignore")
         end
-        if on == padOn then return end
+        if on == padOn then
+            return
+        end
         padOn = on
         trackBg:SetColorTexture(1, 1, 1, on and 0.15 or 0.06)
         PadSteps()
@@ -595,7 +693,7 @@ end
 --  shared controller signal; mouse/keyboard players never build any of it.
 -------------------------------------------------------------------------------
 do
-    local ARROW_UP   = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
+    local ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
     local ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
 
     local function MakeStep(parent, size, icon, onClick)
@@ -606,8 +704,12 @@ do
         t:SetPoint("CENTER", b, "CENTER", 0, 0)
         t:SetTexture(icon)
         b:SetAlpha(0.5)
-        b:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
-        b:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
+        b:SetScript("OnEnter", function(self)
+            self:SetAlpha(0.9)
+        end)
+        b:SetScript("OnLeave", function(self)
+            self:SetAlpha(0.5)
+        end)
         b:SetScript("OnClick", onClick)
         b:Hide()
         return b
@@ -616,8 +718,12 @@ do
     -- Up/down step buttons for a wheel-only scroller: step(1) scrolls up one
     -- notch, step(-1) down. Created hidden; the caller anchors them.
     function ns.PadStepButtons(parent, size, step)
-        return MakeStep(parent, size, ARROW_UP, function() step(1) end),
-               MakeStep(parent, size, ARROW_DOWN, function() step(-1) end)
+        return MakeStep(parent, size, ARROW_UP, function()
+            step(1)
+        end),
+            MakeStep(parent, size, ARROW_DOWN, function()
+                step(-1)
+            end)
     end
 
     -- Sidebar step buttons (categories, bank tabs) in the sidebar header, left
@@ -631,20 +737,28 @@ do
     end
 
     function ns.PadSidebarSync(hdr, sf, child, dbKey, on)
-        if not (hdr and sf and child) then return end
+        if not (hdr and sf and child) then
+            return
+        end
         local st = hdr._padSteps
         if not st then
-            if not on then return end
+            if not on then
+                return
+            end
             local up, down = ns.PadStepButtons(hdr, 14, function(delta)
                 local wheel = sf:GetScript("OnMouseWheel")
-                if wheel then wheel(sf, delta) end
+                if wheel then
+                    wheel(sf, delta)
+                end
             end)
             down:SetPoint("RIGHT", hdr, "RIGHT", -22, 0)
             up:SetPoint("RIGHT", down, "LEFT", -2, 0)
             st = { up = up, down = down, sf = sf, child = child, key = dbKey }
             hdr._padSteps = st
             -- The rebuild sets the list height; the window can resize it too.
-            local function Update() SidebarStepsUpdate(st) end
+            local function Update()
+                SidebarStepsUpdate(st)
+            end
             hooksecurefunc(child, "SetHeight", Update)
             sf:HookScript("OnSizeChanged", Update)
         end
@@ -659,10 +773,14 @@ do
     -- are touched, and no Blizzard OnHide runs for them.
     function ns.PadReleaseBlizzBags()
         local f = ContainerFrameCombinedBags
-        if f and f:IsShown() and not f:IsVisible() then f:Hide() end
+        if f and f:IsShown() and not f:IsVisible() then
+            f:Hide()
+        end
         for i = 1, 13 do
             f = _G["ContainerFrame" .. i]
-            if f and f:IsShown() and not f:IsVisible() then f:Hide() end
+            if f and f:IsShown() and not f:IsVisible() then
+                f:Hide()
+            end
         end
     end
 
@@ -671,23 +789,27 @@ do
     -- Decided once, at login; a later style switch asks for a reload, once.
     local standDown, styleAsked
     function ns.PadUIStandDown()
-        if standDown == nil then standDown = CUI.PadGamepadUI() end
+        if standDown == nil then
+            standDown = CUI.PadGamepadUI()
+        end
         return standDown
     end
 
     function ns.PadStyleChanged()
-        if styleAsked then return end
+        if styleAsked then
+            return
+        end
         styleAsked = true
         -- The Gamepad style's D-pad cannot reach the popup, so chat says it too.
         -- A confirm, not RequestReload: this can run outside a click, which
         -- cannot reload; the popup's click can.
         CludesUI.PrintError(CludesUI.L("The interface style changed. Type /reload so the bags match it."))
         CUI:ShowConfirmPopup({
-            title       = CludesUI.L("Reload Required"),
-            message     = CludesUI.L("The interface style changed. Reload so the bags match it."),
+            title = CludesUI.L("Reload Required"),
+            message = CludesUI.L("The interface style changed. Reload so the bags match it."),
             confirmText = CludesUI.L("Reload Now"),
-            cancelText  = CludesUI.L("Later"),
-            reload      = true,
+            cancelText = CludesUI.L("Later"),
+            reload = true,
         })
     end
 end
@@ -702,30 +824,40 @@ local QUEST_BORDER_COLOR = { r = 1.0, g = 0.82, b = 0.0 }
 -------------------------------------------------------------------------------
 do
     local dialog
-    local job          -- { bag, slot, itemID, size, targets, window, ops, pending, issuedAt }
+    local job -- { bag, slot, itemID, size, targets, window, ops, pending, issuedAt }
     local StepJob
 
     -- Container and guild bank slots share the dialog and job; only the API differs.
     local containerOps = {
-        ownerBag = function(owner) return owner:GetParent():GetID() end,
-        info     = C_Container.GetContainerItemInfo,
+        ownerBag = function(owner)
+            return owner:GetParent():GetID()
+        end,
+        info = C_Container.GetContainerItemInfo,
         numSlots = C_Container.GetContainerNumSlots,
-        split    = C_Container.SplitContainerItem,
-        pickup   = C_Container.PickupContainerItem,
+        split = C_Container.SplitContainerItem,
+        pickup = C_Container.PickupContainerItem,
     }
     local guildOps = {
-        ownerBag = function() return GetCurrentGuildBankTab() end,
+        ownerBag = function()
+            return GetCurrentGuildBankTab()
+        end,
         -- A tab that is no longer viewed reads as empty so a running job stops there.
         info = function(tab, slot)
-            if tab ~= GetCurrentGuildBankTab() then return nil end
+            if tab ~= GetCurrentGuildBankTab() then
+                return nil
+            end
             local texture, count, locked = GetGuildBankItemInfo(tab, slot)
-            if not texture then return nil end
+            if not texture then
+                return nil
+            end
             local link = GetGuildBankItemLink(tab, slot)
             return { stackCount = count, isLocked = locked, itemID = link and GetItemInfoInstant(link) or 0 }
         end,
-        numSlots = function() return 98 end,
-        split    = SplitGuildBankItem,
-        pickup   = PickupGuildBankItem,
+        numSlots = function()
+            return 98
+        end,
+        split = SplitGuildBankItem,
+        pickup = PickupGuildBankItem,
     }
 
     local function StopJob()
@@ -737,23 +869,43 @@ do
     -- destination are skipped for the rest of the job.
     local function Later()
         local this = job
-        C_Timer.After(0.05, function() if job == this then StepJob() end end)
+        C_Timer.After(0.05, function()
+            if job == this then
+                StepJob()
+            end
+        end)
     end
 
     -- One split per server round trip: issue, wait for the source stack to
     -- settle at the expected count, repeat.
     StepJob = function()
-        if not job then return end
-        if not job.window:IsVisible() then StopJob(); return end
+        if not job then
+            return
+        end
+        if not job.window:IsVisible() then
+            StopJob()
+            return
+        end
         local ops = job.ops
         local info = ops.info(job.bag, job.slot)
-        if not info or info.itemID ~= job.itemID then StopJob(); return end
+        if not info or info.itemID ~= job.itemID then
+            StopJob()
+            return
+        end
         if info.isLocked or (job.pending and info.stackCount ~= job.pending) then
-            if GetTime() - job.issuedAt > 2 then ClearCursor(); StopJob() else Later() end
+            if GetTime() - job.issuedAt > 2 then
+                ClearCursor()
+                StopJob()
+            else
+                Later()
+            end
             return
         end
         job.pending = nil
-        if info.stackCount <= job.size then StopJob(); return end
+        if info.stackCount <= job.size then
+            StopJob()
+            return
+        end
         for _, bagID in ipairs(job.targets) do
             for s = 1, ops.numSlots(bagID) do
                 local key = bagID * 1000 + s
@@ -763,7 +915,10 @@ do
                     ops.split(job.bag, job.slot, job.size)
                     ops.pickup(bagID, s)
                     -- Single placed split: one issue, no settle polling.
-                    if job.once then StopJob(); return end
+                    if job.once then
+                        StopJob()
+                        return
+                    end
                     job.pending = info.stackCount - job.size
                     job.issuedAt = GetTime()
                     Later()
@@ -777,30 +932,54 @@ do
     -- once = a single split placed into the first empty target slot (the views
     -- that draw no empty slots have nowhere to drop a cursor stack).
     local function StartJob(bag, slot, itemID, size, targets, window, ops, once)
-        job = { bag = bag, slot = slot, itemID = itemID, size = size, targets = targets, window = window,
-                ops = ops, used = {}, issuedAt = GetTime(), once = once }
+        job = {
+            bag = bag,
+            slot = slot,
+            itemID = itemID,
+            size = size,
+            targets = targets,
+            window = window,
+            ops = ops,
+            used = {},
+            issuedAt = GetTime(),
+            once = once,
+        }
         StepJob()
     end
 
     -- Closing the window a dialog or job belongs to ends it; other windows are unaffected.
     local function WindowHidden(win)
-        if dialog and dialog._window == win then dialog:Hide() end
-        if job and job.window == win then StopJob() end
+        if dialog and dialog._window == win then
+            dialog:Hide()
+        end
+        if job and job.window == win then
+            StopJob()
+        end
         -- Closing the bags ends every session unmerge; the next open merges again.
-        if win == CUI_Bags and CUI_Bags._unmergedLinks then wipe(CUI_Bags._unmergedLinks) end
+        if win == CUI_Bags and CUI_Bags._unmergedLinks then
+            wipe(CUI_Bags._unmergedLinks)
+        end
     end
 
     -- Re-checks the slot the dialog was opened on after every repaint: pooled
     -- buttons get repurposed, and the count can change under us.
     local function Validate()
-        if not dialog or not dialog:IsShown() then return end
+        if not dialog or not dialog:IsShown() then
+            return
+        end
         local owner = dialog._owner
-        if not owner:IsVisible() or dialog._ops.ownerBag(owner) ~= dialog._bag or owner:GetID() ~= dialog._slot then
-            dialog:Hide(); return
+        if
+            not owner:IsVisible()
+            or dialog._ops.ownerBag(owner) ~= dialog._bag
+            or owner:GetID() ~= dialog._slot
+        then
+            dialog:Hide()
+            return
         end
         local info = dialog._ops.info(dialog._bag, dialog._slot)
         if not info or info.itemID ~= dialog._itemID or not info.stackCount or info.stackCount < 2 then
-            dialog:Hide(); return
+            dialog:Hide()
+            return
         end
         if info.stackCount ~= dialog._max then
             dialog:SetRange(1, info.stackCount)
@@ -814,14 +993,20 @@ do
         local bg = b:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(0.15, 0.15, 0.15, 1)
-        if PP and PP.CreateBorder then PP.CreateBorder(b, 0.25, 0.25, 0.25, 1) end
+        if PP and PP.CreateBorder then
+            PP.CreateBorder(b, 0.25, 0.25, 0.25, 1)
+        end
         local fs = b:CreateFontString(nil, "OVERLAY")
         SetBagFont(fs, 12)
         fs:SetPoint("CENTER", 0, 0)
         fs:SetTextColor(1, 1, 1, 0.9)
         fs:SetText(label)
-        b:SetScript("OnEnter", function() bg:SetColorTexture(0.2, 0.2, 0.2, 1) end)
-        b:SetScript("OnLeave", function() bg:SetColorTexture(0.15, 0.15, 0.15, 1) end)
+        b:SetScript("OnEnter", function()
+            bg:SetColorTexture(0.2, 0.2, 0.2, 1)
+        end)
+        b:SetScript("OnLeave", function()
+            bg:SetColorTexture(0.15, 0.15, 0.15, 1)
+        end)
         return b
     end
 
@@ -830,7 +1015,15 @@ do
         local bag, slot, n, ops = d._bag, d._slot, d:Current(), d._ops
         d:Hide()
         local info = ops.info(bag, slot)
-        if not info or info.isLocked or info.itemID ~= d._itemID or not info.stackCount or n >= info.stackCount then return end
+        if
+            not info
+            or info.isLocked
+            or info.itemID ~= d._itemID
+            or not info.stackCount
+            or n >= info.stackCount
+        then
+            return
+        end
         -- Session unmerge mark, written BEFORE the split so the refresh it
         -- triggers already renders the pieces apart. Same link form the slot
         -- tables key on; bags and reagent window only (bank items never merge here).
@@ -838,7 +1031,10 @@ do
             local link = C_Container.GetContainerItemLink(bag, slot)
             if link then
                 local set = CUI_Bags._unmergedLinks
-                if not set then set = {}; CUI_Bags._unmergedLinks = set end
+                if not set then
+                    set = {}
+                    CUI_Bags._unmergedLinks = set
+                end
                 set[link] = true
             end
         end
@@ -858,17 +1054,23 @@ do
             local bg = d:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
             bg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-            if PP and PP.CreateBorder then PP.CreateBorder(d, 0.2, 0.2, 0.2, 1) end
+            if PP and PP.CreateBorder then
+                PP.CreateBorder(d, 0.2, 0.2, 0.2, 1)
+            end
         end,
         font = SetBagFont,
-        button = function(parent, w, h, label) return MakeButton(parent, w, h, label, CUI.PP) end,
+        button = function(parent, w, h, label)
+            return MakeButton(parent, w, h, label, CUI.PP)
+        end,
         editBox = function(eb)
             local PP = CUI.PP
             eb:SetFont(GetFont(), 12, "")
             local ebBg = eb:CreateTexture(nil, "BACKGROUND")
             ebBg:SetAllPoints()
             ebBg:SetColorTexture(0.1, 0.1, 0.1, 1)
-            if PP and PP.CreateBorder then PP.CreateBorder(eb, 0.15, 0.15, 0.15, 1) end
+            if PP and PP.CreateBorder then
+                PP.CreateBorder(eb, 0.15, 0.15, 0.15, 1)
+            end
         end,
         close = function(close)
             close:SetSize(12, 12)
@@ -877,34 +1079,69 @@ do
             close.icon:SetAllPoints()
             close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
             close.icon:SetAlpha(0.7)
-            close:SetScript("OnEnter", function() close.icon:SetAlpha(0.9) end)
-            close:SetScript("OnLeave", function() close.icon:SetAlpha(0.7) end)
+            close:SetScript("OnEnter", function()
+                close.icon:SetAlpha(0.9)
+            end)
+            close:SetScript("OnLeave", function()
+                close.icon:SetAlpha(0.7)
+            end)
         end,
     }
 
     local function CreateDialog()
         local d = CUI.CreateQuantityDialog({
-            name = "CUI_BagsStackSplitFrame", width = 206, height = 94,
-            title = CludesUI.L("Split Stack"), editWidth = 56, maxLetters = 5,
+            name = "CUI_BagsStackSplitFrame",
+            width = 206,
+            height = 94,
+            title = CludesUI.L("Split Stack"),
+            editWidth = 56,
+            maxLetters = 5,
             skin = SKIN,
-            onEnter = function() DoSplit(IsAltKeyDown()) end,
+            onEnter = function()
+                DoSplit(IsAltKeyDown())
+            end,
             buttons = {
-                { key = "split", label = CludesUI.L("Split"), width = 88, height = 24,
-                  point = "BOTTOMLEFT", onClick = function() DoSplit(false) end, primary = true },
-                { key = "auto", label = CludesUI.L("Auto Split"), width = 88, height = 24,
-                  point = "BOTTOMRIGHT", onClick = function() DoSplit(true) end,
-                  tooltip = CludesUI.L("Split this stack into empty slots repeatedly until only the chosen amount or less remains. Alt+Enter does the same.") },
+                {
+                    key = "split",
+                    label = CludesUI.L("Split"),
+                    width = 88,
+                    height = 24,
+                    point = "BOTTOMLEFT",
+                    onClick = function()
+                        DoSplit(false)
+                    end,
+                    primary = true,
+                },
+                {
+                    key = "auto",
+                    label = CludesUI.L("Auto Split"),
+                    width = 88,
+                    height = 24,
+                    point = "BOTTOMRIGHT",
+                    onClick = function()
+                        DoSplit(true)
+                    end,
+                    tooltip = CludesUI.L(
+                        "Split this stack into empty slots repeatedly until only the chosen amount or less remains. Alt+Enter does the same."
+                    ),
+                },
             },
         })
 
         hooksecurefunc(CUI_Bags, "RefreshInventory", Validate)
-        CUI_Bags:HookScript("OnHide", function() WindowHidden(CUI_Bags) end)
+        CUI_Bags:HookScript("OnHide", function()
+            WindowHidden(CUI_Bags)
+        end)
         hooksecurefunc(CUI_BagsReagent, "RefreshInventory", Validate)
-        CUI_BagsReagent:HookScript("OnHide", function() WindowHidden(CUI_BagsReagent) end)
+        CUI_BagsReagent:HookScript("OnHide", function()
+            WindowHidden(CUI_BagsReagent)
+        end)
         local bankFrame = _G.CUI_BankFrame
         if bankFrame then
             hooksecurefunc(bankFrame, "RefreshBank", Validate)
-            bankFrame:HookScript("OnHide", function() WindowHidden(bankFrame) end)
+            bankFrame:HookScript("OnHide", function()
+                WindowHidden(bankFrame)
+            end)
         end
         return d
     end
@@ -918,16 +1155,22 @@ do
         -- land and a plain Split places its stack instead. Everywhere else the
         -- Stack Splitter setting decides whether the dialog replaces the popup.
         local placeOnce = (window == CUI_Bags and selectedCategoryIndex >= 0)
-        if not placeOnce and BP().bagStackSplitter ~= true then return end
+        if not placeOnce and BP().bagStackSplitter ~= true then
+            return
+        end
         local maxStack = CUI.StackSplitFor(owner)
-        if not maxStack then return end
+        if not maxStack then
+            return
+        end
         -- Its OnHide leaves .owner on the owner button and writes a flag onto
         -- it, which nothing reads on a click path.
         CUI.TakeStackSplit()
         ops = ops or containerOps
         local bag, slot = ops.ownerBag(owner), owner:GetID()
         local info = ops.info(bag, slot)
-        if not info or not info.itemID then return end
+        if not info or not info.itemID then
+            return
+        end
         dialog = dialog or CreateDialog()
         StopJob()
         dialog._owner, dialog._bag, dialog._slot, dialog._itemID = owner, bag, slot, info.itemID
@@ -943,7 +1186,9 @@ do
     -- so the same PostClick takeover applies. Auto Split stays on the viewed tab.
     local function HookGuildBank()
         local gb = GuildBankFrame
-        if not gb or not gb.Columns then return end
+        if not gb or not gb.Columns then
+            return
+        end
         for _, column in ipairs(gb.Columns) do
             for _, b in ipairs(column.Buttons) do
                 b:HookScript("PostClick", function(self)
@@ -952,7 +1197,9 @@ do
             end
         end
         hooksecurefunc(gb, "Update", Validate)
-        gb:HookScript("OnHide", function() WindowHidden(gb) end)
+        gb:HookScript("OnHide", function()
+            WindowHidden(gb)
+        end)
     end
     if EventUtil and EventUtil.ContinueOnAddOnLoaded then
         EventUtil.ContinueOnAddOnLoaded("Blizzard_GuildBankUI", HookGuildBank)

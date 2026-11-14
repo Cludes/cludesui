@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_MerchantBulkBuy.lua
 --  Merchant Bulk Buy (opt-in, CludesUIDB.merchantBulkBuy): a shift-click on
@@ -15,7 +17,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 local WSkin = ns.WSkin
-if not WSkin then return end
+if not WSkin then
+    return
+end
 
 local CUI = CludesUI
 local Theme = WSkin.Theme
@@ -24,15 +28,19 @@ local band = bit.band
 local MAX_COSTS = MAX_ITEM_COST or 3
 
 local BAGS = { BACKPACK_CONTAINER }
-for bag = 1, NUM_BAG_SLOTS do BAGS[#BAGS + 1] = bag end
+for bag = 1, NUM_BAG_SLOTS do
+    BAGS[#BAGS + 1] = bag
+end
 local REAGENT_BAG = Enum.BagIndex and Enum.BagIndex.ReagentBag
-if REAGENT_BAG then BAGS[#BAGS + 1] = REAGENT_BAG end
+if REAGENT_BAG then
+    BAGS[#BAGS + 1] = REAGENT_BAG
+end
 
 local events = CreateFrame("Frame")
 local dialog, job, hooked
-local confirm          -- the open purchase confirm's handle (CUI:ShowConfirmPopup)
-local costParts = {}   -- CostText's pieces, reused
-local limits = {}      -- MaxBundles' breakdown, read by the button tooltips
+local confirm -- the open purchase confirm's handle (CUI:ShowConfirmPopup)
+local costParts = {} -- CostText's pieces, reused
+local limits = {} -- MaxBundles' breakdown, read by the button tooltips
 local TIP_OPTS = { justify = "LEFT" }
 
 local function Enabled()
@@ -80,7 +88,9 @@ local function MaxBundles(index, info, itemID, step, stackSize)
     local room, partial = BagRoom(itemID, stackSize)
     local fit = floor(min(room, 999999) / step)
     local afford = math.huge
-    if info.price > 0 then afford = floor(GetMoney() / info.price) end
+    if info.price > 0 then
+        afford = floor(GetMoney() / info.price)
+    end
     for i = 1, MAX_COSTS do
         local _, value, link, currencyName = GetMerchantItemCostItem(index, i)
         if link and value and value > 0 then
@@ -91,11 +101,15 @@ local function MaxBundles(index, info, itemID, step, stackSize)
             else
                 have = C_Item.GetItemCount(link, false, false, true)
             end
-            if have then afford = min(afford, floor(have / value)) end
+            if have then
+                afford = min(afford, floor(have / value))
+            end
         end
     end
     local n = min(fit, afford)
-    if info.numAvailable >= 0 then n = min(n, info.numAvailable) end
+    if info.numAvailable >= 0 then
+        n = min(n, info.numAvailable)
+    end
     limits.fit, limits.afford, limits.stock, limits.partial = fit, afford, info.numAvailable, partial
     return max(n, 0)
 end
@@ -118,7 +132,9 @@ end
 -- A purchase paid in a limited currency: Blizzard confirms it with its own
 -- prompt, which says when it is the last one you can make.
 local function LimitedCurrencyCost(index)
-    if (GetMerchantItemCostInfo(index) or 0) ~= 1 then return false end
+    if (GetMerchantItemCostInfo(index) or 0) ~= 1 then
+        return false
+    end
     local _, _, link = GetMerchantItemCostItem(index, 1)
     local limited = C_Item.GetLimitedCurrencyItemInfo
     return link ~= nil and limited ~= nil and limited(link) ~= nil
@@ -145,7 +161,9 @@ local function StopJob()
     local j = job
     job = nil
     SyncEvents()
-    if not j then return end
+    if not j then
+        return
+    end
     local got = C_Item.GetItemCount(j.itemID) - j.base
     if got < j.target then
         CUI.Print(CludesUI.Lf("Bulk Buy stopped after %1$d of %2$d.", max(got, 0), j.target))
@@ -156,25 +174,47 @@ end
 -- in the count, at the target, or when the merchant no longer sells the item.
 local function StepJob()
     local j = job
-    if not j then return end
+    if not j then
+        return
+    end
     local count = C_Item.GetItemCount(j.itemID)
-    if count < j.last then StopJob(); return end
+    if count < j.last then
+        StopJob()
+        return
+    end
     j.last = count
     local got = count - j.base
-    if got < j.issued then return end
+    if got < j.issued then
+        return
+    end
     local n = floor(min(j.chunk, j.target - got) / j.step) * j.step
-    if n <= 0 or GetMerchantItemID(j.index) ~= j.itemID then StopJob(); return end
+    if n <= 0 or GetMerchantItemID(j.index) ~= j.itemID then
+        StopJob()
+        return
+    end
     j.issued = got + n
     BuyMerchantItem(j.index, n)
 end
 
 -- One order at a time: a new one ends the run still going (and says so).
 local function StartJob(index, itemID, qty, step, chunk)
-    if job then StopJob() end
-    if GetMerchantItemID(index) ~= itemID then return end
+    if job then
+        StopJob()
+    end
+    if GetMerchantItemID(index) ~= itemID then
+        return
+    end
     local count = C_Item.GetItemCount(itemID)
-    job = { index = index, itemID = itemID, target = qty, step = step, chunk = chunk,
-            base = count, last = count, issued = 0 }
+    job = {
+        index = index,
+        itemID = itemID,
+        target = qty,
+        step = step,
+        chunk = chunk,
+        base = count,
+        last = count,
+        issued = 0,
+    }
     SyncEvents()
     StepJob()
 end
@@ -194,7 +234,12 @@ local function Refresh()
     local d = dialog
     local index, owner = d._index, d._owner
     local info = (MerchantFrame.selectedTab or 1) == 1 and C_MerchantFrame.GetItemInfo(index)
-    if not info or GetMerchantItemID(index) ~= d._itemID or not owner:IsVisible() or owner:GetID() ~= index then
+    if
+        not info
+        or GetMerchantItemID(index) ~= d._itemID
+        or not owner:IsVisible()
+        or owner:GetID() ~= index
+    then
         d:Hide()
         return
     end
@@ -213,25 +258,34 @@ local function DoBuy()
     local qty = d:Current()
     local index, itemID, step, chunk, info = d._index, d._itemID, d._step, d._chunk, d._info
     d:Hide()
-    if qty < step then return end
+    if qty < step then
+        return
+    end
     local bundles = qty / step
     local function start()
         confirm = nil
         StartJob(index, itemID, qty, step, chunk)
     end
     if info.hasExtendedCost or info.price * bundles >= (MERCHANT_HIGH_PRICE_COST or 1500000) then
-        local msg = CludesUI.Lf("Buy %1$d x %2$s for %3$s?", qty,
-            GetMerchantItemLink(index) or info.name or "", CostText(index, info, bundles))
+        local msg = CludesUI.Lf(
+            "Buy %1$d x %2$s for %3$s?",
+            qty,
+            GetMerchantItemLink(index) or info.name or "",
+            CostText(index, info, bundles)
+        )
         if not C_MerchantFrame.IsMerchantItemRefundable(index) then
             msg = msg .. "\n\n" .. CludesUI.L("This purchase is not refundable.")
         end
         confirm = CUI:ShowConfirmPopup({
-            title       = "Bulk Buy",
-            message     = msg,
+            title = "Bulk Buy",
+            message = msg,
             confirmText = "Buy",
-            cancelText  = "Cancel",
-            onConfirm   = start,
-            onCancel    = function() confirm = nil; SyncEvents() end,
+            cancelText = "Cancel",
+            onConfirm = start,
+            onCancel = function()
+                confirm = nil
+                SyncEvents()
+            end,
         })
         SyncEvents()
     else
@@ -243,7 +297,10 @@ end
 -- snaps to one, so the box shows what is bought.
 local function BuyOrSnap()
     local q = dialog:Current()
-    if q ~= dialog._eb:GetNumber() then dialog:SetValue(q) return end
+    if q ~= dialog._eb:GetNumber() then
+        dialog:SetValue(q)
+        return
+    end
     DoBuy()
 end
 
@@ -252,7 +309,9 @@ local function NextStack()
     local d = dialog
     local cur = d:Current()
     local n = (floor(cur / d._stackSize) + 1) * d._stackSize
-    if floor(n / d._step) * d._step <= cur then n = cur + d._step end
+    if floor(n / d._step) * d._step <= cur then
+        n = cur + d._step
+    end
     return n
 end
 
@@ -273,7 +332,8 @@ local function MaxTip()
     local d, lim = dialog, limits
     local top = floor(d._max / d._step)
     local t = CludesUI.Lf("You can buy: %s", Accent(d._max))
-        .. "\n" .. CludesUI.Lf("You can fit: %s", LimitAmount(lim.fit, top))
+        .. "\n"
+        .. CludesUI.Lf("You can fit: %s", LimitAmount(lim.fit, top))
     if lim.afford ~= math.huge then
         t = t .. "\n" .. CludesUI.Lf("You can afford: %s", LimitAmount(lim.afford, top))
     end
@@ -289,7 +349,8 @@ local function StackTip()
     local d = dialog
     local n = floor(min(NextStack(), d._max) / d._step) * d._step
     local t = CludesUI.Lf("+1 Stack goes to: %s", Accent(max(n, 0)))
-        .. "\n" .. CludesUI.Lf("Stack size: %d", d._stackSize)
+        .. "\n"
+        .. CludesUI.Lf("Stack size: %d", d._stackSize)
     if limits.partial > 0 then
         t = t .. "\n" .. CludesUI.Lf("Room in partial stacks: %d", limits.partial)
     end
@@ -299,7 +360,9 @@ end
 local function AddStack(b)
     dialog:SetValue(NextStack())
     -- The tooltip under the cursor follows the new amount.
-    if b:IsMouseOver() then CUI.ShowWidgetTooltip(b, StackTip, TIP_OPTS) end
+    if b:IsMouseOver() then
+        CUI.ShowWidgetTooltip(b, StackTip, TIP_OPTS)
+    end
 end
 
 -- Blizzard Skins+' look on the shared quantity window: the theme's surface,
@@ -309,10 +372,35 @@ local SKIN = {
         WSkin.SolidTex(d, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, 1):SetAllPoints()
         WSkin.AddBorder(d)
     end,
-    font = function(fs, size) WSkin.Font(fs, nil, nil, nil, size) end,
+    font = function(fs, size)
+        WSkin.Font(fs, nil, nil, nil, size)
+    end,
     button = function(parent, w, h, label)
-        local b = CUI.MakePopupButton(parent, "CENTER", parent, "CENTER", 0, 0,
-            1, 1, 1, 0.7, 1, 1, 1, 0.9, 1, 1, 1, 0.5, 1, 1, 1, 0.6, true)
+        local b = CUI.MakePopupButton(
+            parent,
+            "CENTER",
+            parent,
+            "CENTER",
+            0,
+            0,
+            1,
+            1,
+            1,
+            0.7,
+            1,
+            1,
+            1,
+            0.9,
+            1,
+            1,
+            1,
+            0.5,
+            1,
+            1,
+            1,
+            0.6,
+            true
+        )
         b:SetSize(w, h)
         b:ClearAllPoints()
         WSkin.Font(b._lbl, nil, nil, nil, 12)
@@ -331,27 +419,62 @@ local SKIN = {
 }
 
 local function CreateDialog()
-    if not Theme.fontPath then WSkin.ResolveTheme() end
+    if not Theme.fontPath then
+        WSkin.ResolveTheme()
+    end
     return CUI.CreateQuantityDialog({
-        name = "CUI_MerchantBulkBuyFrame", width = 232, height = 121,
-        title = CludesUI.L("Bulk Buy"), editWidth = 64, maxLetters = 6,
-        extraLine = true, skin = SKIN,
-        onChange = ShowCost, onEnter = BuyOrSnap,
-        onShow = SyncEvents, onHide = SyncEvents,
+        name = "CUI_MerchantBulkBuyFrame",
+        width = 232,
+        height = 121,
+        title = CludesUI.L("Bulk Buy"),
+        editWidth = 64,
+        maxLetters = 6,
+        extraLine = true,
+        skin = SKIN,
+        onChange = ShowCost,
+        onEnter = BuyOrSnap,
+        onShow = SyncEvents,
+        onHide = SyncEvents,
         buttons = {
-            { key = "stack", label = CludesUI.L("+1 Stack"), width = 66, height = 27,
-              point = "BOTTOMLEFT", onClick = AddStack, tooltip = StackTip, tooltipOpts = TIP_OPTS },
-            { key = "max", label = CludesUI.L("Max"), width = 66, height = 27,
-              point = "BOTTOM", onClick = function() dialog:SetValue(dialog._max) end,
-              tooltip = MaxTip, tooltipOpts = TIP_OPTS },
-            { key = "buy", label = CludesUI.L("Buy"), width = 66, height = 27,
-              point = "BOTTOMRIGHT", onClick = BuyOrSnap, primary = true },
+            {
+                key = "stack",
+                label = CludesUI.L("+1 Stack"),
+                width = 66,
+                height = 27,
+                point = "BOTTOMLEFT",
+                onClick = AddStack,
+                tooltip = StackTip,
+                tooltipOpts = TIP_OPTS,
+            },
+            {
+                key = "max",
+                label = CludesUI.L("Max"),
+                width = 66,
+                height = 27,
+                point = "BOTTOM",
+                onClick = function()
+                    dialog:SetValue(dialog._max)
+                end,
+                tooltip = MaxTip,
+                tooltipOpts = TIP_OPTS,
+            },
+            {
+                key = "buy",
+                label = CludesUI.L("Buy"),
+                width = 66,
+                height = 27,
+                point = "BOTTOMRIGHT",
+                onClick = BuyOrSnap,
+                primary = true,
+            },
         },
     })
 end
 
 local function Validate()
-    if dialog and dialog:IsShown() then Refresh() end
+    if dialog and dialog:IsShown() then
+        Refresh()
+    end
 end
 -- Merchant repaints come in bursts: one refresh per frame while the window shows.
 local refreshSoon = WSkin.Debounce(Validate)
@@ -360,21 +483,30 @@ local refreshSoon = WSkin.Debounce(Validate)
 -- edit box (not the window's own) as a link.
 local function SingleBuyClick(index)
     local focus = GetCurrentKeyBoardFocus()
-    return (MerchantFrame.selectedTab or 1) == 1 and IsModifiedClick("SPLITSTACK")
+    return (MerchantFrame.selectedTab or 1) == 1
+        and IsModifiedClick("SPLITSTACK")
         and GetMerchantItemMaxStack(index) == 1
         and (not focus or (dialog ~= nil and focus == dialog._eb))
         and not CUI.PadGamepadUI()
 end
 
 local function TakeOver(button)
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     local index = button:GetID()
     local split = CUI.StackSplitFor(button)
-    if not split and not (index and SingleBuyClick(index)) then return end
+    if not split and not (index and SingleBuyClick(index)) then
+        return
+    end
     local itemID = index and GetMerchantItemID(index)
     local info = itemID and C_MerchantFrame.GetItemInfo(index)
-    if not info or info.currencyID or LimitedCurrencyCost(index) then return end
-    if split then CUI.TakeStackSplit() end
+    if not info or info.currencyID or LimitedCurrencyCost(index) then
+        return
+    end
+    if split then
+        CUI.TakeStackSplit()
+    end
     dialog = dialog or CreateDialog()
     local step = max(info.stackCount, 1)
     dialog._owner, dialog._index, dialog._itemID = button, index, itemID
@@ -392,18 +524,24 @@ local function TakeOver(button)
     b.stack._resetAnim()
     dialog:Open(button)
     Refresh()
-    if dialog:IsShown() then dialog:FocusInput() end
+    if dialog:IsShown() then
+        dialog:FocusInput()
+    end
 end
 
 -- A merchant repaint: Blizzard's MerchantFrame_Update, or Expand Vendor UI's
 -- grid, which repaints its own tiles (page flips) without one.
 local function OnRepaint()
-    if dialog and dialog:IsShown() then refreshSoon() end
+    if dialog and dialog:IsShown() then
+        refreshSoon()
+    end
 end
 CludesUI._Merchant_BulkBuyRepaint = OnRepaint
 
 local function Install()
-    if hooked then return end
+    if hooked then
+        return
+    end
     hooked = true
     if type(MerchantItemButton_OnModifiedClick) == "function" then
         hooksecurefunc("MerchantItemButton_OnModifiedClick", TakeOver)
@@ -418,21 +556,35 @@ CludesUI._Merchant_RefreshBulkBuy = function()
         Install()
         return
     end
-    if confirm then CUI:CloseConfirmPopup(confirm); confirm = nil end
-    if dialog then dialog:Hide() end
+    if confirm then
+        CUI:CloseConfirmPopup(confirm)
+        confirm = nil
+    end
+    if dialog then
+        dialog:Hide()
+    end
     StopJob()
 end
 
 events:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" then
-        if arg1 ~= ADDON_NAME then return end
+        if arg1 ~= ADDON_NAME then
+            return
+        end
         self:UnregisterEvent("ADDON_LOADED")
-        if Enabled() then Install() end
+        if Enabled() then
+            Install()
+        end
     elseif event == "BAG_UPDATE_DELAYED" then
         StepJob()
     elseif event == "MERCHANT_CLOSED" then
-        if confirm then CUI:CloseConfirmPopup(confirm); confirm = nil end
-        if dialog then dialog:Hide() end
+        if confirm then
+            CUI:CloseConfirmPopup(confirm)
+            confirm = nil
+        end
+        if dialog then
+            dialog:Hide()
+        end
         StopJob()
     else
         -- UI_ERROR_MESSAGE: any red error during a run ends it, so a purchase

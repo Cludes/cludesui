@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_StyleCards.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  fourth pick card, WoW Forever. Builds frames only when called.
 -------------------------------------------------------------------------------
 local CludesUI = _G.CludesUI
-if not CludesUI then return end
+if not CludesUI then
+    return
+end
 
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it, the
 -- options addon fills it in place): each builder below takes CreateFrame from
@@ -29,8 +33,8 @@ local IS_FOREVER = CludesUI.IS_FOREVER == true
 -- the left); 193x77 of visible art at 1x.
 local CLASSIC_FRAME = "Interface\\TargetingFrame\\UI-TargetingFrame"
 local CLASSIC_EMPTY = "Interface\\Buttons\\UI-Quickslot"
-local CLASSIC_FILL  = "Interface\\TargetingFrame\\UI-StatusBar"
-local CLASSIC_CAP   = "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf"
+local CLASSIC_FILL = "Interface\\TargetingFrame\\UI-StatusBar"
+local CLASSIC_CAP = "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf"
 
 local CARD_W, CARD_H, CARD_GAP = 212, 296, 16
 -- Display cards (announcements) have no button: the caption is the last row.
@@ -133,7 +137,11 @@ local function DrawBlizzMock(stage, PP, MakeBorder, _eg, _font, forever)
         art:SetAllPoints()
         -- Plain Blizzard Style draws the retail art on WoW Forever too, as
         -- live (CludesUI.StockAtlas); the WoW Forever card keeps its own.
-        if forever then art:SetAtlas(ART, false) else CludesUI.StockAtlas(art, ART, false) end
+        if forever then
+            art:SetAtlas(ART, false)
+        else
+            CludesUI.StockAtlas(art, ART, false)
+        end
         if AtlasOK(HEALTH) then
             local h = frame:CreateTexture(nil, "ARTWORK", nil, 1)
             h:SetAtlas(HEALTH, false)
@@ -173,7 +181,11 @@ local function DrawBlizzMock(stage, PP, MakeBorder, _eg, _font, forever)
         PP.Point(ic, "TOPLEFT", stage, "TOP", -rowW / 2 + (i - 1) * (ICON + GAP), -76)
         local t = ic:CreateTexture(nil, "ARTWORK")
         if slotOK then
-            if forever then t:SetAtlas(SLOT, false) else CludesUI.StockAtlas(t, SLOT, false) end
+            if forever then
+                t:SetAtlas(SLOT, false)
+            else
+                CludesUI.StockAtlas(t, SLOT, false)
+            end
             PP.Point(t, "TOPLEFT", ic, "TOPLEFT", -3, 3)
             PP.Point(t, "BOTTOMRIGHT", ic, "BOTTOMRIGHT", 3, -3)
         else
@@ -328,7 +340,9 @@ local function DrawClassicMock(stage, PP, _mb, _eg, font)
         local t = cap:CreateTexture(nil, "ARTWORK")
         t:SetAllPoints()
         t:SetTexture(CLASSIC_CAP)
-        if side == 2 then t:SetTexCoord(1, 0, 0, 1) end
+        if side == 2 then
+            t:SetTexCoord(1, 0, 0, 1)
+        end
     end
 end
 
@@ -358,24 +372,50 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
     local CreateFrame = POOL.CreateFrame
     local PP = CludesUI.PanelPP
     local MakeBorder = CludesUI.MakeBorder
-    if not (PP and MakeBorder) then return nil end
-    local L = CludesUI.L or function(s) return s end
+    if not (PP and MakeBorder) then
+        return nil
+    end
+    local L = CludesUI.L or function(s)
+        return s
+    end
     -- The options font once it has loaded, else the locale-aware core font
     -- (the picker runs before the options addon loads).
-    local FONT = CludesUI._font or CludesUI.EXPRESSWAY
+    local FONT = CludesUI._font
+        or CludesUI.EXPRESSWAY
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     opts = opts or {}
 
     local DEFS = {
-        { key = "cui", r = CUI_TEAL.r, g = CUI_TEAL.g, b = CUI_TEAL.b, title = "CludesUI Style", tag = "DEFAULT",
-          caption = "Flat, clean and modern. The look CludesUI was designed around.",
-          draw = DrawCUIMock },
-        { key = "blizzard", r = GOLD_R, g = GOLD_G, b = GOLD_B, title = "Blizzard Style", tag = "BLIZZARD ART",
-          caption = "Blizzard's own frame and button art, with CludesUI's features.",
-          draw = DrawBlizzMock },
-        { key = "classic", r = BRONZE_R, g = BRONZE_G, b = BRONZE_B, title = "Classic WoW UI", tag = "VANILLA ART",
-          caption = "The original frames, rings and slots where the game has them, with CludesUI's features.",
-          draw = DrawClassicMock },
+        {
+            key = "cui",
+            r = CUI_TEAL.r,
+            g = CUI_TEAL.g,
+            b = CUI_TEAL.b,
+            title = "CludesUI Style",
+            tag = "DEFAULT",
+            caption = "Flat, clean and modern. The look CludesUI was designed around.",
+            draw = DrawCUIMock,
+        },
+        {
+            key = "blizzard",
+            r = GOLD_R,
+            g = GOLD_G,
+            b = GOLD_B,
+            title = "Blizzard Style",
+            tag = "BLIZZARD ART",
+            caption = "Blizzard's own frame and button art, with CludesUI's features.",
+            draw = DrawBlizzMock,
+        },
+        {
+            key = "classic",
+            r = BRONZE_R,
+            g = BRONZE_G,
+            b = BRONZE_B,
+            title = "Classic WoW UI",
+            tag = "VANILLA ART",
+            caption = "The original frames, rings and slots where the game has them, with CludesUI's features.",
+            draw = DrawClassicMock,
+        },
     }
 
     local display = opts.display == true
@@ -383,10 +423,20 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
     -- WoW Forever: its own pick card on that client, second in the row (the
     -- announcement cards never show there).
     if IS_FOREVER and not display then
-        table.insert(DEFS, 2, { key = "forever", r = FOREVER_R, g = FOREVER_G, b = FOREVER_B,
-          title = "WoW Forever", tag = "FOREVER ART",
-          caption = "Forever's bronze frames, gryphons and round badges, with CludesUI's features.",
-          draw = DrawForeverMock })
+        table.insert(
+            DEFS,
+            2,
+            {
+                key = "forever",
+                r = FOREVER_R,
+                g = FOREVER_G,
+                b = FOREVER_B,
+                title = "WoW Forever",
+                tag = "FOREVER ART",
+                caption = "Forever's bronze frames, gryphons and round badges, with CludesUI's features.",
+                draw = DrawForeverMock,
+            }
+        )
     end
     -- Another default look: its card takes the DEFAULT tag where it stands,
     -- so the CludesUI card still leads the row.
@@ -454,7 +504,9 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
         cap:SetWordWrap(true)
         -- Three lines fit between the stage and the button; a longer wrap
         -- (wider fallback font) is cut rather than run into the button.
-        if cap.SetMaxLines then cap:SetMaxLines(3) end
+        if cap.SetMaxLines then
+            cap:SetMaxLines(3)
+        end
         PP.Point(cap, "TOP", stage, "BOTTOM", 0, -10)
         cap:SetText(L(def.caption))
 
@@ -510,10 +562,18 @@ function CludesUI.BuildStyleCards(parent, topY, opts)
                     lbl:SetTextColor(1, 1, 1, 0.95)
                 end
             end
-            local function Enter() hovered = true; Paint() end
-            local function Leave() hovered = false; Paint() end
+            local function Enter()
+                hovered = true
+                Paint()
+            end
+            local function Leave()
+                hovered = false
+                Paint()
+            end
             local function Pick()
-                if pickable and opts.onPick then opts.onPick(def.key) end
+                if pickable and opts.onPick then
+                    opts.onPick(def.key)
+                end
             end
             card:SetScript("OnEnter", Enter)
             card:SetScript("OnLeave", Leave)

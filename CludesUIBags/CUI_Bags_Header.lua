@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Header.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ns = select(2, ...)
 local I = ns._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local CUI = CludesUI
@@ -20,7 +24,9 @@ local VisualSortCompare = I.VisualSortCompare
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
 local selectedCategoryIndex = I.selectedCategoryIndex
-I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v) selectedCategoryIndex = v end
+I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v)
+    selectedCategoryIndex = v
+end
 
 -------------------------------------------------------------------------------
 --  UI Components -- Header
@@ -29,10 +35,14 @@ I.categoryIndexSetters[#I.categoryIndexSetters + 1] = function(v) selectedCatego
 -- (SyncHeaderIcons): the count truncates first, then the title, both with "...".
 function CUI_Bags:FitHeaderText()
     local hdr, edge = self.Header, self._hdrEdge
-    if not (hdr and edge) then return end
+    if not (hdr and edge) then
+        return
+    end
     local title, count = hdr.title, hdr.itemCount
     local tl, el = title:GetLeft(), edge:GetLeft()
-    if not (tl and el) then return end
+    if not (tl and el) then
+        return
+    end
     if hdr.slotLines then
         hdr.slotLines[1]:Hide()
         hdr.slotLines[2]:Hide()
@@ -78,7 +88,9 @@ function CUI_Bags:FitHeaderText()
 end
 
 local function CreateHeader()
-    if CUI_Bags.Header then return end
+    if CUI_Bags.Header then
+        return
+    end
     local forever = ns.BagsForever()
     local header = CreateFrame("Frame", nil, CUI_Bags)
     header:SetPoint("TOPLEFT", 1, -1)
@@ -111,7 +123,9 @@ local function CreateHeader()
     header.itemCount:SetWordWrap(false)
     header.itemCount:SetJustifyH("LEFT")
     if not forever then
-        local function Fit() CUI_Bags:FitHeaderText() end
+        local function Fit()
+            CUI_Bags:FitHeaderText()
+        end
         hooksecurefunc(header.title, "SetText", Fit)
         hooksecurefunc(header.title, "SetPoint", Fit)
         hooksecurefunc(header.itemCount, "SetText", Fit)
@@ -128,7 +142,9 @@ local function CreateHeader()
     search.bg = search:CreateTexture(nil, "BACKGROUND")
     search.bg:SetAllPoints()
     search.bg:SetColorTexture(0.02, 0.02, 0.02, 1)
-    if not forever and CUI.PanelPP then CUI.PanelPP.CreateBorder(search, 0.25, 0.25, 0.25, 1, 1, "OVERLAY", 7) end
+    if not forever and CUI.PanelPP then
+        CUI.PanelPP.CreateBorder(search, 0.25, 0.25, 0.25, 1, 1, "OVERLAY", 7)
+    end
 
     local placeholder = search:CreateFontString(nil, "OVERLAY")
     SetBagFont(placeholder, 11)
@@ -202,13 +218,15 @@ local function CreateHeader()
         ApplySortEnabled()
     end
     local function UnlockSort()
-        if not sortLocked then return end
+        if not sortLocked then
+            return
+        end
         sortLocked = false
         ApplySortEnabled()
     end
     CUI_Bags._unlockSort = UnlockSort
 
-    local DoVisualSort  -- forward declaration
+    local DoVisualSort -- forward declaration
 
     -- One physical sort at a time: a sidebar drag can unlock the button
     -- mid-run, and a second run would take the muted sound effects for the
@@ -226,7 +244,9 @@ local function CreateHeader()
 
     -- mergeOnly (category views): consolidate partial stacks, then the visual sort.
     local function DoPhysicalSort(mergeOnly)
-        if InCombatLockdown() or physicalActive then return end  -- confirm popup can outlive the pull
+        if InCombatLockdown() or physicalActive then
+            return
+        end -- confirm popup can outlive the pull
         physicalActive = true
         LockSort()
         CUI_Bags.refreshEnabled = false
@@ -244,11 +264,13 @@ local function CreateHeader()
         -- mute ends where it stands, and the run gives nothing back.
         local tookOver = false
 
-        local FinishSort  -- the run's end, below
+        local FinishSort -- the run's end, below
         -- The run's waiting callbacks check their frame's token: cleared, they
         -- drop out. Either frame is made on first use.
         local function StopWaiting(f)
-            if not f then return end
+            if not f then
+                return
+            end
             f._runToken = nil
             f._wait = nil
             f:UnregisterAllEvents()
@@ -263,7 +285,9 @@ local function CreateHeader()
             local wait = {}
             f._wait = wait
             C_Timer.After(SORT_STUCK_AFTER, function()
-                if f._runToken ~= token or f._wait ~= wait then return end
+                if f._runToken ~= token or f._wait ~= wait then
+                    return
+                end
                 StopWaiting(consolidateFrame)
                 StopWaiting(retryFrame)
                 FinishSort()
@@ -280,10 +304,14 @@ local function CreateHeader()
             -- ItemLocation + DoesItemExist guard it used to sit behind is
             -- redundant, GetContainerItemInfo just returned the item.
             local maxStackByID = {}
-            local function ByCount(a, b) return a.count < b.count end
+            local function ByCount(a, b)
+                return a.count < b.count
+            end
             local function DoOnePass()
-                if InCombatLockdown() then return false end  -- combat started: stop moving items
-                local stacks = {}  -- itemID -> { {bag,slot,count}, ... }
+                if InCombatLockdown() then
+                    return false
+                end -- combat started: stop moving items
+                local stacks = {} -- itemID -> { {bag,slot,count}, ... }
                 -- A WoW Forever special bag's stacks merge only with each other
                 -- (a key of their own), so nothing leaves or enters the bag.
                 local special = ns.SpecialBags()
@@ -297,15 +325,24 @@ local function CreateHeader()
                                 maxStack = select(8, C_Item.GetItemInfo(info.itemID))
                                 -- Uncached item data: don't memo the fallback,
                                 -- a later pass can still resolve it.
-                                if maxStack then maxStackByID[info.itemID] = maxStack
-                                else maxStack = 1 end
+                                if maxStack then
+                                    maxStackByID[info.itemID] = maxStack
+                                else
+                                    maxStack = 1
+                                end
                             end
                             if maxStack > 1 and info.stackCount < maxStack then
                                 local key = info.itemID
-                                if special and special[bag] then key = bag .. ":" .. key end
-                                if not stacks[key] then stacks[key] = {} end
+                                if special and special[bag] then
+                                    key = bag .. ":" .. key
+                                end
+                                if not stacks[key] then
+                                    stacks[key] = {}
+                                end
                                 stacks[key][#stacks[key] + 1] = {
-                                    bag = bag, slot = slot, count = info.stackCount,
+                                    bag = bag,
+                                    slot = slot,
+                                    count = info.stackCount,
                                 }
                             end
                         end
@@ -347,18 +384,24 @@ local function CreateHeader()
             end
 
             local consolidateRetry = 0
-            if not consolidateFrame then consolidateFrame = CreateFrame("Frame") end
+            if not consolidateFrame then
+                consolidateFrame = CreateFrame("Frame")
+            end
             local runToken = {}
             consolidateFrame._runToken = runToken
             consolidateFrame:RegisterEvent("BAG_UPDATE")
             ArmBackstop(consolidateFrame, runToken)
             consolidateFrame:SetScript("OnEvent", function(self)
-                if self._runToken ~= runToken then return end
+                if self._runToken ~= runToken then
+                    return
+                end
                 self._wait = nil
                 self:UnregisterAllEvents()
                 consolidateRetry = consolidateRetry + 1
                 C_Timer.After(0.15, function()
-                    if consolidateFrame._runToken ~= runToken then return end
+                    if consolidateFrame._runToken ~= runToken then
+                        return
+                    end
                     if consolidateRetry < 30 and DoOnePass() then
                         self:RegisterEvent("BAG_UPDATE")
                         ArmBackstop(self, runToken)
@@ -376,7 +419,9 @@ local function CreateHeader()
 
         -- Scan, compute sorted order and execute all moves in one pass; re-scans every call so retries work from fresh state.
         local function ComputeAndExecute(bagMin, bagMax)
-            if InCombatLockdown() then return false end  -- combat started: stop moving items
+            if InCombatLockdown() then
+                return false
+            end -- combat started: stop moving items
             bagMin = bagMin or 0
             bagMax = bagMax or 4
             local total = 0
@@ -399,14 +444,20 @@ local function CreateHeader()
                         sKey[total] = key
                         sID[total] = info.itemID
                         items[#items + 1] = {
-                            pos = total, bag = bag, slot = slot,
-                            info = info, itemLink = link, key = key,
+                            pos = total,
+                            bag = bag,
+                            slot = slot,
+                            info = info,
+                            itemLink = link,
+                            key = key,
                         }
                     end
                 end
             end
 
-            if #items == 0 then return false end
+            if #items == 0 then
+                return false
+            end
 
             CUI_CategoryManager:ClassifyAll(items)
             local cats = CUI_CategoryManager:GetCategories()
@@ -420,7 +471,9 @@ local function CreateHeader()
                         ord = ord + 1
                         local members = CUI_CategoryManager:GetGroupMembers(cat.groupName)
                         if members then
-                            for _, mi in ipairs(members) do sectionOrder[mi] = ord end
+                            for _, mi in ipairs(members) do
+                                sectionOrder[mi] = ord
+                            end
                         end
                     end
                 else
@@ -434,7 +487,9 @@ local function CreateHeader()
                 d._sectionOrder = sectionOrder[d.categoryIndex] or 9999
             end
             table.sort(items, function(a, b)
-                if a._sectionOrder ~= b._sectionOrder then return a._sectionOrder < b._sectionOrder end
+                if a._sectionOrder ~= b._sectionOrder then
+                    return a._sectionOrder < b._sectionOrder
+                end
                 return VisualSortCompare(a, b)
             end)
 
@@ -466,7 +521,9 @@ local function CreateHeader()
                     else
                         moves[#moves + 1] = { sBag[s], sSlot[s], sBag[t], sSlot[t] }
                         whereIs[i] = t
-                        if displaced then whereIs[displaced] = s end
+                        if displaced then
+                            whereIs[displaced] = s
+                        end
                         atPos[t] = i
                         atPos[s] = displaced
                         sID[s], sID[t] = sID[t], sID[s]
@@ -507,21 +564,30 @@ local function CreateHeader()
 
         local function RunRetryLoop(bagMin, bagMax, onDone)
             local moved = ComputeAndExecute(bagMin, bagMax)
-            if not moved then onDone(); return end
+            if not moved then
+                onDone()
+                return
+            end
 
             local retryCount = 0
-            if not retryFrame then retryFrame = CreateFrame("Frame") end
+            if not retryFrame then
+                retryFrame = CreateFrame("Frame")
+            end
             local runToken = {}
             retryFrame._runToken = runToken
             retryFrame:RegisterEvent("BAG_UPDATE")
             ArmBackstop(retryFrame, runToken)
             retryFrame:SetScript("OnEvent", function(self)
-                if self._runToken ~= runToken then return end
+                if self._runToken ~= runToken then
+                    return
+                end
                 self._wait = nil
                 self:UnregisterAllEvents()
                 retryCount = retryCount + 1
                 C_Timer.After(0.15, function()
-                    if retryFrame._runToken ~= runToken then return end
+                    if retryFrame._runToken ~= runToken then
+                        return
+                    end
                     local moved = ComputeAndExecute(bagMin, bagMax)
                     if moved and retryCount < 15 then
                         self:RegisterEvent("BAG_UPDATE")
@@ -564,7 +630,10 @@ local function CreateHeader()
         sortCombatStop:RegisterEvent("PLAYER_REGEN_DISABLED")
         sortCombatStop:RegisterEvent("CVAR_UPDATE")
         -- mergeOnly: the display sort saves its order and FinishSort refreshes the bags.
-        ConsolidateStacks(mergeOnly and function() DoVisualSort(true); FinishSort() end or RunSort)
+        ConsolidateStacks(mergeOnly and function()
+            DoVisualSort(true)
+            FinishSort()
+        end or RunSort)
     end
 
     -- skipRefresh: the caller refreshes the bags (a category sort's merge run).
@@ -585,7 +654,9 @@ local function CreateHeader()
         CUI_CategoryManager:ClassifyAll(tempItems)
 
         local itemsByCat = {}
-        for i = 1, #cats do itemsByCat[i] = {} end
+        for i = 1, #cats do
+            itemsByCat[i] = {}
+        end
         for _, data in ipairs(tempItems) do
             local ci = data.categoryIndex
             if ci and itemsByCat[ci] then
@@ -607,13 +678,17 @@ local function CreateHeader()
                             merged[#merged + 1] = data
                         end
                     end
-                    if #merged > 1 then PreCacheSortFields(merged); table.sort(merged, VisualSortCompare) end
+                    if #merged > 1 then
+                        PreCacheSortFields(merged)
+                        table.sort(merged, VisualSortCompare)
+                    end
                     SaveCategoryOrder(cat.groupName, merged)
                     -- Also save per-member order for individual category views
                     for _, mi in ipairs(members) do
                         local memberItems = itemsByCat[mi]
                         if memberItems and #memberItems > 1 then
-                            PreCacheSortFields(memberItems); table.sort(memberItems, VisualSortCompare)
+                            PreCacheSortFields(memberItems)
+                            table.sort(memberItems, VisualSortCompare)
                         end
                         SaveCategoryOrder(mi, memberItems or {})
                     end
@@ -621,13 +696,16 @@ local function CreateHeader()
             elseif not cat.isRecent and not cat.isPinned then
                 local catItems = itemsByCat[ci]
                 if #catItems > 1 then
-                    PreCacheSortFields(catItems); table.sort(catItems, VisualSortCompare)
+                    PreCacheSortFields(catItems)
+                    table.sort(catItems, VisualSortCompare)
                 end
                 SaveCategoryOrder(ci, catItems)
             end
         end
 
-        if not skipRefresh then CUI_Bags:RefreshInventory() end
+        if not skipRefresh then
+            CUI_Bags:RefreshInventory()
+        end
         LockSort()
         C_Timer.After(3, UnlockSort)
     end
@@ -636,7 +714,9 @@ local function CreateHeader()
     -- storm drives our refresh). Sort to Bottom rides their fill direction (right-to-left = start
     -- at backpack = our top), floating free slots to our top. Real Blizzard CVar (also drives their Clean Up); set only while the option is on, re-asserted each sort.
     local function DoBlizzardSort()
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         PlaySound(SOUNDKIT.UI_BAG_SORTING_01)
         LockSort()
         if BP().bagSortToBottom and C_Container.SetSortBagsRightToLeft then
@@ -647,20 +727,24 @@ local function CreateHeader()
     end
 
     sort:SetScript("OnClick", function()
-        if sortLocked or (InCombatLockdown() and SortMovesItems()) then return end
+        if sortLocked or (InCombatLockdown() and SortMovesItems()) then
+            return
+        end
         if selectedCategoryIndex == -1 then
             if CludesUIDB and CludesUIDB.bagSortWarningDismissed then
                 DoPhysicalSort()
             else
                 CUI:ShowConfirmPopup({
-                    title       = "OneBag Sort",
-                    message     = "OneBag sorting will physically reorganize items in your bags. The changes persist even if you disable CludesUI Bags.",
+                    title = "OneBag Sort",
+                    message = "OneBag sorting will physically reorganize items in your bags. The changes persist even if you disable CludesUI Bags.",
                     confirmText = "Sort",
-                    cancelText  = "Cancel",
-                    checkbox    = "Don't show me again",
-                    onConfirm   = function(dontShowAgain)
+                    cancelText = "Cancel",
+                    checkbox = "Don't show me again",
+                    onConfirm = function(dontShowAgain)
                         if dontShowAgain then
-                            if not CludesUIDB then CludesUIDB = {} end
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
                             CludesUIDB.bagSortWarningDismissed = true
                         end
                         DoPhysicalSort()
@@ -672,14 +756,16 @@ local function CreateHeader()
                 DoBlizzardSort()
             else
                 CUI:ShowConfirmPopup({
-                    title       = "MultiBag Sort",
-                    message     = "MultiBag uses Blizzard's built-in sorting system, which reorganizes the items in your default Blizzard bags. The changes persist even if you disable CludesUI Bags.",
+                    title = "MultiBag Sort",
+                    message = "MultiBag uses Blizzard's built-in sorting system, which reorganizes the items in your default Blizzard bags. The changes persist even if you disable CludesUI Bags.",
                     confirmText = "Sort",
-                    cancelText  = "Cancel",
-                    checkbox    = "Don't show me again",
-                    onConfirm   = function(dontShowAgain)
+                    cancelText = "Cancel",
+                    checkbox = "Don't show me again",
+                    onConfirm = function(dontShowAgain)
                         if dontShowAgain then
-                            if not CludesUIDB then CludesUIDB = {} end
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
                             CludesUIDB.bagMultiSortWarningDismissed = true
                         end
                         DoBlizzardSort()
@@ -700,7 +786,7 @@ local function CreateHeader()
     end)
     CUI_Bags._doVisualSort = DoVisualSort
     CUI_Bags._sortBtn = sort
-    ApplySortEnabled()  -- a /reload mid-combat builds the button locked
+    ApplySortEnabled() -- a /reload mid-combat builds the button locked
 
     local bagsBtn = CreateFrame("Button", nil, header)
     bagsBtn:SetSize(24, 24)
@@ -729,7 +815,7 @@ local function CreateHeader()
         end
     end)
     CUI_Bags._bagsBtn = bagsBtn
-    CUI_Bags:SyncHeaderIcons()  -- places Sort / Show Bags / the coin (built only while on)
+    CUI_Bags:SyncHeaderIcons() -- places Sort / Show Bags / the coin (built only while on)
 
     local clear = CreateFrame("Button", nil, search)
     clear:SetSize(22, 22)
@@ -739,9 +825,15 @@ local function CreateHeader()
     clear.tex:SetText("x")
     clear.tex:SetPoint("CENTER", 0, 1)
     clear.tex:SetTextColor(0.8, 0.8, 0.8)
-    if forever then ns.SkinForeverBagSearch(search, search.bg, placeholder, clear) end
+    if forever then
+        ns.SkinForeverBagSearch(search, search.bg, placeholder, clear)
+    end
     clear:Hide()
-    clear:SetScript("OnClick", function() search:SetText(""); search:ClearFocus(); CUI_Bags.ClearSearch() end)
+    clear:SetScript("OnClick", function()
+        search:SetText("")
+        search:ClearFocus()
+        CUI_Bags.ClearSearch()
+    end)
 
     search:SetScript("OnEscapePressed", function(self)
         self:SetText("")
@@ -766,20 +858,28 @@ local function CreateHeader()
     close.icon:SetAllPoints()
     close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
     close.icon:SetAlpha(0.7)
-    close:SetScript("OnEnter", function() close.icon:SetAlpha(0.9) end)
-    close:SetScript("OnLeave", function() close.icon:SetAlpha(0.7) end)
+    close:SetScript("OnEnter", function()
+        close.icon:SetAlpha(0.9)
+    end)
+    close:SetScript("OnLeave", function()
+        close.icon:SetAlpha(0.7)
+    end)
     if forever then
         ns.PositionForeverBagClose(close)
     end
     close:SetScript("OnClick", function()
         CUI_Bags:Hide()
         CUI_BagsReagent:Hide()
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         CludesUIDB.bagsVisible = false
         -- Controller cursor: keep Blizzard's hidden bag frames closed too.
-        if CUI.PadInUse() then ns.PadReleaseBlizzBags() end
+        if CUI.PadInUse() then
+            ns.PadReleaseBlizzBags()
+        end
     end)
-    CUI_Bags._closeBtn = close  -- Junk Marker mode lets a click on it through
+    CUI_Bags._closeBtn = close -- Junk Marker mode lets a click on it through
     -- Controller cursor: Cancel finds each window's close control.
     if CUI.PadCP() then
         CUI_Bags.CloseButton = close

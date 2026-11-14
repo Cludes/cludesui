@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Layout.lua
 --
@@ -13,21 +15,29 @@ local issecretvalue = issecretvalue
 local PP = CludesUI.PP
 
 local I = ns._internals
-local GetSettingsForUnit, UnitToSettingsKey, unitSettingsKey = I.GetSettingsForUnit, I.UnitToSettingsKey, I.unitSettingsKey
+local GetSettingsForUnit, UnitToSettingsKey, unitSettingsKey =
+    I.GetSettingsForUnit, I.UnitToSettingsKey, I.unitSettingsKey
 local SetFSFont, ApplyDarkTheme, SpecHasClassPower = I.SetFSFont, I.ApplyDarkTheme, I.SpecHasClassPower
 local ApplyHealthBarTexture, ApplyHealthBarAlpha = I.ApplyHealthBarTexture, I.ApplyHealthBarAlpha
-local ApplyClassIconTexture, ResolveRestrictedClassColor = I.ApplyClassIconTexture, I.ResolveRestrictedClassColor
+local ApplyClassIconTexture, ResolveRestrictedClassColor =
+    I.ApplyClassIconTexture, I.ResolveRestrictedClassColor
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -- A main frame a mini frame can take its look from: the key of a pick
 -- ("player" always; "target" / "focus" while that frame is enabled and
 -- Visibility does not keep it off screen entirely), else nil.
 local function DonorPick(p, pick)
-    if pick == "player" then return "player" end
+    if pick == "player" then
+        return "player"
+    end
     if pick == "target" or pick == "focus" then
         local s = p[pick]
-        if p.enabledFrames[pick] ~= false and s and ns.VisEffective(s) ~= "never" then return pick end
+        if p.enabledFrames[pick] ~= false and s and ns.VisEffective(s) ~= "never" then
+            return pick
+        end
     end
     return nil
 end
@@ -40,8 +50,7 @@ end
 function ns.UF_MiniDonorKey(unitKey)
     local p = db.profile
     local own = unitKey and p[unitKey]
-    return DonorPick(p, own and own.lookSource)
-        or DonorPick(p, "focus") or DonorPick(p, "target") or "player"
+    return DonorPick(p, own and own.lookSource) or DonorPick(p, "focus") or DonorPick(p, "target") or "player"
 end
 function ns.GetMiniDonorSettings(unitKey)
     return db.profile[ns.UF_MiniDonorKey(unitKey)]
@@ -73,15 +82,21 @@ end
 -- mini frame donor's. Boss1-5 share the one boss table.
 function ns.UF_BossBorderSettings()
     local s = db.profile.boss
-    if s and s.borderCustom == true then return s end
+    if s and s.borderCustom == true then
+        return s
+    end
     return GetMiniDonorSettings()
 end
 
 function ns.UF_BossAuraBorderAboveEffects(s)
-    return s.auraBorderAboveEffects == true and not ns.UF_Blizz()
-        and not s.auraBorderBehind and not s.auraBorderBehindUnitFrame
+    return s.auraBorderAboveEffects == true
+        and not ns.UF_Blizz()
+        and not s.auraBorderBehind
+        and not s.auraBorderBehindUnitFrame
         and (s.auraBorderSize or 1) > 0
-        and s.auraBorderTexture ~= nil and s.auraBorderTexture ~= "solid" and s.auraBorderTexture ~= ""
+        and s.auraBorderTexture ~= nil
+        and s.auraBorderTexture ~= "solid"
+        and s.auraBorderTexture ~= ""
 end
 
 -- Boss "Simple Debuff Display" mode: "none"|"left"|"right". Tolerates legacy booleans
@@ -90,20 +105,30 @@ end
 -- only the side differs.
 function ns.GetBossSimpleDebuffMode(s)
     local v = s and s.simpleDebuffs
-    if v == "none" or v == "left" or v == "right" then return v end
-    if v == false then return "none" end
-    return "left"  -- nil or legacy true
+    if v == "none" or v == "left" or v == "right" then
+        return v
+    end
+    if v == false then
+        return "none"
+    end
+    return "left" -- nil or legacy true
 end
 
 -- Boss Simple Debuff Display X/Y offsets: dedicated simpleDebuffOffsetX/Y if set, else
 -- the regular debuff offsets, so existing offsets carry over as simple-mode defaults
 -- (zero-migration view; import-safe). Once the cog is edited, dedicated keys take over.
 function ns.GetBossSimpleDebuffOffset(s)
-    if not s then return 0, 0 end
+    if not s then
+        return 0, 0
+    end
     local x = s.simpleDebuffOffsetX
-    if x == nil then x = s.debuffOffsetX or 0 end
+    if x == nil then
+        x = s.debuffOffsetX or 0
+    end
     local y = s.simpleDebuffOffsetY
-    if y == nil then y = s.debuffOffsetY or 0 end
+    if y == nil then
+        y = s.debuffOffsetY or 0
+    end
     return x, y
 end
 
@@ -111,19 +136,29 @@ end
 -- (nil/false/unknown -> "none"); a stray boolean true reads as "left" (symmetry with the debuff resolver).
 function ns.GetBossSimpleBuffMode(s)
     local v = s and s.simpleBuffs
-    if v == "none" or v == "left" or v == "right" then return v end
-    if v == true then return "left" end
+    if v == "none" or v == "left" or v == "right" then
+        return v
+    end
+    if v == true then
+        return "left"
+    end
     return "none"
 end
 
 -- Boss Simple Buff Display X/Y offsets. Mirrors ns.GetBossSimpleDebuffOffset
 -- (simpleBuffOffsetX/Y if set, else regular buff offsets; zero-migration, import-safe).
 function ns.GetBossSimpleBuffOffset(s)
-    if not s then return 0, 0 end
+    if not s then
+        return 0, 0
+    end
     local x = s.simpleBuffOffsetX
-    if x == nil then x = s.buffOffsetX or 0 end
+    if x == nil then
+        x = s.buffOffsetX or 0
+    end
     local y = s.simpleBuffOffsetY
-    if y == nil then y = s.buffOffsetY or 0 end
+    if y == nil then
+        y = s.buffOffsetY or 0
+    end
     return x, y
 end
 
@@ -133,11 +168,15 @@ end
 -- to coordinate space with PP.FromPixels for physical-pixel-perfect gaps at any scale.
 -- (0 and negatives are truthy in Lua, so `or 1` only fills nil.)
 function ns.GetBossBuffSpacing(s, simpleOn)
-    if simpleOn then return (s and s.simpleBuffSpacing) or 1 end
+    if simpleOn then
+        return (s and s.simpleBuffSpacing) or 1
+    end
     return (s and s.buffSpacing) or 1
 end
 function ns.GetBossDebuffSpacing(s, simpleOn)
-    if simpleOn then return (s and s.simpleDebuffSpacing) or 1 end
+    if simpleOn then
+        return (s and s.simpleDebuffSpacing) or 1
+    end
     return (s and s.debuffSpacing) or 1
 end
 
@@ -158,35 +197,39 @@ end
 -- assumptions matching the nameplate system.
 local UF_TEXT_PADDING = 10
 local ufTextWidths = {
-    both        = 75,  -- "132 K | 86%"
-    bothdash    = 75,  -- "132 K - 86%"
-    perhpnum    = 75,  -- "86% | 132 K"
+    both = 75, -- "132 K | 86%"
+    bothdash = 75, -- "132 K - 86%"
+    perhpnum = 75, -- "86% | 132 K"
     perhpnumdash = 75, -- "86% - 132 K"
-    curhpshort  = 38,  -- "132 K"
+    curhpshort = 38, -- "132 K"
     healthshort = 38,
-    curmaxhp    = 75,  -- "132 K / 150 K"
-    curmaxpp    = 75,  -- "132 K / 150 K"
-    perhp       = 38,  -- "86%"
-    perhpnosign = 30,  -- "86"
-    perpp       = 38,  -- "86%"
-    curpp       = 38,  -- "132"
-    curhp_curpp = 75,  -- "132 K | 132"
-    perhp_perpp = 75,  -- "86% | 86%"
-    absorb      = 38,  -- "12.3 K"
-    level       = 24,  -- "80" / "??"
+    curmaxhp = 75, -- "132 K / 150 K"
+    curmaxpp = 75, -- "132 K / 150 K"
+    perhp = 38, -- "86%"
+    perhpnosign = 30, -- "86"
+    perpp = 38, -- "86%"
+    curpp = 38, -- "132"
+    curhp_curpp = 75, -- "132 K | 132"
+    perhp_perpp = 75, -- "86% | 86%"
+    absorb = 38, -- "12.3 K"
+    level = 24, -- "80" / "??"
 }
 -- customFmt: the slot's <prefix>CustomFormat, read for content "custom" only,
 -- estimated from the schema widths. Names count 0 like the Name content, except
 -- on the right slot (isRight), whose estimate cuts the left text: there a name
 -- keeps the schema's width so a long target name is not overlapped.
 local function NoNameWidth(key)
-    if key == "name" or key == "target" then return 0 end
+    if key == "name" or key == "target" then
+        return 0
+    end
 end
 local function EstimateUFTextWidth(content, customFmt, isRight)
     if content == "custom" then
         local TT, cat = CludesUI.TextTags, ns.UF_TextTags
         local parsed = TT.Parse(cat, customFmt)
-        if not parsed then return UF_TEXT_PADDING end
+        if not parsed then
+            return UF_TEXT_PADDING
+        end
         return TT.EstimateWidth(cat, parsed, not isRight and NoNameWidth or nil) + UF_TEXT_PADDING
     end
     return (ufTextWidths[content] or 0) + UF_TEXT_PADDING
@@ -197,23 +240,36 @@ ns.UF_EstimateTextWidth = EstimateUFTextWidth
 -- power presets, or a custom format with a power tag (customFmt, read for
 -- "custom" only). The parse is cached, so the per-update call stays a lookup.
 function ns.UF_IsPowerContent(content, customFmt)
-    if content == "perpp" or content == "curpp" or content == "curmaxpp" or content == "curhp_curpp" or content == "perhp_perpp" then
+    if
+        content == "perpp"
+        or content == "curpp"
+        or content == "curmaxpp"
+        or content == "curhp_curpp"
+        or content == "perhp_perpp"
+    then
         return true
     end
-    if content ~= "custom" then return false end
+    if content ~= "custom" then
+        return false
+    end
     local parsed = CludesUI.TextTags.Parse(ns.UF_TextTags, customFmt)
     return parsed ~= nil and parsed.reads.pp == true
 end
 
 -- Apply class color to a FontString based on the unit.
 local function ApplyClassColor(fs, unit, useClassColor, customR, customG, customB)
-    if not fs then return end
+    if not fs then
+        return
+    end
     if useClassColor and unit then
         -- Class color for players (and AI party members), reaction color for NPCs,
         -- matching the health bar and the custom Enemy Colors override. Shared
         -- with the cui-tgtname tag via ns.ResolveUnitNameColor.
         local r, g, b = ns.ResolveUnitNameColor(unit)
-        if r then fs:SetTextColor(r, g, b); return end
+        if r then
+            fs:SetTextColor(r, g, b)
+            return
+        end
         -- ResolveUnitNameColor returns nil for a SECRET class token (identity-restricted
         -- units: focus-target, ToT) since it can't be used as a table key; the
         -- [cui-tgtcol] hex-escape tag it also feeds recovers a secret hex on its own
@@ -224,7 +280,10 @@ local function ApplyClassColor(fs, unit, useClassColor, customR, customG, custom
             local _, class = UnitClass(unit)
             if issecretvalue(class) then
                 local ok, sr, sg, sb = ResolveRestrictedClassColor(unit, class)
-                if ok then fs:SetTextColor(sr, sg, sb); return end
+                if ok then
+                    fs:SetTextColor(sr, sg, sb)
+                    return
+                end
             end
         end
     end
@@ -239,30 +298,91 @@ end
 -- resolved strictly from the unit token, so an unmapped token recolours nothing.
 -- On ns for the 200-locals cap.
 function ns.UF_RecolorTexts(frame, unit, s)
-    if not frame or not unit then return end
+    if not frame or not unit then
+        return
+    end
     if not s then
         local k = unitSettingsKey[unit]
         s = k and db.profile[k]
     end
-    if not s then return end
+    if not s then
+        return
+    end
     if frame.LeftText and s.leftTextClassColor ~= nil then
-        ApplyClassColor(frame.LeftText, unit, s.leftTextClassColor, s.leftTextColorR, s.leftTextColorG, s.leftTextColorB)
+        ApplyClassColor(
+            frame.LeftText,
+            unit,
+            s.leftTextClassColor,
+            s.leftTextColorR,
+            s.leftTextColorG,
+            s.leftTextColorB
+        )
     end
     if frame.RightText and s.rightTextClassColor ~= nil then
-        ApplyClassColor(frame.RightText, unit, s.rightTextClassColor, s.rightTextColorR, s.rightTextColorG, s.rightTextColorB)
+        ApplyClassColor(
+            frame.RightText,
+            unit,
+            s.rightTextClassColor,
+            s.rightTextColorR,
+            s.rightTextColorG,
+            s.rightTextColorB
+        )
     end
     if frame.CenterText and s.centerTextClassColor ~= nil then
-        ApplyClassColor(frame.CenterText, unit, s.centerTextClassColor, s.centerTextColorR, s.centerTextColorG, s.centerTextColorB)
+        ApplyClassColor(
+            frame.CenterText,
+            unit,
+            s.centerTextClassColor,
+            s.centerTextColorR,
+            s.centerTextColorG,
+            s.centerTextColorB
+        )
     end
     if frame.ExtraText and s.extraTextClassColor ~= nil then
-        ApplyClassColor(frame.ExtraText, unit, s.extraTextClassColor, s.extraTextColorR, s.extraTextColorG, s.extraTextColorB)
+        ApplyClassColor(
+            frame.ExtraText,
+            unit,
+            s.extraTextClassColor,
+            s.extraTextColorR,
+            s.extraTextColorG,
+            s.extraTextColorB
+        )
     end
     local btb = frame._btb
     if btb then
-        if btb.LeftText then ApplyClassColor(btb.LeftText, unit, s.btbLeftClassColor, s.btbLeftColorR, s.btbLeftColorG, s.btbLeftColorB) end
-        if btb.RightText then ApplyClassColor(btb.RightText, unit, s.btbRightClassColor, s.btbRightColorR, s.btbRightColorG, s.btbRightColorB) end
-        if btb.CenterText then ApplyClassColor(btb.CenterText, unit, s.btbCenterClassColor, s.btbCenterColorR, s.btbCenterColorG, s.btbCenterColorB) end
-        if btb._applyBTBPowerColors then btb._applyBTBPowerColors(s) end
+        if btb.LeftText then
+            ApplyClassColor(
+                btb.LeftText,
+                unit,
+                s.btbLeftClassColor,
+                s.btbLeftColorR,
+                s.btbLeftColorG,
+                s.btbLeftColorB
+            )
+        end
+        if btb.RightText then
+            ApplyClassColor(
+                btb.RightText,
+                unit,
+                s.btbRightClassColor,
+                s.btbRightColorR,
+                s.btbRightColorG,
+                s.btbRightColorB
+            )
+        end
+        if btb.CenterText then
+            ApplyClassColor(
+                btb.CenterText,
+                unit,
+                s.btbCenterClassColor,
+                s.btbCenterColorR,
+                s.btbCenterColorG,
+                s.btbCenterColorB
+            )
+        end
+        if btb._applyBTBPowerColors then
+            btb._applyBTBPowerColors(s)
+        end
     end
 end
 
@@ -270,9 +390,13 @@ end
 -- so the class-colored ones repaint here with the new palette.
 CludesUI._UFRecolorAllTexts = function()
     local frames = I.frames
-    if not (frames and db) then return end
+    if not (frames and db) then
+        return
+    end
     for unit in pairs(unitSettingsKey) do
-        if frames[unit] then ns.UF_RecolorTexts(frames[unit], unit) end
+        if frames[unit] then
+            ns.UF_RecolorTexts(frames[unit], unit)
+        end
     end
 end
 
@@ -344,20 +468,30 @@ local function CreateBottomTextBar(frame, unit, settings, anchorFrame, xOffset, 
     -- tag updates and power-type changes. The per-slot early-out (no power-color
     -- flag) keeps it ~free when unused.
     local function ApplyBTBPowerColor(fs, contentKey, usePowerColor, customFmt)
-        if not fs or not usePowerColor then return end
+        if not fs or not usePowerColor then
+            return
+        end
         if ns.UF_IsPowerContent(contentKey, customFmt) then
             -- Secret-safe per-unit power color: player resolves via the clean
             -- string token; non-player units recover it from the clean integer
             -- power type instead of falling back to white.
             local r, g, b = CludesUI.ResolveUnitPowerColor(unit)
-            if r then fs:SetTextColor(r, g, b)
-            else fs:SetTextColor(1, 1, 1) end
+            if r then
+                fs:SetTextColor(r, g, b)
+            else
+                fs:SetTextColor(1, 1, 1)
+            end
         end
     end
     local function ApplyBTBPowerColors(s)
         ApplyBTBPowerColor(leftFS, s.btbLeftContent or "none", s.btbLeftPowerColor, s.btbLeftCustomFormat)
         ApplyBTBPowerColor(rightFS, s.btbRightContent or "none", s.btbRightPowerColor, s.btbRightCustomFormat)
-        ApplyBTBPowerColor(centerFS, s.btbCenterContent or "none", s.btbCenterPowerColor, s.btbCenterCustomFormat)
+        ApplyBTBPowerColor(
+            centerFS,
+            s.btbCenterContent or "none",
+            s.btbCenterPowerColor,
+            s.btbCenterCustomFormat
+        )
     end
 
     local function ApplyBTBTextPositions(s)
@@ -375,7 +509,9 @@ local function CreateBottomTextBar(frame, unit, settings, anchorFrame, xOffset, 
             PP.Point(leftFS, "LEFT", textOvr, "LEFT", 5 + (s.btbLeftX or 0), s.btbLeftY or 0)
             PP.Width(leftFS, totalWidth * 0.9 * SlotWidthMul(s, "btbLeft"))
             leftFS:Show()
-        else leftFS:Hide() end
+        else
+            leftFS:Hide()
+        end
 
         SetFSFont(rightFS, rsz)
         rightFS:ClearAllPoints()
@@ -384,7 +520,9 @@ local function CreateBottomTextBar(frame, unit, settings, anchorFrame, xOffset, 
             PP.Point(rightFS, "RIGHT", textOvr, "RIGHT", -5 + (s.btbRightX or 0), s.btbRightY or 0)
             PP.Width(rightFS, totalWidth * 0.9 * SlotWidthMul(s, "btbRight"))
             rightFS:Show()
-        else rightFS:Hide() end
+        else
+            rightFS:Hide()
+        end
 
         SetFSFont(centerFS, csz)
         centerFS:ClearAllPoints()
@@ -393,11 +531,27 @@ local function CreateBottomTextBar(frame, unit, settings, anchorFrame, xOffset, 
             PP.Point(centerFS, "CENTER", textOvr, "CENTER", s.btbCenterX or 0, s.btbCenterY or 0)
             PP.Width(centerFS, totalWidth * 0.9 * SlotWidthMul(s, "btbCenter"))
             centerFS:Show()
-        else centerFS:Hide() end
+        else
+            centerFS:Hide()
+        end
 
         ApplyClassColor(leftFS, unit, s.btbLeftClassColor, s.btbLeftColorR, s.btbLeftColorG, s.btbLeftColorB)
-        ApplyClassColor(rightFS, unit, s.btbRightClassColor, s.btbRightColorR, s.btbRightColorG, s.btbRightColorB)
-        ApplyClassColor(centerFS, unit, s.btbCenterClassColor, s.btbCenterColorR, s.btbCenterColorG, s.btbCenterColorB)
+        ApplyClassColor(
+            rightFS,
+            unit,
+            s.btbRightClassColor,
+            s.btbRightColorR,
+            s.btbRightColorG,
+            s.btbRightColorB
+        )
+        ApplyClassColor(
+            centerFS,
+            unit,
+            s.btbCenterClassColor,
+            s.btbCenterColorR,
+            s.btbCenterColorG,
+            s.btbCenterColorB
+        )
         -- Power color: after class color, and re-applied continuously from the
         -- power element's PostUpdateColor (btb._applyBTBPowerColors).
         ApplyBTBPowerColors(s)
@@ -425,10 +579,19 @@ local function CreateBottomTextBar(frame, unit, settings, anchorFrame, xOffset, 
 
     local function ApplyBTBClassIcon(s)
         local style = s.btbClassIcon or "none"
-        if style == "none" then classIconTex:Hide(); return end
+        if style == "none" then
+            classIconTex:Hide()
+            return
+        end
         local _, classToken = UnitClass(unit)
-        if issecretvalue(classToken) or not classToken then classIconTex:Hide(); return end
-        if not ApplyClassIconTexture(classIconTex, classToken, style) then classIconTex:Hide(); return end
+        if issecretvalue(classToken) or not classToken then
+            classIconTex:Hide()
+            return
+        end
+        if not ApplyClassIconTexture(classIconTex, classToken, style) then
+            classIconTex:Hide()
+            return
+        end
         local sz = s.btbClassIconSize or 14
         PP.Size(classIconTex, sz, sz)
         classIconTex:ClearAllPoints()
@@ -454,7 +617,9 @@ end
 -- Positioning is handled by Unlock Mode.
 
 local function ApplyFramePosition(frame, unit)
-    if not frame or not db.profile.positions[unit] then return end
+    if not frame or not db.profile.positions[unit] then
+        return
+    end
     local pos = db.profile.positions[unit]
     -- UIParent offsets read in the frame's own scale (identity outside Frame Scale).
     local x, y = ns.UF_ScaledOffsets(frame, pos.x, pos.y)
@@ -486,7 +651,9 @@ end
 -- where independent pixel-snapping pushes edges 1px out. Inset by the border
 -- thickness so the GPU cannot render bar pixels outside the border.
 local function EnsureBarClip(frame)
-    if frame._barClip then return frame._barClip end
+    if frame._barClip then
+        return frame._barClip
+    end
     local clip = CreateFrame("Frame", nil, frame)
     clip:SetAllPoints(frame)
     clip:SetClipsChildren(true)
@@ -533,23 +700,41 @@ local function ReparentBarsToClip(frame, powerPosition, settings)
     end
 end
 
-
 -- Recalculate every element size after a frame scale change so the stack stays
 -- pixel-perfect inside the border. PixelUtil rounds each element independently, so
 -- their sum can exceed the frame's snapped total by 1px at some scales; overflow is
 -- trimmed off the last element after re-snapping.
 local function UpdateBordersForScale(frame, unit)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local settings = GetSettingsForUnit(unit)
-    if not settings then return end
+    if not settings then
+        return
+    end
     local borderSize = settings.borderSize or 1
 
     -- 1) Main frame border textures.
     if frame.unifiedBorder then
         local bc = settings.borderColor or { r = 0, g = 0, b = 0 }
         local textureKey = settings.borderTexture or "solid"
-        CludesUI.ApplyBorderStyle(frame.unifiedBorder, borderSize, bc.r, bc.g, bc.b, settings.borderAlpha or 1, textureKey, settings.borderTextureOffset, settings.borderTextureOffsetY, settings.borderTextureShiftX, settings.borderTextureShiftY, "unitframes", borderSize, nil,
-            CludesUI.BorderPx(settings.borderSizePx, borderSize, textureKey))
+        CludesUI.ApplyBorderStyle(
+            frame.unifiedBorder,
+            borderSize,
+            bc.r,
+            bc.g,
+            bc.b,
+            settings.borderAlpha or 1,
+            textureKey,
+            settings.borderTextureOffset,
+            settings.borderTextureOffsetY,
+            settings.borderTextureShiftX,
+            settings.borderTextureShiftY,
+            "unitframes",
+            borderSize,
+            nil,
+            CludesUI.BorderPx(settings.borderSizePx, borderSize, textureKey)
+        )
     end
 
     -- 2) Gather layout info.
@@ -568,20 +753,26 @@ local function UpdateBordersForScale(frame, unit)
     local btbH = (settings.bottomTextBar and btbIsAtt) and (settings.bottomTextBarHeight or 16) or 0
 
     local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-    if isMini and pStyle == "detached" then pStyle = "attached" end
+    if isMini and pStyle == "detached" then
+        pStyle = "attached"
+    end
     local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
     local isAttached = pStyle == "attached"
     -- Use the side the frame was actually built with, so frames like the pet that
     -- hard-code "left" are not treated as "right".
     local pSide = CludesUI._ufPortraitSide[frame] or settings.portraitSide or "right"
     local effectiveSide = pSide
-    if isAttached and pSide == "top" then effectiveSide = "right" end
+    if isAttached and pSide == "top" then
+        effectiveSide = "right"
+    end
 
     -- Class power above adds height (player only, only if the spec has a resource).
     local cpAboveH = 0
     if unit == "player" and SpecHasClassPower() then
         local cpSt = settings.classPowerStyle or "none"
-        if ns.UF_ForeverCPStyle then cpSt = ns.UF_ForeverCPStyle(cpSt) end
+        if ns.UF_ForeverCPStyle then
+            cpSt = ns.UF_ForeverCPStyle(cpSt)
+        end
         local cpPo = (cpSt == "modern") and (settings.classPowerPosition or "top") or "none"
         if cpSt == "modern" and cpPo == "above" then
             local cpSizeAdj = settings.classPowerSize or 8
@@ -592,11 +783,17 @@ local function UpdateBordersForScale(frame, unit)
     local barHeight = settings.healthHeight + powerH + cpAboveH
     local expectedFrameH = barHeight + btbH
     local pSideSnap = settings.portraitSide or "left"
-    local isInsideSnap = pSideSnap == "insideleft" or pSideSnap == "insideright" or pSideSnap == "insidecenter"
+    local isInsideSnap = pSideSnap == "insideleft"
+        or pSideSnap == "insideright"
+        or pSideSnap == "insidecenter"
     local pSizeAdj = settings.portraitSize or 0
-    if not isAttached and not isInsideSnap then pSizeAdj = pSizeAdj + 10 end
+    if not isAttached and not isInsideSnap then
+        pSizeAdj = pSizeAdj + 10
+    end
     local adjPortraitH = barHeight + pSizeAdj
-    if adjPortraitH < 8 then adjPortraitH = 8 end
+    if adjPortraitH < 8 then
+        adjPortraitH = 8
+    end
 
     local expectedFrameW
     if not showPortrait or not isAttached then
@@ -681,8 +878,12 @@ local function UpdateBordersForScale(frame, unit)
         end
         -- Height: the full stack must fit inside the frame height.
         local usedH = cpAboveH
-        if frame.Health then usedH = usedH + frame.Health:GetHeight() end
-        if frame.Power and ppIsAtt then usedH = usedH + frame.Power:GetHeight() end
+        if frame.Health then
+            usedH = usedH + frame.Health:GetHeight()
+        end
+        if frame.Power and ppIsAtt then
+            usedH = usedH + frame.Power:GetHeight()
+        end
         if usedH + snappedBtbH > snappedFrameH + 0.01 then
             PP.Height(frame.BottomTextBar, snappedBtbH - (usedH + snappedBtbH - snappedFrameH))
         end
@@ -725,8 +926,11 @@ local function UpdateBordersForScale(frame, unit)
         local clipInset = es > 0 and (PP.perfect / es) * 0.25 or PP.mult * 0.25
         local clipL, clipR = clipInset, clipInset
         if showPortrait and isAttached and frame.Portrait and frame.Portrait.backdrop then
-            if effectiveSide == "left" then clipL = 0
-            elseif effectiveSide == "right" then clipR = 0 end
+            if effectiveSide == "left" then
+                clipL = 0
+            elseif effectiveSide == "right" then
+                clipR = 0
+            end
         end
         frame._barClip:ClearAllPoints()
         frame._barClip:SetPoint("TOPLEFT", frame, "TOPLEFT", clipL, -clipInset)
@@ -745,12 +949,21 @@ local function UpdateBordersForScale(frame, unit)
 
     -- Blizzard Style: the stock geometry is re-asserted over everything above
     -- (a reload runs its own sweep after the per-unit re-anchors instead).
-    if ns.UF_Blizz() and not ns._ufReloadSweep then ns.UF_ApplyBlizzardLayout(frame, unit) end
+    if ns.UF_Blizz() and not ns._ufReloadSweep then
+        ns.UF_ApplyBlizzardLayout(frame, unit)
+    end
     if settings.portraitSeparator or frame._portraitSeparator then
-        ns.UpdatePortraitSeparator(frame, frame.Portrait and frame.Portrait.backdrop,
-            settings, effectiveSide, showPortrait and isAttached, ns.UF_Blizz(), nil,
+        ns.UpdatePortraitSeparator(
+            frame,
+            frame.Portrait and frame.Portrait.backdrop,
+            settings,
+            effectiveSide,
+            showPortrait and isAttached,
+            ns.UF_Blizz(),
+            nil,
             unit:match("^boss%d$") and ns.UF_BossBorderSettings()
-                or (unit == "targettarget" and GetMiniDonorSettings(unit) or nil))
+                or (unit == "targettarget" and GetMiniDonorSettings(unit) or nil)
+        )
     end
 end
 
@@ -761,12 +974,19 @@ local function GetFrameDimensions(unit, settingsOnly)
     -- CludesUI look builds from the unit's settings, whatever the style).
     if not settingsOnly and ns.UF_Blizz() then
         local G = ns.UF_BLIZZ[ns.UF_BlizzKind(unit)]
-        if G then return G.w, G.h end
+        if G then
+            return G.w, G.h
+        end
     end
     local settings = GetSettingsForUnit(unit)
     local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-    local miniUnit = unit == "pet" or unit == "targettarget" or unit == "focustarget" or (unit and unit:match("^boss%d$"))
-    if miniUnit and pStyle == "detached" then pStyle = "attached" end
+    local miniUnit = unit == "pet"
+        or unit == "targettarget"
+        or unit == "focustarget"
+        or (unit and unit:match("^boss%d$"))
+    if miniUnit and pStyle == "detached" then
+        pStyle = "attached"
+    end
     local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
     local isAttached = pStyle == "attached"
     local pSizeAdj = settings.portraitSize or 0
@@ -777,23 +997,31 @@ local function GetFrameDimensions(unit, settingsOnly)
     local powerIsAtt = (powerPos == "below" or powerPos == "above")
     local powerExtra = powerIsAtt and (settings.powerHeight or 6) or 0
 
-    if not isAttached then pSizeAdj = pSizeAdj + 10 end
+    if not isAttached then
+        pSizeAdj = pSizeAdj + 10
+    end
     -- Snap returned dimensions to the physical pixel grid so width-matching and
     -- the cog display agree with the rendered frame size.
     local snap = PP.Snap
     if unit == "player" or unit == "target" then
         local ptH = settings.healthHeight + powerExtra
         local adjPH = ptH + pSizeAdj
-        if adjPH < 8 then adjPH = 8 end
+        if adjPH < 8 then
+            adjPH = 8
+        end
         local pSide = settings.portraitSide or (unit == "player" and "left" or "right")
-        if isAttached and pSide == "top" then pSide = (unit == "player") and "left" or "right" end
+        if isAttached and pSide == "top" then
+            pSide = (unit == "player") and "left" or "right"
+        end
         local w = (showPortrait and isAttached) and (adjPH + settings.frameWidth) or settings.frameWidth
         return snap(w), snap(ptH + btbExtra)
     elseif unit == "focus" then
         local pH = powerIsAtt and (settings.powerHeight or 6) or 0
         local barH = settings.healthHeight + pH
         local adjPH = barH + pSizeAdj
-        if adjPH < 8 then adjPH = 8 end
+        if adjPH < 8 then
+            adjPH = 8
+        end
         local w = (showPortrait and isAttached) and (adjPH + settings.frameWidth) or settings.frameWidth
         return snap(w), snap(barH + btbExtra)
     elseif unit == "pet" or unit == "targettarget" or unit == "focustarget" then
@@ -811,7 +1039,9 @@ local function GetFrameDimensions(unit, settingsOnly)
         local pH = powerIsAtt and (settings.powerHeight or 6) or 0
         local barH = settings.healthHeight + pH
         local adjPH = barH + pSizeAdj
-        if adjPH < 8 then adjPH = 8 end
+        if adjPH < 8 then
+            adjPH = 8
+        end
         local w = (showPortrait and isAttached) and (adjPH + settings.frameWidth) or settings.frameWidth
         return snap(w), snap(barH)
     end
@@ -828,11 +1058,13 @@ end
 -- and must NOT happen. Tiling is read back off the live fill texture rather than passed
 -- in, so this stays correct no matter which style function last touched the bar.
 function ns.ApplyFillRotation(bar)
-    if not (bar and bar.SetRotatesTexture) then return end
+    if not (bar and bar.SetRotatesTexture) then
+        return
+    end
     local vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
     local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-    local tiled = fill and ((fill.GetHorizTile and fill:GetHorizTile())
-                         or (fill.GetVertTile and fill:GetVertTile()))
+    local tiled = fill
+        and ((fill.GetHorizTile and fill:GetHorizTile()) or (fill.GetVertTile and fill:GetVertTile()))
     bar:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
@@ -840,7 +1072,9 @@ end
 -- flips direction WITHIN that axis (horizontal: left-right/right-left; vertical:
 -- bottom-top/top-bottom). On ns so the options preview paints the same way.
 function ns.ApplyHealthOrientation(bar, settings)
-    if not bar then return end
+    if not bar then
+        return
+    end
     local vert = (settings and settings.healthVerticalFill) and true or false
     bar:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
     ns.ApplyFillRotation(bar)
@@ -864,9 +1098,9 @@ local function CreateHealthBar(frame, unit, height, xOffset, settings, rightInse
     PP.Point(health, "TOPLEFT", frame, "TOPLEFT", xOffset, -powerAboveOff)
     PP.Point(health, "RIGHT", frame, "RIGHT", -rightInset, 0)
     PP.Height(health, height)
-    health._xOffset = xOffset  -- class power repositioning
-    health._rightInset = rightInset  -- class power repositioning
-    health._topOffset = powerAboveOff  -- SnapLayout re-anchoring
+    health._xOffset = xOffset -- class power repositioning
+    health._rightInset = rightInset -- class power repositioning
+    health._topOffset = powerAboveOff -- SnapLayout re-anchoring
     health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     health:GetStatusBarTexture():SetHorizTile(false)
 
@@ -890,7 +1124,8 @@ local function CreateHealthBar(frame, unit, height, xOffset, settings, rightInse
 
     -- Smooth bar interpolation (opt-in).
     if settings.smoothBars then
-        health.smoothing = Enum and Enum.StatusBarInterpolation
+        health.smoothing = Enum
+            and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
     end
 

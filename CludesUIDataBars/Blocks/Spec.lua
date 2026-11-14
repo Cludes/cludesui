@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- one spec per class on WoW Forever, nothing to switch: no factory, no loadout hook (the main file drops the block from BLOCK_TYPES too)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then
+    return
+end -- one spec per class on WoW Forever, nothing to switch: no factory, no loadout hook (the main file drops the block from BLOCK_TYPES too)
 -- Blocks\Spec.lua
 -- Specialization block factory (spec, loot spec, loadout popups).
 
@@ -9,27 +13,27 @@ local MEDIA = ns.MEDIA
 local K = ns.BlockKit
 
 -- Upvalues
-local CreateFrame      = CreateFrame
-local UIParent         = UIParent
+local CreateFrame = CreateFrame
+local UIParent = UIParent
 local InCombatLockdown = InCombatLockdown
-local ipairs           = ipairs
-local select           = select
-local floor            = math.floor
-local max              = math.max
-local min              = math.min
+local ipairs = ipairs
+local select = select
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
-local IconColorOf          = K.IconColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  SPEC (specialisation, loot-spec, loadout popups)
@@ -41,15 +45,22 @@ local IconColorOf          = K.IconColorOf
 local specInstances = {}
 local specPointerHooked = false
 local function HookLoadoutPointer()
-    if specPointerHooked then return end
-    if not (C_ClassTalents and C_ClassTalents.UpdateLastSelectedSavedConfigID
-            and hooksecurefunc) then return end
+    if specPointerHooked then
+        return
+    end
+    if not (C_ClassTalents and C_ClassTalents.UpdateLastSelectedSavedConfigID and hooksecurefunc) then
+        return
+    end
     specPointerHooked = true
     hooksecurefunc(C_ClassTalents, "UpdateLastSelectedSavedConfigID", function()
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         for i = 1, #specInstances do
             local si = specInstances[i]
-            if not si._dead and si.Refresh then si:Refresh() end
+            if not si._dead and si.Refresh then
+                si:Refresh()
+            end
         end
     end)
 end
@@ -59,16 +70,20 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
     inst.key = InstKey(barCtx, blockCfg)
     specInstances[#specInstances + 1] = inst
     HookLoadoutPointer()
-    inst.events = { "PLAYER_SPECIALIZATION_CHANGED", "PLAYER_LOOT_SPEC_UPDATED",
-                    -- TRAIT_CONFIG_UPDATED fires BEFORE the last-selected pointer moves, so
-                    -- its name read is stale; SPELLS_CHANGED fires once the swap applied
-                    -- (same signal CDM keys its talent-swap rebuilds off) and re-reads the settled name.
-                    "TRAIT_CONFIG_UPDATED", "SPELLS_CHANGED",
-                    -- Combat cancelling a loadout swap started from this block.
-                    "CONFIG_COMMIT_FAILED",
-                    "PLAYER_ENTERING_WORLD",
-                    -- Refresh runs in combat too (our frames only); regen is a cheap catch-up for anything a combat path missed.
-                    "PLAYER_REGEN_ENABLED" }
+    inst.events = {
+        "PLAYER_SPECIALIZATION_CHANGED",
+        "PLAYER_LOOT_SPEC_UPDATED",
+        -- TRAIT_CONFIG_UPDATED fires BEFORE the last-selected pointer moves, so
+        -- its name read is stale; SPELLS_CHANGED fires once the swap applied
+        -- (same signal CDM keys its talent-swap rebuilds off) and re-reads the settled name.
+        "TRAIT_CONFIG_UPDATED",
+        "SPELLS_CHANGED",
+        -- Combat cancelling a loadout swap started from this block.
+        "CONFIG_COMMIT_FAILED",
+        "PLAYER_ENTERING_WORLD",
+        -- Refresh runs in combat too (our frames only); regen is a cheap catch-up for anything a combat path missed.
+        "PLAYER_REGEN_ENABLED",
+    }
 
     local SPEC_MEDIA = MEDIA .. "spec\\"
     local _specFitBuf1 = { "" }
@@ -76,19 +91,19 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
     -- One PNG per spec in media\spec\, named <class>-<spec>.png, listed here in SPEC
     -- INDEX order per class (GetSpecializationInfo order is fixed) -- no spec-ID table; new specs just append.
     local SPEC_ICON_FILES = {
-        WARRIOR     = { "warrior-arms", "warrior-fury", "warrior-prot" },
-        PALADIN     = { "paladin-holy", "paladin-prot", "paladin-ret" },
-        HUNTER      = { "hunter-beastmaster", "hunter-marksman", "hunter-survival" },
-        ROGUE       = { "rogue-assasin", "rogue-outlaw", "rogue-sub" },
-        PRIEST      = { "priest-disc", "priest-holy", "priest-shadow" },
+        WARRIOR = { "warrior-arms", "warrior-fury", "warrior-prot" },
+        PALADIN = { "paladin-holy", "paladin-prot", "paladin-ret" },
+        HUNTER = { "hunter-beastmaster", "hunter-marksman", "hunter-survival" },
+        ROGUE = { "rogue-assasin", "rogue-outlaw", "rogue-sub" },
+        PRIEST = { "priest-disc", "priest-holy", "priest-shadow" },
         DEATHKNIGHT = { "dk-blood", "dk-frost", "dk-unholy" },
-        SHAMAN      = { "shaman-ele", "shaman-enhance", "shaman-resto" },
-        MAGE        = { "mage-arcane", "mage-fire", "mage-frost" },
-        WARLOCK     = { "warlock-aff", "warlock-demo", "warlock-destro" },
-        MONK        = { "monk-brew", "monk-mw", "monk-ww" },
-        DRUID       = { "druid-balance", "druid-feral", "druid-bear", "druid-resto" },
+        SHAMAN = { "shaman-ele", "shaman-enhance", "shaman-resto" },
+        MAGE = { "mage-arcane", "mage-fire", "mage-frost" },
+        WARLOCK = { "warlock-aff", "warlock-demo", "warlock-destro" },
+        MONK = { "monk-brew", "monk-mw", "monk-ww" },
+        DRUID = { "druid-balance", "druid-feral", "druid-bear", "druid-resto" },
         DEMONHUNTER = { "dh-havoc", "dh-vengeance", "dh-devourer" },
-        EVOKER      = { "evoker-dev", "evoker-pres", "evoker-aug" },
+        EVOKER = { "evoker-dev", "evoker-pres", "evoker-aug" },
     }
     local POPUP_FONT_SIZE = 12
     local POPUP_PAD = 8
@@ -117,33 +132,48 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
     -- Per-instance popup pools (lazy). Two spec blocks never fight over the same popup frames.
     local specPool, lootPool, loadoutPool
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     -- Spec reads go through C_SpecializationInfo: the legacy globals are not
     -- registered on WoW Forever (same native functions on retail). The loot
     -- spec pair and GetNumSpecializations are plain globals on both clients.
     local function BuildSpecCache()
-        specCache = {}; numSpecs = GetNumSpecializations() or 0
+        specCache = {}
+        numSpecs = GetNumSpecializations() or 0
         for i = 1, numSpecs do
             local id, name, _, icon, role = C_SpecializationInfo.GetSpecializationInfo(i)
-            if id then specCache[i] = { id = id, name = name, icon = icon, role = role } end
+            if id then
+                specCache[i] = { id = id, name = name, icon = icon, role = role }
+            end
         end
     end
 
     local function UpdateCurrentSpec()
-        currentSpecIdx    = C_SpecializationInfo.GetSpecialization()
+        currentSpecIdx = C_SpecializationInfo.GetSpecialization()
         currentLootSpecID = GetLootSpecialization() or 0
     end
 
     local function GetCurrentLoadoutName()
-        if not (C_ClassTalents and C_ClassTalents.GetLastSelectedSavedConfigID) then return nil end
+        if not (C_ClassTalents and C_ClassTalents.GetLastSelectedSavedConfigID) then
+            return nil
+        end
         local specId = PlayerUtil and PlayerUtil.GetCurrentSpecID and PlayerUtil.GetCurrentSpecID()
-        if not specId then return nil end
+        if not specId then
+            return nil
+        end
         local configID = C_ClassTalents.GetLastSelectedSavedConfigID(specId)
-        if not configID then return nil end
+        if not configID then
+            return nil
+        end
         local info = C_Traits and C_Traits.GetConfigInfo and C_Traits.GetConfigInfo(configID)
-        if info then return info.name end
+        if info then
+            return info.name
+        end
         return nil
     end
 
@@ -155,22 +185,30 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             return nil
         end
         local _, name
-        if GetSpecializationInfoByID then _, name = GetSpecializationInfoByID(currentLootSpecID) end
+        if GetSpecializationInfoByID then
+            _, name = GetSpecializationInfoByID(currentLootSpecID)
+        end
         return name
     end
 
     local function GetBarDisplayText()
         local d = D()
         local text
-        if d.showLoadout ~= false then text = GetCurrentLoadoutName() end
+        if d.showLoadout ~= false then
+            text = GetCurrentLoadoutName()
+        end
         if not text then
             if currentSpecIdx and specCache[currentSpecIdx] then
                 text = specCache[currentSpecIdx].name
             end
         end
-        if not text then text = "" end
+        if not text then
+            text = ""
+        end
         -- Opt-in only (default off): never force-capitalize.
-        if d.useUppercase == true then return text:upper() end
+        if d.useUppercase == true then
+            return text:upper()
+        end
         return text
     end
 
@@ -179,14 +217,27 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
     specButton:EnableMouse(true)
     specButton:RegisterForClicks("AnyUp")
 
-    local specIcon = content:CreateTexture(nil, "OVERLAY"); specIcon:SetSize(16, 16)
+    local specIcon = content:CreateTexture(nil, "OVERLAY")
+    specIcon:SetSize(16, 16)
     local specText = content:CreateFontString(nil, "OVERLAY")
-    local infoText = content:CreateFontString(nil, "OVERLAY"); infoText:Hide()
-    AttachTextOffset(inst, specText)   -- infoText chains to specText
+    local infoText = content:CreateFontString(nil, "OVERLAY")
+    infoText:Hide()
+    AttachTextOffset(inst, specText) -- infoText chains to specText
 
     -- Generic popup builder (shared across the three popups of THIS instance)
-    local function BuildPopup(pool, parent, title, entries, onClickEntry, noCatcher, footerLines, combatClicks)
-        if not pool then return nil end
+    local function BuildPopup(
+        pool,
+        parent,
+        title,
+        entries,
+        onClickEntry,
+        noCatcher,
+        footerLines,
+        combatClicks
+    )
+        if not pool then
+            return nil
+        end
         pool:ReleaseAll()
         local popup = pool._popup
         if not popup then
@@ -196,7 +247,9 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         popup._wbNoCatcher = noCatcher and true or nil
         popup._wbOnHide = function()
             pool:ReleaseAll()
-            if pool._onHide then pool._onHide() end
+            if pool._onHide then
+                pool._onHide()
+            end
         end
         popup:Show()
 
@@ -215,7 +268,8 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         if title and title ~= "" then
             ns.SetFont(popup._title, fontSize)
             -- Localize here: these popups SetText directly instead of the Tip_* helpers that normally route fixed strings through the locale.
-            popup._title:SetText(CludesUI.L(title)); popup._title:SetTextColor(1, 1, 1, 1)
+            popup._title:SetText(CludesUI.L(title))
+            popup._title:SetTextColor(1, 1, 1, 1)
             popup._title:Show()
             maxW = popup._title:GetStringWidth()
             yOff = PAD + LINE + PAD
@@ -232,7 +286,8 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             -- 2px band above/below the content, matching the shared tip's clickable rows.
             btn:SetHeight(iconSz + 4)
             btn:SetPoint("TOPLEFT", popup, "TOPLEFT", PAD, -yOff)
-            btn:EnableMouse(true); btn:RegisterForClicks("AnyUp")
+            btn:EnableMouse(true)
+            btn:RegisterForClicks("AnyUp")
             -- Full-row white hover wash (house style 0.10), same as the shared tip's
             -- clickable rows; HIGHLIGHT layer needs no scripts. Color RE-ASSERTED every
             -- build: the pool resetter nils the highlight texture on every release.
@@ -242,12 +297,16 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             end
             btn._hl:SetColorTexture(1, 1, 1, 0.10)
 
-            if not btn._icon then btn._icon = btn:CreateTexture(nil, "OVERLAY") end
+            if not btn._icon then
+                btn._icon = btn:CreateTexture(nil, "OVERLAY")
+            end
             btn._icon:SetSize(iconSz, iconSz)
             btn._icon:ClearAllPoints()
             btn._icon:SetPoint("LEFT")
 
-            if not btn._label then btn._label = btn:CreateFontString(nil, "OVERLAY") end
+            if not btn._label then
+                btn._label = btn:CreateFontString(nil, "OVERLAY")
+            end
             btn:Show()
             ns.SetFont(btn._label, fontSize)
             btn._label:SetText(entry.name)
@@ -264,8 +323,11 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
                 btn._label:SetPoint("LEFT", btn, "LEFT", 0, 0)
             end
 
-            if entry.isActive then btn._label:SetTextColor(ar, ag, ab, 1)
-            else btn._label:SetTextColor(1, 1, 1, 1) end
+            if entry.isActive then
+                btn._label:SetTextColor(ar, ag, ab, 1)
+            else
+                btn._label:SetTextColor(1, 1, 1, 1)
+            end
 
             -- Right-edge arrow (entry.arrow): the active spec row uses it to signal its loadout subnav.
             if entry.arrow then
@@ -286,15 +348,22 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             btn:SetScript("OnEnter", function()
                 btn._label:SetTextColor(ar, ag, ab, 1)
                 -- Row hover callback (spec popup: open/close the loadout subnav depending on which row the cursor is on).
-                if entry.onHover then entry.onHover(btn) end
+                if entry.onHover then
+                    entry.onHover(btn)
+                end
             end)
             btn:SetScript("OnLeave", function()
-                if entry.isActive then btn._label:SetTextColor(ar, ag, ab, 1)
-                else btn._label:SetTextColor(1, 1, 1, 1) end
+                if entry.isActive then
+                    btn._label:SetTextColor(ar, ag, ab, 1)
+                else
+                    btn._label:SetTextColor(1, 1, 1, 1)
+                end
             end)
             btn:SetScript("OnClick", function(_, mb)
                 -- entry.noClick: informational row (the active spec opens a subnav instead of re-selecting itself).
-                if entry.noClick then return end
+                if entry.noClick then
+                    return
+                end
                 -- combatClicks: the loot-spec popup's action is combat-legal (unprotected preference call); everything else stays gated.
                 if mb == "LeftButton" and (combatClicks or not InCombatLockdown()) then
                     onClickEntry(entry)
@@ -303,50 +372,71 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             end)
 
             local iconExtra = 0
-            if btn._icon:IsShown() then iconExtra = iconSz + 4 end
+            if btn._icon:IsShown() then
+                iconExtra = iconSz + 4
+            end
             local bw = iconExtra + btn._label:GetStringWidth()
-            if entry.arrow then bw = bw + 16 end
-            if bw > maxW then maxW = bw end
+            if entry.arrow then
+                bw = bw + 16
+            end
+            if bw > maxW then
+                maxW = bw
+            end
             btn:SetWidth(bw)
             rowBtns[#rowBtns + 1] = btn
             yOff = yOff + (iconSz + 4) + 3
         end
         -- Trim the last row's trailing gap so the bottom padding stays PAD.
-        if #entries > 0 then yOff = yOff - 3 end
+        if #entries > 0 then
+            yOff = yOff - 3
+        end
 
         -- Optional footer descriptor lines ({left, right} pairs): the same Left Click / Right Click hints the shared tip footers use.
-        if not popup._foot then popup._foot = {} end
+        if not popup._foot then
+            popup._foot = {}
+        end
         local footCount = footerLines and #footerLines or 0
         if footCount > 0 then
             yOff = yOff + 8
             for i = 1, footCount do
                 local fl = popup._foot[i]
                 if not fl then
-                    fl = { l = popup:CreateFontString(nil, "OVERLAY"),
-                           r = popup:CreateFontString(nil, "OVERLAY") }
+                    fl = {
+                        l = popup:CreateFontString(nil, "OVERLAY"),
+                        r = popup:CreateFontString(nil, "OVERLAY"),
+                    }
                     popup._foot[i] = fl
                 end
-                ns.SetFont(fl.l, fontSize); ns.SetFont(fl.r, fontSize)
-                fl.l:SetText(CludesUI.L(footerLines[i][1])); fl.l:SetTextColor(1, 1, 1, 1)
-                fl.r:SetText(CludesUI.L(footerLines[i][2])); fl.r:SetTextColor(1, 1, 1, 1)
+                ns.SetFont(fl.l, fontSize)
+                ns.SetFont(fl.r, fontSize)
+                fl.l:SetText(CludesUI.L(footerLines[i][1]))
+                fl.l:SetTextColor(1, 1, 1, 1)
+                fl.r:SetText(CludesUI.L(footerLines[i][2]))
+                fl.r:SetTextColor(1, 1, 1, 1)
                 fl.l:ClearAllPoints()
                 fl.l:SetPoint("TOPLEFT", popup, "TOPLEFT", PAD, -yOff)
                 fl.r:ClearAllPoints()
                 fl.r:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -PAD, -yOff)
-                fl.l:Show(); fl.r:Show()
+                fl.l:Show()
+                fl.r:Show()
                 local fw = (fl.l:GetStringWidth() or 0) + 16 + (fl.r:GetStringWidth() or 0)
-                if fw > maxW then maxW = fw end
+                if fw > maxW then
+                    maxW = fw
+                end
                 yOff = yOff + fontSize + 4
             end
             yOff = yOff - 4
         end
         for i = footCount + 1, #popup._foot do
-            popup._foot[i].l:Hide(); popup._foot[i].r:Hide()
+            popup._foot[i].l:Hide()
+            popup._foot[i].r:Hide()
         end
 
         popup:SetSize(maxW + PAD * 2, yOff + PAD)
         -- Stretch every row to the popup's inner width: the wash and the click target span the full row, not just the text.
-        for i = 1, #rowBtns do rowBtns[i]:SetWidth(maxW) end
+        for i = 1, #rowBtns do
+            rowBtns[i]:SetWidth(maxW)
+        end
         popup:ClearAllPoints()
         if barCtx.IsVertical() then
             -- Bar on the right half of the screen: popup opens to the left.
@@ -382,13 +472,26 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         end
     end
     local function OpenLoadoutSubnav(rowBtn)
-        if subnavPool and subnavPool._popup and subnavPool._popup:IsShown() then return end
-        if not (C_ClassTalents and C_ClassTalents.GetConfigIDsBySpecID
-                and C_Traits and C_Traits.GetConfigInfo) then return end
-        local specId = currentSpecIdx and specCache[currentSpecIdx]
-            and specCache[currentSpecIdx].id
-        if not specId then return end
-        if not subnavPool then subnavPool = ns.CreateFramePool("Button", UIParent) end
+        if subnavPool and subnavPool._popup and subnavPool._popup:IsShown() then
+            return
+        end
+        if
+            not (
+                C_ClassTalents
+                and C_ClassTalents.GetConfigIDsBySpecID
+                and C_Traits
+                and C_Traits.GetConfigInfo
+            )
+        then
+            return
+        end
+        local specId = currentSpecIdx and specCache[currentSpecIdx] and specCache[currentSpecIdx].id
+        if not specId then
+            return
+        end
+        if not subnavPool then
+            subnavPool = ns.CreateFramePool("Button", UIParent)
+        end
         local activeConfigID
         if C_ClassTalents.GetLastSelectedSavedConfigID then
             activeConfigID = C_ClassTalents.GetLastSelectedSavedConfigID(specId)
@@ -397,10 +500,13 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         for _, cid in ipairs(C_ClassTalents.GetConfigIDsBySpecID(specId) or {}) do
             local info = C_Traits.GetConfigInfo(cid)
             if info and info.name then
-                entries[#entries + 1] = { name = info.name, isActive = (cid == activeConfigID), configID = cid }
+                entries[#entries + 1] =
+                    { name = info.name, isActive = (cid == activeConfigID), configID = cid }
             end
         end
-        if #entries == 0 then return end
+        if #entries == 0 then
+            return
+        end
         local pop = BuildPopup(subnavPool, specButton, nil, entries, function(e)
             BeginLoadoutSwap(specId, e.configID)
         end, true)
@@ -416,9 +522,11 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         local main = specPool and specPool._popup
         if pop and main then
             local mainTop = main:GetTop()
-            local rowTop  = rowBtn and rowBtn.GetTop and rowBtn:GetTop()
+            local rowTop = rowBtn and rowBtn.GetTop and rowBtn:GetTop()
             local dy = 0
-            if mainTop and rowTop then dy = POPUP_PAD - (mainTop - rowTop) end
+            if mainTop and rowTop then
+                dy = POPUP_PAD - (mainTop - rowTop)
+            end
             pop:ClearAllPoints()
             local right = main:GetRight() or 0
             if right + (pop:GetWidth() or 0) > UIParent:GetWidth() then
@@ -431,9 +539,12 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
 
     local function ToggleSpecPopup()
         if specPool and specPool._popup and specPool._popup:IsShown() then
-            specPool._popup:Hide(); return
+            specPool._popup:Hide()
+            return
         end
-        if not specPool then specPool = ns.CreateFramePool("Button", UIParent) end
+        if not specPool then
+            specPool = ns.CreateFramePool("Button", UIParent)
+        end
         -- Any path that hides the spec popup takes the loadout subnav with it.
         specPool._onHide = CloseLoadoutSubnav
         local entries = {}
@@ -442,7 +553,9 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             if info then
                 local isActive = (i == currentSpecIdx)
                 entries[#entries + 1] = {
-                    name = info.name, icon = info.icon, isActive = isActive,
+                    name = info.name,
+                    icon = info.icon,
+                    isActive = isActive,
                     specIndex = i,
                     -- Active spec: not clickable; hover opens the loadout subnav (arrow marks it), any other row closes it.
                     noClick = isActive,
@@ -451,33 +564,53 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
                 }
             end
         end
-        BuildPopup(specPool, specButton, L["CHANGE_SPEC"], entries, function(e)
-            C_SpecializationInfo.SetSpecialization(e.specIndex)
-        end, true, {
-            { L["LEFT_CLICK"],       L["CHANGE_SPEC_SHORT"] },
-            { L["CTRL_LEFT_CLICK"],  L["CHANGE_LOADOUT"] },
-            { L["SHIFT_LEFT_CLICK"], L["OPEN_TALENTS"] },
-            { L["RIGHT_CLICK"],      L["CHANGE_LOOT_SPEC"] },
-        })
+        BuildPopup(
+            specPool,
+            specButton,
+            L["CHANGE_SPEC"],
+            entries,
+            function(e)
+                C_SpecializationInfo.SetSpecialization(e.specIndex)
+            end,
+            true,
+            {
+                { L["LEFT_CLICK"], L["CHANGE_SPEC_SHORT"] },
+                { L["CTRL_LEFT_CLICK"], L["CHANGE_LOADOUT"] },
+                { L["SHIFT_LEFT_CLICK"], L["OPEN_TALENTS"] },
+                { L["RIGHT_CLICK"], L["CHANGE_LOOT_SPEC"] },
+            }
+        )
     end
 
     local function ToggleLootSpecPopup()
         if lootPool and lootPool._popup and lootPool._popup:IsShown() then
-            lootPool._popup:Hide(); return
+            lootPool._popup:Hide()
+            return
         end
-        if not lootPool then lootPool = ns.CreateFramePool("Button", UIParent) end
+        if not lootPool then
+            lootPool = ns.CreateFramePool("Button", UIParent)
+        end
         local activeIcon = nil
-        if currentSpecIdx and specCache[currentSpecIdx] then activeIcon = specCache[currentSpecIdx].icon end
-        local entries = { {
-            name = L["CURRENT_SPEC"],
-            icon = activeIcon,
-            isActive = currentLootSpecID == 0,
-            specIndex = 0,
-        } }
+        if currentSpecIdx and specCache[currentSpecIdx] then
+            activeIcon = specCache[currentSpecIdx].icon
+        end
+        local entries = {
+            {
+                name = L["CURRENT_SPEC"],
+                icon = activeIcon,
+                isActive = currentLootSpecID == 0,
+                specIndex = 0,
+            },
+        }
         for i = 1, numSpecs do
             local info = specCache[i]
             if info then
-                entries[#entries + 1] = { name = info.name, icon = info.icon, isActive = (info.id == currentLootSpecID), specIndex = i }
+                entries[#entries + 1] = {
+                    name = info.name,
+                    icon = info.icon,
+                    isActive = (info.id == currentLootSpecID),
+                    specIndex = i,
+                }
             end
         end
         -- Loot spec switching is combat-legal: SetLootSpecialization is an
@@ -487,7 +620,9 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         local inCombat = InCombatLockdown()
         BuildPopup(lootPool, specButton, L["CHANGE_LOOT_SPEC"], entries, function(e)
             local id = 0
-            if e.specIndex > 0 then id = select(1, C_SpecializationInfo.GetSpecializationInfo(e.specIndex)) or 0 end
+            if e.specIndex > 0 then
+                id = select(1, C_SpecializationInfo.GetSpecializationInfo(e.specIndex)) or 0
+            end
             SetLootSpecialization(id)
         end, inCombat, nil, true)
         if inCombat and hoverWatch then
@@ -498,14 +633,30 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
 
     local function ToggleLoadoutPopup()
         if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then
-            loadoutPool._popup:Hide(); return
+            loadoutPool._popup:Hide()
+            return
         end
-        if not (C_ClassTalents and C_ClassTalents.GetConfigIDsBySpecID and C_Traits and C_Traits.GetConfigInfo) then return end
-        if not loadoutPool then loadoutPool = ns.CreateFramePool("Button", UIParent) end
+        if
+            not (
+                C_ClassTalents
+                and C_ClassTalents.GetConfigIDsBySpecID
+                and C_Traits
+                and C_Traits.GetConfigInfo
+            )
+        then
+            return
+        end
+        if not loadoutPool then
+            loadoutPool = ns.CreateFramePool("Button", UIParent)
+        end
 
         local specId = nil
-        if currentSpecIdx and specCache[currentSpecIdx] then specId = specCache[currentSpecIdx].id end
-        if not specId then return end
+        if currentSpecIdx and specCache[currentSpecIdx] then
+            specId = specCache[currentSpecIdx].id
+        end
+        if not specId then
+            return
+        end
         local activeConfigID = nil
         if C_ClassTalents.GetLastSelectedSavedConfigID then
             activeConfigID = C_ClassTalents.GetLastSelectedSavedConfigID(specId)
@@ -515,7 +666,8 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         for _, cid in ipairs(configIDs) do
             local info = C_Traits.GetConfigInfo(cid)
             if info and info.name then
-                entries[#entries + 1] = { name = info.name, isActive = (cid == activeConfigID), configID = cid }
+                entries[#entries + 1] =
+                    { name = info.name, isActive = (cid == activeConfigID), configID = cid }
             end
         end
         -- In lockdown: catcher-free + hover-watch dismissal like the loot popup.
@@ -531,9 +683,15 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
     end
 
     local function HideAllPopups()
-        if specPool    and specPool._popup    and specPool._popup:IsShown()    then specPool._popup:Hide()    end
-        if lootPool    and lootPool._popup    and lootPool._popup:IsShown()    then lootPool._popup:Hide()    end
-        if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then loadoutPool._popup:Hide() end
+        if specPool and specPool._popup and specPool._popup:IsShown() then
+            specPool._popup:Hide()
+        end
+        if lootPool and lootPool._popup and lootPool._popup:IsShown() then
+            lootPool._popup:Hide()
+        end
+        if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then
+            loadoutPool._popup:Hide()
+        end
     end
 
     function inst:Refresh()
@@ -545,7 +703,7 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         -- Loot spec rides smaller than the main label (11px at the 30 base).
-        local infoSz   = max(8, floor(CONTENT_BASE * 0.36 + 0.5))
+        local infoSz = max(8, floor(CONTENT_BASE * 0.36 + 0.5))
         local gap = 4
         -- Icon -> content spacing only; text-to-text rows (loot spec info
         -- after the main label) keep the tighter gap above.
@@ -569,7 +727,8 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         end
         local iconSz = fontSize + 8
 
-        ns.SetFont(specText, fontSize, barCfg); ns.SetFont(infoText, infoSz, barCfg)
+        ns.SetFont(specText, fontSize, barCfg)
+        ns.SetFont(infoText, infoSz, barCfg)
         specText:SetText(specLabel)
 
         if currentSpecIdx then
@@ -588,36 +747,50 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         end
 
         if mouseOver then
-            specText:SetTextColor(ar, ag, ab, 1); specIcon:SetVertexColor(ar, ag, ab, 1)
+            specText:SetTextColor(ar, ag, ab, 1)
+            specIcon:SetVertexColor(ar, ag, ab, 1)
         else
             local br, bgr, bb = BlockColorOf(blockCfg)
             local ir, ig, ib = IconColorOf(blockCfg)
-            specText:SetTextColor(br, bgr, bb, 1); specIcon:SetVertexColor(ir, ig, ib, 1)
+            specText:SetTextColor(br, bgr, bb, 1)
+            specIcon:SetVertexColor(ir, ig, ib, 1)
         end
 
         local lootName = GetLootSpecName()
         local activeSpecName = nil
-        if currentSpecIdx and specCache[currentSpecIdx] then activeSpecName = specCache[currentSpecIdx].name end
+        if currentSpecIdx and specCache[currentSpecIdx] then
+            activeSpecName = specCache[currentSpecIdx].name
+        end
         if lootName and lootName ~= activeSpecName then
             if d.useUppercase ~= false then
                 infoText:SetText("(" .. lootName:upper() .. ")")
             else
                 infoText:SetText("(" .. lootName .. ")")
             end
-            infoText:SetTextColor(1, 1, 1, 0.8); infoText:Show()
+            infoText:SetTextColor(1, 1, 1, 0.8)
+            infoText:Show()
         else
             infoText:Hide()
         end
 
         -- Show Icon (default ON): hidden drops the icon width and gap entirely.
         local showIcon = d.showIcon ~= false
-        if showIcon then specIcon:Show() else specIcon:Hide(); iconSz = 0 end
+        if showIcon then
+            specIcon:Show()
+        else
+            specIcon:Hide()
+            iconSz = 0
+        end
 
         if isSide then
             iconSz = min(iconSz, max(14, floor(CONTENT_BASE * 0.72 + 0.5)))
-            if not showIcon then iconSz = 0 end
+            if not showIcon then
+                iconSz = 0
+            end
         end
-        if showIcon then specIcon:SetSize(iconSz, iconSz) end
+        if showIcon then
+            specIcon:SetSize(iconSz, iconSz)
+        end
 
         if isSide then
             local slotW = VSlotW(inst)
@@ -672,15 +845,21 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
                 iw = ns.SnapToPixelGrid(infoText:GetStringWidth() or 0)
             end
             local infoPad = 0
-            if iw > 0 then infoPad = gap + iw end
+            if iw > 0 then
+                infoPad = gap + iw
+            end
             local effIconGap = showIcon and iconGap or 0
             local totalW = min(slotW, iconSz + effIconGap + tw + infoPad + 4)
-            specIcon:ClearAllPoints(); specIcon:SetPoint("LEFT", content, "LEFT", 0, 0)
-            specText:ClearAllPoints(); specText:SetPoint("LEFT", content, "LEFT", iconSz + effIconGap, 0)
-            infoText:ClearAllPoints(); infoText:SetPoint("LEFT", specText, "RIGHT", gap, 0)
+            specIcon:ClearAllPoints()
+            specIcon:SetPoint("LEFT", content, "LEFT", 0, 0)
+            specText:ClearAllPoints()
+            specText:SetPoint("LEFT", content, "LEFT", iconSz + effIconGap, 0)
+            infoText:ClearAllPoints()
+            infoText:SetPoint("LEFT", specText, "RIGHT", gap, 0)
             content:SetSize(totalW, barH)
         end
-        specButton:ClearAllPoints(); specButton:SetAllPoints(content)
+        specButton:ClearAllPoints()
+        specButton:SetAllPoints(content)
         MaybeRelayout(inst)
     end
 
@@ -693,45 +872,74 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
         -- opened catcher-free in combat). The subnav counts as inside-bounds.
         local pool = self._watchPool or specPool
         local popup = pool and pool._popup
-        if not (popup and popup:IsShown()) then self:Hide(); return end
+        if not (popup and popup:IsShown()) then
+            self:Hide()
+            return
+        end
         local sub = subnavPool and subnavPool._popup
         local subShown = sub and sub:IsShown()
-        if specButton:IsMouseOver(8, -8, -8, 8) or popup:IsMouseOver(8, -8, -8, 8)
-           or (subShown and sub:IsMouseOver(8, -8, -8, 8)) then return end
+        if
+            specButton:IsMouseOver(8, -8, -8, 8)
+            or popup:IsMouseOver(8, -8, -8, 8)
+            or (subShown and sub:IsMouseOver(8, -8, -8, 8))
+        then
+            return
+        end
         popup:Hide()
-        if subShown then sub:Hide() end
+        if subShown then
+            sub:Hide()
+        end
         self:Hide()
     end)
 
     specButton:SetScript("OnEnter", function()
-        mouseOver = true; inst:Refresh()
+        mouseOver = true
+        inst:Refresh()
         -- No combat gate: the hover popup is our own insecure frames, opens
         -- catcher-free and dismisses via the hover watcher; only swap clicks
         -- are gated. Never stomp a click-opened popup (loot spec / loadout).
-        if lootPool and lootPool._popup and lootPool._popup:IsShown() then return end
-        if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then return end
+        if lootPool and lootPool._popup and lootPool._popup:IsShown() then
+            return
+        end
+        if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then
+            return
+        end
         if not (specPool and specPool._popup and specPool._popup:IsShown()) then
             ToggleSpecPopup()
         end
         hoverWatch._watchPool = specPool
         hoverWatch:Show()
     end)
-    specButton:SetScript("OnLeave", function() mouseOver = false; inst:Refresh() end)
+    specButton:SetScript("OnLeave", function()
+        mouseOver = false
+        inst:Refresh()
+    end)
     specButton:SetScript("OnClick", function(_, button)
         -- No blanket combat gate: popups open catcher-free in lockdown and the talent
         -- frame is viewable in combat; only swapping ROW clicks are locked (loot spec is legal).
         if button == "LeftButton" then
             if IsControlKeyDown() then
-                if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then loadoutPool._popup:Hide(); return end
-                HideAllPopups(); ToggleLoadoutPopup()
+                if loadoutPool and loadoutPool._popup and loadoutPool._popup:IsShown() then
+                    loadoutPool._popup:Hide()
+                    return
+                end
+                HideAllPopups()
+                ToggleLoadoutPopup()
             elseif IsShiftKeyDown() then
                 HideAllPopups()
-                if PlayerSpellsUtil and PlayerSpellsUtil.ToggleClassTalentFrame then PlayerSpellsUtil.ToggleClassTalentFrame()
-                elseif ToggleTalentFrame then ToggleTalentFrame() end
+                if PlayerSpellsUtil and PlayerSpellsUtil.ToggleClassTalentFrame then
+                    PlayerSpellsUtil.ToggleClassTalentFrame()
+                elseif ToggleTalentFrame then
+                    ToggleTalentFrame()
+                end
             end
         elseif button == "RightButton" then
-            if lootPool and lootPool._popup and lootPool._popup:IsShown() then lootPool._popup:Hide(); return end
-            HideAllPopups(); ToggleLootSpecPopup()
+            if lootPool and lootPool._popup and lootPool._popup:IsShown() then
+                lootPool._popup:Hide()
+                return
+            end
+            HideAllPopups()
+            ToggleLootSpecPopup()
         end
     end)
 
@@ -743,8 +951,7 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
                 -- saves/syncs, hero-talent data -- instance background churn) are
                 -- not the commit; the pointer is written from the remembered
                 -- loadout id once the active config reports the landing.
-                local active = C_ClassTalents.GetActiveConfigID
-                    and C_ClassTalents.GetActiveConfigID()
+                local active = C_ClassTalents.GetActiveConfigID and C_ClassTalents.GetActiveConfigID()
                 if active and eventConfigID == active then
                     local specId, configID = pendingSwapSpecId, pendingSwapConfigID
                     pendingSwapSpecId, pendingSwapConfigID = nil, nil
@@ -779,7 +986,9 @@ ns.BlockFactories.spec = function(blockCfg, slot, content, barCtx)
             local iconSz = min(fontSize + 8, max(14, floor(CONTENT_BASE * 0.72 + 0.5)))
             local textH = specText:GetStringHeight() or fontSize
             local infoH = 0
-            if infoText:IsShown() then infoH = (infoText:GetStringHeight() or 0) + 2 end
+            if infoText:IsShown() then
+                infoH = (infoText:GetStringHeight() or 0) + 2
+            end
             return max(8 + iconSz + 2 + textH + infoH + 4, barH, 60)
         end
         return max(content:GetWidth() or 120, 40)

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ClassicTalents.lua  (WoW Forever only)
 --  The vanilla talent window, drawn with the client's own art: one tree a
@@ -11,11 +15,11 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local SIZE = 32           -- talent button
-local STEP = 63           -- between talents on the grid
-local LEFT, TOP = 35, 20  -- first talent, inside the tree area
+local SIZE = 32 -- talent button
+local STEP = 63 -- between talents on the grid
+local LEFT, TOP = 35, 20 -- first talent, inside the tree area
 local VIEW_W, VIEW_H = 296, 332
-local GAP = 8             -- beside the spellbook, past the tabs on its right side
+local GAP = 8 -- beside the spellbook, past the tabs on its right side
 local ART = "Interface\\TalentFrame\\"
 local QUEUE_KEY = "ClassicTalentsBind"
 local TOGGLE_NAME = "CUI_ClassicTalentsToggle"
@@ -45,15 +49,15 @@ local ARROW_LEFT = { 0.5, 1, 0 }
 local F = module.Feature("classicTalents", { enabled = false })
 
 local win, toggle
-local microLayer  -- the click layer over the micro menu's Talents button (see Setup)
-local route       -- CUI_TalentsRoute (see Setup)
-local trees = {}  -- { groupID, name, nodes = { nodeID, ... } } in tree order
-local tree = 1    -- the selected tree
+local microLayer -- the click layer over the micro menu's Talents button (see Setup)
+local route -- CUI_TalentsRoute (see Setup)
+local trees = {} -- { groupID, name, nodes = { nodeID, ... } } in tree order
+local tree = 1 -- the selected tree
 local staged = {} -- [nodeID] = points staged here and not yet learned
 local configID, treeID
 local unspent = 0 -- talent points left to stage
-local boundKeys   -- the keys the toggle holds, space separated
-local queued      -- a repaint is due next frame
+local boundKeys -- the keys the toggle holds, space separated
+local queued -- a repaint is due next frame
 
 -------------------------------------------------------------------------------
 --  Talent data (the trees and their grid: CludesUI.ForeverTalentTrees and
@@ -62,21 +66,31 @@ local queued      -- a repaint is due next frame
 -------------------------------------------------------------------------------
 -- The trees whose own name is too long for a tab, by trait group ID.
 local function ShortName(groupID)
-    if groupID == 11326 then return CludesUI.L("Elemental") end -- Elemental Combat
-    if groupID == 11347 then return CludesUI.L("Feral") end     -- Feral Combat
-    if groupID == 11622 then return CludesUI.L("Shadow") end    -- Shadow Magic
+    if groupID == 11326 then
+        return CludesUI.L("Elemental")
+    end -- Elemental Combat
+    if groupID == 11347 then
+        return CludesUI.L("Feral")
+    end -- Feral Combat
+    if groupID == 11622 then
+        return CludesUI.L("Shadow")
+    end -- Shadow Magic
 end
 
 local function ReadTrees()
     wipe(trees)
     local list
     configID, treeID, list = CludesUI.ForeverTalentTrees()
-    if not list then return end
+    if not list then
+        return
+    end
     for i, t in ipairs(list) do
         t.name = ShortName(t.groupID) or t.name
         trees[i] = t
     end
-    if tree > #trees then tree = 1 end
+    if tree > #trees then
+        tree = 1
+    end
 end
 
 -- Each talent's column and row (from 0) in its tree, from the node positions.
@@ -88,9 +102,13 @@ local function SpellOf(info)
     local entryID = info.activeEntry and info.activeEntry.entryID or info.entryIDs[1]
     local entry = entryID and C_Traits.GetEntryInfo(configID, entryID)
     local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
-    if not def then return end
+    if not def then
+        return
+    end
     local icon = def.overrideIcon
-    if not icon or icon == 0 then icon = def.spellID and C_Spell.GetSpellTexture(def.spellID) end
+    if not icon or icon == 0 then
+        icon = def.spellID and C_Spell.GetSpellTexture(def.spellID)
+    end
     return def.spellID, icon
 end
 
@@ -100,7 +118,9 @@ end
 local Paint, QueuePaint
 
 local function TalentEnter(b)
-    if not b.spellID then return end
+    if not b.spellID then
+        return
+    end
     GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
     GameTooltip:SetSpellByID(b.spellID)
     GameTooltip:Show()
@@ -113,7 +133,9 @@ end
 -- Left click stages a point; right click takes back one staged here.
 local function TalentClick(b, button)
     local nodeID = b.nodeID
-    if not nodeID then return end
+    if not nodeID then
+        return
+    end
     if button == "RightButton" then
         if (staged[nodeID] or 0) > 0 and C_Traits.RefundRank(configID, nodeID) then
             staged[nodeID] = staged[nodeID] - 1
@@ -207,7 +229,8 @@ local function Link(n, from, to, lit)
         local line = Piece(win.lines, n, win.canvas, "UI-TalentBranches", BRANCH_RIGHT, lit)
         line:SetSize(span, SIZE)
         line:SetPoint("TOPLEFT", right and x + SIZE or x - span, y)
-        local arrow = Piece(win.arrows, n, win.above, "UI-TalentArrows", right and ARROW_RIGHT or ARROW_LEFT, lit)
+        local arrow =
+            Piece(win.arrows, n, win.above, "UI-TalentArrows", right and ARROW_RIGHT or ARROW_LEFT, lit)
         arrow:SetSize(SIZE, SIZE)
         arrow:SetPoint("TOPLEFT", right and x + span + SIZE / 2 or x - span - SIZE / 2, y)
     else
@@ -246,17 +269,25 @@ Paint = function()
         end
         FillTalent(b, nodeID, cell)
     end
-    for i = used + 1, #win.talents do win.talents[i]:Hide() end
+    for i = used + 1, #win.talents do
+        win.talents[i]:Hide()
+    end
 
     local links = 0
     for _, cell in pairs(cells) do
         for _, edge in ipairs(cell.info.visibleEdges) do
             local to = cells[edge.targetNode]
-            if to and Link(links + 1, cell, to, edge.isActive) then links = links + 1 end
+            if to and Link(links + 1, cell, to, edge.isActive) then
+                links = links + 1
+            end
         end
     end
-    for i = links + 1, #win.lines do win.lines[i]:Hide() end
-    for i = links + 1, #win.arrows do win.arrows[i]:Hide() end
+    for i = links + 1, #win.lines do
+        win.lines[i]:Hide()
+    end
+    for i = links + 1, #win.arrows do
+        win.arrows[i]:Hide()
+    end
     win.canvas:SetSize(VIEW_W, math.max(VIEW_H, TOP * 2 + (rows - 1) * STEP + SIZE))
 
     for i, tab in ipairs(win.tabs) do
@@ -265,8 +296,12 @@ Paint = function()
         if data then
             tab.text:SetText(data.name)
             local on = i == tree
-            for _, tex in ipairs(tab.active) do tex:SetShown(on) end
-            for _, tex in ipairs(tab.inactive) do tex:SetShown(not on) end
+            for _, tex in ipairs(tab.active) do
+                tex:SetShown(on)
+            end
+            for _, tex in ipairs(tab.inactive) do
+                tex:SetShown(not on)
+            end
             local c = on and HIGHLIGHT_FONT_COLOR or NORMAL_FONT_COLOR
             tab.text:SetTextColor(c.r, c.g, c.b)
             tab.text:SetPoint("CENTER", 0, on and 4 or 2)
@@ -276,8 +311,15 @@ Paint = function()
     local spent = group and group.currencyInfos[1] and group.currencyInfos[1].spent or 0
     -- The numbers are white beside their gold labels.
     local white = HIGHLIGHT_FONT_COLOR
-    win.spent:SetText(t and CludesUI.Lf("Points spent in %1$s Talents: %2$s", t.name,
-        white:WrapTextInColorCode(spent)) or "")
+    win.spent:SetText(
+        t
+                and CludesUI.Lf(
+                    "Points spent in %1$s Talents: %2$s",
+                    t.name,
+                    white:WrapTextInColorCode(spent)
+                )
+            or ""
+    )
     win.points:SetText(CludesUI.Lf("Talent Points: %s", white:WrapTextInColorCode(unspent)))
     win.learn:SetEnabled(HasStaged())
     PaintBackground()
@@ -291,17 +333,23 @@ end
 -- One repaint for a click and the burst of events it sets off.
 local function Repaint()
     queued = nil
-    if win:IsShown() then Refresh() end
+    if win:IsShown() then
+        Refresh()
+    end
 end
 
 QueuePaint = function()
-    if queued then return end
+    if queued then
+        return
+    end
     queued = true
     C_Timer.After(0, Repaint)
 end
 
 local function Rollback()
-    if HasStaged() and configID then C_Traits.RollbackConfig(configID) end
+    if HasStaged() and configID then
+        C_Traits.RollbackConfig(configID)
+    end
     wipe(staged)
 end
 
@@ -313,26 +361,40 @@ end
 local function SavedConfigID()
     local spec = C_SpecializationInfo.GetSpecialization()
     local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
-    if not specID then return nil end
+    if not specID then
+        return nil
+    end
     local saved = C_ClassTalents.GetLastSelectedSavedConfigID(specID)
     local consts = Constants and Constants.TraitConsts
-    if saved == configID or (consts and saved == consts.STARTER_BUILD_TRAIT_CONFIG_ID) then return nil end
+    if saved == configID or (consts and saved == consts.STARTER_BUILD_TRAIT_CONFIG_ID) then
+        return nil
+    end
     return saved
 end
 
 -- A refused commit (combat, an encounter) keeps the staged points, so closing
 -- the window still rolls them back.
 local function Learn()
-    if not HasStaged() then return end
-    if C_ClassTalents.CommitConfig(SavedConfigID()) then wipe(staged) end
+    if not HasStaged() then
+        return
+    end
+    if C_ClassTalents.CommitConfig(SavedConfigID()) then
+        wipe(staged)
+    end
 end
 
-local EVENTS = { "TRAIT_CONFIG_UPDATED", "TRAIT_NODE_CHANGED", "TRAIT_TREE_CURRENCY_INFO_UPDATED",
-                 "ACTIVE_COMBAT_CONFIG_CHANGED" }
+local EVENTS = {
+    "TRAIT_CONFIG_UPDATED",
+    "TRAIT_NODE_CHANGED",
+    "TRAIT_TREE_CURRENCY_INFO_UPDATED",
+    "ACTIVE_COMBAT_CONFIG_CHANGED",
+}
 
 -- Listens only while open. Closing drops the points staged here.
 local function WinShown(f)
-    for _, event in ipairs(EVENTS) do f:RegisterEvent(event) end
+    for _, event in ipairs(EVENTS) do
+        f:RegisterEvent(event)
+    end
     PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
     Refresh()
 end
@@ -376,7 +438,9 @@ local function NewTab(i)
     tab.text:SetWidth(92)
     tab.text:SetWordWrap(false)
     tab:SetScript("OnClick", function()
-        if i == tree then return end
+        if i == tree then
+            return
+        end
         tree = i
         win.scroll:SetVerticalScroll(0)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
@@ -386,7 +450,9 @@ local function NewTab(i)
 end
 
 local function Build()
-    if win then return end
+    if win then
+        return
+    end
     win = CreateFrame("Frame", "CUI_ClassicTalents", UIParent)
     win:Hide()
     win:SetSize(384, 512)
@@ -417,12 +483,18 @@ local function Build()
     -- The tree's background, over the frame art and behind the scrolling
     -- talents: 320 x 331 in four pieces.
     win.bg = {}
-    for _, part in ipairs({ { "TopLeft", 0, 0, 256, 256 }, { "TopRight", 256, 0, 64, 256 },
-                            { "BottomLeft", 0, -256, 256, 75 }, { "BottomRight", 256, -256, 64, 75 } }) do
+    for _, part in ipairs({
+        { "TopLeft", 0, 0, 256, 256 },
+        { "TopRight", 256, 0, 64, 256 },
+        { "BottomLeft", 0, -256, 256, 75 },
+        { "BottomRight", 256, -256, 64, 75 },
+    }) do
         local tex = win:CreateTexture(nil, "ARTWORK", nil, 1)
         tex:SetSize(part[4], part[5])
         tex:SetPoint("TOPLEFT", 23 + part[2], -77 + part[3])
-        if part[5] < 256 then tex:SetTexCoord(0, 1, 0, part[5] / 128) end
+        if part[5] < 256 then
+            tex:SetTexCoord(0, 1, 0, part[5] / 128)
+        end
         win.bg[part[1]] = tex
     end
 
@@ -465,24 +537,32 @@ local function Build()
     win.points:SetPoint("RIGHT", win.learn, "LEFT", -10, 0)
 
     win.tabs, win.talents, win.lines, win.arrows = {}, {}, {}, {}
-    for i = 1, 3 do win.tabs[i] = NewTab(i) end
+    for i = 1, 3 do
+        win.tabs[i] = NewTab(i)
+    end
 
     win:SetScript("OnShow", WinShown)
     win:SetScript("OnHide", WinHidden)
     win:SetScript("OnEvent", function(_, event)
         -- A learn or a change made elsewhere: what was staged here is gone.
-        if event == "TRAIT_CONFIG_UPDATED" or event == "ACTIVE_COMBAT_CONFIG_CHANGED" then wipe(staged) end
+        if event == "TRAIT_CONFIG_UPDATED" or event == "ACTIVE_COMBAT_CONFIG_CHANGED" then
+            wipe(staged)
+        end
         QueuePaint()
     end)
     CludesUI.RegisterEscapeClose(win, { cursor = true })
-    if CludesUI._ShifterAdopt then CludesUI._ShifterAdopt("CUI_ClassicTalents") end
+    if CludesUI._ShifterAdopt then
+        CludesUI._ShifterAdopt("CUI_ClassicTalents")
+    end
 end
 
 -- Beside the Classic Spellbook while that is open and in its place while it is
 -- closed, hanging from the book (the Shifter may have moved it); at the left of
 -- the screen without one. A spot saved in the Shifter wins over all of these.
 local function Place()
-    if not win then return end
+    if not win then
+        return
+    end
     local book = CUI_ClassicSpellbook
     win:ClearAllPoints()
     if not book then
@@ -495,7 +575,9 @@ local function Place()
 end
 
 local function Close()
-    if win then win:Hide() end
+    if win then
+        win:Hide()
+    end
 end
 
 local function Toggle()
@@ -539,8 +621,12 @@ local function Bind()
         toggle:SetScript("OnEvent", Bind)
     end
     local target = on and toggle or _G.TalentMicroButton
-    if route and route:GetAttribute("clickbutton") ~= target then route:SetAttribute("clickbutton", target) end
-    if not toggle then return end
+    if route and route:GetAttribute("clickbutton") ~= target then
+        route:SetAttribute("clickbutton", target)
+    end
+    if not toggle then
+        return
+    end
     if on then
         toggle:RegisterEvent("UPDATE_BINDINGS")
         if not microLayer then
@@ -548,11 +634,17 @@ local function Bind()
         end
     else
         toggle:UnregisterAllEvents()
-        if win then win:Hide() end
+        if win then
+            win:Hide()
+        end
     end
-    if microLayer then microLayer:SetShown(on) end
+    if microLayer then
+        microLayer:SetShown(on)
+    end
     local keys = on and table.concat({ GetBindingKey("TOGGLETALENTS") }, " ") or ""
-    if keys == boundKeys then return end
+    if keys == boundKeys then
+        return
+    end
     boundKeys = keys
     ClearOverrideBindings(toggle)
     for key in keys:gmatch("%S+") do

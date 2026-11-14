@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Events.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- The main file or an earlier CDM file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ECME, _bonusScanSeen, _cdmViewerNames = I.ECME, I._bonusScanSeen, I._cdmViewerNames
@@ -94,7 +98,9 @@ eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
 eventFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
 -- Party Mode axis: no game event; the core fires its own edge.
 if CludesUI.RegisterVisEdge then
-    CludesUI.RegisterVisEdge(function() _CDMApplyVisibility() end)
+    CludesUI.RegisterVisEdge(function()
+        _CDMApplyVisibility()
+    end)
 end
 -- Vehicle edges for the In Vehicle axis (player-filtered; same reasoning).
 eventFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
@@ -125,7 +131,9 @@ local function ScheduleTalentRebuild()
     _talentRebuildToken = _talentRebuildToken + 1
     local token = _talentRebuildToken
     C_Timer.After(0.5, function()
-        if token ~= _talentRebuildToken then return end  -- superseded
+        if token ~= _talentRebuildToken then
+            return
+        end -- superseded
         -- Wipe per-spell caches that may reference stale override IDs or stale charge
         -- data from spells that changed with the talent swap. Also wipe the persisted
         -- DB entries so CacheMultiChargeSpell re-detects from live API rather than
@@ -142,16 +150,22 @@ local function ScheduleTalentRebuild()
             end
             -- Hidden Outside Form/Stance answers (a talent can change which
             -- forms a spell needs)
-            if ns.CdmWipeFormCache then ns.CdmWipeFormCache() end
+            if ns.CdmWipeFormCache then
+                ns.CdmWipeFormCache()
+            end
         end
         -- Rebuild the cdID route map against the new talent set. The stored
         -- assignedSpells is left untouched (it's pure user intent); the route map is
         -- the live source of truth for which frame renders on which bar. A full CDM
         -- rebuild + reanchor below picks up the new routing.
-        if ns.RebuildSpellRouteMap then ns.RebuildSpellRouteMap() end
+        if ns.RebuildSpellRouteMap then
+            ns.RebuildSpellRouteMap()
+        end
         -- The placeholder icon bridge reads the spellbook, and a talent swap is
         -- exactly what changes which form a name resolves to.
-        if ns.WipeCdmBookNameCache then ns.WipeCdmBookNameCache() end
+        if ns.WipeCdmBookNameCache then
+            ns.WipeCdmBookNameCache()
+        end
         -- Clear cached viewer child info so the next tick re-reads from API
         -- (overrideSpellID may have changed with the new talent set)
         for _, vname in ipairs(_cdmViewerNames) do
@@ -174,14 +188,20 @@ local function ScheduleTalentRebuild()
                 end
             end
         end
-        ns._cdmUnresolvedRetries = 0  -- fresh window; see FullCDMRebuild
+        ns._cdmUnresolvedRetries = 0 -- fresh window; see FullCDMRebuild
         -- Rebuild keybind cache (talent swap may change action slot contents)
         UpdateCDMKeybinds()
         -- Invalidate TBB frame cache + spell caches, then reanchor so
         -- overlays re-evaluate against the new viewer pool state.
-        if ns.InvalidateTBBFrameCache then ns.InvalidateTBBFrameCache() end
-        if ns.MarkCDMSpellCacheDirty then ns.MarkCDMSpellCacheDirty() end
-        if ns.QueueReanchor then ns.QueueReanchor() end
+        if ns.InvalidateTBBFrameCache then
+            ns.InvalidateTBBFrameCache()
+        end
+        if ns.MarkCDMSpellCacheDirty then
+            ns.MarkCDMSpellCacheDirty()
+        end
+        if ns.QueueReanchor then
+            ns.QueueReanchor()
+        end
     end)
 end
 
@@ -198,24 +218,33 @@ local function ScheduleRosterRebuild()
         return
     end
     -- Lightweight: just reanchor bars that depend on party frames
-    if ns.QueueReanchor then ns.QueueReanchor() end
+    if ns.QueueReanchor then
+        ns.QueueReanchor()
+    end
 end
 
 -- Events that can move an ability to another action button (Bar Glows keyed per ability).
 local BAR_REBIND_EVENTS = {
-    ACTIONBAR_SLOT_CHANGED = true, ACTIONBAR_PAGE_CHANGED = true, UPDATE_BONUS_ACTIONBAR = true,
-    UPDATE_SHAPESHIFT_FORM = true, SPELLS_CHANGED = true,
+    ACTIONBAR_SLOT_CHANGED = true,
+    ACTIONBAR_PAGE_CHANGED = true,
+    UPDATE_BONUS_ACTIONBAR = true,
+    UPDATE_SHAPESHIFT_FORM = true,
+    SPELLS_CHANGED = true,
 }
 
 eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
-    if not ECME.db then return end
-    if ns._barGlowRebindOn and BAR_REBIND_EVENTS[event] then ns.QueueBarGlowRebind(event, unit) end
+    if not ECME.db then
+        return
+    end
+    if ns._barGlowRebindOn and BAR_REBIND_EVENTS[event] then
+        ns.QueueBarGlowRebind(event, unit)
+    end
     if event == "PLAYER_LOGOUT" then
         ns.SaveCachedBarSizes()
         return
     end
     if event == "SPELL_RANGE_CHECK_UPDATE" then
-        ns.RepaintOverrideRange(unit)   -- payload is (spellID, isInRange, checksRange)
+        ns.RepaintOverrideRange(unit) -- payload is (spellID, isInRange, checksRange)
         return
     end
     if event == "COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED" then
@@ -231,12 +260,17 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         return
     end
     if event == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" or event == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
-        OnProcGlowEvent(event, unit)  -- unit = spellID (first arg after event)
+        OnProcGlowEvent(event, unit) -- unit = spellID (first arg after event)
         return
     end
-    if event == "UPDATE_BINDINGS" or event == "ACTIONBAR_SLOT_CHANGED"
-       or event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR"
-       or event == "UPDATE_OVERRIDE_ACTIONBAR" or event == "UPDATE_VEHICLE_ACTIONBAR" then
+    if
+        event == "UPDATE_BINDINGS"
+        or event == "ACTIONBAR_SLOT_CHANGED"
+        or event == "ACTIONBAR_PAGE_CHANGED"
+        or event == "UPDATE_BONUS_ACTIONBAR"
+        or event == "UPDATE_OVERRIDE_ACTIONBAR"
+        or event == "UPDATE_VEHICLE_ACTIONBAR"
+    then
         -- A page/bonus/override/vehicle swap only changes which page is
         -- active, not the contents of the slots the stable scan reads -- so it
         -- cannot change the cache. Drop it, and with it the rebuild storm a
@@ -263,7 +297,9 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
                     firstSighting = true
                 end
             end
-            if not firstSighting then return end
+            if not firstSighting then
+                return
+            end
         end
         -- Debounce: one-button rotation addons fire ACTIONBAR_SLOT_CHANGED on every GCD. Rapid-fire events coalesce into a single update 0.5s after the last event.
         _keybindDue = GetTime() + 0.5
@@ -286,28 +322,42 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         -- against the COMPLETE icon set (an init-time reseed may have seen a
         -- partial viewer; the racial-family guard keeps the re-run from minting
         -- a second racial slot).
-        if ns.MarkCDMSpellCacheDirty then ns.MarkCDMSpellCacheDirty() end
-        if ns._reseededSpecsSession then wipe(ns._reseededSpecsSession) end
+        if ns.MarkCDMSpellCacheDirty then
+            ns.MarkCDMSpellCacheDirty()
+        end
+        if ns._reseededSpecsSession then
+            wipe(ns._reseededSpecsSession)
+        end
         ScheduleTalentRebuild()
         return
     end
-    if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE" or event == "ACTIVE_TALENT_GROUP_CHANGED"
-        or event == "PLAYER_PVP_TALENT_UPDATE" then
+    if
+        event == "TRAIT_CONFIG_UPDATED"
+        or event == "PLAYER_TALENT_UPDATE"
+        or event == "ACTIVE_TALENT_GROUP_CHANGED"
+        or event == "PLAYER_PVP_TALENT_UPDATE"
+    then
         -- Hero talent, loadout, or PvP talent context change -- debounced rebuild. PvP talents
         -- (de)activating on arena enter/exit makes Blizzard re-evaluate the viewer's tracked
         -- cooldown set; without a rebuild the new pool frames are never re-claimed and the
         -- unclaimed-frame cleanup blanks them (arena-exit empty-CDM bug). The spell set may have changed: let the post-rebuild reanchor re-run the automatic base-bar materialization for this spec.
-        if ns._reseededSpecsSession then wipe(ns._reseededSpecsSession) end
+        if ns._reseededSpecsSession then
+            wipe(ns._reseededSpecsSession)
+        end
         -- Drop the spellbook name map NOW, not only in the debounced rebuild. It answers "which
         -- form does the player have", which is exactly what just changed, and anything repainting
         -- inside the debounce window would otherwise resolve against the pre-swap book. The rebuild
         -- wipes it again, which still matters: this early rebuild can read a book the client has not finished updating, and that second wipe corrects it.
-        if ns.WipeCdmBookNameCache then ns.WipeCdmBookNameCache() end
+        if ns.WipeCdmBookNameCache then
+            ns.WipeCdmBookNameCache()
+        end
         -- Talent Conditions read node ranks from a cache; the rebuild's reanchor re-evaluates them.
         -- Unconditional: the options popup fills the cache before the gate is ever set.
         ns.TalentCondInvalidate()
         -- Bar Glows limited to a hero tree: re-check them now (only while one exists).
-        if ns._barGlowAnyHero and ns.UpdateOverlayVisuals then ns.UpdateOverlayVisuals() end
+        if ns._barGlowAnyHero and ns.UpdateOverlayVisuals then
+            ns.UpdateOverlayVisuals()
+        end
         ScheduleTalentRebuild()
         return
     end
@@ -332,26 +382,38 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
     if event == "PLAYER_EQUIPMENT_CHANGED" then
         -- One rebuild per gear swap: an equipment set fires this once per slot, and
         -- each rebuild is ~3.5 ms. Combat swaps need none (the trinket hook updates).
-        if InCombatLockdown() or _equipRebuildPending then return end
+        if InCombatLockdown() or _equipRebuildPending then
+            return
+        end
         _equipRebuildPending = true
         C_Timer.After(0, function()
             -- Combat began before the flush (/equipset + opener): stay pending,
             -- PLAYER_REGEN_ENABLED rebuilds.
-            if InCombatLockdown() then return end
+            if InCombatLockdown() then
+                return
+            end
             _equipRebuildPending = false
             BuildAllCDMBars()
-            if ns.QueueReanchor then ns.QueueReanchor() end
+            if ns.QueueReanchor then
+                ns.QueueReanchor()
+            end
         end)
         return
     end
-    if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_UPDATE_RESTING"
-       or event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE" then
+    if
+        event == "PLAYER_TARGET_CHANGED"
+        or event == "PLAYER_UPDATE_RESTING"
+        or event == "UNIT_ENTERED_VEHICLE"
+        or event == "UNIT_EXITED_VEHICLE"
+    then
         _CDMApplyVisibility()
         return
     end
-    if event == "PLAYER_MOUNT_DISPLAY_CHANGED"
+    if
+        event == "PLAYER_MOUNT_DISPLAY_CHANGED"
         or event == "PLAYER_CAN_GLIDE_CHANGED"
-        or event == "PLAYER_IS_GLIDING_CHANGED" then
+        or event == "PLAYER_IS_GLIDING_CHANGED"
+    then
         -- Defer to a clean execution context: the event handler chain can carry taint from other
         -- addons, which propagates into LayoutCDMBar when a bar transitions from hidden to visible (visHideMounted). The dragonriding edges take the same deferred path for the same reason (mid-flight unhide runs LayoutCDMBar).
         C_Timer.After(0, _CDMApplyVisibility)
@@ -361,18 +423,31 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         -- Bail fast if no bar actually uses visHideMounted: druids shift constantly in combat (Bear/Cat) and we don't want to re-run the visibility pipeline for nothing.
         local p = ECME.db and ECME.db.profile
         local bars = p and p.cdmBars and p.cdmBars.bars
-        if not bars then return end
+        if not bars then
+            return
+        end
         local anyMountedOpt = false
         for _, bd in ipairs(bars) do
-            if bd.visHideMounted then anyMountedOpt = true; break end
+            if bd.visHideMounted then
+                anyMountedOpt = true
+                break
+            end
         end
-        if not anyMountedOpt then return end
+        if not anyMountedOpt then
+            return
+        end
         -- Defer one frame: the Travel Form aura is applied slightly after UPDATE_SHAPESHIFT_FORM fires, so IsPlayerMountedLike's aura check would miss it on the immediate pass.
         C_Timer.After(0, _CDMApplyVisibility)
         return
     end
-    if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" or event == "ZONE_CHANGED_NEW_AREA" then
-        if ns._syncRotationCombatState then ns._syncRotationCombatState() end
+    if
+        event == "PLAYER_REGEN_DISABLED"
+        or event == "PLAYER_REGEN_ENABLED"
+        or event == "ZONE_CHANGED_NEW_AREA"
+    then
+        if ns._syncRotationCombatState then
+            ns._syncRotationCombatState()
+        end
         if event == "PLAYER_REGEN_DISABLED" then
             SetInCombat(true)
             _CDMApplyVisibility()
@@ -397,24 +472,32 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         end
         -- Flush deferred TBB rebuild that was queued during combat
         if event == "PLAYER_REGEN_ENABLED" and ns.IsTBBRebuildPending and ns.IsTBBRebuildPending() then
-            if ns.BuildTrackedBuffBars then ns.BuildTrackedBuffBars() end
+            if ns.BuildTrackedBuffBars then
+                ns.BuildTrackedBuffBars()
+            end
         end
         -- Flush a secondary buff-viewer park that was blocked during combat
         if event == "PLAYER_REGEN_ENABLED" and ns._secondaryParkPending then
             ns._secondaryParkPending = nil
             local sv = _G[BLIZZ_CDM_FRAMES_SECONDARY.buffs]
             local svc = sv and _ecmeFC[sv]
-            if svc and svc.hidden then ns.ParkSecondaryBuffViewer(sv) end
+            if svc and svc.hidden then
+                ns.ParkSecondaryBuffViewer(sv)
+            end
         end
         -- Flush deferred roster reanchor that was blocked during combat
         if event == "PLAYER_REGEN_ENABLED" and _rosterRebuildPending then
             _rosterRebuildPending = false
-            if ns.QueueReanchor then ns.QueueReanchor() end
+            if ns.QueueReanchor then
+                ns.QueueReanchor()
+            end
         end
         if event == "PLAYER_REGEN_ENABLED" and _equipRebuildPending then
             _equipRebuildPending = false
             BuildAllCDMBars()
-            if ns.QueueReanchor then ns.QueueReanchor() end
+            if ns.QueueReanchor then
+                ns.QueueReanchor()
+            end
         end
         return
     end
@@ -443,7 +526,9 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         end
         ns._cdmWasInPvP = isPvP or nil
         if isPvP and not wasPvP then
-            if ns.QueueReanchor then ns.QueueReanchor() end
+            if ns.QueueReanchor then
+                ns.QueueReanchor()
+            end
         end
         -- Install rotation helper hook after CDM frames have been built
         C_Timer.After(1, function()
@@ -464,16 +549,20 @@ eventFrame:SetScript("OnEvent", function(_, event, unit, updateInfo, arg3)
         -- is cached until the next map rebuild and pins a ghosted/custom spell onto the wrong
         -- visible bar. Re-derive from current truth and re-claim -- the LAST fire of any churn
         -- burst always leaves the final state correct, with no settle timers. (CheckSpecChange's reconcile also rebuilds the map, but a same-key fire means the data changed again after that rebuild.)
-        if ns.RebuildSpellRouteMap then ns.RebuildSpellRouteMap() end
+        if ns.RebuildSpellRouteMap then
+            ns.RebuildSpellRouteMap()
+        end
         -- The tracked-buff catalog can change in the same churn, and the login-pass reconcile may
         -- have consumed its dirty flag against a still-empty viewer pool (the flag is cleared
         -- before the call and an empty catalog no-ops). Re-arm so the queued reanchor reconciles the buff display order against the populated catalog.
         ns._cdmBuffOrderDirty = true
-        if ns.QueueReanchor then ns.QueueReanchor() end
+        if ns.QueueReanchor then
+            ns.QueueReanchor()
+        end
         return
     end
     if event == "PLAYER_SPECIALIZATION_CHANGED" and unit == "player" then
-        ns.DisarmOverrideRanges()   -- the new spec's overrides re-arm on their own events
+        ns.DisarmOverrideRanges() -- the new spec's overrides re-arm on their own events
         -- Non-rebuild work only. The actual spec change rebuild is driven by SPELLS_CHANGED above
         -- (which fires for both manual and auto swaps). This handler just invalidates caches that need immediate clearing.
         CludesUI.InvalidateFrameCache()
@@ -488,7 +577,9 @@ SLASH_ECME1 = "/ccme"
 SLASH_ECME2 = "/cdmeffects"
 SLASH_ECME3 = "/ccdm"
 SlashCmdList.ECME = function(msg)
-    if InCombatLockdown and InCombatLockdown() then return end
+    if InCombatLockdown and InCombatLockdown() then
+        return
+    end
     CludesUI:ShowModule("CludesUICooldownManager")
 end
 
@@ -505,6 +596,5 @@ SlashCmdList.CUIBLIZZCDM = function()
         OpenBlizzardCDMTab()
     end)
 end
-
 
 I.broken = false

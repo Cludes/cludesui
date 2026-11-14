@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  AuraGlows.lua -- Raid Lead: Aura Glows.
 --
@@ -26,9 +28,13 @@ function ns.AuraGlowSettings()
     local p = ns.RaidLeadDB()
     p.auraGlows = p.auraGlows or {}
     local s = p.auraGlows
-    if s.enabled == nil then s.enabled = true end
-    if s.size == nil then s.size = 44 end
-    s.spells = s.spells or {}          -- { spellID, ... }
+    if s.enabled == nil then
+        s.enabled = true
+    end
+    if s.size == nil then
+        s.size = 44
+    end
+    s.spells = s.spells or {} -- { spellID, ... }
     return s
 end
 
@@ -37,7 +43,10 @@ function ns.ParseSpellIDs(text)
     local out, seen = {}, {}
     for id in (text or ""):gmatch("%d+") do
         id = tonumber(id)
-        if id and id > 0 and not seen[id] then seen[id] = true; out[#out + 1] = id end
+        if id and id > 0 and not seen[id] then
+            seen[id] = true
+            out[#out + 1] = id
+        end
     end
     return out
 end
@@ -47,7 +56,9 @@ local built, pending
 
 local function Key(s)
     local t = { tostring(s.size) }
-    for _, id in ipairs(s.spells) do t[#t + 1] = id end
+    for _, id in ipairs(s.spells) do
+        t[#t + 1] = id
+    end
     return table.concat(t, ",")
 end
 
@@ -57,8 +68,12 @@ local function CanBuild()
 end
 
 local function Decorate(button)
-    if button.SetMouseClickEnabled then button:SetMouseClickEnabled(false) end
-    if button.SetMouseMotionEnabled then button:SetMouseMotionEnabled(false) end
+    if button.SetMouseClickEnabled then
+        button:SetMouseClickEnabled(false)
+    end
+    if button.SetMouseMotionEnabled then
+        button:SetMouseMotionEnabled(false)
+    end
     local glow = button:CreateTexture(nil, "OVERLAY", nil, 7)
     glow:SetPoint("TOPLEFT", -4, 4)
     glow:SetPoint("BOTTOMRIGHT", 4, -4)
@@ -81,14 +96,25 @@ local function Rebuild()
     local s = ns.AuraGlowSettings()
     local list = s.enabled and s.spells or {}
     local key = Key(s) .. (s.enabled and "" or "off")
-    if key == built then return end
-    if not CanBuild() then pending = true; return end
+    if key == built then
+        return
+    end
+    if not CanBuild() then
+        pending = true
+        return
+    end
     pending = false
     local AK = CludesUI.AuraKit
-    if container then container:SetEnabled(false); container:Hide(); container = nil end
+    if container then
+        container:SetEnabled(false)
+        container:Hide()
+        container = nil
+    end
     built = key
     holder:SetSize(math.max(1, #list) * (s.size + GAP) - GAP, s.size)
-    if #list == 0 then return end
+    if #list == 0 then
+        return
+    end
     AK.styles[STYLE] = { width = s.size, height = s.size }
     local ok, err = pcall(function()
         local cont = AK.CreateContainerShell(holder, { point = { "LEFT", holder, "LEFT" } })
@@ -98,13 +124,23 @@ local function Rebuild()
         for i, id in ipairs(list) do
             for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
                 AK.AddGroupToContainer(cont, {
-                    key = filter .. id, filter = { filter }, maxFrameCount = 1,
+                    key = filter .. id,
+                    filter = { filter },
+                    maxFrameCount = 1,
                     sortMethod = AuraContainerSortMethod and AuraContainerSortMethod.Default,
                     sortDirection = AuraContainerSortDirection and AuraContainerSortDirection.Normal,
                     candidateFilters = { includeSpellIDs = { [id] = true } },
-                    style = STYLE, extraInit = function(button) Decorate(button) end,
-                    layout = { elementWidth = s.size, elementHeight = s.size, elementSpacing = GAP,
-                               lineSpacing = GAP, layoutIndex = i },
+                    style = STYLE,
+                    extraInit = function(button)
+                        Decorate(button)
+                    end,
+                    layout = {
+                        elementWidth = s.size,
+                        elementHeight = s.size,
+                        elementSpacing = GAP,
+                        lineSpacing = GAP,
+                        layoutIndex = i,
+                    },
                 })
             end
         end
@@ -116,10 +152,15 @@ local function Rebuild()
         CludesUI.Print("|cffff4040Aura Glows could not be set up:|r " .. tostring(err))
     end
 end
-ns.RebuildAuraGlows = function() built = nil; Rebuild() end
+ns.RebuildAuraGlows = function()
+    built = nil
+    Rebuild()
+end
 
 local function ApplyPosition()
-    if not holder or InCombatLockdown() then return end
+    if not holder or InCombatLockdown() then
+        return
+    end
     local p = ns.AuraGlowSettings().pos
     holder:ClearAllPoints()
     if p then
@@ -145,10 +186,18 @@ ev:SetScript("OnEvent", function(_, event)
             registered = true
             CludesUI:RegisterUnlockElements({
                 CludesUI.MakeUnlockElement({
-                    key = "RLEAD_AuraGlows", label = "Aura Glows", group = "Raid Lead", order = 665,
-                    noAnchorTarget = true, noResize = true,
-                    isHidden = function() return not ns.AuraGlowSettings().enabled end,
-                    getFrame = function() return holder end,
+                    key = "RLEAD_AuraGlows",
+                    label = "Aura Glows",
+                    group = "Raid Lead",
+                    order = 665,
+                    noAnchorTarget = true,
+                    noResize = true,
+                    isHidden = function()
+                        return not ns.AuraGlowSettings().enabled
+                    end,
+                    getFrame = function()
+                        return holder
+                    end,
                     getSize = function()
                         local s = ns.AuraGlowSettings()
                         local n = math.max(1, #s.spells)
@@ -157,8 +206,12 @@ ev:SetScript("OnEvent", function(_, event)
                     savePos = function(_, point, relPoint, x, y)
                         ns.AuraGlowSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
                     end,
-                    loadPos = function() return ns.AuraGlowSettings().pos end,
-                    clearPos = function() ns.AuraGlowSettings().pos = nil end,
+                    loadPos = function()
+                        return ns.AuraGlowSettings().pos
+                    end,
+                    clearPos = function()
+                        ns.AuraGlowSettings().pos = nil
+                    end,
                     applyPos = ApplyPosition,
                 }),
             }, "CludesUIRaidLead")

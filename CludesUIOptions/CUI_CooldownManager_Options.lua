@@ -1,12 +1,16 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICooldownManager_Options.lua
 --  Registers CDM Effects module with CludesUI
 --  Tab 1: CDM Bars  (Bar Glows + Tracking Bars disabled pending rewrite)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUICooldownManager"
-local ns = CludesUI._ModuleNS[ADDON_NAME]  -- module namespace (published by the module at its load)
-if not ns then return end  -- module disabled: no options page
+local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+if not ns then
+    return
+end -- module disabled: no options page
 
 -- Controller cursor for the CDM's hand-built popups: the shared
 -- CludesUI.PadPopupOpen (CludesUI_UICore.lua). On ns: no main-chunk local.
@@ -21,25 +25,27 @@ local function GateBlizzardOnly(key, cfg)
     return cfg
 end
 
-local PAGE_BAR_GLOWS    = "Bar Glows"
-local PAGE_BUFF_BARS    = "Tracking Bars"
-local PAGE_CDM_BARS     = "CDM Bars"
+local PAGE_BAR_GLOWS = "Bar Glows"
+local PAGE_BUFF_BARS = "Tracking Bars"
+local PAGE_CDM_BARS = "CDM Bars"
 local PAGE_ROTATION_ICON = "Rotation Assist Icon"
 
-local PAGE_UNLOCK       = "Layout Mode"
+local PAGE_UNLOCK = "Layout Mode"
 
-local SEC_MAPPINGS   = "GLOW MAPPINGS"
-local SEC_LAYOUT     = "LAYOUT"
+local SEC_MAPPINGS = "GLOW MAPPINGS"
+local SEC_LAYOUT = "LAYOUT"
 local SEC_APPEARANCE = "APPEARANCE"
-local SEC_FILTER     = "FILTER"
-local SEC_BEHAVIOR   = "BEHAVIOR"
+local SEC_FILTER = "FILTER"
+local SEC_BEHAVIOR = "BEHAVIOR"
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    if not CludesUI or not CludesUI.RegisterModule then return end
+    if not CludesUI or not CludesUI.RegisterModule then
+        return
+    end
     local PP = CludesUI.PanelPP
     -- The options page pool (CludesUI_FramePool.lua): a frame made here under
     -- a pool host (a reused page or header, a kept menu) is handed out again reset
@@ -50,26 +56,38 @@ initFrame:SetScript("OnEvent", function(self)
     local PoolKept, PoolGen = Pool.Kept, Pool.Gen
 
     local db
-    C_Timer.After(0, function() db = _G._ECME_AceDB end)
+    C_Timer.After(0, function()
+        db = _G._CUCME_AceDB
+    end)
 
     local function DB()
-        if not db then db = _G._ECME_AceDB end
+        if not db then
+            db = _G._CUCME_AceDB
+        end
         return db and db.profile
     end
 
     local function Refresh()
-        if _G._ECME_Apply then _G._ECME_Apply() end
+        if _G._CUCME_Apply then
+            _G._CUCME_Apply()
+        end
     end
 
     -- Add/RemoveTrackedSpell already rebuild routes + queue reanchor; force an immediate
     -- CollectAndReanchor (not the throttled queue), then rebuild the page with
     -- _skipNextApplyRebuild to skip the redundant FullCDMRebuild.
     local function RefreshCDPreview()
-        if ns.CollectAndReanchor then ns.CollectAndReanchor() end
+        if ns.CollectAndReanchor then
+            ns.CollectAndReanchor()
+        end
         ns._skipNextApplyRebuild = true
         C_Timer.After(0.05, function()
-            if ns.CDMApplyVisibility then ns.CDMApplyVisibility() end
-            if ns.ApplyCachedKeybinds then ns.ApplyCachedKeybinds() end
+            if ns.CDMApplyVisibility then
+                ns.CDMApplyVisibility()
+            end
+            if ns.ApplyCachedKeybinds then
+                ns.ApplyCachedKeybinds()
+            end
             CludesUI:RefreshPage(true)
         end)
     end
@@ -90,11 +108,17 @@ initFrame:SetScript("OnEvent", function(self)
         for i = 1, #labels do
             local fs = labels[i]
             local w = fs and fs:GetStringWidth() or 0
-            if w > widest then widest = w end
+            if w > widest then
+                widest = w
+            end
         end
         local fit = math.ceil(widest + (pad or 40))
-        if fit < nominalW then fit = nominalW end
-        if fit > MAX_W then fit = MAX_W end
+        if fit < nominalW then
+            fit = nominalW
+        end
+        if fit > MAX_W then
+            fit = MAX_W
+        end
         return fit
     end
     local SetPVFont = CludesUI.ApplyModuleFont
@@ -120,15 +144,25 @@ initFrame:SetScript("OnEvent", function(self)
     -- Action bar entries (1-8) are stable; CDM bar entries are built dynamically via
     -- BuildBGTargetList since users can add extra cooldown/utility/buff bars beyond defaults.
     local BG_ACTION_BAR_LABELS = {
-        [1] = "Action Bar 1 (Main)", [2] = "Action Bar 2", [3] = "Action Bar 3", [4] = "Action Bar 4",
-        [5] = "Action Bar 5", [6] = "Action Bar 6", [7] = "Action Bar 7", [8] = "Action Bar 8",
+        [1] = "Action Bar 1 (Main)",
+        [2] = "Action Bar 2",
+        [3] = "Action Bar 3",
+        [4] = "Action Bar 4",
+        [5] = "Action Bar 5",
+        [6] = "Action Bar 6",
+        [7] = "Action Bar 7",
+        [8] = "Action Bar 8",
     }
 
     -- Legacy installs saved selectedBar as 101/102 for the default cooldowns/
     -- utility CDM bars; normalize to the bar key string (new saves use the key).
     local function NormalizeSelectedBar(sel)
-        if sel == 101 then return "cooldowns" end
-        if sel == 102 then return "utility" end
+        if sel == 101 then
+            return "cooldowns"
+        end
+        if sel == 102 then
+            return "utility"
+        end
         return sel
     end
 
@@ -139,8 +173,7 @@ initFrame:SetScript("OnEvent", function(self)
         local p = ns.ECME and ns.ECME.db and ns.ECME.db.profile
         if p and p.cdmBars and p.cdmBars.bars then
             for _, bd in ipairs(p.cdmBars.bars) do
-                if bd.enabled and not bd.isGhostBar
-                   and bd.barType ~= "custom_buff" then
+                if bd.enabled and not bd.isGhostBar and bd.barType ~= "custom_buff" then
                     list[#list + 1] = {
                         value = bd.key,
                         label = CludesUI.Lf("CDM Bar - %s", CludesUI.L(bd.name or bd.key)),
@@ -162,7 +195,9 @@ initFrame:SetScript("OnEvent", function(self)
         local p = ns.ECME and ns.ECME.db and ns.ECME.db.profile
         if p and p.cdmBars and p.cdmBars.bars then
             for _, bd in ipairs(p.cdmBars.bars) do
-                if bd.key == sel then return CludesUI.Lf("CDM Bar - %s", CludesUI.L(bd.name or bd.key)) end
+                if bd.key == sel then
+                    return CludesUI.Lf("CDM Bar - %s", CludesUI.L(bd.name or bd.key))
+                end
             end
         end
         return tostring(sel)
@@ -171,14 +206,25 @@ initFrame:SetScript("OnEvent", function(self)
     -- Presets/custom spell IDs/racials/trinkets/custom buffs are CludesUI-injected
     -- icons (no stable cooldownID), so they are NOT glow-assignable -- the Bar Glows preview leaves them inert.
     local function IsNonGlowableCDMIcon(frame)
-        if not frame then return false end
+        if not frame then
+            return false
+        end
         -- Overflow-diverted icons are session-only: their glow identity/slot-index
         -- fallback key belongs to the source bar, so they aren't listed while diverted
         -- (existing cdm_-keyed glows still RENDER -- the render pass is key-driven, not list-driven).
-        if ns.CdmFrameOverflowBar and ns.CdmFrameOverflowBar(frame) then return true end
-        return (frame._isRacialFrame or frame._isTrinketFrame
-            or frame._isPresetFrame or frame._isItemPresetFrame
-            or frame._isCustomSpellFrame or frame._isCustomBuffFrame) and true or false
+        if ns.CdmFrameOverflowBar and ns.CdmFrameOverflowBar(frame) then
+            return true
+        end
+        return (
+            frame._isRacialFrame
+            or frame._isTrinketFrame
+            or frame._isPresetFrame
+            or frame._isItemPresetFrame
+            or frame._isCustomSpellFrame
+            or frame._isCustomBuffFrame
+        )
+                and true
+            or false
     end
 
     -- True if any icon on a buff bar has per-icon "Always Show Buff" = on (or
@@ -192,13 +238,17 @@ initFrame:SetScript("OnEvent", function(self)
             for _, ss in pairs(st) do
                 if type(ss) == "table" then
                     local as = rawget(ss, "alwaysShow")
-                    if as == "on" or as == "missing" then return true end
+                    if as == "on" or as == "missing" then
+                        return true
+                    end
                 end
             end
         end
         local sd = ns.GetBarSpellData and ns.GetBarSpellData(barKey)
         local tier = ns.GetBarTierSettings and ns.GetBarTierSettings(sd, barKey)
-        if tier and (tier.alwaysShow == "on" or tier.alwaysShow == "missing") then return true end
+        if tier and (tier.alwaysShow == "on" or tier.alwaysShow == "missing") then
+            return true
+        end
         return false
     end
 
@@ -206,7 +256,8 @@ initFrame:SetScript("OnEvent", function(self)
     local function GetGlowStyleValues()
         local labels, order = {}, {}
         if ns.GLOW_STYLES then
-            for _, i in ipairs(ns.GLOW_VIEW.ordered) do local entry = ns.GLOW_STYLES[i]
+            for _, i in ipairs(ns.GLOW_VIEW.ordered) do
+                local entry = ns.GLOW_STYLES[i]
                 labels[i] = (entry.name and CludesUI.L(entry.name)) or ("Style " .. i)
                 order[#order + 1] = i
             end
@@ -229,31 +280,52 @@ initFrame:SetScript("OnEvent", function(self)
             local p = ns.ECME and ns.ECME.db and ns.ECME.db.profile
             return p and p.cdmBars
         end
-        local function Rebuild() if ns.BuildAllCDMBars then ns.BuildAllCDMBars() end end
+        local function Rebuild()
+            if ns.BuildAllCDMBars then
+                ns.BuildAllCDMBars()
+            end
+        end
         -- Shared per-bar refreshes: the Glows page runs each distinct onChange once
         -- per Apply, so every bar's descriptor must hand out the same function.
         local function RebuildBuffGlows()
             Rebuild()
-            if ns.RefreshBuffGlows then ns.RefreshBuffGlows() end
+            if ns.RefreshBuffGlows then
+                ns.RefreshBuffGlows()
+            end
         end
         local function RebuildPixelGlows()
             Rebuild()
-            if ns.RequestBarGlowUpdate then ns.RequestBarGlowUpdate() end
+            if ns.RequestBarGlowUpdate then
+                ns.RequestBarGlowUpdate()
+            end
         end
-        local function RebuildTBB() if ns.BuildTrackedBuffBars then ns.BuildTrackedBuffBars() end end
+        local function RebuildTBB()
+            if ns.BuildTrackedBuffBars then
+                ns.BuildTrackedBuffBars()
+            end
+        end
         local function ColorKeys(t, key)
             local c = t[key]
-            if c then return c.r, c.g, c.b end
+            if c then
+                return c.r, c.g, c.b
+            end
         end
         -- pandemicGlow* keys, shared by a bar's Pandemic Glow and the Tracked Buff
         -- Bars (style reads differ, see the descriptors).
         local function PandemicGet(bd, f)
-            if f == "mode" then return bd.pandemicGlowMode or "default" end
+            if f == "mode" then
+                return bd.pandemicGlowMode or "default"
+            end
             return CludesUI.GlowOptions.FlatGet(bd, "pandemicGlow", f)
         end
         local function PandemicSet(bd, f, a, b2, c2)
             if f == "style" then
-                if a == 0 then bd.pandemicGlow = false else bd.pandemicGlow = true; bd.pandemicGlowStyle = a end
+                if a == 0 then
+                    bd.pandemicGlow = false
+                else
+                    bd.pandemicGlow = true
+                    bd.pandemicGlowStyle = a
+                end
             elseif f == "mode" then
                 bd.pandemicGlowMode = a
                 -- Custom with no color stored draws the default look on the bar
@@ -261,7 +333,8 @@ initFrame:SetScript("OnEvent", function(self)
                 if a == "custom" and not bd.pandemicGlowColor then
                     bd.pandemicGlowColor = { r = 1, g = 1, b = 0 }
                 end
-            else CludesUI.GlowOptions.FlatSet(bd, "pandemicGlow", f, a, b2, c2)
+            else
+                CludesUI.GlowOptions.FlatSet(bd, "pandemicGlow", f, a, b2, c2)
             end
         end
 
@@ -277,24 +350,38 @@ initFrame:SetScript("OnEvent", function(self)
         local function PandemicDesc(getBd, onChange)
             local antiClip = ns.CDM_ANTI_CLIP
             return {
-                view = ns.GLOW_VIEW, host = "icon", excludes = { [4] = true },
+                view = ns.GLOW_VIEW,
+                host = "icon",
+                excludes = { [4] = true },
                 extras = not antiClip and { { value = -1, label = "Blizzard Default" } } or nil,
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 1, b = 0 },
                 onChange = onChange or Rebuild,
                 get = function(f)
-                    local bd = getBd(); if not bd then return nil end
+                    local bd = getBd()
+                    if not bd then
+                        return nil
+                    end
                     if f == "style" then
-                        if bd.pandemicGlow == false then return 0 end
-                        if bd.pandemicGlow == nil then return antiClip and 0 or -1 end
+                        if bd.pandemicGlow == false then
+                            return 0
+                        end
+                        if bd.pandemicGlow == nil then
+                            return antiClip and 0 or -1
+                        end
                         local style = bd.pandemicGlowStyle or 1
-                        if antiClip and style == -1 then return 0 end
+                        if antiClip and style == -1 then
+                            return 0
+                        end
                         return style
                     end
                     return PandemicGet(bd, f)
                 end,
                 set = function(f, a, b2, c2)
-                    local bd = getBd(); if bd then PandemicSet(bd, f, a, b2, c2) end
+                    local bd = getBd()
+                    if bd then
+                        PandemicSet(bd, f, a, b2, c2)
+                    end
                 end,
             }
         end
@@ -304,35 +391,61 @@ initFrame:SetScript("OnEvent", function(self)
         -- onChange as for PandemicDesc.
         local function BuffGlowDesc(getBd, onChange)
             return {
-                view = ns.GLOW_VIEW, host = "icon", excludes = { [4] = true },
+                view = ns.GLOW_VIEW,
+                host = "icon",
+                excludes = { [4] = true },
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 0.788, b = 0.137 },
                 onChange = onChange or RebuildBuffGlows,
                 get = function(f)
-                    local bd = getBd(); if not bd then return nil end
-                    if f == "style" then return bd.buffGlowType or 0
-                    elseif f == "mode" then return bd.buffGlowMode or "default"
+                    local bd = getBd()
+                    if not bd then
+                        return nil
+                    end
+                    if f == "style" then
+                        return bd.buffGlowType or 0
+                    elseif f == "mode" then
+                        return bd.buffGlowMode or "default"
                     elseif f == "color" then
-                        if bd.buffGlowR then return bd.buffGlowR, bd.buffGlowG, bd.buffGlowB end
+                        if bd.buffGlowR then
+                            return bd.buffGlowR, bd.buffGlowG, bd.buffGlowB
+                        end
                     -- Same fallbacks as the Buff Glow renderer (8/2/4), not the pixelGlow* keys.
-                    elseif f == "lines" then return bd.buffGlowLines
-                    elseif f == "thickness" then return bd.buffGlowThickness
-                    elseif f == "speed" then return bd.buffGlowSpeed
-                    elseif f == "bg" then return bd.buffGlowBackground == true
+                    elseif f == "lines" then
+                        return bd.buffGlowLines
+                    elseif f == "thickness" then
+                        return bd.buffGlowThickness
+                    elseif f == "speed" then
+                        return bd.buffGlowSpeed
+                    elseif f == "bg" then
+                        return bd.buffGlowBackground == true
                     elseif f == "bgColor" then
-                        if bd.buffGlowBackgroundR then return bd.buffGlowBackgroundR, bd.buffGlowBackgroundG, bd.buffGlowBackgroundB end
+                        if bd.buffGlowBackgroundR then
+                            return bd.buffGlowBackgroundR, bd.buffGlowBackgroundG, bd.buffGlowBackgroundB
+                        end
                     end
                 end,
                 set = function(f, a, b2, c2)
-                    local bd = getBd(); if not bd then return end
-                    if f == "style" then bd.buffGlowType = a
-                    elseif f == "mode" then bd.buffGlowMode = a
-                    elseif f == "color" then bd.buffGlowR, bd.buffGlowG, bd.buffGlowB = a, b2, c2
-                    elseif f == "lines" then bd.buffGlowLines = a
-                    elseif f == "thickness" then bd.buffGlowThickness = a
-                    elseif f == "speed" then bd.buffGlowSpeed = a
-                    elseif f == "bg" then bd.buffGlowBackground = a
-                    elseif f == "bgColor" then bd.buffGlowBackgroundR, bd.buffGlowBackgroundG, bd.buffGlowBackgroundB = a, b2, c2
+                    local bd = getBd()
+                    if not bd then
+                        return
+                    end
+                    if f == "style" then
+                        bd.buffGlowType = a
+                    elseif f == "mode" then
+                        bd.buffGlowMode = a
+                    elseif f == "color" then
+                        bd.buffGlowR, bd.buffGlowG, bd.buffGlowB = a, b2, c2
+                    elseif f == "lines" then
+                        bd.buffGlowLines = a
+                    elseif f == "thickness" then
+                        bd.buffGlowThickness = a
+                    elseif f == "speed" then
+                        bd.buffGlowSpeed = a
+                    elseif f == "bg" then
+                        bd.buffGlowBackground = a
+                    elseif f == "bgColor" then
+                        bd.buffGlowBackgroundR, bd.buffGlowBackgroundG, bd.buffGlowBackgroundB = a, b2, c2
                     end
                 end,
             }
@@ -343,25 +456,38 @@ initFrame:SetScript("OnEvent", function(self)
         -- its icons read these (no style or color of their own).
         local function PixelParamsDesc(bd)
             return {
-                paramsOnly = true, host = "icon",
+                paramsOnly = true,
+                host = "icon",
                 caps = { params = true, bg = true },
                 onChange = RebuildPixelGlows,
                 get = function(f)
-                    if f == "lines" then return bd.pixelGlowLines
-                    elseif f == "thickness" then return bd.pixelGlowThickness
-                    elseif f == "speed" then return bd.pixelGlowSpeed
-                    elseif f == "bg" then return bd.pixelGlowBackground == true
+                    if f == "lines" then
+                        return bd.pixelGlowLines
+                    elseif f == "thickness" then
+                        return bd.pixelGlowThickness
+                    elseif f == "speed" then
+                        return bd.pixelGlowSpeed
+                    elseif f == "bg" then
+                        return bd.pixelGlowBackground == true
                     elseif f == "bgColor" then
-                        if bd.pixelGlowBackgroundR then return bd.pixelGlowBackgroundR, bd.pixelGlowBackgroundG, bd.pixelGlowBackgroundB end
-                    elseif f == "mode" then return "default"
+                        if bd.pixelGlowBackgroundR then
+                            return bd.pixelGlowBackgroundR, bd.pixelGlowBackgroundG, bd.pixelGlowBackgroundB
+                        end
+                    elseif f == "mode" then
+                        return "default"
                     end
                 end,
                 set = function(f, a, b2, c2)
-                    if f == "lines" then bd.pixelGlowLines = a
-                    elseif f == "thickness" then bd.pixelGlowThickness = a
-                    elseif f == "speed" then bd.pixelGlowSpeed = a
-                    elseif f == "bg" then bd.pixelGlowBackground = a
-                    elseif f == "bgColor" then bd.pixelGlowBackgroundR, bd.pixelGlowBackgroundG, bd.pixelGlowBackgroundB = a, b2, c2
+                    if f == "lines" then
+                        bd.pixelGlowLines = a
+                    elseif f == "thickness" then
+                        bd.pixelGlowThickness = a
+                    elseif f == "speed" then
+                        bd.pixelGlowSpeed = a
+                    elseif f == "bg" then
+                        bd.pixelGlowBackground = a
+                    elseif f == "bgColor" then
+                        bd.pixelGlowBackgroundR, bd.pixelGlowBackgroundG, bd.pixelGlowBackgroundB = a, b2, c2
                     end
                 end,
             }
@@ -373,18 +499,31 @@ initFrame:SetScript("OnEvent", function(self)
         -- Tracking Bars page (selected bar) and the Glows page share this.
         local function TbbDesc(getBd, onChange)
             return {
-                view = ns.GLOW_VIEW, host = "bar", excludes = CludesUI.Glows.RECT_EXCLUDES,
+                view = ns.GLOW_VIEW,
+                host = "bar",
+                excludes = CludesUI.Glows.RECT_EXCLUDES,
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 1, b = 0 },
-                isOff = function() local bd = getBd(); return not bd or bd.pandemicGlow ~= true end,
+                isOff = function()
+                    local bd = getBd()
+                    return not bd or bd.pandemicGlow ~= true
+                end,
                 onChange = onChange,
                 get = function(f)
-                    local bd = getBd(); if not bd then return nil end
-                    if f == "style" then return ns.PG_TbbEffectiveStyle(bd) end
+                    local bd = getBd()
+                    if not bd then
+                        return nil
+                    end
+                    if f == "style" then
+                        return ns.PG_TbbEffectiveStyle(bd)
+                    end
                     return PandemicGet(bd, f)
                 end,
                 set = function(f, a, b2, c2)
-                    local bd = getBd(); if bd then PandemicSet(bd, f, a, b2, c2) end
+                    local bd = getBd()
+                    if bd then
+                        PandemicSet(bd, f, a, b2, c2)
+                    end
                 end,
             }
         end
@@ -392,9 +531,12 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Rotation Assist (profile-wide): string-keyed styles; Blizzard Default and
         -- Solid Border are extras, never template targets.
-        local ROT_TO_SHARED = { pixel = 1, button = 2, autocast = 3, shape = 4, gcd = 5, modern = 6, classic = 7 }
+        local ROT_TO_SHARED =
+            { pixel = 1, button = 2, autocast = 3, shape = 4, gcd = 5, modern = 6, classic = 7 }
         local SHARED_TO_ROT = {}
-        for k, v in pairs(ROT_TO_SHARED) do SHARED_TO_ROT[v] = k end
+        for k, v in pairs(ROT_TO_SHARED) do
+            SHARED_TO_ROT[v] = k
+        end
         -- Why the CDM highlight cannot show, nil while it can: Blizzard's
         -- Assisted Highlight off (always on Forever) or Show Rotation Helper off.
         local function RotationLockTip()
@@ -402,9 +544,13 @@ initFrame:SetScript("OnEvent", function(self)
                 return "This option requires Blizzard's Assisted Highlight to be enabled"
             end
             local c = CdmBars()
-            if c and c.hideRotationHelper then return "Show Rotation Helper" end
+            if c and c.hideRotationHelper then
+                return "Show Rotation Helper"
+            end
         end
-        local function RotationHelperOff() return RotationLockTip() ~= nil end
+        local function RotationHelperOff()
+            return RotationLockTip() ~= nil
+        end
         -- The CDM Bars page builds its Rotation Assist rows only while this is false.
         ns._CDM_RotationHelperOff = RotationHelperOff
         -- Blizzard's Assisted Highlight switched in its own options (fires only on
@@ -416,48 +562,88 @@ initFrame:SetScript("OnEvent", function(self)
             EventRegistry:RegisterCallback("AssistedCombatManager.OnSetUseAssistedHighlight", function()
                 CludesUI:InvalidateModulePageCache("CludesUICooldownManager")
                 local m = CludesUI:GetActiveModule()
-                if m == "CludesUICooldownManager"
-                    or (m == CludesUI.GLOBAL_KEY and CludesUI:GetActivePage() == "Glows") then
+                if
+                    m == "CludesUICooldownManager"
+                    or (m == CludesUI.GLOBAL_KEY and CludesUI:GetActivePage() == "Glows")
+                then
                     CludesUI:RefreshPage(true)
                 end
             end, "ECME_Options_AssistedHighlight")
         end
         local function RotationDesc()
             local desc = {
-                host = "icon", noNone = true,
-                toShared = function(v) return ROT_TO_SHARED[v] end,
-                fromShared = function(i) return SHARED_TO_ROT[i] end,
+                host = "icon",
+                noNone = true,
+                toShared = function(v)
+                    return ROT_TO_SHARED[v]
+                end,
+                fromShared = function(i)
+                    return SHARED_TO_ROT[i]
+                end,
                 order = { "pixel", "shape", "button", "autocast", "gcd", "modern", "classic" },
-                extras = { { value = "blizzard", label = "Blizzard Default" }, { value = "solid", label = "Solid Border", colored = true } },
-                caps = { mode = true, params = true, bg = true }, thicknessMax = 8,
+                extras = {
+                    { value = "blizzard", label = "Blizzard Default" },
+                    { value = "solid", label = "Solid Border", colored = true },
+                },
+                caps = { mode = true, params = true, bg = true },
+                thicknessMax = 8,
                 defaultColor = { r = 1, g = 0, b = 0 },
                 -- Off and locked while the highlight cannot show.
-                isOff = RotationHelperOff, disabled = RotationHelperOff, disabledTooltip = RotationLockTip,
-                onChange = function() if ns.UpdateRotationHighlights then ns.UpdateRotationHighlights() end end,
+                isOff = RotationHelperOff,
+                disabled = RotationHelperOff,
+                disabledTooltip = RotationLockTip,
+                onChange = function()
+                    if ns.UpdateRotationHighlights then
+                        ns.UpdateRotationHighlights()
+                    end
+                end,
                 get = function(f)
-                    local c = CdmBars(); if not c then return nil end
-                    if f == "style" then return c.rotationAssistStyle or "blizzard"
-                    elseif f == "mode" then return c.rotationAssistColorMode or "default"
+                    local c = CdmBars()
+                    if not c then
+                        return nil
+                    end
+                    if f == "style" then
+                        return c.rotationAssistStyle or "blizzard"
+                    elseif f == "mode" then
+                        return c.rotationAssistColorMode or "default"
                     elseif f == "color" then
-                        return c.rotationAssistColorR or 1, c.rotationAssistColorG or 0, c.rotationAssistColorB or 0
-                    elseif f == "lines" then return c.rotationAssistLines
+                        return c.rotationAssistColorR or 1,
+                            c.rotationAssistColorG or 0,
+                            c.rotationAssistColorB or 0
+                    elseif f == "lines" then
+                        return c.rotationAssistLines
                     -- The renderer draws 3 when unset and allows up to 8 (thicknessMax).
-                    elseif f == "thickness" then return c.rotationAssistThickness or 3
-                    elseif f == "speed" then return c.rotationAssistSpeed
-                    elseif f == "bg" then return c.rotationAssistBackground == true
-                    elseif f == "bgColor" then return ColorKeys(c, "rotationAssistBackgroundColor")
+                    elseif f == "thickness" then
+                        return c.rotationAssistThickness or 3
+                    elseif f == "speed" then
+                        return c.rotationAssistSpeed
+                    elseif f == "bg" then
+                        return c.rotationAssistBackground == true
+                    elseif f == "bgColor" then
+                        return ColorKeys(c, "rotationAssistBackgroundColor")
                     end
                 end,
                 set = function(f, a, b2, c2)
-                    local c = CdmBars(); if not c then return end
-                    if f == "style" then c.rotationAssistStyle = a
-                    elseif f == "mode" then c.rotationAssistColorMode = a
-                    elseif f == "color" then c.rotationAssistColorR, c.rotationAssistColorG, c.rotationAssistColorB = a, b2, c2
-                    elseif f == "lines" then c.rotationAssistLines = a
-                    elseif f == "thickness" then c.rotationAssistThickness = a
-                    elseif f == "speed" then c.rotationAssistSpeed = a
-                    elseif f == "bg" then c.rotationAssistBackground = a
-                    elseif f == "bgColor" then c.rotationAssistBackgroundColor = { r = a, g = b2, b = c2 }
+                    local c = CdmBars()
+                    if not c then
+                        return
+                    end
+                    if f == "style" then
+                        c.rotationAssistStyle = a
+                    elseif f == "mode" then
+                        c.rotationAssistColorMode = a
+                    elseif f == "color" then
+                        c.rotationAssistColorR, c.rotationAssistColorG, c.rotationAssistColorB = a, b2, c2
+                    elseif f == "lines" then
+                        c.rotationAssistLines = a
+                    elseif f == "thickness" then
+                        c.rotationAssistThickness = a
+                    elseif f == "speed" then
+                        c.rotationAssistSpeed = a
+                    elseif f == "bg" then
+                        c.rotationAssistBackground = a
+                    elseif f == "bgColor" then
+                        c.rotationAssistBackgroundColor = { r = a, g = b2, b = c2 }
                     end
                 end,
             }
@@ -479,8 +665,16 @@ initFrame:SetScript("OnEvent", function(self)
         do
             -- Open Settings targets: the CDM Bars page with the bar selected first.
             local function BarNav(key, section, highlight)
-                return { page = PAGE_CDM_BARS, section = section, highlight = highlight,
-                    preSelect = function() if CludesUI._setCDMBar then CludesUI._setCDMBar(key) end end }
+                return {
+                    page = PAGE_CDM_BARS,
+                    section = section,
+                    highlight = highlight,
+                    preSelect = function()
+                        if CludesUI._setCDMBar then
+                            CludesUI._setCDMBar(key)
+                        end
+                    end,
+                }
             end
             -- Rotation Assist, listed per page build: while the highlight cannot
             -- show, the row reads None and Off, stays locked and opens Show
@@ -491,17 +685,32 @@ initFrame:SetScript("OnEvent", function(self)
                 local offDesc = RotationDesc()
                 offDesc.noNone = nil
                 -- Locked for good: a cached page keeps this listing until it rebuilds.
-                offDesc.disabled = function() return true end
-                local rotOff = { { label = "Rotation Assist Style", desc = offDesc,
-                    nav = BarNav("cooldowns", "EXTRAS", "Show Rotation Helper") } }
+                offDesc.disabled = function()
+                    return true
+                end
+                local rotOff = {
+                    {
+                        label = "Rotation Assist Style",
+                        desc = offDesc,
+                        nav = BarNav("cooldowns", "EXTRAS", "Show Rotation Helper"),
+                    },
+                }
                 -- sub: the group heading on the Glows page card (General, one
                 -- per bar, Tracking Bars); labels stay short beneath it.
-                GO.RegisterSite({ id = "cdm_rotation", label = "Rotation Assist Style", group = "bar",
+                GO.RegisterSite({
+                    id = "cdm_rotation",
+                    label = "Rotation Assist Style",
+                    group = "bar",
                     sub = CludesUI.L("General"),
                     module = "CludesUICooldownManager",
-                    page = PAGE_CDM_BARS, section = "EXTRAS", highlight = "Rotation Assist Style",
+                    page = PAGE_CDM_BARS,
+                    section = "EXTRAS",
+                    highlight = "Rotation Assist Style",
                     preSelect = BarNav("cooldowns").preSelect,
-                    list = function() return RotationHelperOff() and rotOff or rotOn end })
+                    list = function()
+                        return RotationHelperOff() and rotOff or rotOn
+                    end,
+                })
             end
             -- Per-icon glows and Bar Glows stay per entry (never template targets):
             -- hint entries counting the active spec's own settings. Read-only, raw
@@ -511,15 +720,21 @@ initFrame:SetScript("OnEvent", function(self)
             local PER_ICON_GLOW_KEYS = { "procGlow", "activeGlow", "maxStacksGlow", "buffGlow" }
             local PER_ICON_FAMILIES = { "cooldowns", "buffs" }
             local function HasOwnGlow(e)
-                if type(e) ~= "table" then return false end
+                if type(e) ~= "table" then
+                    return false
+                end
                 for i = 1, #PER_ICON_GLOW_KEYS do
                     local v = rawget(e, PER_ICON_GLOW_KEYS[i])
-                    if type(v) == "number" and v > 0 then return true end
+                    if type(v) == "number" and v > 0 then
+                        return true
+                    end
                 end
                 -- Cooldown State Effect glow: its own key decides (false = none),
                 -- else a glow saved in cdStateEffect, the single-value form.
                 local g = rawget(e, "cdStateGlow")
-                if g ~= nil then return type(g) == "string" end
+                if g ~= nil then
+                    return type(g) == "string"
+                end
                 local cse = rawget(e, "cdStateEffect")
                 return type(cse) == "string" and ns.CD_STATE_GLOWS[cse] ~= nil
             end
@@ -528,26 +743,39 @@ initFrame:SetScript("OnEvent", function(self)
                 for _, fam in ipairs(PER_ICON_FAMILIES) do
                     local st = ns.GetSpellSettingsStore and ns.GetSpellSettingsStore(fam)
                     for _, e in pairs(st or {}) do
-                        if HasOwnGlow(e) then n = n + 1 end
+                        if HasOwnGlow(e) then
+                            n = n + 1
+                        end
                     end
                 end
                 -- Preset and custom spells keep theirs in the profile-level
                 -- customActiveStates store (read directly: its getter creates it).
                 local prof = ns.ECME and ns.ECME.db and ns.ECME.db.profile
                 for _, e in pairs((prof and prof.customActiveStates) or {}) do
-                    if HasOwnGlow(e) then n = n + 1 end
+                    if HasOwnGlow(e) then
+                        n = n + 1
+                    end
                 end
                 return n
             end
-            GO.RegisterSite({ id = "cdm_per_icon", label = "Per-Icon Glows",
-                module = "CludesUICooldownManager", page = PAGE_CDM_BARS,
+            GO.RegisterSite({
+                id = "cdm_per_icon",
+                label = "Per-Icon Glows",
+                module = "CludesUICooldownManager",
+                page = PAGE_CDM_BARS,
                 info = {
                     glyph = "icon",
                     tooltip = "Proc Glow, Active State Glow, Max Charges Glow, Buff Glow, CD Ready Glow and Glow Effect Color can be set per icon: right-click an icon in the CDM Bars preview. Counted for the current specialization; the template never changes them.",
-                    text = function() return CludesUI.Lf("%d icon(s) with their own glow settings", CountPerIconGlows()) end,
-                } })
-            GO.RegisterSite({ id = "cdm_bar_glows", label = "Bar Glows",
-                module = "CludesUICooldownManager", page = PAGE_BAR_GLOWS,
+                    text = function()
+                        return CludesUI.Lf("%d icon(s) with their own glow settings", CountPerIconGlows())
+                    end,
+                },
+            })
+            GO.RegisterSite({
+                id = "cdm_bar_glows",
+                label = "Bar Glows",
+                module = "CludesUICooldownManager",
+                page = PAGE_BAR_GLOWS,
                 info = {
                     glyph = "bar",
                     tooltip = "Glows on action bar and CDM buttons while a tracked buff is active (or missing), set per entry on the Bar Glows page. Counted for the current specialization; the template never changes them.",
@@ -558,14 +786,22 @@ initFrame:SetScript("OnEvent", function(self)
                         local bg = specKey and sp and sp[specKey] and sp[specKey].barGlows
                         local n = 0
                         for _, list in pairs((bg and bg.assignments) or {}) do
-                            if type(list) == "table" then n = n + #list end
+                            if type(list) == "table" then
+                                n = n + #list
+                            end
                         end
-                        if bg and bg.enabled == false then return CludesUI.Lf("%d bar glow(s), turned off", n) end
+                        if bg and bg.enabled == false then
+                            return CludesUI.Lf("%d bar glow(s), turned off", n)
+                        end
                         return CludesUI.Lf("%d bar glow(s)", n)
                     end,
-                } })
+                },
+            })
             -- Per-bar sites are rebuilt on every page build (bars come and go).
-            GO.RegisterSite({ id = "cdm_bars", label = "Cooldown Manager Bars", group = "bar",
+            GO.RegisterSite({
+                id = "cdm_bars",
+                label = "Cooldown Manager Bars",
+                group = "bar",
                 module = "CludesUICooldownManager",
                 list = function()
                     local out = {}
@@ -577,29 +813,60 @@ initFrame:SetScript("OnEvent", function(self)
                         if not bd.isGhostBar and bd.barType ~= "custom_buff" then
                             local name = CludesUI.L(bd.name or bd.key or "?")
                             if ns.CDM_BarHasExtras(bd) then
-                                out[#out + 1] = { label = panLabel, sub = name, desc = PandemicDesc(function() return bd end),
-                                    nav = BarNav(bd.key, "EXTRAS", panLabel) }
+                                out[#out + 1] = {
+                                    label = panLabel,
+                                    sub = name,
+                                    desc = PandemicDesc(function()
+                                        return bd
+                                    end),
+                                    nav = BarNav(bd.key, "EXTRAS", panLabel),
+                                }
                             end
                             if ns.IsBarBuffFamily and ns.IsBarBuffFamily(bd) then
-                                out[#out + 1] = { label = "Buff Glow", sub = name, desc = BuffGlowDesc(function() return bd end),
-                                    nav = BarNav(bd.key, "ICON DISPLAY", "Buff Glow") }
+                                out[#out + 1] = {
+                                    label = "Buff Glow",
+                                    sub = name,
+                                    desc = BuffGlowDesc(function()
+                                        return bd
+                                    end),
+                                    nav = BarNav(bd.key, "ICON DISPLAY", "Buff Glow"),
+                                }
                             elseif ns.CDM_BarHasPixelRow(bd) then
-                                out[#out + 1] = { label = "Pixel Glow", sub = name, desc = PixelParamsDesc(bd),
-                                    nav = BarNav(bd.key, "ICON DISPLAY", "Pixel Glow Thickness") }
+                                out[#out + 1] = {
+                                    label = "Pixel Glow",
+                                    sub = name,
+                                    desc = PixelParamsDesc(bd),
+                                    nav = BarNav(bd.key, "ICON DISPLAY", "Pixel Glow Thickness"),
+                                }
                             end
                         end
                     end
                     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
-                    local tbbSub = CludesUI.L("Tracking Bars") .. " - " .. (ns.CDM_ANTI_CLIP
-                        and CludesUI.L("Anti-Clip Glow") or CludesUI.L("Pandemic Glow"))
+                    local tbbSub = CludesUI.L("Tracking Bars")
+                        .. " - "
+                        .. (ns.CDM_ANTI_CLIP and CludesUI.L("Anti-Clip Glow") or CludesUI.L("Pandemic Glow"))
                     for i, bd in ipairs((tbb and tbb.bars) or {}) do
-                        out[#out + 1] = { label = bd.name or "?", sub = tbbSub,
-                            desc = TbbDesc(function() return bd end, RebuildTBB),
-                            nav = { page = PAGE_BUFF_BARS, section = "EXTRAS", highlight = panLabel,
-                                preSelect = function() if ns._TBBSelectBar then ns._TBBSelectBar(i) end end } }
+                        out[#out + 1] = {
+                            label = bd.name or "?",
+                            sub = tbbSub,
+                            desc = TbbDesc(function()
+                                return bd
+                            end, RebuildTBB),
+                            nav = {
+                                page = PAGE_BUFF_BARS,
+                                section = "EXTRAS",
+                                highlight = panLabel,
+                                preSelect = function()
+                                    if ns._TBBSelectBar then
+                                        ns._TBBSelectBar(i)
+                                    end
+                                end,
+                            },
+                        }
                     end
                     return out
-                end })
+                end,
+            })
         end
     end
 
@@ -620,7 +887,9 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local barKeys = { "MainBar", "Bar2", "Bar3", "Bar4", "Bar5", "Bar6", "Bar7", "Bar8" }
         local barKey = barKeys[barIdx]
-        if not barKey then return false end
+        if not barKey then
+            return false
+        end
         local ok, EAB = pcall(CludesUI.Lite.GetAddon, "CludesUIActionBars")
         if ok and EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars then
             local s = EAB.db.profile.bars[barKey]
@@ -637,7 +906,9 @@ initFrame:SetScript("OnEvent", function(self)
     local _bgSpellPickerMenu
 
     CludesUI:RegisterOnHide(function()
-        if _bgSpellPickerMenu then _bgSpellPickerMenu:Hide() end
+        if _bgSpellPickerMenu then
+            _bgSpellPickerMenu:Hide()
+        end
     end)
 
     local function ShowBarGlowSpellPicker(anchorFrame, barIdx, btnIdx, onChanged, overrideAssignKey)
@@ -647,14 +918,21 @@ initFrame:SetScript("OnEvent", function(self)
 
         local assignedSet = {}
         for _, entry in ipairs(buffList) do
-            if entry.spellID then assignedSet[entry.spellID] = true end
+            if entry.spellID then
+                assignedSet[entry.spellID] = true
+            end
         end
 
         -- Immediate update: save picker position, rebuild, re-anchor
         local function ImmediateUpdate()
-            if not onChanged then return end
+            if not onChanged then
+                return
+            end
             local menuRef = _bgSpellPickerMenu
-            if not menuRef then onChanged(); return end
+            if not menuRef then
+                onChanged()
+                return
+            end
             -- Save absolute screen position before rebuild
             local cx, cy = menuRef:GetCenter()
             local mScale = menuRef:GetEffectiveScale()
@@ -664,7 +942,13 @@ initFrame:SetScript("OnEvent", function(self)
             if menuRef and menuRef:IsShown() then
                 menuRef:ClearAllPoints()
                 local uiScale = UIParent:GetEffectiveScale()
-                menuRef:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx * mScale / uiScale, cy * mScale / uiScale)
+                menuRef:SetPoint(
+                    "CENTER",
+                    UIParent,
+                    "BOTTOMLEFT",
+                    cx * mScale / uiScale,
+                    cy * mScale / uiScale
+                )
             end
         end
 
@@ -692,7 +976,9 @@ initFrame:SetScript("OnEvent", function(self)
         local usableIcon = buttonInfo and buttonInfo.iconID
         local menu = ns.ShowBarGlowBuffMenu(anchorFrame, {
             usableItem = { icon = usableIcon },
-            isChecked = function(sid) return assignedSet[sid] end,
+            isChecked = function(sid)
+                return assignedSet[sid]
+            end,
             onClick = function(sp, refreshChecks)
                 if assignedSet[sp.spellID] then
                     assignedSet[sp.spellID] = nil
@@ -720,7 +1006,9 @@ initFrame:SetScript("OnEvent", function(self)
                 ImmediateUpdate()
             end,
         })
-        if not menu then return end
+        if not menu then
+            return
+        end
         menu._btnIdx = btnIdx
         _bgSpellPickerMenu = menu
     end
@@ -728,9 +1016,9 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Bar Glows: BuildBarGlowsPage
     ---------------------------------------------------------------------------
-    local _glowHeaderBuilder  -- stored for cache restore via getHeaderBuilder
-    local _glowSelectedButton = nil  -- UI-only selection state (not saved)
-    local _glowBtnFrames = {}  -- button frames from last header build, indexed by button number
+    local _glowHeaderBuilder -- stored for cache restore via getHeaderBuilder
+    local _glowSelectedButton = nil -- UI-only selection state (not saved)
+    local _glowBtnFrames = {} -- button frames from last header build, indexed by button number
 
     -- Live preview on action-bar paging (stance, mount, vehicle), which changes
     -- the icons the preview copies. One event frame for the session, registered
@@ -740,11 +1028,19 @@ initFrame:SetScript("OnEvent", function(self)
     -- selected (the rows below belong to its current ability, which paging
     -- changes) or a preview glow was lit on a preview button: then the whole
     -- page is built again.
-    local glowLive = { events = { "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "PLAYER_MOUNT_DISPLAY_CHANGED" } }
+    local glowLive =
+        { events = { "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "PLAYER_MOUNT_DISPLAY_CHANGED" } }
     function glowLive.Flush()
         glowLive.pending = false
-        if not (CludesUI:IsShown() and CludesUI:GetActiveModule() == ADDON_NAME
-                and CludesUI:GetActivePage() == PAGE_BAR_GLOWS) then return end
+        if
+            not (
+                CludesUI:IsShown()
+                and CludesUI:GetActiveModule() == ADDON_NAME
+                and CludesUI:GetActivePage() == PAGE_BAR_GLOWS
+            )
+        then
+            return
+        end
         if _glowSelectedButton or next(_bgPreviewGlowOverlays) then
             CludesUI:RefreshPage(true)
         else
@@ -752,13 +1048,17 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
     function glowLive.OnEvent()
-        if glowLive.pending then return end
+        if glowLive.pending then
+            return
+        end
         glowLive.pending = true
         C_Timer.After(0.15, glowLive.Flush)
     end
     function glowLive.Arm()
         local f = glowLive.frame
-        for i = 1, #glowLive.events do f:RegisterEvent(glowLive.events[i]) end
+        for i = 1, #glowLive.events do
+            f:RegisterEvent(glowLive.events[i])
+        end
     end
     function glowLive.Disarm()
         glowLive.frame:UnregisterAllEvents()
@@ -771,7 +1071,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local bg = ns.GetBarGlows()
         local curBar = NormalizeSelectedBar(bg.selectedBar or "cooldowns")
-        local curBtn = _glowSelectedButton  -- nil = no selection
+        local curBtn = _glowSelectedButton -- nil = no selection
 
         local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
@@ -797,7 +1097,9 @@ initFrame:SetScript("OnEvent", function(self)
             local cdmBarKey = isCDMBar and sel or nil
             local barIdx = isCDMBar and nil or sel
             local ok, EAB_ADDON = pcall(CludesUI.Lite.GetAddon, "CludesUIActionBars")
-            if not ok then EAB_ADDON = nil end
+            if not ok then
+                EAB_ADDON = nil
+            end
             local barKeyList = { "MainBar", "Bar2", "Bar3", "Bar4", "Bar5", "Bar6", "Bar7", "Bar8" }
             local barKeyStr = (not isCDMBar) and (barKeyList[barIdx] or "MainBar") or nil
             local barSettings = nil
@@ -817,35 +1119,46 @@ initFrame:SetScript("OnEvent", function(self)
                         NUM_BUTTONS = NUM_BUTTONS + 1
                     end
                 end
-                if NUM_BUTTONS == 0 then NUM_BUTTONS = 1 end
+                if NUM_BUTTONS == 0 then
+                    NUM_BUTTONS = 1
+                end
             end
             local prefix = (not isCDMBar) and (BAR_BUTTON_PREFIXES[barIdx] or "ActionButton") or nil
 
             -- Dropdown at top
             local DD_H = 34
-            local ddW  = 350
-            local DDS    = CludesUI.DD_STYLE
-            local mBgR   = DDS.BG_R;  local mBgG  = DDS.BG_G;  local mBgB  = DDS.BG_B
-            local mBgA   = DDS.BG_A;  local mBgHA = DDS.BG_HA
-            local mBrdA  = DDS.BRD_A; local mBrdHA = DDS.BRD_HA or 0.30
-            local mTxtA  = DDS.TXT_A; local mTxtHA = DDS.TXT_HA or 1
-            local hlA    = DDS.ITEM_HL_A; local selA = DDS.ITEM_SEL_A
-            local tDimR  = CludesUI.TEXT_DIM_R or 0.7
-            local tDimG  = CludesUI.TEXT_DIM_G or 0.7
-            local tDimB  = CludesUI.TEXT_DIM_B or 0.7
-            local tDimA  = CludesUI.TEXT_DIM_A or 0.85
+            local ddW = 350
+            local DDS = CludesUI.DD_STYLE
+            local mBgR = DDS.BG_R
+            local mBgG = DDS.BG_G
+            local mBgB = DDS.BG_B
+            local mBgA = DDS.BG_A
+            local mBgHA = DDS.BG_HA
+            local mBrdA = DDS.BRD_A
+            local mBrdHA = DDS.BRD_HA or 0.30
+            local mTxtA = DDS.TXT_A
+            local mTxtHA = DDS.TXT_HA or 1
+            local hlA = DDS.ITEM_HL_A
+            local selA = DDS.ITEM_SEL_A
+            local tDimR = CludesUI.TEXT_DIM_R or 0.7
+            local tDimG = CludesUI.TEXT_DIM_G or 0.7
+            local tDimB = CludesUI.TEXT_DIM_B or 0.7
+            local tDimA = CludesUI.TEXT_DIM_A or 0.85
             local ITEM_H = 26
 
             local ddBtn = CreateFrame("Button", nil, headerFrame)
             PP.Size(ddBtn, ddW, DD_H)
             ddBtn:SetFrameLevel(headerFrame:GetFrameLevel() + 5)
-            local ddBg  = ddBtn:CreateTexture(nil, "BACKGROUND")
-            ddBg:SetAllPoints(); ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
+            local ddBg = ddBtn:CreateTexture(nil, "BACKGROUND")
+            ddBg:SetAllPoints()
+            ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
             local ddBrd = CludesUI.MakeRoundedBorder(ddBtn, 1, 1, 1, mBrdA, ddBg)
             local ddLbl = ddBtn:CreateFontString(nil, "OVERLAY")
             ddLbl:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-            ddLbl:SetAlpha(mTxtA); ddLbl:SetJustifyH("LEFT")
-            ddLbl:SetWordWrap(false); ddLbl:SetMaxLines(1)
+            ddLbl:SetAlpha(mTxtA)
+            ddLbl:SetJustifyH("LEFT")
+            ddLbl:SetWordWrap(false)
+            ddLbl:SetMaxLines(1)
             ddLbl:SetPoint("LEFT", ddBtn, "LEFT", 12, 0)
             local ddArrow = CludesUI.MakeDropdownArrow(ddBtn, 12, CludesUI.PanelPP)
             ddLbl:SetPoint("RIGHT", ddArrow, "LEFT", -5, 0)
@@ -853,7 +1166,10 @@ initFrame:SetScript("OnEvent", function(self)
 
             local ddMenu
             local function BuildDDMenu()
-                if ddMenu then ddMenu:Hide(); ddMenu = nil end
+                if ddMenu then
+                    ddMenu:Hide()
+                    ddMenu = nil
+                end
                 -- One menu frame for the session, dressed again on every open
                 -- (its rows are pooled under it).
                 local menu = PoolKept(ns, "cdmGlowTargetMenu", "Frame", UIParent)
@@ -863,7 +1179,8 @@ initFrame:SetScript("OnEvent", function(self)
                 menu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
                 menu:SetPoint("TOPRIGHT", ddBtn, "BOTTOMRIGHT", 0, -2)
                 local bg2 = menu:CreateTexture(nil, "BACKGROUND")
-                bg2:SetAllPoints(); bg2:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
+                bg2:SetAllPoints()
+                bg2:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
                 CludesUI.MakeRoundedBorder(menu, 1, 1, 1, mBrdA, bg2, nil, true)
                 local mH = 4
                 local targets = BuildBGTargetList()
@@ -877,15 +1194,24 @@ initFrame:SetScript("OnEvent", function(self)
                     local iLbl = item:CreateFontString(nil, "OVERLAY")
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetJustifyH("LEFT"); iLbl:SetWordWrap(false); iLbl:SetMaxLines(1)
+                    iLbl:SetJustifyH("LEFT")
+                    iLbl:SetWordWrap(false)
+                    iLbl:SetMaxLines(1)
                     iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
                     iLbl:SetText(t.label)
                     local iHl = item:CreateTexture(nil, "ARTWORK")
-                    iHl:SetAllPoints(); iHl:SetColorTexture(1, 1, 1, 1)
+                    iHl:SetAllPoints()
+                    iHl:SetColorTexture(1, 1, 1, 1)
                     local isCurrent = (entryVal == sel)
                     iHl:SetAlpha(isCurrent and selA or 0)
-                    item:SetScript("OnEnter", function() iLbl:SetTextColor(1,1,1,1); iHl:SetAlpha(hlA) end)
-                    item:SetScript("OnLeave", function() iLbl:SetTextColor(tDimR,tDimG,tDimB,tDimA); iHl:SetAlpha(isCurrent and selA or 0) end)
+                    item:SetScript("OnEnter", function()
+                        iLbl:SetTextColor(1, 1, 1, 1)
+                        iHl:SetAlpha(hlA)
+                    end)
+                    item:SetScript("OnLeave", function()
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        iHl:SetAlpha(isCurrent and selA or 0)
+                    end)
                     item:SetScript("OnClick", function()
                         menu:Hide()
                         bgData.selectedBar = entryVal
@@ -897,20 +1223,46 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 menu:SetHeight(mH + 4)
                 menu:SetScript("OnUpdate", function(m)
-                    if not m:IsMouseOver() and not ddBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then m:Hide() end
+                    if
+                        not m:IsMouseOver()
+                        and not ddBtn:IsMouseOver()
+                        and IsMouseButtonDown("LeftButton")
+                    then
+                        m:Hide()
+                    end
                 end)
-                menu:HookScript("OnHide", function(m) m:SetScript("OnUpdate", nil) end)
+                menu:HookScript("OnHide", function(m)
+                    m:SetScript("OnUpdate", nil)
+                end)
                 menu:Show()
                 ddMenu = menu
             end
 
-            ddBtn:SetScript("OnEnter", function() ddLbl:SetAlpha(mTxtHA); ddBrd:SetColor(1,1,1,mBrdHA); ddBg:SetColorTexture(mBgR,mBgG,mBgB,mBgHA) end)
-            ddBtn:SetScript("OnLeave", function()
-                if ddMenu and ddMenu:IsShown() then return end
-                ddLbl:SetAlpha(mTxtA); ddBrd:SetColor(1,1,1,mBrdA); ddBg:SetColorTexture(mBgR,mBgG,mBgB,mBgA)
+            ddBtn:SetScript("OnEnter", function()
+                ddLbl:SetAlpha(mTxtHA)
+                ddBrd:SetColor(1, 1, 1, mBrdHA)
+                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
             end)
-            ddBtn:SetScript("OnClick", function() if ddMenu and ddMenu:IsShown() then ddMenu:Hide() else BuildDDMenu() end end)
-            ddBtn:HookScript("OnHide", function() if ddMenu then ddMenu:Hide() end end)
+            ddBtn:SetScript("OnLeave", function()
+                if ddMenu and ddMenu:IsShown() then
+                    return
+                end
+                ddLbl:SetAlpha(mTxtA)
+                ddBrd:SetColor(1, 1, 1, mBrdA)
+                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
+            end)
+            ddBtn:SetScript("OnClick", function()
+                if ddMenu and ddMenu:IsShown() then
+                    ddMenu:Hide()
+                else
+                    BuildDDMenu()
+                end
+            end)
+            ddBtn:HookScript("OnHide", function()
+                if ddMenu then
+                    ddMenu:Hide()
+                end
+            end)
             PP.Point(ddBtn, "TOP", headerFrame, "TOP", 0, -20)
 
             -- (i) next to the picker: what the page does, on hover
@@ -922,12 +1274,20 @@ initFrame:SetScript("OnEvent", function(self)
             info:SetMouseMotionEnabled(true)
             local infoIco = info:CreateTexture(nil, "OVERLAY")
             infoIco:SetAllPoints()
-            if infoIco.SetSnapToPixelGrid then infoIco:SetSnapToPixelGrid(false); infoIco:SetTexelSnappingBias(0) end
+            if infoIco.SetSnapToPixelGrid then
+                infoIco:SetSnapToPixelGrid(false)
+                infoIco:SetTexelSnappingBias(0)
+            end
             infoIco:SetTexture([[Interface\AddOns\CludesUI\media\icons\cui-info.png]])
             infoIco:SetVertexColor(1, 1, 1, 0.45)
             info:SetScript("OnEnter", function(self)
                 infoIco:SetVertexColor(1, 1, 1, 0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Makes buttons glow when a chosen buff is active or missing, or when their ability is usable."))
+                CludesUI.ShowWidgetTooltip(
+                    self,
+                    CludesUI.L(
+                        "Makes buttons glow when a chosen buff is active or missing, or when their ability is usable."
+                    )
+                )
             end)
             info:SetScript("OnLeave", function()
                 infoIco:SetVertexColor(1, 1, 1, 0.45)
@@ -945,15 +1305,22 @@ initFrame:SetScript("OnEvent", function(self)
                     realBtnH = realBtnW
                 end
                 -- The live icon's on-screen size (width/height match, UI scale) in this panel's scale
-                local liveW = ns.BarGlowPreviewIconSize(ns.cdmBarIcons and ns.cdmBarIcons[cdmBarKey], headerFrame)
-                if liveW then realBtnW, realBtnH = liveW, liveW end
+                local liveW =
+                    ns.BarGlowPreviewIconSize(ns.cdmBarIcons and ns.cdmBarIcons[cdmBarKey], headerFrame)
+                if liveW then
+                    realBtnW, realBtnH = liveW, liveW
+                end
             else
                 local btn1 = _G[prefix .. "1"]
                 realBtnW = (btn1 and btn1:GetWidth() or 36)
                 realBtnH = (btn1 and btn1:GetHeight() or 36)
             end
-            if realBtnW < 1 then realBtnW = 36 end
-            if realBtnH < 1 then realBtnH = 36 end
+            if realBtnW < 1 then
+                realBtnW = 36
+            end
+            if realBtnH < 1 then
+                realBtnH = 36
+            end
 
             -- Read bar size (no scale -- width/height based)
             local scaledBtnW = math.floor(realBtnW + 0.5)
@@ -978,18 +1345,22 @@ initFrame:SetScript("OnEvent", function(self)
                 scaledBtnH = math.floor(scaledBtnH * (isCDMBar and ns.CdmCropFactor(cdmBd) or 0.80) + 0.5)
             end
 
-            local spacing = isCDMBar and ((cdmBd and cdmBd.spacing) or 2) or ((barSettings and barSettings.buttonPadding) or 2)
+            local spacing = isCDMBar and ((cdmBd and cdmBd.spacing) or 2)
+                or ((barSettings and barSettings.buttonPadding) or 2)
             local scaledPad = spacing
 
             -- How many buttons visible
             local numVisible = NUM_BUTTONS
             if not isCDMBar and barSettings then
                 local ov = barSettings.overrideNumIcons
-                if ov and ov > 0 and ov < numVisible then numVisible = ov end
+                if ov and ov > 0 and ov < numVisible then
+                    numVisible = ov
+                end
             end
 
             -- Read zoom
-            local zoom = isCDMBar and ((cdmBd and cdmBd.iconZoom) or 0.08) or (((barSettings and barSettings.iconZoom) or 5.5) / 100)
+            local zoom = isCDMBar and ((cdmBd and cdmBd.iconZoom) or 0.08)
+                or (((barSettings and barSettings.iconZoom) or 5.5) / 100)
             local square = (not isCDMBar) and EAB_ADDON and EAB_ADDON.db and EAB_ADDON.db.profile.squareIcons
 
             -- Read border settings
@@ -1001,8 +1372,15 @@ initFrame:SetScript("OnEvent", function(self)
                 -- shows here only while the bar's style is Solid.
                 local cdmTex = cdmBd.borderTexture or "solid"
                 local cdmPx = CludesUI.BorderPx(cdmBd.borderSizePx, brdSize, cdmTex)
-                if cdmPx and cdmTex == "solid" then brdSize = cdmPx end
-                brdColor = { r = cdmBd.borderR or 0, g = cdmBd.borderG or 0, b = cdmBd.borderB or 0, a = cdmBd.borderA or 1 }
+                if cdmPx and cdmTex == "solid" then
+                    brdSize = cdmPx
+                end
+                brdColor = {
+                    r = cdmBd.borderR or 0,
+                    g = cdmBd.borderG or 0,
+                    b = cdmBd.borderB or 0,
+                    a = cdmBd.borderA or 1,
+                }
                 brdClassColor = cdmBd.borderClassColor
             elseif not isCDMBar and barSettings then
                 -- None..Strong are the steps 0-4; an unknown or numeric value renders as Thin, as the bar does.
@@ -1010,11 +1388,15 @@ initFrame:SetScript("OnEvent", function(self)
                 brdSize = CludesUI.BORDER_STEP_OF_LABEL[thickness] or 1
                 local abTex = barSettings.borderTexture or "solid"
                 local abPx = CludesUI.BorderPx(barSettings.borderThicknessPx, brdSize, abTex)
-                if abPx and abTex == "solid" then brdSize = abPx end
+                if abPx and abTex == "solid" then
+                    brdSize = abPx
+                end
                 brdColor = barSettings.borderColor
                 brdClassColor = barSettings.borderClassColor
             end
-            if not brdColor then brdColor = { r = 0, g = 0, b = 0, a = 1 } end
+            if not brdColor then
+                brdColor = { r = 0, g = 0, b = 0, a = 1 }
+            end
 
             local gridW = numVisible * scaledBtnW + (numVisible - 1) * scaledPad
             -- Live-sized CDM icons can outgrow the preview width: shrink to fit
@@ -1034,7 +1416,9 @@ initFrame:SetScript("OnEvent", function(self)
             wipe(_glowBtnFrames)
 
             for i = 1, NUM_BUTTONS do
-                if i > numVisible then break end
+                if i > numVisible then
+                    break
+                end
 
                 local xOff = startX + (i - 1) * (scaledBtnW + scaledPad)
                 local isSelected = (_glowSelectedButton == i)
@@ -1057,26 +1441,37 @@ initFrame:SetScript("OnEvent", function(self)
                     -- Native equipment frames are parked off the live bar (items
                     -- are preset-lane-only), but the icon registry can still hold
                     -- one from a prior pass -- never replicate it into the preview.
-                    if realBtn and realBtn.cooldownID and C_CooldownViewer
-                        and C_CooldownViewer.GetCooldownViewerCooldownInfo then
+                    if
+                        realBtn
+                        and realBtn.cooldownID
+                        and C_CooldownViewer
+                        and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                    then
                         local rinfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(realBtn.cooldownID)
-                        if rinfo and rinfo.equipSlot then realBtn = nil end
+                        if rinfo and rinfo.equipSlot then
+                            realBtn = nil
+                        end
                     end
                 else
                     realBtn = prefix and _G[prefix .. i]
                 end
                 -- Non-glowable icons (see IsNonGlowableCDMIcon) are left inert -- no hover, clicks do nothing.
                 local nonGlowable = isCDMBar and IsNonGlowableCDMIcon(realBtn)
-                local _rbTex = realBtn and ((ns._hookFrameData[realBtn] and ns._hookFrameData[realBtn].tex) or realBtn._tex)
-                local hasAction = realBtn and ((realBtn.icon and realBtn.icon:GetTexture()) or (_rbTex and _rbTex:GetTexture()))
+                local _rbTex = realBtn
+                    and ((ns._hookFrameData[realBtn] and ns._hookFrameData[realBtn].tex) or realBtn._tex)
+                local hasAction = realBtn
+                    and ((realBtn.icon and realBtn.icon:GetTexture()) or (_rbTex and _rbTex:GetTexture()))
                 local iconTex = bf:CreateTexture(nil, "ARTWORK")
                 iconTex:SetAllPoints()
                 UnsnapTex(iconTex)
                 if hasAction then
-                    local srcTex = (realBtn.icon and realBtn.icon:GetTexture()) or (_rbTex and _rbTex:GetTexture())
+                    local srcTex = (realBtn.icon and realBtn.icon:GetTexture())
+                        or (_rbTex and _rbTex:GetTexture())
                     iconTex:SetTexture(srcTex)
                     -- Desaturate (preview only) non-glowable icons so it's visually clear they're not assignable.
-                    if nonGlowable then iconTex:SetDesaturated(true) end
+                    if nonGlowable then
+                        iconTex:SetDesaturated(true)
+                    end
                     local z = zoom
                     if btnShape == "cropped" then
                         local t = isCDMBar and ns.CdmCropTrim(cdmBd) or 0.10
@@ -1116,7 +1511,12 @@ initFrame:SetScript("OnEvent", function(self)
                             local cr, cg, cb = brdColor.r, brdColor.g, brdColor.b
                             if brdClassColor then
                                 local _, ct = UnitClass("player")
-                                if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then cr, cg, cb = cc.r, cc.g, cc.b end end
+                                if ct then
+                                    local cc = RAID_CLASS_COLORS[ct]
+                                    if cc then
+                                        cr, cg, cb = cc.r, cc.g, cc.b
+                                    end
+                                end
                             end
                             sbt:SetVertexColor(cr, cg, cb, brdColor.a or 1)
                         else
@@ -1128,10 +1528,17 @@ initFrame:SetScript("OnEvent", function(self)
                     local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                     if brdClassColor then
                         local _, ct = UnitClass("player")
-                        if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then cr, cg, cb = cc.r, cc.g, cc.b end end
+                        if ct then
+                            local cc = RAID_CLASS_COLORS[ct]
+                            if cc then
+                                cr, cg, cb = cc.r, cc.g, cc.b
+                            end
+                        end
                     end
                     local PP = CludesUI and CludesUI.PP
-                    if PP then PP.CreateBorder(bf, cr, cg, cb, ca, brdSize, "OVERLAY", 7) end
+                    if PP then
+                        PP.CreateBorder(bf, cr, cg, cb, ca, brdSize, "OVERLAY", 7)
+                    end
                 end
 
                 -- Accent border for buttons that have assignments
@@ -1154,16 +1561,23 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Active button gets accent border; assigned (non-active) buttons get white border
                 -- For custom shapes, tint the shape border instead of showing square PP borders
-                local isCustomShape = btnShape ~= "none" and btnShape ~= "cropped" and btnShape ~= "square" and btnShape ~= "csquare"
-                    and SHAPE_MASKS and SHAPE_MASKS[btnShape]
+                local isCustomShape = btnShape ~= "none"
+                    and btnShape ~= "cropped"
+                    and btnShape ~= "square"
+                    and btnShape ~= "csquare"
+                    and SHAPE_MASKS
+                    and SHAPE_MASKS[btnShape]
                 local accentBrd
                 if not isCustomShape then
                     if isSelected then
-                        accentBrd = PP2 and PP2.CreateBorder(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1, 2, "OVERLAY", 7)
+                        accentBrd = PP2
+                            and PP2.CreateBorder(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1, 2, "OVERLAY", 7)
                     else
                         accentBrd = PP2 and PP2.CreateBorder(accentCont, 1, 1, 1, 0.6, 2, "OVERLAY", 7)
                     end
-                    if accentBrd then accentBrd:Hide() end
+                    if accentBrd then
+                        accentBrd:Hide()
+                    end
                 end
 
                 -- Show active state
@@ -1201,7 +1615,8 @@ initFrame:SetScript("OnEvent", function(self)
 
                 -- Hover swaps border to accent; active button needs none (already accent)
                 bf._shapeBorderTex = isCustomShape and bf._sbt or nil
-                local origBrdR, origBrdG, origBrdB, origBrdA = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+                local origBrdR, origBrdG, origBrdB, origBrdA =
+                    brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                 if isCDMBar and cdmBd then
                     origBrdR = cdmBd.borderR or 0
                     origBrdG = cdmBd.borderG or 0
@@ -1232,8 +1647,12 @@ initFrame:SetScript("OnEvent", function(self)
                             if isCustomShape and bf._shapeBorderTex then
                                 bf._shapeBorderTex:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
                             else
-                                if PP2 and accentCont then PP2.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1) end
-                                if accentBrd then accentBrd:Show() end
+                                if PP2 and accentCont then
+                                    PP2.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                                end
+                                if accentBrd then
+                                    accentBrd:Show()
+                                end
                             end
                         end)
                         bf:SetScript("OnLeave", function()
@@ -1241,7 +1660,9 @@ initFrame:SetScript("OnEvent", function(self)
                             if isCustomShape and bf._shapeBorderTex then
                                 bf._shapeBorderTex:SetVertexColor(origBrdR, origBrdG, origBrdB, origBrdA)
                             else
-                                if accentBrd then accentBrd:Hide() end
+                                if accentBrd then
+                                    accentBrd:Hide()
+                                end
                             end
                         end)
                     end
@@ -1258,26 +1679,40 @@ initFrame:SetScript("OnEvent", function(self)
                         local prevAssigns = bgData.assignments[prevKey]
                         local prevHasAssign = prevAssigns and #prevAssigns > 0
                         if prevHasAssign then
-                            if PP3 and prev._accentCont then PP3.SetBorderColor(prev._accentCont, 1, 1, 1, 0.6) end
+                            if PP3 and prev._accentCont then
+                                PP3.SetBorderColor(prev._accentCont, 1, 1, 1, 0.6)
+                            end
                         else
-                            if prev._accentBrd then prev._accentBrd:Hide() end
+                            if prev._accentBrd then
+                                prev._accentBrd:Hide()
+                            end
                             prev:SetAlpha(0.50)
                             -- Restore hover scripts
                             prev:SetScript("OnEnter", function()
                                 prev:SetAlpha(0.55)
-                                if PP3 and prev._accentCont then PP3.SetBorderColor(prev._accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1) end
-                                if prev._accentBrd then prev._accentBrd:Show() end
+                                if PP3 and prev._accentCont then
+                                    PP3.SetBorderColor(prev._accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                                end
+                                if prev._accentBrd then
+                                    prev._accentBrd:Show()
+                                end
                             end)
                             prev:SetScript("OnLeave", function()
                                 prev:SetAlpha(0.50)
-                                if prev._accentBrd then prev._accentBrd:Hide() end
+                                if prev._accentBrd then
+                                    prev._accentBrd:Hide()
+                                end
                             end)
                         end
                     end
                     -- Show this button as active with accent color + full alpha
                     bf:SetAlpha(1)
-                    if PP3 and accentCont then PP3.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1) end
-                    if accentBrd then accentBrd:Show() end
+                    if PP3 and accentCont then
+                        PP3.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                    end
+                    if accentBrd then
+                        accentBrd:Show()
+                    end
                     -- Remove hover toggle since border is now permanent
                     bf:SetScript("OnEnter", nil)
                     bf:SetScript("OnLeave", nil)
@@ -1286,18 +1721,24 @@ initFrame:SetScript("OnEvent", function(self)
                 bf._btnIdx = i
 
                 -- Track the initially active button
-                if isSelected then headerFrame._activeBtnRef = bf end
+                if isSelected then
+                    headerFrame._activeBtnRef = bf
+                end
 
                 -- Left click: select this button. Right click: select + toggle spell picker.
                 bf:SetScript("OnClick", function(self, button)
                     -- Non-glowable icons ignore both clicks so no glow can be added.
-                    if nonGlowable then return end
+                    if nonGlowable then
+                        return
+                    end
                     local pickerOpen = _bgSpellPickerMenu and _bgSpellPickerMenu:IsShown()
                     local pickerOnThis = pickerOpen and _bgSpellPickerMenu._btnIdx == i
 
                     if button == "LeftButton" then
                         -- Close picker first if open (before rebuild destroys anchor)
-                        if pickerOpen then _bgSpellPickerMenu:Hide() end
+                        if pickerOpen then
+                            _bgSpellPickerMenu:Hide()
+                        end
                         _glowSelectedButton = i
                         ActivateInline()
                         CludesUI:RefreshPage(true)
@@ -1306,7 +1747,9 @@ initFrame:SetScript("OnEvent", function(self)
                             _bgSpellPickerMenu:Hide()
                             return
                         end
-                        if pickerOpen then _bgSpellPickerMenu:Hide() end
+                        if pickerOpen then
+                            _bgSpellPickerMenu:Hide()
+                        end
                         _glowSelectedButton = i
                         ActivateInline()
                         CludesUI:RefreshPage(true)
@@ -1343,7 +1786,9 @@ initFrame:SetScript("OnEvent", function(self)
                 glowLive.frame = CreateFrame("Frame")
                 glowLive.frame:SetScript("OnEvent", glowLive.OnEvent)
             end
-            if parent:IsVisible() then glowLive.Arm() end
+            if parent:IsVisible() then
+                glowLive.Arm()
+            end
             parent:HookScript("OnShow", glowLive.Arm)
             parent:HookScript("OnHide", glowLive.Disarm)
         end
@@ -1352,7 +1797,8 @@ initFrame:SetScript("OnEvent", function(self)
         --  Scrollable content area
         -------------------------------------------------------------------
 
-        _, h = W:Spacer(parent, y, 8);  y = y - h
+        _, h = W:Spacer(parent, y, 8)
+        y = y - h
 
         -- A selected slot that is (now) non-glowable shows no glow settings (the header tip stays).
         if curBtn and type(curBar) == "string" then
@@ -1383,7 +1829,8 @@ initFrame:SetScript("OnEvent", function(self)
             parent._showRowDivider = true
 
             if #buffList == 0 then
-                _, h = W:Spacer(parent, y, 8);  y = y - h
+                _, h = W:Spacer(parent, y, 8)
+                y = y - h
                 local emptyFrame = CreateFrame("Frame", nil, parent)
                 emptyFrame:SetSize(parent:GetWidth(), 30)
                 emptyFrame:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
@@ -1391,7 +1838,9 @@ initFrame:SetScript("OnEvent", function(self)
                 emptyText:SetFont(FONT_PATH, 12, GetCDMOptOutline())
                 emptyText:SetTextColor(0.5, 0.5, 0.5, 1)
                 emptyText:SetPoint("LEFT", 22, 0)
-                emptyText:SetText(CludesUI.L("No buffs assigned. Right click a button in the preview to assign buffs."))
+                emptyText:SetText(
+                    CludesUI.L("No buffs assigned. Right click a button in the preview to assign buffs.")
+                )
                 y = y - 30
             else
                 local glowLabels, glowOrder = GetGlowStyleValues()
@@ -1402,7 +1851,6 @@ initFrame:SetScript("OnEvent", function(self)
                     local expanded
                     y, expanded = ns.BuildBarGlowHeader(parent, y, entry, aIdx, cdmSid)
                     if expanded then
-
                         -- Row 1: When (icon) <buff> is [Active] | And [buff] is [Active] (toggle)
                         -- (CUI_CooldownManager_BarGlowConditions.lua)
                         local removeAIdx = aIdx
@@ -1411,9 +1859,13 @@ initFrame:SetScript("OnEvent", function(self)
                         -- Helper: resolve current glow color and restart preview if active
                         local pvKey = assignKey .. "_" .. aIdx
                         local function RefreshPreviewGlow()
-                            if not _bgPreviewGlowActive[pvKey] then return end
+                            if not _bgPreviewGlowActive[pvKey] then
+                                return
+                            end
                             local ov = _bgPreviewGlowOverlays[pvKey]
-                            if not ov then return end
+                            if not ov then
+                                return
+                            end
                             local style = BarHasCustomShape(curBar) and 2 or (entry.glowStyle or 1)
                             local cr, cg, cb
                             if entry.colorMode == "class" then
@@ -1425,8 +1877,15 @@ initFrame:SetScript("OnEvent", function(self)
                             ns.StopNativeGlow(ov)
                             -- Blackout reads its fill opacity from the extras; every other
                             -- style takes the shared panel extras.
-                            ns.StartNativeGlow(ov, style, cr, cg, cb,
-                                style == 8 and { panel = true, alpha = entry.glowAlpha } or CludesUI.Glows.PANEL_EXTRA)
+                            ns.StartNativeGlow(
+                                ov,
+                                style,
+                                cr,
+                                cg,
+                                cb,
+                                style == 8 and { panel = true, alpha = entry.glowAlpha }
+                                    or CludesUI.Glows.PANEL_EXTRA
+                            )
                         end
 
                         -- At Stacks (toggle) + gear (Comparison / Stack Count), paired with
@@ -1435,70 +1894,112 @@ initFrame:SetScript("OnEvent", function(self)
                         -- and Glows cog): an unknown/secret application count never blocks
                         -- the glow.
                         local stackRow
-                        stackRow, h = W:DualRow(parent, y,
-                            { type = "toggle", text = "At Stacks",
-                              tooltip = "Only glow once the buff's stack count matches the comparison set via the gear.",
-                              disabled = function() return entry.mode == "MISSING" or entry.mode == "USABLE" end,
-                              disabledTooltip = "Only available for a buff in Active mode",
-                              getValue = function() return entry.stackEnabled == true end,
-                              setValue = function(v)
-                                  entry.stackEnabled = v or nil
-                                  Refresh()
-                                  CludesUI:RefreshPage()
-                              end,
-                            },
-                            { type = "dropdown", text = "Glow Type",
-                              values = glowLabels, order = glowOrder,
-                              disabled = function() return BarHasCustomShape(curBar) end,
-                              disabledTooltip = "This option is not available for custom shaped icons",
-                              getValue = function()
-                                  if BarHasCustomShape(curBar) then return 2 end
-                                  return entry.glowStyle or 1
-                              end,
-                              setValue = function(v)
-                                  entry.glowStyle = tonumber(v) or 1
-                                  Refresh()
-                                  RefreshPreviewGlow()
-                                  CludesUI:RefreshPage()
-                              end,
-                            }
-                        );  y = y - h
+                        stackRow, h = W:DualRow(parent, y, {
+                            type = "toggle",
+                            text = "At Stacks",
+                            tooltip = "Only glow once the buff's stack count matches the comparison set via the gear.",
+                            disabled = function()
+                                return entry.mode == "MISSING" or entry.mode == "USABLE"
+                            end,
+                            disabledTooltip = "Only available for a buff in Active mode",
+                            getValue = function()
+                                return entry.stackEnabled == true
+                            end,
+                            setValue = function(v)
+                                entry.stackEnabled = v or nil
+                                Refresh()
+                                CludesUI:RefreshPage()
+                            end,
+                        }, {
+                            type = "dropdown",
+                            text = "Glow Type",
+                            values = glowLabels,
+                            order = glowOrder,
+                            disabled = function()
+                                return BarHasCustomShape(curBar)
+                            end,
+                            disabledTooltip = "This option is not available for custom shaped icons",
+                            getValue = function()
+                                if BarHasCustomShape(curBar) then
+                                    return 2
+                                end
+                                return entry.glowStyle or 1
+                            end,
+                            setValue = function(v)
+                                entry.glowStyle = tonumber(v) or 1
+                                Refresh()
+                                RefreshPreviewGlow()
+                                CludesUI:RefreshPage()
+                            end,
+                        })
+                        y = y - h
                         do
                             local rgn = stackRow._leftRegion
                             CludesUI.BuildInlineCog(rgn, {
                                 title = "At Stacks",
-                                disabled = function() return entry.mode == "MISSING" or entry.mode == "USABLE" or not entry.stackEnabled end,
+                                disabled = function()
+                                    return entry.mode == "MISSING"
+                                        or entry.mode == "USABLE"
+                                        or not entry.stackEnabled
+                                end,
                                 disabledTooltip = function()
-                                    if entry.mode == "MISSING" then return "This option is not available in Buff Missing mode" end
-                                    if entry.mode == "USABLE" then return "This option is not available in Glow When Usable mode" end
+                                    if entry.mode == "MISSING" then
+                                        return "This option is not available in Buff Missing mode"
+                                    end
+                                    if entry.mode == "USABLE" then
+                                        return "This option is not available in Glow When Usable mode"
+                                    end
                                     return "At Stacks"
                                 end,
-                                frameStrata = "FULLSCREEN_DIALOG", frameLevel = 350,
+                                frameStrata = "FULLSCREEN_DIALOG",
+                                frameLevel = 350,
                                 rows = {
-                                    { type = "dropdown", label = "Comparison",
-                                      values = { lt = "Below (<)", lte = "At Most (<=)", eq = "Exactly (=)", gte = "At Least (>=)", gt = "Above (>)" },
-                                      order = { "lt", "lte", "eq", "gte", "gt" },
-                                      get = function() return entry.stackOperator or "gte" end,
-                                      set = function(v)
-                                          entry.stackOperator = v ~= "gte" and v or nil
-                                          Refresh()
-                                      end },
-                                    { type = "input", label = "Stack Count", inputWidth = 42, commitOnBlur = true,
-                                      get = function() return tostring(tonumber(entry.stackThreshold) or 2) end,
-                                      set = function(v)
-                                          local t = math.floor(tonumber(v) or 2)
-                                          if t < 1 then t = 1 end
-                                          if t > 99 then t = 99 end
-                                          entry.stackThreshold = t
-                                          Refresh()
-                                      end },
+                                    {
+                                        type = "dropdown",
+                                        label = "Comparison",
+                                        values = {
+                                            lt = "Below (<)",
+                                            lte = "At Most (<=)",
+                                            eq = "Exactly (=)",
+                                            gte = "At Least (>=)",
+                                            gt = "Above (>)",
+                                        },
+                                        order = { "lt", "lte", "eq", "gte", "gt" },
+                                        get = function()
+                                            return entry.stackOperator or "gte"
+                                        end,
+                                        set = function(v)
+                                            entry.stackOperator = v ~= "gte" and v or nil
+                                            Refresh()
+                                        end,
+                                    },
+                                    {
+                                        type = "input",
+                                        label = "Stack Count",
+                                        inputWidth = 42,
+                                        commitOnBlur = true,
+                                        get = function()
+                                            return tostring(tonumber(entry.stackThreshold) or 2)
+                                        end,
+                                        set = function(v)
+                                            local t = math.floor(tonumber(v) or 2)
+                                            if t < 1 then
+                                                t = 1
+                                            end
+                                            if t > 99 then
+                                                t = 99
+                                            end
+                                            entry.stackThreshold = t
+                                            Refresh()
+                                        end,
+                                    },
                                 },
                             })
                         end
 
                         -- Eyeball preview toggle (on right region of the At Stacks / Glow Type row)
                         if not CludesUI._prebuilding then
-                            local EYE_VIS   = CludesUI.EYE_VISIBLE_ICON
+                            local EYE_VIS = CludesUI.EYE_VISIBLE_ICON
                             local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
                             local leftRgn = stackRow._rightRegion
                             if leftRgn and leftRgn._control then
@@ -1515,12 +2016,14 @@ initFrame:SetScript("OnEvent", function(self)
                                 RefreshEye()
                                 eyeBtn:SetScript("OnClick", function()
                                     local previewBtn = _glowBtnFrames[curBtn]
-                                    if not previewBtn then return end
+                                    if not previewBtn then
+                                        return
+                                    end
                                     if not _bgPreviewGlowOverlays[pvKey] then
                                         local ov = CreateFrame("Frame", nil, previewBtn)
                                         ov:SetAllPoints(previewBtn)
                                         ov:SetFrameLevel(previewBtn:GetFrameLevel() + 10)
-                                        ov._cuiGlowPreview = true  -- exempt from Show Glows Only in Combat
+                                        ov._cuiGlowPreview = true -- exempt from Show Glows Only in Combat
                                         _bgPreviewGlowOverlays[pvKey] = ov
                                     end
                                     local ov = _bgPreviewGlowOverlays[pvKey]
@@ -1528,26 +2031,43 @@ initFrame:SetScript("OnEvent", function(self)
                                         ns.StopNativeGlow(ov)
                                         _bgPreviewGlowActive[pvKey] = false
                                         -- Restore accent border
-                                        if previewBtn._accentBrd then previewBtn._accentBrd:Show() end
+                                        if previewBtn._accentBrd then
+                                            previewBtn._accentBrd:Show()
+                                        end
                                     else
-                                        local style = BarHasCustomShape(curBar) and 2 or (entry.glowStyle or 1)
+                                        local style = BarHasCustomShape(curBar) and 2
+                                            or (entry.glowStyle or 1)
                                         local cr, cg, cb
                                         if entry.colorMode == "class" then
                                             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
                                             cr, cg, cb = cc.r, cc.g, cc.b
                                         elseif entry.colorMode == "custom" and entry.glowColor then
-                                            cr, cg, cb = entry.glowColor.r, entry.glowColor.g, entry.glowColor.b
+                                            cr, cg, cb =
+                                                entry.glowColor.r, entry.glowColor.g, entry.glowColor.b
                                         end
-                                        ns.StartNativeGlow(ov, style, cr, cg, cb,
-                                            style == 8 and { panel = true, alpha = entry.glowAlpha } or CludesUI.Glows.PANEL_EXTRA)
+                                        ns.StartNativeGlow(
+                                            ov,
+                                            style,
+                                            cr,
+                                            cg,
+                                            cb,
+                                            style == 8 and { panel = true, alpha = entry.glowAlpha }
+                                                or CludesUI.Glows.PANEL_EXTRA
+                                        )
                                         _bgPreviewGlowActive[pvKey] = true
                                         -- Hide accent border so glow is visible
-                                        if previewBtn._accentBrd then previewBtn._accentBrd:Hide() end
+                                        if previewBtn._accentBrd then
+                                            previewBtn._accentBrd:Hide()
+                                        end
                                     end
                                     RefreshEye()
                                 end)
-                                eyeBtn:SetScript("OnEnter", function(self) CludesUI.SetGlyphAlpha(self, 0.7) end)
-                                eyeBtn:SetScript("OnLeave", function(self) CludesUI.SetGlyphAlpha(self, 0.4) end)
+                                eyeBtn:SetScript("OnEnter", function(self)
+                                    CludesUI.SetGlyphAlpha(self, 0.7)
+                                end)
+                                eyeBtn:SetScript("OnLeave", function(self)
+                                    CludesUI.SetGlyphAlpha(self, 0.4)
+                                end)
 
                                 -- Blackout fill opacity, in a cog chained left of the eye. Locked
                                 -- unless the entry renders Blackout (custom-shaped bars always
@@ -1556,23 +2076,36 @@ initFrame:SetScript("OnEvent", function(self)
                                 CludesUI.BuildInlineCog(leftRgn, {
                                     title = "Blackout",
                                     disabled = function()
-                                        return (BarHasCustomShape(curBar) and 2 or (entry.glowStyle or 1)) ~= 8
+                                        return (BarHasCustomShape(curBar) and 2 or (entry.glowStyle or 1))
+                                            ~= 8
                                     end,
                                     disabledTooltip = function()
-                                        return BarHasCustomShape(curBar) and "This option is not available for custom shaped icons"
+                                        return BarHasCustomShape(curBar)
+                                                and "This option is not available for custom shaped icons"
                                             or "This option requires the Blackout glow type"
                                     end,
-                                    frameStrata = "FULLSCREEN_DIALOG", frameLevel = 350,
+                                    frameStrata = "FULLSCREEN_DIALOG",
+                                    frameLevel = 350,
                                     rows = {
-                                        { type = "slider", label = "Opacity", min = 1, max = 100, step = 1,
-                                          get = function() return math.floor((entry.glowAlpha or 1) * 100 + 0.5) end,
-                                          set = function(v)
-                                              entry.glowAlpha = v / 100
-                                              -- Restarts the lit Bar Glows with the new opacity (fires
-                                              -- per drag step, so no full CDM rebuild here).
-                                              if ns.RequestBarGlowUpdate then ns.RequestBarGlowUpdate() end
-                                              RefreshPreviewGlow()
-                                          end },
+                                        {
+                                            type = "slider",
+                                            label = "Opacity",
+                                            min = 1,
+                                            max = 100,
+                                            step = 1,
+                                            get = function()
+                                                return math.floor((entry.glowAlpha or 1) * 100 + 0.5)
+                                            end,
+                                            set = function(v)
+                                                entry.glowAlpha = v / 100
+                                                -- Restarts the lit Bar Glows with the new opacity (fires
+                                                -- per drag step, so no full CDM rebuild here).
+                                                if ns.RequestBarGlowUpdate then
+                                                    ns.RequestBarGlowUpdate()
+                                                end
+                                                RefreshPreviewGlow()
+                                            end,
+                                        },
                                     },
                                 })
                             end
@@ -1583,7 +2116,11 @@ initFrame:SetScript("OnEvent", function(self)
                         -- so the slots re-pair there: Only In Combat | Glow Color, then the
                         -- buttons in the left half of the last row.
                         local glowColorCfg = { type = "label", text = "Glow Color" }
-                        local removeCfg = { type = "labeledButton", text = "", buttonText = "Remove", width = 150,
+                        local removeCfg = {
+                            type = "labeledButton",
+                            text = "",
+                            buttonText = "Remove",
+                            width = 150,
                             onClick = function()
                                 table.remove(buffList, removeAIdx)
                                 if #buffList == 0 then
@@ -1595,14 +2132,18 @@ initFrame:SetScript("OnEvent", function(self)
                         }
                         local colorRow, colorRgn, removeRgn
                         if CludesUI.IS_FOREVER then
-                            colorRow, h = W:DualRow(parent, y, ns.BarGlowCombatCfg(entry, Refresh), glowColorCfg);  y = y - h
+                            colorRow, h =
+                                W:DualRow(parent, y, ns.BarGlowCombatCfg(entry, Refresh), glowColorCfg)
+                            y = y - h
                             colorRgn = colorRow._rightRegion
                             local removeRow
-                            removeRow, h = W:DualRow(parent, y, removeCfg, CludesUI.BlankRowCfg());  y = y - h
+                            removeRow, h = W:DualRow(parent, y, removeCfg, CludesUI.BlankRowCfg())
+                            y = y - h
                             removeRgn = removeRow._leftRegion
                         else
                             y = ns.BuildBarGlowCombatRow(W, parent, y, entry, Refresh)
-                            colorRow, h = W:DualRow(parent, y, glowColorCfg, removeCfg);  y = y - h
+                            colorRow, h = W:DualRow(parent, y, glowColorCfg, removeCfg)
+                            y = y - h
                             colorRgn, removeRgn = colorRow._leftRegion, colorRow._rightRegion
                         end
 
@@ -1610,11 +2151,14 @@ initFrame:SetScript("OnEvent", function(self)
                         if not CludesUI._prebuilding then
                             local leftRgn = colorRgn
                             if leftRgn and CludesUI.BuildTrioColorSwatch then
-                                local glowSwatch, defaultSwatch, classSwatch = CludesUI.BuildTrioColorSwatch(
-                                    leftRgn, colorRow:GetFrameLevel() + 3,
-                                    {
-                                        getMode = function() return entry.colorMode or "default" end,
-                                        setMode = function(m) entry.colorMode = m end,
+                                local glowSwatch, defaultSwatch, classSwatch =
+                                    CludesUI.BuildTrioColorSwatch(leftRgn, colorRow:GetFrameLevel() + 3, {
+                                        getMode = function()
+                                            return entry.colorMode or "default"
+                                        end,
+                                        setMode = function(m)
+                                            entry.colorMode = m
+                                        end,
                                         getCustomRGB = function()
                                             local c = entry.glowColor or { r = 1.0, g = 0.788, b = 0.137 }
                                             return c.r, c.g, c.b
@@ -1623,7 +2167,11 @@ initFrame:SetScript("OnEvent", function(self)
                                             entry.glowColor = { r = r, g = g, b = b }
                                         end,
                                         hasClassColor = true,
-                                        onChange = function() Refresh(); RefreshPreviewGlow(); CludesUI:RefreshPage() end,
+                                        onChange = function()
+                                            Refresh()
+                                            RefreshPreviewGlow()
+                                            CludesUI:RefreshPage()
+                                        end,
                                         overrideSize = 20,
                                     })
                                 PP.Point(classSwatch, "RIGHT", leftRgn, "RIGHT", -20, 0)
@@ -1637,12 +2185,22 @@ initFrame:SetScript("OnEvent", function(self)
                             local rightRgn = removeRgn
                             if rightRgn and rightRgn._control then
                                 local btn = rightRgn._control
-                                local dupBtn = ns.BarGlowDuplicateButton(rightRgn, btn, buffList, aIdx, function()
-                                    Refresh()
-                                    CludesUI:RefreshPage(true)
-                                end)
-                                local ico = ns.BarGlowSpellIcon(rightRgn, btn:GetHeight(),
-                                    entry.mode == "USABLE" and (entry.actionSpellID or cdmSid) or entry.spellID)
+                                local dupBtn = ns.BarGlowDuplicateButton(
+                                    rightRgn,
+                                    btn,
+                                    buffList,
+                                    aIdx,
+                                    function()
+                                        Refresh()
+                                        CludesUI:RefreshPage(true)
+                                    end
+                                )
+                                local ico = ns.BarGlowSpellIcon(
+                                    rightRgn,
+                                    btn:GetHeight(),
+                                    entry.mode == "USABLE" and (entry.actionSpellID or cdmSid)
+                                        or entry.spellID
+                                )
                                 PP.Point(ico, "RIGHT", dupBtn or btn, "LEFT", -8, 0)
                             end
                         end
@@ -1656,8 +2214,15 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Tracking Bars page with its state and hooks (CooldownManager_Options\
     -- BuffBarsPage_Options.lua), set up here so the hooks keep their order.
-    local BuildBuffBarsPage, RefreshTBBPopout = ns.CDMO_InitBuffBarsPage(PP, DB, Refresh,
-        FONT_PATH, GetCDMOptOutline, GateBlizzardOnly, PAGE_BUFF_BARS)
+    local BuildBuffBarsPage, RefreshTBBPopout = ns.CDMO_InitBuffBarsPage(
+        PP,
+        DB,
+        Refresh,
+        FONT_PATH,
+        GetCDMOptOutline,
+        GateBlizzardOnly,
+        PAGE_BUFF_BARS
+    )
 
     ---------------------------------------------------------------------------
     --  CDM Bars page
@@ -1667,7 +2232,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- and writes the live value.
     local optState = {}
     local growValues = CludesUI.GROW_DIR_VALUES_BASE
-    local growOrder  = { "RIGHT", "LEFT", "DOWN", "UP" } -- this dropdown's own sequence (DOWN before UP)
+    local growOrder = { "RIGHT", "LEFT", "DOWN", "UP" } -- this dropdown's own sequence (DOWN before UP)
     local durationPositionValues = {
         center = "Center",
         top = "Above Icon",
@@ -1687,7 +2252,9 @@ initFrame:SetScript("OnEvent", function(self)
     function CludesUI._setCDMBar(keyOrType)
         local p = DB()
         local bars = p and p.cdmBars and p.cdmBars.bars
-        if not bars then return end
+        if not bars then
+            return
+        end
         for bi, bb in ipairs(bars) do
             if bb.key == keyOrType or bb.barType == keyOrType then
                 optState.selectedCDMBarIndex = bi
@@ -1716,7 +2283,7 @@ initFrame:SetScript("OnEvent", function(self)
         if optState._cdmPreview and optState._cdmHeaderFixedH > 0 then
             -- Wrapper height is already capped by the Update function's resize logic
             local wrapperH = optState._cdmPreview._wrapper and optState._cdmPreview._wrapper:GetHeight()
-                             or math.min(optState._cdmPreview:GetHeight() * (optState._cdmPreview:GetScale() or 1), 200)
+                or math.min(optState._cdmPreview:GetHeight() * (optState._cdmPreview:GetScale() or 1), 200)
             CludesUI:UpdateContentHeaderHeight(optState._cdmHeaderFixedH + wrapperH)
         end
     end
@@ -1728,11 +2295,15 @@ initFrame:SetScript("OnEvent", function(self)
     -- shows again: onPageCacheRestore).
     local function CatchUpCDMPreview()
         local pv = optState._cdmPreview or CludesUI._cdmHeaderPreview
-        if pv and pv:IsVisible() then UpdateCDMPreview() end
+        if pv and pv:IsVisible() then
+            UpdateCDMPreview()
+        end
     end
     CludesUI:RegisterOnShow(CatchUpCDMPreview)
     CludesUI:RegisterOnCollapse(function(on)
-        if not on then CatchUpCDMPreview() end
+        if not on then
+            CatchUpCDMPreview()
+        end
     end)
 
     -- Refresh our preview when user closes Blizzard's CDM settings panel
@@ -1750,17 +2321,23 @@ initFrame:SetScript("OnEvent", function(self)
     --- Get the currently selected CDM bar data
     local function SelectedCDMBar()
         local p = DB()
-        if not p or not p.cdmBars or not p.cdmBars.bars then return nil end
+        if not p or not p.cdmBars or not p.cdmBars.bars then
+            return nil
+        end
         local bars = p.cdmBars.bars
-        if optState.selectedCDMBarIndex < 1 then optState.selectedCDMBarIndex = 1 end
-        if optState.selectedCDMBarIndex > #bars then optState.selectedCDMBarIndex = #bars end
+        if optState.selectedCDMBarIndex < 1 then
+            optState.selectedCDMBarIndex = 1
+        end
+        if optState.selectedCDMBarIndex > #bars then
+            optState.selectedCDMBarIndex = #bars
+        end
         return bars[optState.selectedCDMBarIndex]
     end
 
     -- Active state preview on first icon
     local _cdmActivePreviewOn = false
-    local _cdmActivePreviewOverlay = nil  -- glow overlay frame on first preview slot
-    local _cdmActivePreviewToken = 0     -- incremented each start to invalidate stale timers
+    local _cdmActivePreviewOverlay = nil -- glow overlay frame on first preview slot
+    local _cdmActivePreviewToken = 0 -- incremented each start to invalidate stale timers
 
     local function StopActiveStatePreview()
         if _cdmActivePreviewOverlay then
@@ -1777,15 +2354,23 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function StartActiveStatePreview()
-        if not _cdmActivePreviewOn then return end
+        if not _cdmActivePreviewOn then
+            return
+        end
         _cdmActivePreviewToken = _cdmActivePreviewToken + 1
         local myToken = _cdmActivePreviewToken
         local bd = SelectedCDMBar()
-        if not bd then return end
+        if not bd then
+            return
+        end
         local anim = bd.activeStateAnim or "blizzard"
-        if not optState._cdmPreview or not optState._cdmPreview._previewSlots then return end
+        if not optState._cdmPreview or not optState._cdmPreview._previewSlots then
+            return
+        end
         local slot = optState._cdmPreview._previewSlots[1]
-        if not slot or not slot:IsShown() then return end
+        if not slot or not slot:IsShown() then
+            return
+        end
 
         -- Ensure cooldown widget exists on preview slot
         if not slot._previewCD then
@@ -1798,9 +2383,14 @@ initFrame:SetScript("OnEvent", function(self)
             cd:SetHideCountdownNumbers(false)
             -- Blizzard Style: the viewer's rounded swipe, matching its mask
             -- (classic icons are square and keep the plain swipe).
-            cd:SetSwipeTexture((CludesUI.BlizzStyle.Active("cdmicons") == "blizzard" and ns.CDM_BLIZZ_SWIPE)
-                or "Interface\\Buttons\\WHITE8x8")
-            if cd.SetSnapToPixelGrid then cd:SetSnapToPixelGrid(false); cd:SetTexelSnappingBias(0) end
+            cd:SetSwipeTexture(
+                (CludesUI.BlizzStyle.Active("cdmicons") == "blizzard" and ns.CDM_BLIZZ_SWIPE)
+                    or "Interface\\Buttons\\WHITE8x8"
+            )
+            if cd.SetSnapToPixelGrid then
+                cd:SetSnapToPixelGrid(false)
+                cd:SetTexelSnappingBias(0)
+            end
             slot._previewCD = cd
         end
 
@@ -1809,17 +2399,25 @@ initFrame:SetScript("OnEvent", function(self)
         local slotGen = PoolGen(slot)
         -- Always refresh font (smaller than the bar's cooldown font size, shadow style)
         C_Timer.After(0, function()
-            if PoolGen(slot) ~= slotGen or not slot._previewCD then return end
+            if PoolGen(slot) ~= slotGen or not slot._previewCD then
+                return
+            end
             local fSize = (bd.cooldownFontSize or 12) - 2
-            if fSize < 6 then fSize = 6 end
+            if fSize < 6 then
+                fSize = 6
+            end
             local fontPath = (CludesUI.GetFontPath("cdm")) or STANDARD_TEXT_FONT
             for _, region in ipairs({ slot._previewCD:GetRegions() }) do
                 if region:GetObjectType() == "FontString" then
                     SetPVFont(region, fontPath, fSize)
                     if ns.AnchorCooldownText then
-                        ns.AnchorCooldownText(region, slot._previewCD,
+                        ns.AnchorCooldownText(
+                            region,
+                            slot._previewCD,
                             bd.cooldownTextPosition or "center",
-                            bd.cooldownTextX or 0, bd.cooldownTextY or 0)
+                            bd.cooldownTextX or 0,
+                            bd.cooldownTextY or 0
+                        )
                     end
                     break
                 end
@@ -1833,7 +2431,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Above the Blizzard Style ring (+15) as on the live icons (+16).
             ov:SetFrameLevel(slot:GetFrameLevel() + (CludesUI.BlizzStyle.Get("cdmicons") and 16 or 3))
             ov:SetAlpha(0)
-            ov._cuiGlowPreview = true  -- exempt from Show Glows Only in Combat
+            ov._cuiGlowPreview = true -- exempt from Show Glows Only in Combat
             slot._glowOverlay = ov
         end
         _cdmActivePreviewOverlay = slot._glowOverlay
@@ -1842,13 +2440,20 @@ initFrame:SetScript("OnEvent", function(self)
         local animR, animG, animB = 1.0, 0.85, 0.0
         if bd.activeAnimClassColor then
             local _, ct = UnitClass("player")
-            if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then animR, animG, animB = cc.r, cc.g, cc.b end end
+            if ct then
+                local cc = RAID_CLASS_COLORS[ct]
+                if cc then
+                    animR, animG, animB = cc.r, cc.g, cc.b
+                end
+            end
         elseif bd.activeAnimR then
-            animR = bd.activeAnimR; animG = bd.activeAnimG or 0.85; animB = bd.activeAnimB or 0.0
+            animR = bd.activeAnimR
+            animG = bd.activeAnimG or 0.85
+            animB = bd.activeAnimB or 0.0
         end
 
         local swAlpha = bd.swipeAlpha or 0.7
-        local PREVIEW_DURATION = 5  -- seconds
+        local PREVIEW_DURATION = 5 -- seconds
 
         if anim == "none" then
             slot._previewCD:SetSwipeColor(0, 0, 0, swAlpha)
@@ -1863,7 +2468,14 @@ initFrame:SetScript("OnEvent", function(self)
             if anim ~= "blizzard" then
                 local glowIdx = tonumber(anim)
                 if glowIdx then
-                    ns.StartNativeGlow(_cdmActivePreviewOverlay, glowIdx, animR, animG, animB, CludesUI.Glows.PANEL_EXTRA)
+                    ns.StartNativeGlow(
+                        _cdmActivePreviewOverlay,
+                        glowIdx,
+                        animR,
+                        animG,
+                        animB,
+                        CludesUI.Glows.PANEL_EXTRA
+                    )
                 end
             else
                 ns.StopNativeGlow(_cdmActivePreviewOverlay)
@@ -1872,7 +2484,9 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Auto-stop glow after preview duration ends
         C_Timer.After(PREVIEW_DURATION, function()
-            if myToken ~= _cdmActivePreviewToken or PoolGen(slot) ~= slotGen then return end
+            if myToken ~= _cdmActivePreviewToken or PoolGen(slot) ~= slotGen then
+                return
+            end
             if _cdmActivePreviewOverlay then
                 ns.StopNativeGlow(_cdmActivePreviewOverlay)
             end
@@ -1888,7 +2502,9 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     -- Close the spell picker when the main CUI options panel closes
     CludesUI:RegisterOnHide(function()
-        if optState._spellPickerMenu and optState._spellPickerMenu:IsShown() then optState._spellPickerMenu:Hide() end
+        if optState._spellPickerMenu and optState._spellPickerMenu:IsShown() then
+            optState._spellPickerMenu:Hide()
+        end
     end)
     -- Normalize a spell ID to its base (undo talent overrides), and resolve
     -- a base id to its current live version (talent overrides) -- both
@@ -1905,11 +2521,17 @@ initFrame:SetScript("OnEvent", function(self)
     -- the keep/drop pass) -- a bridged id there could drop a spell from a saved bar.
     -- Only the art moves; identity stays untouched.
     local function ResolveIconArt(sid, cdID)
-        if not sid or sid <= 0 then return sid end
-        if ns.LustPresetIconSpellID then sid = ns.LustPresetIconSpellID(sid) end
+        if not sid or sid <= 0 then
+            return sid
+        end
+        if ns.LustPresetIconSpellID then
+            sid = ns.LustPresetIconSpellID(sid)
+        end
         if ns.ResolvePlaceholderIconSID then
             local live = ns.ResolvePlaceholderIconSID(sid, cdID)
-            if type(live) == "number" and live > 0 then return live end
+            if type(live) == "number" and live > 0 then
+                return live
+            end
         end
         return ResolveToLive(sid)
     end
@@ -1924,89 +2546,239 @@ initFrame:SetScript("OnEvent", function(self)
             kbFonts.__global = { text = "CDM Font" }
             local function OffTip()
                 local tip = lockTip and lockTip()
-                if tip then return tip end
-                if BD().showKeybind ~= true then return "Show Keybind" end
+                if tip then
+                    return tip
+                end
+                if BD().showKeybind ~= true then
+                    return "Show Keybind"
+                end
             end
 
             CludesUI.BuildInlineCog(rgn, {
                 title = "Keybind Text Settings",
-                disabled = function() return OffTip() ~= nil end,
+                disabled = function()
+                    return OffTip() ~= nil
+                end,
                 disabledTooltip = OffTip,
                 rows = {
-                    { type = "dropdown", label = "Font", values = kbFonts, order = kbFontOrder,
-                      get = function() return BD().keybindFont or "__global" end,
-                      set = function(v) BD().keybindFont = v; RefreshKeybindStyle() end },
-                    { type = "dropdown", label = "Text Outline",
-                      values = { inherit = "CDM Outline", NONE = "None", OUTLINE = "Outline", THICKOUTLINE = "Thick Outline" },
-                      order = { "inherit", "NONE", "OUTLINE", "THICKOUTLINE" },
-                      get = function() return BD().keybindOutline or "inherit" end,
-                      set = function(v) BD().keybindOutline = v; RefreshKeybindStyle() end },
-                    { type = "slider", label = "Text Size", min = 6, max = 20, step = 1,
-                      get = function() return BD().keybindSize or 10 end,
-                      set = function(v) BD().keybindSize = v; RefreshKeybindStyle() end },
-                    { type = "dropdown", label = "Anchor",
-                      values = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right",
-                          LEFT = "Left", CENTER = "Center", RIGHT = "Right",
-                          BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" },
-                      order = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" },
-                      get = function() return BD().keybindAnchor or (BD().keybindAlign == "right" and "TOPRIGHT" or "TOPLEFT") end,
-                      set = function(v) BD().keybindAnchor = v; RefreshKeybindStyle() end },
-                    { type = "slider", label = "X Offset", min = -30, max = 30, step = 1,
-                      get = function() return BD().keybindOffsetX or 2 end,
-                      set = function(v) BD().keybindOffsetX = v; RefreshKeybindStyle() end },
-                    { type = "slider", label = "Y Offset", min = -30, max = 30, step = 1,
-                      get = function() return BD().keybindOffsetY or -2 end,
-                      set = function(v) BD().keybindOffsetY = v; RefreshKeybindStyle() end },
-                    { type = "colorpicker", label = "Background Color", hasAlpha = true,
-                      tooltip = "Set opacity to 0% for text without a background.",
-                      get = function() return BD().keybindBackgroundR or 0, BD().keybindBackgroundG or 0,
-                          BD().keybindBackgroundB or 0, BD().keybindBackgroundA or 0 end,
-                      set = function(r, g, b, a)
-                          local d = BD(); d.keybindBackgroundR = r; d.keybindBackgroundG = g
-                          d.keybindBackgroundB = b; d.keybindBackgroundA = a; RefreshKeybindStyle()
-                      end },
-                    { type = "colorpicker", label = "Border Color", hasAlpha = true,
-                      tooltip = "Set opacity to 0% to hide the keybind badge border.",
-                      get = function() return BD().keybindBorderR or 1, BD().keybindBorderG or 1,
-                          BD().keybindBorderB or 1, BD().keybindBorderA or 0 end,
-                      set = function(r, g, b, a)
-                          local d = BD(); d.keybindBorderR = r; d.keybindBorderG = g
-                          d.keybindBorderB = b; d.keybindBorderA = a; RefreshKeybindStyle()
-                      end },
-                    { type = "slider", label = "Border Size", min = 0, max = 4, step = 1,
-                      get = function() return BD().keybindBorderSize or 1 end,
-                      set = function(v) BD().keybindBorderSize = v; RefreshKeybindStyle() end },
-                    { type = "slider", label = "Background Padding", min = 0, max = 8, step = 1,
-                      get = function() return BD().keybindPadding or 2 end,
-                      set = function(v) BD().keybindPadding = v; RefreshKeybindStyle() end },
+                    {
+                        type = "dropdown",
+                        label = "Font",
+                        values = kbFonts,
+                        order = kbFontOrder,
+                        get = function()
+                            return BD().keybindFont or "__global"
+                        end,
+                        set = function(v)
+                            BD().keybindFont = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Text Outline",
+                        values = {
+                            inherit = "CDM Outline",
+                            NONE = "None",
+                            OUTLINE = "Outline",
+                            THICKOUTLINE = "Thick Outline",
+                        },
+                        order = { "inherit", "NONE", "OUTLINE", "THICKOUTLINE" },
+                        get = function()
+                            return BD().keybindOutline or "inherit"
+                        end,
+                        set = function(v)
+                            BD().keybindOutline = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return BD().keybindSize or 10
+                        end,
+                        set = function(v)
+                            BD().keybindSize = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Anchor",
+                        values = {
+                            TOPLEFT = "Top Left",
+                            TOP = "Top",
+                            TOPRIGHT = "Top Right",
+                            LEFT = "Left",
+                            CENTER = "Center",
+                            RIGHT = "Right",
+                            BOTTOMLEFT = "Bottom Left",
+                            BOTTOM = "Bottom",
+                            BOTTOMRIGHT = "Bottom Right",
+                        },
+                        order = {
+                            "TOPLEFT",
+                            "TOP",
+                            "TOPRIGHT",
+                            "LEFT",
+                            "CENTER",
+                            "RIGHT",
+                            "BOTTOMLEFT",
+                            "BOTTOM",
+                            "BOTTOMRIGHT",
+                        },
+                        get = function()
+                            return BD().keybindAnchor
+                                or (BD().keybindAlign == "right" and "TOPRIGHT" or "TOPLEFT")
+                        end,
+                        set = function(v)
+                            BD().keybindAnchor = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -30,
+                        max = 30,
+                        step = 1,
+                        get = function()
+                            return BD().keybindOffsetX or 2
+                        end,
+                        set = function(v)
+                            BD().keybindOffsetX = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -30,
+                        max = 30,
+                        step = 1,
+                        get = function()
+                            return BD().keybindOffsetY or -2
+                        end,
+                        set = function(v)
+                            BD().keybindOffsetY = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "colorpicker",
+                        label = "Background Color",
+                        hasAlpha = true,
+                        tooltip = "Set opacity to 0% for text without a background.",
+                        get = function()
+                            return BD().keybindBackgroundR or 0,
+                                BD().keybindBackgroundG or 0,
+                                BD().keybindBackgroundB or 0,
+                                BD().keybindBackgroundA or 0
+                        end,
+                        set = function(r, g, b, a)
+                            local d = BD()
+                            d.keybindBackgroundR = r
+                            d.keybindBackgroundG = g
+                            d.keybindBackgroundB = b
+                            d.keybindBackgroundA = a
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "colorpicker",
+                        label = "Border Color",
+                        hasAlpha = true,
+                        tooltip = "Set opacity to 0% to hide the keybind badge border.",
+                        get = function()
+                            return BD().keybindBorderR or 1,
+                                BD().keybindBorderG or 1,
+                                BD().keybindBorderB or 1,
+                                BD().keybindBorderA or 0
+                        end,
+                        set = function(r, g, b, a)
+                            local d = BD()
+                            d.keybindBorderR = r
+                            d.keybindBorderG = g
+                            d.keybindBorderB = b
+                            d.keybindBorderA = a
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Border Size",
+                        min = 0,
+                        max = 4,
+                        step = 1,
+                        get = function()
+                            return BD().keybindBorderSize or 1
+                        end,
+                        set = function(v)
+                            BD().keybindBorderSize = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Background Padding",
+                        min = 0,
+                        max = 8,
+                        step = 1,
+                        get = function()
+                            return BD().keybindPadding or 2
+                        end,
+                        set = function(v)
+                            BD().keybindPadding = v
+                            RefreshKeybindStyle()
+                        end,
+                    },
                     -- Global, not per-bar: there is one shared keybind cache
                     -- for every CDM bar, so this toggle is labelled as such.
-                    { type = "toggle", label = "Keep Keys on Bar Swap (global)",
-                      tooltip = "Keep keybind text identical when your action bar swaps -- rogue stealth, druid forms, skyriding. Also covers conditional macros like \"/cast [bonusbar:1] Backstab; Shadow Dance\", where the key would otherwise jump to whichever branch is live.\n\nThe key then only changes when you actually move the ability or rebind it.\n\nOn by default. Applies to every CDM bar at once.",
-                      get = function()
-                          local p = DB()
-                          return (p and p.cdmBars and p.cdmBars.stableKeybinds) == true
-                      end,
-                      set = function(v)
-                          local p = DB()
-                          if not p or not p.cdmBars then return end
-                          p.cdmBars.stableKeybinds = v and true or false
-                          -- Changes how the cache is built, not just how it is
-                          -- drawn -- needs a full rebuild, not an apply pass.
-                          if ns.UpdateCDMKeybinds then ns.UpdateCDMKeybinds() end
-                          RefreshKeybindStyle()
-                      end },
+                    {
+                        type = "toggle",
+                        label = "Keep Keys on Bar Swap (global)",
+                        tooltip = 'Keep keybind text identical when your action bar swaps -- rogue stealth, druid forms, skyriding. Also covers conditional macros like "/cast [bonusbar:1] Backstab; Shadow Dance", where the key would otherwise jump to whichever branch is live.\n\nThe key then only changes when you actually move the ability or rebind it.\n\nOn by default. Applies to every CDM bar at once.',
+                        get = function()
+                            local p = DB()
+                            return (p and p.cdmBars and p.cdmBars.stableKeybinds) == true
+                        end,
+                        set = function(v)
+                            local p = DB()
+                            if not p or not p.cdmBars then
+                                return
+                            end
+                            p.cdmBars.stableKeybinds = v and true or false
+                            -- Changes how the cache is built, not just how it is
+                            -- drawn -- needs a full rebuild, not an apply pass.
+                            if ns.UpdateCDMKeybinds then
+                                ns.UpdateCDMKeybinds()
+                            end
+                            RefreshKeybindStyle()
+                        end,
+                    },
                 },
             })
 
             local kbSwatch, updateKbSwatch = CludesUI.BuildColorSwatch(
-                rgn, kbRow:GetFrameLevel() + 3,
-                function() return BD().keybindR or 1, BD().keybindG or 1, BD().keybindB or 1, BD().keybindA or 0.9 end,
+                rgn,
+                kbRow:GetFrameLevel() + 3,
+                function()
+                    return BD().keybindR or 1, BD().keybindG or 1, BD().keybindB or 1, BD().keybindA or 0.9
+                end,
                 function(r, g, b, a)
-                    BD().keybindR = r; BD().keybindG = g; BD().keybindB = b; BD().keybindA = a
+                    BD().keybindR = r
+                    BD().keybindG = g
+                    BD().keybindB = b
+                    BD().keybindA = a
                     RefreshKeybindStyle()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(kbSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = kbSwatch
 
@@ -2016,9 +2788,13 @@ initFrame:SetScript("OnEvent", function(self)
             swatchBlock:EnableMouse(true)
             swatchBlock:SetScript("OnEnter", function()
                 local tip = OffTip()
-                if tip then CludesUI.ShowWidgetTooltip(kbSwatch, CludesUI.DisabledTooltip(tip)) end
+                if tip then
+                    CludesUI.ShowWidgetTooltip(kbSwatch, CludesUI.DisabledTooltip(tip))
+                end
             end)
-            swatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            swatchBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function SwatchState()
                 updateKbSwatch()
                 local on = OffTip() == nil
@@ -2034,16 +2810,29 @@ initFrame:SetScript("OnEvent", function(self)
     -- CooldownManager_Options\ (loaded before this file, read when a picker
     -- opens or a page is built).
     ns._CDMO_OptEnv = {
-        _cdmActivePreviewOn = _cdmActivePreviewOn, AnyIconAlwaysShowOn = AnyIconAlwaysShowOn, BuildKeybindStyleControls = BuildKeybindStyleControls,
-        DB = DB, durationPositionOrder = durationPositionOrder, durationPositionValues = durationPositionValues,
-        FitMenuWidth = FitMenuWidth, FONT_PATH = FONT_PATH, GetCDMOptOutline = GetCDMOptOutline,
-        NormalizeToBase = NormalizeToBase, optState = optState, PP = PP,
-        Refresh = Refresh, RefreshCDPreview = RefreshCDPreview, ResolveIconArt = ResolveIconArt,
-        ResolveToLive = ResolveToLive, SelectedCDMBar = SelectedCDMBar, SetPVFont = SetPVFont,
-        StartActiveStatePreview = StartActiveStatePreview, StopActiveStatePreview = StopActiveStatePreview, UpdateCDMPreview = UpdateCDMPreview,
+        _cdmActivePreviewOn = _cdmActivePreviewOn,
+        AnyIconAlwaysShowOn = AnyIconAlwaysShowOn,
+        BuildKeybindStyleControls = BuildKeybindStyleControls,
+        DB = DB,
+        durationPositionOrder = durationPositionOrder,
+        durationPositionValues = durationPositionValues,
+        FitMenuWidth = FitMenuWidth,
+        FONT_PATH = FONT_PATH,
+        GetCDMOptOutline = GetCDMOptOutline,
+        NormalizeToBase = NormalizeToBase,
+        optState = optState,
+        PP = PP,
+        Refresh = Refresh,
+        RefreshCDPreview = RefreshCDPreview,
+        ResolveIconArt = ResolveIconArt,
+        ResolveToLive = ResolveToLive,
+        SelectedCDMBar = SelectedCDMBar,
+        SetPVFont = SetPVFont,
+        StartActiveStatePreview = StartActiveStatePreview,
+        StopActiveStatePreview = StopActiveStatePreview,
+        UpdateCDMPreview = UpdateCDMPreview,
         UpdateCDMPreviewAndResize = UpdateCDMPreviewAndResize,
     }
-
 
     ---------------------------------------------------------------------------
     --  Standalone Rotation Assist Icon (independent of the selected CDM bar)
@@ -2053,7 +2842,9 @@ initFrame:SetScript("OnEvent", function(self)
         local y = yOffset
         local _, h, hdr
         parent._showRowDivider = true
-        local function Settings() return DB().rotationAssistIcon end
+        local function Settings()
+            return DB().rotationAssistIcon
+        end
         local function Apply()
             ns.RefreshRotationAssistIcon()
             CludesUI:RefreshPage()
@@ -2064,9 +2855,13 @@ initFrame:SetScript("OnEvent", function(self)
             if not ns.RotationAssistAvailable() then
                 return "This option requires Blizzard's Assisted Highlight to be enabled"
             end
-            if Settings().enabled ~= true then return "Show Rotation Assist Icon" end
+            if Settings().enabled ~= true then
+                return "Show Rotation Assist Icon"
+            end
         end
-        local function IconOff() return IconLockTip() ~= nil end
+        local function IconOff()
+            return IconLockTip() ~= nil
+        end
         -- The saved position, else the runtime's default (read only).
         local function Position()
             return Settings().position or ns.CDM_ROTATION_ICON_DEFAULT_POS
@@ -2079,60 +2874,124 @@ initFrame:SetScript("OnEvent", function(self)
             ns.RefreshRotationAssistIcon()
         end
 
-        hdr, h = W:SectionHeader(parent, "ROTATION ASSIST ICON", y);  y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "ECME_RotationAssistIcon", disabled = IconOff, disabledTooltip = IconLockTip })
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Rotation Assist Icon",
-              tooltip="Show Blizzard's current recommendation in a separate icon. Requires Assisted Highlight to be enabled in Blizzard's options. Press the spell's normal keybind; this display never casts spells. Blizzard supplies one recommendation, not a queue of future casts.",
-              -- Locked only while off: an icon left on after the highlight was
-              -- switched off can always be turned off here.
-              disabled=function() return not ns.RotationAssistAvailable() and Settings().enabled ~= true end,
-              disabledTooltip="This option requires Blizzard's Assisted Highlight to be enabled",
-              rawTooltip=true,
-              getValue=function() return Settings().enabled == true end,
-              setValue=function(v)
-                  Settings().enabled = v
-                  Apply()
-              end },
-            { type="slider", text="Icon Size", min=16, max=128, step=1,
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return Settings().iconSize or 48 end,
-              setValue=function(v) Settings().iconSize = v; ns.RefreshRotationAssistIcon() end }
-        );  y = y - h
+        hdr, h = W:SectionHeader(parent, "ROTATION ASSIST ICON", y)
+        y = y - h
+        CludesUI.BuildSectionUnlockJump(
+            hdr,
+            { key = "ECME_RotationAssistIcon", disabled = IconOff, disabledTooltip = IconLockTip }
+        )
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Rotation Assist Icon",
+            tooltip = "Show Blizzard's current recommendation in a separate icon. Requires Assisted Highlight to be enabled in Blizzard's options. Press the spell's normal keybind; this display never casts spells. Blizzard supplies one recommendation, not a queue of future casts.",
+            -- Locked only while off: an icon left on after the highlight was
+            -- switched off can always be turned off here.
+            disabled = function()
+                return not ns.RotationAssistAvailable() and Settings().enabled ~= true
+            end,
+            disabledTooltip = "This option requires Blizzard's Assisted Highlight to be enabled",
+            rawTooltip = true,
+            getValue = function()
+                return Settings().enabled == true
+            end,
+            setValue = function(v)
+                Settings().enabled = v
+                Apply()
+            end,
+        }, {
+            type = "slider",
+            text = "Icon Size",
+            min = 16,
+            max = 128,
+            step = 1,
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return Settings().iconSize or 48
+            end,
+            setValue = function(v)
+                Settings().iconSize = v
+                ns.RefreshRotationAssistIcon()
+            end,
+        })
+        y = y - h
         local kbRow
-        kbRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Only in Combat",
-              tooltip="Hide outside combat. Layout Mode shows a placeholder when no recommendation is available.",
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return Settings().onlyInCombat == true end,
-              setValue=function(v) Settings().onlyInCombat = v; Apply() end },
-            { type="toggle", text="Show Keybind",
-              tooltip="Use the CDM keybind mapping. Configure the font, outline, position, background and border with the cog.",
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return Settings().showKeybind == true end,
-              setValue=function(v) Settings().showKeybind = v; Apply() end }
-        );  y = y - h
+        kbRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Only in Combat",
+            tooltip = "Hide outside combat. Layout Mode shows a placeholder when no recommendation is available.",
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return Settings().onlyInCombat == true
+            end,
+            setValue = function(v)
+                Settings().onlyInCombat = v
+                Apply()
+            end,
+        }, {
+            type = "toggle",
+            text = "Show Keybind",
+            tooltip = "Use the CDM keybind mapping. Configure the font, outline, position, background and border with the cog.",
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return Settings().showKeybind == true
+            end,
+            setValue = function(v)
+                Settings().showKeybind = v
+                Apply()
+            end,
+        })
+        y = y - h
         BuildKeybindStyleControls(kbRow, Settings, Apply, IconLockTip)
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="X Offset", min=-2000, max=2000, step=1,
-              tooltip="Horizontal screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return CludesUI.PP.ToPixels(Position().x or 0) end,
-              setValue=function(v) SetOffset("x", v) end },
-            { type="slider", text="Y Offset", min=-1200, max=1200, step=1,
-              tooltip="Vertical screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return CludesUI.PP.ToPixels(Position().y or 0) end,
-              setValue=function(v) SetOffset("y", v) end }
-        );  y = y - h
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Show GCD",
-              tooltip="Show the global cooldown as a swipe over the recommended ability. The swipe shows when the GCD ends; casting, channeling and ability requirements can still delay your next action.",
-              disabled=IconOff, disabledTooltip=IconLockTip,
-              getValue=function() return Settings().showGCD == true end,
-              setValue=function(v) Settings().showGCD = v; Apply() end },
-            CludesUI.BlankRowCfg()
-        );  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "X Offset",
+            min = -2000,
+            max = 2000,
+            step = 1,
+            tooltip = "Horizontal screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return CludesUI.PP.ToPixels(Position().x or 0)
+            end,
+            setValue = function(v)
+                SetOffset("x", v)
+            end,
+        }, {
+            type = "slider",
+            text = "Y Offset",
+            min = -1200,
+            max = 1200,
+            step = 1,
+            tooltip = "Vertical screen offset. You can also drag the Rotation Assist Icon in Layout Mode.",
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return CludesUI.PP.ToPixels(Position().y or 0)
+            end,
+            setValue = function(v)
+                SetOffset("y", v)
+            end,
+        })
+        y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show GCD",
+            tooltip = "Show the global cooldown as a swipe over the recommended ability. The swipe shows when the GCD ends; casting, channeling and ability requirements can still delay your next action.",
+            disabled = IconOff,
+            disabledTooltip = IconLockTip,
+            getValue = function()
+                return Settings().showGCD == true
+            end,
+            setValue = function(v)
+                Settings().showGCD = v
+                Apply()
+            end,
+        }, CludesUI.BlankRowCfg())
+        y = y - h
         return math.abs(y)
     end
 
@@ -2153,19 +3012,31 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local _cdmButtonTip
     local function ShowCDMButtonTip()
-        if CludesUIDB and CludesUIDB.cdmButtonTipSeen then return end
+        if CludesUIDB and CludesUIDB.cdmButtonTipSeen then
+            return
+        end
         -- The CDM header's own preview (this module's header preview slot).
         local preview = optState._cdmPreview or CludesUI._cdmHeaderPreview
-        if not preview then return end
+        if not preview then
+            return
+        end
 
         if not _cdmButtonTip then
             _cdmButtonTip = CludesUI.BuildTipCallout(CludesUI._panelBody, {
-                width = 360, height = 105,
-                text = CludesUI.L("CDM buttons can have their glow and active states\nset per icon or synced to the bar. Click a button\nto show its settings."),
-                font = (CludesUI.GetFontPath("cdm")) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
-                textTop = 15, spacing = 4, btnBottom = 11,
+                width = 360,
+                height = 105,
+                text = CludesUI.L(
+                    "CDM buttons can have their glow and active states\nset per icon or synced to the bar. Click a button\nto show its settings."
+                ),
+                font = (CludesUI.GetFontPath("cdm"))
+                    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF",
+                textTop = 15,
+                spacing = 4,
+                btnBottom = 11,
                 onOkay = function()
-                    if CludesUIDB then CludesUIDB.cdmButtonTipSeen = true end
+                    if CludesUIDB then
+                        CludesUIDB.cdmButtonTipSeen = true
+                    end
                 end,
             })
         end
@@ -2179,13 +3050,17 @@ initFrame:SetScript("OnEvent", function(self)
     -- Hidden whenever the player leaves the CDM Bars page (page switch, module
     -- switch, panel close); it returns on that page until dismissed with Okay.
     local function HideCDMButtonTip()
-        if _cdmButtonTip then _cdmButtonTip:Hide() end
+        if _cdmButtonTip then
+            _cdmButtonTip:Hide()
+        end
     end
     -- Shown a beat after the Bars page renders; the player may already have
     -- moved on by then, so the timer re-checks the page before showing.
     local function QueueCDMButtonTip()
         C_Timer.After(0.1, function()
-            if ns._cdmBarsPageOpen then ShowCDMButtonTip() end
+            if ns._cdmBarsPageOpen then
+                ShowCDMButtonTip()
+            end
         end)
     end
 
@@ -2195,11 +3070,12 @@ initFrame:SetScript("OnEvent", function(self)
     --  existing call sites (page open/close) need no changes.
     ---------------------------------------------------------------------------
     local _buffBarOverlay
-    local function ShowBuffBarOverlay()
-    end
+    local function ShowBuffBarOverlay() end
 
     local function HideBuffBarOverlay()
-        if _buffBarOverlay then _buffBarOverlay:Hide() end
+        if _buffBarOverlay then
+            _buffBarOverlay:Hide()
+        end
     end
     ns.ShowBuffBarOverlay = ShowBuffBarOverlay
     ns.HideBuffBarOverlay = HideBuffBarOverlay
@@ -2211,23 +3087,24 @@ initFrame:SetScript("OnEvent", function(self)
         -- Hide overlay and custom aura preview when panel closes
         HideBuffBarOverlay()
         ns._cdmBarsPageOpen = false
-        if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+        if ns.UpdateCustomBuffBars then
+            ns.UpdateCustomBuffBars()
+        end
     end)
-
 
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
     CludesUI:RegisterModule("CludesUICooldownManager", {
-        title       = "Cooldown Manager",
+        title = "Cooldown Manager",
         description = "CDM bar customization, action bar glows, and buff bars.",
         -- Rotation Assist Icon: the far-right tab; none on Forever (no Assisted
         -- Highlight there).
-        pages       = CludesUI.IS_FOREVER and { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS }
-                      or { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS, PAGE_ROTATION_ICON },
+        pages = CludesUI.IS_FOREVER and { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS }
+            or { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS, PAGE_ROTATION_ICON },
         disabledPages = {},
         disabledPageTooltips = {},
-        buildPage   = function(pageName, parent, yOffset)
+        buildPage = function(pageName, parent, yOffset)
             -- ns._tbbPlaceholderMode / ns._cdmBarsPageOpen reflect the page the player
             -- is REALLY on, not the pageName being built. A hidden search pre-build
             -- cycles pageName through all three pages, so the "switched away" cleanup
@@ -2252,22 +3129,30 @@ initFrame:SetScript("OnEvent", function(self)
             -- Clear TBB placeholders when switching to any non-Tracking Bars page
             if pageName ~= PAGE_BUFF_BARS and ns._tbbPlaceholderMode then
                 ns._tbbPlaceholderMode = false
-                if ns.HideTBBPlaceholders then ns.HideTBBPlaceholders() end
+                if ns.HideTBBPlaceholders then
+                    ns.HideTBBPlaceholders()
+                end
             end
             -- Manage custom aura bar preview: flag-based, not GetActivePage
             if pageName ~= PAGE_CDM_BARS and ns._cdmBarsPageOpen then
                 ns._cdmBarsPageOpen = false
-                if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+                if ns.UpdateCustomBuffBars then
+                    ns.UpdateCustomBuffBars()
+                end
                 -- Page closed: reanchor so buff-bar injected custom/preset buffs
                 -- that were shown for configuration (cdmPageOpen) hide unless active.
-                if ns.QueueReanchor then ns.QueueReanchor() end
+                if ns.QueueReanchor then
+                    ns.QueueReanchor()
+                end
                 HideBuffBarOverlay()
                 HideCDMButtonTip()
             end
             if pageName == PAGE_CDM_BARS then
                 ns._cdmBarsPageOpen = true
                 local h2 = ns.CDMO_BuildCDMBarsPage(pageName, parent, yOffset)
-                if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+                if ns.UpdateCustomBuffBars then
+                    ns.UpdateCustomBuffBars()
+                end
                 ShowBuffBarOverlay()
                 -- Show one-time button settings tip after preview renders
                 QueueCDMButtonTip()
@@ -2298,10 +3183,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- several custom bars of one shape expose identical options, so indexing more
         -- than one of a shape would be a wasted rebuild.
         getPrebuildVariants = function(pageName)
-            if pageName ~= PAGE_CDM_BARS then return nil end
+            if pageName ~= PAGE_CDM_BARS then
+                return nil
+            end
             local p = DB()
             local bars = p and p.cdmBars and p.cdmBars.bars
-            if not bars or #bars == 0 then return nil end
+            if not bars or #bars == 0 then
+                return nil
+            end
             local seenShapes = {}
             local keys = {}
             for _, b in ipairs(bars) do
@@ -2311,8 +3200,12 @@ initFrame:SetScript("OnEvent", function(self)
                     keys[#keys + 1] = b.key
                 end
             end
-            if optState.selectedCDMBarIndex < 1 then optState.selectedCDMBarIndex = 1 end
-            if optState.selectedCDMBarIndex > #bars then optState.selectedCDMBarIndex = #bars end
+            if optState.selectedCDMBarIndex < 1 then
+                optState.selectedCDMBarIndex = 1
+            end
+            if optState.selectedCDMBarIndex > #bars then
+                optState.selectedCDMBarIndex = #bars
+            end
             local currentBar = bars[optState.selectedCDMBarIndex]
             return {
                 setter = CludesUI._setCDMBar,
@@ -2324,24 +3217,34 @@ initFrame:SetScript("OnEvent", function(self)
             -- Same flag management as buildPage
             if pageName ~= PAGE_BUFF_BARS and ns._tbbPlaceholderMode then
                 ns._tbbPlaceholderMode = false
-                if ns.HideTBBPlaceholders then ns.HideTBBPlaceholders() end
+                if ns.HideTBBPlaceholders then
+                    ns.HideTBBPlaceholders()
+                end
             end
             if pageName ~= PAGE_CDM_BARS and ns._cdmBarsPageOpen then
                 ns._cdmBarsPageOpen = false
-                if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+                if ns.UpdateCustomBuffBars then
+                    ns.UpdateCustomBuffBars()
+                end
                 -- Page closed: reanchor so buff-bar injected custom/preset buffs
                 -- that were shown for configuration (cdmPageOpen) hide unless active.
-                if ns.QueueReanchor then ns.QueueReanchor() end
+                if ns.QueueReanchor then
+                    ns.QueueReanchor()
+                end
                 HideBuffBarOverlay()
                 HideCDMButtonTip()
             end
             if pageName == PAGE_BUFF_BARS then
-                if ns.ShowTBBPlaceholders then ns.ShowTBBPlaceholders() end
+                if ns.ShowTBBPlaceholders then
+                    ns.ShowTBBPlaceholders()
+                end
                 RefreshTBBPopout()
             end
             if pageName == PAGE_CDM_BARS then
                 ns._cdmBarsPageOpen = true
-                if ns.UpdateCustomBuffBars then ns.UpdateCustomBuffBars() end
+                if ns.UpdateCustomBuffBars then
+                    ns.UpdateCustomBuffBars()
+                end
                 ShowBuffBarOverlay()
                 -- The undismissed tip returns with the Bars page
                 QueueCDMButtonTip()
@@ -2360,19 +3263,21 @@ initFrame:SetScript("OnEvent", function(self)
             HideCDMButtonTip()
         end,
         onReset = function()
-            if _G._ECME_AceDB then
-                _G._ECME_AceDB:ResetProfile()
+            if _G._CUCME_AceDB then
+                _G._CUCME_AceDB:ResetProfile()
                 -- Clear the per-install capture flag so the snapshot re-runs
                 -- after reload and picks up Blizzard's current CDM layout.
-                if _G._ECME_AceDB.sv then
-                    _G._ECME_AceDB.sv._capturedOnce_CDM = nil
+                if _G._CUCME_AceDB.sv then
+                    _G._CUCME_AceDB.sv._capturedOnce_CDM = nil
                 end
             end
             -- Learned variant->base pairs are game data rather than settings,
             -- but they sit on the SV root where StripDefaults and the profile
             -- system never reach, so a pair learned wrong would survive every
             -- other reset. This is the only path that clears them.
-            if ns.ResetVariantBaseStore then ns.ResetVariantBaseStore() end
+            if ns.ResetVariantBaseStore then
+                ns.ResetVariantBaseStore()
+            end
             -- Wipe spell assignments for the current spec so the init snapshot re-populates
             -- from Blizzard's CDM. Spell data lives in CludesUIDB (per-profile store), not the
             -- AceDB profile, so ResetProfile doesn't touch it. Only clear the ACTIVE profile's current spec to preserve other specs and other profiles.
@@ -2387,9 +3292,13 @@ initFrame:SetScript("OnEvent", function(self)
                     if CludesUI.IS_FOREVER then
                         local token = select(2, UnitClass("player"))
                         local ids = CludesUI.ForeverClassSpecIDs(token)
-                        for i = 1, (ids and #ids or 0) do sp[tostring(ids[i])] = nil end
+                        for i = 1, (ids and #ids or 0) do
+                            sp[tostring(ids[i])] = nil
+                        end
                         local lk = CludesUI.FOREVER_CLASS_SPEC[token]
-                        if lk then sp[tostring(lk)] = nil end
+                        if lk then
+                            sp[tostring(lk)] = nil
+                        end
                     end
                 end
             end
@@ -2399,10 +3308,13 @@ initFrame:SetScript("OnEvent", function(self)
 
     SLASH_ECMEOPT1 = "/ccmeopt"
     SlashCmdList.ECMEOPT = function()
-        if InCombatLockdown and InCombatLockdown() then return end
+        if InCombatLockdown and InCombatLockdown() then
+            return
+        end
         CludesUI:ShowModule("CludesUICooldownManager")
     end
-
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then initFrame:GetScript("OnEvent")(initFrame) end
+if IsLoggedIn() then
+    initFrame:GetScript("OnEvent")(initFrame)
+end

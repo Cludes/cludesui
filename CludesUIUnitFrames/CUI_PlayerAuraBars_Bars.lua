@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Bars.lua
 --
@@ -11,7 +13,9 @@ local _, ns = ...
 local I = ns._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local BuffBarChain, PAB, PabSnap = I.BuffBarChain, I.PAB, I.PabSnap
@@ -31,32 +35,50 @@ local SetBuffsSlotSig, SetBuffsContainer = I.SetBuffsSlotSig, I.SetBuffsContaine
 local SetDebuffsContainer = I.SetDebuffsContainer
 
 local AK -- CludesUI.AuraKit, resolved at first use (see SetAK)
-I.AKSetters[#I.AKSetters + 1] = function(v) AK = v end
+I.AKSetters[#I.AKSetters + 1] = function(v)
+    AK = v
+end
 
 local buffsContainer, debuffsContainer
-I.buffsContainerSetters[#I.buffsContainerSetters + 1] = function(v) buffsContainer = v end
-I.debuffsContainerSetters[#I.debuffsContainerSetters + 1] = function(v) debuffsContainer = v end
+I.buffsContainerSetters[#I.buffsContainerSetters + 1] = function(v)
+    buffsContainer = v
+end
+I.debuffsContainerSetters[#I.debuffsContainerSetters + 1] = function(v)
+    debuffsContainer = v
+end
 local buffsParent, debuffsParent
-I.buffsParentSetters[#I.buffsParentSetters + 1] = function(v) buffsParent = v end
-I.debuffsParentSetters[#I.debuffsParentSetters + 1] = function(v) debuffsParent = v end
+I.buffsParentSetters[#I.buffsParentSetters + 1] = function(v)
+    buffsParent = v
+end
+I.debuffsParentSetters[#I.debuffsParentSetters + 1] = function(v)
+    debuffsParent = v
+end
 -- Per-container, per-polarity registry of every group key ever declared (see
 -- ApplyGroupConfig): reset only when a container is (re-)created, never on a live
 -- settings change.
 local declared = { buffs = {}, debuffs = {} } -- buffs: only the "Show All Buffs" catch-all key ("all"); debuffs: every class-token chain key
 local lastSize = { buffs = nil, debuffs = nil } -- {w=,h=} last-applied grid size, for fixed-edge compensation (see ApplyLiveConfig)
 local buffsSlotSig -- signature of the default Buffs bar's last-applied resolved spell list (ns.PAB_ResolveSpells), mirrors customBuffSig[barId] for the per-bar slots model
-I.buffsSlotSigSetters[#I.buffsSlotSigSetters + 1] = function(v) buffsSlotSig = v end
+I.buffsSlotSigSetters[#I.buffsSlotSigSetters + 1] = function(v)
+    buffsSlotSig = v
+end
 local RegisterPABUnlock -- forward-declared; defined after CreateBars, called from it
 local SyncCancelCVar -- forward-declared; defined after RestyleBars, called from CreateBars/RestyleBars/ReloadCustomBuffBarImpl
 local pabSuppressed = false -- vehicle ride OR degraded-filter window: SetParentShownSafe dims the parents instead of hiding them (see ApplyVehicleHidden)
-I.pabSuppressedSetters[#I.pabSuppressedSetters + 1] = function(v) pabSuppressed = v end
+I.pabSuppressedSetters[#I.pabSuppressedSetters + 1] = function(v)
+    pabSuppressed = v
+end
 -- Last label the Buffs mover was registered under, so ApplyLiveConfig can
 -- re-register on a name change without doing it on every slider drag.
 local lastUnlockBuffLabel
 local ReloadAllCustomBars -- forward-declared; assigned by CUI_PlayerAuraBars_CustomBars.lua (SetReloadAllCustomBars), called from CreateBars
-I.reloadAllSetters[#I.reloadAllSetters + 1] = function(v) ReloadAllCustomBars = v end
+I.reloadAllSetters[#I.reloadAllSetters + 1] = function(v)
+    ReloadAllCustomBars = v
+end
 local PAB_MaybeRefreshPreview -- forward-declared; assigned by CUI_PlayerAuraBars_Preview.lua (SetMaybeRefreshPreview), called from every live-apply function so an open bar-detail preview box tracks slider drags without those functions knowing it exists
-I.previewRefreshSetters[#I.previewRefreshSetters + 1] = function(v) PAB_MaybeRefreshPreview = v end
+I.previewRefreshSetters[#I.previewRefreshSetters + 1] = function(v)
+    PAB_MaybeRefreshPreview = v
+end
 
 -- Last-applied growDirection per live container (weak keys); written by
 -- ApplyContainerAnchorAndGrowth, read by the restricted-apply gate below.
@@ -72,17 +94,27 @@ local restrictionHooked = false
 -- degraded content until the combat edge.
 local function DeferRestrictedApply(key, fn, container, dir)
     local applied = container and containerDirections[container]
-    if not (applied and applied ~= (dir or "LEFT")) then return false end
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
-    if not (AK and AK.AurasRestricted and AK.AurasRestricted()) then return false end
+    if not (applied and applied ~= (dir or "LEFT")) then
+        return false
+    end
+    if not AK then
+        SetAK(CludesUI and CludesUI.AuraKit)
+    end
+    if not (AK and AK.AurasRestricted and AK.AurasRestricted()) then
+        return false
+    end
     restrictedApplies[key] = fn
     if not restrictionHooked then
         restrictionHooked = true
         AK.OnRestrictionLift(function()
-            if not next(restrictedApplies) then return end
+            if not next(restrictedApplies) then
+                return
+            end
             local pending = restrictedApplies
             restrictedApplies = {}
-            for _, apply in pairs(pending) do apply() end
+            for _, apply in pairs(pending) do
+                apply()
+            end
         end)
     end
     return true
@@ -116,10 +148,16 @@ local function SetParentShownSafe(key, parent, want, recompute)
     want = want and true or false
     local locked = InCombatLockdown()
     local shown = parent:IsShown()
-    if issecretvalue and issecretvalue(shown) then shown = nil end
+    if issecretvalue and issecretvalue(shown) then
+        shown = nil
+    end
     local alpha = (pabSuppressed or (locked and not want)) and 0 or 1
-    if parent:GetAlpha() ~= alpha then parent:SetAlpha(alpha) end
-    if shown == want then return end
+    if parent:GetAlpha() ~= alpha then
+        parent:SetAlpha(alpha)
+    end
+    if shown == want then
+        return
+    end
     if locked then
         QueuePABRegenApply("shown:" .. key, recompute)
         return
@@ -134,16 +172,29 @@ end
 -- come up at full alpha here).
 local function ApplyDefaultBarShown(isBuff)
     local s = PAB()
-    if not s then return end
+    if not s then
+        return
+    end
     local parent
-    if isBuff then parent = buffsParent else parent = debuffsParent end
-    if not parent then return end
+    if isBuff then
+        parent = buffsParent
+    else
+        parent = debuffsParent
+    end
+    if not parent then
+        return
+    end
     local cfg = isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
     -- Master enable + Use Blizzard Buffs both stand the defaults down (the
     -- recovery lane can reach this while disabled-awaiting-reload).
-    SetParentShownSafe(isBuff and "default-buffs" or "default-debuffs", parent,
+    SetParentShownSafe(
+        isBuff and "default-buffs" or "default-debuffs",
+        parent,
         s.enabled == true and cfg.enabled ~= false and s.useBlizzardBuffs ~= true,
-        function() ApplyDefaultBarShown(isBuff) end)
+        function()
+            ApplyDefaultBarShown(isBuff)
+        end
+    )
 end
 
 -- Grow direction. AK.ApplyContainerLayout only applies growth when BOTH growthH and
@@ -171,8 +222,12 @@ end
 -- growthH as the primary axis and growthV hardcoded Down (rows wrap downward).
 local function ToGrowthH(dirStr, wrapStr)
     local FlowDir = AnchorUtil and AnchorUtil.FlowDirection
-    if not FlowDir then return nil end
-    if dirStr == "CENTER_VERTICAL" then return FlowDir.Right end
+    if not FlowDir then
+        return nil
+    end
+    if dirStr == "CENTER_VERTICAL" then
+        return FlowDir.Right
+    end
     if dirStr == "UP" or dirStr == "DOWN" then
         return wrapStr == "RIGHT" and FlowDir.Right or FlowDir.Left
     end
@@ -186,9 +241,15 @@ end
 -- CENTER_HORIZONTAL's rows upward, from a setting whose cog those modes never show.
 local function ToGrowthV(dirStr, wrapStr)
     local FlowDir = AnchorUtil and AnchorUtil.FlowDirection
-    if not FlowDir then return nil end
-    if dirStr == "UP" then return FlowDir.Up end
-    if dirStr == "DOWN" then return FlowDir.Down end
+    if not FlowDir then
+        return nil
+    end
+    if dirStr == "UP" then
+        return FlowDir.Up
+    end
+    if dirStr == "DOWN" then
+        return FlowDir.Down
+    end
     if dirStr == "LEFT" or dirStr == "RIGHT" then
         return wrapStr == "UP" and FlowDir.Up or FlowDir.Down
     end
@@ -198,7 +259,9 @@ end
 -- growthH side), same rule horizontal or vertical (LEFT/RIGHT: growthV is always Down
 -- -> TOP component; growthH Right/Left -> LEFT/RIGHT component).
 local function CornerFor(dirStr, wrapStr)
-    if dirStr == "CENTER_VERTICAL" then return "TOP" end
+    if dirStr == "CENTER_VERTICAL" then
+        return "TOP"
+    end
     if dirStr == "UP" or dirStr == "DOWN" then
         local vSide = (dirStr == "UP") and "BOTTOM" or "TOP"
         local hSide = (wrapStr == "RIGHT") and "LEFT" or "RIGHT"
@@ -223,17 +286,20 @@ local function BuildContainerSpec(parent, cfg, grid)
     local wrap = cfg.iconWrapDirection or "LEFT"
     local vertical = (dir == "UP" or dir == "DOWN" or dir == "CENTER_VERTICAL")
     local layoutAnchor = dir == "CENTER_HORIZONTAL" and "LEFT" or CornerFor(dir, wrap)
-    local containerAnchor = (dir == "CENTER_HORIZONTAL" or dir == "CENTER_VERTICAL") and "CENTER" or layoutAnchor
-    return containerAnchor, {
-        point = { containerAnchor, parent, containerAnchor, 0, 0 },
-        layout = {
-            anchorPoint = layoutAnchor,
-            padding = { 0, 0, 0, 0 },
-            rowWidth = grid.rowWidth,
-            growthH = ToGrowthH(dir, wrap),
-            growthV = ToGrowthV(dir, wrap),
+    local containerAnchor = (dir == "CENTER_HORIZONTAL" or dir == "CENTER_VERTICAL") and "CENTER"
+        or layoutAnchor
+    return containerAnchor,
+        {
+            point = { containerAnchor, parent, containerAnchor, 0, 0 },
+            layout = {
+                anchorPoint = layoutAnchor,
+                padding = { 0, 0, 0, 0 },
+                rowWidth = grid.rowWidth,
+                growthH = ToGrowthH(dir, wrap),
+                growthV = ToGrowthV(dir, wrap),
+            },
         },
-    }, vertical
+        vertical
 end
 
 -- Re-applies container anchor/axis/growth/padding/rowWidth for an already-created
@@ -246,11 +312,13 @@ local function ApplyContainerAnchorAndGrowth(container, parent, cfg, grid)
     local direction = cfg.growDirection or "LEFT"
     local directionChanged = containerDirections[container] and containerDirections[container] ~= direction
     containerDirections[container] = direction
-    if directionChanged then container:Hide() end
+    if directionChanged then
+        container:Hide()
+    end
 
     local size = PabSnap(cfg.iconSize or 32)
-    local height = cfg.iconShape == "cropped"
-        and PabSnap(ns.PAB_CroppedHeight(cfg.iconSize or 32, cfg)) or size
+    local height = cfg.iconShape == "cropped" and PabSnap(ns.PAB_CroppedHeight(cfg.iconSize or 32, cfg))
+        or size
     container:ClearAllPoints()
     container:SetSize(size, height)
     container:SetPoint(containerAnchor, parent, containerAnchor, 0, 0)
@@ -289,11 +357,12 @@ end
 -- round the center itself and push edges onto half pixels; every other anchor point
 -- uses SnapForES.
 local function SnapBarPos(frame, point, relPoint, x, y, w, h)
-    if not (x and y) then return x, y end
+    if not (x and y) then
+        return x, y
+    end
     local PP = CludesUI.PP
     local es = frame:GetEffectiveScale()
-    local isCenterAnchor = (point == "CENTER" or point == nil)
-        and (relPoint == "CENTER" or relPoint == nil)
+    local isCenterAnchor = (point == "CENTER" or point == nil) and (relPoint == "CENTER" or relPoint == nil)
     -- w/h replace the frame's own size when given (legacy positions, BarAnchorOffset).
     if isCenterAnchor then
         return PP.SnapCenterForDim(x, w or frame:GetWidth() or 0, es),
@@ -311,17 +380,34 @@ end
 -- with its origin.
 local OriginShift
 do
-    local FRAC_X = { TOPLEFT = 0, LEFT = 0, BOTTOMLEFT = 0, TOP = 0.5, CENTER = 0.5,
-        BOTTOM = 0.5, TOPRIGHT = 1, RIGHT = 1, BOTTOMRIGHT = 1 }
-    local FRAC_Y = { BOTTOMLEFT = 0, BOTTOM = 0, BOTTOMRIGHT = 0, LEFT = 0.5, CENTER = 0.5,
-        RIGHT = 0.5, TOPLEFT = 1, TOP = 1, TOPRIGHT = 1 }
+    local FRAC_X = {
+        TOPLEFT = 0,
+        LEFT = 0,
+        BOTTOMLEFT = 0,
+        TOP = 0.5,
+        CENTER = 0.5,
+        BOTTOM = 0.5,
+        TOPRIGHT = 1,
+        RIGHT = 1,
+        BOTTOMRIGHT = 1,
+    }
+    local FRAC_Y = {
+        BOTTOMLEFT = 0,
+        BOTTOM = 0,
+        BOTTOMRIGHT = 0,
+        LEFT = 0.5,
+        CENTER = 0.5,
+        RIGHT = 0.5,
+        TOPLEFT = 1,
+        TOP = 1,
+        TOPRIGHT = 1,
+    }
     function OriginShift(cfg, point, dw, dh)
         local dir = cfg.growDirection or "LEFT"
         local origin = (dir == "CENTER_HORIZONTAL" or dir == "CENTER_VERTICAL") and "CENTER"
             or CornerFor(dir, cfg.iconWrapDirection or "LEFT")
         point = point or "CENTER"
-        return (FRAC_X[origin] - (FRAC_X[point] or 0.5)) * dw,
-            (FRAC_Y[origin] - (FRAC_Y[point] or 0.5)) * dh
+        return (FRAC_X[origin] - (FRAC_X[point] or 0.5)) * dw, (FRAC_Y[origin] - (FRAC_Y[point] or 0.5)) * dh
     end
 end
 
@@ -332,7 +418,9 @@ end
 -- it at this resolution, until the bar is moved.
 local function BarAnchorOffset(frame, cfg, grid, pos)
     local x, y = pos.x, pos.y
-    if not (x and y) then return x, y end
+    if not (x and y) then
+        return x, y
+    end
     local rw, rh = grid.designWidth, grid.designHeight
     if not pos.design then
         rw, rh = grid.legacyWidth, grid.legacyHeight
@@ -348,10 +436,14 @@ end
 -- on a real move. Anything else is stored as a design position.
 local function MoverStorePos(frame, cfg, grid, cur, point, relPoint, x, y)
     relPoint = relPoint or point
-    if not (x and y) then return { point = point, relPoint = relPoint, x = x, y = y } end
+    if not (x and y) then
+        return { point = point, relPoint = relPoint, x = x, y = y }
+    end
     if cur and cur.point == point and (cur.relPoint or cur.point) == relPoint then
         local cx, cy = BarAnchorOffset(frame, cfg, grid, cur)
-        if cx and cy and math.abs(x - cx) < 0.001 and math.abs(y - cy) < 0.001 then return cur end
+        if cx and cy and math.abs(x - cx) < 0.001 and math.abs(y - cy) < 0.001 then
+            return cur
+        end
     end
     local dx, dy = OriginShift(cfg, point, grid.designWidth - grid.width, grid.designHeight - grid.height)
     return { point = point, relPoint = relPoint, x = x - dx, y = y - dy, design = true }
@@ -361,10 +453,14 @@ end
 -- configured grid size. Rebase any edge-anchored saved position to CENTER/CENTER at
 -- the frame's current visual center before resizing it.
 local function RebaseBarPositionToCenter(frame, pos)
-    if pos and pos.point == "CENTER" and (pos.relPoint or pos.point) == "CENTER" then return pos end
+    if pos and pos.point == "CENTER" and (pos.relPoint or pos.point) == "CENTER" then
+        return pos
+    end
     local cx, cy = frame:GetCenter()
     local ux, uy = UIParent:GetCenter()
-    if not (cx and cy and ux and uy) then return pos end
+    if not (cx and cy and ux and uy) then
+        return pos
+    end
     local x, y = cx - ux, cy - uy
     local sx, sy = SnapBarPos(frame, "CENTER", "CENTER", x, y)
     frame:ClearAllPoints()
@@ -396,14 +492,18 @@ local function ApplyBarPosition(parent, isBuff, grid)
     local cfg = s and (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s))
     local p = (pos and pos.point) and pos or def
     local x, y = p.x, p.y
-    if cfg then x, y = BarAnchorOffset(parent, cfg, grid or ComputeGrid(isBuff, cfg), p) end
+    if cfg then
+        x, y = BarAnchorOffset(parent, cfg, grid or ComputeGrid(isBuff, cfg), p)
+    end
     parent:ClearAllPoints()
     x, y = SnapBarPos(parent, p.point, p.relPoint or p.point, x, y)
     parent:SetPoint(p.point, UIParent, p.relPoint or p.point, x, y)
     if cfg and (cfg.growDirection == "CENTER_HORIZONTAL" or cfg.growDirection == "CENTER_VERTICAL") then
         s[posKey] = RebaseBarPositionToCenter(parent, pos)
     end
-    if anchored and CludesUI.ReapplyOwnAnchor then CludesUI.ReapplyOwnAnchor(unlockKey) end
+    if anchored and CludesUI.ReapplyOwnAnchor then
+        CludesUI.ReapplyOwnAnchor(unlockKey)
+    end
 end
 
 -- Blizzard's player BuffFrame/DebuffFrame are superseded by this module: hide them so
@@ -423,18 +523,24 @@ local function PabOwnsNativeAuras()
 end
 
 local function HideBlizzardPlayerAuras()
-    if blizzardAurasHidden then return end
+    if blizzardAurasHidden then
+        return
+    end
     blizzardAurasHidden = true
     if BuffFrame then
         BuffFrame:Hide()
         hooksecurefunc(BuffFrame, "Show", function()
-            if PabOwnsNativeAuras() then BuffFrame:Hide() end
+            if PabOwnsNativeAuras() then
+                BuffFrame:Hide()
+            end
         end)
     end
     if DebuffFrame then
         DebuffFrame:Hide()
         hooksecurefunc(DebuffFrame, "Show", function()
-            if PabOwnsNativeAuras() then DebuffFrame:Hide() end
+            if PabOwnsNativeAuras() then
+                DebuffFrame:Hide()
+            end
         end)
     end
 end
@@ -444,10 +550,18 @@ end
 -- an explicit Show restores Blizzard's frames without a reload. No-op if
 -- the natives were never hidden this session.
 local function ShowBlizzardPlayerAuras()
-    if not blizzardAurasHidden then return end
-    if PabOwnsNativeAuras() then return end
-    if BuffFrame then BuffFrame:Show() end
-    if DebuffFrame then DebuffFrame:Show() end
+    if not blizzardAurasHidden then
+        return
+    end
+    if PabOwnsNativeAuras() then
+        return
+    end
+    if BuffFrame then
+        BuffFrame:Show()
+    end
+    if DebuffFrame then
+        DebuffFrame:Show()
+    end
 end
 
 -- Re-asserts native visibility for the CURRENT profile/mode (profile swaps
@@ -457,8 +571,12 @@ end
 local function SyncNativeAuras()
     if PabOwnsNativeAuras() then
         if blizzardAurasHidden then
-            if BuffFrame then BuffFrame:Hide() end
-            if DebuffFrame then DebuffFrame:Hide() end
+            if BuffFrame then
+                BuffFrame:Hide()
+            end
+            if DebuffFrame then
+                DebuffFrame:Hide()
+            end
         else
             HideBlizzardPlayerAuras()
         end
@@ -476,7 +594,9 @@ end
 local function BuildEnchantSpec(cfg, pad, rowGap, maxSlots)
     local layout = BuildGroupLayout(cfg, pad, rowGap)
     local placement = CustomAuraContainerItemEnchantmentPlacement
-    if placement then layout.placement = placement.BeforeAuraGroups end
+    if placement then
+        layout.placement = placement.BeforeAuraGroups
+    end
     local sortMethods = AuraContainerItemEnchantmentSortMethod
     local sortDirs = AuraContainerSortDirection
     return {
@@ -512,11 +632,15 @@ do
     -- secret flags, in restricted combat either.
     local function ActiveEnchantCount(slots)
         local api = C_PaperDollInfo and C_PaperDollInfo.GetTemporaryEnchantmentInfo
-        if not api then return 0 end
+        if not api then
+            return 0
+        end
         local n = 0
         for i = 1, math.min(slots or 0, #ENCH_INV_SLOTS) do
             local info = api(ENCH_INV_SLOTS[i])
-            if info and info.hasExpirationTime then n = n + 1 end
+            if info and info.hasExpirationTime then
+                n = n + 1
+            end
         end
         return n
     end
@@ -528,10 +652,14 @@ do
     -- configured number. Nothing is reserved for a slot that is not enchanted.
     function BuffAuraMax(grid)
         local slots = grid.enchSlots or 0
-        if slots <= 0 then return grid.effectiveMax end
+        if slots <= 0 then
+            return grid.effectiveMax
+        end
         local n = ActiveEnchantCount(slots)
         -- WoW Forever: its imbue cells come off the budget too (nil elsewhere).
-        if ns.PAB_FvImbueCount then n = n + ns.PAB_FvImbueCount() end
+        if ns.PAB_FvImbueCount then
+            n = n + ns.PAB_FvImbueCount()
+        end
         return math.max(0, grid.effectiveMax - n)
     end
 
@@ -546,9 +674,13 @@ do
                 enchEventFrame = CreateFrame("Frame")
                 enchEventFrame:SetScript("OnEvent", function()
                     local n = ActiveEnchantCount(#ENCH_INV_SLOTS)
-                    if n == lastEnchCount then return end
+                    if n == lastEnchCount then
+                        return
+                    end
                     lastEnchCount = n
-                    if ns.PAB_ApplyLiveConfig then ns.PAB_ApplyLiveConfig(true) end
+                    if ns.PAB_ApplyLiveConfig then
+                        ns.PAB_ApplyLiveConfig(true)
+                    end
                 end)
             end
             lastEnchCount = ActiveEnchantCount(#ENCH_INV_SLOTS)
@@ -559,22 +691,33 @@ do
             lastEnchCount = nil
         end
         -- WoW Forever: its imbue cells follow the row on and off (nil elsewhere).
-        if ns.PAB_FvImbueSync then ns.PAB_FvImbueSync(want) end
+        if ns.PAB_FvImbueSync then
+            ns.PAB_FvImbueSync(want)
+        end
     end
 end
 
 local function ApplyEnchants(container, cfg, pad, grid)
     local on = ns.PAB_EnchantsOn(cfg)
     SyncEnchantEvents(on)
-    if not (on and container and grid) then return end
-    if (grid.enchSlots or 0) <= 0 then return end
-    AK.AddItemEnchantmentsToContainer(container,
-        BuildEnchantSpec(cfg, pad, grid.rowGap, grid.enchSlots))
+    if not (on and container and grid) then
+        return
+    end
+    if (grid.enchSlots or 0) <= 0 then
+        return
+    end
+    AK.AddItemEnchantmentsToContainer(container, BuildEnchantSpec(cfg, pad, grid.rowGap, grid.enchSlots))
     -- WoW Forever: imbues are an enchant type the engine cells never see there,
     -- drawn by CUI_UnitFrames_ForeverImbues.lua (nil on every other client).
     if ns.PAB_FvImbueLayout then
-        ns.PAB_FvImbueLayout(container, buffsParent, cfg, grid,
-            BuildGroupLayout(cfg, pad, grid.rowGap), (BuildContainerSpec(buffsParent, cfg, grid)))
+        ns.PAB_FvImbueLayout(
+            container,
+            buffsParent,
+            cfg,
+            grid,
+            BuildGroupLayout(cfg, pad, grid.rowGap),
+            (BuildContainerSpec(buffsParent, cfg, grid))
+        )
     end
 end
 
@@ -589,11 +732,17 @@ local function BuffsContentSig(cfg, spells, enchSlots)
 end
 
 local function CreateBars()
-    if not AK then SetAK(CludesUI and CludesUI.AuraKit) end
-    if not AK then return end -- 12.1 gated at file top; defensive only
+    if not AK then
+        SetAK(CludesUI and CludesUI.AuraKit)
+    end
+    if not AK then
+        return
+    end -- 12.1 gated at file top; defensive only
 
     local s = PAB()
-    if not s then return end -- ns.db not ready yet; SetupOptionsPanel calls back once it is
+    if not s then
+        return
+    end -- ns.db not ready yet; SetupOptionsPanel calls back once it is
 
     -- Master enable, default OFF: nothing below runs while disabled -- Blizzard's
     -- BuffFrame/DebuffFrame stay untouched, no containers, no unlock elements, options
@@ -603,10 +752,14 @@ local function CreateBars()
         s.pabEnableSeeded = true
         if s.enabled == nil then
             local old = ns.db and ns.db.profile and ns.db.profile.playerAuras
-            if old and old.enabled == true then s.enabled = true end
+            if old and old.enabled == true then
+                s.enabled = true
+            end
         end
     end
-    if s.enabled ~= true then return end
+    if s.enabled ~= true then
+        return
+    end
 
     -- Enablement is confirmed from here down: arm the cinematic/faction/
     -- vehicle recovery lane (CUI_PlayerAuraBars_Lifecycle.lua; every file has
@@ -626,7 +779,9 @@ local function CreateBars()
     -- not-yet-imported preset filter would resolve an incomplete spell set at login,
     -- cache it as its signature, and never re-resolve until something else forces a
     -- signature change.
-    if ns.PAB_ImportBM2Filters then ns.PAB_ImportBM2Filters() end
+    if ns.PAB_ImportBM2Filters then
+        ns.PAB_ImportBM2Filters()
+    end
 
     -- After the import: the External Defensives seed references the imported
     -- "Externals" preset filter by id.
@@ -653,19 +808,37 @@ local function CreateBars()
     local buffGrid = ComputeGrid(true, buffCfg)
     local debuffGrid = ComputeGrid(false, debuffCfg)
 
-    if not buffsParent then SetBuffsParent(CreateFrame("Frame", "CludesUIPlayerAuraBars_Buffs", UIParent)) end
+    if not buffsParent then
+        SetBuffsParent(CreateFrame("Frame", "CludesUIPlayerAuraBars_Buffs", UIParent))
+    end
     buffsParent:SetSize(buffGrid.width, buffGrid.height)
     ApplyBarPosition(buffsParent, true, buffGrid)
-    lastSize.buffs = { w = buffGrid.width, h = buffGrid.height, dw = buffGrid.designWidth,
-        dh = buffGrid.designHeight, lw = buffGrid.legacyWidth, lh = buffGrid.legacyHeight,
-        gd = buffCfg.growDirection, wd = buffCfg.iconWrapDirection }
+    lastSize.buffs = {
+        w = buffGrid.width,
+        h = buffGrid.height,
+        dw = buffGrid.designWidth,
+        dh = buffGrid.designHeight,
+        lw = buffGrid.legacyWidth,
+        lh = buffGrid.legacyHeight,
+        gd = buffCfg.growDirection,
+        wd = buffCfg.iconWrapDirection,
+    }
 
-    if not debuffsParent then SetDebuffsParent(CreateFrame("Frame", "CludesUIPlayerAuraBars_Debuffs", UIParent)) end
+    if not debuffsParent then
+        SetDebuffsParent(CreateFrame("Frame", "CludesUIPlayerAuraBars_Debuffs", UIParent))
+    end
     debuffsParent:SetSize(debuffGrid.width, debuffGrid.height)
     ApplyBarPosition(debuffsParent, false, debuffGrid)
-    lastSize.debuffs = { w = debuffGrid.width, h = debuffGrid.height, dw = debuffGrid.designWidth,
-        dh = debuffGrid.designHeight, lw = debuffGrid.legacyWidth, lh = debuffGrid.legacyHeight,
-        gd = debuffCfg.growDirection, wd = debuffCfg.iconWrapDirection }
+    lastSize.debuffs = {
+        w = debuffGrid.width,
+        h = debuffGrid.height,
+        dw = debuffGrid.designWidth,
+        dh = debuffGrid.designHeight,
+        lw = debuffGrid.legacyWidth,
+        lh = debuffGrid.legacyHeight,
+        gd = debuffCfg.growDirection,
+        wd = debuffCfg.iconWrapDirection,
+    }
 
     -- Enable toggles (cfg.enabled, nil = enabled): containers and groups still
     -- build below so a live re-enable needs no reload; a disabled bar just
@@ -726,16 +899,31 @@ local function CreateBars()
         ApplyContainerAnchorAndGrowth(container, buffsParent, buffCfg, buffGrid)
         ApplyEnchants(container, buffCfg, buffPad, buffGrid)
         declared.buffs = {}
-        ApplyGroupConfig(container, buffAllChain, declared.buffs, STYLE_BUFFS, BuffAuraMax(buffGrid), buffPad, buffGrid.rowGap, buffCfg, BuffCandidateExtras(buffCfg))
+        ApplyGroupConfig(
+            container,
+            buffAllChain,
+            declared.buffs,
+            STYLE_BUFFS,
+            BuffAuraMax(buffGrid),
+            buffPad,
+            buffGrid.rowGap,
+            buffCfg,
+            BuffCandidateExtras(buffCfg)
+        )
         if #buffSpells > 0 then
             local includeMap = {}
-            for i = 1, #buffSpells do includeMap[buffSpells[i]] = true end
+            for i = 1, #buffSpells do
+                includeMap[buffSpells[i]] = true
+            end
             AK.AddGroupToContainer(container, {
                 key = "spells",
                 filter = { "HELPFUL" },
                 style = STYLE_BUFFS,
                 maxFrameCount = BuffAuraMax(buffGrid),
-                candidateFilters = MergeCandidateFilters({ includeSpellIDs = includeMap }, BuffCandidateExtras(buffCfg)),
+                candidateFilters = MergeCandidateFilters(
+                    { includeSpellIDs = includeMap },
+                    BuffCandidateExtras(buffCfg)
+                ),
                 sortMethod = ResolveSortMethod(buffCfg),
                 sortDirection = ResolveSortDirection(buffCfg),
                 layout = BuildGroupLayout(buffCfg, buffPad, buffGrid.rowGap),
@@ -747,7 +935,17 @@ local function CreateBars()
         SetDebuffsContainer(container)
         ApplyContainerAnchorAndGrowth(container, debuffsParent, debuffCfg, debuffGrid)
         declared.debuffs = {}
-        ApplyGroupConfig(container, debuffChain, declared.debuffs, STYLE_DEBUFFS, debuffGrid.effectiveMax, debuffPad, debuffGrid.rowGap, debuffCfg, DebuffCandidateExtras(debuffCfg))
+        ApplyGroupConfig(
+            container,
+            debuffChain,
+            declared.debuffs,
+            STYLE_DEBUFFS,
+            debuffGrid.effectiveMax,
+            debuffPad,
+            debuffGrid.rowGap,
+            debuffCfg,
+            DebuffCandidateExtras(debuffCfg)
+        )
     end)
     RegisterPABUnlock()
     ReloadAllCustomBars()
@@ -763,13 +961,17 @@ end
 -- wrapper's DIRECT children for section headers, and PABMP_BuildPage builds past
 -- `parent` into its own root on the shared scroll frame, so nothing is scannable.
 local function MapElementSettings(key, kind, barId)
-    if not CludesUI then return end
+    if not CludesUI then
+        return
+    end
     CludesUI._ELEMENT_SETTINGS_MAP = CludesUI._ELEMENT_SETTINGS_MAP or {}
     CludesUI._ELEMENT_SETTINGS_MAP[key] = {
         module = "CludesUIUnitFrames",
         page = "Player Aura Bars",
         preSelectFn = function()
-            if not CludesUI._setPABSelection then return end
+            if not CludesUI._setPABSelection then
+                return
+            end
             if not barId then
                 CludesUI._setPABSelection(kind, "default")
                 return
@@ -778,9 +980,14 @@ local function MapElementSettings(key, kind, barId)
             -- the tile's "Add To" menu can move a bar to another editing-spec
             -- bucket long after its key was mapped.
             local bar, bucket
-            if kind == "buff" then bar, bucket = ns.PAB_GetCustomBuffBar(barId)
-            else bar, bucket = ns.PAB_GetCustomDebuffBar(barId) end
-            if bar then CludesUI._setPABSelection(kind, barId, bucket) end
+            if kind == "buff" then
+                bar, bucket = ns.PAB_GetCustomBuffBar(barId)
+            else
+                bar, bucket = ns.PAB_GetCustomDebuffBar(barId)
+            end
+            if bar then
+                CludesUI._setPABSelection(kind, barId, bucket)
+            end
         end,
     }
 end
@@ -792,7 +999,9 @@ end
 -- from the active aura count, nothing to drag-resize) and noAnchorTarget (a
 -- dynamically-resizing frame is a bad anchor target for other elements).
 function RegisterPABUnlock()
-    if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
+        return
+    end
     local MK = CludesUI.MakeUnlockElement
 
     local function MakeBarElement(key, label, order, isBuff, getParent)
@@ -808,18 +1017,24 @@ function RegisterPABUnlock()
             -- defaults down entirely, mover included.
             isHidden = function()
                 local s = PAB()
-                if not s or s.enabled ~= true or s.useBlizzardBuffs == true then return true end
+                if not s or s.enabled ~= true or s.useBlizzardBuffs == true then
+                    return true
+                end
                 local cfg = isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
                 return cfg.enabled == false
             end,
-            getFrame = function() return getParent() end,
+            getFrame = function()
+                return getParent()
+            end,
             -- Deliberately NOT container:GetWidth()/GetHeight(): AuraContainer geometry
             -- is a Secret Value while tainted (throws in CUI_UnlockMode.lua comparing a
             -- secret baseW). noResize is set anyway, so only a public number for the
             -- mover's label is needed.
             getSize = function()
                 local s = PAB()
-                if not s then return 32, 32 end
+                if not s then
+                    return 32, 32
+                end
                 local grid = ComputeGrid(isBuff, isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s))
                 return grid.width, grid.height
             end,
@@ -828,15 +1043,28 @@ function RegisterPABUnlock()
             -- MoverStorePos, which leaves an unchanged position untouched.
             savePos = function(_, point, relPoint, x, y)
                 local s = PAB()
-                if not s then return end
+                if not s then
+                    return
+                end
                 local posKey = BarPositionKey(isBuff)
                 local cfg = isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
-                s[posKey] = MoverStorePos(getParent(), cfg, ComputeGrid(isBuff, cfg), s[posKey], point, relPoint, x, y)
+                s[posKey] = MoverStorePos(
+                    getParent(),
+                    cfg,
+                    ComputeGrid(isBuff, cfg),
+                    s[posKey],
+                    point,
+                    relPoint,
+                    x,
+                    y
+                )
             end,
             loadPos = function()
                 local s = PAB()
                 local pos = s and s[BarPositionKey(isBuff)]
-                if not pos then return nil end
+                if not pos then
+                    return nil
+                end
                 local cfg = isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
                 local x, y = BarAnchorOffset(getParent(), cfg, ComputeGrid(isBuff, cfg), pos)
                 return { point = pos.point, relPoint = pos.relPoint, x = x, y = y }
@@ -847,23 +1075,41 @@ function RegisterPABUnlock()
             loadRawPosition = function()
                 local s = PAB()
                 local pos = s and s[BarPositionKey(isBuff)]
-                if not pos then return nil end
-                return { point = pos.point, relPoint = pos.relPoint, x = pos.x, y = pos.y,
-                    design = pos.design }
+                if not pos then
+                    return nil
+                end
+                return {
+                    point = pos.point,
+                    relPoint = pos.relPoint,
+                    x = pos.x,
+                    y = pos.y,
+                    design = pos.design,
+                }
             end,
             saveRawPosition = function(_, p)
                 local s = PAB()
-                if not (s and p and p.point) then return end
-                s[BarPositionKey(isBuff)] = { point = p.point, relPoint = p.relPoint or p.point,
-                    x = p.x, y = p.y, design = p.design }
+                if not (s and p and p.point) then
+                    return
+                end
+                s[BarPositionKey(isBuff)] = {
+                    point = p.point,
+                    relPoint = p.relPoint or p.point,
+                    x = p.x,
+                    y = p.y,
+                    design = p.design,
+                }
             end,
             clearPos = function()
                 local s = PAB()
-                if s then s[BarPositionKey(isBuff)] = nil end
+                if s then
+                    s[BarPositionKey(isBuff)] = nil
+                end
             end,
             applyPos = function()
                 local parent = getParent()
-                if parent then ApplyBarPosition(parent, isBuff) end
+                if parent then
+                    ApplyBarPosition(parent, isBuff)
+                end
             end,
         })
     end
@@ -877,8 +1123,12 @@ function RegisterPABUnlock()
     lastUnlockBuffLabel = buffLabel
 
     local elements = {
-        MakeBarElement("PAB_Buffs", buffLabel, 700, true, function() return buffsParent end),
-        MakeBarElement("PAB_Debuffs", "Debuffs", 701, false, function() return debuffsParent end),
+        MakeBarElement("PAB_Buffs", buffLabel, 700, true, function()
+            return buffsParent
+        end),
+        MakeBarElement("PAB_Debuffs", "Debuffs", 701, false, function()
+            return debuffsParent
+        end),
     }
     MapElementSettings("PAB_Buffs", "buff")
     MapElementSettings("PAB_Debuffs", "debuff")
@@ -893,7 +1143,9 @@ end
 -- Exported for the default-bar enable toggles: re-registering re-runs unlock
 -- mode's Sync, which re-reads isHidden and drops a disabled bar's mover
 -- mid-session instead of waiting for the next natural Sync.
-ns.PAB_RegisterUnlock = function() RegisterPABUnlock() end
+ns.PAB_RegisterUnlock = function()
+    RegisterPABUnlock()
+end
 
 -- Public hook for the Options UI: rebuild both style tables and re-decorate every
 -- existing button. Purely a re-skin -- does NOT touch groups, filters, container
@@ -902,7 +1154,9 @@ ns.PAB_RegisterUnlock = function() RegisterPABUnlock() end
 -- for both polarities, since it affects grid geometry.
 local function RestyleBars()
     local s = PAB()
-    if not (AK and s) then return end
+    if not (AK and s) then
+        return
+    end
     AK.styles[STYLE_BUFFS] = BuildStyle(true, DefaultBuffsCfg(s))
     AK.styles[STYLE_DEBUFFS] = BuildStyle(false, DefaultDebuffsCfg(s))
     AK.RestyleSoon(STYLE_BUFFS)
@@ -940,14 +1194,20 @@ local CANCEL_CVAR_DEFAULT = "0.001"
 local function AnyRightClickCancelActive(s)
     -- Use Blizzard Buffs: the NATIVE BuffFrame owns the display and its
     -- right-click cancel breaks on the same CVar -- always repair.
-    if s.useBlizzardBuffs == true then return true end
+    if s.useBlizzardBuffs == true then
+        return true
+    end
     local dbc = DefaultBuffsCfg(s)
-    if dbc.enabled ~= false and dbc.rightClickCancel ~= false then return true end
+    if dbc.enabled ~= false and dbc.rightClickCancel ~= false then
+        return true
+    end
     local customBuffBars = s.customBuffBars
     if customBuffBars then
         for i = 1, #customBuffBars do
             local bar = customBuffBars[i]
-            if bar.enabled ~= false and bar.rightClickCancel ~= false then return true end
+            if bar.enabled ~= false and bar.rightClickCancel ~= false then
+                return true
+            end
         end
     end
     -- Editing-spec bucket buff bars count too (enable-toggle test only,
@@ -959,22 +1219,32 @@ local function AnyRightClickCancelActive(s)
             if bl then
                 for i = 1, #bl do
                     local bar = bl[i]
-                    if bar.enabled ~= false and bar.rightClickCancel ~= false then return true end
+                    if bar.enabled ~= false and bar.rightClickCancel ~= false then
+                        return true
+                    end
                 end
             end
         end
     end
     local db = ns.db
     local playerCfg = db and db.profile and db.profile.player
-    if playerCfg and playerCfg.showBuffs ~= false then return true end
+    if playerCfg and playerCfg.showBuffs ~= false then
+        return true
+    end
     return false
 end
 
 function SyncCancelCVar()
     local s = PAB()
-    if not s or s.enabled ~= true then return end
-    if not AnyRightClickCancelActive(s) then return end
-    if InCombatLockdown() then return end
+    if not s or s.enabled ~= true then
+        return
+    end
+    if not AnyRightClickCancelActive(s) then
+        return
+    end
+    if InCombatLockdown() then
+        return
+    end
     if tonumber(GetCVar(CANCEL_CVAR)) == CANCEL_CVAR_BROKEN then
         -- A repair to Blizzard's default, which Uninstall CUI must not undo:
         -- plain SetCVar, not CludesUI.SetCVar.
@@ -989,14 +1259,26 @@ end
 -- (SetupOptionsPanel calls CreateBars() once ns.db is ready).
 local function ApplyLiveConfig(isBuff)
     local s = PAB()
-    if not (AK and s) then return end
-    if DeferRestrictedApply(isBuff and "default-buffs" or "default-debuffs",
-        function() ApplyLiveConfig(isBuff) end,
-        isBuff and buffsContainer or debuffsContainer,
-        (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)).growDirection) then return end
+    if not (AK and s) then
+        return
+    end
+    if
+        DeferRestrictedApply(
+            isBuff and "default-buffs" or "default-debuffs",
+            function()
+                ApplyLiveConfig(isBuff)
+            end,
+            isBuff and buffsContainer or debuffsContainer,
+            (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)).growDirection
+        )
+    then
+        return
+    end
     local container = isBuff and buffsContainer or debuffsContainer
     local parent = isBuff and buffsParent or debuffsParent
-    if not container or not parent then return end
+    if not container or not parent then
+        return
+    end
 
     local cfg = isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
     -- Enable toggle: a disabled bar hides its parent and skips every live
@@ -1007,7 +1289,9 @@ local function ApplyLiveConfig(isBuff)
     -- the bar's parent -- nothing extra to tear down here.
     ApplyDefaultBarShown(isBuff)
     if s.enabled ~= true or cfg.enabled == false or s.useBlizzardBuffs == true then
-        if isBuff then SyncEnchantEvents(false) end
+        if isBuff then
+            SyncEnchantEvents(false)
+        end
         return
     end
     local grid = ComputeGrid(isBuff, cfg)
@@ -1032,22 +1316,35 @@ local function ApplyLiveConfig(isBuff)
     -- still sees the real last-applied size (the fixed-corner compensation needs it),
     -- and the stored pos is not mutated for a resize that never landed.
     if InCombatLockdown() then
-        local sizeChanged = not (prev and prev.w == grid.width and prev.h == grid.height
-            and prev.dw == grid.designWidth and prev.dh == grid.designHeight
-            and prev.gd == cfg.growDirection and prev.wd == cfg.iconWrapDirection)
+        local sizeChanged = not (
+            prev
+            and prev.w == grid.width
+            and prev.h == grid.height
+            and prev.dw == grid.designWidth
+            and prev.dh == grid.designHeight
+            and prev.gd == cfg.growDirection
+            and prev.wd == cfg.iconWrapDirection
+        )
         local rebasePending = centered
             and not (pos and pos.point == "CENTER" and (pos.relPoint or pos.point) == "CENTER")
         if sizeChanged or rebasePending then
-            QueuePABRegenApply(sizeKey, function() ApplyLiveConfig(isBuff) end)
+            QueuePABRegenApply(sizeKey, function()
+                ApplyLiveConfig(isBuff)
+            end)
         end
     else
         if centered then
             pos = RebaseBarPositionToCenter(parent, pos)
             s[posKey] = pos
         end
-        local resized = not centered and prev
-            and (prev.w ~= grid.width or prev.h ~= grid.height
-                or prev.dw ~= grid.designWidth or prev.dh ~= grid.designHeight)
+        local resized = not centered
+            and prev
+            and (
+                prev.w ~= grid.width
+                or prev.h ~= grid.height
+                or prev.dw ~= grid.designWidth
+                or prev.dh ~= grid.designHeight
+            )
         if resized and pos and pos.point == "CENTER" then
             -- The stored center belongs to its reference frame (design or legacy, see
             -- BarAnchorOffset), so it moves by that frame's delta, toward whichever
@@ -1062,9 +1359,16 @@ local function ApplyLiveConfig(isBuff)
             pos.y = pos.y + dy
         end
         local turned = prev and (prev.gd ~= cfg.growDirection or prev.wd ~= cfg.iconWrapDirection)
-        lastSize[sizeKey] = { w = grid.width, h = grid.height, dw = grid.designWidth,
-            dh = grid.designHeight, lw = grid.legacyWidth, lh = grid.legacyHeight,
-            gd = cfg.growDirection, wd = cfg.iconWrapDirection }
+        lastSize[sizeKey] = {
+            w = grid.width,
+            h = grid.height,
+            dw = grid.designWidth,
+            dh = grid.designHeight,
+            lw = grid.legacyWidth,
+            lh = grid.legacyHeight,
+            gd = cfg.growDirection,
+            wd = cfg.iconWrapDirection,
+        }
         parent:SetSize(grid.width, grid.height)
         -- Re-seated AFTER SetSize so SnapBarPos snaps against the new size and the
         -- rounding shift follows the new grid, or the new origin after a grow/wrap
@@ -1073,7 +1377,9 @@ local function ApplyLiveConfig(isBuff)
         -- a size change.
         local anchored = CludesUI.IsUnlockAnchored
             and CludesUI.IsUnlockAnchored(isBuff and "PAB_Buffs" or "PAB_Debuffs")
-        if (resized or turned) and not anchored then ApplyBarPosition(parent, isBuff, grid) end
+        if (resized or turned) and not anchored then
+            ApplyBarPosition(parent, isBuff, grid)
+        end
     end
 
     local pad = cfg.padding or 5
@@ -1109,16 +1415,31 @@ local function ApplyLiveConfig(isBuff)
                 ApplyContainerAnchorAndGrowth(newContainer, parent, cfg, grid)
                 ApplyEnchants(newContainer, cfg, pad, grid)
                 declared.buffs = {}
-                ApplyGroupConfig(newContainer, allChain, declared.buffs, STYLE_BUFFS, BuffAuraMax(grid), pad, grid.rowGap, cfg, BuffCandidateExtras(cfg))
+                ApplyGroupConfig(
+                    newContainer,
+                    allChain,
+                    declared.buffs,
+                    STYLE_BUFFS,
+                    BuffAuraMax(grid),
+                    pad,
+                    grid.rowGap,
+                    cfg,
+                    BuffCandidateExtras(cfg)
+                )
                 if #spells > 0 then
                     local includeMap = {}
-                    for i = 1, #spells do includeMap[spells[i]] = true end
+                    for i = 1, #spells do
+                        includeMap[spells[i]] = true
+                    end
                     AK.AddGroupToContainer(newContainer, {
                         key = "spells",
                         filter = { "HELPFUL" },
                         style = STYLE_BUFFS,
                         maxFrameCount = BuffAuraMax(grid),
-                        candidateFilters = MergeCandidateFilters({ includeSpellIDs = includeMap }, BuffCandidateExtras(cfg)),
+                        candidateFilters = MergeCandidateFilters(
+                            { includeSpellIDs = includeMap },
+                            BuffCandidateExtras(cfg)
+                        ),
                         sortMethod = ResolveSortMethod(cfg),
                         sortDirection = ResolveSortDirection(cfg),
                         layout = BuildGroupLayout(cfg, pad, grid.rowGap),
@@ -1138,14 +1459,28 @@ local function ApplyLiveConfig(isBuff)
             -- rebuild path the container here is the one about to be retired,
             -- and declaring three engine frames on it would leak them.
             ApplyEnchants(container, cfg, pad, grid)
-            ApplyGroupConfig(container, allChain, declared.buffs, STYLE_BUFFS, BuffAuraMax(grid), pad, grid.rowGap, cfg, BuffCandidateExtras(cfg))
+            ApplyGroupConfig(
+                container,
+                allChain,
+                declared.buffs,
+                STYLE_BUFFS,
+                BuffAuraMax(grid),
+                pad,
+                grid.rowGap,
+                cfg,
+                BuffCandidateExtras(cfg)
+            )
             if declared.buffs.spells then
                 CludesUI.AuraKit.SetGroupCap(container, "spells", BuffAuraMax(grid))
                 container:SetAuraGroupLayout("spells", BuildGroupLayout(cfg, pad, grid.rowGap))
                 local liveIncludeMap = {}
-                for i = 1, #spells do liveIncludeMap[spells[i]] = true end
-                container:SetAuraGroupCandidateFilters("spells",
-                    MergeCandidateFilters({ includeSpellIDs = liveIncludeMap }, BuffCandidateExtras(cfg)))
+                for i = 1, #spells do
+                    liveIncludeMap[spells[i]] = true
+                end
+                container:SetAuraGroupCandidateFilters(
+                    "spells",
+                    MergeCandidateFilters({ includeSpellIDs = liveIncludeMap }, BuffCandidateExtras(cfg))
+                )
                 local sortMethod, sortDirection = ResolveSortMethod(cfg), ResolveSortDirection(cfg)
                 if sortMethod ~= nil and sortDirection ~= nil then
                     container:SetAuraGroupSortMethod("spells", sortMethod, sortDirection)
@@ -1154,10 +1489,22 @@ local function ApplyLiveConfig(isBuff)
         end
     else
         local chain = DebuffChainFor(cfg)
-        ApplyGroupConfig(container, chain, declared.debuffs, STYLE_DEBUFFS, grid.effectiveMax, pad, grid.rowGap, cfg, DebuffCandidateExtras(cfg))
+        ApplyGroupConfig(
+            container,
+            chain,
+            declared.debuffs,
+            STYLE_DEBUFFS,
+            grid.effectiveMax,
+            pad,
+            grid.rowGap,
+            cfg,
+            DebuffCandidateExtras(cfg)
+        )
     end
 
-    if PAB_MaybeRefreshPreview then PAB_MaybeRefreshPreview(isBuff and "buff" or "debuff", "default") end
+    if PAB_MaybeRefreshPreview then
+        PAB_MaybeRefreshPreview(isBuff and "buff" or "debuff", "default")
+    end
 end
 ns.PAB_ApplyLiveConfig = ApplyLiveConfig
 -- Bridge for CludesUF:GetGrowDirectionForBar/SetGrowDirectionForBar, kept here
@@ -1172,9 +1519,15 @@ ns.PAB_ApplyLiveConfig = ApplyLiveConfig
 -- unchanged and those already re-apply corner + growth cheaply.
 function ns.PAB_GetGrowDirection(barKey)
     local s = PAB()
-    if not s then return "LEFT" end
-    if barKey == "PAB_Buffs" then return DefaultBuffsCfg(s).growDirection or "LEFT" end
-    if barKey == "PAB_Debuffs" then return DefaultDebuffsCfg(s).growDirection or "LEFT" end
+    if not s then
+        return "LEFT"
+    end
+    if barKey == "PAB_Buffs" then
+        return DefaultBuffsCfg(s).growDirection or "LEFT"
+    end
+    if barKey == "PAB_Debuffs" then
+        return DefaultDebuffsCfg(s).growDirection or "LEFT"
+    end
     local buffId = barKey:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
         local bar = ns.PAB_GetCustomBuffBar(tonumber(buffId))
@@ -1190,7 +1543,9 @@ end
 
 function ns.PAB_SetGrowDirection(barKey, dir)
     local s = PAB()
-    if not s then return end
+    if not s then
+        return
+    end
     if barKey == "PAB_Buffs" then
         DefaultBuffsCfg(s).growDirection = dir
         RestyleBars()

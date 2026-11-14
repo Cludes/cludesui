@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Fonts_Options.lua
 --
@@ -39,11 +41,11 @@ local _ftExpanded = {}
 local function FontReload()
     CludesUI.InvalidateFontCache()
     CludesUI:ShowConfirmPopup({
-        title       = "Reload Required",
-        message     = "Font changed. A UI reload is needed to apply the new font.",
+        title = "Reload Required",
+        message = "Font changed. A UI reload is needed to apply the new font.",
         confirmText = "Reload Now",
-        cancelText  = "Later",
-        reload      = true,
+        cancelText = "Later",
+        reload = true,
     })
 end
 
@@ -54,16 +56,22 @@ end
 local function FindModuleFontEntry(folder)
     local f = CludesUI.GetFontsDB()
     local list = f.moduleFonts
-    if not list then return nil end
+    if not list then
+        return nil
+    end
     for i = 1, #list do
-        if list[i].folder == folder then return list[i], i end
+        if list[i].folder == folder then
+            return list[i], i
+        end
     end
     return nil
 end
 
 local function EnsureModuleFontEntry(folder, display)
     local f = CludesUI.GetFontsDB()
-    if not f.moduleFonts then f.moduleFonts = {} end
+    if not f.moduleFonts then
+        f.moduleFonts = {}
+    end
     local entry = FindModuleFontEntry(folder)
     if not entry then
         entry = { folder = folder, display = display, font = "__global", outline = "__global" }
@@ -75,8 +83,12 @@ end
 local function PruneModuleFontEntry(folder)
     local f = CludesUI.GetFontsDB()
     local entry, idx = FindModuleFontEntry(folder)
-    if entry and idx and (entry.font or "__global") == "__global"
-       and (entry.outline or "__global") == "__global" then
+    if
+        entry
+        and idx
+        and (entry.font or "__global") == "__global"
+        and (entry.outline or "__global") == "__global"
+    then
         table.remove(f.moduleFonts, idx)
     end
 end
@@ -85,17 +97,22 @@ end
 -- render only the keys their order lists).
 local MODULE_OUTLINE_VALUES = {
     ["__global"] = { text = "CUI Global Outline" },
-    ["none"]     = { text = "Drop Shadow" },
-    ["outline"]  = { text = "Outline" },
-    ["thick"]    = { text = "Thick Outline" },
+    ["none"] = { text = "Drop Shadow" },
+    ["outline"] = { text = "Outline" },
+    ["thick"] = { text = "Thick Outline" },
 }
 local MODULE_OUTLINE_ORDER = { "__global", "none", "outline", "thick" }
 
 -- Per-module outline row config (left slot of each card's first row).
 local function ModuleOutlineCfg(folder, display)
-    return { type = "dropdown", text = "Module Outline",
-        tooltip = "Outline style override for all " .. display .. " text. CUI Global Outline follows the global Outline Mode setting above.",
-        values = MODULE_OUTLINE_VALUES, order = MODULE_OUTLINE_ORDER,
+    return {
+        type = "dropdown",
+        text = "Module Outline",
+        tooltip = "Outline style override for all "
+            .. display
+            .. " text. CUI Global Outline follows the global Outline Mode setting above.",
+        values = MODULE_OUTLINE_VALUES,
+        order = MODULE_OUTLINE_ORDER,
         getValue = function()
             local entry = FindModuleFontEntry(folder)
             return (entry and entry.outline) or "__global"
@@ -103,7 +120,9 @@ local function ModuleOutlineCfg(folder, display)
         setValue = function(v)
             local entry = FindModuleFontEntry(folder)
             local cur = (entry and entry.outline) or "__global"
-            if v == cur then return end
+            if v == cur then
+                return
+            end
             if v == "__global" then
                 if entry then
                     entry.outline = "__global"
@@ -113,7 +132,8 @@ local function ModuleOutlineCfg(folder, display)
                 EnsureModuleFontEntry(folder, display).outline = v
             end
             FontReload()
-        end }
+        end,
+    }
 end
 
 local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, CludesUI.BuildNoteRow
@@ -136,32 +156,64 @@ local function TileActionBars(parent, y, W, tile)
         return EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars
     end
     local function dataBarCfg(label, barKey)
-        return { type = "slider", text = label, min = 6, max = 24, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = 6,
+            max = 24,
+            step = 1,
             getValue = function()
-                local b = bars(); local s = b and b[barKey]
+                local b = bars()
+                local s = b and b[barKey]
                 return (s and s.textSize) or 9
             end,
             setValue = function(v)
-                local b = bars(); local s = b and b[barKey]
-                if not s then return end
+                local b = bars()
+                local s = b and b[barKey]
+                if not s then
+                    return
+                end
                 s.textSize = v
-                if ns.ApplyDataBarLayout then ns.ApplyDataBarLayout(barKey) end
-            end }
+                if ns.ApplyDataBarLayout then
+                    ns.ApplyDataBarLayout(barKey)
+                end
+            end,
+        }
     end
     local _, h
     if ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-            dataBarCfg("XP Bar Text Size", "XPBar"));  y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            ModuleOutlineCfg(tile.folder, tile.display),
+            dataBarCfg("XP Bar Text Size", "XPBar")
+        )
+        y = y - h
         -- WoW Forever has no House Favor bar: its slot is blank there.
-        _, h = W:DualRow(parent, y,
+        _, h = W:DualRow(
+            parent,
+            y,
             dataBarCfg("Reputation Bar Text Size", "RepBar"),
-            CludesUI.IS_FOREVER and BLANK()
-                or dataBarCfg("House Favor Bar Text Size", "FavorBar"));  y = y - h
-        y = LinkRow(parent, y, "Keybind, Macro, Charges & Cooldown Text (per bar)",
-            tile.folder, "Bar Display", "TEXT", "Keybind Text Size")
+            CludesUI.IS_FOREVER and BLANK() or dataBarCfg("House Favor Bar Text Size", "FavorBar")
+        )
+        y = y - h
+        y = LinkRow(
+            parent,
+            y,
+            "Keybind, Macro, Charges & Cooldown Text (per bar)",
+            tile.folder,
+            "Bar Display",
+            "TEXT",
+            "Keybind Text Size"
+        )
     else
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        y = NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        y = NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     return y
 end
@@ -170,70 +222,150 @@ local function TileNameplates(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    local function db() return ns.db and ns.db.profile end
+    local function db()
+        return ns.db and ns.db.profile
+    end
     local DEF = ns.defaults or {}
     -- applyFn: named ns refresher when the module publishes one, otherwise the
     -- module-wide reapply (same repaint the module's own castbar size rows use).
     local function size(label, key, minV, maxV, def, applyName, legacyKey)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
                 local v = p and p[key]
-                if v == nil and legacyKey and p then v = p[legacyKey] end
+                if v == nil and legacyKey and p then
+                    v = p[legacyKey]
+                end
                 return v or DEF[key] or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 local fn = (applyName and ns[applyName]) or ns.RefreshAllSettings
-                if fn then fn() end
-            end }
+                if fn then
+                    fn()
+                end
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        size("Friendly Name Size (Bar Mode)", "friendlyNameTextSize", 6, 30, 12, "RefreshFriendlyNameTextSize"));  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(
+        parent,
+        y,
+        ModuleOutlineCfg(tile.folder, tile.display),
+        size(
+            "Friendly Name Size (Bar Mode)",
+            "friendlyNameTextSize",
+            6,
+            30,
+            12,
+            "RefreshFriendlyNameTextSize"
+        )
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
-        size("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Top Text Size", "textSlotTopSize", 6, 30, 10),
-        size("Center Text Size", "textSlotCenterSize", 6, 30, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Center Text Size", "textSlotCenterSize", 6, 30, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Left Text Size", "textSlotLeftSize", 6, 30, 10),
-        size("Right Text Size", "textSlotRightSize", 6, 30, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Right Text Size", "textSlotRightSize", 6, 30, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
-        size("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
-        size("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Cast Name Size", "castNameSize", 6, 20, 10),
-        size("Cast Timer Size", "castTimerSize", 6, 20, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
-        size("Cast Target Size", "castTargetSize", 6, 20, 10),
-        { type = "slider", text = "Aura Stacks Size", min = 6, max = 20, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.auraStackTextSize) or DEF.auraStackTextSize or 11
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.auraStackTextSize = v
-              if ns.RefreshAllSettings then ns.RefreshAllSettings() end
-              if ns.NPC_ReloadAll then ns.NPC_ReloadAll() end
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Cast Timer Size", "castTimerSize", 6, 20, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, size("Cast Target Size", "castTargetSize", 6, 20, 10), {
+        type = "slider",
+        text = "Aura Stacks Size",
+        min = 6,
+        max = 20,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.auraStackTextSize) or DEF.auraStackTextSize or 11
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.auraStackTextSize = v
+            if ns.RefreshAllSettings then
+                ns.RefreshAllSettings()
+            end
+            if ns.NPC_ReloadAll then
+                ns.NPC_ReloadAll()
+            end
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        size("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        size("Focus Letter Size", "focusLetterSize", 6, 40, 18));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Focus Letter Size", "focusLetterSize", 6, 40, 18)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
-        size("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective"));  y = y - h
+        size("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
+    )
+    y = y - h
     return y
 end
 
@@ -242,16 +374,30 @@ local function TileUnitFrames(parent, y, W, tile)
     local _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
     y = y - h
     if ns then
-        y = LinkRow(parent, y, "Player, Target & Focus Text Sizes (per unit)",
-            tile.folder, "Main Frames", "HEALTH BAR")
-        y = LinkRow(parent, y, "Pet & Target-of-Target Text Sizes (per unit)",
-            tile.folder, "Mini Frames", "HEALTH BAR")
-        y = LinkRow(parent, y, "Boss Frames Text Sizes",
-            tile.folder, "Boss Frames", "HEALTH BAR")
-        y = LinkRow(parent, y, "Player Aura Bars Text (per bar)",
-            tile.folder, "Player Aura Bars", nil)
+        y = LinkRow(
+            parent,
+            y,
+            "Player, Target & Focus Text Sizes (per unit)",
+            tile.folder,
+            "Main Frames",
+            "HEALTH BAR"
+        )
+        y = LinkRow(
+            parent,
+            y,
+            "Pet & Target-of-Target Text Sizes (per unit)",
+            tile.folder,
+            "Mini Frames",
+            "HEALTH BAR"
+        )
+        y = LinkRow(parent, y, "Boss Frames Text Sizes", tile.folder, "Boss Frames", "HEALTH BAR")
+        y = LinkRow(parent, y, "Player Aura Bars Text (per bar)", tile.folder, "Player Aura Bars", nil)
     else
-        y = NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        y = NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     return y
 end
@@ -260,57 +406,105 @@ local function TileRaidFrames(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    local function db() return ns.db and ns.db.profile end
+    local function db()
+        return ns.db and ns.db.profile
+    end
     local function RFApply()
-        if ns.ReloadFrames then ns.ReloadFrames() end
-        if ns.ReloadPartyFrames then ns.ReloadPartyFrames() end
+        if ns.ReloadFrames then
+            ns.ReloadFrames()
+        end
+        if ns.ReloadPartyFrames then
+            ns.ReloadPartyFrames()
+        end
     end
     local function size(label, key, minV, maxV, def)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 RFApply()
-            end }
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        size("Name Size", "nameSize", 6, 26, 10));  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(
+        parent,
+        y,
+        ModuleOutlineCfg(tile.folder, tile.display),
+        size("Name Size", "nameSize", 6, 26, 10)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Health Text Size", "healthTextSize", 6, 26, 9),
-        size("Power Text Size", "powerTextSize", 6, 26, 8));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Power Text Size", "powerTextSize", 6, 26, 8)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
-        size("Status Text Size", "statusTextSize", 6, 30, 14));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Status Text Size", "statusTextSize", 6, 30, 14)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Group Number Size", "groupNumberSize", 6, 30, 10),
-        size("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11));  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "slider", text = "Healer Mana Text Size", min = 8, max = 24, step = 1,
-          getValue = function()
-              local p = db()
-              local hm = p and p.healerMana
-              return (hm and hm.textSize) or 12
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              if not p.healerMana then p.healerMana = {} end
-              p.healerMana.textSize = v
-              if ns.HM_Rebuild then ns.HM_Rebuild() else RFApply() end
-          end },
-        size("Level Size", "levelTextSize", 6, 26, 10));  y = y - h
-    y = LinkRow(parent, y, "Party-Specific Text Sizes",
-        tile.folder, "Party", "TEXT DISPLAY")
-    y = LinkRow(parent, y, "Buff Manager Text (per indicator)",
-        tile.folder, "Buff Manager", nil)
-    y = LinkRow(parent, y, "Debuff Manager Text (per tile)",
-        tile.folder, "Debuff Manager", nil)
+        size("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "slider",
+        text = "Healer Mana Text Size",
+        min = 8,
+        max = 24,
+        step = 1,
+        getValue = function()
+            local p = db()
+            local hm = p and p.healerMana
+            return (hm and hm.textSize) or 12
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            if not p.healerMana then
+                p.healerMana = {}
+            end
+            p.healerMana.textSize = v
+            if ns.HM_Rebuild then
+                ns.HM_Rebuild()
+            else
+                RFApply()
+            end
+        end,
+    }, size("Level Size", "levelTextSize", 6, 26, 10))
+    y = y - h
+    y = LinkRow(parent, y, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
+    y = LinkRow(parent, y, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
+    y = LinkRow(parent, y, "Debuff Manager Text (per tile)", tile.folder, "Debuff Manager", nil)
     return y
 end
 
@@ -319,12 +513,29 @@ local function TileCooldownManager(parent, y, W, tile)
     local _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
     y = y - h
     if ns then
-        y = LinkRow(parent, y, "Icon Duration, Stack & Keybind Text (per bar)",
-            tile.folder, "CDM Bars", "ICON DISPLAY", "Duration Size")
-        y = LinkRow(parent, y, "Tracking Bar Name, Timer & Stacks Text (per bar)",
-            tile.folder, "Tracking Bars", "BAR LAYOUT")
+        y = LinkRow(
+            parent,
+            y,
+            "Icon Duration, Stack & Keybind Text (per bar)",
+            tile.folder,
+            "CDM Bars",
+            "ICON DISPLAY",
+            "Duration Size"
+        )
+        y = LinkRow(
+            parent,
+            y,
+            "Tracking Bar Name, Timer & Stacks Text (per bar)",
+            tile.folder,
+            "Tracking Bars",
+            "BAR LAYOUT"
+        )
     else
-        y = NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        y = NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     return y
 end
@@ -333,13 +544,29 @@ local function TileResourceBars(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    local function db() return _G._ERB_AceDB and _G._ERB_AceDB.profile end
-    local function RBApply() if _G._ERB_Apply then _G._ERB_Apply() end end
+    local function db()
+        return _G._CURB_AceDB and _G._CURB_AceDB.profile
+    end
+    local function RBApply()
+        if _G._CURB_Apply then
+            _G._CURB_Apply()
+        end
+    end
     local function size(label, tableKey, key, minV, maxV, def)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
                 local t = p and p[tableKey]
@@ -348,21 +575,37 @@ local function TileResourceBars(parent, y, W, tile)
             setValue = function(v)
                 local p = db()
                 local t = p and p[tableKey]
-                if not t then return end
+                if not t then
+                    return
+                end
                 t[key] = v
                 RBApply()
-            end }
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        size("Health Text Size", "health", "textSize", 8, 24, 11));  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(
+        parent,
+        y,
+        ModuleOutlineCfg(tile.folder, tile.display),
+        size("Health Text Size", "health", "textSize", 8, 24, 11)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Power Text Size", "primary", "textSize", 8, 24, 11),
-        size("Class Resource Text Size", "secondary", "textSize", 8, 24, 11));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
-        size("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11));  y = y - h
-    _, h = W:DualRow(parent, y,
-        size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK());  y = y - h
+        size("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
+    y = y - h
     return y
 end
 
@@ -370,78 +613,143 @@ local function TileAuraBuffReminders(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    local function db() return _G._EABR_AceDB and _G._EABR_AceDB.profile end
+    local function db()
+        return _G._CUABR_AceDB and _G._CUABR_AceDB.profile
+    end
     local nameFontValues, nameFontOrder = CludesUI.BuildFontDropdownData()
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Name Font",
-          values = nameFontValues, order = nameFontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.display and p.display.nameFont) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.display) then return end
-              p.display.nameFont = (v ~= "__global") and v or nil
-              if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
-          end },
-        { type = "slider", text = "Name Text Size", min = 6, max = 30, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.display and p.display.textSize) or 11
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.display) then return end
-              p.display.textSize = v
-              if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Item Count Font",
-          values = nameFontValues, order = nameFontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.display and p.display.countFont) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.display) then return end
-              p.display.countFont = (v ~= "__global") and v or nil
-              if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
-          end },
-        { type = "slider", text = "Item Count Text Size", min = 6, max = 30, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.display and p.display.countSize) or 16
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.display) then return end
-              p.display.countSize = v
-              if _G._EABR_RequestRefresh then _G._EABR_RequestRefresh() end
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Mana Warning Font",
-          values = nameFontValues, order = nameFontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.consumables and p.consumables.rcManaWarnFont) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.consumables) then return end
-              p.consumables.rcManaWarnFont = (v ~= "__global") and v or nil
-              if _G._EABR_RCWarnApply then _G._EABR_RCWarnApply() end
-          end },
-        { type = "slider", text = "Mana Warning Text Size", min = 10, max = 72, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.consumables and p.consumables.rcManaWarnSize) or 48
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.consumables) then return end
-              p.consumables.rcManaWarnSize = v
-              if _G._EABR_RCWarnApply then _G._EABR_RCWarnApply() end
-          end });  y = y - h
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Name Font",
+        values = nameFontValues,
+        order = nameFontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.display and p.display.nameFont) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.display) then
+                return
+            end
+            p.display.nameFont = (v ~= "__global") and v or nil
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
+        end,
+    }, {
+        type = "slider",
+        text = "Name Text Size",
+        min = 6,
+        max = 30,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.display and p.display.textSize) or 11
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.display) then
+                return
+            end
+            p.display.textSize = v
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Item Count Font",
+        values = nameFontValues,
+        order = nameFontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.display and p.display.countFont) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.display) then
+                return
+            end
+            p.display.countFont = (v ~= "__global") and v or nil
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
+        end,
+    }, {
+        type = "slider",
+        text = "Item Count Text Size",
+        min = 6,
+        max = 30,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.display and p.display.countSize) or 16
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.display) then
+                return
+            end
+            p.display.countSize = v
+            if _G._CUABR_RequestRefresh then
+                _G._CUABR_RequestRefresh()
+            end
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Mana Warning Font",
+        values = nameFontValues,
+        order = nameFontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.consumables and p.consumables.rcManaWarnFont) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.consumables) then
+                return
+            end
+            p.consumables.rcManaWarnFont = (v ~= "__global") and v or nil
+            if _G._CUABR_RCWarnApply then
+                _G._CUABR_RCWarnApply()
+            end
+        end,
+    }, {
+        type = "slider",
+        text = "Mana Warning Text Size",
+        min = 10,
+        max = 72,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.consumables and p.consumables.rcManaWarnSize) or 48
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.consumables) then
+                return
+            end
+            p.consumables.rcManaWarnSize = v
+            if _G._CUABR_RCWarnApply then
+                _G._CUABR_RCWarnApply()
+            end
+        end,
+    })
+    y = y - h
     return y
 end
 
@@ -449,37 +757,63 @@ local function TileQoL(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     -- Flat CludesUIDB keys with a parent-published apply fn.
     local function gsize(label, key, minV, maxV, def, applyName)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 return (CludesUIDB and CludesUIDB[key]) or def
             end,
             setValue = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB[key] = v
                 local fn = CludesUI[applyName]
-                if fn then fn() end
-            end }
+                if fn then
+                    fn()
+                end
+            end,
+        }
     end
     local function brDB()
         local d = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
         return d and d.profile and d.profile.battleRes
     end
     local function brSize(label, key, minV, maxV, def)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = brDB()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = brDB(); if not p then return end
+                local p = brDB()
+                if not p then
+                    return
+                end
                 p[key] = v
-                if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
-            end }
+                if _G._CUI_BattleRes_Apply then
+                    _G._CUI_BattleRes_Apply()
+                end
+            end,
+        }
     end
     local function blDB()
         local d = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
@@ -488,16 +822,27 @@ local function TileQoL(parent, y, W, tile)
     -- Bloodlust writes its own key but reads through the Battle Res value,
     -- exactly like the module's own sliders.
     local function blSize(label, key, minV, maxV, def)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local bl, br = blDB(), brDB()
                 return (bl and bl[key]) or (br and br[key]) or def
             end,
             setValue = function(v)
-                local bl = blDB(); if not bl then return end
+                local bl = blDB()
+                if not bl then
+                    return
+                end
                 bl[key] = v
-                if _G._CUI_Bloodlust_Apply then _G._CUI_Bloodlust_Apply() end
-            end }
+                if _G._CUI_Bloodlust_Apply then
+                    _G._CUI_Bloodlust_Apply()
+                end
+            end,
+        }
     end
     -- Slots fill left to right, top to bottom. WoW Forever has no keystone
     -- popup, no Battle Res indicator and no Bloodlust Tracker, so their slots
@@ -505,89 +850,147 @@ local function TileQoL(parent, y, W, tile)
     -- last slot.
     local FOREVER = CludesUI.IS_FOREVER
     local slots = {}
-    local function add(cfg) slots[#slots + 1] = cfg end
+    local function add(cfg)
+        slots[#slots + 1] = cfg
+    end
     add(ModuleOutlineCfg(tile.folder, tile.display))
     add(gsize("Map Coordinates Text Size", "mapCoordsTextSize", 8, 24, 12, "_applyMapCoords"))
     add(gsize("Group Death Alert Text Size", "groupDeathTextSize", 14, 64, 34, "_applyGroupDeathAlert"))
     add(gsize("Combat Alert Text Size", "combatAlertTextSize", 14, 64, 22, "_applyCombatAlertFrame"))
-    add({ type = "slider", text = "FPS Counter Text Size", min = 8, max = 30, step = 1,
-          getValue = function()
-              if CludesUI.QoLExtrasGet then
-                  return CludesUI.QoLExtrasGet("fpsTextSize") or 12
-              end
-              return (CludesUIDB and CludesUIDB.fpsTextSize) or 12
-          end,
-          setValue = function(v)
-              if CludesUI.QoLExtrasSet then CludesUI.QoLExtrasSet("fpsTextSize", v) end
-              if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
-          end })
+    add({
+        type = "slider",
+        text = "FPS Counter Text Size",
+        min = 8,
+        max = 30,
+        step = 1,
+        getValue = function()
+            if CludesUI.QoLExtrasGet then
+                return CludesUI.QoLExtrasGet("fpsTextSize") or 12
+            end
+            return (CludesUIDB and CludesUIDB.fpsTextSize) or 12
+        end,
+        setValue = function(v)
+            if CludesUI.QoLExtrasSet then
+                CludesUI.QoLExtrasSet("fpsTextSize", v)
+            end
+            if CludesUI._applyFPSDisplay then
+                CludesUI._applyFPSDisplay()
+            end
+        end,
+    })
     add(gsize("Durability Warning Text Size", "durWarnTextSize", 10, 50, 30, "_durWarnApplySettings"))
     add(gsize("Target Distance Text Size", "targetDistanceTextSize", 10, 48, 18, "_applyTargetDistanceFrame"))
     if not FOREVER then
-        add({ type = "slider", text = "Keystone Popup Text Size", min = 8, max = 16, step = 1,
-              getValue = function()
-                  local t = CludesUIDB and CludesUIDB.keystonePopup
-                  return (t and t.textSize) or 11
-              end,
-              setValue = function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  if not CludesUIDB.keystonePopup then CludesUIDB.keystonePopup = {} end
-                  CludesUIDB.keystonePopup.textSize = v
-                  if _G._CUI_RefreshKeystonePopup then _G._CUI_RefreshKeystonePopup() end
-              end })
+        add({
+            type = "slider",
+            text = "Keystone Popup Text Size",
+            min = 8,
+            max = 16,
+            step = 1,
+            getValue = function()
+                local t = CludesUIDB and CludesUIDB.keystonePopup
+                return (t and t.textSize) or 11
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                if not CludesUIDB.keystonePopup then
+                    CludesUIDB.keystonePopup = {}
+                end
+                CludesUIDB.keystonePopup.textSize = v
+                if _G._CUI_RefreshKeystonePopup then
+                    _G._CUI_RefreshKeystonePopup()
+                end
+            end,
+        })
     end
     if not FOREVER then
         add(brSize("Battle Res Duration Size", "durationSize", 8, 30, 12))
         add(brSize("Battle Res Count Size", "countSize", 8, 20, 11))
         add(brSize("Battle Res Text Size", "textSize", 8, 40, 14))
         local brFontValues, brFontOrder = CludesUI.BuildFontDropdownData()
-        add({ type = "dropdown", text = "Battle Res Font",
-              values = brFontValues, order = brFontOrder,
-              getValue = function()
-                  local p = brDB()
-                  return (p and p.font) or "__global"
-              end,
-              setValue = function(v)
-                  local p = brDB(); if not p then return end
-                  p.font = v
-                  if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
-              end })
-        add({ type = "dropdown", text = "Battle Res Outline",
-              values = { ["__global"] = { text = "CUI Global Default" },
-                         ["none"]     = { text = "Drop Shadow" },
-                         ["outline"]  = { text = "Outline" },
-                         ["thick"]    = { text = "Thick Outline" } },
-              order = { "__global", "none", "outline", "thick" },
-              getValue = function()
-                  local p = brDB()
-                  return (p and p.outlineMode) or "__global"
-              end,
-              setValue = function(v)
-                  local p = brDB(); if not p then return end
-                  p.outlineMode = v
-                  if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
-              end })
+        add({
+            type = "dropdown",
+            text = "Battle Res Font",
+            values = brFontValues,
+            order = brFontOrder,
+            getValue = function()
+                local p = brDB()
+                return (p and p.font) or "__global"
+            end,
+            setValue = function(v)
+                local p = brDB()
+                if not p then
+                    return
+                end
+                p.font = v
+                if _G._CUI_BattleRes_Apply then
+                    _G._CUI_BattleRes_Apply()
+                end
+            end,
+        })
+        add({
+            type = "dropdown",
+            text = "Battle Res Outline",
+            values = {
+                ["__global"] = { text = "CUI Global Default" },
+                ["none"] = { text = "Drop Shadow" },
+                ["outline"] = { text = "Outline" },
+                ["thick"] = { text = "Thick Outline" },
+            },
+            order = { "__global", "none", "outline", "thick" },
+            getValue = function()
+                local p = brDB()
+                return (p and p.outlineMode) or "__global"
+            end,
+            setValue = function(v)
+                local p = brDB()
+                if not p then
+                    return
+                end
+                p.outlineMode = v
+                if _G._CUI_BattleRes_Apply then
+                    _G._CUI_BattleRes_Apply()
+                end
+            end,
+        })
         add(blSize("Bloodlust Duration Size", "durationSize", 8, 30, 12))
         add(blSize("Bloodlust Count Size", "countSize", 8, 20, 11))
     end
-    add({ type = "slider", text = "Movement Alert Text Size", min = 8, max = 72, step = 1,
-          tooltip = "Sizes the movement alert's free text, bar number and icon countdown. Switching the alert's Display Mode re-seeds this value.",
-          getValue = function()
-              local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-              local ma = d and d.profile and d.profile.movementAlert
-              return (ma and ma.textSize) or 24
-          end,
-          setValue = function(v)
-              local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
-              local ma = d and d.profile and d.profile.movementAlert
-              if not ma then return end
-              ma.textSize = v
-              if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
-              if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
-              if CludesUI._applyGateway then CludesUI._applyGateway() end
-          end })
+    add({
+        type = "slider",
+        text = "Movement Alert Text Size",
+        min = 8,
+        max = 72,
+        step = 1,
+        tooltip = "Sizes the movement alert's free text, bar number and icon countdown. Switching the alert's Display Mode re-seeds this value.",
+        getValue = function()
+            local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+            local ma = d and d.profile and d.profile.movementAlert
+            return (ma and ma.textSize) or 24
+        end,
+        setValue = function(v)
+            local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
+            local ma = d and d.profile and d.profile.movementAlert
+            if not ma then
+                return
+            end
+            ma.textSize = v
+            if CludesUI._applyMovementAlert then
+                CludesUI._applyMovementAlert()
+            end
+            if CludesUI._applyTimeSpiral then
+                CludesUI._applyTimeSpiral()
+            end
+            if CludesUI._applyGateway then
+                CludesUI._applyGateway()
+            end
+        end,
+    })
     for i = 1, #slots, 2 do
-        _, h = W:DualRow(parent, y, slots[i], slots[i + 1] or BLANK());  y = y - h
+        _, h = W:DualRow(parent, y, slots[i], slots[i + 1] or BLANK())
+        y = y - h
     end
     return y
 end
@@ -596,12 +999,17 @@ local function TileChat(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     local ECHAT = ns.ECHAT
     local function db()
-        return _G._ECHAT_DB and _G._ECHAT_DB.profile and _G._ECHAT_DB.profile.chat
+        return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat
     end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
     -- Edit box picker: same faces plus a "Chat Font" inherit entry first,
@@ -611,115 +1019,197 @@ local function TileChat(parent, y, W, tile)
     table.insert(ebOrder, 1, "__chat")
     local function ChatReload(msg)
         CludesUI:ShowConfirmPopup({
-            title       = "Reload Required",
-            message     = msg,
+            title = "Reload Required",
+            message = msg,
             confirmText = "Reload Now",
-            cancelText  = "Later",
-            reload      = true,
+            cancelText = "Later",
+            reload = true,
         })
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        { type = "dropdown", text = "Chat Font",
-          values = fontValues, order = fontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.font) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.font = v
-              ChatReload("Font changed. A UI reload is needed to apply the new font.")
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Chat Outline Mode",
-          values = { ["__global"] = { text = "CUI Global Default" },
-                     ["none"]     = { text = "Drop Shadow" },
-                     ["outline"]  = { text = "Outline" },
-                     ["thick"]    = { text = "Thick Outline" } },
-          order = { "__global", "none", "outline", "thick" },
-          getValue = function()
-              local p = db()
-              return (p and p.outlineMode) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.outlineMode = v
-              ChatReload("Outline mode changed. A UI reload is needed to apply.")
-          end },
-        { type = "slider", text = "Chat Font Size", min = 8, max = 27, step = 1,
-          getValue = function()
-              local p = db()
-              if p and p.chatFontSize then return p.chatFontSize end
-              local cf = _G.ChatFrame1
-              if cf and cf.GetFont then
-                  local _, fh = cf:GetFont()
-                  if fh and fh > 0 then return math.floor(fh + 0.5) end
-              end
-              return 14
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.chatFontSize = v
-              if ECHAT and ECHAT.ApplyChatFontSize then ECHAT.ApplyChatFontSize(v) end
-          end });  y = y - h
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), {
+        type = "dropdown",
+        text = "Chat Font",
+        values = fontValues,
+        order = fontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.font) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.font = v
+            ChatReload("Font changed. A UI reload is needed to apply the new font.")
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Chat Outline Mode",
+        values = {
+            ["__global"] = { text = "CUI Global Default" },
+            ["none"] = { text = "Drop Shadow" },
+            ["outline"] = { text = "Outline" },
+            ["thick"] = { text = "Thick Outline" },
+        },
+        order = { "__global", "none", "outline", "thick" },
+        getValue = function()
+            local p = db()
+            return (p and p.outlineMode) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.outlineMode = v
+            ChatReload("Outline mode changed. A UI reload is needed to apply.")
+        end,
+    }, {
+        type = "slider",
+        text = "Chat Font Size",
+        min = 8,
+        max = 27,
+        step = 1,
+        getValue = function()
+            local p = db()
+            if p and p.chatFontSize then
+                return p.chatFontSize
+            end
+            local cf = _G.ChatFrame1
+            if cf and cf.GetFont then
+                local _, fh = cf:GetFont()
+                if fh and fh > 0 then
+                    return math.floor(fh + 0.5)
+                end
+            end
+            return 14
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.chatFontSize = v
+            if ECHAT and ECHAT.ApplyChatFontSize then
+                ECHAT.ApplyChatFontSize(v)
+            end
+        end,
+    })
+    y = y - h
     -- Blizzard Style shows Blizzard's own chat tabs (their stock font), so the
     -- tab font row hides there; Classic's painted tabs still use it.
     local BS = CludesUI.BlizzStyle
     local function TabFontGate(cfg)
-        if BS and BS.Active("chat") == "blizzard" then BS.Gate("chat", cfg) end
+        if BS and BS.Active("chat") == "blizzard" then
+            BS.Gate("chat", cfg)
+        end
         return cfg
     end
-    _, h = W:DualRow(parent, y,
-        TabFontGate({ type = "dropdown", text = "Tab Font",
-          values = fontValues, order = fontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.tabFont) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.tabFont = v
-              if ECHAT and ECHAT.ApplyTabAppearance then ECHAT.ApplyTabAppearance() end
-              if ECHAT and ECHAT.ApplyTabLayout then ECHAT.ApplyTabLayout() end
-          end }),
-        TabFontGate({ type = "slider", text = "Tab Font Size", min = 8, max = 24, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.tabFontSize) or 11
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.tabFontSize = v
-              if ECHAT and ECHAT.ApplyTabAppearance then ECHAT.ApplyTabAppearance() end
-              if ECHAT and ECHAT.ApplyTabLayout then ECHAT.ApplyTabLayout() end
-          end }));  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Edit Box Font",
-          values = ebValues, order = ebOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.editBoxFont) or "__chat"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.editBoxFont = v
-              if ECHAT and ECHAT.ApplyFonts then ECHAT.ApplyFonts() end
-          end },
-        { type = "slider", text = "Edit Box Font Size", min = 8, max = 24, step = 1,
-          getValue = function()
-              local p = db()
-              if p and p.editBoxFontSize then return p.editBoxFontSize end
-              if FCF_GetChatWindowInfo then
-                  local _, sz = FCF_GetChatWindowInfo(1)
-                  if sz and sz > 0 then return math.floor(sz + 0.5) end
-              end
-              return 12
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.editBoxFontSize = v
-              if ECHAT and ECHAT.ApplyFonts then ECHAT.ApplyFonts() end
-          end });  y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
+        TabFontGate({
+            type = "dropdown",
+            text = "Tab Font",
+            values = fontValues,
+            order = fontOrder,
+            getValue = function()
+                local p = db()
+                return (p and p.tabFont) or "__global"
+            end,
+            setValue = function(v)
+                local p = db()
+                if not p then
+                    return
+                end
+                p.tabFont = v
+                if ECHAT and ECHAT.ApplyTabAppearance then
+                    ECHAT.ApplyTabAppearance()
+                end
+                if ECHAT and ECHAT.ApplyTabLayout then
+                    ECHAT.ApplyTabLayout()
+                end
+            end,
+        }),
+        TabFontGate({
+            type = "slider",
+            text = "Tab Font Size",
+            min = 8,
+            max = 24,
+            step = 1,
+            getValue = function()
+                local p = db()
+                return (p and p.tabFontSize) or 11
+            end,
+            setValue = function(v)
+                local p = db()
+                if not p then
+                    return
+                end
+                p.tabFontSize = v
+                if ECHAT and ECHAT.ApplyTabAppearance then
+                    ECHAT.ApplyTabAppearance()
+                end
+                if ECHAT and ECHAT.ApplyTabLayout then
+                    ECHAT.ApplyTabLayout()
+                end
+            end,
+        })
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Edit Box Font",
+        values = ebValues,
+        order = ebOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.editBoxFont) or "__chat"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.editBoxFont = v
+            if ECHAT and ECHAT.ApplyFonts then
+                ECHAT.ApplyFonts()
+            end
+        end,
+    }, {
+        type = "slider",
+        text = "Edit Box Font Size",
+        min = 8,
+        max = 24,
+        step = 1,
+        getValue = function()
+            local p = db()
+            if p and p.editBoxFontSize then
+                return p.editBoxFontSize
+            end
+            if FCF_GetChatWindowInfo then
+                local _, sz = FCF_GetChatWindowInfo(1)
+                if sz and sz > 0 then
+                    return math.floor(sz + 0.5)
+                end
+            end
+            return 12
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.editBoxFontSize = v
+            if ECHAT and ECHAT.ApplyFonts then
+                ECHAT.ApplyFonts()
+            end
+        end,
+    })
+    y = y - h
     return y
 end
 
@@ -727,85 +1217,179 @@ local function TileMythicTimer(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    local function db() return _G._EMT_AceDB and _G._EMT_AceDB.profile end
-    local function MTApply() if _G._EMT_ApplyTimer then _G._EMT_ApplyTimer() end end
+    local function db()
+        return _G._CUMT_AceDB and _G._CUMT_AceDB.profile
+    end
+    local function MTApply()
+        if _G._CUMT_ApplyTimer then
+            _G._CUMT_ApplyTimer()
+        end
+    end
     local function size(label, key, minV, maxV, def, fallbackKey)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
-                if not p then return def end
+                if not p then
+                    return def
+                end
                 return p[key] or (fallbackKey and p[fallbackKey]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 MTApply()
-            end }
+            end,
+        }
     end
     local function subSize(label, getT, minV, maxV, def, key, applyName)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local t = getT()
                 return (t and t[key]) or def
             end,
             setValue = function(v)
-                local t = getT(); if not t then return end
+                local t = getT()
+                if not t then
+                    return
+                end
                 t[key] = v
                 local fn = ns[applyName]
-                if fn then fn() else MTApply() end
-            end }
+                if fn then
+                    fn()
+                else
+                    MTApply()
+                end
+            end,
+        }
     end
-    local function tsb() local p = db(); return p and p.tsb end
-    local function tfbT() local p = db(); return p and p.tfb and p.tfb.target end
-    local function tfbF() local p = db(); return p and p.tfb and p.tfb.focus end
-    local function kt() local p = db(); return p and p.kickTracker end
+    local function tsb()
+        local p = db()
+        return p and p.tsb
+    end
+    local function tfbT()
+        local p = db()
+        return p and p.tfb and p.tfb.target
+    end
+    local function tfbF()
+        local p = db()
+        return p and p.tfb and p.tfb.focus
+    end
+    local function kt()
+        local p = db()
+        return p and p.kickTracker
+    end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        { type = "dropdown", text = "Timer Font",
-          tooltip = "Typeface for the M+ timer clock. Every other Mythic+ text uses the module font.",
-          values = fontValues, order = fontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.timerFont) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.timerFont = v
-              MTApply()
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), {
+        type = "dropdown",
+        text = "Timer Font",
+        tooltip = "Typeface for the M+ timer clock. Every other Mythic+ text uses the module font.",
+        values = fontValues,
+        order = fontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.timerFont) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.timerFont = v
+            MTApply()
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Title Size", "titleSize", 8, 24, 16),
-        size("Affix Size", "affixSize", 6, 20, 12));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Affix Size", "affixSize", 6, 20, 12)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Timer Size", "timerTextSize", 10, 32, 20),
-        size("Objectives Size", "objectivesSize", 8, 20, 12));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Objectives Size", "objectivesSize", 8, 20, 12)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
-        size("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
-        size("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Cast Bars Name Size", tsb, 6, 20, 10, "nameSize", "TSB_Refresh"),
-        subSize("Cast Bars Timer Size", tsb, 6, 20, 10, "timerSize", "TSB_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subSize("Cast Bars Timer Size", tsb, 6, 20, 10, "timerSize", "TSB_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Cast Bars Target Size", tsb, 6, 20, 10, "targetSize", "TSB_Refresh"),
-        subSize("Target Cast Bar Name Size", tfbT, 6, 22, 11, "nameSize", "TFB_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subSize("Target Cast Bar Name Size", tfbT, 6, 22, 11, "nameSize", "TFB_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Target Cast Bar Timer Size", tfbT, 6, 22, 11, "timerSize", "TFB_Refresh"),
-        subSize("Target Cast Bar Target Size", tfbT, 6, 20, 10, "targetSize", "TFB_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subSize("Target Cast Bar Target Size", tfbT, 6, 20, 10, "targetSize", "TFB_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Focus Cast Bar Name Size", tfbF, 6, 22, 11, "nameSize", "TFB_Refresh"),
-        subSize("Focus Cast Bar Timer Size", tfbF, 6, 22, 11, "timerSize", "TFB_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subSize("Focus Cast Bar Timer Size", tfbF, 6, 22, 11, "timerSize", "TFB_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Focus Cast Bar Target Size", tfbF, 6, 20, 10, "targetSize", "TFB_Refresh"),
-        subSize("Kick Tracker Timer Size", kt, 6, 24, 11, "timerSize", "KT_Refresh"));  y = y - h
-    _, h = W:DualRow(parent, y,
+        subSize("Kick Tracker Timer Size", kt, 6, 24, 11, "timerSize", "KT_Refresh")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         subSize("Kick Tracker Bar Name Size", kt, 6, 24, 11, "barNameSize", "KT_Refresh"),
-        subSize("Kick Tracker Bar Timer Size", kt, 6, 24, 11, "barTimerSize", "KT_Refresh"));  y = y - h
+        subSize("Kick Tracker Bar Timer Size", kt, 6, 24, 11, "barTimerSize", "KT_Refresh")
+    )
+    y = y - h
     return y
 end
 
@@ -813,60 +1397,112 @@ local function TileDamageMeters(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     local function db()
-        return _G._EDM_DB and _G._EDM_DB.profile and _G._EDM_DB.profile.dm
+        return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        { type = "slider", text = "Header Text Size", min = 8, max = 18, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.hdrFontSize) or 11
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.hdrFontSize = v
-              if ns.ApplyHeader then ns.ApplyHeader() end
-          end });  y = y - h
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), {
+        type = "slider",
+        text = "Header Text Size",
+        min = 8,
+        max = 18,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.hdrFontSize) or 11
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.hdrFontSize = v
+            if ns.ApplyHeader then
+                ns.ApplyHeader()
+            end
+        end,
+    })
+    y = y - h
     local function barSize(label, key)
-        return { type = "slider", text = label, min = 8, max = 18, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = 8,
+            max = 18,
+            step = 1,
             getValue = function()
                 local p = db()
                 return (p and (p[key] or p.fontSize)) or 11
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
-                if ns.RefreshMeter then ns.RefreshMeter() end
-            end }
+                if ns.RefreshMeter then
+                    ns.RefreshMeter()
+                end
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(
+        parent,
+        y,
         barSize("Bar Left Text Size", "leftFontSize"),
-        barSize("Bar Right Text Size", "rightFontSize"));  y = y - h
-    _, h = W:DualRow(parent, y,
-        { type = "slider", text = "Standalone Timer Size", min = 10, max = 40, step = 1,
-          getValue = function()
-              local p = db()
-              return (p and p.standaloneTimerSize) or 26
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.standaloneTimerSize = v
-              if ns.ApplySATimer then ns.ApplySATimer() end
-          end },
-        { type = "slider", text = "Spell History Text Size", min = 8, max = 16, step = 1,
-          getValue = function()
-              local p = db()
-              local sh = p and p.spellHistory
-              return (sh and sh.textSize) or 11
-          end,
-          setValue = function(v)
-              local p = db(); if not (p and p.spellHistory) then return end
-              p.spellHistory.textSize = v
-              if ns.ApplySpellHistory then ns.ApplySpellHistory() end
-          end });  y = y - h
+        barSize("Bar Right Text Size", "rightFontSize")
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "slider",
+        text = "Standalone Timer Size",
+        min = 10,
+        max = 40,
+        step = 1,
+        getValue = function()
+            local p = db()
+            return (p and p.standaloneTimerSize) or 26
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.standaloneTimerSize = v
+            if ns.ApplySATimer then
+                ns.ApplySATimer()
+            end
+        end,
+    }, {
+        type = "slider",
+        text = "Spell History Text Size",
+        min = 8,
+        max = 16,
+        step = 1,
+        getValue = function()
+            local p = db()
+            local sh = p and p.spellHistory
+            return (sh and sh.textSize) or 11
+        end,
+        setValue = function(v)
+            local p = db()
+            if not (p and p.spellHistory) then
+                return
+            end
+            p.spellHistory.textSize = v
+            if ns.ApplySpellHistory then
+                ns.ApplySpellHistory()
+            end
+        end,
+    })
+    y = y - h
     return y
 end
 
@@ -874,44 +1510,85 @@ local function TileBags(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     local function db()
         return CludesUI._bagsDB and CludesUI._bagsDB.profile
     end
     local function TextSizes()
-        if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then _G.CUI_Bags:RefreshTextSizes() end
-        if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshTextSizes then _G.CUI_BankFrame:RefreshTextSizes() end
+        if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
+            _G.CUI_Bags:RefreshTextSizes()
+        end
+        if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshTextSizes then
+            _G.CUI_BankFrame:RefreshTextSizes()
+        end
     end
     local function size(label, key, minV, maxV, def, applyFn)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 applyFn()
-            end }
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
+    _, h = W:DualRow(
+        parent,
+        y,
+        ModuleOutlineCfg(tile.folder, tile.display),
         size("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
-            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then _G.CUI_Bags:RefreshInventory() end
-        end));  y = y - h
-    _, h = W:DualRow(parent, y,
+            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
+                _G.CUI_Bags:RefreshInventory()
+            end
+        end)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
-        size("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
-        size("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes));  y = y - h
-    _, h = W:DualRow(parent, y,
+        size("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("List Text Size", "bagListFontSize", 8, 16, 11, function()
-            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then _G.CUI_Bags:RefreshInventory() end
-            if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshBank then _G.CUI_BankFrame:RefreshBank() end
+            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
+                _G.CUI_Bags:RefreshInventory()
+            end
+            if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshBank then
+                _G.CUI_BankFrame:RefreshBank()
+            end
         end),
-        BLANK());  y = y - h
+        BLANK()
+    )
+    y = y - h
     return y
 end
 
@@ -919,49 +1596,89 @@ local function TileMinimap(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     local function db()
-        return _G._EMM_DB and _G._EMM_DB.profile and _G._EMM_DB.profile.minimap
+        return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap
     end
     local function size(label, key, minV, maxV, def)
-        return { type = "slider", text = label, min = minV, max = maxV, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = minV,
+            max = maxV,
+            step = 1,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
-                if _G._EMM_ApplyMinimap then _G._EMM_ApplyMinimap() end
-            end }
+                if _G._CUMM_ApplyMinimap then
+                    _G._CUMM_ApplyMinimap()
+                end
+            end,
+        }
     end
     -- Scale rows apply exactly like the module's own cogs: SetScale on the
     -- text block's host frame, no full minimap reapply.
     local function scale(label, key, def, frameName)
-        return { type = "slider", text = label, min = 0.5, max = 2.0, step = 0.01,
+        return {
+            type = "slider",
+            text = label,
+            min = 0.5,
+            max = 2.0,
+            step = 0.01,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 local f = _G[frameName]
-                if f and f.SetScale then f:SetScale(v) end
-            end }
+                if f and f.SetScale then
+                    f:SetScale(v)
+                end
+            end,
+        }
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        size("FPS Text Size", "fpsTextSize", 8, 30, 12));  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(
+        parent,
+        y,
+        ModuleOutlineCfg(tile.folder, tile.display),
+        size("FPS Text Size", "fpsTextSize", 8, 30, 12)
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Difficulty Text Size", "diffTextSize", 8, 24, 12),
-        scale("Clock Scale", "clockScale", 1.15, "_EBS_ClockBg"));  y = y - h
-    _, h = W:DualRow(parent, y,
-        scale("Zone Text Scale", "locationScale", 1.15, "_EBS_LocationBg"),
-        scale("Coordinates Scale", "coordsScale", 1.0, "_EBS_CoordFrame"));  y = y - h
-    _, h = W:DualRow(parent, y,
-        scale("FPS/MS Scale", "fpsScale", 1.0, "_EBS_FpsBg"), BLANK());  y = y - h
+        scale("Clock Scale", "clockScale", 1.15, "_CUBS_ClockBg")
+    )
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
+        scale("Zone Text Scale", "locationScale", 1.15, "_CUBS_LocationBg"),
+        scale("Coordinates Scale", "coordsScale", 1.0, "_CUBS_CoordFrame")
+    )
+    y = y - h
+    _, h = W:DualRow(parent, y, scale("FPS/MS Scale", "fpsScale", 1.0, "_CUBS_FpsBg"), BLANK())
+    y = y - h
     return y
 end
 
@@ -969,68 +1686,114 @@ local function TileQuestTracker(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     -- Stock styles keep Blizzard's own tracker text (sized by Edit Mode's
     -- Text Size), so none of these settings apply there.
     local BS = CludesUI.BlizzStyle
     if BS and BS.Get("questtracker") then
-        return NoteRow(parent, y, CludesUI.Lf("%1$s is active: the tracker keeps Blizzard's own text.", CludesUI.L(BS.Label("questtracker"))))
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf(
+                "%1$s is active: the tracker keeps Blizzard's own text.",
+                CludesUI.L(BS.Label("questtracker"))
+            )
+        )
     end
     local function db()
-        return _G._EQT_DB and _G._EQT_DB.profile and _G._EQT_DB.profile.questTracker
+        return _G._CUQT_DB and _G._CUQT_DB.profile and _G._CUQT_DB.profile.questTracker
     end
     local function QTApply()
         local EQT = ns.EQT
-        if not EQT then return end
-        if EQT.RestyleAll then EQT.RestyleAll() end
-        if EQT.UpdateVisibility then EQT.UpdateVisibility() end
-        if EQT.ApplyBackground then EQT.ApplyBackground() end
-        if EQT.RefreshStateDriver then EQT.RefreshStateDriver() end
+        if not EQT then
+            return
+        end
+        if EQT.RestyleAll then
+            EQT.RestyleAll()
+        end
+        if EQT.UpdateVisibility then
+            EQT.UpdateVisibility()
+        end
+        if EQT.ApplyBackground then
+            EQT.ApplyBackground()
+        end
+        if EQT.RefreshStateDriver then
+            EQT.RefreshStateDriver()
+        end
     end
     local function size(label, key, def)
-        return { type = "slider", text = label, min = 8, max = 24, step = 1,
+        return {
+            type = "slider",
+            text = label,
+            min = 8,
+            max = 24,
+            step = 1,
             getValue = function()
                 local p = db()
                 return (p and p[key]) or def
             end,
             setValue = function(v)
-                local p = db(); if not p then return end
+                local p = db()
+                if not p then
+                    return
+                end
                 p[key] = v
                 QTApply()
-            end }
+            end,
+        }
     end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        { type = "dropdown", text = "Quest Tracker Font",
-          tooltip = "Typeface for the quest tracker. This module-local pick wins over the module font override above.",
-          values = fontValues, order = fontOrder,
-          getValue = function()
-              local p = db()
-              return (p and p.font) or "__global"
-          end,
-          setValue = function(v)
-              local p = db(); if not p then return end
-              p.font = v
-              -- The custom tracker (WoW Forever) restyles live.
-              if ns.UseCustomTracker and ns.UseCustomTracker() then
-                  CludesUI.InvalidateFontCache()
-                  QTApply()
-                  return
-              end
-              FontReload()
-          end });  y = y - h
-    _, h = W:DualRow(parent, y,
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), {
+        type = "dropdown",
+        text = "Quest Tracker Font",
+        tooltip = "Typeface for the quest tracker. This module-local pick wins over the module font override above.",
+        values = fontValues,
+        order = fontOrder,
+        getValue = function()
+            local p = db()
+            return (p and p.font) or "__global"
+        end,
+        setValue = function(v)
+            local p = db()
+            if not p then
+                return
+            end
+            p.font = v
+            -- The custom tracker (WoW Forever) restyles live.
+            if ns.UseCustomTracker and ns.UseCustomTracker() then
+                CludesUI.InvalidateFontCache()
+                QTApply()
+                return
+            end
+            FontReload()
+        end,
+    })
+    y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
         size("Header Font Size", "headerFontSize", 13),
-        size("Title Font Size", "titleFontSize", 12));  y = y - h
+        size("Title Font Size", "titleFontSize", 12)
+    )
+    y = y - h
     if ns.UseCustomTracker and ns.UseCustomTracker() then
-        _, h = W:DualRow(parent, y,
+        _, h = W:DualRow(
+            parent,
+            y,
             size("Objective Font Size", "objectiveFontSize", 10),
-            size("Zone Header Font Size", "customZoneFontSize", 13));  y = y - h
+            size("Zone Header Font Size", "customZoneFontSize", 13)
+        )
+        y = y - h
     else
-        _, h = W:DualRow(parent, y,
-            size("Objective Font Size", "objectiveFontSize", 10), BLANK());  y = y - h
+        _, h = W:DualRow(parent, y, size("Objective Font Size", "objectiveFontSize", 10), BLANK())
+        y = y - h
     end
     return y
 end
@@ -1039,45 +1802,77 @@ local function TileBlizzardSkin(parent, y, W, tile)
     local ns = NS(tile.folder)
     local _, h
     if not ns then
-        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK());  y = y - h
-        return NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        y = y - h
+        return NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
-    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display),
-        { type = "slider", text = "Tooltip Font Size Scale", min = 0.7, max = 1.5, step = 0.05,
-          format = "%.0f%%", displayMul = 100,
-          tooltip = "Scales the text size of Blizzard tooltips.",
-          getValue = function()
-              return (CludesUIDB and CludesUIDB.tooltipFontScale) or 1.0
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.tooltipFontScale = v
-          end });  y = y - h
-    local enchSizeCfg = { type = "slider", text = "Enchant Text Size", min = 6, max = 20, step = 1,
-          getValue = function()
-              return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9
-          end,
-          setValue = function(v)
-              if not CludesUIDB then CludesUIDB = {} end
-              CludesUIDB.charSheetEnchantSize = v
-              if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
-          end }
+    _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), {
+        type = "slider",
+        text = "Tooltip Font Size Scale",
+        min = 0.7,
+        max = 1.5,
+        step = 0.05,
+        format = "%.0f%%",
+        displayMul = 100,
+        tooltip = "Scales the text size of Blizzard tooltips.",
+        getValue = function()
+            return (CludesUIDB and CludesUIDB.tooltipFontScale) or 1.0
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.tooltipFontScale = v
+        end,
+    })
+    y = y - h
+    local enchSizeCfg = {
+        type = "slider",
+        text = "Enchant Text Size",
+        min = 6,
+        max = 20,
+        step = 1,
+        getValue = function()
+            return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9
+        end,
+        setValue = function(v)
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
+            CludesUIDB.charSheetEnchantSize = v
+            if CludesUI._refreshCharSheetSlotLabels then
+                CludesUI._refreshCharSheetSlotLabels()
+            end
+        end,
+    }
     -- WoW Forever has no skyriding (the Dragon Riding HUD never loads there),
     -- so the enchant size sits alone in the last row.
-    _, h = W:DualRow(parent, y,
-        enchSizeCfg,
-        CludesUI.IS_FOREVER and BLANK() or
-        { type = "slider", text = "Dragonriding Speed Text Size", min = 6, max = 32, step = 1,
-          getValue = function()
-              local p = ns.edrDB and ns.edrDB.profile and ns.edrDB.profile.speedText
-              return (p and p.size) or 12
-          end,
-          setValue = function(v)
-              local p = ns.edrDB and ns.edrDB.profile and ns.edrDB.profile.speedText
-              if not p then return end
-              p.size = v
-              if ns.edrRedraw then ns.edrRedraw() end
-          end });  y = y - h
+    _, h = W:DualRow(parent, y, enchSizeCfg, CludesUI.IS_FOREVER and BLANK() or {
+        type = "slider",
+        text = "Dragonriding Speed Text Size",
+        min = 6,
+        max = 32,
+        step = 1,
+        getValue = function()
+            local p = ns.edrDB and ns.edrDB.profile and ns.edrDB.profile.speedText
+            return (p and p.size) or 12
+        end,
+        setValue = function(v)
+            local p = ns.edrDB and ns.edrDB.profile and ns.edrDB.profile.speedText
+            if not p then
+                return
+            end
+            p.size = v
+            if ns.edrRedraw then
+                ns.edrRedraw()
+            end
+        end,
+    })
+    y = y - h
     return y
 end
 
@@ -1086,10 +1881,21 @@ local function TileDataBars(parent, y, W, tile)
     local _, h = W:DualRow(parent, y, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
     y = y - h
     if ns then
-        y = LinkRow(parent, y, "Text Scale (per data bar)",
-            tile.folder, "Info Bar", "BAR SETTINGS", "Text Scale")
+        y = LinkRow(
+            parent,
+            y,
+            "Text Scale (per data bar)",
+            tile.folder,
+            "Info Bar",
+            "BAR SETTINGS",
+            "Text Scale"
+        )
     else
-        y = NoteRow(parent, y, CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display)))
+        y = NoteRow(
+            parent,
+            y,
+            CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
+        )
     end
     return y
 end
@@ -1104,17 +1910,33 @@ end
 -- pages (curated list + logout flow); this card mirrors the size and links
 -- to the rest.
 local function TileCombatText(parent, y, W, tile)
-    local _, h = W:DualRow(parent, y,
-        { type = "slider", text = "Combat Text Size", min = 0.5, max = 2.5, step = 0.1,
-          getValue = function() return tonumber(GetCVar("WorldTextScale_v2")) or 1 end,
-          setValue = function(v)
-              if InCombatLockdown() then return end
-              v = math.floor(v * 10 + 0.5) / 10
-              CludesUI.SetCVar("WorldTextScale_v2", v)
-          end },
-        BLANK());  y = y - h
-    y = LinkRow(parent, y, "Combat Text Font (logout required)",
-        GLOBAL_KEY, "General", "COMBAT", "Combat Text Font")
+    local _, h = W:DualRow(parent, y, {
+        type = "slider",
+        text = "Combat Text Size",
+        min = 0.5,
+        max = 2.5,
+        step = 0.1,
+        getValue = function()
+            return tonumber(GetCVar("WorldTextScale_v2")) or 1
+        end,
+        setValue = function(v)
+            if InCombatLockdown() then
+                return
+            end
+            v = math.floor(v * 10 + 0.5) / 10
+            CludesUI.SetCVar("WorldTextScale_v2", v)
+        end,
+    }, BLANK())
+    y = y - h
+    y = LinkRow(
+        parent,
+        y,
+        "Combat Text Font (logout required)",
+        GLOBAL_KEY,
+        "General",
+        "COMBAT",
+        "Combat Text Font"
+    )
     return y
 end
 
@@ -1128,32 +1950,40 @@ end
 -- card's module font override is blocked while one of them is active.
 local TILE_STYLE_KEYS = {
     CludesUIQuestTracker = "questtracker",
-    CludesUIFriends      = "friends",
+    CludesUIFriends = "friends",
 }
 
 local TILE_BUILDERS = {
-    CludesUIActionBars        = { TileActionBars,       "Bar button text, XP/Rep bar text" },
-    CludesUINameplates        = { TileNameplates,       "Names, cast bar and aura text on nameplates" },
-    CludesUIUnitFrames        = { TileUnitFrames,       "Health, power, cast bar and aura text (per unit)" },
-    CludesUIRaidFrames        = { TileRaidFrames,       "Names, health and indicator text on raid and party frames" },
-    CludesUICooldownManager   = { TileCooldownManager,  "Icon duration, stacks, keybinds and tracking bar text" },
-    CludesUIResourceBars      = { TileResourceBars,     "Health, power, class resource, cast and totem bar text" },
-    CludesUIAuraBuffReminders = { TileAuraBuffReminders,"Reminder names, item counts and the mana warning" },
-    CludesUIQoL               = { TileQoL,              CludesUI.IS_FOREVER and "Alert and tracker text"
-                                                               or "Alerts, trackers, battle res and popup text" },
-    CludesUIForeverEssentials = { TileFontOnly,         "Font face and outline only" },
-    CludesUIBlizzardSkin      = { TileBlizzardSkin,     CludesUI.IS_FOREVER and "Tooltip text scale and enchant text"
-                                                               or "Tooltip text scale, enchant text and dragonriding speed" },
-    CludesUIFriends           = { TileFontOnly,         "Font face and outline only" },
-    CludesUIMythicTimer       = { TileMythicTimer,      "M+ timer, objectives, thresholds and spell bar text" },
-    CludesUIQuestTracker      = { TileQuestTracker,     "Tracker font and per-line text sizes" },
-    CludesUIMinimap           = { TileMinimap,          "Clock, zone, coordinates, FPS and difficulty text" },
-    CludesUIChat              = { TileChat,             "Chat windows, tabs and the input field" },
-    CludesUIDamageMeters      = { TileDamageMeters,     "Window header, bar and timer text" },
-    CludesUIBags              = { TileBags,             "Item count, item level, category and label text" },
-    CludesUIDataBars          = { TileDataBars,         "Per-bar text scale" },
-    CludesUIQuickdraw         = { TileFontOnly,         "Font face and outline only" },
-    CludesUISimpleLootCouncil = { TileFontOnly,         "Font face and outline only" },
+    CludesUIActionBars = { TileActionBars, "Bar button text, XP/Rep bar text" },
+    CludesUINameplates = { TileNameplates, "Names, cast bar and aura text on nameplates" },
+    CludesUIUnitFrames = { TileUnitFrames, "Health, power, cast bar and aura text (per unit)" },
+    CludesUIRaidFrames = { TileRaidFrames, "Names, health and indicator text on raid and party frames" },
+    CludesUICooldownManager = {
+        TileCooldownManager,
+        "Icon duration, stacks, keybinds and tracking bar text",
+    },
+    CludesUIResourceBars = { TileResourceBars, "Health, power, class resource, cast and totem bar text" },
+    CludesUIAuraBuffReminders = { TileAuraBuffReminders, "Reminder names, item counts and the mana warning" },
+    CludesUIQoL = {
+        TileQoL,
+        CludesUI.IS_FOREVER and "Alert and tracker text" or "Alerts, trackers, battle res and popup text",
+    },
+    CludesUIForeverEssentials = { TileFontOnly, "Font face and outline only" },
+    CludesUIBlizzardSkin = {
+        TileBlizzardSkin,
+        CludesUI.IS_FOREVER and "Tooltip text scale and enchant text"
+            or "Tooltip text scale, enchant text and dragonriding speed",
+    },
+    CludesUIFriends = { TileFontOnly, "Font face and outline only" },
+    CludesUIMythicTimer = { TileMythicTimer, "M+ timer, objectives, thresholds and spell bar text" },
+    CludesUIQuestTracker = { TileQuestTracker, "Tracker font and per-line text sizes" },
+    CludesUIMinimap = { TileMinimap, "Clock, zone, coordinates, FPS and difficulty text" },
+    CludesUIChat = { TileChat, "Chat windows, tabs and the input field" },
+    CludesUIDamageMeters = { TileDamageMeters, "Window header, bar and timer text" },
+    CludesUIBags = { TileBags, "Item count, item level, category and label text" },
+    CludesUIDataBars = { TileDataBars, "Per-bar text scale" },
+    CludesUIQuickdraw = { TileFontOnly, "Font face and outline only" },
+    CludesUISimpleLootCouncil = { TileFontOnly, "Font face and outline only" },
 }
 
 local function BuildTileList()
@@ -1163,15 +1993,21 @@ local function BuildTileList()
         local def = not entry.comingSoon and TILE_BUILDERS[entry.folder]
         if def then
             tiles[#tiles + 1] = {
-                key = entry.folder, folder = entry.folder, display = entry.display,
-                desc = def[2], buildContent = def[1], hasFontDD = true,
+                key = entry.folder,
+                folder = entry.folder,
+                display = entry.display,
+                desc = def[2],
+                buildContent = def[1],
+                hasFontDD = true,
             }
         end
     end
     tiles[#tiles + 1] = {
-        key = "combatText", display = "Combat & World Text",
+        key = "combatText",
+        display = "Combat & World Text",
         desc = "Floating combat text and world name text (engine settings)",
-        buildContent = TileCombatText, hasFontDD = false,
+        buildContent = TileCombatText,
+        hasFontDD = false,
     }
     return tiles
 end
@@ -1183,7 +2019,8 @@ end
 local function BuildFontCard(parent, y, W, tile)
     return CludesUI.BuildModuleCard(parent, y, W, tile, {
         enabled = (not tile.folder) or NS(tile.folder) ~= nil,
-        expanded = _ftExpanded, descW = 440,
+        expanded = _ftExpanded,
+        descW = 440,
         -- "Aa" glyph rendered in the module's currently resolved face, so the
         -- card shows the active font at a glance.
         glyph = function(hdr, enabled)
@@ -1193,9 +2030,10 @@ local function BuildFontCard(parent, y, W, tile)
             PP.Point(glyph, "LEFT", hdr, "LEFT", 14, 0)
             local glyphText = glyph:CreateFontString(nil, "OVERLAY")
             glyphText:SetPoint("CENTER")
-            local addonKey = tile.folder and CludesUI._folderToAddonKey and CludesUI._folderToAddonKey[tile.folder]
-            local glyphPath = (CludesUI.GetFontPath(addonKey))
-                or "Fonts\\FRIZQT__.TTF"
+            local addonKey = tile.folder
+                and CludesUI._folderToAddonKey
+                and CludesUI._folderToAddonKey[tile.folder]
+            local glyphPath = (CludesUI.GetFontPath(addonKey)) or "Fonts\\FRIZQT__.TTF"
             glyphText:SetFont(glyphPath, 15, "")
             glyphText:SetTextColor(1, 1, 1, enabled and 0.85 or 0.3)
             glyphText:SetText("Aa")
@@ -1204,8 +2042,12 @@ local function BuildFontCard(parent, y, W, tile)
         -- (the old PER ADDON FONTS entry), editable without expanding the card.
         headerDD = tile.hasFontDD and function(hdr)
             local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-            local dd = CludesUI.BuildDropdownControl(hdr, 190, hdr:GetFrameLevel() + 2,
-                fontValues, fontOrder,
+            local dd = CludesUI.BuildDropdownControl(
+                hdr,
+                190,
+                hdr:GetFrameLevel() + 2,
+                fontValues,
+                fontOrder,
                 function()
                     local entry = FindModuleFontEntry(tile.folder)
                     return (entry and entry.font) or "__global"
@@ -1213,7 +2055,9 @@ local function BuildFontCard(parent, y, W, tile)
                 function(v)
                     local entry = FindModuleFontEntry(tile.folder)
                     local cur = (entry and entry.font) or "__global"
-                    if v == cur then return end
+                    if v == cur then
+                        return
+                    end
                     if v == "__global" then
                         if entry then
                             entry.font = "__global"
@@ -1223,12 +2067,15 @@ local function BuildFontCard(parent, y, W, tile)
                         EnsureModuleFontEntry(tile.folder, tile.display).font = v
                     end
                     FontReload()
-                end)
+                end
+            )
             CludesUI.PanelPP.Point(dd, "RIGHT", hdr, "RIGHT", -44, 0)
             -- A module whose stock style keeps Blizzard's own text: the override
             -- has nothing to apply to there.
             local styleKey = TILE_STYLE_KEYS[tile.folder]
-            if styleKey and CludesUI.BlizzStyle then CludesUI.BlizzStyle.BlockInline(styleKey, dd) end
+            if styleKey and CludesUI.BlizzStyle then
+                CludesUI.BlizzStyle.BlockInline(styleKey, dd)
+            end
             return dd
         end or nil,
     })
@@ -1287,7 +2134,8 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     --  GLOBAL FONT section (moved from the old Fonts & Colors page)
     -------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "GLOBAL FONT", y);  y = y - h
+    _, h = W:SectionHeader(parent, "GLOBAL FONT", y)
+    y = y - h
 
     -- Glyph-restricted locales (CJK, Cyrillic): most bundled fonts are Latin-only and cannot render the script, so the picker
     -- offers "System Default" plus external SharedMedia fonts (which may carry the right glyphs).
@@ -1298,9 +2146,10 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     local localeCyrillic = localeRestricted and CludesUI.LOCALE_SCRIPT == "cyrillic"
 
     local fontDropValues = {}
-    local fontDropOrder  = {}
+    local fontDropOrder = {}
     if localeRestricted then
-        fontDropValues[CludesUI.SYSTEM_FONT_KEY] = { text = "System Default", font = CludesUI.LOCALE_FONT_FALLBACK }
+        fontDropValues[CludesUI.SYSTEM_FONT_KEY] =
+            { text = "System Default", font = CludesUI.LOCALE_FONT_FALLBACK }
         fontDropOrder[#fontDropOrder + 1] = CludesUI.SYSTEM_FONT_KEY
         if localeCyrillic then
             -- Cyrillic-capable bundled faces, kept in FONT_ORDER sequence so the
@@ -1308,8 +2157,7 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
             local FONT_DIR_CYR = CludesUI.MEDIA_PATH .. "fonts\\"
             local sepDone = false
             for _, name in ipairs(CludesUI.FONT_ORDER) do
-                local cyrFile = name ~= "---" and CludesUI.FONT_CYRILLIC[name]
-                    and CludesUI.FONT_FILES[name]
+                local cyrFile = name ~= "---" and CludesUI.FONT_CYRILLIC[name] and CludesUI.FONT_FILES[name]
                 if cyrFile then
                     if not sepDone then
                         fontDropOrder[#fontDropOrder + 1] = "---"
@@ -1324,8 +2172,10 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
             end
         else
             -- Expressway is the informed Latin opt-in, using a distinct sentinel key so the untouched default still maps to System Default.
-            fontDropValues[CludesUI.EXPRESSWAY_FORCED_KEY] = { text = "Expressway (Latin only)",
-                font = CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF" }
+            fontDropValues[CludesUI.EXPRESSWAY_FORCED_KEY] = {
+                text = "Expressway (Latin only)",
+                font = CludesUI.MEDIA_PATH .. "fonts\\Expressway.TTF",
+            }
             fontDropOrder[#fontDropOrder + 1] = CludesUI.EXPRESSWAY_FORCED_KEY
         end
         CludesUI.AppendExternalSharedMediaFonts(fontDropValues, fontDropOrder)
@@ -1333,8 +2183,8 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
         -- Blizzard Default first: the client's own standard UI font. The
         -- glyph-restricted branch above skips it (its "System Default" entry
         -- already is the client's own font).
-        fontDropValues[CludesUI.BLIZZARD_FONT_KEY] = { text = "Blizzard Default",
-            font = CludesUI.GetBlizzardFontPath() }
+        fontDropValues[CludesUI.BLIZZARD_FONT_KEY] =
+            { text = "Blizzard Default", font = CludesUI.GetBlizzardFontPath() }
         fontDropOrder[#fontDropOrder + 1] = CludesUI.BLIZZARD_FONT_KEY
         fontDropOrder[#fontDropOrder + 1] = "---"
         local FONT_DIR_GLOBAL = CludesUI.MEDIA_PATH .. "fonts\\"
@@ -1344,7 +2194,8 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
             else
                 local path = CludesUI.FONT_BLIZZARD[name]
                     or (FONT_DIR_GLOBAL .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
-                local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name
+                local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name])
+                    or name
                 fontDropValues[name] = { text = displayName, font = path }
                 fontDropOrder[#fontDropOrder + 1] = name
             end
@@ -1353,58 +2204,84 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     end
 
     local outlineModeValues = {
-        ["none"]    = { text = "Drop Shadow" },
+        ["none"] = { text = "Drop Shadow" },
         ["outline"] = { text = "Outline" },
-        ["thick"]   = { text = "Thick Outline" },
+        ["thick"] = { text = "Thick Outline" },
     }
     local outlineModeOrder = { "none", "outline", "thick" }
 
     -- Global Font (+ cog: Apply to All Game Text) | Outline Mode
     local globalFontRow
-    globalFontRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Global Font",
-          values=fontDropValues, order=fontDropOrder,
-          getValue=function()
-              local g = CludesUI.GetFontsDB().global or CludesUI.DEFAULT_FONT_NAME
-              -- Cyrillic locales list Expressway as a normal entry, so an older
-              -- __expressway opt-in collapses onto it (same file) instead of falling
-              -- through to System Default and misreporting the active face.
-              if localeCyrillic and g == CludesUI.EXPRESSWAY_FORCED_KEY then return "Expressway" end
-              -- In glyph-restricted locales a stored Latin-only bundled font maps to the System Default entry; a chosen SM font shows as-is.
-              if localeRestricted and not fontDropValues[g] then return CludesUI.SYSTEM_FONT_KEY end
-              return g
-          end,
-          setValue=function(v)
-              CludesUI.GetFontsDB().global = v
-              local rl = CludesUI._widgetRefreshList
-              if rl then for i2 = 1, #rl do rl[i2]() end end
-              FontReload()
-          end },
-        { type="dropdown", text="Outline Mode",
-          tooltip="Controls the text rendering style used across all UI elements",
-          values=outlineModeValues, order=outlineModeOrder,
-          getValue=function()
-              local v = CludesUI.GetFontsDB().outlineMode or "none"
-              if v == "shadow" then v = "none" end
-              return v
-          end,
-          setValue=function(v)
-              CludesUI.GetFontsDB().outlineMode = v
-              local rl = CludesUI._widgetRefreshList
-              if rl then for i2 = 1, #rl do rl[i2]() end end
-              FontReload()
-          end });  y = y - h
+    globalFontRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Global Font",
+        values = fontDropValues,
+        order = fontDropOrder,
+        getValue = function()
+            local g = CludesUI.GetFontsDB().global or CludesUI.DEFAULT_FONT_NAME
+            -- Cyrillic locales list Expressway as a normal entry, so an older
+            -- __expressway opt-in collapses onto it (same file) instead of falling
+            -- through to System Default and misreporting the active face.
+            if localeCyrillic and g == CludesUI.EXPRESSWAY_FORCED_KEY then
+                return "Expressway"
+            end
+            -- In glyph-restricted locales a stored Latin-only bundled font maps to the System Default entry; a chosen SM font shows as-is.
+            if localeRestricted and not fontDropValues[g] then
+                return CludesUI.SYSTEM_FONT_KEY
+            end
+            return g
+        end,
+        setValue = function(v)
+            CludesUI.GetFontsDB().global = v
+            local rl = CludesUI._widgetRefreshList
+            if rl then
+                for i2 = 1, #rl do
+                    rl[i2]()
+                end
+            end
+            FontReload()
+        end,
+    }, {
+        type = "dropdown",
+        text = "Outline Mode",
+        tooltip = "Controls the text rendering style used across all UI elements",
+        values = outlineModeValues,
+        order = outlineModeOrder,
+        getValue = function()
+            local v = CludesUI.GetFontsDB().outlineMode or "none"
+            if v == "shadow" then
+                v = "none"
+            end
+            return v
+        end,
+        setValue = function(v)
+            CludesUI.GetFontsDB().outlineMode = v
+            local rl = CludesUI._widgetRefreshList
+            if rl then
+                for i2 = 1, #rl do
+                    rl[i2]()
+                end
+            end
+            FontReload()
+        end,
+    })
+    y = y - h
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(globalFontRow._leftRegion, {
             title = "Global Font",
             rows = {
-                { type="toggle", label="Apply to All Game Text",
-                  tooltip="Applies your Global Font to Blizzard's default game text (menus, tooltips, quest log, character panes, and more). Requires a UI reload.",
-                  get=function() return CludesUI.GetFontsDB().applyToAllGameText == true end,
-                  set=function(v)
-                      CludesUI.GetFontsDB().applyToAllGameText = v and true or false
-                      FontReload()
-                  end },
+                {
+                    type = "toggle",
+                    label = "Apply to All Game Text",
+                    tooltip = "Applies your Global Font to Blizzard's default game text (menus, tooltips, quest log, character panes, and more). Requires a UI reload.",
+                    get = function()
+                        return CludesUI.GetFontsDB().applyToAllGameText == true
+                    end,
+                    set = function(v)
+                        CludesUI.GetFontsDB().applyToAllGameText = v and true or false
+                        FontReload()
+                    end,
+                },
             },
         })
     end
@@ -1416,32 +2293,45 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     -- export/import), drops the SLUG token from every outline (body/icon/aura
     -- text, Outline Mode itself). Off by default; needs reload.
     local oitRow
-    oitRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Outline Icon Text",
-          tooltip="Forces a crisp outline on icon text (stack counts, durations, keybinds). Uncheck a module to make its icon text follow the Outline Mode setting above instead.",
-          values={ ["_placeholder"]="..." }, order={ "_placeholder" },
-          getValue=function() return "_placeholder" end,
-          setValue=function() end },
-        { type="toggle", text="Disable Slug Outline",
-          tooltip="Slug outline renders higher quality outlines compared to the base WoW outline mode but may make outline effects appear slightly thicker.",
-          getValue=function() return CludesUI.IsSlugDisabled() end,
-          setValue=function(v)
-              CludesUI.GetFontsDB().neverShowSlug = v and true or false
-              FontReload()
-          end }
-    );  y = y - h
+    oitRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Outline Icon Text",
+        tooltip = "Forces a crisp outline on icon text (stack counts, durations, keybinds). Uncheck a module to make its icon text follow the Outline Mode setting above instead.",
+        values = { ["_placeholder"] = "..." },
+        order = { "_placeholder" },
+        getValue = function()
+            return "_placeholder"
+        end,
+        setValue = function() end,
+    }, {
+        type = "toggle",
+        text = "Disable Slug Outline",
+        tooltip = "Slug outline renders higher quality outlines compared to the base WoW outline mode but may make outline effects appear slightly thicker.",
+        getValue = function()
+            return CludesUI.IsSlugDisabled()
+        end,
+        setValue = function(v)
+            CludesUI.GetFontsDB().neverShowSlug = v and true or false
+            FontReload()
+        end,
+    })
+    y = y - h
     if not CludesUI._prebuilding then
         local oitItems = {
             { key = "actionBars", label = "Action Bars Icons" },
             { key = "unitFrames", label = "Unit Frames Icons" },
-            { key = "cdm",        label = "CDM Icons" },
+            { key = "cdm", label = "CDM Icons" },
             { key = "raidFrames", label = "Raid & Party Frames Icons" },
-            { key = "bags",       label = "Bags Icons" },
+            { key = "bags", label = "Bags Icons" },
         }
         local rgn = oitRow._leftRegion
-        if rgn._control then rgn._control:Hide() end
+        if rgn._control then
+            rgn._control:Hide()
+        end
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn, 220, rgn:GetFrameLevel() + 2,
+            rgn,
+            220,
+            rgn:GetFrameLevel() + 2,
             oitItems,
             function(k)
                 local f = CludesUI.GetFontsDB()
@@ -1455,14 +2345,17 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
                     local t = {}
                     local seed = CludesUIDB and CludesUIDB.outlineIconText
                     if type(seed) == "table" then
-                        for kk, vv in pairs(seed) do t[kk] = vv end
+                        for kk, vv in pairs(seed) do
+                            t[kk] = vv
+                        end
                     end
                     f.outlineIconText = t
                 end
                 f.outlineIconText[k] = v and true or false
                 -- Reload prompt from setFn, NOT an onChanged callback: a non-nil onChanged re-anchors the open CB dropdown menu absolutely (for page rebuilds), visibly shifting it.
                 FontReload()
-            end)
+            end
+        )
         PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
         rgn._control = cbDD
         rgn._lastInline = nil
@@ -1488,7 +2381,9 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
                 if k ~= "---" or nameFontOrder[#nameFontOrder] ~= "---" then
                     nameFontOrder[#nameFontOrder + 1] = k
                 end
-                if k ~= "---" then nameFontValues[k] = fontDropValues[k] end
+                if k ~= "---" then
+                    nameFontValues[k] = fontDropValues[k]
+                end
             end
         end
     end
@@ -1504,51 +2399,66 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     -- immediately for a typed value.
     do
         local gtsPending
-        _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Name Font",
-              -- Coloured inline rather than via tooltipOpts.color, which would tint the explanation red along with the warning.
-              tooltip="Sets the font for the names that float above players, NPCs and enemies in the world.\n\nSeparate from Global Font - changing this does not affect the rest of the UI, and Global Font does not affect it.\n\nBlizzard Default leaves the name text completely untouched.\n\n|cffff4d4dRequires a re-log or restart of WoW to take effect.|r",
-              values=nameFontValues, order=nameFontOrder,
-              getValue=function()
-                  local n = CludesUI.GetFontsDB().unitNameFont
-                  if not n or not nameFontValues[n] then return NAME_FONT_DEFAULT end
-                  return n
-              end,
-              setValue=function(v)
-                  local fdb = CludesUI.GetFontsDB()
-                  -- nil, not the sentinel, so startup code can tell "leave Blizzard alone" without knowing the key.
-                  fdb.unitNameFont = (v ~= NAME_FONT_DEFAULT) and v or nil
-                  fdb.unitNameFontPath = (v ~= NAME_FONT_DEFAULT)
-                      and nameFontValues[v].font or nil
-                  -- No apply call: the engine already cached the global, so the change lands next login (same as Combat Text Font).
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Logout Required",
-                      message     = "Name font changes require a logout to character select to take effect. This is a WoW engine limitation.",
-                      confirmText = "Okay",
-                      cancelText  = "Later",
-                  })
-              end },
-            { type="slider", text="Game Text Scale", min=75, max=125, step=5,
-              tooltip="Scales the size of Blizzard's default game text (menus, tooltips, quest log, and more). Requires a UI reload.",
-              getValue=function() return CludesUI.GetFontsDB().gameTextScale or 100 end,
-              setValue=function(v)
-                  local f = CludesUI.GetFontsDB()
-                  local changed = (f.gameTextScale or 100) ~= v
-                  if changed then
-                      f.gameTextScale = v ~= 100 and v or nil
-                  end
-                  if CludesUI._sliderDragging then
-                      if changed then gtsPending = true end
-                      return
-                  end
-                  if changed or gtsPending then
-                      gtsPending = nil
-                      FontReload()
-                  end
-              end });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Name Font",
+            -- Coloured inline rather than via tooltipOpts.color, which would tint the explanation red along with the warning.
+            tooltip = "Sets the font for the names that float above players, NPCs and enemies in the world.\n\nSeparate from Global Font - changing this does not affect the rest of the UI, and Global Font does not affect it.\n\nBlizzard Default leaves the name text completely untouched.\n\n|cffff4d4dRequires a re-log or restart of WoW to take effect.|r",
+            values = nameFontValues,
+            order = nameFontOrder,
+            getValue = function()
+                local n = CludesUI.GetFontsDB().unitNameFont
+                if not n or not nameFontValues[n] then
+                    return NAME_FONT_DEFAULT
+                end
+                return n
+            end,
+            setValue = function(v)
+                local fdb = CludesUI.GetFontsDB()
+                -- nil, not the sentinel, so startup code can tell "leave Blizzard alone" without knowing the key.
+                fdb.unitNameFont = (v ~= NAME_FONT_DEFAULT) and v or nil
+                fdb.unitNameFontPath = (v ~= NAME_FONT_DEFAULT) and nameFontValues[v].font or nil
+                -- No apply call: the engine already cached the global, so the change lands next login (same as Combat Text Font).
+                CludesUI:ShowConfirmPopup({
+                    title = "Logout Required",
+                    message = "Name font changes require a logout to character select to take effect. This is a WoW engine limitation.",
+                    confirmText = "Okay",
+                    cancelText = "Later",
+                })
+            end,
+        }, {
+            type = "slider",
+            text = "Game Text Scale",
+            min = 75,
+            max = 125,
+            step = 5,
+            tooltip = "Scales the size of Blizzard's default game text (menus, tooltips, quest log, and more). Requires a UI reload.",
+            getValue = function()
+                return CludesUI.GetFontsDB().gameTextScale or 100
+            end,
+            setValue = function(v)
+                local f = CludesUI.GetFontsDB()
+                local changed = (f.gameTextScale or 100) ~= v
+                if changed then
+                    f.gameTextScale = v ~= 100 and v or nil
+                end
+                if CludesUI._sliderDragging then
+                    if changed then
+                        gtsPending = true
+                    end
+                    return
+                end
+                if changed or gtsPending then
+                    gtsPending = nil
+                    FontReload()
+                end
+            end,
+        })
+        y = y - h
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     -------------------------------------------------------------------
     --  MODULE FONTS -- one expandable card per module. The header dropdown
@@ -1570,11 +2480,15 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
     intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
-    intro:SetText(CludesUI.L("A quick view of every font setting in one place.") .. "\n"
-        .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones."))
+    intro:SetText(
+        CludesUI.L("A quick view of every font setting in one place.")
+            .. "\n"
+            .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
+    )
     y = y - 48
 
-    _, h = W:SectionHeader(parent, "MODULE FONTS", y);  y = y - h
+    _, h = W:SectionHeader(parent, "MODULE FONTS", y)
+    y = y - h
 
     for _, tile in ipairs(BuildTileList()) do
         y = BuildFontCard(parent, y, W, tile)

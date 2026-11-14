@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIActionBars.lua  Custom Action Bars
 --  Own secure action bar frames AND buttons (EABButton/ActionBarButtonTemplate),
@@ -8,8 +10,25 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  + _childupdate-eab-page with explicit action attrs.
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.SetFramePoint and CludesUI.HideFrame and CludesUI._Pool and CludesUI.PadGamepadUI and CludesUI.PadModeOn and CludesUI.RequestTimePlayed and CludesUI.FormatDuration) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the extra bars move Edit Mode systems through the parent's SetFramePoint, and Blizzard's main bar hides through its HideFrame; WoW Forever's Gamepad interface style is read through its PadGamepadUI, and Hide Bar When Using Gamepad follows its PadModeOn; the XP bar's Time This Level asks /played through RequestTimePlayed and its time texts read FormatDuration)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.SetFramePoint
+        and CludesUI.HideFrame
+        and CludesUI._Pool
+        and CludesUI.PadGamepadUI
+        and CludesUI.PadModeOn
+        and CludesUI.RequestTimePlayed
+        and CludesUI.FormatDuration
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the extra bars move Edit Mode systems through the parent's SetFramePoint, and Blizzard's main bar hides through its HideFrame; WoW Forever's Gamepad interface style is read through its PadGamepadUI, and Hide Bar When Using Gamepad follows its PadModeOn; the XP bar's Time This Level asks /played through RequestTimePlayed and its time texts read FormatDuration)
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 local EAB = CludesUI.Lite.NewAddon(ADDON_NAME)
 ns.EAB = EAB
 
@@ -24,7 +43,9 @@ local PP = CludesUI.PP
 do
     local pool = {}
     local n = 40
-    for i = 1, n do pool[i] = CreateFrame("Frame") end
+    for i = 1, n do
+        pool[i] = CreateFrame("Frame")
+    end
     ns.TakeShell = function()
         if n > 0 then
             local f = pool[n]
@@ -69,34 +90,50 @@ do -- Count text visibility
         local CA = C_ActionBar
         -- Never secret (none of the three carries a secrecy flag).
         if CA.IsItemAction(action) or CA.IsConsumableAction(action) or CA.IsStackableAction(action) then
-            if s.hideItemCount then return "hide" end
+            if s.hideItemCount then
+                return "hide"
+            end
             return nil
         end
         local hideCharges, hideStacks = s.hideChargeCount, s.hideStackCount
-        if hideCharges and hideStacks then return "hide" end
-        if not (hideCharges or hideStacks) then return nil end
+        if hideCharges and hideStacks then
+            return "hide"
+        end
+        if not (hideCharges or hideStacks) then
+            return nil
+        end
         -- maxCharges is never secret; the use count is while cooldowns are
         -- restricted.
         local ci = CA.GetActionCharges(action)
         -- Only a plain table is handed on (the caller tests it for nil).
-        if not (type(ci) == "table" and not (issecretvalue and issecretvalue(ci))) then ci = nil end
+        if not (type(ci) == "table" and not (issecretvalue and issecretvalue(ci))) then
+            ci = nil
+        end
         local mc = ci and ci.maxCharges
         if not (type(mc) == "number" and not (issecretvalue and issecretvalue(mc)) and mc > 1) then
-            if hideStacks then return "hide" end
+            if hideStacks then
+                return "hide"
+            end
             return nil, nil, ci
         end
         local uc = CA.GetActionUseCount(action)
         if issecretvalue and issecretvalue(uc) then
             -- Telling the stacks from the charges needs the secret: Charges
             -- hidden rides it as the alpha, Stacks hidden fails open.
-            if hideCharges then return "gate", uc end
+            if hideCharges then
+                return "gate", uc
+            end
             return nil, nil, ci
         end
         if type(uc) == "number" and uc > 0 then
-            if hideStacks then return "hide" end
+            if hideStacks then
+                return "hide"
+            end
             return nil, nil, ci
         end
-        if hideCharges then return "hide" end
+        if hideCharges then
+            return "hide"
+        end
         return nil, nil, ci
     end
 
@@ -181,11 +218,12 @@ do -- Count text visibility
             -- the same ordering defect this function's charge branch above already
             -- carries a comment about. The nil case needs no test of its own:
             -- nil == 0 is simply false.
-            if not (issecretvalue and issecretvalue(v))
-               and (v == 0 or v == "0") then
+            if not (issecretvalue and issecretvalue(v)) and (v == 0 or v == "0") then
                 a = 0
-            elseif (IsConsumableAction and IsConsumableAction(action))
-                or (IsStackableAction and IsStackableAction(action)) then
+            elseif
+                (IsConsumableAction and IsConsumableAction(action))
+                or (IsStackableAction and IsStackableAction(action))
+            then
                 local c = GetActionCount and GetActionCount(action)
                 if c ~= nil and not (issecretvalue and issecretvalue(c)) and c == 0 then
                     a = 0
@@ -211,7 +249,6 @@ ns.EAB_VTABLE = EAB_VTABLE
 
 EAB.VisibilityCompat = EAB.VisibilityCompat or {}
 
-
 -------------------------------------------------------------------------------
 --  Upvalues
 -------------------------------------------------------------------------------
@@ -229,7 +266,10 @@ local C_Timer_After = C_Timer.After
 ns._eabFD = setmetatable({}, { __mode = "k" })
 function ns.EFD(frame)
     local d = ns._eabFD[frame]
-    if not d then d = {}; ns._eabFD[frame] = d end
+    if not d then
+        d = {}
+        ns._eabFD[frame] = d
+    end
     return d
 end
 
@@ -245,7 +285,9 @@ local EFD = ns.EFD
 function ns._eabParked(btn)
     local d = ns._eabFD[btn]
     local p = d and d.parkA0
-    if p == 2 then return not btn:IsShown() end
+    if p == 2 then
+        return not btn:IsShown()
+    end
     return p == 1
 end
 
@@ -263,7 +305,9 @@ end
 -- classic. Stock-mode sites ask `~= "cui"`, kit sites ask `== "classic"`.
 function ns.AB_Style()
     local p = EAB.db and EAB.db.profile
-    if not p then return "cui" end
+    if not p then
+        return "cui"
+    end
     return (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
 end
 
@@ -273,9 +317,13 @@ end
 -- with the Blizzard flag, adds the Forever-only pieces. A LIVE read like
 -- AB_Style; false on every other client.
 function ns.AB_Forever()
-    if CludesUI.IS_FOREVER ~= true then return false end
+    if CludesUI.IS_FOREVER ~= true then
+        return false
+    end
     local p = EAB.db and EAB.db.profile
-    if not (p and p.useForeverStyle == true) then return false end
+    if not (p and p.useForeverStyle == true) then
+        return false
+    end
     return ns.AB_Style() == "blizzard"
 end
 
@@ -284,11 +332,15 @@ end
 -- Action Bar 1 follows the profile-wide foreverHideBarBg (shown unless it is
 -- set), every other bar is off.
 function ns.AB_ForeverBg(key)
-    if not ns.AB_Forever() then return false end
+    if not ns.AB_Forever() then
+        return false
+    end
     local p = EAB.db.profile
     local s = p.bars and p.bars[key]
     local v = s and s.foreverBarBg
-    if v == nil then v = key == "MainBar" and p.foreverHideBarBg ~= true end
+    if v == nil then
+        v = key == "MainBar" and p.foreverHideBarBg ~= true
+    end
     return v and true or false
 end
 
@@ -296,7 +348,9 @@ end
 -- where the Forever client swaps the name), native under the WoW Forever
 -- look. Plain SetAtlas on retail.
 function ns.AB_StockAtlas(tex, name, ...)
-    if ns.AB_Forever() then return tex:SetAtlas(name, ...) end
+    if ns.AB_Forever() then
+        return tex:SetAtlas(name, ...)
+    end
     return CludesUI.StockAtlas(tex, name, ...)
 end
 
@@ -306,7 +360,9 @@ end
 -- the CludesUI-style setting holds. Icon Size itself applies in every
 -- style (stock buttons scale their native art to it).
 function ns.AB_LayoutShape(s)
-    if ns.AB_Style() ~= "cui" then return "none" end
+    if ns.AB_Style() ~= "cui" then
+        return "none"
+    end
     return (s and s.buttonShape) or "none"
 end
 local RegisterStateDriver = RegisterStateDriver
@@ -322,18 +378,82 @@ local BAR_CONFIG = {
     -- CalculateAction path 1; the bar's _onstate-page handler sets actionpage
     -- from the restricted env for form/vehicle/override paging. Keys flow via
     -- Blizzard's native ActionButtonDown/Up -> GetActionButtonForID -> _G["ActionButton"..id].
-    { key = "MainBar",   label = "Action Bar 1 (Main)", barID = 1,  count = 12, blizzBtnPrefix = "ActionButton",              blizzFrame = "MainMenuBar", nativeMainBar = true },
+    {
+        key = "MainBar",
+        label = "Action Bar 1 (Main)",
+        barID = 1,
+        count = 12,
+        blizzBtnPrefix = "ActionButton",
+        blizzFrame = "MainMenuBar",
+        nativeMainBar = true,
+    },
     -- nativeActionPage: the Blizzard actionpage for this bar's slot range.
     -- Buttons keep native IDs; action = ID + (page-1)*12 (CalculateAction path
     -- 1). Keys flow via native MultiActionButtonDown/Up so UseAction gets
     -- isKeyPress=true (required for press-and-hold casting).
-    { key = "Bar2",      label = "Action Bar 2",        barID = 2,  count = 12, blizzBtnPrefix = "MultiBarBottomLeftButton",   blizzFrame = "MultiBarBottomLeft",  nativeActionPage = 6 },
-    { key = "Bar3",      label = "Action Bar 3",        barID = 3,  count = 12, blizzBtnPrefix = "MultiBarBottomRightButton",  blizzFrame = "MultiBarBottomRight", nativeActionPage = 5 },
-    { key = "Bar4",      label = "Action Bar 4",        barID = 4,  count = 12, blizzBtnPrefix = "MultiBarRightButton",        blizzFrame = "MultiBarRight",       nativeActionPage = 3 },
-    { key = "Bar5",      label = "Action Bar 5",        barID = 5,  count = 12, blizzBtnPrefix = "MultiBarLeftButton",         blizzFrame = "MultiBarLeft",        nativeActionPage = 4 },
-    { key = "Bar6",      label = "Action Bar 6",        barID = 6,  count = 12, blizzBtnPrefix = "MultiBar5Button",          blizzFrame = "MultiBar5",           nativeActionPage = 13 },
-    { key = "Bar7",      label = "Action Bar 7",        barID = 7,  count = 12, blizzBtnPrefix = "MultiBar6Button",          blizzFrame = "MultiBar6",           nativeActionPage = 14 },
-    { key = "Bar8",      label = "Action Bar 8",        barID = 8,  count = 12, blizzBtnPrefix = "MultiBar7Button",          blizzFrame = "MultiBar7",           nativeActionPage = 15 },
+    {
+        key = "Bar2",
+        label = "Action Bar 2",
+        barID = 2,
+        count = 12,
+        blizzBtnPrefix = "MultiBarBottomLeftButton",
+        blizzFrame = "MultiBarBottomLeft",
+        nativeActionPage = 6,
+    },
+    {
+        key = "Bar3",
+        label = "Action Bar 3",
+        barID = 3,
+        count = 12,
+        blizzBtnPrefix = "MultiBarBottomRightButton",
+        blizzFrame = "MultiBarBottomRight",
+        nativeActionPage = 5,
+    },
+    {
+        key = "Bar4",
+        label = "Action Bar 4",
+        barID = 4,
+        count = 12,
+        blizzBtnPrefix = "MultiBarRightButton",
+        blizzFrame = "MultiBarRight",
+        nativeActionPage = 3,
+    },
+    {
+        key = "Bar5",
+        label = "Action Bar 5",
+        barID = 5,
+        count = 12,
+        blizzBtnPrefix = "MultiBarLeftButton",
+        blizzFrame = "MultiBarLeft",
+        nativeActionPage = 4,
+    },
+    {
+        key = "Bar6",
+        label = "Action Bar 6",
+        barID = 6,
+        count = 12,
+        blizzBtnPrefix = "MultiBar5Button",
+        blizzFrame = "MultiBar5",
+        nativeActionPage = 13,
+    },
+    {
+        key = "Bar7",
+        label = "Action Bar 7",
+        barID = 7,
+        count = 12,
+        blizzBtnPrefix = "MultiBar6Button",
+        blizzFrame = "MultiBar6",
+        nativeActionPage = 14,
+    },
+    {
+        key = "Bar8",
+        label = "Action Bar 8",
+        barID = 8,
+        count = 12,
+        blizzBtnPrefix = "MultiBar7Button",
+        blizzFrame = "MultiBar7",
+        nativeActionPage = 15,
+    },
     -- Bar9/Bar10: extra bars with NO native Blizzard frame; our own
     -- EABButton<slot> buttons, paged like Bars 2-8 via explicit-action +
     -- _childupdate-eab-page. customPage = the action page the slots live on:
@@ -341,50 +461,110 @@ local BAR_CONFIG = {
     -- Bar10 = page 10 (slots 109-120). Neither page has a Blizzard binding
     -- command, so keys route via SetOverrideBindingClick through the
     -- CUI_BAR9/10_BUTTON commands in Bindings.xml.
-    { key = "Bar9",      label = "Action Bar 9",        barID = 0,  count = 12, customPage = 2 },
-    { key = "Bar10",     label = "Action Bar 10",       barID = 0,  count = 12, customPage = 10 },
-    { key = "StanceBar", label = "Stance Bar",          barID = 0,  count = 10, blizzBtnPrefix = "StanceButton",               blizzFrame = "StanceBar", isStance = true },
-    { key = "PetBar",    label = "Pet Bar",             barID = 0,  count = 10, blizzBtnPrefix = "PetActionButton",            blizzFrame = "PetActionBar", isPetBar = true },
+    { key = "Bar9", label = "Action Bar 9", barID = 0, count = 12, customPage = 2 },
+    { key = "Bar10", label = "Action Bar 10", barID = 0, count = 12, customPage = 10 },
+    {
+        key = "StanceBar",
+        label = "Stance Bar",
+        barID = 0,
+        count = 10,
+        blizzBtnPrefix = "StanceButton",
+        blizzFrame = "StanceBar",
+        isStance = true,
+    },
+    {
+        key = "PetBar",
+        label = "Pet Bar",
+        barID = 0,
+        count = 10,
+        blizzBtnPrefix = "PetActionButton",
+        blizzFrame = "PetActionBar",
+        isPetBar = true,
+    },
 }
 
 -- Aliases for the options file (which references these field names)
 for _, info in ipairs(BAR_CONFIG) do
     info.buttonPrefix = info.blizzBtnPrefix
-    info.frameName    = info.blizzFrame
+    info.frameName = info.blizzFrame
     info.fallbackFrame = nil
 end
 
 local EXTRA_BARS = {
-    { key = "MicroBar", label = "Micro Menu Bar", frameName = "MicroMenuContainer", hoverFrame = "MicroMenu", visibilityOnly = true, blizzOwnedVisibility = true },
-    { key = "BagBar",   label = "Bag Bar",        frameName = "BagsBar", visibilityOnly = true, blizzOwnedVisibility = true },
-    { key = "QueueStatus", label = "Queue Status", frameName = "QueueStatusButton", visibilityOnly = true, blizzOwnedVisibility = true, noManagedVisibility = true },
-    { key = "XPBar",    label = "XP Bar",         visibilityOnly = true, isDataBar = true },
-    { key = "RepBar",   label = "Reputation Bar",  visibilityOnly = true, isDataBar = true },
+    {
+        key = "MicroBar",
+        label = "Micro Menu Bar",
+        frameName = "MicroMenuContainer",
+        hoverFrame = "MicroMenu",
+        visibilityOnly = true,
+        blizzOwnedVisibility = true,
+    },
+    {
+        key = "BagBar",
+        label = "Bag Bar",
+        frameName = "BagsBar",
+        visibilityOnly = true,
+        blizzOwnedVisibility = true,
+    },
+    {
+        key = "QueueStatus",
+        label = "Queue Status",
+        frameName = "QueueStatusButton",
+        visibilityOnly = true,
+        blizzOwnedVisibility = true,
+        noManagedVisibility = true,
+    },
+    { key = "XPBar", label = "XP Bar", visibilityOnly = true, isDataBar = true },
+    { key = "RepBar", label = "Reputation Bar", visibilityOnly = true, isDataBar = true },
     { key = "FavorBar", label = "House Favor Bar", visibilityOnly = true, isDataBar = true },
-    { key = "ExtraActionButton", label = "Extra Action Button", visibilityOnly = true, isBlizzardMovable = true },
-    { key = "EncounterBar",      label = "Encounter Bar",         visibilityOnly = true, isBlizzardMovable = true },
+    {
+        key = "ExtraActionButton",
+        label = "Extra Action Button",
+        visibilityOnly = true,
+        isBlizzardMovable = true,
+    },
+    {
+        key = "EncounterBar",
+        label = "Encounter Bar",
+        visibilityOnly = true,
+        isBlizzardMovable = true,
+    },
 }
 -- WoW Forever has no extra action bar (no binding, no Edit Mode system for
 -- it): no holder, mover or visibility row there, and its container is left
 -- to Blizzard.
 if CludesUI.IS_FOREVER then
     for i = #EXTRA_BARS, 1, -1 do
-        if EXTRA_BARS[i].key == "ExtraActionButton" then table.remove(EXTRA_BARS, i) end
+        if EXTRA_BARS[i].key == "ExtraActionButton" then
+            table.remove(EXTRA_BARS, i)
+        end
     end
 end
 
 local ALL_BARS = {}
-for _, info in ipairs(BAR_CONFIG) do ALL_BARS[#ALL_BARS + 1] = info end
-for _, info in ipairs(EXTRA_BARS) do ALL_BARS[#ALL_BARS + 1] = info end
+for _, info in ipairs(BAR_CONFIG) do
+    ALL_BARS[#ALL_BARS + 1] = info
+end
+for _, info in ipairs(EXTRA_BARS) do
+    ALL_BARS[#ALL_BARS + 1] = info
+end
 
 local BAR_LOOKUP = {}
-for _, info in ipairs(BAR_CONFIG) do BAR_LOOKUP[info.key] = info end
-for _, info in ipairs(EXTRA_BARS) do BAR_LOOKUP[info.key] = info end
+for _, info in ipairs(BAR_CONFIG) do
+    BAR_LOOKUP[info.key] = info
+end
+for _, info in ipairs(EXTRA_BARS) do
+    BAR_LOOKUP[info.key] = info
+end
 
 -- Expose AB bar keys immediately so unlock mode's ApplyAnchorPosition can gate
 -- edge logic to CDM/AB without waiting for deferred RegisterWithUnlockMode.
-if not CludesUI._abBarKeys then CludesUI._abBarKeys = {} end
-for _, info in ipairs(BAR_CONFIG) do CludesUI._abBarKeys[info.key] = true end
+if not CludesUI._abBarKeys then
+    CludesUI._abBarKeys = {}
+end
+for _, info in ipairs(BAR_CONFIG) do
+    CludesUI._abBarKeys[info.key] = true
+end
 
 local BAR_DROPDOWN_VALUES = {}
 local BAR_DROPDOWN_ORDER = {}
@@ -405,19 +585,23 @@ end
 
 local DATA_BAR = {}
 for _, info in ipairs(EXTRA_BARS) do
-    if info.isDataBar then DATA_BAR[info.key] = true end
+    if info.isDataBar then
+        DATA_BAR[info.key] = true
+    end
 end
 
 ns.BAR_DROPDOWN_VALUES = BAR_DROPDOWN_VALUES
-ns.BAR_DROPDOWN_ORDER  = BAR_DROPDOWN_ORDER
-ns.VISIBILITY_ONLY     = VISIBILITY_ONLY
-ns.DATA_BAR            = DATA_BAR
-ns.BAR_LOOKUP          = BAR_LOOKUP
-ns.ALL_BARS            = ALL_BARS
-ns.EXTRA_BARS          = EXTRA_BARS
+ns.BAR_DROPDOWN_ORDER = BAR_DROPDOWN_ORDER
+ns.VISIBILITY_ONLY = VISIBILITY_ONLY
+ns.DATA_BAR = DATA_BAR
+ns.BAR_LOOKUP = BAR_LOOKUP
+ns.ALL_BARS = ALL_BARS
+ns.EXTRA_BARS = EXTRA_BARS
 
 function EAB.VisibilityCompat.ApplyMode(settings, mode)
-    if not settings then return "always" end
+    if not settings then
+        return "always"
+    end
 
     mode = mode or "always"
     settings.barVisibility = mode
@@ -441,7 +625,9 @@ function EAB.VisibilityCompat.ApplyMode(settings, mode)
 end
 
 function EAB.VisibilityCompat.Normalize(settings)
-    if not settings then return "always" end
+    if not settings then
+        return "always"
+    end
     if settings.barVisibility then
         return EAB.VisibilityCompat.ApplyMode(settings, settings.barVisibility)
     end
@@ -465,14 +651,20 @@ end
 -- an Always bar with a Never override is. Raw alwaysHidden/barVisibility reads stay
 -- correct only where the SHARED value is meant (sync copies, the setter itself).
 function EAB.VisibilityCompat.IsNever(s)
-    if not s then return false end
+    if not s then
+        return false
+    end
     local ov = CludesUI.VisOverrideValue(s)
-    if ov then return ov == "never" end
+    if ov then
+        return ov == "never"
+    end
     return (s.alwaysHidden or s.barVisibility == "never") and true or false
 end
 
 function EAB.VisibilityCompat.Copy(dst, src, dstNoGroupModes)
-    if not dst or not src then return end
+    if not dst or not src then
+        return
+    end
 
     local mode = EAB.VisibilityCompat.Normalize(src)
     EAB.VisibilityCompat.ApplyMode(dst, mode)
@@ -495,9 +687,13 @@ function EAB.VisibilityCompat.Copy(dst, src, dstNoGroupModes)
     -- (Pet Bar); the stripped selection re-normalizes through the shared setter,
     -- routing the scalar back through ApplyMode to keep the legacy booleans synced.
     if CludesUI and CludesUI.VisCopySelection then
-        CludesUI.VisCopySelection(dst, src, "barVisibility",
+        CludesUI.VisCopySelection(
+            dst,
+            src,
+            "barVisibility",
             dstNoGroupModes and CludesUI.VIS_CAPS_NO_GROUP or nil,
-            EAB.VisibilityCompat.ApplyMode)
+            EAB.VisibilityCompat.ApplyMode
+        )
     else
         dst.visibilityModes = nil
         dst.visibilityMatch = src.visibilityMatch or nil
@@ -521,43 +717,61 @@ local SHAPE_MASKS = CludesUI.SHAPE_MASKS
 local SHAPE_BORDERS = CludesUI.SHAPE_BORDERS
 local SHAPE_INSETS = CludesUI.SHAPE_INSETS
 local SHAPE_ZOOM_DEFAULTS = {
-    none = 5.5, cropped = 2, square = 6.0, circle = 6.0, csquare = 6.0,
-    diamond = 6.0, hexagon = 6.0, portrait = 6.0, shield = 6.0,
+    none = 5.5,
+    cropped = 2,
+    square = 6.0,
+    circle = 6.0,
+    csquare = 6.0,
+    diamond = 6.0,
+    hexagon = 6.0,
+    portrait = 6.0,
+    shield = 6.0,
 }
 ns.SHAPE_ZOOM_DEFAULTS = SHAPE_ZOOM_DEFAULTS
-ns.SHAPE_MASKS   = SHAPE_MASKS
+ns.SHAPE_MASKS = SHAPE_MASKS
 ns.SHAPE_BORDERS = SHAPE_BORDERS
 
-local SHAPE_BTN_EXPAND  = 10
+local SHAPE_BTN_EXPAND = 10
 local SHAPE_ICON_EXPAND = 7
-ns.SHAPE_BTN_EXPAND  = SHAPE_BTN_EXPAND
+ns.SHAPE_BTN_EXPAND = SHAPE_BTN_EXPAND
 ns.SHAPE_ICON_EXPAND = SHAPE_ICON_EXPAND
 
 local SHAPE_ICON_EXPAND_OFFSETS = {
-    circle = 2, csquare = 4, diamond = 2, hexagon = 4,
-    portrait = 2, shield = 2, square = 4,
+    circle = 2,
+    csquare = 4,
+    diamond = 2,
+    hexagon = 4,
+    portrait = 2,
+    shield = 2,
+    square = 4,
 }
 ns.SHAPE_ICON_EXPAND_OFFSETS = SHAPE_ICON_EXPAND_OFFSETS
 ns.SHAPE_INSETS = SHAPE_INSETS
 
 -- Per-shape edge scale so the circular edge path stays inside the mask.
 local SHAPE_EDGE_SCALES = {
-    circle = 0.75, csquare = 0.75, diamond = 0.70,
-    hexagon = 0.65, portrait = 0.70, shield = 0.65, square = 0.75,
+    circle = 0.75,
+    csquare = 0.75,
+    diamond = 0.70,
+    hexagon = 0.65,
+    portrait = 0.70,
+    shield = 0.65,
+    square = 0.75,
 }
 
 -- Border thickness mapping
 ns.BORDER_THICKNESS = {
-    none   = { regular = 0, shape = 0 },
-    thin   = { regular = 1, shape = 0 },
+    none = { regular = 0, shape = 0 },
+    thin = { regular = 1, shape = 0 },
     normal = { regular = 2, shape = 0 },
-    heavy  = { regular = 3, shape = 0 },
+    heavy = { regular = 3, shape = 0 },
     strong = { regular = 4, shape = 7 },
 }
-ns.BORDER_THICKNESS_ORDER  = { "none", "thin", "normal", "heavy", "strong" }
-ns.BORDER_THICKNESS_LABELS = { none="None", thin="Thin", normal="Normal", heavy="Heavy", strong="Strong" }
+ns.BORDER_THICKNESS_ORDER = { "none", "thin", "normal", "heavy", "strong" }
+ns.BORDER_THICKNESS_LABELS =
+    { none = "None", thin = "Thin", normal = "Normal", heavy = "Heavy", strong = "Strong" }
 ns.BORDER_THICKNESS_DEFAULT_REGULAR = "thin"
-ns.BORDER_THICKNESS_DEFAULT_SHAPE   = "strong"
+ns.BORDER_THICKNESS_DEFAULT_SHAPE = "strong"
 
 -- Per-addon border texture defaults (central registry)
 CludesUI.RegisterBorderDefaults("actionbars", CludesUI.BORDER_DEFAULTS_BUTTONS)
@@ -689,8 +903,8 @@ for _, info in ipairs(BAR_CONFIG) do
         mouseoverSpeed = 0.15,
         clickThrough = false,
         overrideNumIcons = nil,
-        overrideNumRows  = nil,
-        growDirection    = "up",
+        overrideNumRows = nil,
+        growDirection = "up",
         -- Legacy flag, superseded by iconOrder. iconOrder has no default:
         -- nil means "derive from reverseIconOrder" so old profiles keep layout.
         reverseIconOrder = false,
@@ -771,7 +985,7 @@ for _, k in ipairs({ "Bar9", "Bar10" }) do
     local b = defaults.profile.bars[k]
     if b then
         b.barVisibility = "never"
-        b.alwaysHidden  = true
+        b.alwaysHidden = true
     end
 end
 
@@ -797,7 +1011,7 @@ for _, info in ipairs(EXTRA_BARS) do
         d.width = 400
         d.height = 18
         d.orientation = "HORIZONTAL"
-        d.clickThrough = true  -- default on for data bars
+        d.clickThrough = true -- default on for data bars
         -- Custom Border (opt-in): off keeps the built-in 1px black line. The
         -- style keys below are what the option starts from (solid, thin, black)
         -- and render that same line. Offsets, shifts and borderThicknessPx have
@@ -829,8 +1043,12 @@ ns.defaults = defaults
 --  Utility helpers
 -------------------------------------------------------------------------------
 local function SafeEnableMouse(frame, enable)
-    if not frame then return end
-    if frame.IsProtected and frame:IsProtected() and InCombatLockdown() then return end
+    if not frame then
+        return
+    end
+    if frame.IsProtected and frame:IsProtected() and InCombatLockdown() then
+        return
+    end
     if frame.SetMouseClickEnabled then
         frame:SetMouseClickEnabled(enable)
         frame:SetMouseMotionEnabled(enable)
@@ -842,8 +1060,12 @@ end
 -- Like SafeEnableMouse but only mouse motion (OnEnter/OnLeave); keeps
 -- click-through so clicks pass to frames behind.
 local function SafeEnableMouseMotionOnly(frame, enable)
-    if not frame then return end
-    if frame.IsProtected and frame:IsProtected() and InCombatLockdown() then return end
+    if not frame then
+        return
+    end
+    if frame.IsProtected and frame:IsProtected() and InCombatLockdown() then
+        return
+    end
     if frame.SetMouseClickEnabled then
         frame:SetMouseClickEnabled(false)
         frame:SetMouseMotionEnabled(enable)
@@ -868,7 +1090,9 @@ local _fadeAlpha = {}
 function ns.AB_FadeTwin(frame, a)
     local tw = ns._abFadeTwin
     local h = tw and tw[frame]
-    if h then h:SetAlpha(a) end
+    if h then
+        h:SetAlpha(a)
+    end
 end
 
 -- The one fader for every fade target: a shared OnUpdate queue.
@@ -891,7 +1115,7 @@ local function _ExtraFadeOnUpdate(_, elapsed)
             _extraFadeQueue[frame] = nil
         else
             -- Smooth in/out easing
-            local e = t < 0.5 and (2 * t * t) or (1 - (-2 * t + 2)^2 / 2)
+            local e = t < 0.5 and (2 * t * t) or (1 - (-2 * t + 2) ^ 2 / 2)
             a = info.fromAlpha + (info.toAlpha - info.fromAlpha) * e
             frame:SetAlpha(a)
             _fadeAlpha[frame] = a
@@ -899,7 +1123,9 @@ local function _ExtraFadeOnUpdate(_, elapsed)
         end
         if tw then
             local h = tw[frame]
-            if h then h:SetAlpha(a) end
+            if h then
+                h:SetAlpha(a)
+            end
         end
     end
     if not anyActive then
@@ -911,8 +1137,15 @@ end
 local _dragState = { visible = false, strataCache = {} }
 
 -- Grid show/hide state (show empty slots during spell drag)
-local _gridState = { shown = false, visPending = false, spellsPending = false,
-    want = nil, settlePending = false, showFns = {}, hideFns = {} }
+local _gridState = {
+    shown = false,
+    visPending = false,
+    spellsPending = false,
+    want = nil,
+    settlePending = false,
+    showFns = {},
+    hideFns = {},
+}
 
 -- Grid edges arrive in pairs from scripted cursor use: every
 -- PickupContainerItem fires ACTIONBAR_SHOWGRID and every place fires
@@ -924,14 +1157,20 @@ local _gridState = { shown = false, visPending = false, spellsPending = false,
 -- into showFns/hideFns at their own definition sites.
 function ns.EABQueueGrid(show)
     _gridState.want = show
-    if _gridState.settlePending then return end
+    if _gridState.settlePending then
+        return
+    end
     _gridState.settlePending = true
     C_Timer_After(0.05, function()
         _gridState.settlePending = false
         local want = _gridState.want
-        if want == _gridState.shown then return end
+        if want == _gridState.shown then
+            return
+        end
         local list = want and _gridState.showFns or _gridState.hideFns
-        for i = 1, #list do list[i]() end
+        for i = 1, #list do
+            list[i]()
+        end
     end)
 end
 local _quickKeybindState = { open = false, closePending = false, art = {}, FinishClose = nil }
@@ -957,12 +1196,14 @@ local function FadeTo(frame, toAlpha, duration)
         return
     end
     local existing = _extraFadeQueue[frame]
-    if existing and existing.toAlpha == toAlpha then return end
+    if existing and existing.toAlpha == toAlpha then
+        return
+    end
     _extraFadeQueue[frame] = {
         fromAlpha = cur,
-        toAlpha   = toAlpha,
-        duration  = duration,
-        elapsed   = 0,
+        toAlpha = toAlpha,
+        duration = duration,
+        elapsed = 0,
     }
     _extraFadeFrame:SetScript("OnUpdate", _ExtraFadeOnUpdate)
 end
@@ -982,7 +1223,9 @@ end
 -- reports both writes here, so a later fade still starts where the frame
 -- really is. Frames this addon never wrote stay untracked.
 function CludesUI._EABNoteAlpha(frame, a)
-    if _fadeAlpha[frame] ~= nil then _fadeAlpha[frame] = a end
+    if _fadeAlpha[frame] ~= nil then
+        _fadeAlpha[frame] = a
+    end
 end
 
 -- Resolve borderThickness dropdown to actual pixel values. The ONE size source
@@ -994,7 +1237,9 @@ end
 local function ResolveBorderThickness(s)
     local thickness = s.borderThickness or "thin"
     local entry = ns.BORDER_THICKNESS[thickness]
-    if not entry then entry = ns.BORDER_THICKNESS["thin"] end
+    if not entry then
+        entry = ns.BORDER_THICKNESS["thin"]
+    end
     local shape = s.buttonShape or "none"
     if shape ~= "none" and shape ~= "cropped" then
         if thickness == "thin" and s.shapeBorderSize and s.shapeBorderSize ~= entry.shape then
@@ -1010,7 +1255,9 @@ ns.ResolveBorderThickness = ResolveBorderThickness
 
 -- Condense keybind text (CTRL-2 C2, Mouse Button 4 M4, etc.)
 local function FormatHotkeyText(text)
-    if not text or text == "" then return "" end
+    if not text or text == "" then
+        return ""
+    end
     -- Gamepad binds resolve to glyph markup (no atlas name matches a substitution
     -- below); keyboard binds keep the raw tokens the substitutions are written against.
     local resolved = GetBindingText(text, 1)
@@ -1020,7 +1267,7 @@ local function FormatHotkeyText(text)
     text = text:gsub("CTRL%-", "C")
     text = text:gsub("ALT%-", "A")
     text = text:gsub("SHIFT%-", "S")
-    text = text:gsub("META%-", "M")  -- Mac Command key (CMD-E -> ME)
+    text = text:gsub("META%-", "M") -- Mac Command key (CMD-E -> ME)
     text = text:gsub("Mouse Button ", "M")
     text = text:gsub("MOUSEWHEELUP", "MwU")
     text = text:gsub("MOUSEWHEELDOWN", "MwD")
@@ -1039,10 +1286,14 @@ end
 
 -- Check if a button has an action assigned
 local function ButtonHasAction(btn, prefix)
-    if not btn then return false end
+    if not btn then
+        return false
+    end
     if btn.HasAction then
         local ok, has = pcall(btn.HasAction, btn)
-        if ok then return has end
+        if ok then
+            return has
+        end
     end
     return btn.icon and btn.icon:IsShown() and btn.icon:GetTexture() ~= nil
 end
@@ -1054,7 +1305,9 @@ ns.ButtonHasAction = ButtonHasAction
 -- shown again until combat ends (the buttons are secure), so a pet called in
 -- combat would bring back an empty bar.
 function ns.AB_EmptySlot(btn, info)
-    if info.isPetBar and not PetHasActionBar() then return false end
+    if info.isPetBar and not PetHasActionBar() then
+        return false
+    end
     return not ButtonHasAction(btn, info.blizzBtnPrefix)
 end
 
@@ -1065,12 +1318,16 @@ end
 -- GetAttribute("action"), never btn.action (protected -- reading it in combat taints).
 -- Clears when no active duration resolves so a stale swipe is never left behind.
 local function ForceCooldownPaint(btn)
-    if not btn then return end
+    if not btn then
+        return
+    end
     local cd = btn.cooldown
     local action = btn:GetAttribute("action")
     if cd and action and HasAction(action) and C_ActionBar and C_ActionBar.GetActionCooldown then
         local cdInfo = C_ActionBar.GetActionCooldown(action)
-        local durObj = cdInfo and cdInfo.isActive and C_ActionBar.GetActionCooldownDuration
+        local durObj = cdInfo
+            and cdInfo.isActive
+            and C_ActionBar.GetActionCooldownDuration
             and C_ActionBar.GetActionCooldownDuration(action)
         if durObj then
             cd:SetCooldownFromDurationObject(durObj)
@@ -1092,11 +1349,17 @@ ns.ForceCooldownPaint = ForceCooldownPaint
 -- NeverSecret and the duration object carries the timing: no secret is read.
 -- On ns, not a local.
 ns.PaintAssistCooldown = function(btn, spellID)
-    if not spellID then return ForceCooldownPaint(btn) end
+    if not spellID then
+        return ForceCooldownPaint(btn)
+    end
     local cd = btn and btn.cooldown
-    if not cd then return end
+    if not cd then
+        return
+    end
     local info = C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(spellID)
-    local durObj = info and info.isActive and C_Spell.GetSpellCooldownDuration
+    local durObj = info
+        and info.isActive
+        and C_Spell.GetSpellCooldownDuration
         and C_Spell.GetSpellCooldownDuration(spellID)
     if durObj then
         cd:SetCooldownFromDurationObject(durObj)
@@ -1108,7 +1371,7 @@ end
 -- Stock bar frames to disable. Each entry carries flags for how to handle it:
 --   retainEvents  = true  -> do NOT unregister events (needed for override state)
 local STOCK_BAR_DISPOSAL = {
-    { name = "MainActionBar",       retainEvents = true },
+    { name = "MainActionBar", retainEvents = true },
     { name = "MainMenuBar" },
     { name = "MultiBarBottomLeft" },
     { name = "MultiBarBottomRight" },
@@ -1128,15 +1391,28 @@ local STOCK_BAR_DISPOSAL = {
 -- a setter here; the place that assigns it writes through SetSecureRefsReady,
 -- SetPagingFrame or SetIsApplyingAll, built below, which runs them all.
 CludesUI.NewInternals(ns, "_internals", {
-    BAR_CONFIG = BAR_CONFIG, _fadeAlpha = _fadeAlpha, _quickKeybindState = _quickKeybindState,
-    FormatHotkeyText = FormatHotkeyText, StopFade = StopFade, SafeEnableMouse = SafeEnableMouse,
+    BAR_CONFIG = BAR_CONFIG,
+    _fadeAlpha = _fadeAlpha,
+    _quickKeybindState = _quickKeybindState,
+    FormatHotkeyText = FormatHotkeyText,
+    StopFade = StopFade,
+    SafeEnableMouse = SafeEnableMouse,
     SafeEnableMouseMotionOnly = SafeEnableMouseMotionOnly,
-    ShouldQuickKeybindSurfaceBar = ShouldQuickKeybindSurfaceBar, FONT_PATH = FONT_PATH,
-    _gridState = _gridState, NUM_ACTIONBAR_BUTTONS = NUM_ACTIONBAR_BUTTONS,
-    SHAPE_EDGE_SCALES = SHAPE_EDGE_SCALES, STOCK_BAR_DISPOSAL = STOCK_BAR_DISPOSAL, BAR_LOOKUP = BAR_LOOKUP,
-    SHAPE_BTN_EXPAND = SHAPE_BTN_EXPAND, ALL_BARS = ALL_BARS, FadeTo = FadeTo, EXTRA_BARS = EXTRA_BARS,
+    ShouldQuickKeybindSurfaceBar = ShouldQuickKeybindSurfaceBar,
+    FONT_PATH = FONT_PATH,
+    _gridState = _gridState,
+    NUM_ACTIONBAR_BUTTONS = NUM_ACTIONBAR_BUTTONS,
+    SHAPE_EDGE_SCALES = SHAPE_EDGE_SCALES,
+    STOCK_BAR_DISPOSAL = STOCK_BAR_DISPOSAL,
+    BAR_LOOKUP = BAR_LOOKUP,
+    SHAPE_BTN_EXPAND = SHAPE_BTN_EXPAND,
+    ALL_BARS = ALL_BARS,
+    FadeTo = FadeTo,
+    EXTRA_BARS = EXTRA_BARS,
     _dragState = _dragState,
-    secureRefsReadySetters = {}, pagingFrameSetters = {}, isApplyingAllSetters = {},
+    secureRefsReadySetters = {},
+    pagingFrameSetters = {},
+    isApplyingAllSetters = {},
 }, {
     SetSecureRefsReady = "secureRefsReadySetters",
     SetPagingFrame = "pagingFrameSetters",

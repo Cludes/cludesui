@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarBuild.lua
 --
@@ -8,7 +10,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local pcall = pcall
@@ -26,16 +30,22 @@ local SetAnyStacks, SetAnyVisCond = I.SetAnyStacks, I.SetAnyVisCond
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-I.ecmeSetters[#I.ecmeSetters + 1] = function(v) ECME = v end
+I.ecmeSetters[#I.ecmeSetters + 1] = function(v)
+    ECME = v
+end
 local tbbTickFrame
-I.tickFrameSetters[#I.tickFrameSetters + 1] = function(v) tbbTickFrame = v end
+I.tickFrameSetters[#I.tickFrameSetters + 1] = function(v)
+    tbbTickFrame = v
+end
 
 -------------------------------------------------------------------------------
 --  Build / Rebuild All Tracking Bars
 -------------------------------------------------------------------------------
 function ns.BuildTrackedBuffBars()
     SetECME(ns.ECME)
-    if not ECME or not ECME.db then return end
+    if not ECME or not ECME.db then
+        return
+    end
     -- No InCombatLockdown guard needed: TBB frames are ours (UIParent), not secure Blizzard frames, so positioning in combat is safe.
     SetRebuildPending(false)
     SetReflowDirty(true)
@@ -57,11 +67,15 @@ function ns.BuildTrackedBuffBars()
     -- "Use Blizzard CDM Bars": hide all TBB frames and bail
     if p.cdmBars and p.cdmBars.useBlizzardBuffBars then
         for i = 1, #tbbFrames do
-            if tbbFrames[i] then tbbFrames[i]:Hide() end
+            if tbbFrames[i] then
+                tbbFrames[i]:Hide()
+            end
         end
         _tbbWake._enabled = false
         _tbbWake:UnregisterAllEvents()
-        if tbbTickFrame then tbbTickFrame:Hide() end
+        if tbbTickFrame then
+            tbbTickFrame:Hide()
+        end
         return
     end
 
@@ -77,28 +91,40 @@ function ns.BuildTrackedBuffBars()
 
     -- Hide bars beyond current count
     for i = #bars + 1, #tbbFrames do
-        if tbbFrames[i] then tbbFrames[i]:Hide() end
+        if tbbFrames[i] then
+            tbbFrames[i]:Hide()
+        end
     end
 
     -- Feature-gating flags: collected in the bar loop, handed on behind it
-    local _anyPandemic  = false
+    local _anyPandemic = false
     local _anyThreshold = false
-    local _anyStacks    = false
-    local _anyVisCond   = false
+    local _anyStacks = false
+    local _anyVisCond = false
 
     local anyEnabled = false
-    local anyLust = false  -- any enabled bloodlust bar -> needs the Sated listener
-    local anyAntiClip = false  -- WoW Forever: any enabled bar drawing the anti-clip glow
-    local lastBarByGroup = {}  -- gid -> previous enabled member frame (chain tail)
+    local anyLust = false -- any enabled bloodlust bar -> needs the Sated listener
+    local anyAntiClip = false -- WoW Forever: any enabled bar drawing the anti-clip glow
+    local lastBarByGroup = {} -- gid -> previous enabled member frame (chain tail)
     for i, cfg in ipairs(bars) do
         -- Update gating flags
-        if cfg.pandemicGlow                             then _anyPandemic  = true end
-        if cfg.stackThresholdEnabled                    then _anyThreshold = true; _anyStacks = true end
-        if (cfg.stacksPosition or "center") ~= "none"  then _anyStacks    = true end
-        if cfg.stackBasedBar and cfg.trackType ~= "cooldown"
-           and cfg.stackThresholdMaxEnabled             then _anyStacks    = true end
+        if cfg.pandemicGlow then
+            _anyPandemic = true
+        end
+        if cfg.stackThresholdEnabled then
+            _anyThreshold = true
+            _anyStacks = true
+        end
+        if (cfg.stacksPosition or "center") ~= "none" then
+            _anyStacks = true
+        end
+        if cfg.stackBasedBar and cfg.trackType ~= "cooldown" and cfg.stackThresholdMaxEnabled then
+            _anyStacks = true
+        end
         local visCond = TBBUsesVisCondition(cfg)
-        if visCond                                      then _anyVisCond   = true end
+        if visCond then
+            _anyVisCond = true
+        end
 
         if not tbbFrames[i] then
             tbbFrames[i] = CreateTrackedBuffBarFrame(UIParent, i)
@@ -111,8 +137,12 @@ function ns.BuildTrackedBuffBars()
             bar:Hide()
         else
             anyEnabled = true
-            if cfg.popularKey == "bloodlust" then anyLust = true end
-            if cfg.pandemicGlow then anyAntiClip = true end
+            if cfg.popularKey == "bloodlust" then
+                anyLust = true
+            end
+            if cfg.pandemicGlow then
+                anyAntiClip = true
+            end
             ApplyTrackedBuffBarSettings(bar, cfg)
 
             -- Icon texture: preset icon, else the EFFECTIVE (override-resolved) form of the
@@ -123,17 +153,24 @@ function ns.BuildTrackedBuffBars()
                 local iconID
                 if cfg.popularKey then
                     for _, pe in ipairs(TBB_POPULAR_BUFFS) do
-                        if pe.key == cfg.popularKey then iconID = pe.icon; break end
+                        if pe.key == cfg.popularKey then
+                            iconID = pe.icon
+                            break
+                        end
                     end
                 end
                 if not iconID then
                     local effSID = EffectiveIconSpellID(cfg)
                     if effSID then
                         local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(effSID)
-                        if spInfo then iconID = spInfo.iconID end
+                        if spInfo then
+                            iconID = spInfo.iconID
+                        end
                     end
                 end
-                if iconID then bar._icon._tex:SetTexture(iconID) end
+                if iconID then
+                    bar._icon._tex:SetTexture(iconID)
+                end
                 -- Rebuilds can re-pair bar index <-> config (add/remove shifts indices), so
                 -- reset per-bar icon source state and let the next tick re-derive instead of trusting stale caches.
                 bar._lastIconSID = nil
@@ -214,31 +251,47 @@ function ns.BuildTrackedBuffBars()
                     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
                     if not anchored or not bar:GetLeft() then
                         bar:ClearAllPoints()
-                        if pos.scale then pcall(function() bar:SetScale(pos.scale) end) end
+                        if pos.scale then
+                            pcall(function()
+                                bar:SetScale(pos.scale)
+                            end)
+                        end
                         bar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
                     end
                 else
                     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
                     if not anchored or not bar:GetLeft() then
                         bar:ClearAllPoints()
-                        bar:SetPoint("CENTER", UIParent, "CENTER", 0, 200 - (i - 1) * ((cfg.height or 24) + 4))
+                        bar:SetPoint(
+                            "CENTER",
+                            UIParent,
+                            "CENTER",
+                            0,
+                            200 - (i - 1) * ((cfg.height or 24) + 4)
+                        )
                     end
                 end
             end
 
-            if gid ~= 0 then lastBarByGroup[gid] = bar end
-            bar._tbbReady    = true
-            bar._isPassive   = nil
-            bar._stackCount  = 0
-            bar._isLifebloom = nil  -- re-resolve Lifebloom identity after rebuild
-            bar:Hide()  -- tick shows it when active
+            if gid ~= 0 then
+                lastBarByGroup[gid] = bar
+            end
+            bar._tbbReady = true
+            bar._isPassive = nil
+            bar._stackCount = 0
+            bar._isLifebloom = nil -- re-resolve Lifebloom identity after rebuild
+            bar:Hide() -- tick shows it when active
         end
     end
-    SetAnyPandemic(_anyPandemic); SetAnyThreshold(_anyThreshold)
-    SetAnyStacks(_anyStacks); SetAnyVisCond(_anyVisCond)
+    SetAnyPandemic(_anyPandemic)
+    SetAnyThreshold(_anyThreshold)
+    SetAnyStacks(_anyStacks)
+    SetAnyVisCond(_anyVisCond)
     -- WoW Forever: a Tracking Bar's Pandemic Glow is the anti-clip glow, which
     -- listens to your casts only while an enabled bar uses it (CUI_CDM_ForeverAntiClip.lua).
-    if ns.CDM_AntiClipBars then ns.CDM_AntiClipBars(anyAntiClip) end
+    if ns.CDM_AntiClipBars then
+        ns.CDM_AntiClipBars(anyAntiClip)
+    end
 
     -- Tick frame: every frame while anything is live (bar fill+spark need smooth updates);
     -- the idle sleeper in UpdateTrackedBuffBarTimers parks it when nothing is.
@@ -249,7 +302,9 @@ function ns.BuildTrackedBuffBars()
             local tbbAccum = 0
             tbbTickFrame:SetScript("OnUpdate", function(self, elapsed)
                 tbbAccum = tbbAccum + elapsed
-                if tbbAccum < 0.016 then return end
+                if tbbAccum < 0.016 then
+                    return
+                end
                 self._lastDt = tbbAccum
                 tbbAccum = 0
                 ns.UpdateTrackedBuffBarTimers()
@@ -258,7 +313,9 @@ function ns.BuildTrackedBuffBars()
         _tbbWake.Wake()
     else
         _tbbWake:UnregisterAllEvents()
-        if tbbTickFrame then tbbTickFrame:Hide() end
+        if tbbTickFrame then
+            tbbTickFrame:Hide()
+        end
     end
 
     -- Start/stop the player-only Sated-debuff listener that drives the lust displays. Goes
@@ -281,8 +338,11 @@ function ns.BuildTrackedBuffBars()
                 -- option back at None (session fallback, see TBBStandinFrame):
                 -- it must track registry-pos edits from other specs instead of
                 -- freezing anchored children on a phantom (audit-caught).
-                if entry.shiftNoBar == "Up" or entry.shiftNoBar == "Down"
-                    or (ns.TBBStandinFrame and ns.TBBStandinFrame(gk)) then
+                if
+                    entry.shiftNoBar == "Up"
+                    or entry.shiftNoBar == "Down"
+                    or (ns.TBBStandinFrame and ns.TBBStandinFrame(gk))
+                then
                     ns.TBBEnsureStandin(gk)
                 end
                 if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
@@ -305,10 +365,14 @@ function ns.BuildTrackedBuffBars()
     end
 
     -- Unlock mode
-    if ns.RegisterTBBUnlockElements then ns.RegisterTBBUnlockElements() end
+    if ns.RegisterTBBUnlockElements then
+        ns.RegisterTBBUnlockElements()
+    end
 
     -- 12.1 engine-driven decimal timer text (nil on 12.0: module self-gates)
-    if ns.TBBDecimals_Sync then ns.TBBDecimals_Sync() end
+    if ns.TBBDecimals_Sync then
+        ns.TBBDecimals_Sync()
+    end
 
     -- Match pads follow each bar's border settings: a bar or group whose pad
     -- changed is re-pushed through its match once, deferred (compare-only here).

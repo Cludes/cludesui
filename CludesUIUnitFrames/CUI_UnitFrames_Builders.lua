@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Builders.lua
 --
@@ -14,8 +16,10 @@ local PP = CludesUI.PP
 local GetMiniDonorSettings = ns.GetMiniDonorSettings
 
 local I = ns._internals
-local GetSettingsForUnit, UnitToSettingsKey, SetFSFont = I.GetSettingsForUnit, I.UnitToSettingsKey, I.SetFSFont
-local ApplyDarkTheme, ApplyClassColor, SpecHasClassPower = I.ApplyDarkTheme, I.ApplyClassColor, I.SpecHasClassPower
+local GetSettingsForUnit, UnitToSettingsKey, SetFSFont =
+    I.GetSettingsForUnit, I.UnitToSettingsKey, I.SetFSFont
+local ApplyDarkTheme, ApplyClassColor, SpecHasClassPower =
+    I.ApplyDarkTheme, I.ApplyClassColor, I.SpecHasClassPower
 local ApplyHealthBarTexture, ApplyHealthBarAlpha = I.ApplyHealthBarTexture, I.ApplyHealthBarAlpha
 local CreateHealthBar, CreateAbsorbBar, CreatePowerBar, CreatePortrait =
     I.CreateHealthBar, I.CreateAbsorbBar, I.CreatePowerBar, I.CreatePortrait
@@ -24,7 +28,9 @@ local CreateCastBar, SetupShowOnCastBar, CreateBottomTextBar =
 local ReparentBarsToClip, UpdateBordersForScale = I.ReparentBarsToClip, I.UpdateBordersForScale
 local SlotWidthMul, EstimateUFTextWidth = I.SlotWidthMul, I.EstimateUFTextWidth
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -- Boss frames have an independent Hover / Target border recolor (mirrors Raid Frames
 -- "Hover Borders"); both default OFF. Priority: hover (moused over) > target (current
@@ -32,9 +38,13 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 -- place. _hovered is maintained by OnEnter/OnLeave hooks; _isTarget by the boss target
 -- updater. On ns to avoid the Lua 200-local cap.
 ns.ApplyBossBorderState = function(self)
-    if not self.unifiedBorder then return end
+    if not self.unifiedBorder then
+        return
+    end
     local s = db.profile.boss
-    if not s then return end
+    if not s then
+        return
+    end
     local r, g, b, a
     if self._hovered and s.bossHoverBorderEnabled then
         local c = s.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
@@ -51,14 +61,22 @@ ns.ApplyBossBorderState = function(self)
     end
     CludesUI.SetBorderStyleColor(self.unifiedBorder, r, g, b, a)
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then seam._tex:SetVertexColor(r, g, b, a) end
+    if seam and seam:IsShown() then
+        seam._tex:SetVertexColor(r, g, b, a)
+    end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(r, g, b, a) end
+    if portraitSeam and portraitSeam:IsShown() then
+        portraitSeam._tex:SetVertexColor(r, g, b, a)
+    end
 end
 
 local function FrameBorderEnter(self)
-    if not self.unifiedBorder then return end
-    if self._blizzArtFrame then return end  -- Blizzard Style: no CUI border to recolor
+    if not self.unifiedBorder then
+        return
+    end
+    if self._blizzArtFrame then
+        return
+    end -- Blizzard Style: no CUI border to recolor
     local unit = self._cuiUnit or "player"
     if unit:match("^boss%d$") then
         self._hovered = true
@@ -68,27 +86,41 @@ local function FrameBorderEnter(self)
     local isMini = (unit == "pet" or unit == "targettarget" or unit == "focustarget")
     local settings = isMini and GetMiniDonorSettings(unit) or GetSettingsForUnit(unit)
     -- Highlight defaults ON (nil == enabled); only an explicit false disables it.
-    if settings.highlightEnabled == false then return end
+    if settings.highlightEnabled == false then
+        return
+    end
     -- Per-mini-frame opt-out: with "Show Highlight Border" off, a mini frame never
     -- recolors on hover even when the donor (main frame) highlight is enabled. (When the
     -- donor highlight is off we already returned above, so this has no effect then.)
-    if isMini and GetSettingsForUnit(unit).showHighlightBorder == false then return end
+    if isMini and GetSettingsForUnit(unit).showHighlightBorder == false then
+        return
+    end
     local hc = settings.highlightColor or { r = 1, g = 1, b = 1 }
     local ha = settings.highlightAlpha or 1
     CludesUI.SetBorderStyleColor(self.unifiedBorder, hc.r, hc.g, hc.b, ha)
     -- The portrait's Outer Ring wears the frame border tint (only once built).
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
-    if ring and ring:IsShown() then ring:SetVertexColor(hc.r, hc.g, hc.b, ha) end
+    if ring and ring:IsShown() then
+        ring:SetVertexColor(hc.r, hc.g, hc.b, ha)
+    end
     -- So does the Power Bar Seam (only once built).
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then seam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha) end
+    if seam and seam:IsShown() then
+        seam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha)
+    end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha) end
+    if portraitSeam and portraitSeam:IsShown() then
+        portraitSeam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha)
+    end
 end
 local function FrameBorderLeave(self)
-    if not self.unifiedBorder then return end
-    if self._blizzArtFrame then return end  -- Blizzard Style: no CUI border to recolor
+    if not self.unifiedBorder then
+        return
+    end
+    if self._blizzArtFrame then
+        return
+    end -- Blizzard Style: no CUI border to recolor
     local unit = self._cuiUnit or "player"
     if unit:match("^boss%d$") then
         self._hovered = false
@@ -102,11 +134,17 @@ local function FrameBorderLeave(self)
     CludesUI.SetBorderStyleColor(self.unifiedBorder, bc.r, bc.g, bc.b, ba)
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
-    if ring and ring:IsShown() then ring:SetVertexColor(bc.r, bc.g, bc.b, ba) end
+    if ring and ring:IsShown() then
+        ring:SetVertexColor(bc.r, bc.g, bc.b, ba)
+    end
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then seam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba) end
+    if seam and seam:IsShown() then
+        seam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba)
+    end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba) end
+    if portraitSeam and portraitSeam:IsShown() then
+        portraitSeam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba)
+    end
 end
 -- The detached portrait's click overlay replays these on hover (Portrait.lua).
 I.FrameBorderEnter, I.FrameBorderLeave = FrameBorderEnter, FrameBorderLeave
@@ -122,10 +160,27 @@ local function CreateUnifiedBorder(frame, unit)
     PP.Point(border, "TOPLEFT", frame, "TOPLEFT", 0, 0)
     PP.Point(border, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
     local borderBehind = settings.borderBehind
-    border:SetFrameLevel(borderBehind and math.max(0, frame:GetFrameLevel() - 1) or (frame:GetFrameLevel() + 10))
+    border:SetFrameLevel(
+        borderBehind and math.max(0, frame:GetFrameLevel() - 1) or (frame:GetFrameLevel() + 10)
+    )
 
-    CludesUI.ApplyBorderStyle(border, size, bc.r, bc.g, bc.b, settings.borderAlpha or 1, textureKey, settings.borderTextureOffset, settings.borderTextureOffsetY, settings.borderTextureShiftX, settings.borderTextureShiftY, "unitframes", size, nil,
-        CludesUI.BorderPx(settings.borderSizePx, size, textureKey))
+    CludesUI.ApplyBorderStyle(
+        border,
+        size,
+        bc.r,
+        bc.g,
+        bc.b,
+        settings.borderAlpha or 1,
+        textureKey,
+        settings.borderTextureOffset,
+        settings.borderTextureOffsetY,
+        settings.borderTextureShiftX,
+        settings.borderTextureShiftY,
+        "unitframes",
+        size,
+        nil,
+        CludesUI.BorderPx(settings.borderSizePx, size, textureKey)
+    )
 
     frame.unifiedBorder = border
 
@@ -150,7 +205,9 @@ local AURA_ZOOM = 0.07
 -- zoom (optional) overrides the default AURA_ZOOM crop; per-unit/per-category
 -- Icon Zoom values flow in here, defaulting to AURA_ZOOM so unset = unchanged.
 local function SetAuraIconCrop(icon, cropped, w, h, zoom)
-    if not icon then return end
+    if not icon then
+        return
+    end
     local z = zoom or AURA_ZOOM
     if cropped and w and h and w > 0 then
         local uSpan = 1 - 2 * z
@@ -165,7 +222,9 @@ end
 -- (rectangular height = 80% of width + aspect-preserving texcoord trim).
 ns.SetAuraIconCrop = SetAuraIconCrop
 function ns.GetAuraCropHeight(cropped, w)
-    if cropped then return math_floor(w * AURA_CROP_HEIGHT + 0.5) end
+    if cropped then
+        return math_floor(w * AURA_CROP_HEIGHT + 0.5)
+    end
     return w
 end
 
@@ -174,12 +233,19 @@ end
 -- the icon edge, center sits dead-center. User X/Y offset adds on top. On ns for the
 -- 200-local cap.
 function ns.ApplyStackAnchor(fs, parent, pos, offX, offY)
-    if not fs or not parent then return end
+    if not fs or not parent then
+        return
+    end
     local point, baseX = "BOTTOMRIGHT", -1
-    if pos == "bottomleft" then point, baseX = "BOTTOMLEFT", 1
-    elseif pos == "topright" then point, baseX = "TOPRIGHT", -1
-    elseif pos == "topleft" then point, baseX = "TOPLEFT", 1
-    elseif pos == "center" then point, baseX = "CENTER", 0 end
+    if pos == "bottomleft" then
+        point, baseX = "BOTTOMLEFT", 1
+    elseif pos == "topright" then
+        point, baseX = "TOPRIGHT", -1
+    elseif pos == "topleft" then
+        point, baseX = "TOPLEFT", 1
+    elseif pos == "center" then
+        point, baseX = "CENTER", 0
+    end
     fs:ClearAllPoints()
     fs:SetPoint(point, parent, point, baseX + (offX or 0), offY or 0)
 end
@@ -189,7 +255,9 @@ end
 -- always-fresh settings access and build the unit's containers.
 local function CreateTargetAuras(frame, unit)
     ns.UF_GetSettings = GetSettingsForUnit
-    ns.UF_GetProfile = ns.UF_GetProfile or function() return db and db.profile end
+    ns.UF_GetProfile = ns.UF_GetProfile or function()
+        return db and db.profile
+    end
     return ns.UF_CreateAuraContainers(frame, unit or "target")
 end
 
@@ -199,9 +267,13 @@ end
 -- Overrides land. Same settings view and on/off test as the container runtime.
 function ns.UF_EnsurePetAuras(frame)
     frame = frame or (ns.frames and ns.frames.pet)
-    if not frame or ns.GetUnitFrameSource("pet") ~= "cui" then return end
+    if not frame or ns.GetUnitFrameSource("pet") ~= "cui" then
+        return
+    end
     local s = ns.UF_AuraSettings("pet")
-    if not s then return end
+    if not s then
+        return
+    end
     if ns.UF_AuraSideOn("pet", "HELPFUL", s) or ns.UF_AuraSideOn("pet", "HARMFUL", s) then
         CreateTargetAuras(frame, "pet")
     end
@@ -223,7 +295,7 @@ local function ApplyAbsorbGate(frame, unit, textOverlay, zone, fs, content)
             frame._absClip = frame._absClip or {}
             g = CreateFrame("StatusBar", nil, textOverlay)
             g:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-            g:SetStatusBarColor(1, 1, 1, 0)  -- geometry only; never drawn
+            g:SetStatusBarColor(1, 1, 1, 0) -- geometry only; never drawn
             g:SetMinMaxValues(0, 1)
             g:SetValue(0)
             local clip = CreateFrame("Frame", nil, textOverlay)
@@ -237,9 +309,12 @@ local function ApplyAbsorbGate(frame, unit, textOverlay, zone, fs, content)
         local clip = frame._absClip[zone]
         g._cuiHealGate = isHeal
         g:ClearAllPoints()
-        g:SetAllPoints(fs)  -- gate spans the zone's text allocation (live)
-        if fs:GetParent() ~= clip then fs:SetParent(clip) end
-        g:Show(); clip:Show()
+        g:SetAllPoints(fs) -- gate spans the zone's text allocation (live)
+        if fs:GetParent() ~= clip then
+            fs:SetParent(clip)
+        end
+        g:Show()
+        clip:Show()
         local amt
         if isHeal then
             amt = (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unit)) or 0
@@ -249,8 +324,13 @@ local function ApplyAbsorbGate(frame, unit, textOverlay, zone, fs, content)
         g:SetValue(amt)
     elseif g then
         local clip = frame._absClip[zone]
-        if fs:GetParent() == clip then fs:SetParent(textOverlay) end
-        g:Hide(); if clip then clip:Hide() end
+        if fs:GetParent() == clip then
+            fs:SetParent(textOverlay)
+        end
+        g:Hide()
+        if clip then
+            clip:Hide()
+        end
     end
 end
 
@@ -271,14 +351,17 @@ local function ApplyFrameTextTags(frame, unit, settings, lc, rc, cc, ec)
     ApplyAbsorbGate(frame, unit, textOverlay, "left", frame.LeftText, lc)
     ApplyAbsorbGate(frame, unit, textOverlay, "right", frame.RightText, rc)
     ApplyAbsorbGate(frame, unit, textOverlay, "center", frame.CenterText, cc)
-    if extraText then ApplyAbsorbGate(frame, unit, textOverlay, "extra", extraText, ec) end
+    if extraText then
+        ApplyAbsorbGate(frame, unit, textOverlay, "extra", extraText, ec)
+    end
     ns.UF_PaintText(frame, frame._cuiUnit or unit)
 end
 
 -- Position and show/hide based on content + offsets
 local function ApplyFrameTextPositions(frame, unit, s, rcDefault, barWDefault)
     local textOverlay = frame._textOverlay
-    local leftText, rightText, centerText, extraText = frame.LeftText, frame.RightText, frame.CenterText, frame.ExtraText
+    local leftText, rightText, centerText, extraText =
+        frame.LeftText, frame.RightText, frame.CenterText, frame.ExtraText
     local lc = s.leftTextContent or "name"
     local rc = s.rightTextContent or rcDefault
     local cc = s.centerTextContent or "none"
@@ -315,8 +398,17 @@ local function ApplyFrameTextPositions(frame, unit, s, rcDefault, barWDefault)
             end
             PP.Width(extraText, barW * 0.95 * SlotWidthMul(s, "extraText"))
             extraText:Show()
-            ApplyClassColor(extraText, unit, s.extraTextClassColor, s.extraTextColorR, s.extraTextColorG, s.extraTextColorB)
-        else extraText:Hide() end
+            ApplyClassColor(
+                extraText,
+                unit,
+                s.extraTextClassColor,
+                s.extraTextColorR,
+                s.extraTextColorG,
+                s.extraTextColorB
+            )
+        else
+            extraText:Hide()
+        end
     end
 
     -- Each text position renders independently.
@@ -327,8 +419,17 @@ local function ApplyFrameTextPositions(frame, unit, s, rcDefault, barWDefault)
         PP.Point(centerText, "CENTER", textOverlay, "CENTER", cxo, cyo)
         PP.Width(centerText, barW * 0.9 * SlotWidthMul(s, "centerText"))
         centerText:Show()
-        ApplyClassColor(centerText, unit, s.centerTextClassColor, s.centerTextColorR, s.centerTextColorG, s.centerTextColorB)
-    else centerText:Hide() end
+        ApplyClassColor(
+            centerText,
+            unit,
+            s.centerTextClassColor,
+            s.centerTextColorR,
+            s.centerTextColorG,
+            s.centerTextColorB
+        )
+    else
+        centerText:Hide()
+    end
 
     SetFSFont(leftText, lsz)
     leftText:ClearAllPoints()
@@ -343,8 +444,17 @@ local function ApplyFrameTextPositions(frame, unit, s, rcDefault, barWDefault)
             PP.Width(leftText, barW * 0.9 * SlotWidthMul(s, "leftText"))
         end
         leftText:Show()
-        ApplyClassColor(leftText, unit, s.leftTextClassColor, s.leftTextColorR, s.leftTextColorG, s.leftTextColorB)
-    else leftText:Hide() end
+        ApplyClassColor(
+            leftText,
+            unit,
+            s.leftTextClassColor,
+            s.leftTextColorR,
+            s.leftTextColorG,
+            s.leftTextColorB
+        )
+    else
+        leftText:Hide()
+    end
 
     SetFSFont(rightText, rsz)
     rightText:ClearAllPoints()
@@ -359,8 +469,17 @@ local function ApplyFrameTextPositions(frame, unit, s, rcDefault, barWDefault)
             PP.Width(rightText, barW * 0.9 * SlotWidthMul(s, "rightText"))
         end
         rightText:Show()
-        ApplyClassColor(rightText, unit, s.rightTextClassColor, s.rightTextColorR, s.rightTextColorG, s.rightTextColorB)
-    else rightText:Hide() end
+        ApplyClassColor(
+            rightText,
+            unit,
+            s.rightTextClassColor,
+            s.rightTextColorR,
+            s.rightTextColorG,
+            s.rightTextColorB
+        )
+    else
+        rightText:Hide()
+    end
 end
 
 local function StyleFullFrame(frame, unit)
@@ -383,12 +502,16 @@ local function StyleFullFrame(frame, unit)
         local pSide = settings.portraitSide or "left"
         -- For attached, "top" falls back to default side
         local effectiveSide = pSide
-        if isAttached and pSide == "top" then effectiveSide = "left" end
+        if isAttached and pSide == "top" then
+            effectiveSide = "left"
+        end
         -- Class power "above" adds height above health bar ("top" floats outside)
         local cpAboveH = 0
         if SpecHasClassPower() then
             local cpSt = settings.classPowerStyle or "none"
-            if ns.UF_ForeverCPStyle then cpSt = ns.UF_ForeverCPStyle(cpSt) end
+            if ns.UF_ForeverCPStyle then
+                cpSt = ns.UF_ForeverCPStyle(cpSt)
+            end
             local cpPo = (cpSt == "modern") and (settings.classPowerPosition or "top") or "none"
             if cpSt == "modern" and cpPo == "above" then
                 local cpSizeAdj = settings.classPowerSize or 8
@@ -400,8 +523,12 @@ local function StyleFullFrame(frame, unit)
         -- Apply portrait size adjustment
         local pSizeAdj = settings.portraitSize or 0
         local adjPortraitH = playerHeightWithCp + pSizeAdj
-        if adjPortraitH < 8 then adjPortraitH = 8 end
-        if not isAttached then pSizeAdj = pSizeAdj + 10 end
+        if adjPortraitH < 8 then
+            adjPortraitH = 8
+        end
+        if not isAttached then
+            pSizeAdj = pSizeAdj + 10
+        end
         if not showPortrait then
             totalWidth = settings.frameWidth
             portraitHeight = 0
@@ -414,9 +541,11 @@ local function StyleFullFrame(frame, unit)
         end
         -- Health bar xOffset: only offset when portrait is attached on the left
         local healthXOffset = (showPortrait and isAttached and effectiveSide == "left") and adjPortraitH or 0
-        local healthRightInset = (showPortrait and isAttached and effectiveSide == "right") and adjPortraitH or 0
+        local healthRightInset = (showPortrait and isAttached and effectiveSide == "right") and adjPortraitH
+            or 0
         PP.Size(frame, totalWidth, playerHeightWithCp + btbExtra)
-        frame.Health = CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
+        frame.Health =
+            CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
         frame.Power = CreatePowerBar(frame, unit, settings)
         -- Always create absorb bar; oUF element disabled later if not wanted
         CreateAbsorbBar(frame, unit, settings)
@@ -452,11 +581,17 @@ local function StyleFullFrame(frame, unit)
         local pSide = settings.portraitSide or "right"
         -- For attached, "top" falls back to default side
         local effectiveSide = pSide
-        if isAttached and pSide == "top" then effectiveSide = "right" end
+        if isAttached and pSide == "top" then
+            effectiveSide = "right"
+        end
         local pSizeAdj = settings.portraitSize or 0
         local adjPortraitH = playerTargetHeight + pSizeAdj
-        if not isAttached then pSizeAdj = pSizeAdj + 10 end
-        if adjPortraitH < 8 then adjPortraitH = 8 end
+        if not isAttached then
+            pSizeAdj = pSizeAdj + 10
+        end
+        if adjPortraitH < 8 then
+            adjPortraitH = 8
+        end
         if not showPortrait then
             totalWidth = settings.frameWidth
         elseif isAttached then
@@ -465,9 +600,11 @@ local function StyleFullFrame(frame, unit)
             totalWidth = settings.frameWidth
         end
         local healthXOffset = (showPortrait and isAttached and effectiveSide == "left") and adjPortraitH or 0
-        local healthRightInset = (showPortrait and isAttached and effectiveSide == "right") and adjPortraitH or 0
+        local healthRightInset = (showPortrait and isAttached and effectiveSide == "right") and adjPortraitH
+            or 0
         PP.Size(frame, totalWidth, targetFrameHeight)
-        frame.Health = CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
+        frame.Health =
+            CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
         frame.Power = CreatePowerBar(frame, unit, settings)
         CreateAbsorbBar(frame, unit, settings)
         frame.Castbar = CreateCastBar(frame, unit, settings)
@@ -507,13 +644,11 @@ local function StyleFullFrame(frame, unit)
         raidIconHolder:SetAllPoints(frame)
         raidIconHolder:SetFrameLevel(frame:GetFrameLevel() + 20)
         local raidIcon = raidIconHolder:CreateTexture(nil, "OVERLAY", nil, 7)
-        local rmSize  = settings.raidMarkerSize or 28
+        local rmSize = settings.raidMarkerSize or 28
         local rmAlign = settings.raidMarkerAlign or "right"
-        local rmX     = settings.raidMarkerX or 0
-        local rmY     = settings.raidMarkerY or 0
-        local rmAnchor = (rmAlign == "left") and "TOPLEFT"
-            or (rmAlign == "center") and "TOP"
-            or "TOPRIGHT"
+        local rmX = settings.raidMarkerX or 0
+        local rmY = settings.raidMarkerY or 0
+        local rmAnchor = (rmAlign == "left") and "TOPLEFT" or (rmAlign == "center") and "TOP" or "TOPRIGHT"
         raidIcon:SetSize(rmSize, rmSize)
         raidIcon:SetPoint("CENTER", frame, rmAnchor, rmX, rmY)
         frame._raidMarkerIcon = raidIcon
@@ -571,10 +706,14 @@ local function StyleFullFrame(frame, unit)
     frame.NameText = leftText
     frame.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec) ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec) end
+    local function ApplyTextTags(lc, rc, cc, ec)
+        ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec)
+    end
     ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
     frame._applyTextTags = ApplyTextTags
-    local function ApplyTextPositions(s) ApplyFrameTextPositions(frame, unit, s, "both", 181) end
+    local function ApplyTextPositions(s)
+        ApplyFrameTextPositions(frame, unit, s, "both", 181)
+    end
     ApplyTextPositions(settings)
     frame._applyTextPositions = ApplyTextPositions
 
@@ -588,13 +727,17 @@ local function StyleFullFrame(frame, unit)
         if btbIsAttached and showPortrait and isAttached then
             local pSide = settings.portraitSide or (unit == "player" and "left" or "right")
             local eSide = pSide
-            if pSide == "top" then eSide = (unit == "player") and "left" or "right" end
+            if pSide == "top" then
+                eSide = (unit == "player") and "left" or "right"
+            end
             if eSide == "left" then
                 local ppPos2 = settings.powerPosition or "below"
                 local ppIsAtt2 = (ppPos2 == "below" or ppPos2 == "above")
                 local barH = settings.healthHeight + (ppIsAtt2 and (settings.powerHeight or 6) or 0)
                 local adj = barH + (settings.portraitSize or 0)
-                if adj < 8 then adj = 8 end
+                if adj < 8 then
+                    adj = 8
+                end
                 btbXOff = -adj
             end
         end
@@ -603,7 +746,6 @@ local function StyleFullFrame(frame, unit)
         -- Cast bar positioning owned by centralized unlock system
     end
 end
-
 
 local function StyleFocusFrame(frame, unit)
     local settings = GetSettingsForUnit(unit)
@@ -623,11 +765,17 @@ local function StyleFocusFrame(frame, unit)
     local pSide = settings.portraitSide or "right"
     -- For attached, "top" falls back to default side
     local effectiveSide = pSide
-    if isAttached and pSide == "top" then effectiveSide = "right" end
+    if isAttached and pSide == "top" then
+        effectiveSide = "right"
+    end
     local pSizeAdj = settings.portraitSize or 0
-    if not isAttached then pSizeAdj = pSizeAdj + 10 end
+    if not isAttached then
+        pSizeAdj = pSizeAdj + 10
+    end
     local adjPortraitH = focusBarHeight + pSizeAdj
-    if adjPortraitH < 8 then adjPortraitH = 8 end
+    if adjPortraitH < 8 then
+        adjPortraitH = 8
+    end
 
     if not showPortrait then
         totalWidth = settings.frameWidth
@@ -640,7 +788,8 @@ local function StyleFocusFrame(frame, unit)
     PP.Size(frame, totalWidth, focusFrameHeight)
     local healthXOffset = (showPortrait and isAttached and effectiveSide == "left") and adjPortraitH or 0
     local healthRightInset = (showPortrait and isAttached and effectiveSide == "right") and adjPortraitH or 0
-    frame.Health = CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
+    frame.Health =
+        CreateHealthBar(frame, unit, settings.healthHeight, healthXOffset, settings, healthRightInset)
     frame.Power = CreatePowerBar(frame, unit, settings)
     CreateAbsorbBar(frame, unit, settings)
     frame.Castbar = CreateCastBar(frame, unit, settings)
@@ -681,13 +830,11 @@ local function StyleFocusFrame(frame, unit)
         raidIconHolder:SetAllPoints(frame)
         raidIconHolder:SetFrameLevel(frame:GetFrameLevel() + 20)
         local raidIcon = raidIconHolder:CreateTexture(nil, "OVERLAY", nil, 7)
-        local rmSize  = settings.raidMarkerSize or 28
+        local rmSize = settings.raidMarkerSize or 28
         local rmAlign = settings.raidMarkerAlign or "right"
-        local rmX     = settings.raidMarkerX or 0
-        local rmY     = settings.raidMarkerY or 0
-        local rmAnchor = (rmAlign == "left") and "TOPLEFT"
-            or (rmAlign == "center") and "TOP"
-            or "TOPRIGHT"
+        local rmX = settings.raidMarkerX or 0
+        local rmY = settings.raidMarkerY or 0
+        local rmAnchor = (rmAlign == "left") and "TOPLEFT" or (rmAlign == "center") and "TOP" or "TOPRIGHT"
         raidIcon:SetSize(rmSize, rmSize)
         raidIcon:SetPoint("CENTER", frame, rmAnchor, rmX, rmY)
         frame._raidMarkerIcon = raidIcon
@@ -746,10 +893,14 @@ local function StyleFocusFrame(frame, unit)
     frame.NameText = leftText
     frame.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec) ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec) end
+    local function ApplyTextTags(lc, rc, cc, ec)
+        ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec)
+    end
     ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
     frame._applyTextTags = ApplyTextTags
-    local function ApplyTextPositions(s) ApplyFrameTextPositions(frame, unit, s, "perhp", 181) end
+    local function ApplyTextPositions(s)
+        ApplyFrameTextPositions(frame, unit, s, "perhp", 181)
+    end
     ApplyTextPositions(settings)
     frame._applyTextPositions = ApplyTextPositions
 
@@ -777,7 +928,9 @@ ns.UF_PetHasPower = (CludesUI.IS_FOREVER == true)
 local function StyleSimpleFrame(frame, unit)
     local settings = GetSettingsForUnit(unit)
     local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-    if pStyle == "detached" then pStyle = "attached" end
+    if pStyle == "detached" then
+        pStyle = "attached"
+    end
     local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
     local pSide = settings.portraitSide or "left"
     -- WoW Forever pet power bar (Blizzard Style keeps its stock one instead): an
@@ -789,8 +942,8 @@ local function StyleSimpleFrame(frame, unit)
     local aboveOff = (ppPos == "above") and powerH or 0
     local barH = settings.healthHeight + powerH
     local totalWidth = settings.frameWidth
-    local portraitOffset = 0  -- applied to Health TOPLEFT when portrait on left
-    local healthRightInset = 0  -- applied to Health RIGHT when portrait on right
+    local portraitOffset = 0 -- applied to Health TOPLEFT when portrait on left
+    local healthRightInset = 0 -- applied to Health RIGHT when portrait on right
     if showPortrait then
         totalWidth = barH + settings.frameWidth
         if pSide == "right" then
@@ -806,7 +959,7 @@ local function StyleSimpleFrame(frame, unit)
     PP.Point(health, "TOPLEFT", frame, "TOPLEFT", portraitOffset, -aboveOff)
     PP.Point(health, "RIGHT", frame, "RIGHT", -healthRightInset, 0)
     PP.Height(health, settings.healthHeight)
-    health._topOffset = aboveOff  -- SnapLayout re-anchoring
+    health._topOffset = aboveOff -- SnapLayout re-anchoring
     health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     health:GetStatusBarTexture():SetHorizTile(false)
 
@@ -816,7 +969,9 @@ local function StyleSimpleFrame(frame, unit)
     bg:SetColorTexture(0, 0, 0, 0.5)
     health.bg = bg
 
-    if unit ~= "pet" then health.colorClass = true end
+    if unit ~= "pet" then
+        health.colorClass = true
+    end
     health.colorReaction = true
     health.colorTapped = true
     health.colorDisconnected = true
@@ -838,14 +993,18 @@ local function StyleSimpleFrame(frame, unit)
     -- is parked while it is hidden); ToT and FoT carry none.
     if petPower then
         frame.Power = CreatePowerBar(frame, unit, settings)
-        if ppPos == "none" then frame:DisableElement("Power") end
+        if ppPos == "none" then
+            frame:DisableElement("Power")
+        end
     else
         frame.Power = ns.UF_BlizzMiniPower(frame, unit, settings)
     end
     -- A pet is never an attackable NPC, so the melee-mob gray-out pass (a pcall
     -- per paint) can never act on a WoW Forever pet's bar, stock or not (the pet
     -- defaults to an attached bar there, so it would run): drop it.
-    if unit == "pet" and ns.UF_PetHasPower and frame.Power then frame.Power.PostUpdate = nil end
+    if unit == "pet" and ns.UF_PetHasPower and frame.Power then
+        frame.Power.PostUpdate = nil
+    end
 
     -- Always create portrait; hide backdrop when disabled.
     frame.Portrait = CreatePortrait(frame, pSide, barH, unit)
@@ -907,20 +1066,25 @@ local function StyleSimpleFrame(frame, unit)
     frame.NameText = leftText
     frame.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc) ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc) end
+    local function ApplyTextTags(lc, rc, cc)
+        ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc)
+    end
     ApplyTextTags(leftContent, rightContent, centerContent)
     frame._applyTextTags = ApplyTextTags
-    local function ApplyTextPositions(s) ApplyFrameTextPositions(frame, unit, s, "none", 100) end
+    local function ApplyTextPositions(s)
+        ApplyFrameTextPositions(frame, unit, s, "none", 100)
+    end
     ApplyTextPositions(settings)
     frame._applyTextPositions = ApplyTextPositions
-    if unit == "pet" then ns.UF_EnsurePetAuras(frame) end
+    if unit == "pet" then
+        ns.UF_EnsurePetAuras(frame)
+    end
     -- Pet cast bar: built only while on, so it costs nothing otherwise.
     if unit == "pet" and settings.showCastbar == true then
         frame.Castbar = CreateCastBar(frame, unit, settings)
         SetupShowOnCastBar(frame, unit)
     end
 end
-
 
 local function StyleBossFrame(frame, unit)
     local settings = GetSettingsForUnit(unit)
@@ -931,7 +1095,9 @@ local function StyleBossFrame(frame, unit)
     local totalWidth = 0
     local portraitHeight = 0
     local pStyle = settings.portraitStyle or db.profile.portraitStyle or "attached"
-    if pStyle == "detached" then pStyle = "attached" end
+    if pStyle == "detached" then
+        pStyle = "attached"
+    end
     local showPortrait = pStyle ~= "none" and settings.showPortrait ~= false
     if not showPortrait then
         totalWidth = settings.frameWidth
@@ -942,7 +1108,8 @@ local function StyleBossFrame(frame, unit)
     PP.Size(frame, totalWidth, bossBarHeight)
     local pSide = settings.portraitSide or "right"
     local healthRightInset = (showPortrait and pSide == "right") and bossBarHeight or 0
-    frame.Health = CreateHealthBar(frame, unit, settings.healthHeight, portraitHeight, settings, healthRightInset)
+    frame.Health =
+        CreateHealthBar(frame, unit, settings.healthHeight, portraitHeight, settings, healthRightInset)
     frame.Power = CreatePowerBar(frame, unit, settings)
     -- Always create the absorb bar (visibility gated at render time). Boss frames
     -- carry no absorb settings of their own: they render with the TARGET frame's
@@ -992,10 +1159,10 @@ local function StyleBossFrame(frame, unit)
         raidIconHolder:SetAllPoints(frame)
         raidIconHolder:SetFrameLevel(frame:GetFrameLevel() + 20)
         local raidIcon = raidIconHolder:CreateTexture(nil, "OVERLAY", nil, 7)
-        local rmSize  = settings.raidMarkerSize or 28
+        local rmSize = settings.raidMarkerSize or 28
         local rmAlign = settings.raidMarkerAlign or "left"
-        local rmX     = settings.raidMarkerX or 0
-        local rmY     = settings.raidMarkerY or 0
+        local rmX = settings.raidMarkerX or 0
+        local rmY = settings.raidMarkerY or 0
         raidIcon:SetSize(rmSize, rmSize)
         if rmAlign == "left" then
             raidIcon:SetPoint("RIGHT", frame, "LEFT", rmX, rmY)
@@ -1054,14 +1221,17 @@ local function StyleBossFrame(frame, unit)
     frame.NameText = leftText
     frame.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec) ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec) end
+    local function ApplyTextTags(lc, rc, cc, ec)
+        ApplyFrameTextTags(frame, unit, GetSettingsForUnit(unit), lc, rc, cc, ec)
+    end
     ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
     frame._applyTextTags = ApplyTextTags
-    local function ApplyTextPositions(s) ApplyFrameTextPositions(frame, unit, s, "perhp", 100) end
+    local function ApplyTextPositions(s)
+        ApplyFrameTextPositions(frame, unit, s, "perhp", 100)
+    end
     ApplyTextPositions(settings)
     frame._applyTextPositions = ApplyTextPositions
 end
-
 
 -- (Styles are no longer registered anywhere: the spawn sites call
 -- StyleFullFrame/StyleFocusFrame/StyleSimpleFrame/StyleBossFrame

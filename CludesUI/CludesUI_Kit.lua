@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Kit.lua
 --  The house controls for module windows and on-screen frames, so every
@@ -23,19 +25,25 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local Kit = {}
 CludesUI.Kit = Kit
 
-local BG = { 0.062, 0.070, 0.082 }       -- the house popup fill
+local BG = { 0.062, 0.070, 0.082 } -- the house popup fill
 local CONTROL_BG = { 0, 0, 0, 0.5 }
 local IDLE = { 0.82, 0.82, 0.82 }
 
-local function PP() return CludesUI.PP end
+local function PP()
+    return CludesUI.PP
+end
 
 function Kit.Accent()
     local c = CludesUI.CLUDES_GREEN
-    if c then return c.r, c.g, c.b end
+    if c then
+        return c.r, c.g, c.b
+    end
     return 0.30, 0.79, 0.94
 end
 
-function Kit.AccentHex() return CludesUI.HexColor(Kit.Accent()) end
+function Kit.AccentHex()
+    return CludesUI.HexColor(Kit.Accent())
+end
 
 --- Copies the accent into an { r, g, b } array the caller keeps (for colour
 --- tables a feature passes around); returns it.
@@ -52,7 +60,9 @@ function Kit.AccentText(fs, alpha)
     end
     Paint()
     local owner = fs:GetParent()
-    if owner and owner.HookScript and not fs._kitAccent then owner:HookScript("OnShow", Paint) end
+    if owner and owner.HookScript and not fs._kitAccent then
+        owner:HookScript("OnShow", Paint)
+    end
     fs._kitAccent = true
 end
 
@@ -93,11 +103,15 @@ function Kit.Glyph(parent, text, onClick, tip, key)
     b:SetScript("OnClick", onClick)
     b:SetScript("OnEnter", function(self)
         self.t:SetTextColor(Kit.Accent())
-        if tip then CludesUI.ShowWidgetTooltip(self, tip) end
+        if tip then
+            CludesUI.ShowWidgetTooltip(self, tip)
+        end
     end)
     b:SetScript("OnLeave", function(self)
         self.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
-        if tip then CludesUI.HideWidgetTooltip() end
+        if tip then
+            CludesUI.HideWidgetTooltip()
+        end
     end)
     return b
 end
@@ -127,7 +141,9 @@ function Kit.Window(name, w, h, title, opts)
     win.header:SetPoint("TOPLEFT", 1, -28)
     win.header:SetPoint("TOPRIGHT", -1, -28)
     win.close = Kit.Glyph(win, "x", function()
-        if opts.onClose then opts.onClose() end
+        if opts.onClose then
+            opts.onClose()
+        end
         win:Hide()
     end, nil, opts.key)
     win.close:SetPoint("TOPRIGHT", -5, -5)
@@ -138,7 +154,9 @@ function Kit.Window(name, w, h, title, opts)
     end
     Paint()
     win:HookScript("OnShow", Paint)
-    if name and opts.special ~= false then tinsert(UISpecialFrames, name) end
+    if name and opts.special ~= false then
+        tinsert(UISpecialFrames, name)
+    end
     return win
 end
 
@@ -172,18 +190,35 @@ function Kit.Button(parent, text, w, h, onClick, opts)
     Paint(false)
     b:HookScript("OnEnter", function(self)
         Paint(true)
-        if opts.tip then CludesUI.ShowWidgetTooltip(self, opts.tip) end
+        if opts.tip then
+            CludesUI.ShowWidgetTooltip(self, opts.tip)
+        end
     end)
     b:HookScript("OnLeave", function()
         Paint(false)
-        if opts.tip then CludesUI.HideWidgetTooltip() end
+        if opts.tip then
+            CludesUI.HideWidgetTooltip()
+        end
     end)
-    if onClick then b:SetScript("OnClick", onClick) end
-    function b:SetText(t) self.label:SetText(t) end
-    function b:GetText() return self.label:GetText() end
-    function b:GetTextWidth() return self.label:GetStringWidth() end
-    function b:SetActive(on) self._active = on and true or nil; Paint(self:IsMouseOver()) end
-    b:HookScript("OnShow", function(self) Paint(self:IsMouseOver()) end)
+    if onClick then
+        b:SetScript("OnClick", onClick)
+    end
+    function b:SetText(t)
+        self.label:SetText(t)
+    end
+    function b:GetText()
+        return self.label:GetText()
+    end
+    function b:GetTextWidth()
+        return self.label:GetStringWidth()
+    end
+    function b:SetActive(on)
+        self._active = on and true or nil
+        Paint(self:IsMouseOver())
+    end
+    b:HookScript("OnShow", function(self)
+        Paint(self:IsMouseOver())
+    end)
     return b
 end
 
@@ -209,12 +244,23 @@ function Kit.Check(parent, label, onClick, key)
         c.mark:SetColorTexture(r, g, b, 1)
         c.mark:SetShown(c._checked == true)
     end
-    function c:SetChecked(on) self._checked = on and true or false; Paint() end
-    function c:GetChecked() return self._checked == true end
-    function c:SetLabel(t) self.text:SetText(t) end
+    function c:SetChecked(on)
+        self._checked = on and true or false
+        Paint()
+    end
+    function c:GetChecked()
+        return self._checked == true
+    end
+    function c:SetLabel(t)
+        self.text:SetText(t)
+    end
     -- The flip is on PreClick, so a caller's own OnClick (SetScript) keeps it.
-    c:SetScript("PreClick", function(self) self:SetChecked(not self._checked) end)
-    if onClick then c:SetScript("OnClick", onClick) end
+    c:SetScript("PreClick", function(self)
+        self:SetChecked(not self._checked)
+    end)
+    if onClick then
+        c:SetScript("OnClick", onClick)
+    end
     c:SetScript("OnEnter", Paint)
     c:SetScript("OnLeave", Paint)
     c:SetChecked(false)
@@ -277,7 +323,9 @@ function Kit.Scroll(parent)
         local h = scroll:GetHeight() or 0
         if range <= 0.5 or h <= 0 then
             track:Hide()
-            if scroll:GetVerticalScroll() ~= 0 then scroll:SetVerticalScroll(0) end
+            if scroll:GetVerticalScroll() ~= 0 then
+                scroll:SetVerticalScroll(0)
+            end
             return
         end
         track:Show()
@@ -297,7 +345,9 @@ function Kit.Scroll(parent)
     end
 
     scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(self, delta) ScrollTo(self:GetVerticalScroll() - delta * 40) end)
+    scroll:SetScript("OnMouseWheel", function(self, delta)
+        ScrollTo(self:GetVerticalScroll() - delta * 40)
+    end)
     scroll:SetScript("OnScrollRangeChanged", Update)
     scroll:SetScript("OnVerticalScroll", Update)
     scroll:SetScript("OnSizeChanged", function(self, w)
@@ -313,10 +363,14 @@ function Kit.Scroll(parent)
             y = y / scale
             local range = scroll:GetVerticalScrollRange() or 0
             local h = scroll:GetHeight() - s:GetHeight()
-            if h > 0 then ScrollTo(s._startV + (s._startY - y) / h * range) end
+            if h > 0 then
+                ScrollTo(s._startV + (s._startY - y) / h * range)
+            end
         end)
     end)
-    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    thumb:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+    end)
     scroll.Refresh = Update
     track:Hide()
     return scroll, content
@@ -333,13 +387,23 @@ end
 local Node = {}
 Node.__index = Node
 
-local function NewNode() return setmetatable({ items = {} }, Node) end
+local function NewNode()
+    return setmetatable({ items = {} }, Node)
+end
 
 function Node:CreateTitle(text)
-    table.insert(self.items, { text = text, noLoc = true, isDisabled = function() return true end })
+    table.insert(self.items, {
+        text = text,
+        noLoc = true,
+        isDisabled = function()
+            return true
+        end,
+    })
 end
 function Node:CreateDivider()
-    if #self.items > 0 then table.insert(self.items, "---") end
+    if #self.items > 0 then
+        table.insert(self.items, "---")
+    end
 end
 function Node:CreateButton(text, fn)
     local child = NewNode()
@@ -359,13 +423,17 @@ local function Items(node)
         if type(item) == "table" and item._node then
             local kids = Items(item._node)
             local copy = { text = item.text, noLoc = true, onClick = item.onClick }
-            if #kids > 0 then copy.children, copy.onClick = kids, nil end
+            if #kids > 0 then
+                copy.children, copy.onClick = kids, nil
+            end
             out[#out + 1] = copy
         else
             out[#out + 1] = item
         end
     end
-    if out[#out] == "---" then out[#out] = nil end
+    if out[#out] == "---" then
+        out[#out] = nil
+    end
     return out
 end
 

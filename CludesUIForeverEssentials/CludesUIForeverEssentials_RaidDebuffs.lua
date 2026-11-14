@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_RaidDebuffs.lua  (WoW Forever only)
 --  Raid Debuffs: a row of the raid debuffs you pick (Sunder Armor, Faerie
@@ -21,7 +25,9 @@ local _, module = ...
 
 local DEBUFFS = module.RAID_DEBUFFS or {}
 local DEFAULTS = { enabled = false, iconSize = 30, groupOnly = true }
-for _, d in ipairs(DEBUFFS) do DEFAULTS["pick_" .. d.key] = d.default end
+for _, d in ipairs(DEBUFFS) do
+    DEFAULTS["pick_" .. d.key] = d.default
+end
 local F = module.Feature("raidDebuffs", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = 140 })
 local Get, Enabled = F.Get, F.Enabled
 
@@ -29,25 +35,31 @@ local GAP = 3
 local STYLE = "cui:raiddebuffs"
 local holder, container
 local cells = {}
-local built, pending = nil, false   -- built = the picks key the current container was made for
+local built, pending = nil, false -- built = the picks key the current container was made for
 
 local function Picked()
     local out = {}
     for _, d in ipairs(DEBUFFS) do
-        if Get("pick_" .. d.key) then out[#out + 1] = d end
+        if Get("pick_" .. d.key) then
+            out[#out + 1] = d
+        end
     end
     return out
 end
 
 local function PickKey(list)
     local keys = { tostring(Get("iconSize")) }
-    for _, d in ipairs(list) do keys[#keys + 1] = d.key end
+    for _, d in ipairs(list) do
+        keys[#keys + 1] = d.key
+    end
     return table.concat(keys, ",")
 end
 
 local function Cell(i)
     local c = cells[i]
-    if c then return c end
+    if c then
+        return c
+    end
     c = CreateFrame("Frame", nil, holder)
     c.missing = c:CreateTexture(nil, "BACKGROUND")
     c.missing:SetAllPoints()
@@ -69,11 +81,18 @@ end
 
 -- Builds (or rebuilds) the row for the current picks.
 local function Rebuild()
-    if not holder then return end
+    if not holder then
+        return
+    end
     local list = Enabled() and Picked() or {}
     local key = PickKey(list)
-    if key == built then return end
-    if not CanBuild() then pending = true; return end
+    if key == built then
+        return
+    end
+    if not CanBuild() then
+        pending = true
+        return
+    end
     pending = false
     local AK = CludesUI.AuraKit
     if container then
@@ -91,16 +110,22 @@ local function Rebuild()
         c.missing:SetTexture(C_Spell.GetSpellTexture(d.ids[1]))
         c:Show()
     end
-    for i = #list + 1, #cells do cells[i]:Hide() end
+    for i = #list + 1, #cells do
+        cells[i]:Hide()
+    end
     holder:SetSize(math.max(1, #list) * (size + GAP) - GAP, size)
-    if #list == 0 then return end
+    if #list == 0 then
+        return
+    end
 
     AK.styles[STYLE] = { width = size, height = size }
     local ok, err = pcall(function()
         local cont = AK.CreateContainerShell(holder, { point = { "TOPLEFT", holder, "TOPLEFT" } })
         for i, d in ipairs(list) do
             local set = {}
-            for _, id in ipairs(d.ids) do set[id] = true end
+            for _, id in ipairs(d.ids) do
+                set[id] = true
+            end
             local cell = cells[i]
             AK.AddSlotToContainer(cont, {
                 key = d.key,
@@ -110,8 +135,12 @@ local function Rebuild()
                 extraInit = function(button)
                     button:SetAllPoints(cell)
                     -- Display only: an aura button takes the mouse by default.
-                    if button.SetMouseClickEnabled then button:SetMouseClickEnabled(false) end
-                    if button.SetMouseMotionEnabled then button:SetMouseMotionEnabled(false) end
+                    if button.SetMouseClickEnabled then
+                        button:SetMouseClickEnabled(false)
+                    end
+                    if button.SetMouseMotionEnabled then
+                        button:SetMouseMotionEnabled(false)
+                    end
                 end,
             })
         end
@@ -127,19 +156,29 @@ end
 -- Alpha only, which is safe in combat: shown with a living enemy targeted
 -- (and in a group, unless Group Only is off).
 local function UpdateShown()
-    if not holder then return end
+    if not holder then
+        return
+    end
     local show = Enabled() and UnitExists("target")
     if show then
         local enemy = UnitCanAttack("player", "target")
-        if not (issecretvalue and issecretvalue(enemy)) then show = enemy and not UnitIsDead("target") end
+        if not (issecretvalue and issecretvalue(enemy)) then
+            show = enemy and not UnitIsDead("target")
+        end
     end
-    if show and Get("groupOnly") then show = IsInGroup() end
-    if CludesUI._unlockActive then show = Enabled() end
+    if show and Get("groupOnly") then
+        show = IsInGroup()
+    end
+    if CludesUI._unlockActive then
+        show = Enabled()
+    end
     holder:SetAlpha(show and 1 or 0)
 end
 
 local function Build()
-    if holder then return holder end
+    if holder then
+        return holder
+    end
     holder = CreateFrame("Frame", "CludesUIRaidDebuffs", UIParent)
     holder:SetSize(Get("iconSize"), Get("iconSize"))
     return holder
@@ -148,7 +187,9 @@ end
 local ev = CreateFrame("Frame")
 ev:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_ENABLED" or event == "ADDON_RESTRICTION_STATE_CHANGED" then
-        if pending then Rebuild() end
+        if pending then
+            Rebuild()
+        end
     end
     UpdateShown()
 end)
@@ -156,13 +197,20 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "GROUP_ROSTER_UPDATE", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
+        for _, e in ipairs({
+            "PLAYER_TARGET_CHANGED",
+            "GROUP_ROSTER_UPDATE",
+            "PLAYER_REGEN_ENABLED",
+            "PLAYER_ENTERING_WORLD",
+        }) do
             ev:RegisterEvent(e)
         end
         pcall(ev.RegisterEvent, ev, "ADDON_RESTRICTION_STATE_CHANGED")
         ev:RegisterUnitEvent("UNIT_FACTION", "target")
         ev:RegisterUnitEvent("UNIT_FLAGS", "target")
-        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holder) end
+        if not CludesUI._unlockActive and not InCombatLockdown() then
+            F.Place(holder)
+        end
     else
         ev:UnregisterAllEvents()
     end
@@ -173,12 +221,22 @@ end
 CludesUI._RaidDebuffs = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply, Debuffs = DEBUFFS }
 
 F.Start(Apply, {
-    key = "CUI_RaidDebuffs", label = "Raid Debuffs", order = 739,
-    frame = function(build) if build then Build(); Rebuild(); UpdateShown() end; return holder end,
+    key = "CUI_RaidDebuffs",
+    label = "Raid Debuffs",
+    order = 739,
+    frame = function(build)
+        if build then
+            Build()
+            Rebuild()
+            UpdateShown()
+        end
+        return holder
+    end,
     size = function()
         local n = math.max(1, #Picked())
         local size = Get("iconSize")
         return n * size + (n - 1) * GAP, size
     end,
-    noAnchorTarget = true, noSizeMatchTarget = true,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

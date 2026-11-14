@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Defaults.lua
 --
@@ -10,13 +12,17 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local EABR = I.EABR
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -------------------------------------------------------------------------------
 --  Glow Types (shared with options)
@@ -26,7 +32,6 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 local GLOW_VIEW = CludesUI.Glows.MakeView({ 2, 1, 3, 5, 6, 7 })
 
 local StopAllGlows = CludesUI.Glows.StopAllGlows
-
 
 -------------------------------------------------------------------------------
 --  Defaults
@@ -82,7 +87,7 @@ local defaults = {
             yOffset = 200,
             showText = true,
             showTooltips = true,
-            textColor = {r=1, g=1, b=1},
+            textColor = { r = 1, g = 1, b = 1 },
             textSize = 12,
             textXOffset = 0,
             textYOffset = -5,
@@ -116,7 +121,13 @@ local defaults = {
         },
         raidBuffs = {
             enabled = {
-                motw=true, bshout=true, fort=true, ai=true, bronze=true, sky=true, hmark=true,
+                motw = true,
+                bshout = true,
+                fort = true,
+                ai = true,
+                bronze = true,
+                sky = true,
+                hmark = true,
                 -- WoW Forever's Divine Spirit (no key on retail).
                 spirit = EABR.FOREVER or nil,
             },
@@ -140,13 +151,22 @@ local defaults = {
         },
         auras = {
             enabled = {
-                moonkin_form=false,
-                symbiotic=true, battle_stance=true, def_stance=true, berserk_stance=true, shadowform=true,
-                devo_aura=true, bol=true, bof=true, som=true, blistering_scales=true,
-                bestow_weyrnstone=true, timelessness=true,
+                moonkin_form = false,
+                symbiotic = true,
+                battle_stance = true,
+                def_stance = true,
+                berserk_stance = true,
+                shadowform = true,
+                devo_aura = true,
+                bol = true,
+                bof = true,
+                som = true,
+                blistering_scales = true,
+                bestow_weyrnstone = true,
+                timelessness = true,
                 -- Opt-in: enabling it also turns on group aura tracking for
                 -- the class.
-                soulstone=false,
+                soulstone = false,
             },
             -- All buckets (including open world) on by default.
             whereToShow = {},
@@ -157,18 +177,30 @@ local defaults = {
             -- showing a desaturated restock prompt.
             showWithoutItem = true,
             enabled = {
-                deadly=true, instant=true, wound=true, amplifying=true,
-                crippling=true, numbing=true, atrophic=true,
-                rite_adj=true, rite_sanc=true,
-                flametongue=true, windfury=true, earthliving=true, tidecaller=true, tstrike=true,
-                ls=true, ws=true, es=true,
+                deadly = true,
+                instant = true,
+                wound = true,
+                amplifying = true,
+                crippling = true,
+                numbing = true,
+                atrophic = true,
+                rite_adj = true,
+                rite_sanc = true,
+                flametongue = true,
+                windfury = true,
+                earthliving = true,
+                tidecaller = true,
+                tstrike = true,
+                ls = true,
+                ws = true,
+                es = true,
                 -- Opt-in: Earth Shield on a group member (Elemental Orbit).
-                es_ally=false,
-                augment_rune=true,
-                weapon_enchant=true,
-                inky_black=true,
-                flask=true,
-                food=true,
+                es_ally = false,
+                augment_rune = true,
+                weapon_enchant = true,
+                inky_black = true,
+                flask = true,
+                food = true,
             },
             -- Bag/equip consumables (open world off) and the old shared
             -- class-specials set (open world on). The per-section copies have
@@ -186,7 +218,7 @@ local defaults = {
             inkyBlackZones = "",
         },
         unlockPos = nil,
-        talentReminders = {},  -- array of {zoneNames={} (zoneName = an older version's single zone, read while there is no list), spellID=number, spellName=string, notNeededMode="never"|"season"|"all", showNotNeeded=bool (the old checkbox, kept in step)}
+        talentReminders = {}, -- array of {zoneNames={} (zoneName = an older version's single zone, read while there is no list), spellID=number, spellName=string, notNeededMode="never"|"season"|"all", showNotNeeded=bool (the old checkbox, kept in step)}
         talentReminderYOffset = -50,
     },
 }
@@ -194,13 +226,13 @@ local defaults = {
 -- WoW Forever section settings; only that client's profiles carry the table.
 if EABR.FOREVER then
     defaults.profile.forever = {
-        camp = false,       -- Camp Benefits reminder; opt-in, it shows whenever the buff is missing
+        camp = false, -- Camp Benefits reminder; opt-in, it shows whenever the buff is missing
         sleepingBag = false, -- Sleeping Bag reminder; opt-in, below max level with a Cozy Sleeping Bag in the bags
-        gather = false,     -- gathering tracking reminder; opt-in, it shows while no tracker is up
-        gatherClassTrack = true,  -- an active class tracking also hides it
-        treasure = false,   -- Find Treasure reminder (Dwarf); opt-in, it shows while it is off
-        wellFed = false,    -- Well Fed reminder; opt-in, matched by aura name (every food has its own spell ID)
-        mageArmor = false,  -- Mage armor reminder (Mage); opt-in, it shows while no Frost/Ice/Mage Armor rank is up
+        gather = false, -- gathering tracking reminder; opt-in, it shows while no tracker is up
+        gatherClassTrack = true, -- an active class tracking also hides it
+        treasure = false, -- Find Treasure reminder (Dwarf); opt-in, it shows while it is off
+        wellFed = false, -- Well Fed reminder; opt-in, matched by aura name (every food has its own spell ID)
+        mageArmor = false, -- Mage armor reminder (Mage); opt-in, it shows while no Frost/Ice/Mage Armor rank is up
         weapon = false,
         weaponLowRank = false,
         weaponHideNoItem = true,
@@ -210,19 +242,19 @@ if EABR.FOREVER then
         -- with more than one spell picks the spell its click casts, and the
         -- wheel over a spell picks its rank; opt-in.
         pickerEnabled = false,
-        classBuffActions = {},  -- class buff key -> { castSpellID, castRanks = { spell ID -> pinned rank } }
-        classBuffPicks = {},  -- class buff key -> ticked (unset: the buff's own default)
-        whereToShow = {},   -- section "Where to Show" (an absent bucket = shown)
-        customIDs = {},     -- spell IDs the user tracks, in the order added
+        classBuffActions = {}, -- class buff key -> { castSpellID, castRanks = { spell ID -> pinned rank } }
+        classBuffPicks = {}, -- class buff key -> ticked (unset: the buff's own default)
+        whereToShow = {}, -- section "Where to Show" (an absent bucket = shown)
+        customIDs = {}, -- spell IDs the user tracks, in the order added
         customClasses = {}, -- spell ID -> { CLASS = false }: the classes a custom ID does not remind (unset: every class)
-        customGroups = {},  -- { name = string, ids = { spell IDs } }: one reminder while none of ids is active
+        customGroups = {}, -- { name = string, ids = { spell IDs } }: one reminder while none of ids is active
     }
 end
 
 -------------------------------------------------------------------------------
 --  Middle-click dismiss hide a reminder until the next loading screen
 -------------------------------------------------------------------------------
-local _dismissedUntilLoad = {}  -- [dismissKey] = true
+local _dismissedUntilLoad = {} -- [dismissKey] = true
 
 -------------------------------------------------------------------------------
 --  Per-section appear-sounds: one sound key per section (raid buffs / auras /
@@ -238,12 +270,18 @@ function EABR.SpecialSoundField(key)
         local S = EABR.SPECIALS
         set = { rogue_lethal = S.ROGUE.sound, rogue_nonlethal = S.ROGUE.sound }
         local groups = {
-            { I.ROGUE_POISONS, S.ROGUE.sound }, { I.PALADIN_RITES, S.PALADIN.sound },
-            { I.SHAMAN_IMBUES, S.SHAMAN.sound }, { I.SHAMAN_SHIELDS, S.SHAMAN.sound },
+            { I.ROGUE_POISONS, S.ROGUE.sound },
+            { I.PALADIN_RITES, S.PALADIN.sound },
+            { I.SHAMAN_IMBUES, S.SHAMAN.sound },
+            { I.SHAMAN_SHIELDS, S.SHAMAN.sound },
         }
         for _, g in ipairs(groups) do
             if type(g[1]) == "table" then
-                for _, it in ipairs(g[1]) do if it.key then set[it.key] = g[2] end end
+                for _, it in ipairs(g[1]) do
+                    if it.key then
+                        set[it.key] = g[2]
+                    end
+                end
             end
         end
         EABR._specialKeySet = set
@@ -254,7 +292,9 @@ end
 -- Resolves the configured sound key for a reminder from its dismissKey.
 function EABR.ResolveReminderSound(dk)
     local prefix, key = dk:match("^(%a+):(.+)$")
-    if not prefix then return nil end
+    if not prefix then
+        return nil
+    end
     local p = db.profile
     if prefix == "raidbuff" then
         return p.raidBuffs.sectionSound
@@ -263,7 +303,9 @@ function EABR.ResolveReminderSound(dk)
     elseif prefix == "consumable" then
         local co = p.consumables
         local field = EABR.SpecialSoundField(key)
-        if field then return EABR.SpecialsSound(co, field) end
+        if field then
+            return EABR.SpecialsSound(co, field)
+        end
         return co.sectionSound
     elseif prefix == "forever" then
         local fo = p.forever
@@ -286,7 +328,9 @@ function EABR.HandleAppearSounds(missing)
                 if skey and skey ~= "none" then
                     local paths = CludesUI._groupDeathSoundPaths
                     local path = paths and paths[skey]
-                    if path then PlaySoundFile(path, "Master") end
+                    if path then
+                        PlaySoundFile(path, "Master")
+                    end
                 end
             end
         end

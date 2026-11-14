@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIChat.lua
 --
@@ -15,11 +17,24 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --    - Copy Chat button + session history (own message store)
 -------------------------------------------------------------------------------
 local addonName, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.PadGamepadUI) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[addonName] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.PadGamepadUI
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
+CludesUI._ModuleNS[addonName] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 local CUI = _G.CludesUI
-if not CUI then return end
+if not CUI then
+    return
+end
 
 ns.ECHAT = ns.ECHAT or {}
 local ECHAT = ns.ECHAT
@@ -40,11 +55,11 @@ CUI.RegisterBorderDefaults("chat", {
     ["blizz"] = {
         defaultSize = "heavy",
         sizes = {
-            none   = { offsetX=0, offsetY=0, shiftX=0, shiftY=0 },
-            thin   = { offsetX=2, offsetY=1, shiftX=0, shiftY=0 },
-            normal = { offsetX=3, offsetY=2, shiftX=0, shiftY=0 },
-            heavy  = { offsetX=4, offsetY=2, shiftX=1, shiftY=0 },
-            strong = { offsetX=4, offsetY=2, shiftX=2, shiftY=0 },
+            none = { offsetX = 0, offsetY = 0, shiftX = 0, shiftY = 0 },
+            thin = { offsetX = 2, offsetY = 1, shiftX = 0, shiftY = 0 },
+            normal = { offsetX = 3, offsetY = 2, shiftX = 0, shiftY = 0 },
+            heavy = { offsetX = 4, offsetY = 2, shiftX = 1, shiftY = 0 },
+            strong = { offsetX = 4, offsetY = 2, shiftX = 2, shiftY = 0 },
         },
     },
 })
@@ -67,13 +82,13 @@ CludesUI._chatCFD = CFD
 local CHAT_DEFAULTS = {
     profile = {
         chat = {
-            enabled    = true,
+            enabled = true,
             visibility = "always",
-            bgAlpha    = 0.65,
-            bgR        = 0.03,
-            bgG        = 0.045,
-            bgB        = 0.05,
-            bgTexture  = "none",  -- chat background texture key (Unit Frames bar texture catalogue)
+            bgAlpha = 0.65,
+            bgR = 0.03,
+            bgG = 0.045,
+            bgB = 0.05,
+            bgTexture = "none", -- chat background texture key (Unit Frames bar texture catalogue)
             timestampFormat = "%I:%M ",
             timestampAll = false,
             font = "__global",
@@ -81,22 +96,22 @@ local CHAT_DEFAULTS = {
             fontSize = 12,
             tabFont = "__global",
             tabFontSize = 11,
-            tabFontColor = { r=1, g=1, b=1, a=0.65 },
-            tabFontColorActive = { r=1, g=1, b=1, a=1 },
+            tabFontColor = { r = 1, g = 1, b = 1, a = 0.65 },
+            tabFontColorActive = { r = 1, g = 1, b = 1, a = 1 },
             sidebarVisibility = "always",
             hideBorders = false,
-            innerBorderColor = { r=1, g=1, b=1, a=0.06 },
+            innerBorderColor = { r = 1, g = 1, b = 1, a = 0.06 },
             innerBorderColorMode = "custom",
             panelBorderBehind = false,
             tabBackgroundTexture = "none",
             activeTabBorder = true,
-            tabBorderColorActive = { r=1, g=1, b=1, a=0.18 },
+            tabBorderColorActive = { r = 1, g = 1, b = 1, a = 0.18 },
             -- WoW Forever: tabs inside one continuous chat panel (per-client default).
             extendBgBehindTabs = (CludesUI.IS_FOREVER == true),
             panelBorderTexture = "solid",
             panelBorderThickness = "none",
             panelBorderColorMode = "custom",
-            panelBorderColor = { r=1, g=1, b=1 },
+            panelBorderColor = { r = 1, g = 1, b = 1 },
             panelBorderOpacity = 0.18,
             tabSpacing = 1,
             tabPadding = 0,
@@ -104,16 +119,16 @@ local CHAT_DEFAULTS = {
             tabBorderTexture = "solid",
             tabBorderThickness = "none",
             tabBorderColorMode = "custom",
-            tabBorderColor = { r=1, g=1, b=1 },
+            tabBorderColor = { r = 1, g = 1, b = 1 },
             tabBorderOpacity = 0.18,
             tabHeight = 24,
             tabInnerPaddingX = 12,
             scrollButtonOnChat = false,
-            tabBackgroundColor = { r=0.03, g=0.045, b=0.05, a=0.44 },
-            tabBackgroundColorActive = { r=0.03, g=0.045, b=0.05, a=0.65 },
+            tabBackgroundColor = { r = 0.03, g = 0.045, b = 0.05, a = 0.44 },
+            tabBackgroundColorActive = { r = 0.03, g = 0.045, b = 0.05, a = 0.65 },
             activeUnderline = true,
             activeUnderlineColorMode = "accent",
-            activeUnderlineColor = { r=0.05, g=0.82, b=0.61, a=1 },
+            activeUnderlineColor = { r = 0.05, g = 0.82, b = 0.61, a = 1 },
             showFriends = true,
             showGuild = false,
             showDurability = false,
@@ -137,15 +152,15 @@ local CHAT_DEFAULTS = {
             inputOnTop = false,
             -- Style page (reload-gated): Blizzard Style / Classic WoW UI
             useBlizzardStyle = false,
-            useClassicStyle  = false,
+            useClassicStyle = false,
             -- The WoW Forever look's Border Style (latched in ns.ChatStyle):
             -- "textured" = Slim Textured, the default there (an unset value
             -- reads the same, CludesUI.ForeverBorderKind), "slim" = Slim,
             -- "heavy" = Heavy Bronze. Nil on every other client.
             foreverBorder = (CludesUI.IS_FOREVER == true) and "textured" or nil,
             lockChatSize = false,
-            abbreviateChannels = true,  -- same key as live: saved settings carry over
-            abbreviateChannelLetters = false,  -- world channels as letters (Ge, T, LD, WD, LFG) instead of their numbers
+            abbreviateChannels = true, -- same key as live: saved settings carry over
+            abbreviateChannelLetters = false, -- world channels as letters (Ge, T, LD, WD, LFG) instead of their numbers
             classColorNames = true,
             hideSidebarBg = false,
             sidebarIconScale = 1.0,
@@ -167,13 +182,16 @@ local CHAT_DEFAULTS = {
 
 local _chatDB
 local function EnsureDB()
-    if _chatDB then return _chatDB end
-    if not CUI.Lite then return nil end
+    if _chatDB then
+        return _chatDB
+    end
+    if not CUI.Lite then
+        return nil
+    end
     _chatDB = CUI.Lite.NewDB("CludesUIChatDB", CHAT_DEFAULTS)
-    _G._ECHAT_DB = _chatDB
+    _G._CUCHAT_DB = _chatDB
     -- One-time migration: mouseover -> always (idle fade replaces it)
-    if _chatDB.profile and _chatDB.profile.chat
-        and _chatDB.profile.chat.visibility == "mouseover" then
+    if _chatDB.profile and _chatDB.profile.chat and _chatDB.profile.chat.visibility == "mouseover" then
         _chatDB.profile.chat.visibility = "always"
     end
     return _chatDB
@@ -199,9 +217,11 @@ end
 function ns.ChatStyle()
     local v = ns._chatStyle
     if v == nil then
-        local d = _G._ECHAT_DB
+        local d = _G._CUCHAT_DB
         local c = d and d.profile and d.profile.chat
-        if not c then return "cui" end
+        if not c then
+            return "cui"
+        end
         v = (c.useClassicStyle and "classic") or (c.useBlizzardStyle and "blizzard") or "cui"
         ns._chatStyle = v
         -- The WoW Forever variant of Blizzard Style, latched with it: the
@@ -210,8 +230,7 @@ function ns.ChatStyle()
         -- the other modules' Forever latches it also asks for the kit's
         -- frame (CludesUI.ForeverBorderOK): a client that cannot draw it
         -- renders plain Blizzard Style.
-        ns._chatForeverFlag = v == "blizzard" and CludesUI.IS_FOREVER == true
-            and c.useForeverStyle == true
+        ns._chatForeverFlag = v == "blizzard" and CludesUI.IS_FOREVER == true and c.useForeverStyle == true
         ns._chatForever = ns._chatForeverFlag and CludesUI.ForeverBorderOK()
         -- Its Border Style (Chat page), latched with it: "slim" (the shipped
         -- line), "textured" (Blizzard's live line; unset, the default, reads
@@ -224,13 +243,17 @@ end
 -- WoW Forever variant: ChatStyle() still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces. False off Forever.
 function ns.ChatForever()
-    if ns._chatStyle == nil then ns.ChatStyle() end
+    if ns._chatStyle == nil then
+        ns.ChatStyle()
+    end
     return ns._chatForever == true
 end
 -- The WoW Forever kit's Border Style this session: "slim", "textured" or
 -- "heavy" (latched with the look). Nil everywhere else.
 function ns.ChatFvKind()
-    if ns._chatStyle == nil then ns.ChatStyle() end
+    if ns._chatStyle == nil then
+        ns.ChatStyle()
+    end
     return ns._chatFvKind
 end
 -- The WoW Forever kit wears the heavy bronze frame this session (Border
@@ -242,7 +265,9 @@ end
 -- flag comparison must read (ChatForever() stays false where the frame
 -- cannot be drawn, so comparing it to profile flags would never settle).
 function ns.ChatForeverFlag()
-    if ns._chatStyle == nil then ns.ChatStyle() end
+    if ns._chatStyle == nil then
+        ns.ChatStyle()
+    end
     return ns._chatForeverFlag == true
 end
 -- Profiles (ProfileChangesStyle's `extra`, handed the incoming chat table):
@@ -251,9 +276,14 @@ end
 -- for a reload.
 function ns.ChatFvBorderChanged(c)
     local kind
-    if type(c) == "table" and not c.useClassicStyle and c.useBlizzardStyle
-        and CludesUI.IS_FOREVER == true and c.useForeverStyle == true
-        and CludesUI.ForeverBorderOK() then
+    if
+        type(c) == "table"
+        and not c.useClassicStyle
+        and c.useBlizzardStyle
+        and CludesUI.IS_FOREVER == true
+        and c.useForeverStyle == true
+        and CludesUI.ForeverBorderOK()
+    then
         kind = CludesUI.ForeverBorderKind(c.foreverBorder)
     end
     return kind ~= ns.ChatFvKind()
@@ -262,20 +292,32 @@ end
 -- in place (only the suppression is skipped); our panel paint, borders and
 -- input chrome stand down. The display engine and every text feature run as
 -- in the CludesUI look.
-function ns.ChatStock() return ns.ChatStyle() ~= "cui" end
+function ns.ChatStock()
+    return ns.ChatStyle() ~= "cui"
+end
 -- Blizzard's own chat frame art and input box revealed: the stock styles
 -- minus WoW Forever, which strips them like the CludesUI look and draws
 -- its bronze kit on our panel instead (options still gate as Blizzard Style).
-function ns.ChatStockArt() return ns.ChatStock() and not ns.ChatForever() end
+function ns.ChatStockArt()
+    return ns.ChatStock() and not ns.ChatForever()
+end
 -- Blizzard Style only: Blizzard's real tab strip is revealed as well. Classic
 -- and WoW Forever keep the ghost tabs over the invisible strip, painted with
 -- their own tab art.
-function ns.ChatBlizzTabs() return ns.ChatStyle() == "blizzard" and not ns.ChatForever() end
+function ns.ChatBlizzTabs()
+    return ns.ChatStyle() == "blizzard" and not ns.ChatForever()
+end
 -- Stock-aware reads of the CludesUI-only layout settings (the band behind
 -- the tabs, input on top, the panel and sidebar borders).
-function ECHAT.ExtendBgBehindTabs(cfg) return cfg.extendBgBehindTabs == true and not ns.ChatStock() end
-function ECHAT.InputOnTop(cfg) return (cfg.inputOnTop and not ns.ChatStock()) and true or false end
-function ECHAT.BordersHidden(cfg) return (cfg.hideBorders or ns.ChatStock()) and true or false end
+function ECHAT.ExtendBgBehindTabs(cfg)
+    return cfg.extendBgBehindTabs == true and not ns.ChatStock()
+end
+function ECHAT.InputOnTop(cfg)
+    return (cfg.inputOnTop and not ns.ChatStock()) and true or false
+end
+function ECHAT.BordersHidden(cfg)
+    return (cfg.hideBorders or ns.ChatStock()) and true or false
+end
 
 local PP = CUI.PP
 local function GetFont()
@@ -294,8 +336,12 @@ local function GetOutlineFlag()
         return (CUI.GetFontOutlineFlag("chat")) or ""
     end
     -- Chat-specific outline override; still slug-gated by "Never Show Slug".
-    if mode == "outline" then return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG" end
-    if mode == "thick" then return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG" end
+    if mode == "outline" then
+        return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+    end
+    if mode == "thick" then
+        return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
+    end
     return ""
 end
 
@@ -337,7 +383,9 @@ end
 
 local function GetTabPadding()
     local cfg = ECHAT.DB()
-    if ECHAT.ExtendBgBehindTabs(cfg) then return 0 end
+    if ECHAT.ExtendBgBehindTabs(cfg) then
+        return 0
+    end
     return cfg.tabPadding or 0
 end
 local function GetTabAreaHeight()
@@ -361,7 +409,7 @@ local function GetInnerBorderColor(cfg)
         local c = cfg.innerBorderColor
         return r, g, b, (c and c.a) or 0.06
     end
-    local c = cfg.innerBorderColor or { r=1, g=1, b=1, a=0.06 }
+    local c = cfg.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
     return c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
 end
 
@@ -370,7 +418,9 @@ end
 local function GetFrameFontSize(id)
     if FCF_GetChatWindowInfo then
         local _, fontSize = FCF_GetChatWindowInfo(id)
-        if fontSize and fontSize > 0 then return fontSize end
+        if fontSize and fontSize > 0 then
+            return fontSize
+        end
     end
     return 12
 end
@@ -380,7 +430,9 @@ local function GetEditBoxHeight()
 end
 local function GetEditBoxFont()
     local key = ECHAT.DB().editBoxFont
-    if not key or key == "__chat" then return GetFont() end
+    if not key or key == "__chat" then
+        return GetFont()
+    end
     if key == "__global" then
         return (CUI.GetFontPath("chat")) or STANDARD_TEXT_FONT
     end
@@ -394,14 +446,12 @@ end
 -- Chat background texture catalogue: same set as the Unit Frames bar texture
 -- dropdown (same shared media files), with SharedMedia statusbar textures
 -- appended through the shared CludesUI helper.
-ns.chatBgTextures, ns.chatBgTextureNames, ns.chatBgTextureOrder =
-    CludesUI.BuildBarTextureTables(true)
+ns.chatBgTextures, ns.chatBgTextureNames, ns.chatBgTextureOrder = CludesUI.BuildBarTextureTables(true)
 
 -- Refresh from SharedMedia (idempotent; registers the late-registration
 -- callback on first call, same as the other modules).
 function ECHAT.RefreshBgTextureCatalogue()
-    CludesUI.AppendSharedMediaTextures(
-        ns.chatBgTextureNames, ns.chatBgTextureOrder, nil, ns.chatBgTextures)
+    CludesUI.AppendSharedMediaTextures(ns.chatBgTextureNames, ns.chatBgTextureOrder, nil, ns.chatBgTextures)
 end
 
 -- Apply background settings from DB to all skinned chat frames
@@ -433,7 +483,9 @@ function ECHAT.ApplyBackground()
             local bgTex = CFD(cf).bg:GetRegions()
             if bgTex then
                 if stock and bgTex.SetColorTexture then
-                    if bgTex.SetVertexColor then bgTex:SetVertexColor(1, 1, 1, 1) end
+                    if bgTex.SetVertexColor then
+                        bgTex:SetVertexColor(1, 1, 1, 1)
+                    end
                     bgTex:SetColorTexture(0, 0, 0, 0)
                 elseif texPath and bgTex.SetTexture then
                     bgTex:SetTexture(texPath)
@@ -441,14 +493,18 @@ function ECHAT.ApplyBackground()
                 elseif bgTex.SetColorTexture then
                     -- Clear the texture-mode tint before returning to solid, or
                     -- the color double-tints through the vertex color.
-                    if bgTex.SetVertexColor then bgTex:SetVertexColor(1, 1, 1, 1) end
+                    if bgTex.SetVertexColor then
+                        bgTex:SetVertexColor(1, 1, 1, 1)
+                    end
                     bgTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A)
                 end
             end
         end
     end
     -- WoW Forever: the colour and texture fill the kit's framed boxes instead.
-    if ns.ChatForever() then ECHAT.FV_PaintFills(texPath, BG_R, BG_G, BG_B, BG_A) end
+    if ns.ChatForever() then
+        ECHAT.FV_PaintFills(texPath, BG_R, BG_G, BG_B, BG_A)
+    end
     local cf1 = _G.ChatFrame1
     if cf1 and CFD(cf1).sidebar then
         local sbBg = CFD(cf1).sidebar:GetRegions()
@@ -456,11 +512,17 @@ function ECHAT.ApplyBackground()
             sbBg:SetColorTexture(BG_R, BG_G, BG_B, stock and 0 or BG_A)
         end
         -- Blizzard Style column backdrop: the window colour, re-read.
-        if ECHAT.SB_SyncBackdrop then ECHAT.SB_SyncBackdrop(true) end
+        if ECHAT.SB_SyncBackdrop then
+            ECHAT.SB_SyncBackdrop(true)
+        end
     end
     -- Keep the behind-tabs extension in sync with the new color/opacity.
-    if ECHAT.ApplyExtendedBackground then ECHAT.ApplyExtendedBackground() end
-    if ECHAT.ApplyTabAppearance then ECHAT.ApplyTabAppearance() end
+    if ECHAT.ApplyExtendedBackground then
+        ECHAT.ApplyExtendedBackground()
+    end
+    if ECHAT.ApplyTabAppearance then
+        ECHAT.ApplyTabAppearance()
+    end
 end
 
 -- Mouseover sidebars only participate in panel geometry while visible; kept
@@ -469,8 +531,7 @@ end
 local _sidebarMouseoverLayoutVisible = false
 local function SidebarParticipatesInLayout(cfg)
     local mode = cfg.sidebarVisibility or "always"
-    return mode == "always"
-        or (mode == "mouseover" and _sidebarMouseoverLayoutVisible)
+    return mode == "always" or (mode == "mouseover" and _sidebarMouseoverLayoutVisible)
 end
 
 -- Extend the chat background up behind the tab strip (and the sidebar by the same
@@ -488,7 +549,9 @@ function ECHAT.ApplyExtendedBackground()
     local cf1 = _G.ChatFrame1
     local d1 = cf1 and CFD(cf1)
     local bg1 = d1 and d1.bg
-    if not bg1 then return end
+    if not bg1 then
+        return
+    end
 
     local ext = ns._chatBgExt
     if extend and not ext then
@@ -504,14 +567,18 @@ function ECHAT.ApplyExtendedBackground()
     end
     if ext then
         ext:SetHeight(GetTabAreaHeight())
-        if ns._chatBgExtTex then ns._chatBgExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A) end
+        if ns._chatBgExtTex then
+            ns._chatBgExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A)
+        end
         -- BACKGROUND strata (still above the 3D world) puts tabs in front;
         -- the strip never overlaps chat text or the sidebar.
         ext:SetFrameStrata("BACKGROUND")
         -- Level 1 leaves level 0 free for the panel border's "Show Behind"
         -- mode, whose outward half stays visible around the strip.
         ext:SetFrameLevel(1)
-        if _chatAlphaCurrent then ext:SetAlpha(_chatAlphaCurrent) end
+        if _chatAlphaCurrent then
+            ext:SetAlpha(_chatAlphaCurrent)
+        end
         ext:SetShown(extend)
     end
 
@@ -536,14 +603,18 @@ function ECHAT.ApplyExtendedBackground()
             div._cuiOwned = true
             div:SetWidth((PP and PP.mult) or 1)
             div:SetColorTexture(GetInnerBorderColor(cfg))
-            if PP and PP.DisablePixelSnap then PP.DisablePixelSnap(div) end
+            if PP and PP.DisablePixelSnap then
+                PP.DisablePixelSnap(div)
+            end
             d1.sidebarExt = sext
             d1.sidebarExtTex = t
             d1.sidebarExtDiv = div
         end
         if sext then
             sext:SetHeight(GetTabAreaHeight())
-            if d1.sidebarExtTex then d1.sidebarExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A) end
+            if d1.sidebarExtTex then
+                d1.sidebarExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A)
+            end
             local div = d1.sidebarExtDiv
             if div then
                 div:SetColorTexture(GetInnerBorderColor(cfg))
@@ -572,14 +643,16 @@ function ECHAT.ApplyExtendedBackground()
     if border and ns.ChatStock() then
         -- Stock styles: Blizzard's own chat frame border is the border.
         border:Hide()
-        if ns._sidebarSeparateBorder then ns._sidebarSeparateBorder:Hide() end
+        if ns._sidebarSeparateBorder then
+            ns._sidebarSeparateBorder:Hide()
+        end
     elseif border then
         border:ClearAllPoints()
         local includeSidebar = sb
             and not cfg.hideSidebarBg
             and SidebarParticipatesInLayout(cfg)
-            -- A separate sidebar is its own island: excluded here, wrapped
-            -- by its own border below.
+            -- A separate sidebar is its own island: excluded here, wrapped
+            -- by its own border below.
             and cfg.sidebarSeparate ~= true
         local topExtension = extend and GetTabAreaHeight() or 0
         if includeSidebar and not cfg.sidebarRight then
@@ -606,36 +679,54 @@ function ECHAT.ApplyExtendedBackground()
         border:SetFrameLevel(borderLevel)
 
         if CludesUI.ApplyBorderStyle then
-            local sizes = { none=0, thin=1, normal=2, heavy=3, strong=4 }
+            local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
             local thicknessKey = cfg.panelBorderThickness or "none"
             local mode = cfg.panelBorderColorMode or "custom"
             local color
             if mode == "accent" then
                 local r, g, b = CludesUI.GetAccentColor()
-                color = { r=r, g=g, b=b }
+                color = { r = r, g = g, b = b }
             elseif mode == "class" then
                 local _, class = UnitClass("player")
-                color = class and RAID_CLASS_COLORS[class] or { r=1, g=1, b=1 }
+                color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
             else
-                color = cfg.panelBorderColor or { r=1, g=1, b=1 }
+                color = cfg.panelBorderColor or { r = 1, g = 1, b = 1 }
             end
             local alpha = cfg.panelBorderOpacity
-            if alpha == nil then alpha = mode == "custom" and 0.18 or 0.5 end
+            if alpha == nil then
+                alpha = mode == "custom" and 0.18 or 0.5
+            end
             local bSize = sizes[thicknessKey] or 1
             local bTex = cfg.panelBorderTexture or "solid"
             -- Exact pixel size beside the step (nil = the legacy step path).
             local bPx = CludesUI.BorderPx(cfg.panelBorderThicknessPx, bSize, bTex)
-            CludesUI.ApplyBorderStyle(border, bSize,
-                color.r, color.g, color.b, alpha, bTex,
-                cfg.panelBorderOffsetX, cfg.panelBorderOffsetY,
-                cfg.panelBorderShiftX, cfg.panelBorderShiftY, "chat", thicknessKey, nil, bPx)
+            CludesUI.ApplyBorderStyle(
+                border,
+                bSize,
+                color.r,
+                color.g,
+                color.b,
+                alpha,
+                bTex,
+                cfg.panelBorderOffsetX,
+                cfg.panelBorderOffsetY,
+                cfg.panelBorderShiftX,
+                cfg.panelBorderShiftY,
+                "chat",
+                thicknessKey,
+                nil,
+                bPx
+            )
             local solidBorder = PP and PP.GetBorders and PP.GetBorders(border)
-            if solidBorder then solidBorder:SetFrameLevel(borderLevel + (showBehind and 0 or 1)) end
+            if solidBorder then
+                solidBorder:SetFrameLevel(borderLevel + (showBehind and 0 or 1))
+            end
             border:Show()
 
             -- Separate Sidebar: its own border, same style and construction class as
             -- the panel border (our UIParent frame anchored to our sidebar frame).
-            local wantSbBorder = cfg.sidebarSeparate == true and sb
+            local wantSbBorder = cfg.sidebarSeparate == true
+                and sb
                 and not cfg.hideSidebarBg
                 and (cfg.sidebarVisibility or "always") ~= "never"
             local sbBorder = ns._sidebarSeparateBorder
@@ -646,19 +737,33 @@ function ECHAT.ApplyExtendedBackground()
             end
             if sbBorder then
                 if wantSbBorder then
-                    local sbTop = (extend and not cfg.hideSidebarBg)
-                        and GetTabAreaHeight() or 0
+                    local sbTop = (extend and not cfg.hideSidebarBg) and GetTabAreaHeight() or 0
                     sbBorder:ClearAllPoints()
                     sbBorder:SetPoint("TOPLEFT", sb, "TOPLEFT", 0, sbTop)
                     sbBorder:SetPoint("BOTTOMRIGHT", sb, "BOTTOMRIGHT", 0, 0)
                     sbBorder:SetFrameStrata(showBehind and "BACKGROUND" or "MEDIUM")
                     sbBorder:SetFrameLevel(borderLevel)
-                    CludesUI.ApplyBorderStyle(sbBorder, bSize,
-                        color.r, color.g, color.b, alpha, bTex,
-                        cfg.panelBorderOffsetX, cfg.panelBorderOffsetY,
-                        cfg.panelBorderShiftX, cfg.panelBorderShiftY, "chat", thicknessKey, nil, bPx)
+                    CludesUI.ApplyBorderStyle(
+                        sbBorder,
+                        bSize,
+                        color.r,
+                        color.g,
+                        color.b,
+                        alpha,
+                        bTex,
+                        cfg.panelBorderOffsetX,
+                        cfg.panelBorderOffsetY,
+                        cfg.panelBorderShiftX,
+                        cfg.panelBorderShiftY,
+                        "chat",
+                        thicknessKey,
+                        nil,
+                        bPx
+                    )
                     local sbSolid = PP and PP.GetBorders and PP.GetBorders(sbBorder)
-                    if sbSolid then sbSolid:SetFrameLevel(borderLevel + (showBehind and 0 or 1)) end
+                    if sbSolid then
+                        sbSolid:SetFrameLevel(borderLevel + (showBehind and 0 or 1))
+                    end
                     sbBorder:Show()
                 else
                     sbBorder:Hide()
@@ -669,9 +774,15 @@ function ECHAT.ApplyExtendedBackground()
             border:Hide()
         end
     end
-    if ECHAT.ApplyTabBorders then ECHAT.ApplyTabBorders() end
-    if ECHAT.ApplyTabSeparators then ECHAT.ApplyTabSeparators() end
-    if ECHAT.ApplyTabAppearance then ECHAT.ApplyTabAppearance() end
+    if ECHAT.ApplyTabBorders then
+        ECHAT.ApplyTabBorders()
+    end
+    if ECHAT.ApplyTabSeparators then
+        ECHAT.ApplyTabSeparators()
+    end
+    if ECHAT.ApplyTabAppearance then
+        ECHAT.ApplyTabAppearance()
+    end
 end
 
 -- Re-apply font to all chat text surfaces. Chat text size is Blizzard's
@@ -702,13 +813,19 @@ function ECHAT.ApplyFonts()
             local size = GetEditBoxFontSize(i)
             eb:SetFont(editFont, size, outline)
             if i <= 10 then
-                if eb.header then eb.header:SetFont(editFont, size, outline) end
-                if eb.headerSuffix then eb.headerSuffix:SetFont(editFont, size, outline) end
+                if eb.header then
+                    eb.header:SetFont(editFont, size, outline)
+                end
+                if eb.headerSuffix then
+                    eb.headerSuffix:SetFont(editFont, size, outline)
+                end
             end
         end
     end
     -- Our message frames (family/outline ours, size per window from Blizzard).
-    if ECHAT.EngineApplyFonts then ECHAT.EngineApplyFonts() end
+    if ECHAT.EngineApplyFonts then
+        ECHAT.EngineApplyFonts()
+    end
 end
 
 -- One size for every chat window (the options slider). Persistence rides
@@ -721,9 +838,13 @@ end
 -- secret label widths under our taint (the v7.15-era removal). Under the
 -- engine, size only touches storage, SetFont, and OUR frames.
 function ECHAT.ApplyChatFontSize(size)
-    if type(size) ~= "number" or size <= 0 then return end
+    if type(size) ~= "number" or size <= 0 then
+        return
+    end
     for i = 1, 10 do
-        if _G["ChatFrame" .. i] then CludesUI.SetChatWindowSize(i, size) end
+        if _G["ChatFrame" .. i] then
+            CludesUI.SetChatWindowSize(i, size)
+        end
     end
     -- Temp whisper frames carry no numbered storage; their live font is the
     -- state FCF_GetChatWindowInfo reads back, so set it directly.
@@ -733,7 +854,9 @@ function ECHAT.ApplyChatFontSize(size)
             local cf = _G[frames[i]]
             if cf and cf.isTemporary and cf.inUse and cf.SetFont then
                 local font, _, flags = cf:GetFont()
-                if font then cf:SetFont(font, size, flags or "") end
+                if font then
+                    cf:SetFont(font, size, flags or "")
+                end
             end
         end
     end
@@ -750,7 +873,9 @@ end
 -- frame font directly without emitting UPDATE_CHAT_WINDOWS.
 function ECHAT.SyncChatFontSize()
     local cfg = ECHAT.DB()
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     if cfg.chatFontSize == nil then
         local cf = _G.ChatFrame1
         if cf and cf.GetFont then
@@ -786,7 +911,9 @@ function ECHAT.ApplySidebarVisibility()
     local mode = cfg.sidebarVisibility or "always"
     local cf1 = _G.ChatFrame1
     local sidebar = cf1 and CFD(cf1).sidebar
-    if not sidebar then return end
+    if not sidebar then
+        return
+    end
 
     if mode == "never" then
         SetSidebarLayoutVisible(false)
@@ -813,7 +940,9 @@ function ECHAT.ApplySidebarVisibility()
     end
     -- The fade's cached sidebar mode follows the new visibility (declared
     -- in CUI_Chat_Visibility.lua, hence the runtime lookup).
-    if ECHAT.InvalidateAlphaCache then ECHAT.InvalidateAlphaCache() end
+    if ECHAT.InvalidateAlphaCache then
+        ECHAT.InvalidateAlphaCache()
+    end
 
     -- Re-anchor the extended panel border as the sidebar enters/leaves layout.
     if ECHAT.ApplyTabPadding then
@@ -826,14 +955,16 @@ function ECHAT.ApplySidebarVisibility()
         SetSidebarFadeFrame(CreateFrame("Frame"))
         _sidebarFadeFrame:Hide()
         _sidebarFadeFrame:SetScript("OnUpdate", function(self, dt)
-            local step = dt * 4  -- 0.25s fade
+            local step = dt * 4 -- 0.25s fade
             if _sidebarFadeTarget > _sidebarFadeAlpha then
                 SetSidebarFadeAlpha(min(_sidebarFadeTarget, _sidebarFadeAlpha + step))
             else
                 SetSidebarFadeAlpha(max(_sidebarFadeTarget, _sidebarFadeAlpha - step))
             end
             local sb = _G.ChatFrame1 and CFD(_G.ChatFrame1).sidebar
-            if sb then sb:SetAlpha(min(_sidebarFadeAlpha, _chatAlphaCurrent)) end
+            if sb then
+                sb:SetAlpha(min(_sidebarFadeAlpha, _chatAlphaCurrent))
+            end
             if ns._sidebarSeparateBorder then
                 ns._sidebarSeparateBorder:SetAlpha(min(_sidebarFadeAlpha, _chatAlphaCurrent))
             end
@@ -869,8 +1000,9 @@ function ECHAT.ApplyBorders()
             -- Input-on-top: the divider marks the overlaid input's edge, so it
             -- shares that input's shown state (ECHAT.ApplyInputTopStrip) --
             -- otherwise it cuts across a message once the strip is released.
-            CFD(cf).inputDiv:SetShown(not hide
-                and (not ECHAT.InputOnTop(cfg) or ECHAT.InputTopStripActive(cf)))
+            CFD(cf).inputDiv:SetShown(
+                not hide and (not ECHAT.InputOnTop(cfg) or ECHAT.InputTopStripActive(cf))
+            )
         end
     end
     local cf1 = _G.ChatFrame1
@@ -886,19 +1018,20 @@ function ECHAT.ApplyBorders()
         end
     end
     -- Mirror border visibility onto the behind-tabs divider continuation.
-    if ECHAT.ApplyExtendedBackground then ECHAT.ApplyExtendedBackground() end
-    if ECHAT.ApplyTabSeparators then ECHAT.ApplyTabSeparators() end
+    if ECHAT.ApplyExtendedBackground then
+        ECHAT.ApplyExtendedBackground()
+    end
+    if ECHAT.ApplyTabSeparators then
+        ECHAT.ApplyTabSeparators()
+    end
 end
 
 -- Sidebar hints use the fully skinned GameTooltip when the BlizzardSkin
 -- module's tooltip reskin is active; otherwise the lightweight CUI widget
 -- tooltip, so Chat has no hard dependency on that module.
 local function ShowSidebarIconTooltip(owner, label)
-    local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded
-        and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
-    local useGameTooltip = isLoaded
-        and (not CludesUIDB or CludesUIDB.customTooltips ~= false)
-        and GameTooltip
+    local isLoaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
+    local useGameTooltip = isLoaded and (not CludesUIDB or CludesUIDB.customTooltips ~= false) and GameTooltip
     owner._cuiSidebarUsesGameTooltip = useGameTooltip and true or false
     if useGameTooltip then
         GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
@@ -936,7 +1069,9 @@ end
 -- and reused, so repeats cost only the timer.
 function ECHAT.PositionChatPanel(cf)
     local d = CFD(cf)
-    if d._posQueued then return end
+    if d._posQueued then
+        return
+    end
     d._posQueued = true
     local fn = d._posDefer
     if not fn then
@@ -952,12 +1087,16 @@ end
 function ECHAT._PositionChatPanelNow(cf)
     local d = CFD(cf)
     local bg = d and d.bg
-    if not bg then return end
+    if not bg then
+        return
+    end
     -- ChatFrame1's panel keeps tracking even while the frame is dock-hidden
     -- (a selected temp window hides it): the sidebar, the extended tab band,
     -- and the strip visuals all anchor to THIS panel, and skipping it while
     -- hidden strands them when chat is moved. Hidden frames keep live rects.
-    if not cf:IsShown() and cf ~= _G.ChatFrame1 then return end
+    if not cf:IsShown() and cf ~= _G.ChatFrame1 then
+        return
+    end
     local l, t, r, cb = cf:GetLeft(), cf:GetTop(), cf:GetRight(), cf:GetBottom()
     if not (l and t and r and cb) then
         -- Undock rescue: dragging a tab off the dock can end with Blizzard's
@@ -969,13 +1108,11 @@ function ECHAT._PositionChatPanelNow(cf)
         -- next drag-stop iteration saves cleanly and the window stays where
         -- the user dropped it. Costs nothing when healthy -- this branch is
         -- the existing nil-rect early-out.
-        if cf ~= _G.ChatFrame1 and not cf.isDocked and cf:IsShown()
-            and cf:GetNumPoints() == 0 then
+        if cf ~= _G.ChatFrame1 and not cf.isDocked and cf:IsShown() and cf:GetNumPoints() == 0 then
             local cx, cy = GetCursorPosition()
             local es = cf:GetEffectiveScale()
             local issec = _G.issecretvalue
-            if cx and cy and es and es > 0
-                and not (issec and (issec(cx) or issec(cy))) then
+            if cx and cy and es and es > 0 and not (issec and (issec(cx) or issec(cy))) then
                 pcall(function()
                     cf:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / es, cy / es)
                 end)
@@ -1004,8 +1141,7 @@ function ECHAT._PositionChatPanelNow(cf)
                     mx, my = mx / ui2, my / ui2
                     local base = d._dragCursorBase
                     if not base then
-                        base = { x = mx, y = my,
-                                 l = d._bgL, t = d._bgT, r = d._bgR, b = d._bgB }
+                        base = { x = mx, y = my, l = d._bgL, t = d._bgT, r = d._bgR, b = d._bgB }
                         d._dragCursorBase = base
                     end
                     local dx, dy = mx - base.x, my - base.y
@@ -1027,7 +1163,9 @@ function ECHAT._PositionChatPanelNow(cf)
     d._cfWasDocked = cf.isDocked and true or nil
     -- Rects come back in each frame's own space; convert to UIParent's.
     local ui = UIParent:GetEffectiveScale()
-    if not ui or ui == 0 then return end
+    if not ui or ui == 0 then
+        return
+    end
     local cs = cf:GetEffectiveScale() / ui
     -- Insets from ApplyInputPosition (input above/below, its height); falls
     -- back to creation-time geometry before that has ever run.
@@ -1040,12 +1178,19 @@ function ECHAT._PositionChatPanelNow(cf)
     end
     local left, top = (l * cs) + il, (t * cs) + it
     local right, bottom = (r * cs) + ir, (cb * cs) + ib
-    if right - left < 1 or top - bottom < 1 then return end
+    if right - left < 1 or top - bottom < 1 then
+        return
+    end
     local pl, pt, pr, pb = d._bgL, d._bgT, d._bgR, d._bgB
     -- Write only when it moved: this runs every frame and a redundant SetPoint
     -- is still a layout write.
-    if pl and math.abs(pl - left) < 0.05 and math.abs(pt - top) < 0.05
-       and math.abs(pr - right) < 0.05 and math.abs(pb - bottom) < 0.05 then
+    if
+        pl
+        and math.abs(pl - left) < 0.05
+        and math.abs(pt - top) < 0.05
+        and math.abs(pr - right) < 0.05
+        and math.abs(pb - bottom) < 0.05
+    then
         return
     end
     d._bgL, d._bgT, d._bgR, d._bgB = left, top, right, bottom
@@ -1063,7 +1208,9 @@ function ECHAT.PositionChatPanelsNow()
         local cf = _G["ChatFrame" .. i]
         -- Gate on the panel existing, NOT on _skinned: that table is a local of
         -- CUI_Chat_EditBox.lua, so referencing it here reads a nil GLOBAL.
-        if cf and CFD(cf).bg then ECHAT._PositionChatPanelNow(cf) end
+        if cf and CFD(cf).bg then
+            ECHAT._PositionChatPanelNow(cf)
+        end
     end
     -- The owned tab strip is anchored to the panel and follows for free.
 end
@@ -1082,7 +1229,9 @@ local function PanelHost()
 end
 
 local function ReseatPanel(f, host)
-    if not f then return end
+    if not f then
+        return
+    end
     local p = f:GetParent()
     if p ~= host and (p == UIParent or p == _panelHost) then
         FrameUtil.SetParentMaintainRenderLayering(f, host)
@@ -1138,7 +1287,9 @@ end
 ECHAT.STOCK_CLAMP_TOP, ECHAT.STOCK_CLAMP_BOTTOM = 35, 34
 local function EnsureChatClampInsets()
     local cf1 = _G.ChatFrame1
-    if not (cf1 and cf1.GetClampRectInsets) then return end
+    if not (cf1 and cf1.GetClampRectInsets) then
+        return
+    end
     local wl, wr, wt, wb = 0, 0, 0, 0
     if ns.ChatStock() then
         local x = (ECHAT.STOCK_BG_X or 8) + 4
@@ -1182,17 +1333,23 @@ ECHAT._stockBgPts = {}
 -- Rewrites the x of every LEFT/RIGHT anchor on region r; true once settled
 -- (nothing to seat, or seated), false when a secret anchor held it off.
 function ECHAT._SeatStockX(r, lx, rx)
-    if not (r and r.GetNumPoints) then return true end
+    if not (r and r.GetNumPoints) then
+        return true
+    end
     local sec = _G.issecretvalue
     local pts, c, differs = ECHAT._stockBgPts, 0, false
     for i = 1, r:GetNumPoints() do
         local p, rel, rp, x, y = r:GetPoint(i)
         if not p or (sec and (sec(x) or sec(y))) then
-            for j = 1, c do pts[j] = nil end
+            for j = 1, c do
+                pts[j] = nil
+            end
             return false
         end
         local want = (p:find("LEFT") and lx) or (p:find("RIGHT") and rx) or nil
-        if want and x ~= want then differs = true end
+        if want and x ~= want then
+            differs = true
+        end
         pts[c + 1], pts[c + 2], pts[c + 3], pts[c + 4] = p, rel, rp, y
         c = c + 4
     end
@@ -1200,16 +1357,24 @@ function ECHAT._SeatStockX(r, lx, rx)
         for j = 1, c, 4 do
             local p = pts[j]
             local x = (p:find("LEFT") and lx) or (p:find("RIGHT") and rx) or nil
-            if x then r:SetPoint(p, pts[j + 1], pts[j + 2], x, pts[j + 3]) end
+            if x then
+                r:SetPoint(p, pts[j + 1], pts[j + 2], x, pts[j + 3])
+            end
         end
     end
-    for j = 1, c do pts[j] = nil end
+    for j = 1, c do
+        pts[j] = nil
+    end
     return true
 end
 function ECHAT.SeatStockBackground(cf)
-    if not (cf and ECHAT._stockSeatArmed) then return end
+    if not (cf and ECHAT._stockSeatArmed) then
+        return
+    end
     local d = CFD(cf)
-    if d.stockSeated then return end
+    if d.stockSeated then
+        return
+    end
     local id = cf:GetID()
     local cc = Constants and Constants.ChatFrameConstants
     if not id or id < 1 or id == 2 or id > ((cc and cc.MaxChatWindows) or 10) then
@@ -1224,8 +1389,12 @@ function ECHAT.SeatStockBackground(cf)
     ok = ECHAT._SeatStockX(cf.editBox, -X - 3, X + 1 - 8) and ok
     -- Size grabber (undocked windows; the main window's never shows):
     -- BOTTOMRIGHT on the background's, out to the border's outer edge.
-    if id ~= 1 then ok = ECHAT._SeatStockX(cf.ResizeButton, 4, 4) and ok end
-    if ok then d.stockSeated = true end
+    if id ~= 1 then
+        ok = ECHAT._SeatStockX(cf.ResizeButton, 4, 4) and ok
+    end
+    if ok then
+        d.stockSeated = true
+    end
 end
 
 -- State sync for what the panels lost by no longer being chat frame children,
@@ -1238,7 +1407,9 @@ end
 -- passes. The stack-hidden gate keeps the shown-follow from re-showing
 -- panels the full-hide put away.
 function ECHAT.SyncChatFrameState()
-    if ECHAT.SuppressChatEditModeSelection then ECHAT.SuppressChatEditModeSelection() end
+    if ECHAT.SuppressChatEditModeSelection then
+        ECHAT.SuppressChatEditModeSelection()
+    end
     EnsureChatClampInsets()
     -- Size drift self-heal: Edit Mode's late layout passes can re-rect the
     -- main window through paths the ApplySystemAnchor guard never sees,
@@ -1249,8 +1420,13 @@ function ECHAT.SyncChatFrameState()
     local cfgSz = ECHAT.DB()
     local pos = cfgSz and cfgSz.chatPosition
     local sz = pos and cfgSz.chatSize
-    if sz and sz.w and sz.h and not ns._chatSizingActive
-        and not (_G.CludesUI and _G.CludesUI._unlockActive) then
+    if
+        sz
+        and sz.w
+        and sz.h
+        and not ns._chatSizingActive
+        and not (_G.CludesUI and _G.CludesUI._unlockActive)
+    then
         local cf1s = _G.ChatFrame1
         -- Armed only after the settled-sight apply (the anchor guard is
         -- installed there): position ownership must never begin early, or
@@ -1263,8 +1439,12 @@ function ECHAT.SyncChatFrameState()
             local h = cf1s:GetHeight()
             local isec = _G.issecretvalue
             local drift = false
-            if w and h and not (isec and (isec(w) or isec(h)))
-                and (math.abs(w - sz.w) > 1.5 or math.abs(h - sz.h) > 1.5) then
+            if
+                w
+                and h
+                and not (isec and (isec(w) or isec(h)))
+                and (math.abs(w - sz.w) > 1.5 or math.abs(h - sz.h) > 1.5)
+            then
                 drift = true
             end
             -- Position drift too: Edit Mode's late writes move the rect as
@@ -1287,12 +1467,18 @@ function ECHAT.SyncChatFrameState()
                         ty = math.max(-ib, math.min(ty, sh - it - sz.h))
                     end
                 end
-                if l and b and not (isec and (isec(l) or isec(b)))
-                    and (math.abs(l - tx) > 1.5 or math.abs(b - ty) > 1.5) then
+                if
+                    l
+                    and b
+                    and not (isec and (isec(l) or isec(b)))
+                    and (math.abs(l - tx) > 1.5 or math.abs(b - ty) > 1.5)
+                then
                     drift = true
                 end
             end
-            if drift and ECHAT.ApplyChatPosition then ECHAT.ApplyChatPosition() end
+            if drift and ECHAT.ApplyChatPosition then
+                ECHAT.ApplyChatPosition()
+            end
         end
     end
     -- Stock styles reveal Blizzard's own background ON the chat frame, and
@@ -1318,27 +1504,43 @@ function ECHAT.SyncChatFrameState()
                 -- lockdown; a secret skips the compare and re-asserts.
                 local bf = cf.isDocked and _G["ChatFrame" .. i .. "ButtonFrame"]
                 local bfA = bf and bf:GetAlpha()
-                if bfA and ((issecretvalue and issecretvalue(bfA)) or bfA ~= 0) then bf:SetAlpha(0) end
+                if bfA and ((issecretvalue and issecretvalue(bfA)) or bfA ~= 0) then
+                    bf:SetAlpha(0)
+                end
                 local sb = cf.ScrollToBottomButton
                 local sbA = sb and sb:GetAlpha()
-                if sbA and ((issecretvalue and issecretvalue(sbA)) or sbA ~= 0) then sb:SetAlpha(0) end
+                if sbA and ((issecretvalue and issecretvalue(sbA)) or sbA ~= 0) then
+                    sb:SetAlpha(0)
+                end
             end
             -- Stock styles: each permanent window's art seated once (stamped).
-            if stockLvl then ECHAT.SeatStockBackground(cf) end
+            if stockLvl then
+                ECHAT.SeatStockBackground(cf)
+            end
             local bg = CFD(cf).bg
             if bg and not ns._chatStackHidden then
-                if bg:IsShown() ~= shown then bg:SetShown(shown) end
+                if bg:IsShown() ~= shown then
+                    bg:SetShown(shown)
+                end
                 if shown then
                     if stockLvl then
                         local lvl = cf:GetFrameLevel() + 1
-                        if bg:GetFrameLevel() ~= lvl then bg:SetFrameLevel(lvl) end
-                        if ECHAT.EngineLevelWindow then ECHAT.EngineLevelWindow(cf) end
+                        if bg:GetFrameLevel() ~= lvl then
+                            bg:SetFrameLevel(lvl)
+                        end
+                        if ECHAT.EngineLevelWindow then
+                            ECHAT.EngineLevelWindow(cf)
+                        end
                     else
-                    local lvl = max(0, cf:GetFrameLevel() - 1)
-                    if bg:GetFrameLevel() ~= lvl then bg:SetFrameLevel(lvl) end
+                        local lvl = max(0, cf:GetFrameLevel() - 1)
+                        if bg:GetFrameLevel() ~= lvl then
+                            bg:SetFrameLevel(lvl)
+                        end
                     end
                     local st = stockLvl and "MEDIUM" or cf:GetFrameStrata()
-                    if bg:GetFrameStrata() ~= st then bg:SetFrameStrata(st) end
+                    if bg:GetFrameStrata() ~= st then
+                        bg:SetFrameStrata(st)
+                    end
                 end
             end
         end
@@ -1375,7 +1577,9 @@ do
         local cf = _G["ChatFrame" .. i]
         if cf and cf.GetFont then
             local size = GetFrameFontSize(i)
-            if size and size > 0 then lastFontSize[i] = size end
+            if size and size > 0 then
+                lastFontSize[i] = size
+            end
         end
     end
 
@@ -1393,13 +1597,19 @@ do
                 -- execution, after the click that changed the dock but
                 -- before this frame renders. A queued pass would paint one
                 -- frame of a ghost stretched on the dying tab.
-                if ECHAT.TabsRefreshNow then ECHAT.TabsRefreshNow() end
-                if ECHAT.QueueTabPass then ECHAT.QueueTabPass() end
+                if ECHAT.TabsRefreshNow then
+                    ECHAT.TabsRefreshNow()
+                end
+                if ECHAT.QueueTabPass then
+                    ECHAT.QueueTabPass()
+                end
             end
         end
         -- State compares are cheaper at a coarse cadence.
         accum = accum + elapsed
-        if accum < 0.1 then return end
+        if accum < 0.1 then
+            return
+        end
         accum = 0
         -- Edit Mode self-heal: OnHide is the normal disarm; this covers a missed
         -- one (reload inside Edit Mode etc.).
@@ -1411,13 +1621,19 @@ do
             local sel = FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
             if sel ~= lastSelected then
                 lastSelected = sel
-                if ECHAT.QueueTabPass then ECHAT.QueueTabPass() end
+                if ECHAT.QueueTabPass then
+                    ECHAT.QueueTabPass()
+                end
                 -- Stock sidebar: the scroll flash follows the selected window.
-                if ECHAT.SB_FlashSync then ECHAT.SB_FlashSync() end
+                if ECHAT.SB_FlashSync then
+                    ECHAT.SB_FlashSync()
+                end
             end
             -- Blizzard Style sidebar backdrop: the selected window's stored
             -- colour (tab-menu colour and opacity edits land while armed).
-            if ECHAT.SB_SyncBackdrop then ECHAT.SB_SyncBackdrop() end
+            if ECHAT.SB_SyncBackdrop then
+                ECHAT.SB_SyncBackdrop()
+            end
         end
         -- Blizzard's tab menu writes the frame font directly and does not emit
         -- UPDATE_CHAT_WINDOWS. Mirror the changed stored size into the CUI
@@ -1451,7 +1667,9 @@ do
                 shownChanged = true
             end
         end
-        if shownChanged and ECHAT.QueueFullPass then ECHAT.QueueFullPass() end
+        if shownChanged and ECHAT.QueueFullPass then
+            ECHAT.QueueFullPass()
+        end
         ECHAT.SyncChatFrameState()
         -- Disarm: nothing hovered, Edit Mode closed, linger expired, no open
         -- context menu. The linger covers quick menu clicks; the menu check
@@ -1459,7 +1677,13 @@ do
         -- land while the mouse has been in the menu far past the linger, and
         -- the shown/selection watches above must see their results.
         local menuOpen = Menu and Menu.GetManager and Menu.GetManager():IsAnyMenuOpen()
-        if hoverCount == 0 and not editMode and not unlockHold and not menuOpen and GetTime() >= lingerUntil then
+        if
+            hoverCount == 0
+            and not editMode
+            and not unlockHold
+            and not menuOpen
+            and GetTime() >= lingerUntil
+        then
             ECHAT.PositionChatPanelsNow()
             follower:Hide()
         end
@@ -1474,13 +1698,17 @@ do
     end
     function ECHAT.FollowRelease()
         hoverCount = max(0, hoverCount - 1)
-        if hoverCount == 0 then lingerUntil = GetTime() + 4 end
+        if hoverCount == 0 then
+            lingerUntil = GetTime() + 4
+        end
     end
     -- Edit Mode session: chat can be dragged/resized with the mouse far from
     -- any of our hover widgets (the Selection overlay occludes them).
     function ECHAT.FollowArmEditMode(on)
         editMode = on and true or false
-        if editMode then follower:Show() end
+        if editMode then
+            follower:Show()
+        end
     end
     -- Unlock-mode session hold: the Chat mover drags ChatFrame1 with the
     -- cursor over OUR mover proxy, not over any arming widget -- without
@@ -1489,7 +1717,9 @@ do
     -- flag whenever the Edit Mode manager is closed (always, in unlock).
     function ECHAT.FollowArmUnlock(on)
         unlockHold = on and true or false
-        if unlockHold then follower:Show() end
+        if unlockHold then
+            follower:Show()
+        end
     end
 end
 
@@ -1502,36 +1732,91 @@ end
 -- broken: true while an CUI_Chat_*.lua file loads; a file that fails leaves
 -- it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_internals", {
-    _chatAlphaCurrent = _chatAlphaCurrent, _chatFadeFrame = _chatFadeFrame,
-    _sidebarFadeAlpha = _sidebarFadeAlpha, _sidebarFadeTarget = _sidebarFadeTarget,
-    _sidebarMouseoverLayoutVisible = _sidebarMouseoverLayoutVisible, BG_A = BG_A, BG_B = BG_B,
-    BG_G = BG_G, BG_R = BG_R, CFD = CFD, EnsureChatClampInsets = EnsureChatClampInsets,
-    EnsureDB = EnsureDB, FADE_IN_DURATION = FADE_IN_DURATION,
-    FADE_OUT_DURATION = FADE_OUT_DURATION, GetEditBoxFont = GetEditBoxFont,
-    GetEditBoxFontSize = GetEditBoxFontSize, GetEditBoxHeight = GetEditBoxHeight,
-    GetFont = GetFont, GetFrameFontSize = GetFrameFontSize, GetIdleFadeAlpha = GetIdleFadeAlpha,
-    GetInnerBorderColor = GetInnerBorderColor, GetOutlineFlag = GetOutlineFlag,
-    GetTabAreaHeight = GetTabAreaHeight, HideSidebarIconTooltip = HideSidebarIconTooltip,
+    _chatAlphaCurrent = _chatAlphaCurrent,
+    _chatFadeFrame = _chatFadeFrame,
+    _sidebarFadeAlpha = _sidebarFadeAlpha,
+    _sidebarFadeTarget = _sidebarFadeTarget,
+    _sidebarMouseoverLayoutVisible = _sidebarMouseoverLayoutVisible,
+    BG_A = BG_A,
+    BG_B = BG_B,
+    BG_G = BG_G,
+    BG_R = BG_R,
+    CFD = CFD,
+    EnsureChatClampInsets = EnsureChatClampInsets,
+    EnsureDB = EnsureDB,
+    FADE_IN_DURATION = FADE_IN_DURATION,
+    FADE_OUT_DURATION = FADE_OUT_DURATION,
+    GetEditBoxFont = GetEditBoxFont,
+    GetEditBoxFontSize = GetEditBoxFontSize,
+    GetEditBoxHeight = GetEditBoxHeight,
+    GetFont = GetFont,
+    GetFrameFontSize = GetFrameFontSize,
+    GetIdleFadeAlpha = GetIdleFadeAlpha,
+    GetInnerBorderColor = GetInnerBorderColor,
+    GetOutlineFlag = GetOutlineFlag,
+    GetTabAreaHeight = GetTabAreaHeight,
+    HideSidebarIconTooltip = HideSidebarIconTooltip,
     IDLE_FADE_OUT_DURATION = IDLE_FADE_OUT_DURATION,
     ShowSidebarIconTooltip = ShowSidebarIconTooltip,
-    bgRSetters = { function(v) BG_R = v end },
-    bgGSetters = { function(v) BG_G = v end },
-    bgBSetters = { function(v) BG_B = v end },
-    bgASetters = { function(v) BG_A = v end },
-    sidebarLayoutVisibleSetters = { function(v) _sidebarMouseoverLayoutVisible = v end },
-    sidebarFadeTargetSetters = { function(v) _sidebarFadeTarget = v end },
-    sidebarFadeAlphaSetters = { function(v) _sidebarFadeAlpha = v end },
-    sidebarFadeFrameSetters = { function(v) _sidebarFadeFrame = v end },
-    chatAlphaCurrentSetters = { function(v) _chatAlphaCurrent = v end },
-    visChatVisibleSetters = {}, idleFadeActiveSetters = {},
+    bgRSetters = {
+        function(v)
+            BG_R = v
+        end,
+    },
+    bgGSetters = {
+        function(v)
+            BG_G = v
+        end,
+    },
+    bgBSetters = {
+        function(v)
+            BG_B = v
+        end,
+    },
+    bgASetters = {
+        function(v)
+            BG_A = v
+        end,
+    },
+    sidebarLayoutVisibleSetters = {
+        function(v)
+            _sidebarMouseoverLayoutVisible = v
+        end,
+    },
+    sidebarFadeTargetSetters = {
+        function(v)
+            _sidebarFadeTarget = v
+        end,
+    },
+    sidebarFadeAlphaSetters = {
+        function(v)
+            _sidebarFadeAlpha = v
+        end,
+    },
+    sidebarFadeFrameSetters = {
+        function(v)
+            _sidebarFadeFrame = v
+        end,
+    },
+    chatAlphaCurrentSetters = {
+        function(v)
+            _chatAlphaCurrent = v
+        end,
+    },
+    visChatVisibleSetters = {},
+    idleFadeActiveSetters = {},
 }, {
-    SetBgR = "bgRSetters", SetBgG = "bgGSetters", SetBgB = "bgBSetters", SetBgA = "bgASetters",
+    SetBgR = "bgRSetters",
+    SetBgG = "bgGSetters",
+    SetBgB = "bgBSetters",
+    SetBgA = "bgASetters",
     SetSidebarLayoutVisible = "sidebarLayoutVisibleSetters",
     SetSidebarFadeTarget = "sidebarFadeTargetSetters",
     SetSidebarFadeAlpha = "sidebarFadeAlphaSetters",
     SetSidebarFadeFrame = "sidebarFadeFrameSetters",
     SetChatAlphaCurrent = "chatAlphaCurrentSetters",
-    SetVisChatVisible = "visChatVisibleSetters", SetIdleFadeActive = "idleFadeActiveSetters",
+    SetVisChatVisible = "visChatVisibleSetters",
+    SetIdleFadeActive = "idleFadeActiveSetters",
 })
 -- The Set<Name> functions this file calls itself (declared above BG_R).
 do

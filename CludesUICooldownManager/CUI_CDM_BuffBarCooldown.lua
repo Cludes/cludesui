@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarCooldown.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local GetTime = GetTime
@@ -25,7 +29,9 @@ local SetRestoreNormalFill = I.SetRestoreNormalFill
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local _anyThreshold = false
-I.anyThresholdSetters[#I.anyThresholdSetters + 1] = function(v) _anyThreshold = v end
+I.anyThresholdSetters[#I.anyThresholdSetters + 1] = function(v)
+    _anyThreshold = v
+end
 -- Assigned further down and handed to CUI_CDM_BuffBarFrames.lua
 -- (SetRestoreNormalFill).
 local _restoreTBBNormalFill
@@ -40,9 +46,13 @@ local _restoreTBBNormalFill
 --  honoring the texture, gradient, spark, orientation and reverse-fill settings.
 -------------------------------------------------------------------------------
 local function _ensureTBBChargeHashFill(bar)
-    if bar._chargeHashCountBar then return end
+    if bar._chargeHashCountBar then
+        return
+    end
     local sb = bar._bar
-    if not sb then return end
+    if not sb then
+        return
+    end
 
     local countBar = CreateFrame("StatusBar", nil, sb)
     countBar:SetAllPoints(sb)
@@ -94,7 +104,9 @@ end
 
 local function _styleTBBChargeHashFill(bar, cfg)
     local fill = bar._chargeHashFillTexture
-    if not fill then return end
+    if not fill then
+        return
+    end
     local texPath = bar._lastTexPath or "Interface\\Buttons\\WHITE8x8"
     local fR, fG = bar._baseFillR or _classR, bar._baseFillG or _classG
     local fB, fA = bar._baseFillB or _classB, bar._baseFillA or 1
@@ -103,23 +115,27 @@ local function _styleTBBChargeHashFill(bar, cfg)
     local gR, gG = cfg.gradientR or 0.20, cfg.gradientG or 0.20
     local gB, gA = cfg.gradientB or 0.80, cfg.gradientA or 1
     -- SCALAR style signature: unchanged active bars take this branch without allocating a temporary table/key string every tick.
-    if bar._chargeHashFillStyleValid
-       and bar._chargeHashFillStyleTexPath == texPath
-       and bar._chargeHashFillStyleGradient == gradientEnabled
-       and bar._chargeHashFillStyleDirection == gradientDir
-       and bar._chargeHashFillStyleR == fR
-       and bar._chargeHashFillStyleG == fG
-       and bar._chargeHashFillStyleB == fB
-       and bar._chargeHashFillStyleA == fA
-       and bar._chargeHashFillStyleGradientR == gR
-       and bar._chargeHashFillStyleGradientG == gG
-       and bar._chargeHashFillStyleGradientB == gB
-       and bar._chargeHashFillStyleGradientA == gA then
+    if
+        bar._chargeHashFillStyleValid
+        and bar._chargeHashFillStyleTexPath == texPath
+        and bar._chargeHashFillStyleGradient == gradientEnabled
+        and bar._chargeHashFillStyleDirection == gradientDir
+        and bar._chargeHashFillStyleR == fR
+        and bar._chargeHashFillStyleG == fG
+        and bar._chargeHashFillStyleB == fB
+        and bar._chargeHashFillStyleA == fA
+        and bar._chargeHashFillStyleGradientR == gR
+        and bar._chargeHashFillStyleGradientG == gG
+        and bar._chargeHashFillStyleGradientB == gB
+        and bar._chargeHashFillStyleGradientA == gA
+    then
         return
     end
 
     fill:SetTexture(texPath)
-    if bar._blizzFillAtlas then fill:SetAtlas("UI-HUD-CoolDownManager-Bar") end
+    if bar._blizzFillAtlas then
+        fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
+    end
     fill:ClearAllPoints()
     if gradientEnabled then
         -- Gradients stay mapped across the full bar and are revealed by the moving clip, matching the stock gradient path.
@@ -158,10 +174,18 @@ local function _styleTBBChargeHashFill(bar, cfg)
 end
 
 _restoreTBBNormalFill = function(bar, cfg)
-    if not bar._chargeHashFillActive then return end
-    if bar._chargeHashFillClip then bar._chargeHashFillClip:Hide() end
-    if bar._chargeHashCountBar then bar._chargeHashCountBar:Hide() end
-    if bar._chargeHashProgressBar then bar._chargeHashProgressBar:Hide() end
+    if not bar._chargeHashFillActive then
+        return
+    end
+    if bar._chargeHashFillClip then
+        bar._chargeHashFillClip:Hide()
+    end
+    if bar._chargeHashCountBar then
+        bar._chargeHashCountBar:Hide()
+    end
+    if bar._chargeHashProgressBar then
+        bar._chargeHashProgressBar:Hide()
+    end
 
     local sb = bar._bar
     local fillTex = bar._cachedOurFillTex
@@ -169,8 +193,12 @@ _restoreTBBNormalFill = function(bar, cfg)
         fillTex = sb:GetStatusBarTexture()
         bar._cachedOurFillTex = fillTex
     end
-    if fillTex then fillTex:SetAlpha(1) end
-    if bar._gradientActive and bar._gradClip then bar._gradClip:Show() end
+    if fillTex then
+        fillTex:SetAlpha(1)
+    end
+    if bar._gradientActive and bar._gradClip then
+        bar._gradClip:Show()
+    end
     if cfg.showSpark and fillTex then
         AnchorTBBSpark(bar, cfg, (bar._gradientActive and bar._gradClip) or fillTex)
     end
@@ -182,16 +210,24 @@ _restoreTBBNormalFill = function(bar, cfg)
 end
 SetRestoreNormalFill(_restoreTBBNormalFill)
 
-local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
-        durObj, remaining, duration, wasShown)
-    if cfg.chargeHashLines ~= true or type(maxCharges) ~= "number"
-       or maxCharges <= 1 then
+local function _updateTBBChargeHashFill(
+    bar,
+    cfg,
+    maxCharges,
+    currentCharges,
+    durObj,
+    remaining,
+    duration,
+    wasShown
+)
+    if cfg.chargeHashLines ~= true or type(maxCharges) ~= "number" or maxCharges <= 1 then
         return false
     end
     local secretCount = issecretvalue and issecretvalue(currentCharges)
-    if not secretCount and type(currentCharges) ~= "number" then return false end
-    if not durObj and not (_tbbCleanNum(remaining) and _tbbCleanNum(duration)
-       and duration > 0) then
+    if not secretCount and type(currentCharges) ~= "number" then
+        return false
+    end
+    if not durObj and not (_tbbCleanNum(remaining) and _tbbCleanNum(duration) and duration > 0) then
         return false
     end
 
@@ -202,8 +238,9 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
     local countTexture = bar._chargeHashCountTexture
     local progressTexture = bar._chargeHashProgressTexture
     local clip = bar._chargeHashFillClip
-    if not sb or not countBar or not progressBar or not countTexture
-       or not progressTexture or not clip then return false end
+    if not sb or not countBar or not progressBar or not countTexture or not progressTexture or not clip then
+        return false
+    end
 
     local isVert = cfg.verticalOrientation and true or false
     local reverse = cfg.reverseFill and true or false
@@ -214,12 +251,14 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
     -- reads them, so this per-tick path never touches them.
 
     -- Direct scalar comparisons name every geometry invalidator while keeping the steady-state update allocation-free.
-    if not bar._chargeHashFillGeometryValid
-       or bar._chargeHashFillMaxCharges ~= maxCharges
-       or bar._chargeHashFillVertical ~= isVert
-       or bar._chargeHashFillReverse ~= reverse
-       or bar._chargeHashFillBarW ~= barW
-       or bar._chargeHashFillBarH ~= barH then
+    if
+        not bar._chargeHashFillGeometryValid
+        or bar._chargeHashFillMaxCharges ~= maxCharges
+        or bar._chargeHashFillVertical ~= isVert
+        or bar._chargeHashFillReverse ~= reverse
+        or bar._chargeHashFillBarW ~= barW
+        or bar._chargeHashFillBarH ~= barH
+    then
         countBar:SetOrientation(orientation)
         countBar:SetReverseFill(reverse)
         countBar:SetMinMaxValues(0, maxCharges)
@@ -302,13 +341,10 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
     -- SetValue is a supported secret sink: NEVER inspect or compute with the live count in Lua.
     countBar:SetValue(currentCharges)
 
-    if durObj and progressBar.SetTimerDuration and Enum
-       and Enum.StatusBarTimerDirection then
+    if durObj and progressBar.SetTimerDuration and Enum and Enum.StatusBarTimerDirection then
         if bar._cdNeedSet or bar._chargeHashDuration ~= durObj or not wasShown then
-            local interp = Enum.StatusBarInterpolation
-                and Enum.StatusBarInterpolation.Immediate
-            progressBar:SetTimerDuration(durObj, interp,
-                Enum.StatusBarTimerDirection.ElapsedTime)
+            local interp = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.Immediate
+            progressBar:SetTimerDuration(durObj, interp, Enum.StatusBarTimerDirection.ElapsedTime)
             bar._chargeHashDuration = durObj
         end
     else
@@ -322,15 +358,18 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
     -- Partial-charge shade state: scalar-cached so the steady-state tick is a no-op.
     local shade = bar._chargeHashShadeTexture
     if shade then
-        local shadeA = cfg.chargeHashShade == true
-            and (tonumber(cfg.chargeHashShadeAlpha) or 0.5) or 0
-        if shadeA > 1 then shadeA = 1 end
+        local shadeA = cfg.chargeHashShade == true and (tonumber(cfg.chargeHashShadeAlpha) or 0.5) or 0
+        if shadeA > 1 then
+            shadeA = 1
+        end
         if shadeA > 0 then
             if bar._chargeHashShadeAlpha ~= shadeA then
                 shade:SetColorTexture(0, 0, 0, shadeA)
                 bar._chargeHashShadeAlpha = shadeA
             end
-            if not shade:IsShown() then shade:Show() end
+            if not shade:IsShown() then
+                shade:Show()
+            end
         elseif shade:IsShown() then
             shade:Hide()
         end
@@ -345,8 +384,12 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
             fillTex = sb:GetStatusBarTexture()
             bar._cachedOurFillTex = fillTex
         end
-        if fillTex then fillTex:SetAlpha(0) end
-        if bar._gradClip then bar._gradClip:Hide() end
+        if fillTex then
+            fillTex:SetAlpha(0)
+        end
+        if bar._gradClip then
+            bar._gradClip:Hide()
+        end
         clip:Show()
     end
     if cfg.showSpark and bar._spark then
@@ -354,7 +397,9 @@ local function _updateTBBChargeHashFill(bar, cfg, maxCharges, currentCharges,
         -- edge is the exact visible fill boundary, and skipping the frame's pixel rounding
         -- keeps the spark joined to that edge in both normal and reverse fill.
         AnchorTBBSpark(bar, cfg, progressTexture, true)
-        if not bar._spark:IsShown() then bar._spark:Show() end
+        if not bar._spark:IsShown() then
+            bar._spark:Show()
+        end
     end
     bar._chargeHashFillActive = true
     bar._cdNeedSet = nil
@@ -371,9 +416,9 @@ end
 --  the mirror when the API turns secret; isActive stays readable, so the bar still
 --  ends/hides exactly when the real cooldown does even if the mirror drifts (CDR, resets).
 -------------------------------------------------------------------------------
-local _cdCast = {}       -- [sid] = { start, dur } live local cooldown mirror
-local _cdDurCache = {}   -- [sid] = last clean cooldown/recharge duration seen
-local _cdWatch = {}      -- [watched sid] = canonical sid to key the mirror by
+local _cdCast = {} -- [sid] = { start, dur } live local cooldown mirror
+local _cdDurCache = {} -- [sid] = last clean cooldown/recharge duration seen
+local _cdWatch = {} -- [watched sid] = canonical sid to key the mirror by
 local _cdFrame
 local _cdActive = false
 -- Cooldown-state generation: bumped by SPELL_UPDATE_COOLDOWN/CHARGES/player casts. Bars
@@ -385,9 +430,13 @@ local _cdGen = 0
 -- ONLY at the global (client-verified: no C_Spell form exists); static data, never secret,
 -- but validated anyway since the seed feeds arithmetic.
 local function _cdBaseDuration(sid)
-    if not GetSpellBaseCooldown then return nil end
+    if not GetSpellBaseCooldown then
+        return nil
+    end
     local ms = GetSpellBaseCooldown(sid)
-    if _tbbCleanNum(ms) and ms > 0 then return ms / 1000 end
+    if _tbbCleanNum(ms) and ms > 0 then
+        return ms / 1000
+    end
     return nil
 end
 
@@ -397,22 +446,31 @@ local function _ensureCooldownCastListener(enable)
             _cdFrame = ns.TakeShell()
             _cdFrame:SetScript("OnEvent", function(_, event, _, _, castSid)
                 _cdGen = _cdGen + 1
-                if event ~= "UNIT_SPELLCAST_SUCCEEDED" then return end
+                if event ~= "UNIT_SPELLCAST_SUCCEEDED" then
+                    return
+                end
                 local spellID = castSid
-                if not spellID then return end
+                if not spellID then
+                    return
+                end
                 local canon = _cdWatch[spellID]
                 if not canon and C_Spell and C_Spell.GetBaseSpell then
                     -- Cast can fire with the override form while the bar watches the base.
                     local base = C_Spell.GetBaseSpell(spellID)
-                    if type(base) == "number" then canon = _cdWatch[base] end
+                    if type(base) == "number" then
+                        canon = _cdWatch[base]
+                    end
                 end
-                if not canon then return end
+                if not canon then
+                    return
+                end
                 local now = GetTime()
                 -- Charge spells: maxCharges is static and stays readable, and the cast just consumed one charge.
-                local ch = C_Spell.GetSpellCharges
-                    and C_Spell.GetSpellCharges(canon)
+                local ch = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(canon)
                 local maxCh = ch and ch.maxCharges
-                if not (_tbbCleanNum(maxCh) and maxCh > 1) then maxCh = nil end
+                if not (_tbbCleanNum(maxCh) and maxCh > 1) then
+                    maxCh = nil
+                end
                 -- NEVER overwrite an unexpired mirror: a plain spell cannot be cast while on
                 -- cooldown, and a charge spell cast while already recharging does NOT restart the next charge; only the count drops.
                 local m = _cdCast[canon]
@@ -424,7 +482,10 @@ local function _ensureCooldownCastListener(enable)
                 end
                 local dur = _cdDurCache[canon] or _cdBaseDuration(canon)
                 if dur then
-                    if not m then m = {}; _cdCast[canon] = m end
+                    if not m then
+                        m = {}
+                        _cdCast[canon] = m
+                    end
                     m.start = now
                     m.dur = dur
                     if maxCh then
@@ -476,11 +537,14 @@ function ns.UpdateCooldownCastListener()
                     -- could never arm the mirror. Never overwrites a live clean read.
                     if not _cdDurCache[canon] then
                         local seed
-                        local ch = C_Spell.GetSpellCharges
-                            and C_Spell.GetSpellCharges(canon)
+                        local ch = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(canon)
                         local rd = ch and ch.cooldownDuration
-                        if _tbbCleanNum(rd) and rd > 0 then seed = rd end
-                        if not seed then seed = _cdBaseDuration(canon) end
+                        if _tbbCleanNum(rd) and rd > 0 then
+                            seed = rd
+                        end
+                        if not seed then
+                            seed = _cdBaseDuration(canon)
+                        end
                         _cdDurCache[canon] = seed
                     end
                 end
@@ -557,10 +621,15 @@ local function _UpdateCooldownBar(bar, cfg)
                     -- Clean read: keep the fallback mirror exact.
                     _cdDurCache[sid] = du
                     local m = _cdCast[sid]
-                    if not m then m = {}; _cdCast[sid] = m end
+                    if not m then
+                        m = {}
+                        _cdCast[sid] = m
+                    end
                     m.start = st
                     m.dur = du
-                    if charges then m.charges = charges end
+                    if charges then
+                        m.charges = charges
+                    end
                     m.maxCh = maxCh
                 else
                     timingSecret = true
@@ -583,7 +652,10 @@ local function _UpdateCooldownBar(bar, cfg)
                         -- Clean read: keep the fallback mirror exact.
                         _cdDurCache[sid] = du
                         local m = _cdCast[sid]
-                        if not m then m = {}; _cdCast[sid] = m end
+                        if not m then
+                            m = {}
+                            _cdCast[sid] = m
+                        end
                         m.start = st
                         m.dur = du
                     else
@@ -601,11 +673,13 @@ local function _UpdateCooldownBar(bar, cfg)
     if wantHandle then
         durObj = bar._cdDurObj
         local now = GetTime()
-        if durObj == nil
-           or bar._cdArmGen ~= _cdGen
-           or bar._cdArmSid ~= sid
-           or bar._cdArmKind ~= wantHandle
-           or now - (bar._cdArmTime or 0) > 1 then
+        if
+            durObj == nil
+            or bar._cdArmGen ~= _cdGen
+            or bar._cdArmSid ~= sid
+            or bar._cdArmKind ~= wantHandle
+            or now - (bar._cdArmTime or 0) > 1
+        then
             local fetch
             if wantHandle == "charge" then
                 if C_Spell.GetSpellChargeDuration then
@@ -628,7 +702,9 @@ local function _UpdateCooldownBar(bar, cfg)
     else
         bar._cdDurObj = nil
     end
-    if timingSecret and not durObj then unreadable = true end
+    if timingSecret and not durObj then
+        unreadable = true
+    end
 
     -- Combat-secrecy fallback: timing went secret but the cast mirror holds clean local
     -- numbers, so drive the drain from those instead of shown-full fail-open (expired/absent mirror keeps the fail-open).
@@ -645,9 +721,13 @@ local function _UpdateCooldownBar(bar, cfg)
                 local guard = m.maxCh + 1
                 while rem <= 0 and guard > 0 do
                     m.charges = m.charges + 1
-                    if m.charges >= m.maxCh then m.charges = m.maxCh - 1 end
+                    if m.charges >= m.maxCh then
+                        m.charges = m.maxCh - 1
+                    end
                     m.start = m.start + m.dur
-                    if m.start > now then m.start = now end
+                    if m.start > now then
+                        m.start = now
+                    end
                     rem = m.start + m.dur - now
                     guard = guard - 1
                 end
@@ -665,7 +745,10 @@ local function _UpdateCooldownBar(bar, cfg)
         end
     end
 
-    if remaining and remaining <= 0 then remaining = nil; duration = nil end
+    if remaining and remaining <= 0 then
+        remaining = nil
+        duration = nil
+    end
 
     -- Clean ready: drop the mirror so a stale window can never resurrect. A live duration
     -- handle means ON cooldown with secret timing (not ready), so the mirror stays in that case.
@@ -675,33 +758,48 @@ local function _UpdateCooldownBar(bar, cfg)
 
     local onCooldown = (remaining ~= nil) or (durObj ~= nil) or unreadable
 
-    local hashChargeMode = cfg.chargeHashLines == true
-        and type(maxCharges) == "number" and maxCharges > 1
+    local hashChargeMode = cfg.chargeHashLines == true and type(maxCharges) == "number" and maxCharges > 1
     if bar._bar then
         ApplyTBBChargeHashLines(bar, cfg, maxCharges)
     end
 
     -- No pandemic concept for cooldowns: clear stale glow from a re-purposed bar frame.
-    if bar._pandemicGlowActive then ClearPandemic(bar) end
+    if bar._pandemicGlowActive then
+        ClearPandemic(bar)
+    end
 
     if not onCooldown and cfg.hideWhenInactive ~= false then
         -- Ready = inactive: hide, matching the buff inactive branch.
         _restoreTBBNormalFill(bar, cfg)
         bar._stackCount = 0
-        if bar._stacksText then bar._stacksText:Hide() end
+        if bar._stacksText then
+            bar._stacksText:Hide()
+        end
         bar._nameSet = nil
-        if bar:IsShown() then bar:Hide() end
+        if bar:IsShown() then
+            bar:Hide()
+        end
         return
     end
 
     local wasShown = bar:IsShown()
-    if not wasShown then bar:Show() end
+    if not wasShown then
+        bar:Show()
+    end
     local sb = bar._bar
     if sb then
         local timerDir = Enum and Enum.StatusBarTimerDirection
-        local hashFillActive = hashChargeMode and _updateTBBChargeHashFill(
-            bar, cfg, maxCharges, chargeCountValue,
-            durObj, remaining, duration, wasShown)
+        local hashFillActive = hashChargeMode
+            and _updateTBBChargeHashFill(
+                bar,
+                cfg,
+                maxCharges,
+                chargeCountValue,
+                durObj,
+                remaining,
+                duration,
+                wasShown
+            )
         if hashFillActive then
             -- The composite's invisible native bars own the recovery geometry; the visible clipped texture and spark were updated above.
         elseif durObj and sb.SetTimerDuration and timerDir then
@@ -714,8 +812,7 @@ local function _UpdateCooldownBar(bar, cfg)
             -- direction term matters because toggling the option restyles a LIVE bar in
             -- place: with only the fetch/show terms the engine would keep animating the old
             -- direction until the next handle fetch.
-            local wantDir = cfg.fillUp and timerDir.ElapsedTime
-                or timerDir.RemainingTime
+            local wantDir = cfg.fillUp and timerDir.ElapsedTime or timerDir.RemainingTime
             if bar._cdNeedSet or not wasShown or bar._cdFillDir ~= wantDir then
                 sb:SetMinMaxValues(0, 1)
                 local interpE = Enum.StatusBarInterpolation
@@ -736,14 +833,15 @@ local function _UpdateCooldownBar(bar, cfg)
                 -- bar sitting at the opposite end, and with smooth cooldowns
                 -- on, easing from there plays a visible backwards sweep at the
                 -- exact moment the spell was cast.
-                if (not wasShown or bar._cdFillDir ~= wantDir)
-                    and sb.SetToTargetValue then
+                if (not wasShown or bar._cdFillDir ~= wantDir) and sb.SetToTargetValue then
                     sb:SetToTargetValue()
                 end
                 bar._cdNeedSet = nil
                 bar._cdFillDir = wantDir
             end
-            if cfg.showSpark and bar._spark then bar._spark:Show() end
+            if cfg.showSpark and bar._spark then
+                bar._spark:Show()
+            end
         elseif remaining then
             _restoreTBBNormalFill(bar, cfg)
             sb:SetMinMaxValues(0, duration)
@@ -752,7 +850,9 @@ local function _UpdateCooldownBar(bar, cfg)
             -- can simply mirror the fraction in Lua.
             local fillVal = cfg.fillUp and (duration - remaining) or remaining
             -- Smooth fill is baseline (see UpdateLustBar note).
-            local smooth = _tbbWake._smoothCooldowns and wasShown and Enum
+            local smooth = _tbbWake._smoothCooldowns
+                and wasShown
+                and Enum
                 and Enum.StatusBarInterpolation
                 and Enum.StatusBarInterpolation.ExponentialEaseOut
             if smooth then
@@ -763,7 +863,9 @@ local function _UpdateCooldownBar(bar, cfg)
             -- Plain SetValue cancels the running bar timer, so the cached
             -- engine direction is stale the moment this branch runs.
             bar._cdFillDir = nil
-            if cfg.showSpark and bar._spark then bar._spark:Show() end
+            if cfg.showSpark and bar._spark then
+                bar._spark:Show()
+            end
         else
             _restoreTBBNormalFill(bar, cfg)
             -- Ready (kept on screen) or unreadable fail-open: full bar in either direction.
@@ -771,7 +873,9 @@ local function _UpdateCooldownBar(bar, cfg)
             sb:SetMinMaxValues(0, 1)
             sb:SetValue(1)
             bar._cdFillDir = nil
-            if bar._spark then bar._spark:Hide() end
+            if bar._spark then
+                bar._spark:Hide()
+            end
         end
     end
 
@@ -815,7 +919,9 @@ local function _UpdateCooldownBar(bar, cfg)
         end
     else
         bar._stackCount = 0
-        if bar._stacksText then bar._stacksText:Hide() end
+        if bar._stacksText then
+            bar._stacksText:Hide()
+        end
     end
 
     -- Threshold feed (gated): runs in both arms so a charge count that becomes unreadable zeroes the overlay instead of freezing its last value.
@@ -827,8 +933,7 @@ local function _UpdateCooldownBar(bar, cfg)
     if bar._ticksDirty and sb then
         local bw = sb:GetWidth()
         if bw and bw > 0 then
-            ApplyTBBTickMarks(sb, cfg, bar._threshTicks,
-                cfg.verticalOrientation, bar._tickOverlay)
+            ApplyTBBTickMarks(sb, cfg, bar._threshTicks, cfg.verticalOrientation, bar._tickOverlay)
             bar._ticksDirty = nil
         end
     end

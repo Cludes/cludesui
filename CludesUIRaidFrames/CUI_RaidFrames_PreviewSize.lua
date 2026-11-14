@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewSize.lua
 --
@@ -9,14 +11,16 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local max          = math.max
-local ipairs       = ipairs
-local tostring     = tostring
-local InCombatLockdown      = InCombatLockdown
-local CreateFrame           = CreateFrame
+local max = math.max
+local ipairs = ipairs
+local tostring = tostring
+local InCombatLockdown = InCombatLockdown
+local CreateFrame = CreateFrame
 
 local RF = ns._internals -- the table of the Raid Frames chain
 local MOVER_GROUPS, PixelSnap = RF.MOVER_GROUPS, RF.PixelSnap
@@ -27,13 +31,21 @@ local HidePreview = I.HidePreview
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local db
-RF.dbSetters[#RF.dbSetters + 1] = function(v) db = v end
+RF.dbSetters[#RF.dbSetters + 1] = function(v)
+    db = v
+end
 local PP
-RF.PPSetters[#RF.PPSetters + 1] = function(v) PP = v end
+RF.PPSetters[#RF.PPSetters + 1] = function(v)
+    PP = v
+end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(v) containerFrame = v end
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(v)
+    containerFrame = v
+end
 local previewActive = false
-I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v) previewActive = v end
+I.previewActiveSetters[#I.previewActiveSetters + 1] = function(v)
+    previewActive = v
+end
 
 -------------------------------------------------------------------------------
 --  Size preview (simple: just health + power bars at the tier's dimensions)
@@ -51,14 +63,18 @@ ns._ShowSizePreview = function(tier)
     -- be undone by the PLAYER_REGEN_DISABLED safety net (it already fired at
     -- combat start), and would strand the real frames invisible for the rest of
     -- the pull -- the same game-breaking outcome the alpha rework prevents.
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     local s = db.profile
     local overrides = s.raidSizeOverrides
-    if not overrides or not overrides[tier] then return end
+    if not overrides or not overrides[tier] then
+        return
+    end
 
     -- Hide any active previews (both real and overlay mode)
     if previewActive then
-        HidePreview()  -- cleans up real-mode preview frames
+        HidePreview() -- cleans up real-mode preview frames
     end
     if ns._partyPvActive then
         ns.HidePartyPreview()
@@ -69,10 +85,18 @@ ns._ShowSizePreview = function(tier)
     -- UIParent child (ns._sizePreviewContainer), so container alpha does not
     -- affect them. The mouse blocker keeps the now-invisible real unit buttons
     -- from catching clicks while configuring out of combat.
-    if containerFrame then containerFrame:SetAlpha(0) end
-    if ns._partyContainerFrame then ns._partyContainerFrame:SetAlpha(0) end
-    if ns._ptModelOn then ns.RF_PtContainerAlpha(0) end
-    if ns._PF.container then ns._PF.container:SetAlpha(0) end
+    if containerFrame then
+        containerFrame:SetAlpha(0)
+    end
+    if ns._partyContainerFrame then
+        ns._partyContainerFrame:SetAlpha(0)
+    end
+    if ns._ptModelOn then
+        ns.RF_PtContainerAlpha(0)
+    end
+    if ns._PF.container then
+        ns._PF.container:SetAlpha(0)
+    end
     ns._PF_AlphaSync()
     ns._SetPreviewMouseBlock(true)
 
@@ -82,10 +106,13 @@ ns._ShowSizePreview = function(tier)
     local cs = ns.RF_CellSpacing(s)
     local gs = ns.RF_GroupSpacing(s)
     local unitGrowth, groupGrowth = ns._RFEffectiveGrowth(
-        ov.unitGrowth or s.unitGrowth or "DOWN", ov.groupGrowth or s.groupGrowth or "RIGHT", s.mergeGroups)
-    local frameCount  = tier
-    local perGroup    = 5
-    local numGroups   = math.ceil(frameCount / perGroup)
+        ov.unitGrowth or s.unitGrowth or "DOWN",
+        ov.groupGrowth or s.groupGrowth or "RIGHT",
+        s.mergeGroups
+    )
+    local frameCount = tier
+    local perGroup = 5
+    local numGroups = math.ceil(frameCount / perGroup)
 
     -- Group bounding box (same logic as LayoutGroups)
     local groupW, groupH
@@ -99,10 +126,14 @@ ns._ShowSizePreview = function(tier)
 
     -- Unit step within a group along unitGrowth axis
     local uStepX, uStepY = 0, 0
-    if unitGrowth == "DOWN" then        uStepY = -(bh + cs)
-    elseif unitGrowth == "UP" then      uStepY = (bh + cs)
-    elseif unitGrowth == "RIGHT" then   uStepX = (bw + cs)
-    else                                uStepX = -(bw + cs)
+    if unitGrowth == "DOWN" then
+        uStepY = -(bh + cs)
+    elseif unitGrowth == "UP" then
+        uStepY = (bh + cs)
+    elseif unitGrowth == "RIGHT" then
+        uStepX = (bw + cs)
+    else
+        uStepX = -(bw + cs)
     end
 
     -- Normalize unit positions within a group (matches RefreshPreview pattern)
@@ -110,8 +141,12 @@ ns._ShowSizePreview = function(tier)
     for u = 0, perGroup - 1 do
         local px = u * uStepX
         local py = u * uStepY
-        if px < minUX then minUX = px end
-        if py > maxUY then maxUY = py end
+        if px < minUX then
+            minUX = px
+        end
+        if py > maxUY then
+            maxUY = py
+        end
     end
 
     -- Total bounding box: the tier's group mover footprint via the SAME
@@ -138,7 +173,9 @@ ns._ShowSizePreview = function(tier)
     -- Always use real positioning (where frames actually sit)
     local pad = 0
     container:SetSize(totalW, totalH)
-    if container._bg then container._bg:Hide() end
+    if container._bg then
+        container._bg:Hide()
+    end
     container:SetFrameStrata("HIGH")
     container:ClearAllPoints()
     -- Same growth-corner origin as the live container (_ApplyTierOffset):
@@ -167,10 +204,11 @@ ns._ShowSizePreview = function(tier)
     -- Center Groups: the tier's full group count centered in the box, as live
     -- (which centers up to the last group holding members, in both modes).
     local shiftX, shiftY = 0, 0
-    if centered then shiftX, shiftY = ns._RFCenterShift(gSlots, numGroups) end
+    if centered then
+        shiftX, shiftY = ns._RFCenterShift(gSlots, numGroups)
+    end
 
-    local groupOrder = s.customGroupOrder and not s.mergeGroups
-        and ns._RFValidatedGroupOrder(s.groupOrder)
+    local groupOrder = s.customGroupOrder and not s.mergeGroups and ns._RFValidatedGroupOrder(s.groupOrder)
     local sizePreviewSlotByGroup
     if groupOrder then
         sizePreviewSlotByGroup = {}
@@ -194,12 +232,16 @@ ns._ShowSizePreview = function(tier)
             health:SetValue(100)
             -- Pre-paint tint (see StyleButton's health bar note).
             health:SetStatusBarColor(0.12, 0.12, 0.12)
-            if PP then PP.DisablePixelSnap(health) end
+            if PP then
+                PP.DisablePixelSnap(health)
+            end
             f._health = health
 
             local bg = f:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
-            if PP then PP.DisablePixelSnap(bg) end
+            if PP then
+                PP.DisablePixelSnap(bg)
+            end
             f._bg = bg
 
             local power = CreateFrame("StatusBar", nil, f)
@@ -207,13 +249,17 @@ ns._ShowSizePreview = function(tier)
             power:SetPoint("BOTTOMRIGHT")
             power:SetMinMaxValues(0, 1)
             power:SetValue(1)
-            if PP then PP.DisablePixelSnap(power) end
+            if PP then
+                PP.DisablePixelSnap(power)
+            end
             f._power = power
 
             local bdr = CreateFrame("Frame", nil, f)
             bdr:SetAllPoints()
             bdr:SetFrameLevel(f:GetFrameLevel() + 2)
-            if PP then PP.CreateBorder(bdr, 0, 0, 0, 1, 1) end
+            if PP then
+                PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
+            end
             f._border = bdr
 
             -- Name text
@@ -229,7 +275,9 @@ ns._ShowSizePreview = function(tier)
             tnb:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
             local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
             tnbBg:SetAllPoints()
-            if PP then PP.DisablePixelSnap(tnbBg) end
+            if PP then
+                PP.DisablePixelSnap(tnbBg)
+            end
             local tnbText = tnb:CreateFontString(nil, "OVERLAY")
             tnbText:SetWordWrap(false)
             tnb:Hide()
@@ -258,22 +306,43 @@ ns._ShowSizePreview = function(tier)
         f._health:ClearAllPoints()
         f._health:SetAllPoints(f)
         f._health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        if f._health:GetStatusBarTexture() then f._health:GetStatusBarTexture():SetHorizTile(false) end
+        if f._health:GetStatusBarTexture() then
+            f._health:GetStatusBarTexture():SetHorizTile(false)
+        end
         f._health:SetStatusBarColor(0.24, 0.26, 0.30, 1)
         f._health:SetValue(100)
         f._bg:SetColorTexture(0.09, 0.09, 0.11, 1)
-        if f._power then f._power:Hide() end
-        if f._topNameBar then f._topNameBar:Hide() end
+        if f._power then
+            f._power:Hide()
+        end
+        if f._topNameBar then
+            f._topNameBar:Hide()
+        end
         if f._roleIcon then
             f._roleIcon:Hide()
-            if f._roleIcon._roleText then f._roleIcon._roleText:Hide() end
+            if f._roleIcon._roleText then
+                f._roleIcon._roleText:Hide()
+            end
         end
 
         -- Thin neutral outline so each block and the spacing between them reads clearly.
         if f._border and PP then
             f._border:SetFrameLevel(f:GetFrameLevel() + 2)
-            CludesUI.ApplyBorderStyle(f._border, 1, 0.7, 0.7, 0.75, 0.8,
-                "solid", nil, nil, nil, nil, "unitframes", 1)
+            CludesUI.ApplyBorderStyle(
+                f._border,
+                1,
+                0.7,
+                0.7,
+                0.75,
+                0.8,
+                "solid",
+                nil,
+                nil,
+                nil,
+                nil,
+                "unitframes",
+                1
+            )
         end
 
         -- Centered unit number.
@@ -289,7 +358,7 @@ ns._ShowSizePreview = function(tier)
 
         -- Position: group index + unit index within group
         local groupIdx = math.ceil(i / perGroup) - 1
-        local unitIdx  = (i - 1) % perGroup
+        local unitIdx = (i - 1) % perGroup
 
         -- Group origin (TOPLEFT-relative, adjusted for growth direction)
         local displaySlot = sizePreviewSlotByGroup and sizePreviewSlotByGroup[groupIdx + 1] or groupIdx
@@ -323,15 +392,25 @@ ns._HideSizePreview = function()
     -- Restore real frame opacity (size preview only changed alpha, never the
     -- Shown state) and drop the mouse blocker. SetAlpha(1) is always legal, in
     -- or out of combat, so the frames can never be stranded invisible.
-    if containerFrame then containerFrame:SetAlpha(1) end
-    if ns._partyContainerFrame then ns._partyContainerFrame:SetAlpha(1) end
-    if ns._ptModelOn then ns.RF_PtContainerAlpha(1) end
-    if ns._PF.container then ns._PF.container:SetAlpha(1) end
+    if containerFrame then
+        containerFrame:SetAlpha(1)
+    end
+    if ns._partyContainerFrame then
+        ns._partyContainerFrame:SetAlpha(1)
+    end
+    if ns._ptModelOn then
+        ns.RF_PtContainerAlpha(1)
+    end
+    if ns._PF.container then
+        ns._PF.container:SetAlpha(1)
+    end
     ns._PF_AlphaSync()
     ns._SetPreviewMouseBlock(false)
     -- Recompute party visibility (only shows party frames if actually grouped /
     -- Show When Solo). Bails in combat; the alpha restore above suffices there.
-    if ns._UpdatePartyVisibility then ns._UpdatePartyVisibility() end
+    if ns._UpdatePartyVisibility then
+        ns._UpdatePartyVisibility()
+    end
 end
 
 I.broken = false

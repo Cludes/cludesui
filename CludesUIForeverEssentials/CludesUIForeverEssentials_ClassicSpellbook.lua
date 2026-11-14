@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ClassicSpellbook.lua  (WoW Forever only)
 --  The vanilla spellbook, drawn with the client's own art: school tabs down
@@ -28,14 +32,14 @@ local F = module.Feature("classicSpellbook", { enabled = false })
 
 local book, toggle, events
 local lines = {} -- shown skill lines: { name, icon, slots = { spellbook slot, ... } }
-local line = 1   -- the selected skill line
+local line = 1 -- the selected skill line
 local pages = {} -- page per skill line (0: the search results), as the snippets last reported
-local newSearch  -- the search text changed: its results open on page 1
-local query      -- lowercase search text; nil when not searching
-local stale      -- the spellbook changed while the book was closed
-local boundKeys  -- the keys the toggle holds, space separated
+local newSearch -- the search text changed: its results open on page 1
+local query -- lowercase search text; nil when not searching
+local stale -- the spellbook changed while the book was closed
+local boundKeys -- the keys the toggle holds, space separated
 local found = { slots = {} } -- the search results, shown as a line of their own
-local pushed     -- the snippet text the snippets last ran
+local pushed -- the snippet text the snippets last ran
 
 -------------------------------------------------------------------------------
 --  Spell data
@@ -43,9 +47,15 @@ local pushed     -- the snippet text the snippets last ran
 -- A search matches a spell's name, rank text or description.
 local function Matches(slot)
     local info = C_SpellBook.GetSpellBookItemInfo(slot, BANK)
-    if not info then return false end
-    if info.name:lower():find(query, 1, true) then return true end
-    if info.subName and info.subName:lower():find(query, 1, true) then return true end
+    if not info then
+        return false
+    end
+    if info.name:lower():find(query, 1, true) then
+        return true
+    end
+    if info.subName and info.subName:lower():find(query, 1, true) then
+        return true
+    end
     local text = C_SpellBook.GetSpellBookItemDescription(slot, BANK)
     return text ~= nil and text:lower():find(query, 1, true) ~= nil
 end
@@ -63,22 +73,30 @@ local function ReadLines()
         if info and not info.shouldHide and not info.offSpecID then
             local slots = {}
             for slot = info.itemIndexOffset + 1, info.itemIndexOffset + info.numSpellBookItems do
-                if C_SpellBook.GetSpellBookItemType(slot, BANK) == Enum.SpellBookItemType.Spell
-                   and (allRanks or not C_SpellBook.IsSpellBookItemLowRank(slot, BANK))
-                   and (passives or not C_SpellBook.IsSpellBookItemPassive(slot, BANK)) then
+                if
+                    C_SpellBook.GetSpellBookItemType(slot, BANK) == Enum.SpellBookItemType.Spell
+                    and (allRanks or not C_SpellBook.IsSpellBookItemLowRank(slot, BANK))
+                    and (passives or not C_SpellBook.IsSpellBookItemPassive(slot, BANK))
+                then
                     slots[#slots + 1] = slot
-                    if query and Matches(slot) then found.slots[#found.slots + 1] = slot end
+                    if query and Matches(slot) then
+                        found.slots[#found.slots + 1] = slot
+                    end
                 end
             end
             lines[#lines + 1] = { name = info.name, icon = info.iconID, slots = slots }
         end
     end
-    if line > #lines then line = 1 end
+    if line > #lines then
+        line = 1
+    end
 end
 
 -- The line on show: the search results while searching.
 local function Shown()
-    if query then return found, 0 end
+    if query then
+        return found, 0
+    end
     return lines[line], line
 end
 
@@ -91,7 +109,9 @@ end
 --  Spell buttons
 -------------------------------------------------------------------------------
 local function SpellEnter(b)
-    if not b.slot then return end
+    if not b.slot then
+        return
+    end
     GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
     GameTooltip:SetSpellBookItem(b.slot, BANK)
     GameTooltip:Show()
@@ -102,7 +122,9 @@ local function SpellLeave()
 end
 
 local function SpellDrag(b)
-    if b.spellID and not b.passive and not InCombatLockdown() then C_Spell.PickupSpell(b.spellID) end
+    if b.spellID and not b.passive and not InCombatLockdown() then
+        C_Spell.PickupSpell(b.spellID)
+    end
 end
 
 local function NewSpellButton(i)
@@ -167,8 +189,12 @@ local function FillSpellButton(b, slot)
     b.name:SetText(info.name)
     b.name:Show()
     local sub = info.subName
-    if not sub or sub == "" then sub = C_Spell.GetSpellSubtext(spellID) end
-    if (not sub or sub == "") and info.isPassive then sub = SPELL_PASSIVE end
+    if not sub or sub == "" then
+        sub = C_Spell.GetSpellSubtext(spellID)
+    end
+    if (not sub or sub == "") and info.isPassive then
+        sub = SPELL_PASSIVE
+    end
     b.sub:SetText(sub or "")
     b.sub:Show()
     local c = info.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
@@ -182,7 +208,9 @@ end
 -- the game to the swirl: its numbers can be secret in combat.
 local function PaintCooldowns()
     for _, b in ipairs(book.spells) do
-        local duration = b.slot and not b.passive and C_SpellBook.GetSpellBookItemCooldownDuration(b.slot, BANK)
+        local duration = b.slot
+            and not b.passive
+            and C_SpellBook.GetSpellBookItemCooldownDuration(b.slot, BANK)
         if duration then
             b.cooldown:SetCooldownFromDurationObject(duration)
         else
@@ -230,7 +258,9 @@ local function TabLeave()
 end
 
 local function TurnSound(b)
-    if not b.idle then PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN) end
+    if not b.idle then
+        PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
+    end
 end
 
 -- Out of combat only, like every frame made here. A click shows its line.
@@ -338,13 +368,21 @@ local function Push()
         tab.tooltip = data.name
         tab:Show()
     end
-    for i = #lines + 1, #book.tabs do book.tabs[i]:Hide() end
+    for i = #lines + 1, #book.tabs do
+        book.tabs[i]:Hide()
+    end
 
     local out = { "LINES = newtable() COUNTS = newtable()" }
-    for i, data in ipairs(lines) do LineText(out, i, data.slots) end
-    if query then LineText(out, 0, found.slots) end
+    for i, data in ipairs(lines) do
+        LineText(out, i, data.slots)
+    end
+    if query then
+        LineText(out, 0, found.slots)
+    end
     local reset = newSearch
-    if reset then out[#out + 1] = "PAGES[0] = 1" end
+    if reset then
+        out[#out + 1] = "PAGES[0] = 1"
+    end
     newSearch = nil
     out[#out + 1] = ("LINE = %d"):format(query and 0 or line)
     out[#out + 1] = AIM
@@ -361,7 +399,9 @@ end
 
 -- Rereads the spellbook and repaints; waits out combat.
 local function Refresh()
-    if not book then return end
+    if not book then
+        return
+    end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer(QUEUE_KEY, Refresh)
         return
@@ -375,7 +415,9 @@ end
 -- closes (the book is protected, so it is the one that never moves).
 local function PlaceTalents()
     local talents = CludesUI._ClassicTalents
-    if talents then talents.Place() end
+    if talents then
+        talents.Place()
+    end
 end
 
 -- Cooldowns are followed only while the book is open.
@@ -395,21 +437,27 @@ end
 
 -- A search or an option changed in combat applies when the fight ends.
 local function Changed()
-    if InCombatLockdown() then UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1) end
+    if InCombatLockdown() then
+        UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1)
+    end
     Refresh()
 end
 
 local function SearchChanged(box)
     local text = strtrim(box:GetText()):lower()
     text = text ~= "" and text or nil
-    if text == query then return end
+    if text == query then
+        return
+    end
     query, newSearch = text, true
     Changed()
 end
 
 -- A spellbook option of the game's: a checkbox over its console variable.
 local function Option(root, label, cvar)
-    root:CreateCheckbox(label, function() return GetCVarBool(cvar) end, function()
+    root:CreateCheckbox(label, function()
+        return GetCVarBool(cvar)
+    end, function()
         SetCVar(cvar, not GetCVarBool(cvar))
         Changed()
     end)
@@ -419,7 +467,9 @@ end
 local function OptionsMenu(_, root)
     Option(root, SPELLBOOK_FILTER_PASSIVES, "spellBookHidePassives")
     local _, class = UnitClass("player")
-    if class ~= "ROGUE" and class ~= "WARRIOR" then Option(root, SHOW_ALL_SPELL_RANKS, "ShowAllSpellRanks") end
+    if class ~= "ROGUE" and class ~= "WARRIOR" then
+        Option(root, SHOW_ALL_SPELL_RANKS, "ShowAllSpellRanks")
+    end
 end
 
 local TOGGLE_SNIPPET = [[
@@ -439,7 +489,9 @@ local microLayer
 local route
 
 local function Build()
-    if book then return end
+    if book then
+        return
+    end
     book = CreateFrame("Frame", "CUI_ClassicSpellbook", UIParent, "SecureHandlerShowHideTemplate")
     book:Hide()
     book:SetSize(384, 512)
@@ -458,8 +510,12 @@ local function Build()
     portrait:SetTexture(ART .. "Spellbook-Icon")
     portrait:SetSize(58, 58)
     portrait:SetPoint("TOPLEFT", 10, -8)
-    for _, part in ipairs({ { "TopLeft", "TOPLEFT", 256 }, { "TopRight", "TOPRIGHT", 128 },
-                            { "BotLeft", "BOTTOMLEFT", 256 }, { "BotRight", "BOTTOMRIGHT", 128 } }) do
+    for _, part in ipairs({
+        { "TopLeft", "TOPLEFT", 256 },
+        { "TopRight", "TOPRIGHT", 128 },
+        { "BotLeft", "BOTTOMLEFT", 256 },
+        { "BotRight", "BOTTOMRIGHT", 128 },
+    }) do
         local tex = book:CreateTexture(nil, "ARTWORK")
         tex:SetTexture(ART .. "UI-SpellbookPanel-" .. part[1])
         tex:SetSize(part[3], 256)
@@ -482,7 +538,9 @@ local function Build()
     escape:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
     escape:SetScript("PostClick", function()
         local talents = CludesUI._ClassicTalents
-        if talents then talents.Close() end
+        if talents then
+            talents.Close()
+        end
     end)
 
     local close = CreateFrame("Button", nil, book, "SecureHandlerClickTemplate")
@@ -518,25 +576,39 @@ local function Build()
     ]])
     book.prev = NewArrow("Prev", 50, -1)
     book.next = NewArrow("Next", 314, 1)
-    if CludesUI._ShifterAdopt then CludesUI._ShifterAdopt("CUI_ClassicSpellbook") end
+    if CludesUI._ShifterAdopt then
+        CludesUI._ShifterAdopt("CUI_ClassicSpellbook")
+    end
 end
 
 -- The click layer's click: out of combat, where an addon may show the book.
 local function MicroToggle()
-    if not book or InCombatLockdown() then return end
-    if book:IsShown() then book:Hide() else book:Show() end
+    if not book or InCombatLockdown() then
+        return
+    end
+    if book:IsShown() then
+        book:Hide()
+    else
+        book:Show()
+    end
 end
 
 local function MicroClicksBack()
-    if microLayer then microLayer:SetMouseClickEnabled(true) end
+    if microLayer then
+        microLayer:SetMouseClickEnabled(true)
+    end
 end
 
 -- The route clicks the book's toggle while the feature is on, else the game's
 -- micro button. Out of combat only (Apply defers itself).
 local function AimRoute(on)
-    if not route then return end
+    if not route then
+        return
+    end
     local target = on and toggle or _G.SpellbookMicroButton
-    if route:GetAttribute("clickbutton") ~= target then route:SetAttribute("clickbutton", target) end
+    if route:GetAttribute("clickbutton") ~= target then
+        route:SetAttribute("clickbutton", target)
+    end
 end
 
 if not InCombatLockdown() then
@@ -556,9 +628,13 @@ local function Bind()
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Bind", Bind)
         return
     end
-    if not toggle then return end
+    if not toggle then
+        return
+    end
     local keys = F.Enabled() and table.concat({ GetBindingKey("TOGGLESPELLBOOK") }, " ") or ""
-    if keys == boundKeys then return end
+    if keys == boundKeys then
+        return
+    end
     boundKeys = keys
     ClearOverrideBindings(toggle)
     for key in keys:gmatch("%S+") do
@@ -575,7 +651,9 @@ local function OnEvent(_, event)
     elseif event == "SPELL_UPDATE_COOLDOWN" then
         PaintCooldowns()
     elseif event == "PLAYER_REGEN_DISABLED" then
-        if stale then Refresh() end
+        if stale then
+            Refresh()
+        end
         if book then
             book.prev:SetEnabled(true)
             book.next:SetEnabled(true)
@@ -597,11 +675,17 @@ local function Apply()
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Apply", Apply)
         return
     end
-    if events then events:UnregisterAllEvents() end
+    if events then
+        events:UnregisterAllEvents()
+    end
     if not F.Enabled() then
-        if microLayer then microLayer:Hide() end
+        if microLayer then
+            microLayer:Hide()
+        end
         AimRoute(false)
-        if book then book:Hide() end
+        if book then
+            book:Hide()
+        end
         Bind()
         return
     end
@@ -622,7 +706,9 @@ local function Apply()
     events:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
     events:RegisterEvent("UPDATE_BINDINGS")
     events:RegisterEvent("PLAYER_REGEN_DISABLED")
-    if book:IsShown() then events:RegisterEvent("SPELL_UPDATE_COOLDOWN") end
+    if book:IsShown() then
+        events:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    end
     Bind()
     Refresh()
 end

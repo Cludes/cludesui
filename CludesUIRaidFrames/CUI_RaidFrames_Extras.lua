@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Extras.lua
 --
@@ -9,32 +11,36 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
-local pairs        = pairs
-local ipairs       = ipairs
-local type         = type
-local select       = select
-local UnitName              = UnitName
-local UnitClass             = UnitClass
-local UnitExists            = UnitExists
-local UnitIsUnit            = UnitIsUnit
-local IsInRaid              = IsInRaid
-local IsInGroup             = IsInGroup
-local UnitInRaid            = UnitInRaid
-local GetRaidRosterInfo     = GetRaidRosterInfo
-local InCombatLockdown      = InCombatLockdown
-local C_Timer               = C_Timer
-local issecretvalue         = issecretvalue
-local CreateFrame           = CreateFrame
-local RAID_CLASS_COLORS     = RAID_CLASS_COLORS
+local pairs = pairs
+local ipairs = ipairs
+local type = type
+local select = select
+local UnitName = UnitName
+local UnitClass = UnitClass
+local UnitExists = UnitExists
+local UnitIsUnit = UnitIsUnit
+local IsInRaid = IsInRaid
+local IsInGroup = IsInGroup
+local UnitInRaid = UnitInRaid
+local GetRaidRosterInfo = GetRaidRosterInfo
+local InCombatLockdown = InCombatLockdown
+local C_Timer = C_Timer
+local issecretvalue = issecretvalue
+local CreateFrame = CreateFrame
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 local allButtons, GetFFD, GetPowerColor = I.allButtons, I.GetFFD, I.GetPowerColor
 local ApplyFont, PixelSnap = I.ApplyFont, I.PixelSnap
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -------------------------------------------------------------------------------
 --  Healer Mana Text Display (Extras): one text row per group healer, riding
@@ -47,7 +53,7 @@ I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
 -------------------------------------------------------------------------------
 do
     local container
-    local rows = {}   -- i -> { nameFS, valFS, unit }
+    local rows = {} -- i -> { nameFS, valFS, unit }
 
     local function HMSet()
         local prof = db.profile
@@ -64,14 +70,22 @@ do
     -- neither (the preview eyeball still works ungrouped).
     function ns._HMActive()
         local mode = HMSet().mode or "none"
-        if mode == "none" then return false end
-        if IsInRaid() then return mode == "raid" or mode == "both" end
-        if IsInGroup() then return mode == "party" or mode == "both" end
+        if mode == "none" then
+            return false
+        end
+        if IsInRaid() then
+            return mode == "raid" or mode == "both"
+        end
+        if IsInGroup() then
+            return mode == "party" or mode == "both"
+        end
         return false
     end
 
     local function EnsureContainer()
-        if container then return container end
+        if container then
+            return container
+        end
         container = CreateFrame("Frame", "ERF_HealerMana", UIParent)
         container:SetSize(50, 25)
         container:Hide()
@@ -90,7 +104,9 @@ do
     -- sink -- secret-safe, no Lua math (same source as the power bars).
     function ns._HMUpdateValue(unit)
         local r = ns._hmUnitRows and ns._hmUnitRows[unit]
-        if not r then return end
+        if not r then
+            return
+        end
         r.valFS:SetFormattedText("%d", UnitPowerPercent(unit, 0, true, CurveConstants.ScaleTo100))
     end
 
@@ -100,20 +116,22 @@ do
         local hm = HMSet()
         local preview = ns._hmPreview
         if not ns._HMActive() and not preview then
-            if container then container:Hide() end
+            if container then
+                container:Hide()
+            end
             ns._hmUnitRows = nil
             return
         end
         EnsureContainer()
-        local size     = hm.textSize or 12
-        local spacing  = hm.spacing or 2
-        local alignR   = hm.align == "RIGHT"
-        local alignC   = hm.align == "CENTER"
-        local growUp   = hm.growth == "UP"
-        local inRaid   = IsInRaid()
+        local size = hm.textSize or 12
+        local spacing = hm.spacing or 2
+        local alignR = hm.align == "RIGHT"
+        local alignC = hm.align == "CENTER"
+        local growUp = hm.growth == "UP"
+        local inRaid = IsInRaid()
         local showNames = (hm.showNames ~= false) and (inRaid or preview)
         local classNames = hm.classNames ~= false
-        local powerMode  = hm.colorMode == "power"
+        local powerMode = hm.colorMode == "power"
         local cc = hm.color
         local cr, cg, cb = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
         local fontPath = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -126,8 +144,10 @@ do
             count = count + 1
             local r = rows[count]
             if not r then
-                r = { nameFS = container:CreateFontString(nil, "OVERLAY"),
-                      valFS  = container:CreateFontString(nil, "OVERLAY") }
+                r = {
+                    nameFS = container:CreateFontString(nil, "OVERLAY"),
+                    valFS = container:CreateFontString(nil, "OVERLAY"),
+                }
                 rows[count] = r
             end
             r.unit = unit
@@ -139,7 +159,9 @@ do
             -- Value color: power color per unit, or the custom color.
             if powerMode then
                 local pr, pg, pb
-                if unit then pr, pg, pb = GetPowerColor(unit) end
+                if unit then
+                    pr, pg, pb = GetPowerColor(unit)
+                end
                 valFS:SetTextColor(pr or 0.3, pg or 0.5, pb or 0.85, 1)
             else
                 valFS:SetTextColor(cr, cg, cb, 1)
@@ -152,11 +174,18 @@ do
                     local token = fakeClass
                     if not token and unit then
                         token = select(2, UnitClass(unit))
-                        if issecretvalue and issecretvalue(token) then token = nil end
+                        if issecretvalue and issecretvalue(token) then
+                            token = nil
+                        end
                     end
-                    local col = token and ((CludesUI.GetClassColor(token))
-                        or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]))
-                    if col then nr, ng, nb = col.r, col.g, col.b end
+                    local col = token
+                        and (
+                            (CludesUI.GetClassColor(token))
+                            or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token])
+                        )
+                    if col then
+                        nr, ng, nb = col.r, col.g, col.b
+                    end
                 elseif powerMode then
                     nr, ng, nb = 1, 1, 1
                 end
@@ -168,7 +197,9 @@ do
                     -- The raid frames' Name Format (live names show only in a
                     -- raid).
                     local hmName = unit and CludesUI.WithSurname(UnitName(unit))
-                    if hmName then hmName = ns.RF_FormatName(hmName, db.profile) end
+                    if hmName then
+                        hmName = ns.RF_FormatName(hmName, db.profile)
+                    end
                     nameFS:SetFormattedText("%s", hmName or "")
                 end
                 nameFS:Show()
@@ -176,7 +207,7 @@ do
                 if w and not (issecretvalue and issecretvalue(w)) then
                     nameW = w
                 else
-                    nameW = size * 5  -- secret name: estimated width
+                    nameW = size * 5 -- secret name: estimated width
                 end
             else
                 nameFS:SetText("")
@@ -186,14 +217,17 @@ do
             -- width would shift the row every tick.
             local valEst = size * 2.2
             local rowW = (showNames and (nameW + 4) or 0) + valEst
-            if rowW > widest then widest = rowW end
+            if rowW > widest then
+                widest = rowW
+            end
             -- Growth: rows stack down from the top edge, or up from the
             -- bottom edge (anchor family flips with it).
             local yOff = (growUp and 1 or -1) * (count - 1) * rowH
             local pCorner = growUp and "BOTTOMLEFT" or "TOPLEFT"
             local pCornerR = growUp and "BOTTOMRIGHT" or "TOPRIGHT"
             local pEdge = growUp and "BOTTOM" or "TOP"
-            nameFS:ClearAllPoints(); valFS:ClearAllPoints()
+            nameFS:ClearAllPoints()
+            valFS:ClearAllPoints()
             if alignC then
                 if showNames then
                     nameFS:SetPoint(pCorner, container, pEdge, -rowW / 2, yOff)
@@ -206,7 +240,9 @@ do
             elseif alignR then
                 valFS:SetPoint(pCornerR, container, pCornerR, 0, yOff)
                 valFS:SetJustifyH("RIGHT")
-                if showNames then nameFS:SetPoint("RIGHT", valFS, "LEFT", -4, 0) end
+                if showNames then
+                    nameFS:SetPoint("RIGHT", valFS, "LEFT", -4, 0)
+                end
             else
                 if showNames then
                     nameFS:SetPoint(pCorner, container, pCorner, 0, yOff)
@@ -220,7 +256,9 @@ do
                 valFS:SetFormattedText("%d", fakeVal)
             end
             valFS:Show()
-            if unit then map[unit] = r end
+            if unit then
+                map[unit] = r
+            end
         end
 
         if preview then
@@ -238,7 +276,9 @@ do
                     end
                 end
             else
-                if ns._ResolvePowerRole("player") == "HEALER" then addRow("player") end
+                if ns._ResolvePowerRole("player") == "HEALER" then
+                    addRow("player")
+                end
                 for i = 1, 4 do
                     local unit = "party" .. i
                     if UnitExists(unit) and ns._ResolvePowerRole(unit) == "HEALER" then
@@ -262,7 +302,9 @@ do
             container:Show()
             -- Seed live values (the event path keeps them current after).
             if not preview then
-                for unit in pairs(map) do ns._HMUpdateValue(unit) end
+                for unit in pairs(map) do
+                    ns._HMUpdateValue(unit)
+                end
             end
         else
             container:Hide()
@@ -295,21 +337,29 @@ do
     ns._PGSet = PGSet
 
     local function ModeColor(mode, custom)
-        if mode == "custom" then return custom end
+        if mode == "custom" then
+            return custom
+        end
         local r, g, b
         if mode == "class" then
             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-            if cc then r, g, b = cc.r, cc.g, cc.b end
+            if cc then
+                r, g, b = cc.r, cc.g, cc.b
+            end
         else
             r, g, b = CludesUI.ResolveActiveAccent()
         end
-        if not r then return custom end
+        if not r then
+            return custom
+        end
         return { r = r, g = g, b = b, a = 1 }
     end
 
     local function CustomColor(key)
         local pg, s = PGSet(), db.profile
-        if pg[key] then return pg[key] end
+        if pg[key] then
+            return pg[key]
+        end
         if key == "textColor" then
             local gc = s.groupNumberColor or {}
             return { r = gc.r or 1, g = gc.g or 1, b = gc.b or 1, a = gc.a or 0.75 }
@@ -324,13 +374,15 @@ do
         local bg = s.customBgColor or {}
         return pg.textSize or s.groupNumberSize or 10,
             ModeColor(pg.textColorMode or "accent", CustomColor("textColor")),
-            pg.bgColor or { r = bg.r or 17/255, g = bg.g or 17/255, b = bg.b or 17/255, a = 1 },
+            pg.bgColor or { r = bg.r or 17 / 255, g = bg.g or 17 / 255, b = bg.b or 17 / 255, a = 1 },
             pg.borderSize or s.borderSize or 1,
             ModeColor(pg.borderColorMode or "accent", CustomColor("borderColor"))
     end
 
     local function ApplyPos()
-        if not frame then return end
+        if not frame then
+            return
+        end
         local pos = PGSet().unlockPos
         frame:ClearAllPoints()
         if pos and pos.point then
@@ -342,7 +394,9 @@ do
     ns._PGApplyPos = ApplyPos
 
     local function EnsureFrame()
-        if frame then return frame end
+        if frame then
+            return frame
+        end
         frame = CreateFrame("Frame", "ERF_PlayerGroup", UIParent)
         frame:SetSize(50, 25)
         frame:Hide()
@@ -361,7 +415,9 @@ do
     local fmt, shown -- the text format and the group it shows
 
     local function UpdateGroup()
-        if not frame then return end
+        if not frame then
+            return
+        end
         local index = IsInRaid() and UnitInRaid("player")
         local group = index and select(3, GetRaidRosterInfo(index))
         -- Out of a raid, or a roster read mid-update that has no group for you yet.
@@ -394,11 +450,16 @@ do
             CludesUI.RegAccent({ type = "callback", fn = ns.PG_Apply })
         end
         if events then
-            if on then events:RegisterEvent("GROUP_ROSTER_UPDATE")
-            else events:UnregisterEvent("GROUP_ROSTER_UPDATE") end
+            if on then
+                events:RegisterEvent("GROUP_ROSTER_UPDATE")
+            else
+                events:UnregisterEvent("GROUP_ROSTER_UPDATE")
+            end
         end
         if not on then
-            if frame then frame:Hide() end
+            if frame then
+                frame:Hide()
+            end
             return
         end
         EnsureFrame()
@@ -416,10 +477,15 @@ do
             for g = 1, 8 do
                 fs:SetFormattedText(fmt, g)
                 local sw = fs:GetStringWidth()
-                if sw > tw then tw = sw end
+                if sw > tw then
+                    tw = sw
+                end
             end
             local th = fs:GetStringHeight()
-            if not full then tw = math.max(tw, th); th = tw end
+            if not full then
+                tw = math.max(tw, th)
+                th = tw
+            end
             local pad = (pg.padding or 4) * 2
             w = w or (tw + pad)
             h = h or (th + pad)
@@ -430,9 +496,23 @@ do
         local tex = s.borderTexture or "solid"
         -- The frame border's exact pixels apply only at its own size.
         local px = (pg.borderSize == nil) and CludesUI.BorderPx(s.borderSizePx, bs, tex) or nil
-        CludesUI.ApplyBorderStyle(frame.borderFrame, bs, bc.r, bc.g, bc.b, bc.a or 1, tex,
-            s.borderTextureOffset, s.borderTextureOffsetY,
-            s.borderTextureShiftX, s.borderTextureShiftY, "unitframes", bs, nil, px)
+        CludesUI.ApplyBorderStyle(
+            frame.borderFrame,
+            bs,
+            bc.r,
+            bc.g,
+            bc.b,
+            bc.a or 1,
+            tex,
+            s.borderTextureOffset,
+            s.borderTextureOffsetY,
+            s.borderTextureShiftX,
+            s.borderTextureShiftY,
+            "unitframes",
+            bs,
+            nil,
+            px
+        )
         UpdateGroup()
     end
 
@@ -467,10 +547,11 @@ ns.GetFFD = GetFFD
 ns._CollectTrackerFrames = function()
     local out = {}
     local function Collect(list)
-        if not list then return end
+        if not list then
+            return
+        end
         for _, btn in ipairs(list) do
-            if btn:IsVisible() and btn:GetAttribute("unit")
-               and not GetFFD(btn)._isExtra then
+            if btn:IsVisible() and btn:GetAttribute("unit") and not GetFFD(btn)._isExtra then
                 out[#out + 1] = btn
             end
         end
@@ -488,9 +569,13 @@ end
 -- attribute the header wrote. Extra frames answer last: they duplicate a unit
 -- already on a real raid button.
 function CludesUI.GetUnitFrame(unit)
-    if type(unit) ~= "string" then return nil end
+    if type(unit) ~= "string" then
+        return nil
+    end
     local function Find(list)
-        if not list then return nil end
+        if not list then
+            return nil
+        end
         for _, btn in ipairs(list) do
             if btn:IsVisible() then
                 local u = btn:GetAttribute("unit")
@@ -498,7 +583,9 @@ function CludesUI.GetUnitFrame(unit)
                 -- attribute would pass as a string and the compare would throw:
                 -- probe for secrecy first, never compare a secret.
                 if type(u) == "string" and not (issecretvalue and issecretvalue(u)) then
-                    if u == unit then return btn end
+                    if u == unit then
+                        return btn
+                    end
                     -- The header gives the player's own button a raidN token, so
                     -- a literal compare never finds "player". UnitIsUnit answers
                     -- a SECRET boolean for a restricted pairing (or nil when the
@@ -533,15 +620,23 @@ end
 -- scan can drop every CUI frame for the rest of the fight. The library
 -- rescans on its own at PLAYER_REGEN_ENABLED, so the regen pass covers it.
 ns._NotifyTrackerProviders = function()
-    if ns._trackerRefreshPending then return end
+    if ns._trackerRefreshPending then
+        return
+    end
     local cb = ns._trackerRefreshCb
     local lgf = LibStub and LibStub("LibGetFrame-1.0", true)
-    if not cb and not (lgf and lgf.ScanForUnitFrames) then return end
+    if not cb and not (lgf and lgf.ScanForUnitFrames) then
+        return
+    end
     ns._trackerRefreshPending = true
     C_Timer.After(0, function()
         ns._trackerRefreshPending = false
-        if cb then pcall(cb) end
-        if lgf and not InCombatLockdown() then pcall(lgf.ScanForUnitFrames) end
+        if cb then
+            pcall(cb)
+        end
+        if lgf and not InCombatLockdown() then
+            pcall(lgf.ScanForUnitFrames)
+        end
     end)
 end
 
@@ -557,7 +652,9 @@ ns._RegisterTrackerProviders = function()
             api.v1:RegisterFrameProvider({
                 Name = "CludesUI",
                 GetFrames = ns._CollectTrackerFrames,
-                RegisterRefreshFrames = function(cb) ns._trackerRefreshCb = cb end,
+                RegisterRefreshFrames = function(cb)
+                    ns._trackerRefreshCb = cb
+                end,
             })
         end)
     end

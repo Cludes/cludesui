@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Nameplates_Options\ColorsPage_Options.lua
 --  Nameplates options: the Colors page (BuildColorsPage) and the mini preview
@@ -7,7 +9,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  shared helpers come from ns._NPO_OptEnv.
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUINameplates"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 
 -- The options page frame pool (CludesUI_FramePool.lua): frames made under a
 -- pooled page part are handed back to the page's next build.
@@ -18,33 +22,67 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 if CludesUI.IS_FOREVER then
     function ns.NPO_ThreatPctRows(get, set)
         local function Slider(key, label, lo, hi)
-            return { type="slider", label=label, min=lo, max=hi, step=1,
-              get=function() return get(key) end,
-              set=function(v) set(key, v) end }
+            return {
+                type = "slider",
+                label = label,
+                min = lo,
+                max = hi,
+                step = 1,
+                get = function()
+                    return get(key)
+                end,
+                set = function(v)
+                    set(key, v)
+                end,
+            }
         end
         -- The gap colours show while the gap is picked and coloured.
         local function GapColorOff()
             return get("threatPctMode") ~= "gap" or not get("threatPctColorByThreat")
         end
         local function GapColor(key, label, tip)
-            return { type="colorpicker", label=label, tooltip=tip, hidden=GapColorOff,
-              get=function()
-                local c = get(key)
-                if c then return c.r, c.g, c.b end
-                return 1, 1, 1
-              end,
-              set=function(r, g, b) set(key, { r = r, g = g, b = b }) end }
+            return {
+                type = "colorpicker",
+                label = label,
+                tooltip = tip,
+                hidden = GapColorOff,
+                get = function()
+                    local c = get(key)
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end,
+                set = function(r, g, b)
+                    set(key, { r = r, g = g, b = b })
+                end,
+            }
         end
         return {
-            { type="dropdown", label="Text Shows",
-              values={ percent = "Threat %", gap = "Threat Gap" }, order={ "percent", "gap" },
-              tooltip="Threat Gap shows on your target's plate only.",
-              get=function() return get("threatPctMode") or "percent" end,
-              set=function(v) set("threatPctMode", v) end },
-            { type="toggle", label="Color by Threat",
-              tooltip="Colors the number. Off shows it in white.",
-              get=function() return get("threatPctColorByThreat") end,
-              set=function(v) set("threatPctColorByThreat", v) end },
+            {
+                type = "dropdown",
+                label = "Text Shows",
+                values = { percent = "Threat %", gap = "Threat Gap" },
+                order = { "percent", "gap" },
+                tooltip = "Threat Gap shows on your target's plate only.",
+                get = function()
+                    return get("threatPctMode") or "percent"
+                end,
+                set = function(v)
+                    set("threatPctMode", v)
+                end,
+            },
+            {
+                type = "toggle",
+                label = "Color by Threat",
+                tooltip = "Colors the number. Off shows it in white.",
+                get = function()
+                    return get("threatPctColorByThreat")
+                end,
+                set = function(v)
+                    set("threatPctColorByThreat", v)
+                end,
+            },
             GapColor("threatGapAheadColor", "Ahead Color", "When your threat is higher."),
             GapColor("threatGapBehindColor", "Behind Color", "When theirs is higher."),
             Slider("threatPctSize", "Size", 6, 20),
@@ -70,16 +108,24 @@ local debuffColorAdded
 local debuffColorOpen = {}
 function ns.NP_BuildDebuffColorsOptions(parent, y)
     local DC = ns.DebuffColorKit
-    if not DC then return y end
+    if not DC then
+        return y
+    end
     local W = CludesUI.Widgets
     local PP = CludesUI.PanelPP
     local function Get(key)
         local db = ns.db and ns.db.profile
-        if db and db[key] ~= nil then return db[key] end
+        if db and db[key] ~= nil then
+            return db[key]
+        end
         return ns.defaults[key]
     end
-    local function Off() return Get("debuffColorsEnabled") ~= true end
-    local function Read(class) return DC.Read(class, Get) end
+    local function Off()
+        return Get("debuffColorsEnabled") ~= true
+    end
+    local function Read(class)
+        return DC.Read(class, Get)
+    end
     -- Every edit applies at once. The color picker writes on every frame of a
     -- drag, so while it is open the refresh waits for it to close.
     local function Apply()
@@ -95,23 +141,32 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local function Write(class, singles, combos, rgn)
         local snap = rgn and CludesUI._SOAttribution(rgn)
         ns.db.profile[DC.Key(class)] = DC.Encode(singles, combos)
-        if rgn then CludesUI._NotifySettingWrite(rgn, snap) end
+        if rgn then
+            CludesUI._NotifySettingWrite(rgn, snap)
+        end
         Apply()
     end
-    local function Rebuild() CludesUI:RefreshPage(true) end
+    local function Rebuild()
+        CludesUI:RefreshPage(true)
+    end
     local function SpellName(id, fallback)
         return (id and C_Spell and C_Spell.GetSpellName(id)) or fallback
     end
     local function SpellIcon(id)
-        if not id then return end
+        if not id then
+            return
+        end
         local texture = C_Spell and C_Spell.GetSpellTexture(id)
-        if texture then return texture end
+        if texture then
+            return texture
+        end
         local info = C_Spell and C_Spell.GetSpellInfo(id)
         local preset = ns.DebuffColorPresetByID[id]
-        return (info and info.iconID) or (preset and preset[4])
-            or "Interface\\Icons\\INV_Misc_QuestionMark"
+        return (info and info.iconID) or (preset and preset[4]) or "Interface\\Icons\\INV_Misc_QuestionMark"
     end
-    local function CopyColor(c) return { r = c.r, g = c.g, b = c.b } end
+    local function CopyColor(c)
+        return { r = c.r, g = c.g, b = c.b }
+    end
     -- A list's chosen spells, each once, in priority order.
     local function Chosen(singles)
         local out, seen = {}, {}
@@ -143,7 +198,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         end
     end
     table.sort(ORDER, function(a, b)
-        if (a == playerClass) ~= (b == playerClass) then return a == playerClass end
+        if (a == playerClass) ~= (b == playerClass) then
+            return a == playerClass
+        end
         return NAME[a] < NAME[b]
     end)
     local CLASS_VALUES = { _noLoc = true }
@@ -170,7 +227,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         end
     end
     local NO_PRESETS = { order = { "remove", "custom" }, byKey = {} }
-    local function Presets(class) return classPresets[class] or NO_PRESETS end
+    local function Presets(class)
+        return classPresets[class] or NO_PRESETS
+    end
     -- A class's custom spells: every spell its lists hold that is not one of
     -- its presets, once each, debuffs first. Each is an item of the class's
     -- spell menus for as long as something holds it.
@@ -184,9 +243,13 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
                 out[#out + 1] = key
             end
         end
-        for _, e in ipairs(singles) do Add(e.spell) end
+        for _, e in ipairs(singles) do
+            Add(e.spell)
+        end
         for _, k in ipairs(combos) do
-            for _, id in ipairs(k.spells) do Add(id) end
+            for _, id in ipairs(k.spells) do
+                Add(id)
+            end
         end
         return out
     end
@@ -195,7 +258,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- names it across classes: its popup title, and the text Spec Overrides
     -- keys its entry by (two classes' rows share a visible label).
     local function Label(cell)
-        if cell.kind == "combo" then return CludesUI.Lf("%1$d. Combo", cell.n) end
+        if cell.kind == "combo" then
+            return CludesUI.Lf("%1$d. Combo", cell.n)
+        end
         return CludesUI.Lf("%1$d. Debuff", cell.n)
     end
     local function MissingOf(cell)
@@ -217,9 +282,13 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- with the reason and Custom Spell... refuses it (the arrows move a debuff).
     local IN_USE = "Already in use. Use the arrows to reorder."
     local function HeldElsewhere(cell, id, missing, singles)
-        if missing == nil then missing = MissingOf(cell) end
+        if missing == nil then
+            missing = MissingOf(cell)
+        end
         for n, e in ipairs(singles or Read(cell.class)) do
-            if n ~= cell.n and e.spell == id and (e.missing == true) == missing then return true end
+            if n ~= cell.n and e.spell == id and (e.missing == true) == missing then
+                return true
+            end
         end
         return false
     end
@@ -230,7 +299,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local function MissingFull(cell, singles, above)
         local ids, n = {}, 0
         for i, e in ipairs(singles or Read(cell.class)) do
-            if above and i >= cell.n then break end
+            if above and i >= cell.n then
+                break
+            end
             if i ~= cell.n and e.missing and e.spell > 0 and not ids[e.spell] then
                 ids[e.spell], n = true, n + 1
             end
@@ -248,7 +319,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local function SetSpell(cell, id, rgn)
         local singles, combos = Read(cell.class)
         local e = singles[cell.n]
-        if not e or e.spell == id then return end
+        if not e or e.spell == id then
+            return
+        end
         e.spell = id
         Write(cell.class, singles, combos, rgn)
         CludesUI:RefreshPage()
@@ -263,7 +336,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         local singles, combos = Read(cell.class)
         local list = cell.kind == "combo" and combos or singles
         local j = cell.n + dir
-        if not (list[cell.n] and list[j]) then return end
+        if not (list[cell.n] and list[j]) then
+            return
+        end
         list[cell.n], list[j] = list[j], list[cell.n]
         Write(cell.class, singles, combos, cell.rgn)
         Rebuild()
@@ -271,7 +346,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local function Remove(cell)
         local singles, combos = Read(cell.class)
         local list = cell.kind == "combo" and combos or singles
-        if not list[cell.n] then return end
+        if not list[cell.n] then
+            return
+        end
         table.remove(list, cell.n)
         Write(cell.class, singles, combos, cell.rgn)
         Rebuild()
@@ -279,7 +356,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- A new debuff starts unchosen; a new combo pairs the class's top two.
     local function AddSingle(class)
         local singles, combos = Read(class)
-        if #singles >= DC.MAX_SINGLES then return end
+        if #singles >= DC.MAX_SINGLES then
+            return
+        end
         singles[#singles + 1] = { spell = 0, color = CopyColor(DC.SINGLE_COLOR) }
         Write(class, singles, combos)
         debuffColorOpen[class] = true
@@ -292,7 +371,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         return #combos < DC.MAX_COMBOS and #Chosen(singles) >= 2
     end
     local function AddCombo(class)
-        if not ComboRoom(class) then return end
+        if not ComboRoom(class) then
+            return
+        end
         local singles, combos = Read(class)
         local picks = Chosen(singles)
         combos[#combos + 1] = { spells = { picks[1], picks[2] }, color = CopyColor(DC.COMBO_COLOR) }
@@ -309,23 +390,30 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- Basic or Custom Solid border; a textured custom border is recolored as it
     -- is. Both checks follow the runtime's border reading (BorderSpec in the module).
     local function Mode()
-        if Off() then return "none" end
+        if Off() then
+            return "none"
+        end
         return DC.Mode(Get)
     end
     local function NoBorder()
-        if CludesUI.BlizzStyle.Get("nameplates") then return true end
+        if CludesUI.BlizzStyle.Get("nameplates") then
+            return true
+        end
         if Get("customBorderEnabled") then
-            if (Get("customBorderSize") or 0) <= 0 then return true end
+            if (Get("customBorderSize") or 0) <= 0 then
+                return true
+            end
             -- A textured border whose art no longer resolves (its media pack
             -- removed) draws nothing.
             local tex = Get("customBorderTexture")
-            return tex ~= nil and tex ~= "" and tex ~= "solid"
-                and not CludesUI.ResolveBorderTexture(tex)
+            return tex ~= nil and tex ~= "" and tex ~= "solid" and not CludesUI.ResolveBorderTexture(tex)
         end
         return Get("showBorder") == false
     end
     local function StripBorder()
-        if NoBorder() then return false end
+        if NoBorder() then
+            return false
+        end
         if Get("customBorderEnabled") then
             local tex = Get("customBorderTexture")
             return not tex or tex == "" or tex == "solid"
@@ -333,36 +421,54 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         return true
     end
     local _, h, modeRow
-    _, h = W:SectionHeader(parent, "DEBUFF BASED NAMEPLATE COLORING", y); y = y - h
-    modeRow, h = W:DualRow(parent, y,
-        { type="dropdown", text="Debuff Coloring",
-          values={ none = "None", nameplate = "Color Nameplate", texture = "Texture Nameplate",
-                   border = "Color Border", name = "Color Name" },
-          order={ "none", "nameplate", "texture", "border", "name" },
-          disabledValues=function(key)
-              if key == "border" and NoBorder() then return "This option requires a Border to be selected" end
-              if key == "name" and not ns.FindNameSlot() then return "This option requires the enemy name to be shown" end
-              return false
-          end,
-          getValue=Mode,
-          setValue=CludesUI.SectionToggleSetValue(function(v)
-              local db = ns.db.profile
-              db.debuffColorsEnabled = v ~= "none"
-              if v ~= "none" then
-                  db.debuffColorsBorder = v == "border"
-                  db.debuffColorsMode = (v == "texture" or v == "name") and v or nil
-              end
-              ns.DebuffColors_Refresh()
-          end),
-          tooltip="Colors enemy health bars, their borders or their names while the chosen debuffs are on them." },
-        { type="toggle", text="Only My Debuffs",
-          getValue=function() return Get("debuffColorsPlayerOnly") ~= false end,
-          setValue=function(v)
-              ns.db.profile.debuffColorsPlayerOnly = v
-              Apply()
-          end,
-          disabled=Off, disabledTooltip="Debuff Coloring",
-          tooltip="Counts only the debuffs you applied." }); y = y - h
+    _, h = W:SectionHeader(parent, "DEBUFF BASED NAMEPLATE COLORING", y)
+    y = y - h
+    modeRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Debuff Coloring",
+        values = {
+            none = "None",
+            nameplate = "Color Nameplate",
+            texture = "Texture Nameplate",
+            border = "Color Border",
+            name = "Color Name",
+        },
+        order = { "none", "nameplate", "texture", "border", "name" },
+        disabledValues = function(key)
+            if key == "border" and NoBorder() then
+                return "This option requires a Border to be selected"
+            end
+            if key == "name" and not ns.FindNameSlot() then
+                return "This option requires the enemy name to be shown"
+            end
+            return false
+        end,
+        getValue = Mode,
+        setValue = CludesUI.SectionToggleSetValue(function(v)
+            local db = ns.db.profile
+            db.debuffColorsEnabled = v ~= "none"
+            if v ~= "none" then
+                db.debuffColorsBorder = v == "border"
+                db.debuffColorsMode = (v == "texture" or v == "name") and v or nil
+            end
+            ns.DebuffColors_Refresh()
+        end),
+        tooltip = "Colors enemy health bars, their borders or their names while the chosen debuffs are on them.",
+    }, {
+        type = "toggle",
+        text = "Only My Debuffs",
+        getValue = function()
+            return Get("debuffColorsPlayerOnly") ~= false
+        end,
+        setValue = function(v)
+            ns.db.profile.debuffColorsPlayerOnly = v
+            Apply()
+        end,
+        disabled = Off,
+        disabledTooltip = "Debuff Coloring",
+        tooltip = "Counts only the debuffs you applied.",
+    })
+    y = y - h
 
     -- Color Border's cog, built while it is picked (the dropdown rebuilds the
     -- page) and shown only over a border drawn as strips; a border change on
@@ -371,16 +477,26 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         local cog = CludesUI.BuildInlineCog(modeRow._leftRegion, {
             title = "Color Border",
             rows = {
-                { type="slider", label="Extra Border Size", min=0, max=4, step=1,
-                  tooltip="Thickens the border by this many pixels while it shows a debuff color.",
-                  get=function() return Get("debuffColorsBorderExtra") or 0 end,
-                  set=function(v)
-                      ns.db.profile.debuffColorsBorderExtra = v
-                      Apply()
-                  end },
+                {
+                    type = "slider",
+                    label = "Extra Border Size",
+                    min = 0,
+                    max = 4,
+                    step = 1,
+                    tooltip = "Thickens the border by this many pixels while it shows a debuff color.",
+                    get = function()
+                        return Get("debuffColorsBorderExtra") or 0
+                    end,
+                    set = function(v)
+                        ns.db.profile.debuffColorsBorderExtra = v
+                        Apply()
+                    end,
+                },
             },
         })
-        local function ShowCog() cog:SetShown(StripBorder()) end
+        local function ShowCog()
+            cog:SetShown(StripBorder())
+        end
         ShowCog()
         CludesUI.RegisterWidgetRefresh(ShowCog)
     end
@@ -389,21 +505,28 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- the health bar's own).
     if Mode() == "texture" then
         local env = ns._NPO_OptEnv
-        _, h = W:DualRow(parent, y,
-            { type="dropdown", text="Texture", values=env.hbtValues, order=env.hbtOrder,
-              tooltip="The texture the debuff color is drawn in.",
-              getValue=function() return Get("debuffColorsTexture") or Get("healthBarTexture") or "none" end,
-              setValue=function(v)
-                  ns.db.profile.debuffColorsTexture = v
-                  Apply()
-              end },
-            CludesUI.BlankRowCfg()); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Texture",
+            values = env.hbtValues,
+            order = env.hbtOrder,
+            tooltip = "The texture the debuff color is drawn in.",
+            getValue = function()
+                return Get("debuffColorsTexture") or Get("healthBarTexture") or "none"
+            end,
+            setValue = function(v)
+                ns.db.profile.debuffColorsTexture = v
+                Apply()
+            end,
+        }, CludesUI.BlankRowCfg())
+        y = y - h
     end
 
     -- Section gate: the rows below exist only while Debuff Coloring is on (the
     -- dropdown's SectionToggleSetValue rebuilds the page).
     if Off() then
-        _, h = W:Spacer(parent, y, 20); y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
         return y
     end
 
@@ -414,7 +537,9 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local DOWN_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
     local function HoverColor()
         local ac = CludesUI.CLUDES_GREEN
-        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then return 0.72, 0.72, 0.72 end
+        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then
+            return 0.72, 0.72, 0.72
+        end
         return ac.r, ac.g, ac.b
     end
     local function Arrow(rgn, texture, tip, enabled, onClick)
@@ -446,23 +571,36 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     end
     local function ReorderArrows(rgn, cell)
         local label = rgn._label
-        local up = Arrow(rgn, UP_ICON, "Move Up", cell.n > 1, function() Move(cell, -1) end)
+        local up = Arrow(rgn, UP_ICON, "Move Up", cell.n > 1, function()
+            Move(cell, -1)
+        end)
         up:SetPoint("LEFT", label, "LEFT", math.ceil(label:GetStringWidth()) + 6, -1)
-        local down = Arrow(rgn, DOWN_ICON, "Move Down", cell.n < cell.count, function() Move(cell, 1) end)
+        local down = Arrow(rgn, DOWN_ICON, "Move Down", cell.n < cell.count, function()
+            Move(cell, 1)
+        end)
         down:SetPoint("LEFT", up, "RIGHT", 0, 0)
     end
 
     local SINGLE_TIP = "Higher in the list wins when several are up."
     local COMBO_TIP = "Combos win over single debuffs; higher in the list wins."
     local STATE_ORDER = { "applied", "missing" }
-    local STATE_VALUES = { applied = "Applied", missing = "Missing", _menuOpts = {
-        onItemHover = function(key, item)
-            if key == "missing" then
-                CludesUI.ShowWidgetTooltip(item, CludesUI.L("Colors enemies you fight without this debuff."))
-            end
-        end,
-        onItemLeave = function() CludesUI.HideWidgetTooltip() end,
-    } }
+    local STATE_VALUES = {
+        applied = "Applied",
+        missing = "Missing",
+        _menuOpts = {
+            onItemHover = function(key, item)
+                if key == "missing" then
+                    CludesUI.ShowWidgetTooltip(
+                        item,
+                        CludesUI.L("Colors enemies you fight without this debuff.")
+                    )
+                end
+            end,
+            onItemLeave = function()
+                CludesUI.HideWidgetTooltip()
+            end,
+        },
+    }
 
     -- A debuff: its spell menu (Remove, Custom Spell..., the class's presets,
     -- then its custom spells) with its color inline. The custom tail follows
@@ -470,11 +608,23 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- refresher); Custom Spell... is an action: it adds a spell and keeps its label.
     local function SingleCfg(cell)
         local own = Presets(cell.class)
-        local values = { _noLoc = true, none = CludesUI.L("None"),
-            remove = { text = CludesUI.L("Remove"), action = function() Remove(cell) end } }
-        for key, s in pairs(own.byKey) do values[key] = s.name end
+        local values = {
+            _noLoc = true,
+            none = CludesUI.L("None"),
+            remove = {
+                text = CludesUI.L("Remove"),
+                action = function()
+                    Remove(cell)
+                end,
+            },
+        }
+        for key, s in pairs(own.byKey) do
+            values[key] = s.name
+        end
         local order = {}
-        for i, key in ipairs(own.order) do order[i] = key end
+        for i, key in ipairs(own.order) do
+            order[i] = key
+        end
         local base = #order
         -- True when the menu's items changed (it must rebuild).
         function cell.syncCustoms()
@@ -497,82 +647,125 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
             return changed
         end
         cell.syncCustoms()
-        values.custom = { text = CludesUI.L("Custom Spell..."), action = function()
-            CludesUI:ShowInputPopup({
-                title=FullLabel(cell), confirmText="Add", cancelText="Cancel",
-                message="Enter the debuff's spell ID.",
-                placeholder="Spell ID", maxLetters=10,
-                onConfirm=function(text)
-                    local value = DC.SpellID((text or ""):match("^%s*(%d+)%s*$"))
-                    if not (value and C_Spell and C_Spell.GetSpellInfo(value)) then
-                        CludesUI.PrintError(CludesUI.L("Enter a valid debuff spell ID."))
-                        return
-                    end
-                    if HeldElsewhere(cell, value) then
-                        CludesUI.PrintError(CludesUI.L("Already in use. Use the arrows to reorder."))
-                        return
-                    end
-                    if MissingOf(cell) and MissingFull(cell, nil, SpellOf(cell) > 0) then
-                        CludesUI.PrintError(MISSING_FULL)
-                        return
-                    end
-                    SetSpell(cell, value, cell.rgn)
-                end,
-            })
-        end }
-        values._menuOpts = {
-            searchable=true, itemHeight=28, maxHeight=280, iconNativeColor=true,
-            icon=function(key)
-                local id = tonumber(key)
-                return SpellIcon(id and id > 0 and id), .08, .92, .08, .92
+        values.custom = {
+            text = CludesUI.L("Custom Spell..."),
+            action = function()
+                CludesUI:ShowInputPopup({
+                    title = FullLabel(cell),
+                    confirmText = "Add",
+                    cancelText = "Cancel",
+                    message = "Enter the debuff's spell ID.",
+                    placeholder = "Spell ID",
+                    maxLetters = 10,
+                    onConfirm = function(text)
+                        local value = DC.SpellID((text or ""):match("^%s*(%d+)%s*$"))
+                        if not (value and C_Spell and C_Spell.GetSpellInfo(value)) then
+                            CludesUI.PrintError(CludesUI.L("Enter a valid debuff spell ID."))
+                            return
+                        end
+                        if HeldElsewhere(cell, value) then
+                            CludesUI.PrintError(CludesUI.L("Already in use. Use the arrows to reorder."))
+                            return
+                        end
+                        if MissingOf(cell) and MissingFull(cell, nil, SpellOf(cell) > 0) then
+                            CludesUI.PrintError(MISSING_FULL)
+                            return
+                        end
+                        SetSpell(cell, value, cell.rgn)
+                    end,
+                })
             end,
-            onItemHover=function(key, item)
+        }
+        values._menuOpts = {
+            searchable = true,
+            itemHeight = 28,
+            maxHeight = 280,
+            iconNativeColor = true,
+            icon = function(key)
+                local id = tonumber(key)
+                return SpellIcon(id and id > 0 and id), 0.08, 0.92, 0.08, 0.92
+            end,
+            onItemHover = function(key, item)
                 local spell = own.byKey[key]
                 if spell then
-                    CludesUI.ShowWidgetTooltip(item, spell.class .. " | " .. CludesUI.Lf("Spell ID: %1$s", spell.id))
+                    CludesUI.ShowWidgetTooltip(
+                        item,
+                        spell.class .. " | " .. CludesUI.Lf("Spell ID: %1$s", spell.id)
+                    )
                 elseif tonumber(key) then
                     CludesUI.ShowWidgetTooltip(item, CludesUI.Lf("Spell ID: %1$s", key))
                 end
             end,
-            onItemLeave=function() CludesUI.HideWidgetTooltip() end,
+            onItemLeave = function()
+                CludesUI.HideWidgetTooltip()
+            end,
         }
-        return { type="dropdown", text=Label(cell), values=values, order=order,
-            getValue=function()
+        return {
+            type = "dropdown",
+            text = Label(cell),
+            values = values,
+            order = order,
+            getValue = function()
                 local id = SpellOf(cell)
-                if id == 0 then return "none" end
+                if id == 0 then
+                    return "none"
+                end
                 return tostring(id)
             end,
-            setValue=function(v)
+            setValue = function(v)
                 local id = DC.SpellID(v)
-                if id then SetSpell(cell, id) end
+                if id then
+                    SetSpell(cell, id)
+                end
             end,
             -- Never the row's own spell (a list saved with a duplicate keeps
             -- its label lit). A Missing row past MAX_MISSING shows why it colors
             -- nothing; an unchosen one may not take a spell once the rest are full.
-            disabledValues=function(key)
+            disabledValues = function(key)
                 local id, singles = tonumber(key), Read(cell.class)
                 local e = singles[cell.n]
-                if not id or (e and e.spell == id) then return false end
+                if not id or (e and e.spell == id) then
+                    return false
+                end
                 local missing = e ~= nil and e.missing == true
-                if HeldElsewhere(cell, id, missing, singles) then return IN_USE end
+                if HeldElsewhere(cell, id, missing, singles) then
+                    return IN_USE
+                end
                 return missing and MissingFull(cell, singles, e.spell > 0) and MISSING_FULL or false
             end,
-            tooltip=SINGLE_TIP }
+            tooltip = SINGLE_TIP,
+        }
     end
     -- Applied / Missing, beside the spell menu; a state a same-spell row holds is
     -- greyed, and Missing once MAX_MISSING rows use it.
     local function StateDropdown(rgn, cell)
-        local dd = CludesUI.BuildDropdownControl(rgn, 90, rgn:GetFrameLevel() + 3, STATE_VALUES, STATE_ORDER,
-            function() return MissingOf(cell) and "missing" or "applied" end,
-            function(v) SetMissing(cell, v == "missing") end,
+        local dd = CludesUI.BuildDropdownControl(
+            rgn,
+            90,
+            rgn:GetFrameLevel() + 3,
+            STATE_VALUES,
+            STATE_ORDER,
+            function()
+                return MissingOf(cell) and "missing" or "applied"
+            end,
+            function(v)
+                SetMissing(cell, v == "missing")
+            end,
             function(key)
                 local singles, missing = Read(cell.class), key == "missing"
                 local e = singles[cell.n]
-                if not e or missing == (e.missing == true) then return false end
-                if missing and MissingFull(cell, singles) then return MISSING_FULL end
-                return e.spell > 0 and HeldElsewhere(cell, e.spell, missing, singles)
-                    and "Another row already uses this debuff this way." or false
-            end)
+                if not e or missing == (e.missing == true) then
+                    return false
+                end
+                if missing and MissingFull(cell, singles) then
+                    return MISSING_FULL
+                end
+                return e.spell > 0
+                        and HeldElsewhere(cell, e.spell, missing, singles)
+                        and "Another row already uses this debuff this way."
+                    or false
+            end
+        )
         PP.Point(dd, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = dd
         CludesUI.RegisterWidgetRefresh(dd._refreshLabel)
@@ -582,29 +775,42 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         -- The menu rebuilds only when its custom spells change.
         local function Sync()
             local ctrl = rgn._control
-            if cell.syncCustoms() and ctrl._invalidateMenu then ctrl._invalidateMenu() end
-            if ctrl._refreshLabel then ctrl._refreshLabel() end
+            if cell.syncCustoms() and ctrl._invalidateMenu then
+                ctrl._invalidateMenu()
+            end
+            if ctrl._refreshLabel then
+                ctrl._refreshLabel()
+            end
         end
         Sync()
         CludesUI.RegisterWidgetRefresh(Sync)
         StateDropdown(rgn, cell)
-        CludesUI.BuildInlineSwatches(rgn, { {
-            tooltip = "Debuff Color",
-            getValue = function()
-                local e = Read(cell.class)[cell.n]
-                local c = e and e.color or DC.SINGLE_COLOR
-                return c.r, c.g, c.b
-            end,
-            setValue = function(r, g, b)
-                local singles, combos = Read(cell.class)
-                local e = singles[cell.n]
-                if not e then return end
-                e.color = { r = r, g = g, b = b }
-                Write(cell.class, singles, combos)
-            end,
-            disabled = function() return SpellOf(cell) == 0 end,
-            disabledTooltip = "This option requires a debuff to be selected",
-        } })
+        CludesUI.BuildInlineSwatches(
+            rgn,
+            {
+                {
+                    tooltip = "Debuff Color",
+                    getValue = function()
+                        local e = Read(cell.class)[cell.n]
+                        local c = e and e.color or DC.SINGLE_COLOR
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        local singles, combos = Read(cell.class)
+                        local e = singles[cell.n]
+                        if not e then
+                            return
+                        end
+                        e.color = { r = r, g = g, b = b }
+                        Write(cell.class, singles, combos)
+                    end,
+                    disabled = function()
+                        return SpellOf(cell) == 0
+                    end,
+                    disabledTooltip = "This option requires a debuff to be selected",
+                },
+            }
+        )
     end
 
     -- A combo: a checkbox list of its class's debuffs (two to four checked),
@@ -613,107 +819,183 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local function SetComboSpells(cell, spells, rgn)
         local singles, combos = Read(cell.class)
         local k = combos[cell.n]
-        if not k then return end
+        if not k then
+            return
+        end
         k.spells = spells
         Write(cell.class, singles, combos, rgn)
     end
-    local COMBO_VALUES = setmetatable({}, { __index = function(_, key)
-        if type(key) ~= "string" or key:sub(1, 1) == "_" then return nil end
-        local names = {}
-        for id in key:gmatch("%d+") do names[#names + 1] = SpellName(tonumber(id), "Spell " .. id) end
-        return #names > 0 and table.concat(names, " + ") or nil
-    end })
+    local COMBO_VALUES = setmetatable({}, {
+        __index = function(_, key)
+            if type(key) ~= "string" or key:sub(1, 1) == "_" then
+                return nil
+            end
+            local names = {}
+            for id in key:gmatch("%d+") do
+                names[#names + 1] = SpellName(tonumber(id), "Spell " .. id)
+            end
+            return #names > 0 and table.concat(names, " + ") or nil
+        end,
+    })
     local function ComboCfg(cell)
-        return { type="dropdown", text=Label(cell), values=COMBO_VALUES, order={},
-            getValue=function() return table.concat(ComboSpells(cell), "+") end,
-            setValue=function(v)
+        return {
+            type = "dropdown",
+            text = Label(cell),
+            values = COMBO_VALUES,
+            order = {},
+            getValue = function()
+                return table.concat(ComboSpells(cell), "+")
+            end,
+            setValue = function(v)
                 local spells = {}
                 for id in tostring(v):gmatch("%d+") do
                     id = DC.SpellID(id)
-                    if id and #spells < DC.MAX_COMBO_SPELLS then spells[#spells + 1] = id end
+                    if id and #spells < DC.MAX_COMBO_SPELLS then
+                        spells[#spells + 1] = id
+                    end
                 end
                 SetComboSpells(cell, spells)
             end,
-            tooltip=COMBO_TIP }
+            tooltip = COMBO_TIP,
+        }
     end
     local function ComboChrome(rgn, cell)
         ReorderArrows(rgn, cell)
         local function Has(id)
             for _, s in ipairs(ComboSpells(cell)) do
-                if s == id then return true end
+                if s == id then
+                    return true
+                end
             end
             return false
         end
         local function Valid()
             local seen, n = {}, 0
             for _, s in ipairs(ComboSpells(cell)) do
-                if not seen[s] then seen[s] = true; n = n + 1 end
+                if not seen[s] then
+                    seen[s] = true
+                    n = n + 1
+                end
             end
             return n >= 2
         end
         -- Its class's chosen debuffs, then any spell only the combo holds.
         local function Items()
-            local items = { { key = "_remove", label = "Remove", isTopAction = true,
-                onClick = function() Remove(cell) end } }
+            local items = {
+                {
+                    key = "_remove",
+                    label = "Remove",
+                    isTopAction = true,
+                    onClick = function()
+                        Remove(cell)
+                    end,
+                },
+            }
             local listed = {}
             local function Add(id)
-                if listed[id] then return end
+                if listed[id] then
+                    return
+                end
                 listed[id] = true
-                items[#items + 1] = { key = tostring(id), label = SpellName(id, "Spell " .. id),
+                items[#items + 1] = {
+                    key = tostring(id),
+                    label = SpellName(id, "Spell " .. id),
                     icon = SpellIcon(id),
-                    lockedFn = function() return not Has(id) and #ComboSpells(cell) >= DC.MAX_COMBO_SPELLS end,
-                    lockedTooltip = "A combo holds up to four debuffs." }
+                    lockedFn = function()
+                        return not Has(id) and #ComboSpells(cell) >= DC.MAX_COMBO_SPELLS
+                    end,
+                    lockedTooltip = "A combo holds up to four debuffs.",
+                }
             end
-            for _, id in ipairs(Chosen((Read(cell.class)))) do Add(id) end
-            for _, id in ipairs(ComboSpells(cell)) do Add(id) end
+            for _, id in ipairs(Chosen((Read(cell.class)))) do
+                Add(id)
+            end
+            for _, id in ipairs(ComboSpells(cell)) do
+                Add(id)
+            end
             return items
         end
         local ctrl = rgn._control
         local ddW = ctrl and ctrl:GetWidth() or 0
-        if ddW < 50 then ddW = 170 end
+        if ddW < 50 then
+            ddW = 170
+        end
         local pulse
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(rgn, ddW, rgn:GetFrameLevel() + 2,
+        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+            rgn,
+            ddW,
+            rgn:GetFrameLevel() + 2,
             Items,
-            function(key) return Has(tonumber(key)) end,
+            function(key)
+                return Has(tonumber(key))
+            end,
             function(key, on)
                 local id = tonumber(key)
                 local spells = {}
                 for _, s in ipairs(ComboSpells(cell)) do
-                    if s ~= id then spells[#spells + 1] = s end
+                    if s ~= id then
+                        spells[#spells + 1] = s
+                    end
                 end
-                if on and #spells < DC.MAX_COMBO_SPELLS then spells[#spells + 1] = id end
+                if on and #spells < DC.MAX_COMBO_SPELLS then
+                    spells[#spells + 1] = id
+                end
                 SetComboSpells(cell, spells)
             end,
-            nil, 8, false, false,
-            function() if pulse then pulse() end end,
-            { notifyWrites = true, noAllLabel = true, separatorFn = function() return " + " end })
+            nil,
+            8,
+            false,
+            false,
+            function()
+                if pulse then
+                    pulse()
+                end
+            end,
+            {
+                notifyWrites = true,
+                noAllLabel = true,
+                separatorFn = function()
+                    return " + "
+                end,
+            }
+        )
         local p1, rel, p2, ax, ay
         if ctrl then
             p1, rel, p2, ax, ay = ctrl:GetPoint(1)
             ctrl:Hide()
         end
-        if p1 then cbDD:SetPoint(p1, rel, p2, ax, ay)
-        else PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0) end
+        if p1 then
+            cbDD:SetPoint(p1, rel, p2, ax, ay)
+        else
+            PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
+        end
         rgn._control = cbDD
         rgn._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
         pulse = CludesUI.AttachEmptyFilterWarn(rgn, cbDD, CludesUI.L("Pick at least two debuffs"), Valid)
-        CludesUI.BuildInlineSwatches(rgn, { {
-            tooltip = "Combo Color",
-            getValue = function()
-                local _, combos = Read(cell.class)
-                local k = combos[cell.n]
-                local c = k and k.color or DC.COMBO_COLOR
-                return c.r, c.g, c.b
-            end,
-            setValue = function(r, g, b)
-                local singles, combos = Read(cell.class)
-                local k = combos[cell.n]
-                if not k then return end
-                k.color = { r = r, g = g, b = b }
-                Write(cell.class, singles, combos)
-            end,
-        } })
+        CludesUI.BuildInlineSwatches(
+            rgn,
+            {
+                {
+                    tooltip = "Combo Color",
+                    getValue = function()
+                        local _, combos = Read(cell.class)
+                        local k = combos[cell.n]
+                        local c = k and k.color or DC.COMBO_COLOR
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        local singles, combos = Read(cell.class)
+                        local k = combos[cell.n]
+                        if not k then
+                            return
+                        end
+                        k.color = { r = r, g = g, b = b }
+                        Write(cell.class, singles, combos)
+                    end,
+                },
+            }
+        )
     end
 
     -- Add Class opens the classes that have no card yet (the standard
@@ -727,48 +1009,105 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         proxyLbl:Hide()
         local menu
         local function EnsureMenu()
-            if menu then return menu end
+            if menu then
+                return menu
+            end
             local refresh
-            menu, _, refresh = CludesUI.BuildDropdownMenu(btn, CLASS_W, order, CLASS_VALUES,
-                function() return nil end, pick, proxyLbl, "regular")
-            CludesUI.WireDropdownScripts(btn, proxyLbl, NO_PAINT, NO_PAINT, menu, refresh, CludesUI.RD_DD_COLOURS, true)
+            menu, _, refresh = CludesUI.BuildDropdownMenu(btn, CLASS_W, order, CLASS_VALUES, function()
+                return nil
+            end, pick, proxyLbl, "regular")
+            CludesUI.WireDropdownScripts(
+                btn,
+                proxyLbl,
+                NO_PAINT,
+                NO_PAINT,
+                menu,
+                refresh,
+                CludesUI.RD_DD_COLOURS,
+                true
+            )
             btn:HookScript("OnEnter", enter)
-            btn:HookScript("OnLeave", function(self) if not menu:IsShown() then leave(self) end end)
-            menu:HookScript("OnHide", function() if not btn:IsMouseOver() then leave(btn) end end)
+            btn:HookScript("OnLeave", function(self)
+                if not menu:IsShown() then
+                    leave(self)
+                end
+            end)
+            menu:HookScript("OnHide", function()
+                if not btn:IsMouseOver() then
+                    leave(btn)
+                end
+            end)
             return menu
         end
-        btn:HookScript("OnHide", function() if menu then menu:Hide() end end)
+        btn:HookScript("OnHide", function()
+            if menu then
+                menu:Hide()
+            end
+        end)
         return function()
             local m = EnsureMenu()
-            if m:IsShown() then m:Hide() else m:Show() end
+            if m:IsShown() then
+                m:Hide()
+            else
+                m:Show()
+            end
         end
     end
-    local function SingleRoom(class) return #Read(class) < DC.MAX_SINGLES end
+    local function SingleRoom(class)
+        return #Read(class) < DC.MAX_SINGLES
+    end
     local function AddSingleCfg(class)
-        return { type="button", text="+ Add Debuff", width=ADD_W,
-            onClick=function() AddSingle(class) end,
-            disabled=function() return not SingleRoom(class) end,
-            disabledTooltip="This class has ten debuffs.", rawTooltip=true }
+        return {
+            type = "button",
+            text = "+ Add Debuff",
+            width = ADD_W,
+            onClick = function()
+                AddSingle(class)
+            end,
+            disabled = function()
+                return not SingleRoom(class)
+            end,
+            disabledTooltip = "This class has ten debuffs.",
+            rawTooltip = true,
+        }
     end
     local function AddComboCfg(class)
-        return { type="button", text="+ Add Combo", width=ADD_W,
-            onClick=function() AddCombo(class) end,
-            disabled=function() return not ComboRoom(class) end,
-            disabledTooltip="This option requires two debuffs for the same class" }
+        return {
+            type = "button",
+            text = "+ Add Combo",
+            width = ADD_W,
+            onClick = function()
+                AddCombo(class)
+            end,
+            disabled = function()
+                return not ComboRoom(class)
+            end,
+            disabledTooltip = "This option requires two debuffs for the same class",
+        }
     end
 
     local function CellCfg(c)
-        if c == nil then return CludesUI.BlankRowCfg() end
-        if c.type then return c end
+        if c == nil then
+            return CludesUI.BlankRowCfg()
+        end
+        if c.type then
+            return c
+        end
         return c.kind == "combo" and ComboCfg(c) or SingleCfg(c)
     end
     local function CellChrome(rgn, c)
-        if CludesUI._prebuilding or c == nil or c.type then return end
+        if CludesUI._prebuilding or c == nil or c.type then
+            return
+        end
         c.rgn = rgn
         if rgn._captureCfg then
             rgn._captureCfg = setmetatable({ text = FullLabel(c) }, { __index = rgn._captureCfg })
         end
-        if c.kind == "combo" then ComboChrome(rgn, c) else SingleChrome(rgn, c) end
+        if c.kind == "combo" then
+            ComboChrome(rgn, c)
+        else
+            SingleChrome(rgn, c)
+        end
         -- The entry Add just made: its own row takes the write (its slot read now,
         -- while this build's row is its dress).
         local a = debuffColorAdded
@@ -785,9 +1124,13 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     local DEBUFFS, COMBOS = "Debuffs", "Combos"
     local function ClassRows(class, singles, combos, cy)
         local titles, ch
-        titles, ch = W:DualRow(parent, cy,
-            { type="label", text="DEBUFFS", tooltip=SINGLE_TIP },
-            { type="label", text="COMBOS", tooltip=COMBO_TIP }); cy = cy - ch
+        titles, ch = W:DualRow(
+            parent,
+            cy,
+            { type = "label", text = "DEBUFFS", tooltip = SINGLE_TIP },
+            { type = "label", text = "COMBOS", tooltip = COMBO_TIP }
+        )
+        cy = cy - ch
         -- The column titles read as section headers: their size and tint.
         local tint = CludesUI.TEXT_SECTION
         for _, rgn in ipairs({ titles._leftRegion, titles._rightRegion }) do
@@ -807,7 +1150,8 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         for k = 1, math.max(#left, #right) do
             local l, r = left[k], right[k]
             local row
-            row, ch = W:DualRow(parent, cy, CellCfg(l), CellCfg(r)); cy = cy - ch
+            row, ch = W:DualRow(parent, cy, CellCfg(l), CellCfg(r))
+            cy = cy - ch
             CellChrome(row._leftRegion, l)
             CellChrome(row._rightRegion, r)
         end
@@ -827,7 +1171,7 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if CludesUI.IS_FOREVER then
             icon:SetTexture(CludesUI.ForeverClassIcon(class))
-            icon:SetTexCoord(.08, .92, .08, .92)
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         elseif coords then
             local du = (coords[2] - coords[1]) * ICON_CROP
             local dv = (coords[4] - coords[3]) * ICON_CROP
@@ -851,16 +1195,28 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
 
     -- The cards (the house module card, as on Global Settings > Fonts), the
     -- first right under the settings above.
-    if debuffColorOpen[playerClass] == nil then debuffColorOpen[playerClass] = true end
+    if debuffColorOpen[playerClass] == nil then
+        debuffColorOpen[playerClass] = true
+    end
     for _, entry in ipairs(listed) do
         local class, singles, combos = entry.class, entry.singles, entry.combos
-        local tile = { key = class, display = NAME[class],
+        local tile = {
+            key = class,
+            display = NAME[class],
             desc = CludesUI.L(DEBUFFS) .. ": " .. #singles .. "    " .. CludesUI.L(COMBOS) .. ": " .. #combos,
-            buildContent = function(_, cy) return ClassRows(class, singles, combos, cy) end }
+            buildContent = function(_, cy)
+                return ClassRows(class, singles, combos, cy)
+            end,
+        }
         y = CludesUI.BuildModuleCard(parent, y, W, tile, {
-            enabled = true, expanded = debuffColorOpen, descW = 440,
+            enabled = true,
+            expanded = debuffColorOpen,
+            descW = 440,
             searchDesc = "Debuff Coloring",
-            glyph = function(hdr) ClassGlyph(hdr, class) end })
+            glyph = function(hdr)
+                ClassGlyph(hdr, class)
+            end,
+        })
         -- The card's title (its description line hangs off it) takes the
         -- class color at full strength.
         local _, title = tile._descFS:GetPoint(1)
@@ -873,28 +1229,40 @@ function ns.NP_BuildDebuffColorsOptions(parent, y)
     -- Add Class: a first, unchosen debuff gives the picked class its card.
     if #unlisted > 0 then
         local openClass, wide
-        wide, h = W:WideButton(parent, "+ Add Class", y,
-            function() if openClass then openClass() end end, CLASS_W); y = y - h
+        wide, h = W:WideButton(parent, "+ Add Class", y, function()
+            if openClass then
+                openClass()
+            end
+        end, CLASS_W)
+        y = y - h
         if not CludesUI._prebuilding then
             -- The row's button: its one shown child (page reuse keeps the row's
             -- children of its earlier dresses among its children, hidden).
             local btn
             local kids = { wide:GetChildren() }
             for i = 1, #kids do
-                if kids[i]:IsShown() then btn = kids[i]; break end
+                if kids[i]:IsShown() then
+                    btn = kids[i]
+                    break
+                end
             end
-            if btn then openClass = AddPicker(btn, unlisted, AddSingle) end
+            if btn then
+                openClass = AddPicker(btn, unlisted, AddSingle)
+            end
         end
     end
-    _, h = W:Spacer(parent, y, 20); y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
     return y
 end
 
 -- Mini preview bar builder for color swatches. type: "health"/"cast"/"castLocked". colorKey: DB key for the bar color (read live). parentRow: frame to attach to. anchorFrame: optional override anchor (e.g. DualRow half-region).
 local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
     local env = ns._NPO_OptEnv
-    local DB, DBVal, defaults, GetFocusLetterAnchor = env.DB, env.DBVal, env.defaults, env.GetFocusLetterAnchor
-    local GetNPOptOutline, NextCastFill, NextCastIcon, PP = env.GetNPOptOutline, env.NextCastFill, env.NextCastIcon, env.PP
+    local DB, DBVal, defaults, GetFocusLetterAnchor =
+        env.DB, env.DBVal, env.defaults, env.GetFocusLetterAnchor
+    local GetNPOptOutline, NextCastFill, NextCastIcon, PP =
+        env.GetNPOptOutline, env.NextCastFill, env.NextCastIcon, env.PP
     local SetPVFont = env.SetPVFont
     local MEDIA = "Interface\\AddOns\\CludesUINameplates\\Media\\"
     local isHalf = anchorFrame and true or false
@@ -906,7 +1274,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
     local anchor = anchorFrame or parentRow
 
     local container = CreateFrame("Frame", nil, parentRow)
-    PP.Size(container, BAR_W + 2, BAR_H + 2)  -- +2 for border
+    PP.Size(container, BAR_W + 2, BAR_H + 2) -- +2 for border
     -- Position: to the left of the swatch (swatch is at RIGHT -SIDE_PAD, 24px wide)
     PP.Point(container, "RIGHT", anchor, "RIGHT", -(20 + SWATCH_SZ + SWATCH_GAP), 0)
     container:SetFrameLevel(parentRow:GetFrameLevel() + 2)
@@ -921,10 +1289,22 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             edges[#edges + 1] = t
             return t
         end
-        local t = mkE(); t:SetPoint("TOPLEFT"); t:SetPoint("TOPRIGHT"); t:SetHeight(1)
-        local b = mkE(); b:SetPoint("BOTTOMLEFT"); b:SetPoint("BOTTOMRIGHT"); b:SetHeight(1)
-        local l = mkE(); l:SetPoint("TOPLEFT", t, "BOTTOMLEFT"); l:SetPoint("BOTTOMLEFT", b, "TOPLEFT"); l:SetWidth(1)
-        local r = mkE(); r:SetPoint("TOPRIGHT", t, "BOTTOMRIGHT"); r:SetPoint("BOTTOMRIGHT", b, "TOPRIGHT"); r:SetWidth(1)
+        local t = mkE()
+        t:SetPoint("TOPLEFT")
+        t:SetPoint("TOPRIGHT")
+        t:SetHeight(1)
+        local b = mkE()
+        b:SetPoint("BOTTOMLEFT")
+        b:SetPoint("BOTTOMRIGHT")
+        b:SetHeight(1)
+        local l = mkE()
+        l:SetPoint("TOPLEFT", t, "BOTTOMLEFT")
+        l:SetPoint("BOTTOMLEFT", b, "TOPLEFT")
+        l:SetWidth(1)
+        local r = mkE()
+        r:SetPoint("TOPRIGHT", t, "BOTTOMRIGHT")
+        r:SetPoint("BOTTOMRIGHT", b, "TOPRIGHT")
+        r:SetWidth(1)
         return edges
     end
 
@@ -950,7 +1330,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         brdFrame:SetFrameLevel(health:GetFrameLevel() + 2)
         local brdEdges = MakePreviewBorder(brdFrame)
         container._brdEdges = brdEdges
-        container._health = health  -- exposed for proxy color override / dimming
+        container._health = health -- exposed for proxy color override / dimming
 
         -- Always create both FontStrings (shown/hidden dynamically), parented to a text frame ABOVE the overlay clips so focus texture never covers the health numbers.
         local textFrame = CreateFrame("Frame", nil, health)
@@ -970,7 +1350,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         local function RefreshHealthText()
             local hpFS = 10
             -- Use the largest text slot size (capped at 13 for mini bars)
-            for _, sk in ipairs({"textSlotRight", "textSlotLeft", "textSlotCenter"}) do
+            for _, sk in ipairs({ "textSlotRight", "textSlotLeft", "textSlotCenter" }) do
                 local el = DBVal(sk) or defaults[sk]
                 if el and el ~= "none" and not ns.IsNameElement(el) then
                     hpFS = math.min(DBVal(sk .. "Size") or defaults[sk .. "Size"] or 10, 13)
@@ -990,8 +1370,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
 
             -- Bar slots: show health text based on slot assignments
             local barSlots = {
-                { key = "textSlotRight",  anchor = "RIGHT",  xOff = -2 },
-                { key = "textSlotLeft",   anchor = "LEFT",   xOff = 2 },
+                { key = "textSlotRight", anchor = "RIGHT", xOff = -2 },
+                { key = "textSlotLeft", anchor = "LEFT", xOff = 2 },
                 { key = "textSlotCenter", anchor = "CENTER", xOff = 0 },
             }
             for _, slot in ipairs(barSlots) do
@@ -1005,23 +1385,30 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                     sc = (DB() and DB().enemyNameHostileColor) or defaults.hostile
                 elseif mode == "level" then
                     local r, g, b = ns.NP_UnitLevelColor("player")
-                    if r then sc = { r = r, g = g, b = b } end
+                    if r then
+                        sc = { r = r, g = g, b = b }
+                    end
                 end
                 if element == "healthPercent" or element == "healthPercentNoSign" then
                     pctFS:SetTextColor(sc.r, sc.g, sc.b, 1)
-                    pctFS:SetText(element == "healthPercentNoSign" and tostring(healthPct) or (healthPct .. "%"))
+                    pctFS:SetText(
+                        element == "healthPercentNoSign" and tostring(healthPct) or (healthPct .. "%")
+                    )
                     pctFS:SetPoint(slot.anchor, health, slot.anchor, slot.xOff, 0)
                     pctFS:Show()
                 elseif element == "healthNumber" then
                     numFS:SetTextColor(sc.r, sc.g, sc.b, 1)
-                    local valStr = tostring(healthVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+                    local valStr =
+                        tostring(healthVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
                     numFS:SetText(valStr)
                     numFS:SetPoint(slot.anchor, health, slot.anchor, slot.xOff, 0)
                     numFS:Show()
                 elseif ns.IsComboHealthText(element) then
-                    local valStr = tostring(healthVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+                    local valStr =
+                        tostring(healthVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
                     pctFS:SetTextColor(sc.r, sc.g, sc.b, 1)
-                    local maxStr = tostring(FAKE_MAX_HP):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+                    local maxStr =
+                        tostring(FAKE_MAX_HP):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
                     ns.SetCombinedHealthText(pctFS, element, healthPct .. "%", valStr, maxStr)
                     pctFS:SetPoint(slot.anchor, health, slot.anchor, slot.xOff, 0)
                     pctFS:Show()
@@ -1056,15 +1443,20 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             return clip, tex
         end
 
-        local _overlayTexKey   = (colorKey == "target") and "targetOverlayTexture"  or "focusOverlayTexture"
-        local _overlayAlphaKey = (colorKey == "target") and "targetOverlayAlpha"   or "focusOverlayAlpha"
-        local _overlayColorKey = (colorKey == "target") and "targetOverlayColor"   or "focusOverlayColor"
-        local _overlayFullBgKey = (colorKey == "target") and "targetOverlayFullBgAlpha" or "focusOverlayFullBgAlpha"
+        local _overlayTexKey = (colorKey == "target") and "targetOverlayTexture" or "focusOverlayTexture"
+        local _overlayAlphaKey = (colorKey == "target") and "targetOverlayAlpha" or "focusOverlayAlpha"
+        local _overlayColorKey = (colorKey == "target") and "targetOverlayColor" or "focusOverlayColor"
+        local _overlayFullBgKey = (colorKey == "target") and "targetOverlayFullBgAlpha"
+            or "focusOverlayFullBgAlpha"
         -- Empty-portion (bg) opacity: full when "Full alpha on empty part of bar" is on, else dimmed to 30% (matches live plates).
         local function _overlayBgAlpha(oAlpha)
             local full = DBVal(_overlayFullBgKey)
-            if full == nil then full = defaults[_overlayFullBgKey] end
-            if full then return oAlpha end
+            if full == nil then
+                full = defaults[_overlayFullBgKey]
+            end
+            if full then
+                return oAlpha
+            end
             return oAlpha * 0.3
         end
         if colorKey == "focus" or colorKey == "target" then
@@ -1073,12 +1465,17 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                 local fillRef = health:GetStatusBarTexture()
                 local oAlpha = DBVal(_overlayAlphaKey) or defaults[_overlayAlphaKey]
                 local oc = (DB() and DB()[_overlayColorKey]) or defaults[_overlayColorKey]
-                overlayFillClip, overlayFillTex = MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
-                overlayFillTex:SetTexture(ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png"))
+                overlayFillClip, overlayFillTex =
+                    MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
+                overlayFillTex:SetTexture(
+                    ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                )
                 overlayFillTex:SetAlpha(oAlpha)
                 overlayFillTex:SetVertexColor(oc.r, oc.g, oc.b)
                 overlayBgClip, overlayBgTex = MakeOverlayClip(fillRef, "TOPRIGHT", health, "BOTTOMRIGHT", 1)
-                overlayBgTex:SetTexture(ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png"))
+                overlayBgTex:SetTexture(
+                    ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                )
                 overlayBgTex:SetAlpha(_overlayBgAlpha(oAlpha))
                 overlayBgTex:SetVertexColor(oc.r, oc.g, oc.b)
             end
@@ -1086,9 +1483,13 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
 
         local focusLetterFS
         local function RefreshFocusLetter()
-            if colorKey ~= "focus" then return end
+            if colorKey ~= "focus" then
+                return
+            end
             if DBVal("focusLetterEnabled") ~= true then
-                if focusLetterFS then focusLetterFS:Hide() end
+                if focusLetterFS then
+                    focusLetterFS:Hide()
+                end
                 return
             end
             if not focusLetterFS then
@@ -1117,26 +1518,38 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         end
         -- Live update hook: refresh overlay texture from DB
         container.UpdateOverlay = function()
-            if colorKey ~= "focus" and colorKey ~= "target" then return end
+            if colorKey ~= "focus" and colorKey ~= "target" then
+                return
+            end
             local tex = DBVal(_overlayTexKey) or defaults[_overlayTexKey]
             if tex == "none" then
-                if overlayFillClip then overlayFillClip:Hide() end
-                if overlayBgClip then overlayBgClip:Hide() end
+                if overlayFillClip then
+                    overlayFillClip:Hide()
+                end
+                if overlayBgClip then
+                    overlayBgClip:Hide()
+                end
             else
                 local fillRef = health:GetStatusBarTexture()
                 local oAlpha = DBVal(_overlayAlphaKey) or defaults[_overlayAlphaKey]
                 local oc = (DB() and DB()[_overlayColorKey]) or defaults[_overlayColorKey]
                 if not overlayFillClip then
-                    overlayFillClip, overlayFillTex = MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
+                    overlayFillClip, overlayFillTex =
+                        MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
                 end
-                overlayFillTex:SetTexture(ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png"))
+                overlayFillTex:SetTexture(
+                    ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                )
                 overlayFillTex:SetAlpha(oAlpha)
                 overlayFillTex:SetVertexColor(oc.r, oc.g, oc.b)
                 overlayFillClip:Show()
                 if not overlayBgClip then
-                    overlayBgClip, overlayBgTex = MakeOverlayClip(fillRef, "TOPRIGHT", health, "BOTTOMRIGHT", 1)
+                    overlayBgClip, overlayBgTex =
+                        MakeOverlayClip(fillRef, "TOPRIGHT", health, "BOTTOMRIGHT", 1)
                 end
-                overlayBgTex:SetTexture(ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png"))
+                overlayBgTex:SetTexture(
+                    ns.ResolveOverlayTexPath and ns.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                )
                 overlayBgTex:SetAlpha(_overlayBgAlpha(oAlpha))
                 overlayBgTex:SetVertexColor(oc.r, oc.g, oc.b)
                 overlayBgClip:Show()
@@ -1151,14 +1564,13 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         end
         -- Exposed so cache-restore / refresh-all can update text from current DB
         container.RefreshHealthText = RefreshHealthText
-        container.RefreshBorderStyle = function() end  -- no style toggle needed for 1px solid
+        container.RefreshBorderStyle = function() end -- no style toggle needed for 1px solid
         container.RefreshBorderColor = function()
             local bc = (DB() and DB().borderColor) or defaults.borderColor
             for _, tex in ipairs(container._brdEdges) do
                 tex:SetColorTexture(bc.r, bc.g, bc.b, 1)
             end
         end
-
     elseif colorType == "cast" or colorType == "castLocked" then
         PP.Size(container, BAR_W + 2, BAR_H + 2)
 
@@ -1171,7 +1583,6 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         local castBG = cast:CreateTexture(nil, "BACKGROUND")
         castBG:SetAllPoints()
         castBG:SetColorTexture(0.20, 0.20, 0.20, 0.9)
-
 
         local spark = cast:CreateTexture(nil, "OVERLAY", nil, 1)
         spark:SetTexture(MEDIA .. "cast_spark.tga")
@@ -1198,19 +1609,21 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
 
         local dbRef = DB()
         local colShowTimer = defaults.showCastTimer
-        if dbRef and dbRef.showCastTimer ~= nil then colShowTimer = dbRef.showCastTimer end
+        if dbRef and dbRef.showCastTimer ~= nil then
+            colShowTimer = dbRef.showCastTimer
+        end
         local colCtmSz = math.min((dbRef and dbRef.castTimerSize) or defaults.castTimerSize, 13)
         local colCtmC = (dbRef and dbRef.castTimerColor) or defaults.castTimerColor
-        local colNameSide   = (dbRef and dbRef.castNameSide)   or defaults.castNameSide
+        local colNameSide = (dbRef and dbRef.castNameSide) or defaults.castNameSide
         local colTargetSide = (dbRef and dbRef.castTargetSide) or defaults.castTargetSide
-        local colTimerSide  = (dbRef and dbRef.castTimerSide)  or defaults.castTimerSide
+        local colTimerSide = (dbRef and dbRef.castTimerSide) or defaults.castTimerSide
         local colCombine = dbRef and dbRef.castCombineNameTarget == true
         local colTimerW = colCtmSz * 2.2
         -- Per-element cast text truncation (% of bar width + wrap), mirroring runtime.
         local colNameW = BAR_W * ((dbRef and dbRef.castNameWidthPct) or defaults.castNameWidthPct) / 100
-        local colTgtW  = BAR_W * ((dbRef and dbRef.castTargetWidthPct) or defaults.castTargetWidthPct) / 100
+        local colTgtW = BAR_W * ((dbRef and dbRef.castTargetWidthPct) or defaults.castTargetWidthPct) / 100
         local colNameWrap = (dbRef and dbRef.castNameWrap) == true
-        local colTgtWrap  = (dbRef and dbRef.castTargetWrap) == true
+        local colTgtWrap = (dbRef and dbRef.castTargetWrap) == true
 
         -- Spell name
         local nameFS = cast:CreateFontString(nil, "OVERLAY")
@@ -1222,8 +1635,17 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         if colNameSide == "none" then
             nameFS:Hide()
         else
-            local pt, xb, jh = ns.GetCastTextAnchor(colNameSide, colShowTimer and colTimerSide == colNameSide, colTimerW, false)
-            nameFS:SetWidth(colCombine and (BAR_W * ((dbRef and dbRef.castCombinedWidthPct) or defaults.castCombinedWidthPct) / 100) or colNameW)
+            local pt, xb, jh = ns.GetCastTextAnchor(
+                colNameSide,
+                colShowTimer and colTimerSide == colNameSide,
+                colTimerW,
+                false
+            )
+            nameFS:SetWidth(
+                colCombine
+                        and (BAR_W * ((dbRef and dbRef.castCombinedWidthPct) or defaults.castCombinedWidthPct) / 100)
+                    or colNameW
+            )
             nameFS:SetJustifyH(jh)
             nameFS:SetPoint(pt, cast, pt, xb, 0)
         end
@@ -1250,10 +1672,13 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         targetFS:SetWordWrap(colTgtWrap)
         targetFS:SetNonSpaceWrap(false)
         targetFS:SetMaxLines(colTgtWrap and 2 or 1)
-        local colTargetText = isHalf and (UnitName("player") or CludesUI.L("Target")) or (UnitName("player") or CludesUI.L("Spell Target"))
+        local colTargetText = isHalf and (UnitName("player") or CludesUI.L("Target"))
+            or (UnitName("player") or CludesUI.L("Spell Target"))
         targetFS:SetText(colTargetText)
         local useClassColor = defaults.castTargetClassColor
-        if dbRef and dbRef.castTargetClassColor ~= nil then useClassColor = dbRef.castTargetClassColor end
+        if dbRef and dbRef.castTargetClassColor ~= nil then
+            useClassColor = dbRef.castTargetClassColor
+        end
         local colTargetHex
         if useClassColor then
             local _, pClass = UnitClass("player")
@@ -1268,17 +1693,29 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         else
             local ctc = (dbRef and dbRef.castTargetColor) or defaults.castTargetColor
             targetFS:SetTextColor(ctc.r, ctc.g, ctc.b, 1)
-            colTargetHex = string.format("ff%02x%02x%02x",
-                math.floor(ctc.r * 255 + 0.5), math.floor(ctc.g * 255 + 0.5), math.floor(ctc.b * 255 + 0.5))
+            colTargetHex = string.format(
+                "ff%02x%02x%02x",
+                math.floor(ctc.r * 255 + 0.5),
+                math.floor(ctc.g * 255 + 0.5),
+                math.floor(ctc.b * 255 + 0.5)
+            )
         end
         if colCombine then
-            nameFS:SetFormattedText("%s - |c" .. colTargetHex .. "%s|r",
-                CludesUI.L("Spell Name"), colTargetText)
+            nameFS:SetFormattedText(
+                "%s - |c" .. colTargetHex .. "%s|r",
+                CludesUI.L("Spell Name"),
+                colTargetText
+            )
         end
         if colCombine or colTargetSide == "none" then
             targetFS:Hide()
         else
-            local pt, xb, jh = ns.GetCastTextAnchor(colTargetSide, colShowTimer and colTimerSide == colTargetSide, colTimerW, false)
+            local pt, xb, jh = ns.GetCastTextAnchor(
+                colTargetSide,
+                colShowTimer and colTimerSide == colTargetSide,
+                colTimerW,
+                false
+            )
             targetFS:SetWidth(colTgtW)
             targetFS:SetJustifyH(jh)
             targetFS:SetPoint(pt, cast, pt, xb, 0)
@@ -1324,7 +1761,8 @@ local function BuildColorsPage(pageName, parent, yOffset)
     local env = ns._NPO_OptEnv
     local _colorPagePreviews, DB, DBColor, DBVal = env._colorPagePreviews, env.DB, env.DBColor, env.DBVal
     local defaults, optState, pairs, PP = env.defaults, env.optState, env.pairs, env.PP
-    local RefreshAllPlates, SECTION_ENEMY, SECTION_THREAT, THREAT_PCT_POSITION_ORDER = env.RefreshAllPlates, env.SECTION_ENEMY, env.SECTION_THREAT, env.THREAT_PCT_POSITION_ORDER
+    local RefreshAllPlates, SECTION_ENEMY, SECTION_THREAT, THREAT_PCT_POSITION_ORDER =
+        env.RefreshAllPlates, env.SECTION_ENEMY, env.SECTION_THREAT, env.THREAT_PCT_POSITION_ORDER
     local THREAT_PCT_POSITIONS = env.THREAT_PCT_POSITIONS
     local W = CludesUI.Widgets
     local y = yOffset
@@ -1344,7 +1782,8 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -----------------------------------------------------------------------
     --  ENEMY COLORS
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_ENEMY, y);  y = y - h
+    _, h = W:SectionHeader(parent, SECTION_ENEMY, y)
+    y = y - h
 
     -- Modify Out of Combat is a view over darkenEnemiesOOC + darkenOOCRecolor (the
     -- runtime ignores the recolor flag while darkening is off): No Change = off,
@@ -1352,85 +1791,129 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- whose value it changes.
     local function OOCOn()
         local db = DB()
-        if db and db.darkenEnemiesOOC ~= nil then return db.darkenEnemiesOOC end
+        if db and db.darkenEnemiesOOC ~= nil then
+            return db.darkenEnemiesOOC
+        end
         return defaults.darkenEnemiesOOC
     end
     local function OOCRecolorOn()
         local db = DB()
         local v = db and db.darkenOOCRecolor
-        if v == nil then v = defaults.darkenOOCRecolor end
+        if v == nil then
+            v = defaults.darkenOOCRecolor
+        end
         return v
     end
     local function OOCMode()
-        if not OOCOn() then return "none" end
+        if not OOCOn() then
+            return "none"
+        end
         return OOCRecolorOn() and "color" or "darken"
     end
 
     -- Enemy Types | Modify Out of Combat
     local enemyTypesRow
-    enemyTypesRow, h = W:DualRow(parent, y,
-        { type="multiSwatch", text="Enemy Types",
-          swatches = {
-            { tooltip = "Enemies",
-              getValue = function() return DBColor("enemyInCombat") end,
-              setValue = function(r, g, b)
-                DB().enemyInCombat = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "Spell Casters",
-              getValue = function() return DBColor("caster") end,
-              setValue = function(r, g, b)
-                DB().caster = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "Mini-Bosses",
-              getValue = function() return DBColor("miniboss") end,
-              setValue = function(r, g, b)
-                DB().miniboss = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "Bosses",
-              getValue = function() return DBColor("boss") end,
-              setValue = function(r, g, b)
-                DB().boss = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-          } },
-        { type="dropdown", text="Modify Out of Combat",
-          values={ none = "No Change", darken = "Darken", color = "Change Color" },
-          order={ "none", "darken", "color" },
-          getValue=OOCMode,
-          -- The inline color swatch exists only for Change Color: rebuild when that flips.
-          setValue=CludesUI.DependentSetValue(function() return OOCMode() == "color" end, function(v)
-            local on = v ~= "none"
-            local db = DB()
-            if OOCOn() ~= on then db.darkenEnemiesOOC = on end
-            if on and OOCRecolorOn() ~= (v == "color") then db.darkenOOCRecolor = (v == "color") end
-            if ns.NP_CastTintsDirty then ns.NP_CastTintsDirty() end
-            for _, plate in pairs(ns.plates) do
-                plate:UpdateHealthColor()
-            end
-            CludesUI:RefreshPage()
-          end),
-          tooltip="How enemy plates look while out of combat." });  y = y - h
+    enemyTypesRow, h = W:DualRow(
+        parent,
+        y,
+        {
+            type = "multiSwatch",
+            text = "Enemy Types",
+            swatches = {
+                {
+                    tooltip = "Enemies",
+                    getValue = function()
+                        return DBColor("enemyInCombat")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().enemyInCombat = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    tooltip = "Spell Casters",
+                    getValue = function()
+                        return DBColor("caster")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().caster = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    tooltip = "Mini-Bosses",
+                    getValue = function()
+                        return DBColor("miniboss")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().miniboss = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    tooltip = "Bosses",
+                    getValue = function()
+                        return DBColor("boss")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().boss = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+            },
+        },
+        {
+            type = "dropdown",
+            text = "Modify Out of Combat",
+            values = { none = "No Change", darken = "Darken", color = "Change Color" },
+            order = { "none", "darken", "color" },
+            getValue = OOCMode,
+            -- The inline color swatch exists only for Change Color: rebuild when that flips.
+            setValue = CludesUI.DependentSetValue(function()
+                return OOCMode() == "color"
+            end, function(v)
+                local on = v ~= "none"
+                local db = DB()
+                if OOCOn() ~= on then
+                    db.darkenEnemiesOOC = on
+                end
+                if on and OOCRecolorOn() ~= (v == "color") then
+                    db.darkenOOCRecolor = (v == "color")
+                end
+                if ns.NP_CastTintsDirty then
+                    ns.NP_CastTintsDirty()
+                end
+                for _, plate in pairs(ns.plates) do
+                    plate:UpdateHealthColor()
+                end
+                CludesUI:RefreshPage()
+            end),
+            tooltip = "How enemy plates look while out of combat.",
+        }
+    )
+    y = y - h
 
     -- Change Color's flat color (MaybeDarken), inline beside the dropdown while
     -- that mode is picked.
     if not CludesUI._prebuilding and OOCMode() == "color" then
         CludesUI.BuildInlineSwatches(enemyTypesRow._rightRegion, {
-            { tooltip = "Out of Combat Color",
-              getValue = function()
-                local db = DB()
-                local c = (db and db.darkenOOCColor) or defaults.darkenOOCColor
-                return c.r, c.g, c.b
-              end,
-              setValue = function(r, g, b)
-                DB().darkenOOCColor = { r = r, g = g, b = b }
-                if ns.NP_CastTintsDirty then ns.NP_CastTintsDirty() end
-                for _, plate in pairs(ns.plates) do
-                    plate:UpdateHealthColor()
-                end
-              end },
+            {
+                tooltip = "Out of Combat Color",
+                getValue = function()
+                    local db = DB()
+                    local c = (db and db.darkenOOCColor) or defaults.darkenOOCColor
+                    return c.r, c.g, c.b
+                end,
+                setValue = function(r, g, b)
+                    DB().darkenOOCColor = { r = r, g = g, b = b }
+                    if ns.NP_CastTintsDirty then
+                        ns.NP_CastTintsDirty()
+                    end
+                    for _, plate in pairs(ns.plates) do
+                        plate:UpdateHealthColor()
+                    end
+                end,
+            },
         })
     end
 
@@ -1439,67 +1922,92 @@ local function BuildColorsPage(pageName, parent, yOffset)
         local leftRgn = enemyTypesRow._leftRegion
         local isOWOff = function()
             local v = DBVal("owBasicColoring")
-            if v == nil then return not defaults.owBasicColoring end
+            if v == nil then
+                return not defaults.owBasicColoring
+            end
             return not v
         end
         CludesUI.BuildInlineCog(leftRgn, {
             title = "Enemy Colors",
             rows = {
-                { type="toggle", label="Simple Coloring When Not In M+",
-                  get=function()
-                    local v = DBVal("owBasicColoring")
-                    if v == nil then return defaults.owBasicColoring end
-                    return v
-                  end,
-                  set=function(v)
-                    DB().owBasicColoring = v
-                    RefreshAllPlates()
-                  end },
-                { type="colorpicker", label="All Enemies",
-                  get=function() return DBColor("owBasicColor") end,
-                  set=function(r, g, b)
-                    DB().owBasicColor = { r = r, g = g, b = b }
-                    RefreshAllPlates()
-                  end,
-                  disabled=isOWOff,
-                  disabledTooltip="Simple Coloring When Not In M+" },
+                {
+                    type = "toggle",
+                    label = "Simple Coloring When Not In M+",
+                    get = function()
+                        local v = DBVal("owBasicColoring")
+                        if v == nil then
+                            return defaults.owBasicColoring
+                        end
+                        return v
+                    end,
+                    set = function(v)
+                        DB().owBasicColoring = v
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    type = "colorpicker",
+                    label = "All Enemies",
+                    get = function()
+                        return DBColor("owBasicColor")
+                    end,
+                    set = function(r, g, b)
+                        DB().owBasicColor = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                    disabled = isOWOff,
+                    disabledTooltip = "Simple Coloring When Not In M+",
+                },
             },
         })
     end
 
     -- Neutral & Mini Enemies | Enable Quest Mob Color
     local neutralMiniRow
-    neutralMiniRow, h = W:DualRow(parent, y,
-        { type="multiSwatch", text="Neutral & Mini Enemies",
-          swatches = {
-            { tooltip = "Neutral",
-              getValue = function() return DBColor("neutral") end,
-              setValue = function(r, g, b)
-                DB().neutral = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "Mini Enemies",
-              -- Until explicitly set, views the user's "Enemies" color so the swatch starts matching enemyInCombat (see GetReactionColor).
-              getValue = function()
-                local db = DB()
-                local c = (db and db.miniEnemy) or (db and db.enemyInCombat) or defaults.enemyInCombat
-                return c.r, c.g, c.b
-              end,
-              setValue = function(r, g, b)
-                DB().miniEnemy = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-          } },
-        { type="toggle", text="Enable Quest Mob Color",
-          getValue=function() return DBVal("questMobColorEnabled") == true end,
-          setValue=function(v)
+    neutralMiniRow, h = W:DualRow(parent, y, {
+        type = "multiSwatch",
+        text = "Neutral & Mini Enemies",
+        swatches = {
+            {
+                tooltip = "Neutral",
+                getValue = function()
+                    return DBColor("neutral")
+                end,
+                setValue = function(r, g, b)
+                    DB().neutral = { r = r, g = g, b = b }
+                    RefreshAllPlates()
+                end,
+            },
+            {
+                tooltip = "Mini Enemies",
+                -- Until explicitly set, views the user's "Enemies" color so the swatch starts matching enemyInCombat (see GetReactionColor).
+                getValue = function()
+                    local db = DB()
+                    local c = (db and db.miniEnemy) or (db and db.enemyInCombat) or defaults.enemyInCombat
+                    return c.r, c.g, c.b
+                end,
+                setValue = function(r, g, b)
+                    DB().miniEnemy = { r = r, g = g, b = b }
+                    RefreshAllPlates()
+                end,
+            },
+        },
+    }, {
+        type = "toggle",
+        text = "Enable Quest Mob Color",
+        getValue = function()
+            return DBVal("questMobColorEnabled") == true
+        end,
+        setValue = function(v)
             DB().questMobColorEnabled = v
             for _, plate in pairs(ns.plates) do
                 plate:UpdateHealthColor()
             end
             CludesUI:RefreshPage()
-          end,
-          tooltip="Colors enemy nameplates for quest mobs you still need to kill." });  y = y - h
+        end,
+        tooltip = "Colors enemy nameplates for quest mobs you still need to kill.",
+    })
+    y = y - h
 
     -- Inline Quest Mob Color swatch
     if not CludesUI._prebuilding then
@@ -1512,8 +2020,17 @@ local function BuildColorsPage(pageName, parent, yOffset)
             DB().questMobColor = { r = r, g = g, b = b }
             RefreshAllPlates()
         end
-        local isQuestOff = function() return DBVal("questMobColorEnabled") ~= true end
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, questColorGet, questColorSet, nil, 20)
+        local isQuestOff = function()
+            return DBVal("questMobColorEnabled") ~= true
+        end
+        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+            rightRgn,
+            rightRgn:GetFrameLevel() + 5,
+            questColorGet,
+            questColorSet,
+            nil,
+            20
+        )
         PP.Point(swatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
             local off = isQuestOff()
@@ -1532,57 +2049,81 @@ local function BuildColorsPage(pageName, parent, yOffset)
         CludesUI.BuildInlineCog(leftRgn, {
             title = "Mini Enemies",
             rows = {
-                { type="toggle", label="Mini Coloring M+ Only",
-                  get=function()
-                    local v = DBVal("miniColoringMPlusOnly")
-                    if v == nil then return defaults.miniColoringMPlusOnly end
-                    return v
-                  end,
-                  set=function(v)
-                    DB().miniColoringMPlusOnly = v
-                    RefreshAllPlates()
-                  end },
+                {
+                    type = "toggle",
+                    label = "Mini Coloring M+ Only",
+                    get = function()
+                        local v = DBVal("miniColoringMPlusOnly")
+                        if v == nil then
+                            return defaults.miniColoringMPlusOnly
+                        end
+                        return v
+                    end,
+                    set = function(v)
+                        DB().miniColoringMPlusOnly = v
+                        RefreshAllPlates()
+                    end,
+                },
             },
         })
     end
 
     -- Color Casting Enemies | Enemy Players Use Enemy Color
     local castingRow
-    castingRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Color Casting Enemies",
-          getValue=function() return DBVal("castingEnemyColors") == true end,
-          setValue=function(v)
+    castingRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Color Casting Enemies",
+        getValue = function()
+            return DBVal("castingEnemyColors") == true
+        end,
+        setValue = function(v)
             DB().castingEnemyColors = v
             RefreshAllPlates()
             CludesUI:RefreshPage()
-          end,
-          tooltip="Enemies not colored as Spell Casters take the Interruptible Caster or Uninterruptible Caster color once they cast a spell that can or cannot be interrupted." },
-        { type="toggle", text="Enemy Players Use Enemy Color",
-          getValue=function() return DBVal("enemyPlayerEnemyColor") == true end,
-          setValue=function(v)
+        end,
+        tooltip = "Enemies not colored as Spell Casters take the Interruptible Caster or Uninterruptible Caster color once they cast a spell that can or cannot be interrupted.",
+    }, {
+        type = "toggle",
+        text = "Enemy Players Use Enemy Color",
+        getValue = function()
+            return DBVal("enemyPlayerEnemyColor") == true
+        end,
+        setValue = function(v)
             DB().enemyPlayerEnemyColor = v
             RefreshAllPlates()
-          end,
-          tooltip="Enemy players take the Enemies color instead of their class color." });  y = y - h
+        end,
+        tooltip = "Enemy players take the Enemies color instead of their class color.",
+    })
+    y = y - h
 
     -- Inline cog with the mob types each applies to, then the Interruptible / Uninterruptible swatches.
     if not CludesUI._prebuilding then
         local rgn = castingRow._leftRegion
-        local isCastingOff = function() return DBVal("castingEnemyColors") ~= true end
+        local isCastingOff = function()
+            return DBVal("castingEnemyColors") ~= true
+        end
         local typeItems = {
-            { key="Normal",   label="Normal / Trivial", fixed=true },
-            { key="Elite",    label="Elite",            fixed=true },
-            { key="MiniBoss", label="Mini-Bosses",      fixed=true },
-            { key="Boss",     label="Bosses",           fixed=true },
+            { key = "Normal", label = "Normal / Trivial", fixed = true },
+            { key = "Elite", label = "Elite", fixed = true },
+            { key = "MiniBoss", label = "Mini-Bosses", fixed = true },
+            { key = "Boss", label = "Bosses", fixed = true },
         }
         local function TypeRow(label, prefix)
             -- hint replaces the widget's "Drag to Reorder": every row is fixed.
-            return { type="reordercheck", label=label, ddWidth=170, items=typeItems, hint="Enemy Types",
-              get=function(key) return DBVal(prefix .. key) end,
-              set=function(key, v)
-                DB()[prefix .. key] = v
-                RefreshAllPlates()
-              end }
+            return {
+                type = "reordercheck",
+                label = label,
+                ddWidth = 170,
+                items = typeItems,
+                hint = "Enemy Types",
+                get = function(key)
+                    return DBVal(prefix .. key)
+                end,
+                set = function(key, v)
+                    DB()[prefix .. key] = v
+                    RefreshAllPlates()
+                end,
+            }
         end
         CludesUI.BuildInlineCog(rgn, {
             title = "Casting Enemies",
@@ -1594,27 +2135,37 @@ local function BuildColorsPage(pageName, parent, yOffset)
             },
         })
         CludesUI.BuildInlineSwatches(rgn, {
-            { tooltip = "Interruptible Caster",
-              getValue = function() return DBColor("castingIntColor") end,
-              setValue = function(r, g, b)
-                DB().castingIntColor = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "Uninterruptible Caster",
-              getValue = function() return DBColor("castingUnintColor") end,
-              setValue = function(r, g, b)
-                DB().castingUnintColor = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
+            {
+                tooltip = "Interruptible Caster",
+                getValue = function()
+                    return DBColor("castingIntColor")
+                end,
+                setValue = function(r, g, b)
+                    DB().castingIntColor = { r = r, g = g, b = b }
+                    RefreshAllPlates()
+                end,
+            },
+            {
+                tooltip = "Uninterruptible Caster",
+                getValue = function()
+                    return DBColor("castingUnintColor")
+                end,
+                setValue = function(r, g, b)
+                    DB().castingUnintColor = { r = r, g = g, b = b }
+                    RefreshAllPlates()
+                end,
+            },
         }, { disabled = isCastingOff, disabledTooltip = "Color Casting Enemies" })
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     -----------------------------------------------------------------------
     --  THREAT COLORS
     -----------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, SECTION_THREAT, y);  y = y - h
+    _, h = W:SectionHeader(parent, SECTION_THREAT, y)
+    y = y - h
 
     -- Show Threat Colors (threatColorMode): Never / Instances (dungeons, raids and
     -- delves) / Group or Pet ("always": everywhere) / Always ("alwaysSolo"); an unknown
@@ -1630,69 +2181,104 @@ local function BuildColorsPage(pageName, parent, yOffset)
         end
         return v
     end
-    local function threatNever() return threatModeGet() == "never" end
+    local function threatNever()
+        return threatModeGet() == "never"
+    end
 
     -- Row 1: Show Threat Colors (left) ---- Tank Threat (right)
-    _, h = W:DualRow(parent, y,
-        { type="dropdown", text="Show Threat Colors",
-          tooltip="Where nameplates show threat colors.",
-          values={ never="Never", instances="Instances", always="Group or Pet", alwaysSolo="Always" },
-          order={ "never", "instances", "always", "alwaysSolo" },
-          getValue=threatModeGet,
-          setValue=function(v)
-            DB().threatColorMode = v
-            ns.NP_ApplyThreatColorMode()
-            CludesUI:RefreshPage()
-          end },
-        { type="multiSwatch", text="Tank Threat",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          swatches = {
-            { tooltip = "Losing Aggro",
-              getValue = function() return DBColor("tankLosingAggro") end,
-              setValue = function(r, g, b)
-                DB().tankLosingAggro = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-            { tooltip = "No Aggro",
-              getValue = function() return DBColor("tankNoAggro") end,
-              setValue = function(r, g, b)
-                DB().tankNoAggro = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-          } });  y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
+        {
+            type = "dropdown",
+            text = "Show Threat Colors",
+            tooltip = "Where nameplates show threat colors.",
+            values = { never = "Never", instances = "Instances", always = "Group or Pet", alwaysSolo = "Always" },
+            order = { "never", "instances", "always", "alwaysSolo" },
+            getValue = threatModeGet,
+            setValue = function(v)
+                DB().threatColorMode = v
+                ns.NP_ApplyThreatColorMode()
+                CludesUI:RefreshPage()
+            end,
+        },
+        {
+            type = "multiSwatch",
+            text = "Tank Threat",
+            disabled = threatNever,
+            disabledTooltip = "Show Threat Colors",
+            swatches = {
+                {
+                    tooltip = "Losing Aggro",
+                    getValue = function()
+                        return DBColor("tankLosingAggro")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().tankLosingAggro = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    tooltip = "No Aggro",
+                    getValue = function()
+                        return DBColor("tankNoAggro")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().tankNoAggro = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+            },
+        }
+    )
+    y = y - h
 
     -- Disabled-state helpers (shared across the toggle rows' swatches and cogs)
     local function isTankHasAggroDisabled()
         local db = DB()
-        if db and db.tankHasAggroEnabled ~= nil then return not db.tankHasAggroEnabled end
+        if db and db.tankHasAggroEnabled ~= nil then
+            return not db.tankHasAggroEnabled
+        end
         return not defaults.tankHasAggroEnabled
     end
     local function isClassicTankAggroDisabled()
         local db = DB()
-        if db and db.classicTankAggro ~= nil then return not db.classicTankAggro end
+        if db and db.classicTankAggro ~= nil then
+            return not db.classicTankAggro
+        end
         return not defaults.classicTankAggro
     end
     local function isOffTankDisabled()
         local db = DB()
-        if db and db.offTankAggroEnabled ~= nil then return not db.offTankAggroEnabled end
+        if db and db.offTankAggroEnabled ~= nil then
+            return not db.offTankAggroEnabled
+        end
         return not defaults.offTankAggroEnabled
     end
     local function isDpsNoAggroDisabled()
         local db = DB()
-        if db and db.dpsNoAggroEnabled ~= nil then return not db.dpsNoAggroEnabled end
+        if db and db.dpsNoAggroEnabled ~= nil then
+            return not db.dpsNoAggroEnabled
+        end
         return not defaults.dpsNoAggroEnabled
     end
     -- The Override toggles only reorder the health bar's color priority, so the No Aggro
     -- and Has Aggro cogs (Override rows only) lock while Show Threat On leaves the Health Bar out.
-    local function isThreatHealthOff() return not ns.GetThreatColorHealth() end
+    local function isThreatHealthOff()
+        return not ns.GetThreatColorHealth()
+    end
 
     -- Inline swatch lock for the toggle rows: dimmed and click-blocked while its own
     -- toggle is off or Show Threat Colors is Never; the block names the missing one.
     local function LockThreatSwatch(swatch, updateSwatch, ownOff, ownReq)
-        local tipCfg = { disabledTooltip = function()
-            if threatNever() then return "Show Threat Colors" end
-            return ownReq
-        end }
+        local tipCfg = {
+            disabledTooltip = function()
+                if threatNever() then
+                    return "Show Threat Colors"
+                end
+                return ownReq
+            end,
+        }
         local block = CreateFrame("Frame", nil, swatch)
         block:SetAllPoints()
         block:SetFrameLevel(swatch:GetFrameLevel() + 10)
@@ -1700,7 +2286,9 @@ local function BuildColorsPage(pageName, parent, yOffset)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(swatch, CludesUI.ResolveDisabledTip(tipCfg))
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local function State()
             local off = threatNever() or ownOff()
             swatch:SetAlpha(off and 0.3 or 1)
@@ -1715,36 +2303,58 @@ local function BuildColorsPage(pageName, parent, yOffset)
 
     -- Row 2: Non-Tank Threat (left) ---- DPS: Show Special "No Aggro" Color (right)
     local nonTankRow
-    nonTankRow, h = W:DualRow(parent, y,
-        { type="multiSwatch", text="Non-Tank Threat",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          swatches = {
-            { tooltip = "Has Aggro",
-              getValue = function() return DBColor("dpsHasAggro") end,
-              setValue = function(r, g, b)
-                DB().dpsHasAggro = { r = r, g = g, b = b }
+    nonTankRow, h = W:DualRow(
+        parent,
+        y,
+        {
+            type = "multiSwatch",
+            text = "Non-Tank Threat",
+            disabled = threatNever,
+            disabledTooltip = "Show Threat Colors",
+            swatches = {
+                {
+                    tooltip = "Has Aggro",
+                    getValue = function()
+                        return DBColor("dpsHasAggro")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().dpsHasAggro = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    tooltip = "Near Aggro",
+                    getValue = function()
+                        return DBColor("dpsNearAggro")
+                    end,
+                    setValue = function(r, g, b)
+                        DB().dpsNearAggro = { r = r, g = g, b = b }
+                        RefreshAllPlates()
+                    end,
+                },
+            },
+        },
+        {
+            type = "toggle",
+            text = 'DPS: Show Special "No Aggro" Color',
+            tooltip = "Shows a special color for non caster/mini-boss enemies when you do not have aggro on them.",
+            disabled = threatNever,
+            disabledTooltip = "Show Threat Colors",
+            getValue = function()
+                local db = DB()
+                if db and db.dpsNoAggroEnabled ~= nil then
+                    return db.dpsNoAggroEnabled
+                end
+                return defaults.dpsNoAggroEnabled
+            end,
+            setValue = function(v)
+                DB().dpsNoAggroEnabled = v
                 RefreshAllPlates()
-              end },
-            { tooltip = "Near Aggro",
-              getValue = function() return DBColor("dpsNearAggro") end,
-              setValue = function(r, g, b)
-                DB().dpsNearAggro = { r = r, g = g, b = b }
-                RefreshAllPlates()
-              end },
-          } },
-        { type="toggle", text="DPS: Show Special \"No Aggro\" Color",
-          tooltip="Shows a special color for non caster/mini-boss enemies when you do not have aggro on them.",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          getValue=function()
-            local db = DB()
-            if db and db.dpsNoAggroEnabled ~= nil then return db.dpsNoAggroEnabled end
-            return defaults.dpsNoAggroEnabled
-          end,
-          setValue=function(v)
-            DB().dpsNoAggroEnabled = v
-            RefreshAllPlates()
-            CludesUI:RefreshPage()
-          end });  y = y - h
+                CludesUI:RefreshPage()
+            end,
+        }
+    )
+    y = y - h
 
     -- Inline cog on "Non-Tank Threat": steady red execute-style glow
     -- while the Near Aggro color is active (see EnsureNearAggroGlow).
@@ -1754,20 +2364,25 @@ local function BuildColorsPage(pageName, parent, yOffset)
             disabledTooltip = "Show Threat Colors",
             title = "Near Aggro",
             rows = {
-                { type="toggle", label="Glow Nameplate When Near Aggro",
-                  tooltip="Adds a steady red glow around the nameplate while the Near Aggro color is active.",
-                  get=function()
-                    local db = DB()
-                    local v = db and db.threatNearAggroGlow
-                    if v == nil then v = defaults.threatNearAggroGlow end
-                    return v
-                  end,
-                  set=function(v)
-                    DB().threatNearAggroGlow = v and true or false
-                    for _, plate in pairs(ns.plates) do
-                        plate:UpdateHealthColor()
-                    end
-                  end },
+                {
+                    type = "toggle",
+                    label = "Glow Nameplate When Near Aggro",
+                    tooltip = "Adds a steady red glow around the nameplate while the Near Aggro color is active.",
+                    get = function()
+                        local db = DB()
+                        local v = db and db.threatNearAggroGlow
+                        if v == nil then
+                            v = defaults.threatNearAggroGlow
+                        end
+                        return v
+                    end,
+                    set = function(v)
+                        DB().threatNearAggroGlow = v and true or false
+                        for _, plate in pairs(ns.plates) do
+                            plate:UpdateHealthColor()
+                        end
+                    end,
+                },
             },
         })
     end
@@ -1775,7 +2390,9 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- Inline cog next to the DPS toggle, then the "No Aggro" color swatch left of it
     if not CludesUI._prebuilding then
         local rgn = nonTankRow._rightRegion
-        local dpsNoAggroColorGet = function() return DBColor("dpsNoAggro") end
+        local dpsNoAggroColorGet = function()
+            return DBColor("dpsNoAggro")
+        end
         local dpsNoAggroColorSet = function(r, g, b)
             DB().dpsNoAggro = { r = r, g = g, b = b }
             RefreshAllPlates()
@@ -1783,38 +2400,75 @@ local function BuildColorsPage(pageName, parent, yOffset)
 
         -- Inline cog: independent "Override Mini-Boss colors" / "Override Caster colors" / "Override Boss colors" toggles promote the DPS No Aggro color above that single mob-type color (kept separate for contrast); dimmed while off.
         CludesUI.BuildInlineCog(rgn, {
-            disabled = function() return threatNever() or isDpsNoAggroDisabled() or isThreatHealthOff() end,
+            disabled = function()
+                return threatNever() or isDpsNoAggroDisabled() or isThreatHealthOff()
+            end,
             disabledTooltip = function()
-                if threatNever() then return "Show Threat Colors" end
-                if isDpsNoAggroDisabled() then return 'DPS: Show Special "No Aggro" Color' end
+                if threatNever() then
+                    return "Show Threat Colors"
+                end
+                if isDpsNoAggroDisabled() then
+                    return 'DPS: Show Special "No Aggro" Color'
+                end
                 return "Health Bar"
             end,
             title = "No Aggro",
             rows = {
-                { type="toggle", label="Override Mini-Boss colors",
-                  get=function()
-                    local db = DB()
-                    if db and db.dpsNoAggroOverrideMiniBoss ~= nil then return db.dpsNoAggroOverrideMiniBoss end
-                    return defaults.dpsNoAggroOverrideMiniBoss
-                  end,
-                  set=function(v) DB().dpsNoAggroOverrideMiniBoss = v; RefreshAllPlates() end },
-                { type="toggle", label="Override Caster colors",
-                  get=function()
-                    local db = DB()
-                    if db and db.dpsNoAggroOverrideCaster ~= nil then return db.dpsNoAggroOverrideCaster end
-                    return defaults.dpsNoAggroOverrideCaster
-                  end,
-                  set=function(v) DB().dpsNoAggroOverrideCaster = v; RefreshAllPlates() end },
-                { type="toggle", label="Override Boss colors",
-                  get=function()
-                    local db = DB()
-                    if db and db.dpsNoAggroOverrideBoss ~= nil then return db.dpsNoAggroOverrideBoss end
-                    return defaults.dpsNoAggroOverrideBoss
-                  end,
-                  set=function(v) DB().dpsNoAggroOverrideBoss = v; RefreshAllPlates() end },
+                {
+                    type = "toggle",
+                    label = "Override Mini-Boss colors",
+                    get = function()
+                        local db = DB()
+                        if db and db.dpsNoAggroOverrideMiniBoss ~= nil then
+                            return db.dpsNoAggroOverrideMiniBoss
+                        end
+                        return defaults.dpsNoAggroOverrideMiniBoss
+                    end,
+                    set = function(v)
+                        DB().dpsNoAggroOverrideMiniBoss = v
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Override Caster colors",
+                    get = function()
+                        local db = DB()
+                        if db and db.dpsNoAggroOverrideCaster ~= nil then
+                            return db.dpsNoAggroOverrideCaster
+                        end
+                        return defaults.dpsNoAggroOverrideCaster
+                    end,
+                    set = function(v)
+                        DB().dpsNoAggroOverrideCaster = v
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Override Boss colors",
+                    get = function()
+                        local db = DB()
+                        if db and db.dpsNoAggroOverrideBoss ~= nil then
+                            return db.dpsNoAggroOverrideBoss
+                        end
+                        return defaults.dpsNoAggroOverrideBoss
+                    end,
+                    set = function(v)
+                        DB().dpsNoAggroOverrideBoss = v
+                        RefreshAllPlates()
+                    end,
+                },
             },
         })
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, dpsNoAggroColorGet, dpsNoAggroColorSet, nil, 20)
+        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+            rgn,
+            rgn:GetFrameLevel() + 5,
+            dpsNoAggroColorGet,
+            dpsNoAggroColorSet,
+            nil,
+            20
+        )
         PP.Point(swatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         LockThreatSwatch(swatch, updateSwatch, isDpsNoAggroDisabled, 'DPS: Show Special "No Aggro" Color')
@@ -1822,43 +2476,57 @@ local function BuildColorsPage(pageName, parent, yOffset)
 
     -- Row 3: Classic Tank Aggro (left) ---- Tank: Show Special "Has Aggro" Color (right)
     local tankAggroRow
-    tankAggroRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Classic Tank Aggro",
-          tooltip="Enables a three-tier tank aggro system: has aggro, losing aggro, and no aggro colors override all mob-type colors.",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          getValue=function()
+    tankAggroRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Classic Tank Aggro",
+        tooltip = "Enables a three-tier tank aggro system: has aggro, losing aggro, and no aggro colors override all mob-type colors.",
+        disabled = threatNever,
+        disabledTooltip = "Show Threat Colors",
+        getValue = function()
             local db = DB()
-            if db and db.classicTankAggro ~= nil then return db.classicTankAggro end
+            if db and db.classicTankAggro ~= nil then
+                return db.classicTankAggro
+            end
             return defaults.classicTankAggro
-          end,
-          setValue=function(v)
+        end,
+        setValue = function(v)
             DB().classicTankAggro = v
             RefreshAllPlates()
             CludesUI:RefreshPage()
-          end },
-        { type="toggle", text="Tank: Show Special \"Has Aggro\" Color",
-          tooltip="Shows a special color for non caster/mini-boss enemies when you have aggro on them.",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          getValue=function()
+        end,
+    }, {
+        type = "toggle",
+        text = 'Tank: Show Special "Has Aggro" Color',
+        tooltip = "Shows a special color for non caster/mini-boss enemies when you have aggro on them.",
+        disabled = threatNever,
+        disabledTooltip = "Show Threat Colors",
+        getValue = function()
             local db = DB()
-            if db and db.tankHasAggroEnabled ~= nil then return db.tankHasAggroEnabled end
+            if db and db.tankHasAggroEnabled ~= nil then
+                return db.tankHasAggroEnabled
+            end
             return defaults.tankHasAggroEnabled
-          end,
-          setValue=function(v)
+        end,
+        setValue = function(v)
             DB().tankHasAggroEnabled = v
             RefreshAllPlates()
             CludesUI:RefreshPage()
-          end });  y = y - h
+        end,
+    })
+    y = y - h
 
     -- Inline "Has Aggro" color swatch next to Classic Tank Aggro toggle
     if not CludesUI._prebuilding then
         local rgn = tankAggroRow._leftRegion
-        local aggroColorGet = function() return DBColor("tankHasAggro") end
+        local aggroColorGet = function()
+            return DBColor("tankHasAggro")
+        end
         local aggroColorSet = function(r, g, b)
             DB().tankHasAggro = { r = r, g = g, b = b }
             RefreshAllPlates()
         end
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, aggroColorGet, aggroColorSet, nil, 20)
+        local swatch, updateSwatch =
+            CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, aggroColorGet, aggroColorSet, nil, 20)
         PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -12, 0)
         LockThreatSwatch(swatch, updateSwatch, isClassicTankAggroDisabled, "Classic Tank Aggro")
     end
@@ -1866,7 +2534,9 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- Inline cog next to the tank Has Aggro toggle, then the "Has Aggro" color swatch left of it
     if not CludesUI._prebuilding then
         local rgn = tankAggroRow._rightRegion
-        local tankAggroColorGet = function() return DBColor("tankHasAggro") end
+        local tankAggroColorGet = function()
+            return DBColor("tankHasAggro")
+        end
         local tankAggroColorSet = function(r, g, b)
             DB().tankHasAggro = { r = r, g = g, b = b }
             RefreshAllPlates()
@@ -1874,31 +2544,60 @@ local function BuildColorsPage(pageName, parent, yOffset)
 
         -- Inline cog "Override Mini-Boss and Caster colors" promotes the tank has-aggro color above the mini-boss/caster priority steps; dimmed while Has Aggro is off.
         CludesUI.BuildInlineCog(rgn, {
-            disabled = function() return threatNever() or isTankHasAggroDisabled() or isThreatHealthOff() end,
+            disabled = function()
+                return threatNever() or isTankHasAggroDisabled() or isThreatHealthOff()
+            end,
             disabledTooltip = function()
-                if threatNever() then return "Show Threat Colors" end
-                if isTankHasAggroDisabled() then return 'Tank: Show Special "Has Aggro" Color' end
+                if threatNever() then
+                    return "Show Threat Colors"
+                end
+                if isTankHasAggroDisabled() then
+                    return 'Tank: Show Special "Has Aggro" Color'
+                end
                 return "Health Bar"
             end,
             title = "Has Aggro",
             rows = {
-                { type="toggle", label="Override Mini-Boss and Caster colors",
-                  get=function()
-                    local db = DB()
-                    if db and db.tankHasAggroOverrideMobType ~= nil then return db.tankHasAggroOverrideMobType end
-                    return defaults.tankHasAggroOverrideMobType
-                  end,
-                  set=function(v) DB().tankHasAggroOverrideMobType = v; RefreshAllPlates() end },
-                { type="toggle", label="Override Boss colors",
-                  get=function()
-                    local db = DB()
-                    if db and db.tankHasAggroOverrideBoss ~= nil then return db.tankHasAggroOverrideBoss end
-                    return defaults.tankHasAggroOverrideBoss
-                  end,
-                  set=function(v) DB().tankHasAggroOverrideBoss = v; RefreshAllPlates() end },
+                {
+                    type = "toggle",
+                    label = "Override Mini-Boss and Caster colors",
+                    get = function()
+                        local db = DB()
+                        if db and db.tankHasAggroOverrideMobType ~= nil then
+                            return db.tankHasAggroOverrideMobType
+                        end
+                        return defaults.tankHasAggroOverrideMobType
+                    end,
+                    set = function(v)
+                        DB().tankHasAggroOverrideMobType = v
+                        RefreshAllPlates()
+                    end,
+                },
+                {
+                    type = "toggle",
+                    label = "Override Boss colors",
+                    get = function()
+                        local db = DB()
+                        if db and db.tankHasAggroOverrideBoss ~= nil then
+                            return db.tankHasAggroOverrideBoss
+                        end
+                        return defaults.tankHasAggroOverrideBoss
+                    end,
+                    set = function(v)
+                        DB().tankHasAggroOverrideBoss = v
+                        RefreshAllPlates()
+                    end,
+                },
             },
         })
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, tankAggroColorGet, tankAggroColorSet, nil, 20)
+        local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+            rgn,
+            rgn:GetFrameLevel() + 5,
+            tankAggroColorGet,
+            tankAggroColorSet,
+            nil,
+            20
+        )
         PP.Point(swatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         rgn._lastInline = swatch
         LockThreatSwatch(swatch, updateSwatch, isTankHasAggroDisabled, 'Tank: Show Special "Has Aggro" Color')
@@ -1910,28 +2609,42 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- Border locks while no CUI border is drawn (None, or a stock style). Built as a
     -- placeholder dropdown (its disabled config dims the label and blocks the slot) and
     -- replaced below in whichever half of chanRow holds it.
-    local chanCfg = { type="dropdown", text="Show Threat On",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          values={ __placeholder = "..." }, order={ "__placeholder" },
-          getValue=function() return "__placeholder" end,
-          setValue=function() end }
+    local chanCfg = {
+        type = "dropdown",
+        text = "Show Threat On",
+        disabled = threatNever,
+        disabledTooltip = "Show Threat Colors",
+        values = { __placeholder = "..." },
+        order = { "__placeholder" },
+        getValue = function()
+            return "__placeholder"
+        end,
+        setValue = function() end,
+    }
 
     -- WoW Forever Threat % helpers and toggle (nil on retail, where Show Threat On
     -- takes the Off-Tank row's right slot instead).
     local threatPctOff, ThreatPctSet, offTankRightCfg
     if CludesUI.IS_FOREVER then
-        threatPctOff = function() return not DBVal("threatPctEnabled") end
+        threatPctOff = function()
+            return not DBVal("threatPctEnabled")
+        end
         ThreatPctSet = function(key, v)
             DB()[key] = v
             ns.RefreshThreatPct()
         end
-        offTankRightCfg = { type="toggle", text="Show Threat % on Nameplates",
-              tooltip="Shows your threat percentage on each enemy nameplate while you are in combat with it.",
-              getValue=function() return DBVal("threatPctEnabled") end,
-              setValue=function(v)
+        offTankRightCfg = {
+            type = "toggle",
+            text = "Show Threat % on Nameplates",
+            tooltip = "Shows your threat percentage on each enemy nameplate while you are in combat with it.",
+            getValue = function()
+                return DBVal("threatPctEnabled")
+            end,
+            setValue = function(v)
                 ThreatPctSet("threatPctEnabled", v)
                 CludesUI:RefreshPage()
-              end }
+            end,
+        }
     else
         offTankRightCfg = chanCfg
     end
@@ -1939,31 +2652,39 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- Row 4: Tank: Show Special "Off-Tank" Color (left) ---- Show Threat On (right);
     -- on WoW Forever the right slot is Show Threat % on Nameplates.
     local offTankRow
-    offTankRow, h = W:DualRow(parent, y,
-        { type="toggle", text="Tank: Show Special \"Off-Tank\" Color",
-          tooltip="Shows a special color for nameplates that another tank in your raid has aggro on.",
-          disabled=threatNever, disabledTooltip="Show Threat Colors",
-          getValue=function()
+    offTankRow, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = 'Tank: Show Special "Off-Tank" Color',
+        tooltip = "Shows a special color for nameplates that another tank in your raid has aggro on.",
+        disabled = threatNever,
+        disabledTooltip = "Show Threat Colors",
+        getValue = function()
             local db = DB()
-            if db and db.offTankAggroEnabled ~= nil then return db.offTankAggroEnabled end
+            if db and db.offTankAggroEnabled ~= nil then
+                return db.offTankAggroEnabled
+            end
             return defaults.offTankAggroEnabled
-          end,
-          setValue=function(v)
+        end,
+        setValue = function(v)
             DB().offTankAggroEnabled = v
             RefreshAllPlates()
             CludesUI:RefreshPage()
-          end },
-        offTankRightCfg);  y = y - h
+        end,
+    }, offTankRightCfg)
+    y = y - h
 
     -- Inline "Off-Tank" color swatch next to the Off-Tank toggle
     if not CludesUI._prebuilding then
         local rgn = offTankRow._leftRegion
-        local otColorGet = function() return DBColor("offTankAggro") end
+        local otColorGet = function()
+            return DBColor("offTankAggro")
+        end
         local otColorSet = function(r, g, b)
             DB().offTankAggro = { r = r, g = g, b = b }
             RefreshAllPlates()
         end
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, otColorGet, otColorSet, nil, 20)
+        local swatch, updateSwatch =
+            CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, otColorGet, otColorSet, nil, 20)
         PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -12, 0)
         LockThreatSwatch(swatch, updateSwatch, isOffTankDisabled, 'Tank: Show Special "Off-Tank" Color')
     end
@@ -1972,13 +2693,21 @@ local function BuildColorsPage(pageName, parent, yOffset)
     local chanRow = offTankRow
     if CludesUI.IS_FOREVER then
         local threatPctRow
-        threatPctRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Threat % Position",
-              values=THREAT_PCT_POSITIONS, order=THREAT_PCT_POSITION_ORDER,
-              disabled=threatPctOff, disabledTooltip="Show Threat % on Nameplates",
-              getValue=function() return DBVal("threatPctPosition") end,
-              setValue=function(v) ThreatPctSet("threatPctPosition", v) end },
-            chanCfg);  y = y - h
+        threatPctRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Threat % Position",
+            values = THREAT_PCT_POSITIONS,
+            order = THREAT_PCT_POSITION_ORDER,
+            disabled = threatPctOff,
+            disabledTooltip = "Show Threat % on Nameplates",
+            getValue = function()
+                return DBVal("threatPctPosition")
+            end,
+            setValue = function(v)
+                ThreatPctSet("threatPctPosition", v)
+            end,
+        }, chanCfg)
+        y = y - h
         chanRow = threatPctRow
 
         if not CludesUI._prebuilding then
@@ -1995,48 +2724,73 @@ local function BuildColorsPage(pageName, parent, yOffset)
     -- in whichever half of chanRow was built from chanCfg.
     if not CludesUI._prebuilding then
         local rgn = chanRow._rightRegion
-        if chanRow._leftRegion._cfg == chanCfg then rgn = chanRow._leftRegion end
-        if rgn._control then rgn._control:Hide() end
+        if chanRow._leftRegion._cfg == chanCfg then
+            rgn = chanRow._leftRegion
+        end
+        if rgn._control then
+            rgn._control:Hide()
+        end
         -- A locked Border also drops out of the summary, which then reads what is drawn.
         local function isThreatBorderLocked()
             return not (ns.IsBorderEnabled() or ns.IsCustomBorderEnabled())
         end
         local chanItems = {
             { key = "health", label = "Health Bar" },
-            { key = "border", label = "Border",
-              lockedFn = isThreatBorderLocked,
-              excludeFromSummaryFn = isThreatBorderLocked,
-              lockedTooltip = function()
-                if CludesUI.BlizzStyle.Get("nameplates") then
-                    return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("nameplates"), "disabled")
-                end
-                return "This option requires a Border to be selected"
-              end },
-            { key = "name",   label = "Name" },
+            {
+                key = "border",
+                label = "Border",
+                lockedFn = isThreatBorderLocked,
+                excludeFromSummaryFn = isThreatBorderLocked,
+                lockedTooltip = function()
+                    if CludesUI.BlizzStyle.Get("nameplates") then
+                        return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("nameplates"), "disabled")
+                    end
+                    return "This option requires a Border to be selected"
+                end,
+            },
+            { key = "name", label = "Name" },
         }
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn, 170, rgn:GetFrameLevel() + 2,
+            rgn,
+            170,
+            rgn:GetFrameLevel() + 2,
             chanItems,
             function(k)
-                if k == "health" then return ns.GetThreatColorHealth() end
-                if k == "border" then return ns.GetThreatColorBorder() end
-                if k == "name"   then return ns.GetThreatColorName() end
+                if k == "health" then
+                    return ns.GetThreatColorHealth()
+                end
+                if k == "border" then
+                    return ns.GetThreatColorBorder()
+                end
+                if k == "name" then
+                    return ns.GetThreatColorName()
+                end
                 return false
             end,
             function(k, v)
-                if k == "health" then DB().threatColorHealth = v
-                elseif k == "border" then DB().threatColorBorder = v
-                elseif k == "name" then DB().threatColorName = v end
+                if k == "health" then
+                    DB().threatColorHealth = v
+                elseif k == "border" then
+                    DB().threatColorBorder = v
+                elseif k == "name" then
+                    DB().threatColorName = v
+                end
                 RefreshAllPlates()
                 -- Health Bar gates the No Aggro and Has Aggro cogs.
                 CludesUI:RefreshPage()
-            end)
+            end
+        )
         PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
         rgn._control = cbDD
         cbDD:HookScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(cbDD, "Chooses which parts of the nameplate show the threat colors; with Health Bar off, the bar keeps its Enemy Types color.")
+            CludesUI.ShowWidgetTooltip(
+                cbDD,
+                "Chooses which parts of the nameplate show the threat colors; with Health Bar off, the bar keeps its Enemy Types color."
+            )
         end)
-        cbDD:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        cbDD:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         -- The checkbox dropdown has no disabled state of its own: grey it and block
         -- clicks while Show Threat Colors is Never; the placeholder's disabled overlay
@@ -2050,23 +2804,40 @@ local function BuildColorsPage(pageName, parent, yOffset)
         CludesUI.RegisterWidgetRefresh(ApplyChanDisabled)
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     y = ns.NP_BuildDebuffColorsOptions(parent, y)
 
     -- Build a refresh-all function for page cache restore
     optState._colorPreviewRefreshAll = function()
         for _, prev in ipairs(_G._CUI_ColorPreviews) do
-            if prev.UpdateColor then prev.UpdateColor() end
-            if prev.UpdateOverlay then prev.UpdateOverlay() end
-            if prev.RefreshBorderColor then prev.RefreshBorderColor() end
-            if prev.RefreshHealthText then prev.RefreshHealthText() end
+            if prev.UpdateColor then
+                prev.UpdateColor()
+            end
+            if prev.UpdateOverlay then
+                prev.UpdateOverlay()
+            end
+            if prev.RefreshBorderColor then
+                prev.RefreshBorderColor()
+            end
+            if prev.RefreshHealthText then
+                prev.RefreshHealthText()
+            end
         end
         for _, prev in ipairs(_colorPagePreviews) do
-            if prev.UpdateColor then prev.UpdateColor() end
-            if prev.UpdateOverlay then prev.UpdateOverlay() end
-            if prev.RefreshBorderColor then prev.RefreshBorderColor() end
-            if prev.RefreshHealthText then prev.RefreshHealthText() end
+            if prev.UpdateColor then
+                prev.UpdateColor()
+            end
+            if prev.UpdateOverlay then
+                prev.UpdateOverlay()
+            end
+            if prev.RefreshBorderColor then
+                prev.RefreshBorderColor()
+            end
+            if prev.RefreshHealthText then
+                prev.RefreshHealthText()
+            end
         end
     end
     for _, prev in ipairs(_colorPagePreviews) do

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookPressMirror.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local barDataByKey = ns.barDataByKey
@@ -32,27 +36,32 @@ local GetTime = GetTime
 --  Per-frame data lives in an external weak-keyed table.
 -------------------------------------------------------------------------------
 do
-    local AB_MEDIA      = "Interface\\AddOns\\CludesUIActionBars\\Media\\"
-    local AB_HIGHLIGHT  = { AB_MEDIA .. "highlight-2.png", AB_MEDIA .. "highlight-3.png", AB_MEDIA .. "highlight-4.png" }
-    local DEPRESS_TEX   = "Interface\\Buttons\\UI-Quickslot-Depress"
-    local CHECKED_TEX   = "Interface\\Buttons\\CheckButtonHilight"
+    local AB_MEDIA = "Interface\\AddOns\\CludesUIActionBars\\Media\\"
+    local AB_HIGHLIGHT =
+        { AB_MEDIA .. "highlight-2.png", AB_MEDIA .. "highlight-3.png", AB_MEDIA .. "highlight-4.png" }
+    local DEPRESS_TEX = "Interface\\Buttons\\UI-Quickslot-Depress"
+    local CHECKED_TEX = "Interface\\Buttons\\CheckButtonHilight"
     local CHECKED_ATLAS = "UI-HUD-ActionBar-IconFrame-Mouseover"
-    local DEPRESS_INSET = 0.14   -- crop the beveled border off the fallback texture
-    local MIN_VISIBLE   = 0.05   -- floor so ultra-fast taps still show a press
-    local MAX_HOLD      = 2.0    -- safety: never leave an icon stuck "pressed"
+    local DEPRESS_INSET = 0.14 -- crop the beveled border off the fallback texture
+    local MIN_VISIBLE = 0.05 -- floor so ultra-fast taps still show a press
+    local MAX_HOLD = 2.0 -- safety: never leave an icon stuck "pressed"
 
-    local _pushOverlay = setmetatable({}, { __mode = "k" })  -- [icon] = overlay frame
-    local _held  = {}   -- [buttonFrame] = { overlays = {..}, keys = {..}, t = GetTime() }
+    local _pushOverlay = setmetatable({}, { __mode = "k" }) -- [icon] = overlay frame
+    local _held = {} -- [buttonFrame] = { overlays = {..}, keys = {..}, t = GetTime() }
     local _heldN = 0
-    local _poll  = ns.TakeShell()
+    local _poll = ns.TakeShell()
     _poll:Hide()
 
     -- Read the action bars' pushed settings live so the CDM press matches them.
     local function GetABProfile()
         local L = CludesUI and CludesUI.Lite
-        if not (L and L.GetAddon) then return nil end
+        if not (L and L.GetAddon) then
+            return nil
+        end
         local ok, eab = pcall(L.GetAddon, "CludesUIActionBars", true)
-        if ok and eab and eab.db then return eab.db.profile end
+        if ok and eab and eab.db then
+            return eab.db.profile
+        end
         return nil
     end
 
@@ -66,14 +75,20 @@ do
             local cr, cg, cb = c.r, c.g, c.b
             if p.pushedUseClassColor then
                 local _, ct = UnitClass("player")
-                if ct then local cc = RAID_CLASS_COLORS[ct]; if cc then cr, cg, cb = cc.r, cc.g, cc.b end end
+                if ct then
+                    local cc = RAID_CLASS_COLORS[ct]
+                    if cc then
+                        cr, cg, cb = cc.r, cc.g, cc.b
+                    end
+                end
             end
             tex:SetTexCoord(0, 1, 0, 1)
             if p.useClassicStyle then
                 -- Classic WoW UI action bars: the vanilla pushed slot, uncropped.
                 tex:SetAtlas(nil)
                 tex:SetTexture(DEPRESS_TEX)
-                tex:SetVertexColor(1, 1, 1, 1); tex:SetAlpha(1)
+                tex:SetVertexColor(1, 1, 1, 1)
+                tex:SetAlpha(1)
                 return true
             elseif p.useBlizzardStyle then
                 -- The bars' own pressed art: the retail sheet on WoW Forever
@@ -83,17 +98,21 @@ do
                 else
                     CludesUI.StockAtlas(tex, "UI-HUD-ActionBar-IconFrame-Down", false)
                 end
-                tex:SetVertexColor(1, 1, 1, 1); tex:SetAlpha(1)
+                tex:SetVertexColor(1, 1, 1, 1)
+                tex:SetAlpha(1)
                 return true
             elseif pType == 6 then
-                tex:SetAlpha(0); return false
+                tex:SetAlpha(0)
+                return false
             elseif pType == 5 then
                 tex:SetAlpha(0)
                 return "border", cr, cg, cb, p.pushedBorderSize or 4
             end
             tex:SetAlpha(1)
             if pType <= 3 then
-                tex:SetAtlas(nil); tex:SetTexture(AB_HIGHLIGHT[pType] or AB_HIGHLIGHT[2]); tex:SetVertexColor(cr, cg, cb, 1)
+                tex:SetAtlas(nil)
+                tex:SetTexture(AB_HIGHLIGHT[pType] or AB_HIGHLIGHT[2])
+                tex:SetVertexColor(cr, cg, cb, 1)
             elseif pType == 4 then
                 tex:SetColorTexture(cr, cg, cb, 0.35)
             end
@@ -103,7 +122,8 @@ do
         tex:SetAtlas(nil)
         tex:SetTexture(DEPRESS_TEX)
         tex:SetTexCoord(DEPRESS_INSET, 1 - DEPRESS_INSET, DEPRESS_INSET, 1 - DEPRESS_INSET)
-        tex:SetVertexColor(1, 1, 1, 1); tex:SetAlpha(1)
+        tex:SetVertexColor(1, 1, 1, 1)
+        tex:SetAlpha(1)
         return true
     end
 
@@ -115,14 +135,19 @@ do
     -- Without the action bars: Blizzard's own art, as its bars show it.
     local function StyleChecked(tex)
         local p = GetABProfile()
-        if p and p.showCastHighlight == false then tex:SetAlpha(0); return false end
+        if p and p.showCastHighlight == false then
+            tex:SetAlpha(0)
+            return false
+        end
         tex:SetTexCoord(0, 1, 0, 1)
-        tex:SetVertexColor(1, 1, 1, 1); tex:SetAlpha(1)
+        tex:SetVertexColor(1, 1, 1, 1)
+        tex:SetAlpha(1)
         tex:SetBlendMode("ADD")
         if not p then
             tex:SetAtlas(CHECKED_ATLAS, false)
         elseif p.useClassicStyle then
-            tex:SetAtlas(nil); tex:SetTexture(CHECKED_TEX)
+            tex:SetAtlas(nil)
+            tex:SetTexture(CHECKED_TEX)
         elseif p.useBlizzardStyle then
             if CludesUI.IS_FOREVER == true and p.useForeverStyle == true then
                 tex:SetAtlas(CHECKED_ATLAS, false)
@@ -130,13 +155,16 @@ do
                 CludesUI.StockAtlas(tex, CHECKED_ATLAS, false)
             end
         else
-            tex:SetAtlas(nil); tex:SetTexture(AB_HIGHLIGHT[1])
+            tex:SetAtlas(nil)
+            tex:SetTexture(AB_HIGHLIGHT[1])
         end
         return true
     end
 
     local function EnsureBorderEdges(ov)
-        if ov._borderEdges then return ov._borderEdges end
+        if ov._borderEdges then
+            return ov._borderEdges
+        end
         local edges = {}
         for j = 1, 4 do
             local t = ov:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -156,9 +184,13 @@ do
     -- nil: their icon art fills the frame rect, so a square press is correct.
     local function IconShape(icon)
         local ifc = _ecmeFC and _ecmeFC[icon]
-        if not (ifc and ifc.shapeApplied and ifc.shapeMask) then return nil end
+        if not (ifc and ifc.shapeApplied and ifc.shapeMask) then
+            return nil
+        end
         local shape = ifc.shapeName
-        if not shape or shape == "none" or shape == "cropped" then return nil end
+        if not shape or shape == "none" or shape == "cropped" then
+            return nil
+        end
         return shape, ifc.shapeMask
     end
 
@@ -167,7 +199,9 @@ do
     -- shape's own border texture instead. Its thickness is baked into the art,
     -- so the bars' pushed border size doesn't apply -- colour still does.
     local function EnsureShapeRing(ov)
-        if ov._shapeRing then return ov._shapeRing end
+        if ov._shapeRing then
+            return ov._shapeRing
+        end
         local t = ov:CreateTexture(nil, "OVERLAY", nil, 2)
         t:SetSnapToPixelGrid(false)
         t:SetTexelSnappingBias(0)
@@ -212,7 +246,10 @@ do
             end
         end
         local result, cr, cg, cb, bsz = style(ov._tex)
-        if not result then ov:Hide(); return nil end
+        if not result then
+            ov:Hide()
+            return nil
+        end
         -- Shaped icons expand their icon texture past the frame (and expand the
         -- texcoords to match), so anchor to the frame itself -- the rect the
         -- shapeMask covers -- rather than to the oversized texture.
@@ -223,25 +260,56 @@ do
         local ringTex = shape and ns.CDM_SHAPE_BORDERS and ns.CDM_SHAPE_BORDERS[shape]
         if result == "border" and ringTex then
             ov._tex:Hide()
-            if ov._borderEdges then for j = 1, 4 do ov._borderEdges[j]:Hide() end end
+            if ov._borderEdges then
+                for j = 1, 4 do
+                    ov._borderEdges[j]:Hide()
+                end
+            end
             local ring = EnsureShapeRing(ov)
             ring:SetTexture(ringTex)
             ring:SetVertexColor(cr, cg, cb, 1)
-            ring:ClearAllPoints(); ring:SetAllPoints(ov)
+            ring:ClearAllPoints()
+            ring:SetAllPoints(ov)
             ring:Show()
         elseif result == "border" then
             ov._tex:Hide()
-            if ov._shapeRing then ov._shapeRing:Hide() end
+            if ov._shapeRing then
+                ov._shapeRing:Hide()
+            end
             local edges = EnsureBorderEdges(ov)
-            for j = 1, 4 do edges[j]:SetVertexColor(cr, cg, cb, 1) end
-            edges[1]:ClearAllPoints(); edges[1]:SetPoint("TOPLEFT", ov); edges[1]:SetPoint("TOPRIGHT", ov); edges[1]:SetHeight(bsz); edges[1]:Show()
-            edges[2]:ClearAllPoints(); edges[2]:SetPoint("BOTTOMLEFT", ov); edges[2]:SetPoint("BOTTOMRIGHT", ov); edges[2]:SetHeight(bsz); edges[2]:Show()
-            edges[3]:ClearAllPoints(); edges[3]:SetPoint("TOPLEFT", edges[1], "BOTTOMLEFT"); edges[3]:SetPoint("BOTTOMLEFT", edges[2], "TOPLEFT"); edges[3]:SetWidth(bsz); edges[3]:Show()
-            edges[4]:ClearAllPoints(); edges[4]:SetPoint("TOPRIGHT", edges[1], "BOTTOMRIGHT"); edges[4]:SetPoint("BOTTOMRIGHT", edges[2], "TOPRIGHT"); edges[4]:SetWidth(bsz); edges[4]:Show()
+            for j = 1, 4 do
+                edges[j]:SetVertexColor(cr, cg, cb, 1)
+            end
+            edges[1]:ClearAllPoints()
+            edges[1]:SetPoint("TOPLEFT", ov)
+            edges[1]:SetPoint("TOPRIGHT", ov)
+            edges[1]:SetHeight(bsz)
+            edges[1]:Show()
+            edges[2]:ClearAllPoints()
+            edges[2]:SetPoint("BOTTOMLEFT", ov)
+            edges[2]:SetPoint("BOTTOMRIGHT", ov)
+            edges[2]:SetHeight(bsz)
+            edges[2]:Show()
+            edges[3]:ClearAllPoints()
+            edges[3]:SetPoint("TOPLEFT", edges[1], "BOTTOMLEFT")
+            edges[3]:SetPoint("BOTTOMLEFT", edges[2], "TOPLEFT")
+            edges[3]:SetWidth(bsz)
+            edges[3]:Show()
+            edges[4]:ClearAllPoints()
+            edges[4]:SetPoint("TOPRIGHT", edges[1], "BOTTOMRIGHT")
+            edges[4]:SetPoint("BOTTOMRIGHT", edges[2], "TOPRIGHT")
+            edges[4]:SetWidth(bsz)
+            edges[4]:Show()
         else
             ov._tex:Show()
-            if ov._borderEdges then for j = 1, 4 do ov._borderEdges[j]:Hide() end end
-            if ov._shapeRing then ov._shapeRing:Hide() end
+            if ov._borderEdges then
+                for j = 1, 4 do
+                    ov._borderEdges[j]:Hide()
+                end
+            end
+            if ov._shapeRing then
+                ov._shapeRing:Hide()
+            end
         end
         ov:Show()
         return ov
@@ -254,29 +322,53 @@ do
     ---------------------------------------------------------------------------
     --  Spell matching (pressed button's spell vs. a CDM icon's spell)
     ---------------------------------------------------------------------------
-    local GetOverrideSpell      = C_Spell and C_Spell.GetOverrideSpell
-    local GetBaseSpell          = C_Spell and C_Spell.GetBaseSpell
+    local GetOverrideSpell = C_Spell and C_Spell.GetOverrideSpell
+    local GetBaseSpell = C_Spell and C_Spell.GetBaseSpell
     local FindSpellOverrideByID = C_SpellBook and C_SpellBook.FindSpellOverrideByID
 
     local function safeNum(fn, arg)
-        if type(fn) ~= "function" then return nil end
+        if type(fn) ~= "function" then
+            return nil
+        end
         local ok, res = pcall(fn, arg)
-        if ok and type(res) == "number" and res > 0 then return res end
+        if ok and type(res) == "number" and res > 0 then
+            return res
+        end
     end
 
     local function SpellIdSet(id)
         local t = { [id] = true }
-        local a = safeNum(GetOverrideSpell, id);      if a then t[a] = true end
-        local b = safeNum(GetBaseSpell, id);          if b then t[b] = true end
-        local c = safeNum(FindBaseSpellByID, id);     if c then t[c] = true end
-        local d = safeNum(FindSpellOverrideByID, id); if d then t[d] = true end
+        local a = safeNum(GetOverrideSpell, id)
+        if a then
+            t[a] = true
+        end
+        local b = safeNum(GetBaseSpell, id)
+        if b then
+            t[b] = true
+        end
+        local c = safeNum(FindBaseSpellByID, id)
+        if c then
+            t[c] = true
+        end
+        local d = safeNum(FindSpellOverrideByID, id)
+        if d then
+            t[d] = true
+        end
         return t
     end
 
     local function IconMatches(pressedSet, iconSid)
-        if pressedSet[iconSid] then return true end
-        local a = safeNum(GetOverrideSpell, iconSid); if a and pressedSet[a] then return true end
-        local b = safeNum(GetBaseSpell, iconSid);     if b and pressedSet[b] then return true end
+        if pressedSet[iconSid] then
+            return true
+        end
+        local a = safeNum(GetOverrideSpell, iconSid)
+        if a and pressedSet[a] then
+            return true
+        end
+        local b = safeNum(GetBaseSpell, iconSid)
+        if b and pressedSet[b] then
+            return true
+        end
         return false
     end
 
@@ -303,11 +395,15 @@ do
     local function IconSpellID(icon)
         local fc = _ecmeFC and _ecmeFC[icon]
         local sid = fc and fc.spellID
-        if sid then return sid end
+        if sid then
+            return sid
+        end
         local cdID = icon.cooldownID
         if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
             local info = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
-            if info then return info.overrideSpellID or info.spellID end
+            if info then
+                return info.overrideSpellID or info.spellID
+            end
         end
         return nil
     end
@@ -318,14 +414,22 @@ do
     ---------------------------------------------------------------------------
     local function ReleaseEntry(btn, entry)
         local ovs = entry.overlays
-        for i = 1, #ovs do ovs[i]:Hide() end
+        for i = 1, #ovs do
+            ovs[i]:Hide()
+        end
         _held[btn] = nil
         _heldN = _heldN - 1
-        if _heldN <= 0 then _heldN = 0; _poll:Hide() end
+        if _heldN <= 0 then
+            _heldN = 0
+            _poll:Hide()
+        end
     end
 
     _poll:SetScript("OnUpdate", function()
-        if _heldN == 0 then _poll:Hide(); return end
+        if _heldN == 0 then
+            _poll:Hide()
+            return
+        end
         local now = GetTime()
         for btn, entry in pairs(_held) do
             local elapsed = now - entry.t
@@ -337,12 +441,19 @@ do
                 local keys = entry.keys
                 if keys then
                     for i = 1, #keys do
-                        if keys[i] and IsKeyDown(keys[i]) then anyDown = true; break end
+                        if keys[i] and IsKeyDown(keys[i]) then
+                            anyDown = true
+                            break
+                        end
                     end
                 end
-                if not anyDown then done = true end
+                if not anyDown then
+                    done = true
+                end
             end
-            if done then ReleaseEntry(btn, entry) end
+            if done then
+                ReleaseEntry(btn, entry)
+            end
         end
     end)
 
@@ -353,19 +464,28 @@ do
     local _anyPressMirror = false
     local function RefreshCdmPressMirrorFlag()
         _anyPressMirror = false
-        if not barDataByKey then return end
+        if not barDataByKey then
+            return
+        end
         for _, bd in pairs(barDataByKey) do
             -- Buff-family bars never mirror presses (auto-tracked auras, not
             -- keybind-pressed), so ignore a stale/imported pressMirror on them.
-            if bd and bd.pressMirror and not ns.IsBarBuffFamily(bd) then _anyPressMirror = true; return end
+            if bd and bd.pressMirror and not ns.IsBarBuffFamily(bd) then
+                _anyPressMirror = true
+                return
+            end
         end
     end
     ns.RefreshCdmPressMirrorFlag = RefreshCdmPressMirrorFlag
     RefreshCdmPressMirrorFlag()
 
     local function SlotSpellID(slot)
-        if not slot then return nil end
-        if HasAction and not HasAction(slot) then return nil end
+        if not slot then
+            return nil
+        end
+        if HasAction and not HasAction(slot) then
+            return nil
+        end
         -- NOTE (Midnight): GetActionInfo is documented as usable only in the
         -- secure restricted environment. This runs from an insecure post-hook,
         -- so a future build could hand back nil/secret here and silently no-op
@@ -406,10 +526,14 @@ do
     end
 
     local function OnPress(btn, bindCmd)
-        if not btn or not _anyPressMirror then return end
+        if not btn or not _anyPressMirror then
+            return
+        end
         local slot = btn.action or (btn.GetAttribute and btn:GetAttribute("action"))
         local sid, itemID = SlotSpellID(slot)
-        if not sid and not itemID then return end
+        if not sid and not itemID then
+            return
+        end
 
         local pressedSet = sid and SpellIdSet(sid) or {}
         if itemID then
@@ -420,7 +544,9 @@ do
             -- of it being tracked as a plain Custom Spell entry instead.
             pressedSet[-itemID] = true
             local primaryItemID = PresetPrimaryItemID(itemID)
-            if primaryItemID then pressedSet[-primaryItemID] = true end
+            if primaryItemID then
+                pressedSet[-primaryItemID] = true
+            end
             for invSlot in pairs(ns.INV_SLOT_NAMES) do
                 if GetInventoryItemID("player", invSlot) == itemID then
                     pressedSet[-invSlot] = true
@@ -428,7 +554,9 @@ do
             end
             local _, useSpellID = C_Item.GetItemSpell(itemID)
             if useSpellID then
-                for k in pairs(SpellIdSet(useSpellID)) do pressedSet[k] = true end
+                for k in pairs(SpellIdSet(useSpellID)) do
+                    pressedSet[k] = true
+                end
             end
         end
         local overlays
@@ -442,14 +570,19 @@ do
                             local isid = IconSpellID(icon)
                             if isid and IconMatches(pressedSet, isid) then
                                 local ov = ShowPush(icon)
-                                if ov then overlays = overlays or {}; overlays[#overlays + 1] = ov end
+                                if ov then
+                                    overlays = overlays or {}
+                                    overlays[#overlays + 1] = ov
+                                end
                             end
                         end
                     end
                 end
             end
         end
-        if not overlays then return end
+        if not overlays then
+            return
+        end
 
         local keys
         if bindCmd then
@@ -458,7 +591,9 @@ do
         end
         local entry = _held[btn]
         if entry then
-            entry.overlays = overlays; entry.keys = keys; entry.t = GetTime()
+            entry.overlays = overlays
+            entry.keys = keys
+            entry.t = GetTime()
         else
             _held[btn] = { overlays = overlays, keys = keys, t = GetTime() }
             _heldN = _heldN + 1
@@ -470,9 +605,13 @@ do
     function ns.ClearCdmPressPush()
         for _, entry in pairs(_held) do
             local ovs = entry.overlays
-            for i = 1, #ovs do ovs[i]:Hide() end
+            for i = 1, #ovs do
+                ovs[i]:Hide()
+            end
         end
-        wipe(_held); _heldN = 0; _poll:Hide()
+        wipe(_held)
+        _heldN = 0
+        _poll:Hide()
         RefreshCdmPressMirrorFlag()
     end
 
@@ -484,7 +623,9 @@ do
     _G._CUI_OnActionButtonPress = function(btn, down, bindCmd)
         -- Down edge only: buttons register both edges, and in key-up mode the
         -- key is already released by the up click.
-        if not down or not btn or not bindCmd or not _anyPressMirror then return end
+        if not down or not btn or not bindCmd or not _anyPressMirror then
+            return
+        end
         -- Keyboard evidence (a real mouse click must not mirror): a held
         -- binding key proves keyboard, but wheel binds are never IsKeyDown, so
         -- the cursor-rect test covers those. Only miss: a wheel bind pressed
@@ -492,7 +633,9 @@ do
         local k1, k2 = GetBindingKey(bindCmd)
         local b1, b2 = BaseKey(k1), BaseKey(k2)
         local keyHeld = (b1 and IsKeyDown(b1)) or (b2 and IsKeyDown(b2))
-        if not keyHeld and btn.IsUnderMouse and btn:IsUnderMouse() then return end
+        if not keyHeld and btn.IsUnderMouse and btn:IsUnderMouse() then
+            return
+        end
         OnPress(btn, bindCmd)
     end
 
@@ -500,13 +643,13 @@ do
     --  Hook the action-button key-down path (fires on press, even on cooldown)
     ---------------------------------------------------------------------------
     local MULTIBAR_BINDING = {
-        MultiBarBottomLeft  = "MULTIACTIONBAR1BUTTON",
+        MultiBarBottomLeft = "MULTIACTIONBAR1BUTTON",
         MultiBarBottomRight = "MULTIACTIONBAR2BUTTON",
-        MultiBarRight       = "MULTIACTIONBAR3BUTTON",
-        MultiBarLeft        = "MULTIACTIONBAR4BUTTON",
-        MultiBar5           = "MULTIACTIONBAR5BUTTON",
-        MultiBar6           = "MULTIACTIONBAR6BUTTON",
-        MultiBar7           = "MULTIACTIONBAR7BUTTON",
+        MultiBarRight = "MULTIACTIONBAR3BUTTON",
+        MultiBarLeft = "MULTIACTIONBAR4BUTTON",
+        MultiBar5 = "MULTIACTIONBAR5BUTTON",
+        MultiBar6 = "MULTIACTIONBAR6BUTTON",
+        MultiBar7 = "MULTIACTIONBAR7BUTTON",
     }
 
     local ev = ns.TakeShell()
@@ -536,10 +679,10 @@ do
     --  only when the queued attack changed. A restricted answer counts as not
     --  queued.
     ---------------------------------------------------------------------------
-    local _checkOverlay = setmetatable({}, { __mode = "k" })  -- [icon] = overlay frame
-    local _queueNames       -- the class's attack names, resolved at login
-    local _queued = false   -- the name painted, false = none
-    local _lit = {}         -- the overlays showing it
+    local _checkOverlay = setmetatable({}, { __mode = "k" }) -- [icon] = overlay frame
+    local _queueNames -- the class's attack names, resolved at login
+    local _queued = false -- the name painted, false = none
+    local _lit = {} -- the overlays showing it
     local _queueFlush = ns.TakeShell()
     _queueFlush:Hide()
     _queueFlush:SetScript("OnUpdate", function(self)
@@ -547,12 +690,22 @@ do
         local name = false
         for i = 1, #_queueNames do
             local cur = C_Spell.IsCurrentSpell(_queueNames[i])
-            if not issecretvalue(cur) and cur then name = _queueNames[i]; break end
+            if not issecretvalue(cur) and cur then
+                name = _queueNames[i]
+                break
+            end
         end
-        if name == _queued then return end
+        if name == _queued then
+            return
+        end
         _queued = name
-        for i = #_lit, 1, -1 do _lit[i]:Hide(); _lit[i] = nil end
-        if not (name and cdmBarIcons) then return end
+        for i = #_lit, 1, -1 do
+            _lit[i]:Hide()
+            _lit[i] = nil
+        end
+        if not (name and cdmBarIcons) then
+            return
+        end
         for barKey, list in pairs(cdmBarIcons) do
             local bd = barDataByKey and barDataByKey[barKey]
             if bd and not ns.IsBarBuffFamily(bd) then
@@ -562,7 +715,9 @@ do
                         local sid = IconSpellID(icon)
                         if not issecretvalue(sid) and sid and C_Spell.GetSpellName(sid) == name then
                             local ov = ShowOverlay(icon, _checkOverlay, 14, StyleChecked)
-                            if ov then _lit[#_lit + 1] = ov end
+                            if ov then
+                                _lit[#_lit + 1] = ov
+                            end
                         end
                     end
                 end
@@ -581,13 +736,19 @@ do
         local lists = CludesUI.FOREVER_NEXT_SWING
         local _, classFile = UnitClass("player")
         local ids = lists and lists[classFile]
-        if not (ids and C_Spell.IsCurrentSpell) then return end
+        if not (ids and C_Spell.IsCurrentSpell) then
+            return
+        end
         _queueNames = {}
         for i = 1, #ids do
             local n = C_Spell.GetSpellName(ids[i])
-            if not issecretvalue(n) and n then _queueNames[#_queueNames + 1] = n end
+            if not issecretvalue(n) and n then
+                _queueNames[#_queueNames + 1] = n
+            end
         end
-        if #_queueNames > 0 then self:RegisterEvent("ACTIONBAR_UPDATE_STATE") end
+        if #_queueNames > 0 then
+            self:RegisterEvent("ACTIONBAR_UPDATE_STATE")
+        end
     end)
 end
 I.broken = false

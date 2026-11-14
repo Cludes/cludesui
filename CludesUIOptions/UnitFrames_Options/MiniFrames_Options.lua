@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  UnitFrames_Options\MiniFrames_Options.lua
 --  Unit Frames options: Mini Frames and Boss Frames builders. Definitions
@@ -6,7 +8,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  CUI_UnitFrames_Options.lua).
 -------------------------------------------------------------------------------
 local ns = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not ns then return end  -- module disabled: no options page
+if not ns then
+    return
+end -- module disabled: no options page
 
 -- Page reuse: the frames this file builds under a kept page go through the
 -- options frame pool (CludesUI_FramePool.lua), which hands the next build
@@ -35,8 +39,10 @@ end
 -- section): the requirement its Move in Unlock Mode button names while that
 -- toggle is off.
 local MINI_ENABLE_LABELS = {
-    targettarget = "Enable Target of Target", focustarget = "Enable Focus Target",
-    pet = "Enable Pet Frame", boss = "Enable Boss Frames",
+    targettarget = "Enable Target of Target",
+    focustarget = "Enable Focus Target",
+    pet = "Enable Pet Frame",
+    boss = "Enable Boss Frames",
 }
 
 ---------------------------------------------------------------------------
@@ -44,36 +50,50 @@ local MINI_ENABLE_LABELS = {
 ---------------------------------------------------------------------------
 local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enableRow, afterSizeRow, opts)
     local env = ns._UFO_OptEnv
-    local AddDarkModeBlock, BuildBarTexDropdown, BuildInactiveNotice, PP = env.AddDarkModeBlock, env.BuildBarTexDropdown, env.BuildInactiveNotice, env.PP
-    local RegisterWidgetRefresh, ReloadAndUpdate, db, healthTextOrder = env.RegisterWidgetRefresh, env.ReloadAndUpdate, env.db, env.healthTextOrder
+    local AddDarkModeBlock, BuildBarTexDropdown, BuildInactiveNotice, PP =
+        env.AddDarkModeBlock, env.BuildBarTexDropdown, env.BuildInactiveNotice, env.PP
+    local RegisterWidgetRefresh, ReloadAndUpdate, db, healthTextOrder =
+        env.RegisterWidgetRefresh, env.ReloadAndUpdate, env.db, env.healthTextOrder
     local healthTextOrderBoss, healthTextValues = env.healthTextOrderBoss, env.healthTextValues
     local TexBgRowCfg = env.TexBgRowCfg
     local _, h
     opts = opts or {}
 
-
     -- Shorthand accessors for this mini frame's settings
-    local function MGet(key) return settingsTable[key] end
-    local function MSet(key, val) settingsTable[key] = val; ReloadAndUpdate() end
+    local function MGet(key)
+        return settingsTable[key]
+    end
+    local function MSet(key, val)
+        settingsTable[key] = val
+        ReloadAndUpdate()
+    end
     local function MVal(key, default)
         local v = settingsTable[key]
-        if v ~= nil then return v end
+        if v ~= nil then
+            return v
+        end
         return default
     end
 
     -- DISPLAY
     local displayHeader
-    displayHeader, h = W:SectionHeader(parent, "DISPLAY", y); y = y - h
+    displayHeader, h = W:SectionHeader(parent, "DISPLAY", y)
+    y = y - h
     -- The Move in Unlock Mode button on the frame's first section: its mover
     -- exists only for the CludesUI frame source, so the button explains
     -- itself while the frame is hidden (its enable toggle) or on Blizzard's frame.
     CludesUI.BuildSectionUnlockJump(displayHeader, {
         key = unitKey,
-        disabled = function() return ns.GetUnitFrameSource(unitKey) ~= "cui" end,
+        disabled = function()
+            return ns.GetUnitFrameSource(unitKey) ~= "cui"
+        end,
         disabledTooltip = function()
-            if ns.VisUnitDisabled(db.profile, unitKey) then return MINI_ENABLE_LABELS[unitKey] end
+            if ns.VisUnitDisabled(db.profile, unitKey) then
+                return MINI_ENABLE_LABELS[unitKey]
+            end
             return "This option requires the CludesUI Frame Source."
-        end })
+        end,
+    })
     y = CludesUI.BlizzStyle.Note(parent, y, "unitframes")
 
     -- Enable row (passed in from each builder)
@@ -105,7 +125,9 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 if key == "inherit" then
                     local donor = GetMiniDonorSettings(unitKey)
                     local dk = donor and donor.healthBarTexture
-                    if dk == "inherit" then dk = nil end
+                    if dk == "inherit" then
+                        dk = nil
+                    end
                     dk = dk or db.profile.healthBarTexture
                     return dk and (ns.healthBarTextures or {})[dk] or nil
                 end
@@ -117,48 +139,68 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         local isBoss = (unitKey == "boss")
         local rightSlot
         if isBoss then
-            rightSlot = { type="dropdown", text="Hover Borders",
-                values={ __placeholder = "All" }, order={ "__placeholder" },
-                getValue=function() return "__placeholder" end,
-                setValue=function() end }
+            rightSlot = {
+                type = "dropdown",
+                text = "Hover Borders",
+                values = { __placeholder = "All" },
+                order = { "__placeholder" },
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            }
         else
             -- ToT / Focus Target / Pet: per-frame Strata override (same options as
             -- main frames' Frame Strata); inherits the global value until set
             -- (getter falls back to db.profile.frameStrata).
             local miniStrataValues = CludesUI.FRAME_STRATA_LABELS
             local miniStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
-            rightSlot = { type="dropdown", text="Strata",
-                tooltip="Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
-                values = miniStrataValues, order = miniStrataOrder,
-                getValue=function() return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM" end,
-                setValue=function(v)
+            rightSlot = {
+                type = "dropdown",
+                text = "Strata",
+                tooltip = "Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
+                values = miniStrataValues,
+                order = miniStrataOrder,
+                getValue = function()
+                    return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM"
+                end,
+                setValue = function(v)
                     settingsTable.frameStrata = v
                     ReloadAndUpdate()
-                end }
+                end,
+            }
         end
         local barTexRow
-        barTexRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Bar Texture", values=mtVals, order=mtOrder,
-              getValue=function()
-                  local v = settingsTable.healthBarTexture
-                  if v == nil then return "inherit" end
-                  return v
-              end,
-              setValue=function(v)
-                  if v == "inherit" then
-                      settingsTable.healthBarTexture = nil
-                  else
-                      settingsTable.healthBarTexture = v
-                  end
-                  ReloadAndUpdate()
-              end },
-            rightSlot);  y = y - h
+        barTexRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Bar Texture",
+            values = mtVals,
+            order = mtOrder,
+            getValue = function()
+                local v = settingsTable.healthBarTexture
+                if v == nil then
+                    return "inherit"
+                end
+                return v
+            end,
+            setValue = function(v)
+                if v == "inherit" then
+                    settingsTable.healthBarTexture = nil
+                else
+                    settingsTable.healthBarTexture = v
+                end
+                ReloadAndUpdate()
+            end,
+        }, rightSlot)
+        y = y - h
         -- Textured Background cog: while Bar Texture is Inherit the toggle
         -- follows the main frame and shows its value, greyed.
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(barTexRow._leftRegion, {
                 title = "Texture Settings",
-                rows = { TexBgRowCfg(function() return settingsTable end, ReloadAndUpdate, unitKey) },
+                rows = { TexBgRowCfg(function()
+                    return settingsTable
+                end, ReloadAndUpdate, unitKey) },
             })
         end
 
@@ -168,59 +210,70 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         if isBoss and not CludesUI._prebuilding then
             local PP = CludesUI.PP
             local rightRgn = barTexRow._rightRegion
-            if rightRgn._control then rightRgn._control:Hide() end
+            if rightRgn._control then
+                rightRgn._control:Hide()
+            end
             local hbKeyMap = { hover = "bossHoverBorderEnabled", target = "bossTargetBorderEnabled" }
             local hbItems = {
-                { key = "hover",  label = "Hover Border" },
+                { key = "hover", label = "Hover Border" },
                 { key = "target", label = "Target Border" },
             }
-            local UpdateHBSwatchVis  -- forward declare; assigned after swatches
+            local UpdateHBSwatchVis -- forward declare; assigned after swatches
             local cbDD = CludesUI.BuildVisOptsCBDropdown(
-                rightRgn, 170, rightRgn:GetFrameLevel() + 2,
+                rightRgn,
+                170,
+                rightRgn:GetFrameLevel() + 2,
                 hbItems,
-                function(k) return settingsTable[hbKeyMap[k]] and true or false end,
+                function(k)
+                    return settingsTable[hbKeyMap[k]] and true or false
+                end,
                 function(k, v)
                     settingsTable[hbKeyMap[k]] = v
                     ReloadAndUpdate()
-                    if UpdateHBSwatchVis then UpdateHBSwatchVis() end
-                end)
+                    if UpdateHBSwatchVis then
+                        UpdateHBSwatchVis()
+                    end
+                end
+            )
             CludesUI.PanelPP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
             rightRgn._control = cbDD
             rightRgn._lastInline = nil
 
             -- Inline swatches: Hover (nearest the dropdown), then Target to its left.
             local lvl = barTexRow:GetFrameLevel() + 3
-            local hoverSwatch, updHover = CludesUI.BuildColorSwatch(
-                rightRgn, lvl,
-                function()
-                    local c = settingsTable.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b, settingsTable.bossHoverBorderAlpha or 1
-                end,
-                function(r, g, b, a)
-                    settingsTable.bossHoverBorderColor = { r=r, g=g, b=b }
-                    settingsTable.bossHoverBorderAlpha = a
-                    ReloadAndUpdate()
-                end, true, 20)
+            local hoverSwatch, updHover = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
+                local c = settingsTable.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
+                return c.r, c.g, c.b, settingsTable.bossHoverBorderAlpha or 1
+            end, function(r, g, b, a)
+                settingsTable.bossHoverBorderColor = { r = r, g = g, b = b }
+                settingsTable.bossHoverBorderAlpha = a
+                ReloadAndUpdate()
+            end, true, 20)
             hoverSwatch:SetPoint("RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
             rightRgn._lastInline = hoverSwatch
-            hoverSwatch:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(hoverSwatch, "Hover") end)
-            hoverSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            hoverSwatch:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(hoverSwatch, "Hover")
+            end)
+            hoverSwatch:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
-            local targetSwatch, updTarget = CludesUI.BuildColorSwatch(
-                rightRgn, lvl,
-                function()
-                    local c = settingsTable.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b, settingsTable.bossTargetBorderAlpha or 1
-                end,
-                function(r, g, b, a)
-                    settingsTable.bossTargetBorderColor = { r=r, g=g, b=b }
-                    settingsTable.bossTargetBorderAlpha = a
-                    ReloadAndUpdate()
-                end, true, 20)
+            local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
+                local c = settingsTable.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
+                return c.r, c.g, c.b, settingsTable.bossTargetBorderAlpha or 1
+            end, function(r, g, b, a)
+                settingsTable.bossTargetBorderColor = { r = r, g = g, b = b }
+                settingsTable.bossTargetBorderAlpha = a
+                ReloadAndUpdate()
+            end, true, 20)
             targetSwatch:SetPoint("RIGHT", rightRgn._lastInline, "LEFT", -8, 0)
             rightRgn._lastInline = targetSwatch
-            targetSwatch:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(targetSwatch, "Target") end)
-            targetSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            targetSwatch:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(targetSwatch, "Target")
+            end)
+            targetSwatch:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             -- Gray a swatch when its border state is off (still clickable so the
             -- color can be pre-set), matching the Raid Frames Hover Borders row.
@@ -228,7 +281,11 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 hoverSwatch:SetAlpha(settingsTable.bossHoverBorderEnabled and 1 or 0.3)
                 targetSwatch:SetAlpha(settingsTable.bossTargetBorderEnabled and 1 or 0.3)
             end
-            CludesUI.RegisterWidgetRefresh(function() updHover(); updTarget(); UpdateHBSwatchVis() end)
+            CludesUI.RegisterWidgetRefresh(function()
+                updHover()
+                updTarget()
+                UpdateHBSwatchVis()
+            end)
             UpdateHBSwatchVis()
         end
     end
@@ -244,19 +301,28 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- Dark Mode for this frame alone, as on the Main Frames page (unset follows the
     -- profile's). It feeds the Dark Mode override condition, so it rechecks it and is
     -- locked while such an override is edited.
-    local darkCfg = { type="toggle", text="Dark Mode",
-        tooltip="Dark Mode for this frame. Global Settings > Colors switches every frame.",
-        getValue=function() return ns.UF_DarkThemeOn(settingsTable) end,
-        setValue=function(v)
+    local darkCfg = {
+        type = "toggle",
+        text = "Dark Mode",
+        tooltip = "Dark Mode for this frame. Global Settings > Colors switches every frame.",
+        getValue = function()
+            return ns.UF_DarkThemeOn(settingsTable)
+        end,
+        setValue = function(v)
             MSet("darkTheme", v)
             CludesUI.Conditions_Recheck()
             CludesUI:RefreshPage()
-        end }
+        end,
+    }
     local function LockDark(rgn)
-        if CludesUI._prebuilding then return end
-        CludesUI.SpecOverrides_AttachEditLock(rgn,
+        if CludesUI._prebuilding then
+            return
+        end
+        CludesUI.SpecOverrides_AttachEditLock(
+            rgn,
             "Dark Mode drives a Dark Mode override condition and can't be changed while editing an override",
-            CludesUI.SpecOverrides_DarkCondEditActive)
+            CludesUI.SpecOverrides_DarkCondEditActive
+        )
     end
 
     -- DISPLAY bottom row for boss: the mini frames carry their Strata
@@ -268,16 +334,21 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         local bossStrataValues = CludesUI.FRAME_STRATA_LABELS
         local bossStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
         local strataRow
-        strataRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Strata",
-              tooltip="Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
-              values = bossStrataValues, order = bossStrataOrder,
-              getValue=function() return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM" end,
-              setValue=function(v)
-                  settingsTable.frameStrata = v
-                  ReloadAndUpdate()
-              end },
-            darkCfg);  y = y - h
+        strataRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Strata",
+            tooltip = "Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
+            values = bossStrataValues,
+            order = bossStrataOrder,
+            getValue = function()
+                return settingsTable.frameStrata or db.profile.frameStrata or "MEDIUM"
+            end,
+            setValue = function(v)
+                settingsTable.frameStrata = v
+                ReloadAndUpdate()
+            end,
+        }, darkCfg)
+        y = y - h
         LockDark(strataRow._rightRegion)
     end
 
@@ -286,20 +357,41 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- borderSizeOverride nil = inherit donor size until set. Boss frames use
     -- their own Border Style | Border Size row above instead.
     if unitKey ~= "boss" then
-        _, h = W:DualRow(parent, y,
-            CludesUI.BlizzStyle.Gate("unitframes", { type="slider", text="Border Size", min=0, max=4, step=1,
-              tooltip="Overrides the border size from the main frames for this frame only. Border color and texture still follow the main frames.",
-              getValue=function()
-                  local donor = GetMiniDonorSettings(unitKey)
-                  return settingsTable.borderSizeOverride or (donor and donor.borderSize) or 1
-              end,
-              setValue=function(v) settingsTable.borderSizeOverride = v; ReloadAndUpdate() end }),
-            { type="toggle", text="Show Highlight Border",
-              tooltip="Show the main frames' hover highlight border on this frame. Turn off so this frame never recolors on mouseover. No effect when Highlight is off in the main frames' Hover Borders.",
-              getValue=function() return settingsTable.showHighlightBorder ~= false end,
-              setValue=function(v) settingsTable.showHighlightBorder = v end });  y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            CludesUI.BlizzStyle.Gate("unitframes", {
+                type = "slider",
+                text = "Border Size",
+                min = 0,
+                max = 4,
+                step = 1,
+                tooltip = "Overrides the border size from the main frames for this frame only. Border color and texture still follow the main frames.",
+                getValue = function()
+                    local donor = GetMiniDonorSettings(unitKey)
+                    return settingsTable.borderSizeOverride or (donor and donor.borderSize) or 1
+                end,
+                setValue = function(v)
+                    settingsTable.borderSizeOverride = v
+                    ReloadAndUpdate()
+                end,
+            }),
+            {
+                type = "toggle",
+                text = "Show Highlight Border",
+                tooltip = "Show the main frames' hover highlight border on this frame. Turn off so this frame never recolors on mouseover. No effect when Highlight is off in the main frames' Hover Borders.",
+                getValue = function()
+                    return settingsTable.showHighlightBorder ~= false
+                end,
+                setValue = function(v)
+                    settingsTable.showHighlightBorder = v
+                end,
+            }
+        )
+        y = y - h
         local darkRow
-        darkRow, h = W:DualRow(parent, y, darkCfg, CludesUI.BlankRowCfg());  y = y - h
+        darkRow, h = W:DualRow(parent, y, darkCfg, CludesUI.BlankRowCfg())
+        y = y - h
         LockDark(darkRow._leftRegion)
     end
 
@@ -310,7 +402,8 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
     -- HEALTH BAR section
     local textHeader
-    textHeader, h = W:SectionHeader(parent, "HEALTH BAR", y); y = y - h
+    textHeader, h = W:SectionHeader(parent, "HEALTH BAR", y)
+    y = y - h
 
     -- Row 1: Bar Height + Bar Width
     local sizeRow
@@ -322,24 +415,65 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     if CludesUI.BlizzStyle.Get("unitframes") then
         -- Blizzard Style: the stock size is fixed, so the whole frame scales
         -- instead; the slider takes the gated width's slot (no blank slot).
-        rightSlot = { type="slider", text="Frame Scale", min=50, max=200, step=5,
-            tooltip="Scales the whole frame. Blizzard Style frames are the stock size, so this stands in for Bar Width and Health Bar Height.",
-            getValue=function() return math.floor((settingsTable.blizzScale or 1) * 100 + 0.5) end,
-            setValue=function(v) settingsTable.blizzScale = v / 100; ReloadAndUpdate() end }
+        rightSlot = {
+            type = "slider",
+            text = "Frame Scale",
+            min = 50,
+            max = 200,
+            step = 5,
+            tooltip = "Scales the whole frame. Blizzard Style frames are the stock size, so this stands in for Bar Width and Health Bar Height.",
+            getValue = function()
+                return math.floor((settingsTable.blizzScale or 1) * 100 + 0.5)
+            end,
+            setValue = function(v)
+                settingsTable.blizzScale = v / 100
+                ReloadAndUpdate()
+            end,
+        }
     elseif opts.hideBarWidth then
-        rightSlot = { type="label", text="" }
+        rightSlot = { type = "label", text = "" }
     else
-        rightSlot = CludesUI.BlizzStyle.Gate("unitframes", { type="slider", text="Bar Width", min=vertFill and 20 or 60, max=300, step=1,
-            disabled=mwDis, disabledTooltip=mwTip, rawTooltip=mwRaw,
-            getValue=function() return settingsTable.frameWidth end,
-            setValue=function(v) settingsTable.frameWidth = v; ReloadAndUpdate() end })
+        rightSlot = CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "slider",
+            text = "Bar Width",
+            min = vertFill and 20 or 60,
+            max = 300,
+            step = 1,
+            disabled = mwDis,
+            disabledTooltip = mwTip,
+            rawTooltip = mwRaw,
+            getValue = function()
+                return settingsTable.frameWidth
+            end,
+            setValue = function(v)
+                settingsTable.frameWidth = v
+                ReloadAndUpdate()
+            end,
+        })
     end
-    sizeRow, h = W:DualRow(parent, y,
-        CludesUI.BlizzStyle.Gate("unitframes", { type="slider", text="Health Bar Height", min=10, max=vertFill and 400 or 100, step=1,
-          disabled=mhDis, disabledTooltip=mhTip, rawTooltip=mhRaw,
-          getValue=function() return settingsTable.healthHeight end,
-          setValue=function(v) settingsTable.healthHeight = v; ReloadAndUpdate() end }),
-        rightSlot);  y = y - h
+    sizeRow, h = W:DualRow(
+        parent,
+        y,
+        CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "slider",
+            text = "Health Bar Height",
+            min = 10,
+            max = vertFill and 400 or 100,
+            step = 1,
+            disabled = mhDis,
+            disabledTooltip = mhTip,
+            rawTooltip = mhRaw,
+            getValue = function()
+                return settingsTable.healthHeight
+            end,
+            setValue = function(v)
+                settingsTable.healthHeight = v
+                ReloadAndUpdate()
+            end,
+        }),
+        rightSlot
+    )
+    y = y - h
 
     -- Row 2: Fill Color + Bar Background/Opacity. Boss frames present each as an
     -- opacity slider with inline class/custom swatches (mirroring Main Frames' Bar
@@ -351,71 +485,120 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         if isBoss then
             -- Fill Color = the health fill opacity (formerly "Fill Opacity")
             -- with the fill color swatches moved inline below.
-            leftSlot2 = { type="slider", text="Fill Color", min=0, max=100, step=1,
-              disabled=function() return ns.UF_DarkThemeOn(settingsTable) end,
-              disabledTooltip="Dark Mode", requireState="disabled",
-              getValue=function() return MVal("healthBarOpacity", 90) end,
-              setValue=function(v) MSet("healthBarOpacity", v) end }
-            rightSlot2 = { type="slider", text="Bar Background", min=0, max=100, step=1,
-              getValue=function() return MVal("customBgAlpha", 100) end,
-              setValue=function(v) MSet("customBgAlpha", v) end }
+            leftSlot2 = {
+                type = "slider",
+                text = "Fill Color",
+                min = 0,
+                max = 100,
+                step = 1,
+                disabled = function()
+                    return ns.UF_DarkThemeOn(settingsTable)
+                end,
+                disabledTooltip = "Dark Mode",
+                requireState = "disabled",
+                getValue = function()
+                    return MVal("healthBarOpacity", 90)
+                end,
+                setValue = function(v)
+                    MSet("healthBarOpacity", v)
+                end,
+            }
+            rightSlot2 = {
+                type = "slider",
+                text = "Bar Background",
+                min = 0,
+                max = 100,
+                step = 1,
+                getValue = function()
+                    return MVal("customBgAlpha", 100)
+                end,
+                setValue = function(v)
+                    MSet("customBgAlpha", v)
+                end,
+            }
         else
             -- "Fill Color" picker: Custom Colored Fill + Class Colored Fill.
             -- Bar Background was split out to its own slider + swatch row below
             -- (still the same customBgColor / customBgAlpha variables).
             local fillSwatches = {
-                { tooltip = "Custom Colored Fill", hasAlpha = false,
-                  getValue = function()
-                      local c = MGet("customFillColor")
-                      if c then return c.r, c.g, c.b end
-                      return 37/255, 193/255, 29/255
-                  end,
-                  setValue = function(r, g, b)
-                      settingsTable.customFillColor = { r=r, g=g, b=b }
-                      ReloadAndUpdate()
-                  end,
-                  onClick = function(self)
-                      if MVal("healthClassColored", false) then
-                          if MGet("customFillColor") == nil then
-                              settingsTable.customFillColor = { r = 37/255, g = 193/255, b = 29/255 }
-                          end
-                          settingsTable.healthClassColored = false
-                          ReloadAndUpdate(); CludesUI:RefreshPage()
-                          return
-                      end
-                      if self._eabOrigClick then self._eabOrigClick(self) end
-                  end,
-                  refreshAlpha = function()
-                      return MVal("healthClassColored", false) and 0.3 or 1
-                  end },
-                { tooltip = "Class Colored Fill", hasAlpha = false,
-                  getValue = function()
-                      local _, ct = UnitClass("player")
-                      if ct and RAID_CLASS_COLORS[ct] then
-                          local cc = RAID_CLASS_COLORS[ct]
-                          return cc.r, cc.g, cc.b
-                      end
-                      return 1, 1, 1
-                  end,
-                  setValue = function() end,
-                  onClick = function()
-                      settingsTable.healthClassColored = true
-                      ReloadAndUpdate(); CludesUI:RefreshPage()
-                  end,
-                  refreshAlpha = function()
-                      return MVal("healthClassColored", false) and 1 or 0.3
-                  end },
+                {
+                    tooltip = "Custom Colored Fill",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = MGet("customFillColor")
+                        if c then
+                            return c.r, c.g, c.b
+                        end
+                        return 37 / 255, 193 / 255, 29 / 255
+                    end,
+                    setValue = function(r, g, b)
+                        settingsTable.customFillColor = { r = r, g = g, b = b }
+                        ReloadAndUpdate()
+                    end,
+                    onClick = function(self)
+                        if MVal("healthClassColored", false) then
+                            if MGet("customFillColor") == nil then
+                                settingsTable.customFillColor = { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
+                            end
+                            settingsTable.healthClassColored = false
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage()
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        return MVal("healthClassColored", false) and 0.3 or 1
+                    end,
+                },
+                {
+                    tooltip = "Class Colored Fill",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, ct = UnitClass("player")
+                        if ct and RAID_CLASS_COLORS[ct] then
+                            local cc = RAID_CLASS_COLORS[ct]
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        settingsTable.healthClassColored = true
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        return MVal("healthClassColored", false) and 1 or 0.3
+                    end,
+                },
             }
-            leftSlot2 = { type="multiSwatch", text="Fill Color", swatches = fillSwatches }
-            rightSlot2 = { type="slider", text="Fill Opacity", min=0, max=100, step=1,
-              disabled=function() return ns.UF_DarkThemeOn(settingsTable) end,
-              disabledTooltip="Dark Mode", requireState="disabled",
-              getValue=function() return MVal("healthBarOpacity", 90) end,
-              setValue=function(v) MSet("healthBarOpacity", v) end }
+            leftSlot2 = { type = "multiSwatch", text = "Fill Color", swatches = fillSwatches }
+            rightSlot2 = {
+                type = "slider",
+                text = "Fill Opacity",
+                min = 0,
+                max = 100,
+                step = 1,
+                disabled = function()
+                    return ns.UF_DarkThemeOn(settingsTable)
+                end,
+                disabledTooltip = "Dark Mode",
+                requireState = "disabled",
+                getValue = function()
+                    return MVal("healthBarOpacity", 90)
+                end,
+                setValue = function(v)
+                    MSet("healthBarOpacity", v)
+                end,
+            }
         end
 
         local colorRow
-        colorRow, h = W:DualRow(parent, y, leftSlot2, rightSlot2);  y = y - h
+        colorRow, h = W:DualRow(parent, y, leftSlot2, rightSlot2)
+        y = y - h
 
         if isBoss then
             -- Inline Custom + Class fill swatches on the Fill Color slider (left
@@ -425,17 +608,31 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 local fClassGet = function()
                     local _, ct = UnitClass("player")
                     local cc = ct and RAID_CLASS_COLORS[ct]
-                    if cc then return cc.r, cc.g, cc.b end
+                    if cc then
+                        return cc.r, cc.g, cc.b
+                    end
                     return 1, 1, 1
                 end
-                local fClassSw, fClassUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fClassGet, function() end, false, 20)
+                local fClassSw, fClassUpdate = CludesUI.BuildColorSwatch(
+                    rgn,
+                    rgn:GetFrameLevel() + 5,
+                    fClassGet,
+                    function() end,
+                    false,
+                    20
+                )
                 fClassSw._eabOrigClick = fClassSw:GetScript("OnClick")
                 fClassSw:SetScript("OnClick", function()
                     settingsTable.healthClassColored = true
-                    ReloadAndUpdate(); CludesUI:RefreshPage()
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
                 end)
-                fClassSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(fClassSw, "Class Colored Fill") end)
-                fClassSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                fClassSw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(fClassSw, "Class Colored Fill")
+                end)
+                fClassSw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(fClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 rgn._lastInline = fClassSw
                 RegisterWidgetRefresh(function()
@@ -446,28 +643,38 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
                 local fCustomGet = function()
                     local c = MGet("customFillColor")
-                    if c then return c.r, c.g, c.b end
-                    return 37/255, 193/255, 29/255
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 37 / 255, 193 / 255, 29 / 255
                 end
                 local fCustomSet = function(r, g, b)
-                    settingsTable.customFillColor = { r=r, g=g, b=b }
+                    settingsTable.customFillColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end
-                local fCustomSw, fCustomUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fCustomGet, fCustomSet, false, 20)
+                local fCustomSw, fCustomUpdate =
+                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fCustomGet, fCustomSet, false, 20)
                 fCustomSw._eabOrigClick = fCustomSw:GetScript("OnClick")
                 fCustomSw:SetScript("OnClick", function(self)
                     if MVal("healthClassColored", false) then
                         if MGet("customFillColor") == nil then
-                            settingsTable.customFillColor = { r = 37/255, g = 193/255, b = 29/255 }
+                            settingsTable.customFillColor = { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
                         end
                         settingsTable.healthClassColored = false
-                        ReloadAndUpdate(); CludesUI:RefreshPage()
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then self._eabOrigClick(self) end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
                 end)
-                fCustomSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(fCustomSw, "Custom Colored Fill") end)
-                fCustomSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                fCustomSw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(fCustomSw, "Custom Colored Fill")
+                end)
+                fCustomSw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(fCustomSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 rgn._lastInline = fCustomSw
                 RegisterWidgetRefresh(function()
@@ -484,17 +691,31 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 local bgClassGet = function()
                     local _, ct = UnitClass("player")
                     local cc = ct and RAID_CLASS_COLORS[ct]
-                    if cc then return cc.r, cc.g, cc.b end
+                    if cc then
+                        return cc.r, cc.g, cc.b
+                    end
                     return 1, 1, 1
                 end
-                local bgClassSw, bgClassUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgClassGet, function() end, false, 20)
+                local bgClassSw, bgClassUpdate = CludesUI.BuildColorSwatch(
+                    rgn,
+                    rgn:GetFrameLevel() + 5,
+                    bgClassGet,
+                    function() end,
+                    false,
+                    20
+                )
                 bgClassSw._eabOrigClick = bgClassSw:GetScript("OnClick")
                 bgClassSw:SetScript("OnClick", function()
                     settingsTable.bgClassColored = true
-                    ReloadAndUpdate(); CludesUI:RefreshPage()
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
                 end)
-                bgClassSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgClassSw, "Class Colored Background") end)
-                bgClassSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                bgClassSw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(bgClassSw, "Class Colored Background")
+                end)
+                bgClassSw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(bgClassSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 rgn._lastInline = bgClassSw
                 RegisterWidgetRefresh(function()
@@ -505,25 +726,35 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
                 local bgSwGet = function()
                     local c = MGet("customBgColor")
-                    if c then return c.r, c.g, c.b end
-                    return 17/255, 17/255, 17/255
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 17 / 255, 17 / 255, 17 / 255
                 end
                 local bgSwSet = function(r, g, b)
-                    settingsTable.customBgColor = { r=r, g=g, b=b }
+                    settingsTable.customBgColor = { r = r, g = g, b = b }
                     ReloadAndUpdate()
                 end
-                local bgSw, bgSwUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
+                local bgSw, bgSwUpdate =
+                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
                 bgSw._eabOrigClick = bgSw:GetScript("OnClick")
                 bgSw:SetScript("OnClick", function(self)
                     if MVal("bgClassColored", false) then
                         settingsTable.bgClassColored = false
-                        ReloadAndUpdate(); CludesUI:RefreshPage()
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then self._eabOrigClick(self) end
+                    if self._eabOrigClick then
+                        self._eabOrigClick(self)
+                    end
                 end)
-                bgSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color") end)
-                bgSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                bgSw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color")
+                end)
+                bgSw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 rgn._lastInline = bgSw
                 RegisterWidgetRefresh(function()
@@ -538,117 +769,222 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- fill/background colors). Boss also blocks Bar Background so its swatches
         -- gray out like Main Frames; other mini units' Bar Opacity has its own disable handler.
         if not CludesUI._prebuilding then
-        AddDarkModeBlock(colorRow._leftRegion, function() return settingsTable end)
-        if isBoss then AddDarkModeBlock(colorRow._rightRegion, function() return settingsTable end) end
+            AddDarkModeBlock(colorRow._leftRegion, function()
+                return settingsTable
+            end)
+            if isBoss then
+                AddDarkModeBlock(colorRow._rightRegion, function()
+                    return settingsTable
+                end)
+            end
         end
     end
 
     -- Mini frames pair Smooth Health Bars with Vertical Fill below;
     -- boss frames keep it beside Reverse Fill.
-    local smoothBarsWidget = { type="toggle", text="Smooth Health Bars",
-          getValue=function() return MVal("smoothBars", false) end,
-          setValue=function(v) MSet("smoothBars", v) end }
-    local reverseFillWidget = { type="toggle", text="Reverse Fill",
-          getValue=function() return settingsTable.healthReverseFill end,
-          setValue=function(v) settingsTable.healthReverseFill = v; ReloadAndUpdate() end }
+    local smoothBarsWidget = {
+        type = "toggle",
+        text = "Smooth Health Bars",
+        getValue = function()
+            return MVal("smoothBars", false)
+        end,
+        setValue = function(v)
+            MSet("smoothBars", v)
+        end,
+    }
+    local reverseFillWidget = {
+        type = "toggle",
+        text = "Reverse Fill",
+        getValue = function()
+            return settingsTable.healthReverseFill
+        end,
+        setValue = function(v)
+            settingsTable.healthReverseFill = v
+            ReloadAndUpdate()
+        end,
+    }
     if unitKey == "boss" then
-        _, h = W:DualRow(parent, y, smoothBarsWidget, reverseFillWidget);  y = y - h
+        _, h = W:DualRow(parent, y, smoothBarsWidget, reverseFillWidget)
+        y = y - h
     else
         -- Bar Background (opacity slider + inline color swatch) | Reverse Fill.
         -- Reuses the existing customBgAlpha (opacity) + customBgColor (color)
         -- variables -- same as the Boss frames and the runtime health bg, so
         -- no saved option changes.
         local bgRow
-        bgRow, h = W:DualRow(parent, y,
-            { type="slider", text="Bar Background", min=0, max=100, step=1,
-              getValue=function() return MVal("customBgAlpha", 100) end,
-              setValue=function(v) MSet("customBgAlpha", v) end },
-            reverseFillWidget);  y = y - h
+        bgRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Bar Background",
+            min = 0,
+            max = 100,
+            step = 1,
+            getValue = function()
+                return MVal("customBgAlpha", 100)
+            end,
+            setValue = function(v)
+                MSet("customBgAlpha", v)
+            end,
+        }, reverseFillWidget)
+        y = y - h
         -- inline bg colors - custom swatch + class swatch
         -- tot/focus use class for player, reaction for npc
         -- pet resolves to player's class color
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
-                { tooltip = "Custom Background Color", hasAlpha = false,
-                  getValue = function()
-                      local c = MGet("customBgColor")
-                      if c then return c.r, c.g, c.b end
-                      return 17/255, 17/255, 17/255
-                  end,
-                  setValue = function(r, g, b)
-                      settingsTable.customBgColor = { r=r, g=g, b=b }
-                      ReloadAndUpdate()
-                  end,
-                  onClick = function(self)
-                      if MVal("bgClassColored", false) then
-                          settingsTable.bgClassColored = false
-                          ReloadAndUpdate(); CludesUI:RefreshPage()
-                          return
-                      end
-                      if self._eabOrigClick then self._eabOrigClick(self) end
-                  end,
-                  refreshAlpha = function()
-                      return MVal("bgClassColored", false) and 0.3 or 1
-                  end },
-                { tooltip = "Class Colored Background", hasAlpha = false,
-                  getValue = function()
-                      local _, ct = UnitClass("player")
-                      local cc = ct and RAID_CLASS_COLORS[ct]
-                      if cc then return cc.r, cc.g, cc.b end
-                      return 1, 1, 1
-                  end,
-                  setValue = function() end,
-                  onClick = function()
-                      settingsTable.bgClassColored = true
-                      ReloadAndUpdate(); CludesUI:RefreshPage()
-                  end,
-                  refreshAlpha = function()
-                      return MVal("bgClassColored", false) and 1 or 0.3
-                  end },
+                {
+                    tooltip = "Custom Background Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = MGet("customBgColor")
+                        if c then
+                            return c.r, c.g, c.b
+                        end
+                        return 17 / 255, 17 / 255, 17 / 255
+                    end,
+                    setValue = function(r, g, b)
+                        settingsTable.customBgColor = { r = r, g = g, b = b }
+                        ReloadAndUpdate()
+                    end,
+                    onClick = function(self)
+                        if MVal("bgClassColored", false) then
+                            settingsTable.bgClassColored = false
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage()
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        return MVal("bgClassColored", false) and 0.3 or 1
+                    end,
+                },
+                {
+                    tooltip = "Class Colored Background",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, ct = UnitClass("player")
+                        local cc = ct and RAID_CLASS_COLORS[ct]
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        settingsTable.bgClassColored = true
+                        ReloadAndUpdate()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        return MVal("bgClassColored", false) and 1 or 0.3
+                    end,
+                },
             })
         end
     end
 
     -- Vertical Fill swaps the fill AXIS (Reverse Fill above flips direction within
     -- it, so vertical+reverse fills top-to-bottom); own row since Reverse Fill's row is already full on both layouts.
-    _, h = W:DualRow(parent, y,
-        CludesUI.BlizzStyle.Gate("unitframes", { type="toggle", text="Vertical Fill",
-          tooltip="Fill the health bar bottom-to-top instead of left-to-right. Reverse Fill flips it to top-to-bottom.",
-          getValue=function() return settingsTable.healthVerticalFill end,
-          setValue=function(v) settingsTable.healthVerticalFill = v; ReloadAndUpdate(); CludesUI:RefreshPage(true) end }),
-        unitKey ~= "boss" and smoothBarsWidget or CludesUI.BlankRowCfg());  y = y - h
+    _, h = W:DualRow(
+        parent,
+        y,
+        CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "toggle",
+            text = "Vertical Fill",
+            tooltip = "Fill the health bar bottom-to-top instead of left-to-right. Reverse Fill flips it to top-to-bottom.",
+            getValue = function()
+                return settingsTable.healthVerticalFill
+            end,
+            setValue = function(v)
+                settingsTable.healthVerticalFill = v
+                ReloadAndUpdate()
+                CludesUI:RefreshPage(true)
+            end,
+        }),
+        unitKey ~= "boss" and smoothBarsWidget or CludesUI.BlankRowCfg()
+    )
+    y = y - h
 
     -- Blizzard Style: the stock level number in the boss art's level circle
     -- (the small frames' stock art carries none), with its size and
     -- offsets on a cog. The row is the preview level text's click target
     -- (stashed on the page: the boss targets table reads it).
     if unitKey == "boss" and CludesUI.BlizzStyle.Get("unitframes") then
-        parent._ufLevelRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Level",
-              tooltip="Shows the unit's level in the frame's level circle, as the default UI does.",
-              getValue=function() return settingsTable.blizzShowLevel ~= false end,
-              setValue=function(v) settingsTable.blizzShowLevel = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-            { type="label", text="" });  y = y - h
+        parent._ufLevelRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Level",
+            tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
+            getValue = function()
+                return settingsTable.blizzShowLevel ~= false
+            end,
+            setValue = function(v)
+                settingsTable.blizzShowLevel = v
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(parent._ufLevelRow._leftRegion, {
-                disabled = function() return settingsTable.blizzShowLevel == false end,
+                disabled = function()
+                    return settingsTable.blizzShowLevel == false
+                end,
                 disabledTooltip = "This option requires Show Level.",
                 title = "Level Text Settings",
                 rows = {
                     -- The size follows the name text until set here.
-                    { type="slider", label="Size", min=8, max=100, step=1,
-                      get=function() return MVal("blizzLevelSize", MVal("leftTextSize", settingsTable.textSize or 12)) end,
-                      set=function(v) MSet("blizzLevelSize", v) end },
-                    { type="slider", label="X Offset", min=-150, max=150, step=1,
-                      get=function() return MVal("blizzLevelX", 0) end,
-                      set=function(v) MSet("blizzLevelX", v) end },
-                    { type="slider", label="Y Offset", min=-150, max=150, step=1,
-                      get=function() return MVal("blizzLevelY", 0) end,
-                      set=function(v) MSet("blizzLevelY", v) end },
-                    { type="toggle", label="Difficulty Color",
-                      tooltip="Colors an attackable unit's level by difficulty, as the default UI does.",
-                      get=function() return MVal("blizzLevelDifficultyColor", true) end,
-                      set=function(v) MSet("blizzLevelDifficultyColor", v) end },
+                    {
+                        type = "slider",
+                        label = "Size",
+                        min = 8,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return MVal("blizzLevelSize", MVal("leftTextSize", settingsTable.textSize or 12))
+                        end,
+                        set = function(v)
+                            MSet("blizzLevelSize", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -150,
+                        max = 150,
+                        step = 1,
+                        get = function()
+                            return MVal("blizzLevelX", 0)
+                        end,
+                        set = function(v)
+                            MSet("blizzLevelX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -150,
+                        max = 150,
+                        step = 1,
+                        get = function()
+                            return MVal("blizzLevelY", 0)
+                        end,
+                        set = function(v)
+                            MSet("blizzLevelY", v)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Difficulty Color",
+                        tooltip = "Colors an attackable unit's level by difficulty, as the default UI does.",
+                        get = function()
+                            return MVal("blizzLevelDifficultyColor", true)
+                        end,
+                        set = function(v)
+                            MSet("blizzLevelDifficultyColor", v)
+                        end,
+                    },
                 },
             })
         end
@@ -656,505 +992,1026 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
     -- Active text slots share the Main Frames list workflow.
     local textSlots = {}
-    textSlots[1] = { key="leftText", position="Left Text", default="name",
-        cfg={ type="dropdown", text="Left Text", values=healthTextValues, order=(unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-          getValue=function() return MVal("leftTextContent", "name") end,
-          setValue=function(v)
-            settingsTable.leftTextContent = v
-            if ns.UF_IsUniqueContent(v) then
-                if settingsTable.rightTextContent == v then settingsTable.rightTextContent = "none" end
-                if settingsTable.centerTextContent == v then settingsTable.centerTextContent = "none" end
-            end
-            ReloadAndUpdate(); CludesUI:RefreshPage(true)
-          end,
+    textSlots[1] = {
+        key = "leftText",
+        position = "Left Text",
+        default = "name",
+        cfg = {
+            type = "dropdown",
+            text = "Left Text",
+            values = healthTextValues,
+            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
+            getValue = function()
+                return MVal("leftTextContent", "name")
+            end,
+            setValue = function(v)
+                settingsTable.leftTextContent = v
+                if ns.UF_IsUniqueContent(v) then
+                    if settingsTable.rightTextContent == v then
+                        settingsTable.rightTextContent = "none"
+                    end
+                    if settingsTable.centerTextContent == v then
+                        settingsTable.centerTextContent = "none"
+                    end
+                end
+                ReloadAndUpdate()
+                CludesUI:RefreshPage(true)
+            end,
         },
-        decorate=function(rgn)
+        decorate = function(rgn)
             -- Inline cog + color swatches on Left Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(rgn, {
-                    disabled = function() return MVal("leftTextContent", "name") == "none" end,
+                    disabled = function()
+                        return MVal("leftTextContent", "name") == "none"
+                    end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Left Text Settings",
                     rows = ns.UF_CoreTextRows("leftText", "name", MVal, MSet, {
-                        { type="slider", label="Size", min=8, max=100, step=1,
-                          get=function() return MVal("leftTextSize", settingsTable.textSize or 12) end,
-                          set=function(v) MSet("leftTextSize", v) end },
-                        { type="slider", label="X Offset", min=-100, max=100, step=1,
-                          get=function() return MVal("leftTextX", 0) end,
-                          set=function(v) MSet("leftTextX", v) end },
-                        { type="slider", label="Y Offset", min=-60, max=60, step=1,
-                          get=function() return MVal("leftTextY", 0) end,
-                          set=function(v) MSet("leftTextY", v) end },
-                        { type="slider", label="Width %", min=20, max=200, step=5,
-                          get=function() return MVal("leftTextWidthPct", 100) end,
-                          set=function(v) MSet("leftTextWidthPct", v) end },
-                        { type="multiswatch", label="Indicator Color",
-                          disabled=function() local c = MVal("leftTextContent","name") return c ~= "nametotarget" and c ~= "targetname" end,
-                          disabledTooltip="This option only applies when Name > Target or Target is selected.",
-                          swatches = {
-                            { tooltip = "Custom Colored", hasAlpha = false,
-                              getValue = function() local c = MVal("leftTextTargetSepColor", nil) if type(c) == "table" then return c.r or 1, c.g or 1, c.b or 1 end return 1, 1, 1 end,
-                              setValue = function(r, g, b) MSet("leftTextTargetSepColor", { r=r, g=g, b=b }) end,
-                              onClick = function(self)
-                                  if MVal("leftTextTargetSepClassColor", false) then
-                                      MSet("leftTextTargetSepClassColor", false)
-                                      return
-                                  end
-                                  if self._eabOrigClick then self._eabOrigClick(self) end
-                              end,
-                              refreshAlpha = function() return MVal("leftTextTargetSepClassColor", false) and 0.3 or 1 end },
-                            { tooltip = "Class Colored", hasAlpha = false,
-                              getValue = function()
-                                  local _, ct = UnitClass("player")
-                                  local cc = ct and CludesUI.GetClassColor(ct)
-                                  if cc then return cc.r, cc.g, cc.b end
-                                  return 1, 1, 1
-                              end,
-                              setValue = function() end,
-                              onClick = function() MSet("leftTextTargetSepClassColor", true) end,
-                              refreshAlpha = function() return MVal("leftTextTargetSepClassColor", false) and 1 or 0.3 end },
-                          } },
-                        { type="input", label="Separator", inputWidth=60,
-                          get=function() return MVal("leftTextTargetSep", ">") end,
-                          set=function(v)
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              if v == "" then v = ">" end
-                              MSet("leftTextTargetSep", v)
-                          end,
-                          disabled=function() return MVal("leftTextContent","name") ~= "nametotarget" end,
-                          disabledTooltip="This option only applies when Name > Target is selected." },
-                        { type="input", label="Prefix", inputWidth=60,
-                          tooltip="Text shown before the target's name.",
-                          get=function() return MVal("leftTextTargetPrefix", "T:") end,
-                          set=function(v)
-                              -- Unlike Separator, empty is kept: no prefix.
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              MSet("leftTextTargetPrefix", v)
-                          end,
-                          disabled=function() return MVal("leftTextContent","name") ~= "targetname" end,
-                          disabledTooltip="This option only applies when Target is selected." },
-                                        }),
+                        {
+                            type = "slider",
+                            label = "Size",
+                            min = 8,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("leftTextSize", settingsTable.textSize or 12)
+                            end,
+                            set = function(v)
+                                MSet("leftTextSize", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("leftTextX", 0)
+                            end,
+                            set = function(v)
+                                MSet("leftTextX", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -60,
+                            max = 60,
+                            step = 1,
+                            get = function()
+                                return MVal("leftTextY", 0)
+                            end,
+                            set = function(v)
+                                MSet("leftTextY", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Width %",
+                            min = 20,
+                            max = 200,
+                            step = 5,
+                            get = function()
+                                return MVal("leftTextWidthPct", 100)
+                            end,
+                            set = function(v)
+                                MSet("leftTextWidthPct", v)
+                            end,
+                        },
+                        {
+                            type = "multiswatch",
+                            label = "Indicator Color",
+                            disabled = function()
+                                local c = MVal("leftTextContent", "name")
+                                return c ~= "nametotarget" and c ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
+                            swatches = {
+                                {
+                                    tooltip = "Custom Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local c = MVal("leftTextTargetSepColor", nil)
+                                        if type(c) == "table" then
+                                            return c.r or 1, c.g or 1, c.b or 1
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function(r, g, b)
+                                        MSet("leftTextTargetSepColor", { r = r, g = g, b = b })
+                                    end,
+                                    onClick = function(self)
+                                        if MVal("leftTextTargetSepClassColor", false) then
+                                            MSet("leftTextTargetSepClassColor", false)
+                                            return
+                                        end
+                                        if self._eabOrigClick then
+                                            self._eabOrigClick(self)
+                                        end
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("leftTextTargetSepClassColor", false) and 0.3 or 1
+                                    end,
+                                },
+                                {
+                                    tooltip = "Class Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local _, ct = UnitClass("player")
+                                        local cc = ct and CludesUI.GetClassColor(ct)
+                                        if cc then
+                                            return cc.r, cc.g, cc.b
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function() end,
+                                    onClick = function()
+                                        MSet("leftTextTargetSepClassColor", true)
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("leftTextTargetSepClassColor", false) and 1 or 0.3
+                                    end,
+                                },
+                            },
+                        },
+                        {
+                            type = "input",
+                            label = "Separator",
+                            inputWidth = 60,
+                            get = function()
+                                return MVal("leftTextTargetSep", ">")
+                            end,
+                            set = function(v)
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if v == "" then
+                                    v = ">"
+                                end
+                                MSet("leftTextTargetSep", v)
+                            end,
+                            disabled = function()
+                                return MVal("leftTextContent", "name") ~= "nametotarget"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target is selected.",
+                        },
+                        {
+                            type = "input",
+                            label = "Prefix",
+                            inputWidth = 60,
+                            tooltip = "Text shown before the target's name.",
+                            get = function()
+                                return MVal("leftTextTargetPrefix", "T:")
+                            end,
+                            set = function(v)
+                                -- Unlike Separator, empty is kept: no prefix.
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                MSet("leftTextTargetPrefix", v)
+                            end,
+                            disabled = function()
+                                return MVal("leftTextContent", "name") ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Target is selected.",
+                        },
+                    }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    rgn, rgn:GetFrameLevel() + 5,
-                    function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
-                        if cc then return cc.r, cc.g, cc.b end
-                        return 1, 1, 1
-                    end,
-                    function() end, nil, 20)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local _, classFile = UnitClass("player")
+                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    if cc then
+                        return cc.r, cc.g, cc.b
+                    end
+                    return 1, 1, 1
+                end, function() end, nil, 20)
                 PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
-                    if MVal("leftTextContent", "name") == "none" then return end
-                    MSet("leftTextClassColor", true); CludesUI:RefreshPage()
+                    if MVal("leftTextContent", "name") == "none" then
+                        return
+                    end
+                    MSet("leftTextClassColor", true)
+                    CludesUI:RefreshPage()
                 end)
-                classSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(classSw, "Class Colored") end)
-                classSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                classSw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
+                end)
+                classSw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local swGet = function()
                     return MVal("leftTextColorR", 1), MVal("leftTextColorG", 1), MVal("leftTextColorB", 1)
                 end
                 local swSet = function(r, g, b)
-                    settingsTable.leftTextColorR = r; settingsTable.leftTextColorG = g; settingsTable.leftTextColorB = b
+                    settingsTable.leftTextColorR = r
+                    settingsTable.leftTextColorG = g
+                    settingsTable.leftTextColorB = b
                     ReloadAndUpdate()
                 end
-                local sw, swUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                local sw, swUp =
+                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
                 PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
                 rgn._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
-                    if MVal("leftTextContent", "name") == "none" then return end
-                    if MVal("leftTextClassColor", false) then
-                        MSet("leftTextClassColor", false); CludesUI:RefreshPage(); return
+                    if MVal("leftTextContent", "name") == "none" then
+                        return
                     end
-                    if origClick then origClick(self, ...) end
+                    if MVal("leftTextClassColor", false) then
+                        MSet("leftTextClassColor", false)
+                        CludesUI:RefreshPage()
+                        return
+                    end
+                    if origClick then
+                        origClick(self, ...)
+                    end
                 end)
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Custom Colored") end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local function UpdSwatches()
                     local isNone = MVal("leftTextContent", "name") == "none"
                     local isClass = MVal("leftTextClassColor", false)
                     sw:SetAlpha((isClass or isNone) and 0.3 or 1)
                     classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                 end
-                RegisterWidgetRefresh(function() swUp(); classSwUp(); UpdSwatches() end)
+                RegisterWidgetRefresh(function()
+                    swUp()
+                    classSwUp()
+                    UpdSwatches()
+                end)
                 UpdSwatches()
             end
         end,
     }
-    textSlots[2] = { key="rightText", position="Right Text", default="none",
-        cfg={ type="dropdown", text="Right Text", values=healthTextValues, order=(unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-          getValue=function() return MVal("rightTextContent", "none") end,
-          setValue=function(v)
-            settingsTable.rightTextContent = v
-            if ns.UF_IsUniqueContent(v) then
-                if settingsTable.leftTextContent == v then settingsTable.leftTextContent = "none" end
-                if settingsTable.centerTextContent == v then settingsTable.centerTextContent = "none" end
-            end
-            ReloadAndUpdate(); CludesUI:RefreshPage(true)
-          end,
+    textSlots[2] = {
+        key = "rightText",
+        position = "Right Text",
+        default = "none",
+        cfg = {
+            type = "dropdown",
+            text = "Right Text",
+            values = healthTextValues,
+            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
+            getValue = function()
+                return MVal("rightTextContent", "none")
+            end,
+            setValue = function(v)
+                settingsTable.rightTextContent = v
+                if ns.UF_IsUniqueContent(v) then
+                    if settingsTable.leftTextContent == v then
+                        settingsTable.leftTextContent = "none"
+                    end
+                    if settingsTable.centerTextContent == v then
+                        settingsTable.centerTextContent = "none"
+                    end
+                end
+                ReloadAndUpdate()
+                CludesUI:RefreshPage(true)
+            end,
         },
-        decorate=function(rgn)
+        decorate = function(rgn)
             -- Inline cog + color swatches on Right Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(rgn, {
-                    disabled = function() return MVal("rightTextContent", "none") == "none" end,
+                    disabled = function()
+                        return MVal("rightTextContent", "none") == "none"
+                    end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Right Text Settings",
                     rows = ns.UF_CoreTextRows("rightText", "none", MVal, MSet, {
-                        { type="slider", label="Size", min=8, max=100, step=1,
-                          get=function() return MVal("rightTextSize", settingsTable.textSize or 12) end,
-                          set=function(v) MSet("rightTextSize", v) end },
-                        { type="slider", label="X Offset", min=-100, max=100, step=1,
-                          get=function() return MVal("rightTextX", 0) end,
-                          set=function(v) MSet("rightTextX", v) end },
-                        { type="slider", label="Y Offset", min=-60, max=60, step=1,
-                          get=function() return MVal("rightTextY", 0) end,
-                          set=function(v) MSet("rightTextY", v) end },
-                        { type="slider", label="Width %", min=20, max=200, step=5,
-                          get=function() return MVal("rightTextWidthPct", 100) end,
-                          set=function(v) MSet("rightTextWidthPct", v) end },
-                        { type="multiswatch", label="Indicator Color",
-                          disabled=function() local c = MVal("rightTextContent","none") return c ~= "nametotarget" and c ~= "targetname" end,
-                          disabledTooltip="This option only applies when Name > Target or Target is selected.",
-                          swatches = {
-                            { tooltip = "Custom Colored", hasAlpha = false,
-                              getValue = function() local c = MVal("rightTextTargetSepColor", nil) if type(c) == "table" then return c.r or 1, c.g or 1, c.b or 1 end return 1, 1, 1 end,
-                              setValue = function(r, g, b) MSet("rightTextTargetSepColor", { r=r, g=g, b=b }) end,
-                              onClick = function(self)
-                                  if MVal("rightTextTargetSepClassColor", false) then
-                                      MSet("rightTextTargetSepClassColor", false)
-                                      return
-                                  end
-                                  if self._eabOrigClick then self._eabOrigClick(self) end
-                              end,
-                              refreshAlpha = function() return MVal("rightTextTargetSepClassColor", false) and 0.3 or 1 end },
-                            { tooltip = "Class Colored", hasAlpha = false,
-                              getValue = function()
-                                  local _, ct = UnitClass("player")
-                                  local cc = ct and CludesUI.GetClassColor(ct)
-                                  if cc then return cc.r, cc.g, cc.b end
-                                  return 1, 1, 1
-                              end,
-                              setValue = function() end,
-                              onClick = function() MSet("rightTextTargetSepClassColor", true) end,
-                              refreshAlpha = function() return MVal("rightTextTargetSepClassColor", false) and 1 or 0.3 end },
-                          } },
-                        { type="input", label="Separator", inputWidth=60,
-                          get=function() return MVal("rightTextTargetSep", ">") end,
-                          set=function(v)
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              if v == "" then v = ">" end
-                              MSet("rightTextTargetSep", v)
-                          end,
-                          disabled=function() return MVal("rightTextContent","none") ~= "nametotarget" end,
-                          disabledTooltip="This option only applies when Name > Target is selected." },
-                        { type="input", label="Prefix", inputWidth=60,
-                          tooltip="Text shown before the target's name.",
-                          get=function() return MVal("rightTextTargetPrefix", "T:") end,
-                          set=function(v)
-                              -- Unlike Separator, empty is kept: no prefix.
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              MSet("rightTextTargetPrefix", v)
-                          end,
-                          disabled=function() return MVal("rightTextContent","none") ~= "targetname" end,
-                          disabledTooltip="This option only applies when Target is selected." },
-                                        }),
+                        {
+                            type = "slider",
+                            label = "Size",
+                            min = 8,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("rightTextSize", settingsTable.textSize or 12)
+                            end,
+                            set = function(v)
+                                MSet("rightTextSize", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("rightTextX", 0)
+                            end,
+                            set = function(v)
+                                MSet("rightTextX", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -60,
+                            max = 60,
+                            step = 1,
+                            get = function()
+                                return MVal("rightTextY", 0)
+                            end,
+                            set = function(v)
+                                MSet("rightTextY", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Width %",
+                            min = 20,
+                            max = 200,
+                            step = 5,
+                            get = function()
+                                return MVal("rightTextWidthPct", 100)
+                            end,
+                            set = function(v)
+                                MSet("rightTextWidthPct", v)
+                            end,
+                        },
+                        {
+                            type = "multiswatch",
+                            label = "Indicator Color",
+                            disabled = function()
+                                local c = MVal("rightTextContent", "none")
+                                return c ~= "nametotarget" and c ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
+                            swatches = {
+                                {
+                                    tooltip = "Custom Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local c = MVal("rightTextTargetSepColor", nil)
+                                        if type(c) == "table" then
+                                            return c.r or 1, c.g or 1, c.b or 1
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function(r, g, b)
+                                        MSet("rightTextTargetSepColor", { r = r, g = g, b = b })
+                                    end,
+                                    onClick = function(self)
+                                        if MVal("rightTextTargetSepClassColor", false) then
+                                            MSet("rightTextTargetSepClassColor", false)
+                                            return
+                                        end
+                                        if self._eabOrigClick then
+                                            self._eabOrigClick(self)
+                                        end
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("rightTextTargetSepClassColor", false) and 0.3 or 1
+                                    end,
+                                },
+                                {
+                                    tooltip = "Class Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local _, ct = UnitClass("player")
+                                        local cc = ct and CludesUI.GetClassColor(ct)
+                                        if cc then
+                                            return cc.r, cc.g, cc.b
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function() end,
+                                    onClick = function()
+                                        MSet("rightTextTargetSepClassColor", true)
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("rightTextTargetSepClassColor", false) and 1 or 0.3
+                                    end,
+                                },
+                            },
+                        },
+                        {
+                            type = "input",
+                            label = "Separator",
+                            inputWidth = 60,
+                            get = function()
+                                return MVal("rightTextTargetSep", ">")
+                            end,
+                            set = function(v)
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if v == "" then
+                                    v = ">"
+                                end
+                                MSet("rightTextTargetSep", v)
+                            end,
+                            disabled = function()
+                                return MVal("rightTextContent", "none") ~= "nametotarget"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target is selected.",
+                        },
+                        {
+                            type = "input",
+                            label = "Prefix",
+                            inputWidth = 60,
+                            tooltip = "Text shown before the target's name.",
+                            get = function()
+                                return MVal("rightTextTargetPrefix", "T:")
+                            end,
+                            set = function(v)
+                                -- Unlike Separator, empty is kept: no prefix.
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                MSet("rightTextTargetPrefix", v)
+                            end,
+                            disabled = function()
+                                return MVal("rightTextContent", "none") ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Target is selected.",
+                        },
+                    }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    rgn, rgn:GetFrameLevel() + 5,
-                    function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
-                        if cc then return cc.r, cc.g, cc.b end
-                        return 1, 1, 1
-                    end,
-                    function() end, nil, 20)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local _, classFile = UnitClass("player")
+                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    if cc then
+                        return cc.r, cc.g, cc.b
+                    end
+                    return 1, 1, 1
+                end, function() end, nil, 20)
                 PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
-                    if MVal("rightTextContent", "none") == "none" then return end
-                    MSet("rightTextClassColor", true); CludesUI:RefreshPage()
+                    if MVal("rightTextContent", "none") == "none" then
+                        return
+                    end
+                    MSet("rightTextClassColor", true)
+                    CludesUI:RefreshPage()
                 end)
-                classSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(classSw, "Class Colored") end)
-                classSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                classSw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
+                end)
+                classSw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local swGet = function()
                     return MVal("rightTextColorR", 1), MVal("rightTextColorG", 1), MVal("rightTextColorB", 1)
                 end
                 local swSet = function(r, g, b)
-                    settingsTable.rightTextColorR = r; settingsTable.rightTextColorG = g; settingsTable.rightTextColorB = b
+                    settingsTable.rightTextColorR = r
+                    settingsTable.rightTextColorG = g
+                    settingsTable.rightTextColorB = b
                     ReloadAndUpdate()
                 end
-                local sw, swUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                local sw, swUp =
+                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
                 PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
                 rgn._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
-                    if MVal("rightTextContent", "none") == "none" then return end
-                    if MVal("rightTextClassColor", false) then
-                        MSet("rightTextClassColor", false); CludesUI:RefreshPage(); return
+                    if MVal("rightTextContent", "none") == "none" then
+                        return
                     end
-                    if origClick then origClick(self, ...) end
+                    if MVal("rightTextClassColor", false) then
+                        MSet("rightTextClassColor", false)
+                        CludesUI:RefreshPage()
+                        return
+                    end
+                    if origClick then
+                        origClick(self, ...)
+                    end
                 end)
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Custom Colored") end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local function UpdSwatches()
                     local isNone = MVal("rightTextContent", "none") == "none"
                     local isClass = MVal("rightTextClassColor", false)
                     sw:SetAlpha((isClass or isNone) and 0.3 or 1)
                     classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                 end
-                RegisterWidgetRefresh(function() swUp(); classSwUp(); UpdSwatches() end)
+                RegisterWidgetRefresh(function()
+                    swUp()
+                    classSwUp()
+                    UpdSwatches()
+                end)
                 UpdSwatches()
             end
         end,
     }
-    textSlots[3] = { key="centerText", position="Center Text", default="none",
-        cfg={ type="dropdown", text="Center Text", values=healthTextValues, order=(unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-          getValue=function() return MVal("centerTextContent", "none") end,
-          setValue=function(v)
-            settingsTable.centerTextContent = v
-            ReloadAndUpdate(); CludesUI:RefreshPage(true)
-          end },
-        decorate=function(rgn)
+    textSlots[3] = {
+        key = "centerText",
+        position = "Center Text",
+        default = "none",
+        cfg = {
+            type = "dropdown",
+            text = "Center Text",
+            values = healthTextValues,
+            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
+            getValue = function()
+                return MVal("centerTextContent", "none")
+            end,
+            setValue = function(v)
+                settingsTable.centerTextContent = v
+                ReloadAndUpdate()
+                CludesUI:RefreshPage(true)
+            end,
+        },
+        decorate = function(rgn)
             -- Inline cog + color swatches on Center Text: Custom + Class (CDM Border Size pattern)
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(rgn, {
-                    disabled = function() return MVal("centerTextContent", "none") == "none" end,
+                    disabled = function()
+                        return MVal("centerTextContent", "none") == "none"
+                    end,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = "Center Text Settings",
                     rows = ns.UF_CoreTextRows("centerText", "none", MVal, MSet, {
-                        { type="slider", label="Size", min=8, max=100, step=1,
-                          get=function() return MVal("centerTextSize", settingsTable.textSize or 12) end,
-                          set=function(v) MSet("centerTextSize", v) end },
-                        { type="slider", label="X Offset", min=-100, max=100, step=1,
-                          get=function() return MVal("centerTextX", 0) end,
-                          set=function(v) MSet("centerTextX", v) end },
-                        { type="slider", label="Y Offset", min=-60, max=60, step=1,
-                          get=function() return MVal("centerTextY", 0) end,
-                          set=function(v) MSet("centerTextY", v) end },
-                        { type="slider", label="Width %", min=20, max=200, step=5,
-                          get=function() return MVal("centerTextWidthPct", 100) end,
-                          set=function(v) MSet("centerTextWidthPct", v) end },
-                        { type="multiswatch", label="Indicator Color",
-                          disabled=function() local c = MVal("centerTextContent","none") return c ~= "nametotarget" and c ~= "targetname" end,
-                          disabledTooltip="This option only applies when Name > Target or Target is selected.",
-                          swatches = {
-                            { tooltip = "Custom Colored", hasAlpha = false,
-                              getValue = function() local c = MVal("centerTextTargetSepColor", nil) if type(c) == "table" then return c.r or 1, c.g or 1, c.b or 1 end return 1, 1, 1 end,
-                              setValue = function(r, g, b) MSet("centerTextTargetSepColor", { r=r, g=g, b=b }) end,
-                              onClick = function(self)
-                                  if MVal("centerTextTargetSepClassColor", false) then
-                                      MSet("centerTextTargetSepClassColor", false)
-                                      return
-                                  end
-                                  if self._eabOrigClick then self._eabOrigClick(self) end
-                              end,
-                              refreshAlpha = function() return MVal("centerTextTargetSepClassColor", false) and 0.3 or 1 end },
-                            { tooltip = "Class Colored", hasAlpha = false,
-                              getValue = function()
-                                  local _, ct = UnitClass("player")
-                                  local cc = ct and CludesUI.GetClassColor(ct)
-                                  if cc then return cc.r, cc.g, cc.b end
-                                  return 1, 1, 1
-                              end,
-                              setValue = function() end,
-                              onClick = function() MSet("centerTextTargetSepClassColor", true) end,
-                              refreshAlpha = function() return MVal("centerTextTargetSepClassColor", false) and 1 or 0.3 end },
-                          } },
-                        { type="input", label="Separator", inputWidth=60,
-                          get=function() return MVal("centerTextTargetSep", ">") end,
-                          set=function(v)
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              if v == "" then v = ">" end
-                              MSet("centerTextTargetSep", v)
-                          end,
-                          disabled=function() return MVal("centerTextContent","none") ~= "nametotarget" end,
-                          disabledTooltip="This option only applies when Name > Target is selected." },
-                        { type="input", label="Prefix", inputWidth=60,
-                          tooltip="Text shown before the target's name.",
-                          get=function() return MVal("centerTextTargetPrefix", "T:") end,
-                          set=function(v)
-                              -- Unlike Separator, empty is kept: no prefix.
-                              v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                              MSet("centerTextTargetPrefix", v)
-                          end,
-                          disabled=function() return MVal("centerTextContent","none") ~= "targetname" end,
-                          disabledTooltip="This option only applies when Target is selected." },
-                                        }),
+                        {
+                            type = "slider",
+                            label = "Size",
+                            min = 8,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("centerTextSize", settingsTable.textSize or 12)
+                            end,
+                            set = function(v)
+                                MSet("centerTextSize", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return MVal("centerTextX", 0)
+                            end,
+                            set = function(v)
+                                MSet("centerTextX", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -60,
+                            max = 60,
+                            step = 1,
+                            get = function()
+                                return MVal("centerTextY", 0)
+                            end,
+                            set = function(v)
+                                MSet("centerTextY", v)
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Width %",
+                            min = 20,
+                            max = 200,
+                            step = 5,
+                            get = function()
+                                return MVal("centerTextWidthPct", 100)
+                            end,
+                            set = function(v)
+                                MSet("centerTextWidthPct", v)
+                            end,
+                        },
+                        {
+                            type = "multiswatch",
+                            label = "Indicator Color",
+                            disabled = function()
+                                local c = MVal("centerTextContent", "none")
+                                return c ~= "nametotarget" and c ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
+                            swatches = {
+                                {
+                                    tooltip = "Custom Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local c = MVal("centerTextTargetSepColor", nil)
+                                        if type(c) == "table" then
+                                            return c.r or 1, c.g or 1, c.b or 1
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function(r, g, b)
+                                        MSet("centerTextTargetSepColor", { r = r, g = g, b = b })
+                                    end,
+                                    onClick = function(self)
+                                        if MVal("centerTextTargetSepClassColor", false) then
+                                            MSet("centerTextTargetSepClassColor", false)
+                                            return
+                                        end
+                                        if self._eabOrigClick then
+                                            self._eabOrigClick(self)
+                                        end
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("centerTextTargetSepClassColor", false) and 0.3 or 1
+                                    end,
+                                },
+                                {
+                                    tooltip = "Class Colored",
+                                    hasAlpha = false,
+                                    getValue = function()
+                                        local _, ct = UnitClass("player")
+                                        local cc = ct and CludesUI.GetClassColor(ct)
+                                        if cc then
+                                            return cc.r, cc.g, cc.b
+                                        end
+                                        return 1, 1, 1
+                                    end,
+                                    setValue = function() end,
+                                    onClick = function()
+                                        MSet("centerTextTargetSepClassColor", true)
+                                    end,
+                                    refreshAlpha = function()
+                                        return MVal("centerTextTargetSepClassColor", false) and 1 or 0.3
+                                    end,
+                                },
+                            },
+                        },
+                        {
+                            type = "input",
+                            label = "Separator",
+                            inputWidth = 60,
+                            get = function()
+                                return MVal("centerTextTargetSep", ">")
+                            end,
+                            set = function(v)
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                if v == "" then
+                                    v = ">"
+                                end
+                                MSet("centerTextTargetSep", v)
+                            end,
+                            disabled = function()
+                                return MVal("centerTextContent", "none") ~= "nametotarget"
+                            end,
+                            disabledTooltip = "This option only applies when Name > Target is selected.",
+                        },
+                        {
+                            type = "input",
+                            label = "Prefix",
+                            inputWidth = 60,
+                            tooltip = "Text shown before the target's name.",
+                            get = function()
+                                return MVal("centerTextTargetPrefix", "T:")
+                            end,
+                            set = function(v)
+                                -- Unlike Separator, empty is kept: no prefix.
+                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                MSet("centerTextTargetPrefix", v)
+                            end,
+                            disabled = function()
+                                return MVal("centerTextContent", "none") ~= "targetname"
+                            end,
+                            disabledTooltip = "This option only applies when Target is selected.",
+                        },
+                    }),
                 })
 
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    rgn, rgn:GetFrameLevel() + 5,
-                    function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
-                        if cc then return cc.r, cc.g, cc.b end
-                        return 1, 1, 1
-                    end,
-                    function() end, nil, 20)
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local _, classFile = UnitClass("player")
+                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    if cc then
+                        return cc.r, cc.g, cc.b
+                    end
+                    return 1, 1, 1
+                end, function() end, nil, 20)
                 PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                 classSw:SetScript("OnClick", function()
-                    if MVal("centerTextContent", "none") == "none" then return end
-                    MSet("centerTextClassColor", true); CludesUI:RefreshPage()
+                    if MVal("centerTextContent", "none") == "none" then
+                        return
+                    end
+                    MSet("centerTextClassColor", true)
+                    CludesUI:RefreshPage()
                 end)
-                classSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(classSw, "Class Colored") end)
-                classSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                classSw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
+                end)
+                classSw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local swGet = function()
-                    return MVal("centerTextColorR", 1), MVal("centerTextColorG", 1), MVal("centerTextColorB", 1)
+                    return MVal("centerTextColorR", 1),
+                        MVal("centerTextColorG", 1),
+                        MVal("centerTextColorB", 1)
                 end
                 local swSet = function(r, g, b)
-                    settingsTable.centerTextColorR = r; settingsTable.centerTextColorG = g; settingsTable.centerTextColorB = b
+                    settingsTable.centerTextColorR = r
+                    settingsTable.centerTextColorG = g
+                    settingsTable.centerTextColorB = b
                     ReloadAndUpdate()
                 end
-                local sw, swUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                local sw, swUp =
+                    CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
                 PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
                 rgn._lastInline = sw
                 local origClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self, ...)
-                    if MVal("centerTextContent", "none") == "none" then return end
-                    if MVal("centerTextClassColor", false) then
-                        MSet("centerTextClassColor", false); CludesUI:RefreshPage(); return
+                    if MVal("centerTextContent", "none") == "none" then
+                        return
                     end
-                    if origClick then origClick(self, ...) end
+                    if MVal("centerTextClassColor", false) then
+                        MSet("centerTextClassColor", false)
+                        CludesUI:RefreshPage()
+                        return
+                    end
+                    if origClick then
+                        origClick(self, ...)
+                    end
                 end)
-                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Custom Colored") end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local function UpdSwatches()
                     local isNone = MVal("centerTextContent", "none") == "none"
                     local isClass = MVal("centerTextClassColor", false)
                     sw:SetAlpha((isClass or isNone) and 0.3 or 1)
                     classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                 end
-                RegisterWidgetRefresh(function() swUp(); classSwUp(); UpdSwatches() end)
+                RegisterWidgetRefresh(function()
+                    swUp()
+                    classSwUp()
+                    UpdSwatches()
+                end)
                 UpdSwatches()
             end
         end,
     }
     if unitKey == "boss" then
-        textSlots[4] = { key="extraText", position="Extra Text (full length)", default="none",
-            cfg={ type="dropdown", text="Extra Text (full length)", values=healthTextValues, order=healthTextOrderBoss,
-              getValue=function() return MVal("extraTextContent", "none") end,
-              setValue=function(v)
-                settingsTable.extraTextContent = v
-                ReloadAndUpdate(); CludesUI:RefreshPage(true)
-              end },
-            decorate=function(rgn)
+        textSlots[4] = {
+            key = "extraText",
+            position = "Extra Text (full length)",
+            default = "none",
+            cfg = {
+                type = "dropdown",
+                text = "Extra Text (full length)",
+                values = healthTextValues,
+                order = healthTextOrderBoss,
+                getValue = function()
+                    return MVal("extraTextContent", "none")
+                end,
+                setValue = function(v)
+                    settingsTable.extraTextContent = v
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage(true)
+                end,
+            },
+            decorate = function(rgn)
                 -- Extra Text retains the boss-only Alignment setting.
                 if unitKey == "boss" and not CludesUI._prebuilding then
                     CludesUI.BuildInlineCog(rgn, {
-                        disabled = function() return MVal("extraTextContent", "none") == "none" end,
+                        disabled = function()
+                            return MVal("extraTextContent", "none") == "none"
+                        end,
                         disabledTooltip = "This option requires a text selection other than none.",
                         title = "Extra Text Settings",
                         rows = ns.UF_CoreTextRows("extraText", "none", MVal, MSet, {
-                            { type="dropdown", label="Alignment",
-                              values={ ["left"]="Left", ["right"]="Right", ["center"]="Center" }, order={ "left", "right", "center" },
-                              get=function() return MVal("extraTextAlign", "left") end,
-                              set=function(v) MSet("extraTextAlign", v) end },
-                            { type="slider", label="Size", min=8, max=100, step=1,
-                              get=function() return MVal("extraTextSize", settingsTable.textSize or 12) end,
-                              set=function(v) MSet("extraTextSize", v) end },
-                            { type="slider", label="X Offset", min=-300, max=300, step=1,
-                              get=function() return MVal("extraTextX", 0) end,
-                              set=function(v) MSet("extraTextX", v) end },
-                            { type="slider", label="Y Offset", min=-300, max=300, step=1,
-                              get=function() return MVal("extraTextY", 0) end,
-                              set=function(v) MSet("extraTextY", v) end },
-                            { type="slider", label="Width %", min=20, max=200, step=5,
-                              get=function() return MVal("extraTextWidthPct", 100) end,
-                              set=function(v) MSet("extraTextWidthPct", v) end },
-                            { type="multiswatch", label="Indicator Color",
-                              disabled=function() local c = MVal("extraTextContent","none") return c ~= "nametotarget" and c ~= "targetname" end,
-                              disabledTooltip="This option only applies when Name > Target or Target is selected.",
-                              swatches = {
-                                { tooltip = "Custom Colored", hasAlpha = false,
-                                  getValue = function() local c = MVal("extraTextTargetSepColor", nil) if type(c) == "table" then return c.r or 1, c.g or 1, c.b or 1 end return 1, 1, 1 end,
-                                  setValue = function(r, g, b) MSet("extraTextTargetSepColor", { r=r, g=g, b=b }) end,
-                                  onClick = function(self)
-                                      if MVal("extraTextTargetSepClassColor", false) then
-                                          MSet("extraTextTargetSepClassColor", false)
-                                          return
-                                      end
-                                      if self._eabOrigClick then self._eabOrigClick(self) end
-                                  end,
-                                  refreshAlpha = function() return MVal("extraTextTargetSepClassColor", false) and 0.3 or 1 end },
-                                { tooltip = "Class Colored", hasAlpha = false,
-                                  getValue = function()
-                                      local _, ct = UnitClass("player")
-                                      local cc = ct and CludesUI.GetClassColor(ct)
-                                      if cc then return cc.r, cc.g, cc.b end
-                                      return 1, 1, 1
-                                  end,
-                                  setValue = function() end,
-                                  onClick = function() MSet("extraTextTargetSepClassColor", true) end,
-                                  refreshAlpha = function() return MVal("extraTextTargetSepClassColor", false) and 1 or 0.3 end },
-                              } },
-                            { type="input", label="Separator", inputWidth=60,
-                              get=function() return MVal("extraTextTargetSep", ">") end,
-                              set=function(v)
-                                  v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                  if v == "" then v = ">" end
-                                  MSet("extraTextTargetSep", v)
-                              end,
-                              disabled=function() return MVal("extraTextContent","none") ~= "nametotarget" end,
-                              disabledTooltip="This option only applies when Name > Target is selected." },
-                            { type="input", label="Prefix", inputWidth=60,
-                              tooltip="Text shown before the target's name.",
-                              get=function() return MVal("extraTextTargetPrefix", "T:") end,
-                              set=function(v)
-                                  -- Unlike Separator, empty is kept: no prefix.
-                                  v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                  MSet("extraTextTargetPrefix", v)
-                              end,
-                              disabled=function() return MVal("extraTextContent","none") ~= "targetname" end,
-                              disabledTooltip="This option only applies when Target is selected." },
-                                            }),
+                            {
+                                type = "dropdown",
+                                label = "Alignment",
+                                values = { ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
+                                order = { "left", "right", "center" },
+                                get = function()
+                                    return MVal("extraTextAlign", "left")
+                                end,
+                                set = function(v)
+                                    MSet("extraTextAlign", v)
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Size",
+                                min = 8,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return MVal("extraTextSize", settingsTable.textSize or 12)
+                                end,
+                                set = function(v)
+                                    MSet("extraTextSize", v)
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "X Offset",
+                                min = -300,
+                                max = 300,
+                                step = 1,
+                                get = function()
+                                    return MVal("extraTextX", 0)
+                                end,
+                                set = function(v)
+                                    MSet("extraTextX", v)
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Y Offset",
+                                min = -300,
+                                max = 300,
+                                step = 1,
+                                get = function()
+                                    return MVal("extraTextY", 0)
+                                end,
+                                set = function(v)
+                                    MSet("extraTextY", v)
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Width %",
+                                min = 20,
+                                max = 200,
+                                step = 5,
+                                get = function()
+                                    return MVal("extraTextWidthPct", 100)
+                                end,
+                                set = function(v)
+                                    MSet("extraTextWidthPct", v)
+                                end,
+                            },
+                            {
+                                type = "multiswatch",
+                                label = "Indicator Color",
+                                disabled = function()
+                                    local c = MVal("extraTextContent", "none")
+                                    return c ~= "nametotarget" and c ~= "targetname"
+                                end,
+                                disabledTooltip = "This option only applies when Name > Target or Target is selected.",
+                                swatches = {
+                                    {
+                                        tooltip = "Custom Colored",
+                                        hasAlpha = false,
+                                        getValue = function()
+                                            local c = MVal("extraTextTargetSepColor", nil)
+                                            if type(c) == "table" then
+                                                return c.r or 1, c.g or 1, c.b or 1
+                                            end
+                                            return 1, 1, 1
+                                        end,
+                                        setValue = function(r, g, b)
+                                            MSet("extraTextTargetSepColor", { r = r, g = g, b = b })
+                                        end,
+                                        onClick = function(self)
+                                            if MVal("extraTextTargetSepClassColor", false) then
+                                                MSet("extraTextTargetSepClassColor", false)
+                                                return
+                                            end
+                                            if self._eabOrigClick then
+                                                self._eabOrigClick(self)
+                                            end
+                                        end,
+                                        refreshAlpha = function()
+                                            return MVal("extraTextTargetSepClassColor", false) and 0.3 or 1
+                                        end,
+                                    },
+                                    {
+                                        tooltip = "Class Colored",
+                                        hasAlpha = false,
+                                        getValue = function()
+                                            local _, ct = UnitClass("player")
+                                            local cc = ct and CludesUI.GetClassColor(ct)
+                                            if cc then
+                                                return cc.r, cc.g, cc.b
+                                            end
+                                            return 1, 1, 1
+                                        end,
+                                        setValue = function() end,
+                                        onClick = function()
+                                            MSet("extraTextTargetSepClassColor", true)
+                                        end,
+                                        refreshAlpha = function()
+                                            return MVal("extraTextTargetSepClassColor", false) and 1 or 0.3
+                                        end,
+                                    },
+                                },
+                            },
+                            {
+                                type = "input",
+                                label = "Separator",
+                                inputWidth = 60,
+                                get = function()
+                                    return MVal("extraTextTargetSep", ">")
+                                end,
+                                set = function(v)
+                                    v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                    if v == "" then
+                                        v = ">"
+                                    end
+                                    MSet("extraTextTargetSep", v)
+                                end,
+                                disabled = function()
+                                    return MVal("extraTextContent", "none") ~= "nametotarget"
+                                end,
+                                disabledTooltip = "This option only applies when Name > Target is selected.",
+                            },
+                            {
+                                type = "input",
+                                label = "Prefix",
+                                inputWidth = 60,
+                                tooltip = "Text shown before the target's name.",
+                                get = function()
+                                    return MVal("extraTextTargetPrefix", "T:")
+                                end,
+                                set = function(v)
+                                    -- Unlike Separator, empty is kept: no prefix.
+                                    v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
+                                    MSet("extraTextTargetPrefix", v)
+                                end,
+                                disabled = function()
+                                    return MVal("extraTextContent", "none") ~= "targetname"
+                                end,
+                                disabledTooltip = "This option only applies when Target is selected.",
+                            },
+                        }),
                     })
 
                     local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                        rgn, rgn:GetFrameLevel() + 5,
+                        rgn,
+                        rgn:GetFrameLevel() + 5,
                         function()
                             local _, classFile = UnitClass("player")
                             local cc = classFile and CludesUI.GetClassColor(classFile)
-                            if cc then return cc.r, cc.g, cc.b end
+                            if cc then
+                                return cc.r, cc.g, cc.b
+                            end
                             return 1, 1, 1
                         end,
-                        function() end, nil, 20)
+                        function() end,
+                        nil,
+                        20
+                    )
                     PP.Point(classSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
                     classSw:SetScript("OnClick", function()
-                        if MVal("extraTextContent", "none") == "none" then return end
-                        MSet("extraTextClassColor", true); CludesUI:RefreshPage()
+                        if MVal("extraTextContent", "none") == "none" then
+                            return
+                        end
+                        MSet("extraTextClassColor", true)
+                        CludesUI:RefreshPage()
                     end)
-                    classSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(classSw, "Class Colored") end)
-                    classSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                    classSw:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
+                    end)
+                    classSw:SetScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
                     local swGet = function()
-                        return MVal("extraTextColorR", 1), MVal("extraTextColorG", 1), MVal("extraTextColorB", 1)
+                        return MVal("extraTextColorR", 1),
+                            MVal("extraTextColorG", 1),
+                            MVal("extraTextColorB", 1)
                     end
                     local swSet = function(r, g, b)
-                        settingsTable.extraTextColorR = r; settingsTable.extraTextColorG = g; settingsTable.extraTextColorB = b
+                        settingsTable.extraTextColorR = r
+                        settingsTable.extraTextColorG = g
+                        settingsTable.extraTextColorB = b
                         ReloadAndUpdate()
                     end
-                    local sw, swUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
+                    local sw, swUp =
+                        CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, swGet, swSet, nil, 20)
                     PP.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
                     rgn._lastInline = sw
                     local swOrigClick = sw:GetScript("OnClick")
                     sw:SetScript("OnClick", function(self, ...)
-                        if MVal("extraTextContent", "none") == "none" then return end
-                        if MVal("extraTextClassColor", false) then
-                            MSet("extraTextClassColor", false); CludesUI:RefreshPage(); return
+                        if MVal("extraTextContent", "none") == "none" then
+                            return
                         end
-                        if swOrigClick then swOrigClick(self, ...) end
+                        if MVal("extraTextClassColor", false) then
+                            MSet("extraTextClassColor", false)
+                            CludesUI:RefreshPage()
+                            return
+                        end
+                        if swOrigClick then
+                            swOrigClick(self, ...)
+                        end
                     end)
-                    sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Custom Colored") end)
-                    sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                    sw:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
+                    end)
+                    sw:SetScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
                     local function UpdSwatches()
                         local isNone = MVal("extraTextContent", "none") == "none"
                         local isClass = MVal("extraTextClassColor", false)
                         sw:SetAlpha((isClass or isNone) and 0.3 or 1)
                         classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                     end
-                    RegisterWidgetRefresh(function() swUp(); classSwUp(); UpdSwatches() end)
+                    RegisterWidgetRefresh(function()
+                        swUp()
+                        classSwUp()
+                        UpdSwatches()
+                    end)
                     UpdSwatches()
                 end
             end,
@@ -1162,11 +2019,18 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     end
     local textRow
     y, textRow = ns.UFO_BuildTextSlots(W, parent, y, {
-        slots=textSlots, values=healthTextValues, contentOrder=textSlots[1].cfg.order,
-        unit=unitKey, page=unitKey == "boss" and "Boss Frames" or "Mini Frames",
-        db=function() return settingsTable end,
-        liveDB=function() return db.profile[unitKey] end,
-        apply=ReloadAndUpdate,
+        slots = textSlots,
+        values = healthTextValues,
+        contentOrder = textSlots[1].cfg.order,
+        unit = unitKey,
+        page = unitKey == "boss" and "Boss Frames" or "Mini Frames",
+        db = function()
+            return settingsTable
+        end,
+        liveDB = function()
+            return db.profile[unitKey]
+        end,
+        apply = ReloadAndUpdate,
     })
 
     -- POWER BAR section (mini units with a power bar: boss, and the pet on WoW Forever).
@@ -1174,19 +2038,41 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
     -- a height of 0 effectively hides the bar.
     if opts.hasPowerBar then
         local powerHeader
-        powerHeader, h = W:SectionHeader(parent, "POWER BAR", y); y = y - h
+        powerHeader, h = W:SectionHeader(parent, "POWER BAR", y)
+        y = y - h
 
         -- Row 1: Power Bar Height (+ Reverse Fill cog) | Above Health Bar toggle
         local pwrRow1
-        pwrRow1, h = W:DualRow(parent, y,
+        pwrRow1, h = W:DualRow(
+            parent,
+            y,
             -- Blizzard Style: the stock track fixes height and spot; the
             -- Reverse Fill cog on this slot keeps working (keepRow).
-            CludesUI.BlizzStyle.Gate("unitframes", { type="slider", text="Power Bar Height", min=0, max=100, step=1,
-              getValue=function() return MVal("powerHeight", 6) end,
-              setValue=function(v) MSet("powerHeight", v) end }, true),
-            CludesUI.BlizzStyle.Gate("unitframes", { type="toggle", text="Above Health Bar",
-              getValue=function() return MVal("powerPosition", "below") == "above" end,
-              setValue=function(v) MSet("powerPosition", v and "above" or "below") end }));  y = y - h
+            CludesUI.BlizzStyle.Gate("unitframes", {
+                type = "slider",
+                text = "Power Bar Height",
+                min = 0,
+                max = 100,
+                step = 1,
+                getValue = function()
+                    return MVal("powerHeight", 6)
+                end,
+                setValue = function(v)
+                    MSet("powerHeight", v)
+                end,
+            }, true),
+            CludesUI.BlizzStyle.Gate("unitframes", {
+                type = "toggle",
+                text = "Above Health Bar",
+                getValue = function()
+                    return MVal("powerPosition", "below") == "above"
+                end,
+                setValue = function(v)
+                    MSet("powerPosition", v and "above" or "below")
+                end,
+            })
+        )
+        y = y - h
         -- Expose the Power Bar Height row + POWER BAR header so the boss
         -- preview's power-bar click overlay can scroll here.
         parent._powerHeaderFrame = powerHeader
@@ -1197,9 +2083,16 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             CludesUI.BuildInlineCog(rgn, {
                 title = "Power Bar Fill",
                 rows = {
-                    { type="toggle", label="Reverse Fill",
-                      get=function() return MVal("powerReverseFill", false) end,
-                      set=function(v) MSet("powerReverseFill", v) end },
+                    {
+                        type = "toggle",
+                        label = "Reverse Fill",
+                        get = function()
+                            return MVal("powerReverseFill", false)
+                        end,
+                        set = function(v)
+                            MSet("powerReverseFill", v)
+                        end,
+                    },
                 },
             })
         end
@@ -1208,13 +2101,32 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- Fill Color (opacity slider + power/custom fill swatches). Mirrors the
         -- Main Frames power bar; the opacity sliders replace the old plain ones.
         local pwrRow2
-        pwrRow2, h = W:DualRow(parent, y,
-            { type="slider", text="Bar Background", min=0, max=100, step=1,
-              getValue=function() return MVal("customPowerBgAlpha", 100) end,
-              setValue=function(v) MSet("customPowerBgAlpha", v) end },
-            { type="slider", text="Fill Color", min=0, max=100, step=1,
-              getValue=function() return MVal("powerBarOpacity", 100) end,
-              setValue=function(v) MSet("powerBarOpacity", v) end });  y = y - h
+        pwrRow2, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Bar Background",
+            min = 0,
+            max = 100,
+            step = 1,
+            getValue = function()
+                return MVal("customPowerBgAlpha", 100)
+            end,
+            setValue = function(v)
+                MSet("customPowerBgAlpha", v)
+            end,
+        }, {
+            type = "slider",
+            text = "Fill Color",
+            min = 0,
+            max = 100,
+            step = 1,
+            getValue = function()
+                return MVal("powerBarOpacity", 100)
+            end,
+            setValue = function(v)
+                MSet("powerBarOpacity", v)
+            end,
+        })
+        y = y - h
         -- Inline Power Colored + Custom background swatches on Bar Background
         -- (left region); both toggle powerBgPowerColored, the inactive one
         -- dims to 0.3 (mirrors the Main Frames power Bar Background).
@@ -1226,14 +2138,29 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 local f = CludesUI.GetPowerBgDarkenFactor()
                 return info.r * f, info.g * f, info.b * f
             end
-            local bgPwrSw, bgPwrUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgPwrGet, function() end, false, 20)
+            local bgPwrSw, bgPwrUpdate = CludesUI.BuildColorSwatch(
+                rgn,
+                rgn:GetFrameLevel() + 5,
+                bgPwrGet,
+                function() end,
+                false,
+                20
+            )
             bgPwrSw._eabOrigClick = bgPwrSw:GetScript("OnClick")
             bgPwrSw:SetScript("OnClick", function()
                 settingsTable.powerBgPowerColored = true
-                ReloadAndUpdate(); CludesUI:RefreshPage()
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
             end)
-            bgPwrSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgPwrSw, "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors.") end)
-            bgPwrSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            bgPwrSw:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(
+                    bgPwrSw,
+                    "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors."
+                )
+            end)
+            bgPwrSw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             PP.Point(bgPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = bgPwrSw
             RegisterWidgetRefresh(function()
@@ -1244,25 +2171,35 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
             local bgGet = function()
                 local c = MGet("customPowerBgColor")
-                if c then return c.r, c.g, c.b end
-                return 17/255, 17/255, 17/255
+                if c then
+                    return c.r, c.g, c.b
+                end
+                return 17 / 255, 17 / 255, 17 / 255
             end
             local bgSet = function(r, g, b)
-                settingsTable.customPowerBgColor = { r=r, g=g, b=b }
+                settingsTable.customPowerBgColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
             end
-            local bgSw, bgSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgGet, bgSet, false, 20)
+            local bgSw, bgSwUp =
+                CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgGet, bgSet, false, 20)
             bgSw._eabOrigClick = bgSw:GetScript("OnClick")
             bgSw:SetScript("OnClick", function(self)
                 if MVal("powerBgPowerColored", false) then
                     settingsTable.powerBgPowerColored = false
-                    ReloadAndUpdate(); CludesUI:RefreshPage()
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
                     return
                 end
-                if self._eabOrigClick then self._eabOrigClick(self) end
+                if self._eabOrigClick then
+                    self._eabOrigClick(self)
+                end
             end)
-            bgSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color") end)
-            bgSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            bgSw:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color")
+            end)
+            bgSw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             PP.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = bgSw
             RegisterWidgetRefresh(function()
@@ -1281,14 +2218,29 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                 local info = CludesUI.GetPowerColor(pToken or "MANA")
                 return info.r, info.g, info.b
             end
-            local fPwrSw, fPwrUpdate = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fPwrGet, function() end, false, 20)
+            local fPwrSw, fPwrUpdate = CludesUI.BuildColorSwatch(
+                rgn,
+                rgn:GetFrameLevel() + 5,
+                fPwrGet,
+                function() end,
+                false,
+                20
+            )
             fPwrSw._eabOrigClick = fPwrSw:GetScript("OnClick")
             fPwrSw:SetScript("OnClick", function()
                 settingsTable.powerPercentPowerColor = true
-                ReloadAndUpdate(); CludesUI:RefreshPage()
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
             end)
-            fPwrSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(fPwrSw, "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors.") end)
-            fPwrSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            fPwrSw:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(
+                    fPwrSw,
+                    "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors."
+                )
+            end)
+            fPwrSw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             PP.Point(fPwrSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = fPwrSw
             RegisterWidgetRefresh(function()
@@ -1299,11 +2251,13 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
 
             local fGet = function()
                 local c = MGet("customPowerFillColor")
-                if c then return c.r, c.g, c.b end
+                if c then
+                    return c.r, c.g, c.b
+                end
                 return 0, 0, 1
             end
             local fSet = function(r, g, b)
-                settingsTable.customPowerFillColor = { r=r, g=g, b=b }
+                settingsTable.customPowerFillColor = { r = r, g = g, b = b }
                 ReloadAndUpdate()
             end
             local fSw, fSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, fGet, fSet, false, 20)
@@ -1311,13 +2265,20 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             fSw:SetScript("OnClick", function(self)
                 if MVal("powerPercentPowerColor", true) ~= false then
                     settingsTable.powerPercentPowerColor = false
-                    ReloadAndUpdate(); CludesUI:RefreshPage()
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
                     return
                 end
-                if self._eabOrigClick then self._eabOrigClick(self) end
+                if self._eabOrigClick then
+                    self._eabOrigClick(self)
+                end
             end)
-            fSw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(fSw, "Custom Colored Fill") end)
-            fSw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            fSw:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(fSw, "Custom Colored Fill")
+            end)
+            fSw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             PP.Point(fSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = fSw
             RegisterWidgetRefresh(function()
@@ -1336,42 +2297,87 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
             if v ~= "none" and MVal("powerPercentText", "none") == "none" then
                 settingsTable.powerPercentText = "center"
             end
-            if v == "none" then settingsTable.powerPercentText = "none" end
-            ReloadAndUpdate(); CludesUI:RefreshPage()
+            if v == "none" then
+                settingsTable.powerPercentText = "none"
+            end
+            ReloadAndUpdate()
+            CludesUI:RefreshPage()
             -- The page stays, so the menu is rebuilt for Custom's pencil.
             ns.UFO_RefreshMenus(pwrTextRow and pwrTextRow._leftRegion)
         end
-        pwrTextRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Power Text",
-              values = ns.UFO_CustomTextValues(
-                  { ["none"]="None", ["smart"]="Smart Text", ["curpp"]="Power Value", ["perpp"]="Power %", ["both"]="Value | %" },
-                  function() return MVal("powerTextFormat", "perpp") end,
-                  function()
-                      ns.UFO_EditCustomText("powerText", settingsTable, unitKey,
-                          function() SetPowerTextFormat("custom") end)
-                  end),
-              -- WoW Forever lists no Smart Text (CludesUI.PowerTextFormat).
-              order  = CludesUI.PowerTextFormatOrder({ "none", "---", "custom", "---", "smart", "curpp", "perpp", "both" }),
-              getValue=function() return CludesUI.PowerTextFormat(MVal("powerTextFormat", "perpp")) end,
-              setValue=SetPowerTextFormat },
-            { type="dropdown", text="Text Position",
-              values = { ["none"]="None", ["left"]="Left", ["right"]="Right", ["center"]="Center" },
-              order  = { "none", "---", "left", "right", "center" },
-              getValue=function() return MVal("powerPercentText", "none") end,
-              setValue=function(v) MSet("powerPercentText", v); CludesUI:RefreshPage() end });  y = y - h
+        pwrTextRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Power Text",
+            values = ns.UFO_CustomTextValues(
+                {
+                    ["none"] = "None",
+                    ["smart"] = "Smart Text",
+                    ["curpp"] = "Power Value",
+                    ["perpp"] = "Power %",
+                    ["both"] = "Value | %",
+                },
+                function()
+                    return MVal("powerTextFormat", "perpp")
+                end,
+                function()
+                    ns.UFO_EditCustomText("powerText", settingsTable, unitKey, function()
+                        SetPowerTextFormat("custom")
+                    end)
+                end
+            ),
+            -- WoW Forever lists no Smart Text (CludesUI.PowerTextFormat).
+            order = CludesUI.PowerTextFormatOrder({
+                "none",
+                "---",
+                "custom",
+                "---",
+                "smart",
+                "curpp",
+                "perpp",
+                "both",
+            }),
+            getValue = function()
+                return CludesUI.PowerTextFormat(MVal("powerTextFormat", "perpp"))
+            end,
+            setValue = SetPowerTextFormat,
+        }, {
+            type = "dropdown",
+            text = "Text Position",
+            values = { ["none"] = "None", ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
+            order = { "none", "---", "left", "right", "center" },
+            getValue = function()
+                return MVal("powerPercentText", "none")
+            end,
+            setValue = function(v)
+                MSet("powerPercentText", v)
+                CludesUI:RefreshPage()
+            end,
+        })
+        y = y - h
         -- Expose the power-text row so the preview's power-text click overlay
         -- can scroll here (mirrors parent._powerHeightRow / _powerHeaderFrame).
         parent._powerTextRow = pwrTextRow
         if not CludesUI._prebuilding then
-            ns.UFO_AddCustomFormatAccessor(pwrTextRow._leftRegion, "Power Text", "powerText",
-                MVal("powerTextFormat", "perpp"), function() return settingsTable end, ReloadAndUpdate)
+            ns.UFO_AddCustomFormatAccessor(
+                pwrTextRow._leftRegion,
+                "Power Text",
+                "powerText",
+                MVal("powerTextFormat", "perpp"),
+                function()
+                    return settingsTable
+                end,
+                ReloadAndUpdate
+            )
         end
         -- Show % cog on Power Text (left)
         if not CludesUI._prebuilding then
             local rgn = pwrTextRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, ns.UFO_PowerTextCog(MVal, MSet,
-                { none = true, curpp = true },
-                function(v) MSet("powerShowPercent", v) end))
+            CludesUI.BuildInlineCog(
+                rgn,
+                ns.UFO_PowerTextCog(MVal, MSet, { none = true, curpp = true }, function(v)
+                    MSet("powerShowPercent", v)
+                end)
+            )
         end
         -- Inline Text Color swatches on Power Text (left): Custom + Power Colored,
         -- mutually exclusive (mirrors Main Frames' Text Color multiSwatch). Custom
@@ -1379,100 +2385,164 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
         -- picker. Power-colored click: selects power-colored + clears custom.
         if not CludesUI._prebuilding then
             local rgn = pwrTextRow._leftRegion
-            local customSw, customSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                function()
-                    local c = MGet("powerTextColor")
-                    if c then return c.r, c.g, c.b end
-                    return 1, 1, 1
-                end,
-                function(r, g, b)
-                    settingsTable.powerTextColor = { r=r, g=g, b=b }
-                    ReloadAndUpdate()
-                end, false, 20)
+            local customSw, customSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local c = MGet("powerTextColor")
+                if c then
+                    return c.r, c.g, c.b
+                end
+                return 1, 1, 1
+            end, function(r, g, b)
+                settingsTable.powerTextColor = { r = r, g = g, b = b }
+                ReloadAndUpdate()
+            end, false, 20)
             PP.Point(customSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = customSw
             local customOrigClick = customSw:GetScript("OnClick")
             customSw:SetScript("OnClick", function(self, ...)
                 if MVal("powerPercentTextPowerColor", false) then
                     settingsTable.powerPercentTextPowerColor = false
-                    ReloadAndUpdate(); CludesUI:RefreshPage(); return
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
+                    return
                 end
-                if customOrigClick then customOrigClick(self, ...) end
+                if customOrigClick then
+                    customOrigClick(self, ...)
+                end
             end)
-            customSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(customSw, "Custom Text Color") end)
-            customSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-            local powerSw, powerSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                function()
-                    local _, pToken = UnitPowerType("player")
-                    local info = CludesUI.GetPowerColor(pToken or "MANA")
-                    if info then return info.r, info.g, info.b end
-                    return 1, 1, 1
-                end,
-                function() end, false, 20)
+            customSw:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(customSw, "Custom Text Color")
+            end)
+            customSw:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
+            local powerSw, powerSwUp = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                local _, pToken = UnitPowerType("player")
+                local info = CludesUI.GetPowerColor(pToken or "MANA")
+                if info then
+                    return info.r, info.g, info.b
+                end
+                return 1, 1, 1
+            end, function() end, false, 20)
             PP.Point(powerSw, "RIGHT", customSw, "LEFT", -8, 0)
             rgn._lastInline = powerSw
             powerSw:SetScript("OnClick", function()
                 settingsTable.powerPercentTextPowerColor = true
                 settingsTable.powerTextColor = nil
-                ReloadAndUpdate(); CludesUI:RefreshPage()
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
             end)
-            powerSw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(powerSw, "Power Colored Text") end)
-            powerSw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            powerSw:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(powerSw, "Power Colored Text")
+            end)
+            powerSw:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function UpdSwatches()
                 local isPower = MVal("powerPercentTextPowerColor", false)
                 customSw:SetAlpha(isPower and 0.3 or 1)
                 powerSw:SetAlpha(isPower and 1 or 0.3)
             end
-            RegisterWidgetRefresh(function() customSwUp(); powerSwUp(); UpdSwatches() end)
+            RegisterWidgetRefresh(function()
+                customSwUp()
+                powerSwUp()
+                UpdSwatches()
+            end)
             UpdSwatches()
         end
         -- Size + X/Y offsets cog on Text Position (right)
         if not CludesUI._prebuilding then
             local rgn = pwrTextRow._rightRegion
             CludesUI.BuildInlineCog(rgn, {
-                disabled = function() return MVal("powerPercentText", "none") == "none" end,
+                disabled = function()
+                    return MVal("powerPercentText", "none") == "none"
+                end,
                 disabledTooltip = "This option requires a text position other than none.",
                 title = "Text Position",
                 rows = {
-                    { type="slider", label="Size", min=6, max=100, step=1,
-                      get=function() return MVal("powerPercentSize", 9) end,
-                      set=function(v) MSet("powerPercentSize", v) end },
-                    { type="slider", label="X Offset", min=-50, max=50, step=1,
-                      get=function() return MVal("powerPercentX", 0) end,
-                      set=function(v) MSet("powerPercentX", v) end },
-                    { type="slider", label="Y Offset", min=-50, max=50, step=1,
-                      get=function() return MVal("powerPercentY", 0) end,
-                      set=function(v) MSet("powerPercentY", v) end },
+                    {
+                        type = "slider",
+                        label = "Size",
+                        min = 6,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return MVal("powerPercentSize", 9)
+                        end,
+                        set = function(v)
+                            MSet("powerPercentSize", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return MVal("powerPercentX", 0)
+                        end,
+                        set = function(v)
+                            MSet("powerPercentX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return MVal("powerPercentY", 0)
+                        end,
+                        set = function(v)
+                            MSet("powerPercentY", v)
+                        end,
+                    },
                 },
             })
         end
 
         -- Power bar border size and color, matching Player/Target/Focus.
         local pwrBorderRow
-        pwrBorderRow, h = W:DualRow(parent, y,
-            { type="slider", text="Border Size", min=0, max=4, step=1, trackWidth=120,
-              getValue=function() return MVal("powerBorderSize", 0) end,
-              setValue=function(v) MSet("powerBorderSize", v) end },
-            { type="label", text="" });  y = y - h
+        pwrBorderRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Border Size",
+            min = 0,
+            max = 4,
+            step = 1,
+            trackWidth = 120,
+            getValue = function()
+                return MVal("powerBorderSize", 0)
+            end,
+            setValue = function(v)
+                MSet("powerBorderSize", v)
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
         if not CludesUI._prebuilding then
             local rgn = pwrBorderRow._leftRegion
             local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rgn, pwrBorderRow:GetFrameLevel() + 3,
+                rgn,
+                pwrBorderRow:GetFrameLevel() + 3,
                 function()
-                    local c = MGet("powerBorderColor") or { r=0, g=0, b=0 }
+                    local c = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
                     return c.r, c.g, c.b, MVal("powerBorderAlpha", 1)
                 end,
                 function(r, g, b, a)
-                    settingsTable.powerBorderColor = { r=r, g=g, b=b }
+                    settingsTable.powerBorderColor = { r = r, g = g, b = b }
                     settingsTable.powerBorderAlpha = a
                     ReloadAndUpdate()
                 end,
-                true, 20)
+                true,
+                20
+            )
             PP.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
             swatch:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(swatch, "Border Color")
             end)
-            swatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            swatch:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             rgn._lastInline = swatch
             RegisterWidgetRefresh(updateSwatch)
         end
@@ -1492,113 +2562,179 @@ end
 -- (Target of Target / Focus Target) adds the 2D / Class art choice.
 local function AttachPortraitSideCog(rgn, settingsTable, withArtStyle, unitKey)
     local env = ns._UFO_OptEnv
-    local ReloadAndUpdate, UpdatePreview, classThemeSubOrder, classThemeSubValues = env.ReloadAndUpdate, env.UpdatePreview, env.classThemeSubOrder, env.classThemeSubValues
+    local ReloadAndUpdate, UpdatePreview, classThemeSubOrder, classThemeSubValues =
+        env.ReloadAndUpdate, env.UpdatePreview, env.classThemeSubOrder, env.classThemeSubValues
     local _, portraitShow
     local rows = {
-        { type="toggle", label="Portrait on Right",
-          get=function() return (settingsTable.portraitSide or "left") == "right" end,
-          set=function(v)
-              settingsTable.portraitSide = v and "right" or "left"
-              ReloadAndUpdate(); UpdatePreview()
-          end },
+        {
+            type = "toggle",
+            label = "Portrait on Right",
+            get = function()
+                return (settingsTable.portraitSide or "left") == "right"
+            end,
+            set = function(v)
+                settingsTable.portraitSide = v and "right" or "left"
+                ReloadAndUpdate()
+                UpdatePreview()
+            end,
+        },
     }
     if withArtStyle then
-        rows[#rows + 1] = { type="dropdown", label="Art Style",
-            values={ ["2d"] = "2D Portrait", ["class"] = "Class" }, order={ "2d", "class" },
-            get=function() return settingsTable.portraitMode == "class" and "class" or "2d" end,
-            set=function(v)
+        rows[#rows + 1] = {
+            type = "dropdown",
+            label = "Art Style",
+            values = { ["2d"] = "2D Portrait", ["class"] = "Class" },
+            order = { "2d", "class" },
+            get = function()
+                return settingsTable.portraitMode == "class" and "class" or "2d"
+            end,
+            set = function(v)
                 local function ApplyArt()
                     settingsTable.portraitMode = v
-                    ReloadAndUpdate(); UpdatePreview()
+                    ReloadAndUpdate()
+                    UpdatePreview()
                 end
-                if v == "2d" and settingsTable.portraitMode == "class"
-                    and settingsTable.portraitMirror and not CludesUI.BlizzStyle.Get("unitframes")
+                if
+                    v == "2d"
+                    and settingsTable.portraitMode == "class"
+                    and settingsTable.portraitMirror
+                    and not CludesUI.BlizzStyle.Get("unitframes")
                     and ns.UF_Ask2DMirroredPortraits(function()
                         ApplyArt()
                         CludesUI:RefreshPage()
-                    end) then
-                    if portraitShow and portraitShow._popupFrame then portraitShow._popupFrame:Hide() end
+                    end)
+                then
+                    if portraitShow and portraitShow._popupFrame then
+                        portraitShow._popupFrame:Hide()
+                    end
                     return
                 end
                 ApplyArt()
-            end }
-        rows[#rows + 1] = { type="dropdown", label="Class Style",
-            values=classThemeSubValues, order=classThemeSubOrder,
-            get=function() return settingsTable.classThemeStyle or "modern" end,
-            set=function(v)
-                settingsTable.classThemeStyle = v
-                ReloadAndUpdate(); UpdatePreview()
             end,
-            disabled=function() return settingsTable.portraitMode ~= "class" end,
-            disabledTooltip="This option requires Art Style to be set to Class", rawTooltip=true }
+        }
+        rows[#rows + 1] = {
+            type = "dropdown",
+            label = "Class Style",
+            values = classThemeSubValues,
+            order = classThemeSubOrder,
+            get = function()
+                return settingsTable.classThemeStyle or "modern"
+            end,
+            set = function(v)
+                settingsTable.classThemeStyle = v
+                ReloadAndUpdate()
+                UpdatePreview()
+            end,
+            disabled = function()
+                return settingsTable.portraitMode ~= "class"
+            end,
+            disabledTooltip = "This option requires Art Style to be set to Class",
+            rawTooltip = true,
+        }
         -- The Non-Player Portrait opt-in and its choice, as on the main frames.
-        rows[#rows + 1] = { type="toggle", label="Custom Non-Player Portrait",
-            tooltip="Pick what NPCs show in Class art instead of their 2D portrait.",
-            get=function() return settingsTable.portraitNonPlayerOn == true end,
-            set=function(v)
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = "Custom Non-Player Portrait",
+            tooltip = "Pick what NPCs show in Class art instead of their 2D portrait.",
+            get = function()
+                return settingsTable.portraitNonPlayerOn == true
+            end,
+            set = function(v)
                 settingsTable.portraitNonPlayerOn = v or nil
                 ReloadAndUpdate()
-            end }
+            end,
+        }
         -- No 3D here: a mini frame's fade never reaches a model (the
         -- runtime resolves a saved "3d" to 2D the same way).
-        rows[#rows + 1] = { type="dropdown", label="Non-Player Portrait",
-            values={ ["2d"] = "2D Portrait", ["none"] = "Nothing" }, order={ "2d", "none" },
-            get=function() return settingsTable.portraitNonPlayer == "none" and "none" or "2d" end,
-            set=function(v)
+        rows[#rows + 1] = {
+            type = "dropdown",
+            label = "Non-Player Portrait",
+            values = { ["2d"] = "2D Portrait", ["none"] = "Nothing" },
+            order = { "2d", "none" },
+            get = function()
+                return settingsTable.portraitNonPlayer == "none" and "none" or "2d"
+            end,
+            set = function(v)
                 settingsTable.portraitNonPlayer = v
                 ReloadAndUpdate()
             end,
-            disabled=function()
+            disabled = function()
                 return settingsTable.portraitMode ~= "class" or not settingsTable.portraitNonPlayerOn
             end,
-            disabledTooltip=function()
+            disabledTooltip = function()
                 if settingsTable.portraitMode ~= "class" then
                     return "This option requires Art Style to be set to Class"
                 end
                 return "Custom Non-Player Portrait"
-            end }
+            end,
+        }
     end
     if unitKey == "targettarget" or unitKey == "boss" then
-        rows[#rows + 1] = { type="toggle", label="Mirror Portrait",
-            tooltip="Mirrors playable-race portraits in 2D. Always flips class art horizontally.",
-            disabled=function() return CludesUI.BlizzStyle.Get("unitframes") end,
-            disabledTooltip=function() return CludesUI.BlizzStyle.Label("unitframes") end,
-            requireState="disabled",
-            get=function() return settingsTable.portraitMirror == true end,
-            set=function(v)
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = "Mirror Portrait",
+            tooltip = "Mirrors playable-race portraits in 2D. Always flips class art horizontally.",
+            disabled = function()
+                return CludesUI.BlizzStyle.Get("unitframes")
+            end,
+            disabledTooltip = function()
+                return CludesUI.BlizzStyle.Label("unitframes")
+            end,
+            requireState = "disabled",
+            get = function()
+                return settingsTable.portraitMirror == true
+            end,
+            set = function(v)
                 local function ApplyMirror()
                     settingsTable.portraitMirror = v or nil
                     ns.UF_RefreshPortraitMirror(unitKey)
                     UpdatePreview()
                 end
-                if v and not settingsTable.portraitMirror and settingsTable.portraitMode ~= "3d"
+                if
+                    v
+                    and not settingsTable.portraitMirror
+                    and settingsTable.portraitMode ~= "3d"
                     and settingsTable.portraitMode ~= "class"
                     and ns.UF_Ask2DMirroredPortraits(function()
                         ApplyMirror()
                         CludesUI:RefreshPage()
-                    end) then
-                    if portraitShow and portraitShow._popupFrame then portraitShow._popupFrame:Hide() end
+                    end)
+                then
+                    if portraitShow and portraitShow._popupFrame then
+                        portraitShow._popupFrame:Hide()
+                    end
                     return
                 end
                 ApplyMirror()
-            end }
-        rows[#rows + 1] = { type="toggle", label="Vertical Border Separator",
-            tooltip="Draws the selected border style between the attached portrait and the bars.",
-            disabled=function()
-                local donor = unitKey == "boss" and ns.UF_BossBorderSettings() or GetMiniDonorSettings(unitKey)
-                return CludesUI.BlizzStyle.Get("unitframes") or (settingsTable.borderSizeOverride or donor.borderSize or 1) <= 0
+            end,
+        }
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = "Vertical Border Separator",
+            tooltip = "Draws the selected border style between the attached portrait and the bars.",
+            disabled = function()
+                local donor = unitKey == "boss" and ns.UF_BossBorderSettings()
+                    or GetMiniDonorSettings(unitKey)
+                return CludesUI.BlizzStyle.Get("unitframes")
+                    or (settingsTable.borderSizeOverride or donor.borderSize or 1) <= 0
                     or not CludesUI.GetBorderCompanion(donor.borderTexture or "solid", "sepV")
             end,
-            disabledTooltip=function()
-                if CludesUI.BlizzStyle.Get("unitframes") then return CludesUI.BlizzStyle.Label("unitframes") end
+            disabledTooltip = function()
+                if CludesUI.BlizzStyle.Get("unitframes") then
+                    return CludesUI.BlizzStyle.Label("unitframes")
+                end
                 return "This option requires a border style with divider art and a Border Size above 0."
             end,
-            rawTooltip=true,
-            get=function() return settingsTable.portraitSeparator == true end,
-            set=function(v)
+            rawTooltip = true,
+            get = function()
+                return settingsTable.portraitSeparator == true
+            end,
+            set = function(v)
                 settingsTable.portraitSeparator = v or nil
-                ReloadAndUpdate(); UpdatePreview()
-            end }
+                ReloadAndUpdate()
+                UpdatePreview()
+            end,
+        }
     end
     _, portraitShow = CludesUI.BuildInlineCog(rgn, {
         gap = 9,
@@ -1618,14 +2754,16 @@ end
 -- own single enable toggle + Show Portrait (right slot), Pet-style.
 function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
     local env = ns._UFO_OptEnv
-    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned = env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
+    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
+        env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
     local ReloadAndUpdate, abs, db = env.ReloadAndUpdate, env.abs, env.db
     settingsTable = settingsTable or db.profile.targettarget
     unitKey = unitKey or "targettarget"
     local enableText = (unitKey == "focustarget") and "Enable Focus Target" or "Enable Target of Target"
     local _, h
 
-    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, unitKey, true); y = y - h
+    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, unitKey, true)
+    y = y - h
 
     local portraitRow
     local function enableRow(Ww, pp, yy)
@@ -1637,48 +2775,85 @@ function ns.UFO_BuildFoTToTOptions(W, parent, y, settingsTable, unitKey)
         local parentLabel = (unitKey == "focustarget") and "Focus" or "Target"
         local parentKey = (unitKey == "focustarget") and "focus" or "target"
         local childName = (unitKey == "focustarget") and "focus-target" or "target-of-target"
-        portraitRow, h = Ww:DualRow(pp, yy,
-            { type="toggle", text=enableText,
-              getValue=function() return db.profile.enabledFrames[unitKey] ~= false end,
-              setValue=function(v)
+        portraitRow, h = Ww:DualRow(pp, yy, {
+            type = "toggle",
+            text = enableText,
+            getValue = function()
+                return db.profile.enabledFrames[unitKey] ~= false
+            end,
+            setValue = function(v)
                 db.profile.enabledFrames[unitKey] = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ unitKey })
-              end },
-            isCUI and CludesUI.BlizzStyle.Gate("unitframes", { type="toggle", text="Show Portrait",
-              getValue=function() return CludesUI.BlizzStyle.Get("unitframes") or settingsTable.showPortrait ~= false end,
-              setValue=function(v)
+            end,
+        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "toggle",
+            text = "Show Portrait",
+            getValue = function()
+                return CludesUI.BlizzStyle.Get("unitframes") or settingsTable.showPortrait ~= false
+            end,
+            setValue = function(v)
                 settingsTable.showPortrait = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
-              end }) or { type="label", text="" })
+            end,
+        }) or { type = "label", text = "" })
         if isCUI and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitRow._rightRegion, settingsTable, true, unitKey)
         end
         AttachFrameSourceCog(portraitRow._leftRegion, unitKey, {
-            tooltip = "Due to Blizzard API restrictions, Blizzard's native " .. childName
+            tooltip = "Due to Blizzard API restrictions, Blizzard's native "
+                .. childName
                 .. " can't be hidden in combat and will show the whole time you are in combat. Recommended: match the "
-                .. parentLabel .. " frame's source -- both Blizzard Default, or both CludesUI.",
-            disabled = function() return ns.GetUnitFrameSource(parentKey) ~= "blizzard" end,
-            disabledTooltip = "\"Blizzard Default\" is only available when the " .. parentLabel
-                .. " frame's source is set to Blizzard Default -- the " .. childName
-                .. " then comes from Blizzard's " .. parentKey .. " frame.",
+                .. parentLabel
+                .. " frame's source -- both Blizzard Default, or both CludesUI.",
+            disabled = function()
+                return ns.GetUnitFrameSource(parentKey) ~= "blizzard"
+            end,
+            disabledTooltip = '"Blizzard Default" is only available when the '
+                .. parentLabel
+                .. " frame's source is set to Blizzard Default -- the "
+                .. childName
+                .. " then comes from Blizzard's "
+                .. parentKey
+                .. " frame.",
         })
         return portraitRow, h
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow = BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enableRow)
+    y, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enableRow)
 
     -- Store click targets for hover highlight system
     parent._ufClickTargets = {
-        healthBar  = { section = displayHeader,  target = sizeRow },
-        portrait   = { section = displayHeader,  target = portraitRow,   slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(parent, "leftText", textHeader or displayHeader, textRow or sizeRow),
-        healthText = ns.UFO_TextClickTarget(parent, "rightText", textHeader or displayHeader, textRow or sizeRow),
-        centerText = ns.UFO_TextClickTarget(parent, "centerText", textHeader or displayHeader, textRow or sizeRow),
-        extraText = ns.UFO_TextClickTarget(parent, "extraText", textHeader or displayHeader, textRow or sizeRow),
+        healthBar = { section = displayHeader, target = sizeRow },
+        portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
+        nameText = ns.UFO_TextClickTarget(
+            parent,
+            "leftText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        healthText = ns.UFO_TextClickTarget(
+            parent,
+            "rightText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        centerText = ns.UFO_TextClickTarget(
+            parent,
+            "centerText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        extraText = ns.UFO_TextClickTarget(
+            parent,
+            "extraText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
     }
 
     return abs(y)
@@ -1686,43 +2861,60 @@ end
 
 function ns.UFO_BuildPetOptions(W, parent, y)
     local env = ns._UFO_OptEnv
-    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned = env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
+    local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
+        env.AttachFrameSourceCog, env.BuildApplyAllRow, env.MINI_GROUP_ORDER, env.PromptReloadIfUnspawned
     local ReloadAndUpdate, UpdatePreview, abs, db = env.ReloadAndUpdate, env.UpdatePreview, env.abs, env.db
     local _, h
 
-    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, "pet", true); y = y - h
+    _, h = BuildApplyAllRow(parent, y, MINI_GROUP_ORDER, "pet", true)
+    y = y - h
 
     local portraitRow
     local function enableRow(Ww, pp, yy)
         local isCUI = ns.GetUnitFrameSource("pet") == "cui"
-        portraitRow, h = Ww:DualRow(pp, yy,
-            { type="toggle", text="Enable Pet Frame",
-              getValue=function() return db.profile.enabledFrames.pet ~= false end,
-              setValue=function(v)
+        portraitRow, h = Ww:DualRow(pp, yy, {
+            type = "toggle",
+            text = "Enable Pet Frame",
+            getValue = function()
+                return db.profile.enabledFrames.pet ~= false
+            end,
+            setValue = function(v)
                 db.profile.enabledFrames.pet = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "pet" })
-              end },
-            isCUI and CludesUI.BlizzStyle.Gate("unitframes", { type="toggle", text="Show Portrait",
-              getValue=function() return CludesUI.BlizzStyle.Get("unitframes") or db.profile.pet.showPortrait ~= false end,
-              setValue=function(v)
+            end,
+        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "toggle",
+            text = "Show Portrait",
+            getValue = function()
+                return CludesUI.BlizzStyle.Get("unitframes") or db.profile.pet.showPortrait ~= false
+            end,
+            setValue = function(v)
                 db.profile.pet.showPortrait = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
-              end }) or { type="label", text="" })
+            end,
+        }) or { type = "label", text = "" })
         if isCUI and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitRow._rightRegion, db.profile.pet)
         end
         AttachFrameSourceCog(portraitRow._leftRegion, "pet", {
             extraRows = {
-                { type = "toggle", label = "Always Show Pet Frame",
-                  tooltip = "Show the pet frame whenever you have a pet, ignoring the Player frame's visibility settings.",
-                  get = function() return db.profile.pet.alwaysShow == true end,
-                  set = function(v)
-                      db.profile.pet.alwaysShow = v and true or nil
-                      if ns.UpdateFrameVisibility then ns.UpdateFrameVisibility() end
-                  end },
+                {
+                    type = "toggle",
+                    label = "Always Show Pet Frame",
+                    tooltip = "Show the pet frame whenever you have a pet, ignoring the Player frame's visibility settings.",
+                    get = function()
+                        return db.profile.pet.alwaysShow == true
+                    end,
+                    set = function(v)
+                        db.profile.pet.alwaysShow = v and true or nil
+                        if ns.UpdateFrameVisibility then
+                            ns.UpdateFrameVisibility()
+                        end
+                    end,
+                },
             },
         })
         return portraitRow, h
@@ -1736,57 +2928,115 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     if CludesUI.IS_FOREVER == true then
         petPower = ns.UF_PetHasPower and not CludesUI.BlizzStyle.Get("unitframes")
         local P = db.profile.pet
-        local function happyOff() return P.happinessEnabled == false end
+        local function happyOff()
+            return P.happinessEnabled == false
+        end
         -- The live icon repaints itself; the preview mirrors it.
-        local function happyApply() ns.UF_ApplyPetHappiness(); UpdatePreview() end
-        petOpts = { hasPowerBar = petPower, afterPowerRow = function(Ww, pp, yy)
-            local hh
-            happyHeader, hh = Ww:SectionHeader(pp, "PET HAPPINESS", yy);  yy = yy - hh
+        local function happyApply()
+            ns.UF_ApplyPetHappiness()
+            UpdatePreview()
+        end
+        petOpts = {
+            hasPowerBar = petPower,
+            afterPowerRow = function(Ww, pp, yy)
+                local hh
+                happyHeader, hh = Ww:SectionHeader(pp, "PET HAPPINESS", yy)
+                yy = yy - hh
 
-            -- Row 1: Show Happiness | Size
-            happyRow, hh = Ww:DualRow(pp, yy,
-                { type="toggle", text="Show Happiness",
-                  tooltip="Shows your hunter pet's happiness beside the pet frame.",
-                  getValue=function() return P.happinessEnabled ~= false end,
-                  setValue=function(v)
-                      P.happinessEnabled = v
-                      happyApply()
-                      CludesUI:RefreshPage()
-                  end },
-                { type="slider", text="Size", min=10, max=64, step=1,
-                  disabled=happyOff, disabledTooltip="Show Happiness",
-                  getValue=function() return P.happinessSize or 20 end,
-                  setValue=function(v) P.happinessSize = v; happyApply() end });  yy = yy - hh
-
-            -- Row 2: Position (+ offsets cog) | blank (odd last slot)
-            local posRow
-            posRow, hh = Ww:DualRow(pp, yy,
-                { type="segmented", text="Position",
-                  values={ left="Left", right="Right", top="Top" }, order={ "left", "right", "top" },
-                  disabled=happyOff, disabledTooltip="Show Happiness",
-                  getValue=function() return P.happinessAlign or "right" end,
-                  setValue=function(v) P.happinessAlign = v; happyApply() end },
-                CludesUI.BlankRowCfg());  yy = yy - hh
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(posRow._leftRegion, {
-                    disabled = happyOff, disabledTooltip = "Show Happiness",
-                    title = "Happiness Position",
-                    rows = {
-                        { type="slider", label="X Offset", min=-100, max=100, step=1,
-                          get=function() return P.happinessX or 0 end,
-                          set=function(v) P.happinessX = v; happyApply() end },
-                        { type="slider", label="Y Offset", min=-100, max=100, step=1,
-                          get=function() return P.happinessY or 0 end,
-                          set=function(v) P.happinessY = v; happyApply() end },
-                    },
+                -- Row 1: Show Happiness | Size
+                happyRow, hh = Ww:DualRow(pp, yy, {
+                    type = "toggle",
+                    text = "Show Happiness",
+                    tooltip = "Shows your hunter pet's happiness beside the pet frame.",
+                    getValue = function()
+                        return P.happinessEnabled ~= false
+                    end,
+                    setValue = function(v)
+                        P.happinessEnabled = v
+                        happyApply()
+                        CludesUI:RefreshPage()
+                    end,
+                }, {
+                    type = "slider",
+                    text = "Size",
+                    min = 10,
+                    max = 64,
+                    step = 1,
+                    disabled = happyOff,
+                    disabledTooltip = "Show Happiness",
+                    getValue = function()
+                        return P.happinessSize or 20
+                    end,
+                    setValue = function(v)
+                        P.happinessSize = v
+                        happyApply()
+                    end,
                 })
-            end
-            return yy
-        end }
+                yy = yy - hh
+
+                -- Row 2: Position (+ offsets cog) | blank (odd last slot)
+                local posRow
+                posRow, hh = Ww:DualRow(pp, yy, {
+                    type = "segmented",
+                    text = "Position",
+                    values = { left = "Left", right = "Right", top = "Top" },
+                    order = { "left", "right", "top" },
+                    disabled = happyOff,
+                    disabledTooltip = "Show Happiness",
+                    getValue = function()
+                        return P.happinessAlign or "right"
+                    end,
+                    setValue = function(v)
+                        P.happinessAlign = v
+                        happyApply()
+                    end,
+                }, CludesUI.BlankRowCfg())
+                yy = yy - hh
+                if not CludesUI._prebuilding then
+                    CludesUI.BuildInlineCog(posRow._leftRegion, {
+                        disabled = happyOff,
+                        disabledTooltip = "Show Happiness",
+                        title = "Happiness Position",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "X Offset",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return P.happinessX or 0
+                                end,
+                                set = function(v)
+                                    P.happinessX = v
+                                    happyApply()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Y Offset",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return P.happinessY or 0
+                                end,
+                                set = function(v)
+                                    P.happinessY = v
+                                    happyApply()
+                                end,
+                            },
+                        },
+                    })
+                end
+                return yy
+            end,
+        }
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow = BuildMiniTextAndSize(W, parent, y, db.profile.pet, "pet", enableRow, nil, petOpts)
+    y, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(W, parent, y, db.profile.pet, "pet", enableRow, nil, petOpts)
 
     -- BUFFS AND DEBUFFS, on the CludesUI pet frame only (an inactive frame
     -- shows the notice above instead). Location, size (Cropped Icons
@@ -1800,13 +3050,24 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         local SwapAuraSlot = env.SwapAuraSlot
         local function PGet(key, default)
             local v = db.profile.pet[key]
-            if v == nil then return default end
+            if v == nil then
+                return default
+            end
             return v
         end
-        local function PSet(key, v) db.profile.pet[key] = v; ReloadAndUpdate() end
-        local function buffsOff() return db.profile.pet.showBuffs == false end
-        local function debuffsOff() return (db.profile.pet.debuffAnchor or "none") == "none" end
-        local function anyOn() return not (buffsOff() and debuffsOff()) end
+        local function PSet(key, v)
+            db.profile.pet[key] = v
+            ReloadAndUpdate()
+        end
+        local function buffsOff()
+            return db.profile.pet.showBuffs == false
+        end
+        local function debuffsOff()
+            return (db.profile.pet.debuffAnchor or "none") == "none"
+        end
+        local function anyOn()
+            return not (buffsOff() and debuffsOff())
+        end
         -- The two stacks never share a spot (SwapAuraSlot); the reload pass
         -- builds the containers once one of them is on. Copy Auras From is
         -- built only while one is on, so turning the first on or the last off
@@ -1818,32 +3079,65 @@ function ns.UFO_BuildPetOptions(W, parent, y)
                 CludesUI:RefreshPage()
             end)
         end
-        auraHeader, h = W:SectionHeader(parent, "BUFFS AND DEBUFFS", y);  y = y - h
+        auraHeader, h = W:SectionHeader(parent, "BUFFS AND DEBUFFS", y)
+        y = y - h
 
         -- Buffs Location | Buff Size, then Debuffs Location | Debuff Size: the
         -- settings cog on each Location, the position cog on each Size.
-        buffRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Buffs Location",
-              values=env.buffAnchorValues, order=env.buffAnchorOrder,
-              getValue=function()
-                  local pet = db.profile.pet
-                  if pet.showBuffs == false then return "none" end
-                  return pet.buffAnchor or "topleft"
-              end,
-              setValue=PlaceAuras("buffAnchor") },
-            { type="slider", text="Buff Size", min=10, max=70, step=1,
-              disabled=buffsOff, disabledTooltip="Buffs Location",
-              getValue=function() return PGet("buffSize", 22) end,
-              setValue=function(v) PSet("buffSize", v) end });  y = y - h
-        debuffRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Debuffs Location",
-              values=env.buffAnchorValues, order=env.buffAnchorOrder,
-              getValue=function() return PGet("debuffAnchor", "none") end,
-              setValue=PlaceAuras("debuffAnchor") },
-            { type="slider", text="Debuff Size", min=10, max=70, step=1,
-              disabled=debuffsOff, disabledTooltip="Debuffs Location",
-              getValue=function() return PGet("debuffSize", 22) end,
-              setValue=function(v) PSet("debuffSize", v) end });  y = y - h
+        buffRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Buffs Location",
+            values = env.buffAnchorValues,
+            order = env.buffAnchorOrder,
+            getValue = function()
+                local pet = db.profile.pet
+                if pet.showBuffs == false then
+                    return "none"
+                end
+                return pet.buffAnchor or "topleft"
+            end,
+            setValue = PlaceAuras("buffAnchor"),
+        }, {
+            type = "slider",
+            text = "Buff Size",
+            min = 10,
+            max = 70,
+            step = 1,
+            disabled = buffsOff,
+            disabledTooltip = "Buffs Location",
+            getValue = function()
+                return PGet("buffSize", 22)
+            end,
+            setValue = function(v)
+                PSet("buffSize", v)
+            end,
+        })
+        y = y - h
+        debuffRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Debuffs Location",
+            values = env.buffAnchorValues,
+            order = env.buffAnchorOrder,
+            getValue = function()
+                return PGet("debuffAnchor", "none")
+            end,
+            setValue = PlaceAuras("debuffAnchor"),
+        }, {
+            type = "slider",
+            text = "Debuff Size",
+            min = 10,
+            max = 70,
+            step = 1,
+            disabled = debuffsOff,
+            disabledTooltip = "Debuffs Location",
+            getValue = function()
+                return PGet("debuffSize", 22)
+            end,
+            setValue = function(v)
+                PSet("debuffSize", v)
+            end,
+        })
+        y = y - h
 
         -- Copy Auras From | (blank: odd last slot), built while buffs or
         -- debuffs show. Shows the frame in use: the pick while that frame can
@@ -1851,33 +3145,71 @@ function ns.UFO_BuildPetOptions(W, parent, y)
         -- no pick follows. Every pick is stored, so it sticks when Copy Look
         -- From changes later.
         if anyOn() then
-            _, h = W:DualRow(parent, y,
-                { type="segmented", text="Copy Auras From",
-                  tooltip="The frame whose aura look the pet copies.",
-                  values={ target="Target", focus="Focus", player="Player" },
-                  order={ "target", "focus", "player" },
-                  getValue=function() return ns.UF_MiniAuraSourceKey("pet") end,
-                  setValue=function(v)
-                      if v == db.profile.pet.auraSource then return end
-                      db.profile.pet.auraSource = v
-                      ReloadAndUpdate()
-                      CludesUI:RefreshPage()
-                  end,
-                  -- Slot marks follow the stored pick alone: the frame shown
-                  -- also reads the other frames' enable and Visibility keys.
-                  accessors={ { getValue=function() return db.profile.pet.auraSource end } } },
-                CludesUI.BlankRowCfg());  y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "segmented",
+                text = "Copy Auras From",
+                tooltip = "The frame whose aura look the pet copies.",
+                values = { target = "Target", focus = "Focus", player = "Player" },
+                order = { "target", "focus", "player" },
+                getValue = function()
+                    return ns.UF_MiniAuraSourceKey("pet")
+                end,
+                setValue = function(v)
+                    if v == db.profile.pet.auraSource then
+                        return
+                    end
+                    db.profile.pet.auraSource = v
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
+                end,
+                -- Slot marks follow the stored pick alone: the frame shown
+                -- also reads the other frames' enable and Visibility keys.
+                accessors = { {
+                    getValue = function()
+                        return db.profile.pet.auraSource
+                    end,
+                } },
+            }, CludesUI.BlankRowCfg())
+            y = y - h
         end
 
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(buffRow._leftRegion, { disabled=buffsOff, disabledTooltip="Buffs Location",
-                title="Buff Settings", rows=ns.UFO_AuraSettingsRows("buff", PGet, PSet, 40, 4) })
-            CludesUI.BuildInlineCog(buffRow._rightRegion, { disabled=buffsOff,
-                disabledTooltip="Buffs Location", title="Buff Position", rows=ns.UFO_AuraPositionRows("buff", PGet, PSet) })
-            CludesUI.BuildInlineCog(debuffRow._leftRegion, { disabled=debuffsOff, disabledTooltip="Debuffs Location",
-                title="Debuff Settings", rows=ns.UFO_AuraSettingsRows("debuff", PGet, PSet, 20, 10) })
-            CludesUI.BuildInlineCog(debuffRow._rightRegion, { disabled=debuffsOff,
-                disabledTooltip="Debuffs Location", title="Debuff Position", rows=ns.UFO_AuraPositionRows("debuff", PGet, PSet) })
+            CludesUI.BuildInlineCog(
+                buffRow._leftRegion,
+                {
+                    disabled = buffsOff,
+                    disabledTooltip = "Buffs Location",
+                    title = "Buff Settings",
+                    rows = ns.UFO_AuraSettingsRows("buff", PGet, PSet, 40, 4),
+                }
+            )
+            CludesUI.BuildInlineCog(
+                buffRow._rightRegion,
+                {
+                    disabled = buffsOff,
+                    disabledTooltip = "Buffs Location",
+                    title = "Buff Position",
+                    rows = ns.UFO_AuraPositionRows("buff", PGet, PSet),
+                }
+            )
+            CludesUI.BuildInlineCog(
+                debuffRow._leftRegion,
+                {
+                    disabled = debuffsOff,
+                    disabledTooltip = "Debuffs Location",
+                    title = "Debuff Settings",
+                    rows = ns.UFO_AuraSettingsRows("debuff", PGet, PSet, 20, 10),
+                }
+            )
+            CludesUI.BuildInlineCog(
+                debuffRow._rightRegion,
+                {
+                    disabled = debuffsOff,
+                    disabledTooltip = "Debuffs Location",
+                    title = "Debuff Position",
+                    rows = ns.UFO_AuraPositionRows("debuff", PGet, PSet),
+                }
+            )
         end
     end
 
@@ -1885,52 +3217,111 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     -- built at login, so turning it on asks for a reload. Move it in Unlock Mode.
     if ns.GetUnitFrameSource("pet") == "cui" then
         local P = db.profile.pet
-        local function castOff() return P.showCastbar ~= true end
-        _, h = W:SectionHeader(parent, "CAST BAR", y);  y = y - h
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Cast Bar",
-              tooltip="Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
-              getValue=function() return P.showCastbar == true end,
-              setValue=function(v)
-                  P.showCastbar = v
-                  ReloadAndUpdate()
-                  local pf = ns.frames and ns.frames.pet
-                  if v and pf and not pf.Castbar then
-                      CludesUI:ShowConfirmPopup({
-                          title = "Reload Required",
-                          message = "The pet cast bar is built at login. Reload to show it.",
-                          confirmText = "Reload Now",
-                          cancelText = "Later",
-                          reload = true,
-                      })
-                  end
-                  CludesUI:RefreshPage()
-              end },
-            { type="slider", text="Cast Bar Width", min=30, max=400, step=1,
-              disabled=castOff, disabledTooltip="Show Cast Bar",
-              getValue=function() return P.castbarWidth or 120 end,
-              setValue=function(v) P.castbarWidth = v; ReloadAndUpdate() end });  y = y - h
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Cast Bar Height", min=1, max=40, step=1,
-              disabled=castOff, disabledTooltip="Show Cast Bar",
-              getValue=function() return P.castbarHeight or 12 end,
-              setValue=function(v) P.castbarHeight = v; ReloadAndUpdate() end },
-            { type="toggle", text="Hide When Idle",
-              tooltip="Only show the cast bar while a cast is in progress.",
-              disabled=castOff, disabledTooltip="Show Cast Bar",
-              getValue=function() return P.castbarHideWhenInactive ~= false end,
-              setValue=function(v) P.castbarHideWhenInactive = v; ReloadAndUpdate() end });  y = y - h
+        local function castOff()
+            return P.showCastbar ~= true
+        end
+        _, h = W:SectionHeader(parent, "CAST BAR", y)
+        y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Cast Bar",
+            tooltip = "Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
+            getValue = function()
+                return P.showCastbar == true
+            end,
+            setValue = function(v)
+                P.showCastbar = v
+                ReloadAndUpdate()
+                local pf = ns.frames and ns.frames.pet
+                if v and pf and not pf.Castbar then
+                    CludesUI:ShowConfirmPopup({
+                        title = "Reload Required",
+                        message = "The pet cast bar is built at login. Reload to show it.",
+                        confirmText = "Reload Now",
+                        cancelText = "Later",
+                        reload = true,
+                    })
+                end
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "slider",
+            text = "Cast Bar Width",
+            min = 30,
+            max = 400,
+            step = 1,
+            disabled = castOff,
+            disabledTooltip = "Show Cast Bar",
+            getValue = function()
+                return P.castbarWidth or 120
+            end,
+            setValue = function(v)
+                P.castbarWidth = v
+                ReloadAndUpdate()
+            end,
+        })
+        y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Cast Bar Height",
+            min = 1,
+            max = 40,
+            step = 1,
+            disabled = castOff,
+            disabledTooltip = "Show Cast Bar",
+            getValue = function()
+                return P.castbarHeight or 12
+            end,
+            setValue = function(v)
+                P.castbarHeight = v
+                ReloadAndUpdate()
+            end,
+        }, {
+            type = "toggle",
+            text = "Hide When Idle",
+            tooltip = "Only show the cast bar while a cast is in progress.",
+            disabled = castOff,
+            disabledTooltip = "Show Cast Bar",
+            getValue = function()
+                return P.castbarHideWhenInactive ~= false
+            end,
+            setValue = function(v)
+                P.castbarHideWhenInactive = v
+                ReloadAndUpdate()
+            end,
+        })
+        y = y - h
     end
 
     -- Store click targets for hover highlight system
     parent._ufClickTargets = {
-        healthBar  = { section = displayHeader,  target = sizeRow },
-        portrait   = { section = displayHeader,  target = portraitRow,   slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(parent, "leftText", textHeader or displayHeader, textRow or sizeRow),
-        healthText = ns.UFO_TextClickTarget(parent, "rightText", textHeader or displayHeader, textRow or sizeRow),
-        centerText = ns.UFO_TextClickTarget(parent, "centerText", textHeader or displayHeader, textRow or sizeRow),
-        extraText = ns.UFO_TextClickTarget(parent, "extraText", textHeader or displayHeader, textRow or sizeRow),
-        buffIcon   = auraHeader and { section = auraHeader, target = buffRow,   slotSide = "left" } or nil,
+        healthBar = { section = displayHeader, target = sizeRow },
+        portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
+        nameText = ns.UFO_TextClickTarget(
+            parent,
+            "leftText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        healthText = ns.UFO_TextClickTarget(
+            parent,
+            "rightText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        centerText = ns.UFO_TextClickTarget(
+            parent,
+            "centerText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        extraText = ns.UFO_TextClickTarget(
+            parent,
+            "extraText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        buffIcon = auraHeader and { section = auraHeader, target = buffRow, slotSide = "left" } or nil,
         debuffIcon = auraHeader and { section = auraHeader, target = debuffRow, slotSide = "left" } or nil,
     }
     -- WoW Forever: the preview's power bar, power text and happiness icon
@@ -1938,8 +3329,10 @@ function ns.UFO_BuildPetOptions(W, parent, y)
     if happyRow then
         local tg = parent._ufClickTargets
         if petPower then
-            tg.powerBar     = { section = parent._powerHeaderFrame, target = parent._powerHeightRow, slotSide = "left" }
-            tg.powerBarText = { section = parent._powerHeaderFrame, target = parent._powerTextRow, slotSide = "left" }
+            tg.powerBar =
+                { section = parent._powerHeaderFrame, target = parent._powerHeightRow, slotSide = "left" }
+            tg.powerBarText =
+                { section = parent._powerHeaderFrame, target = parent._powerTextRow, slotSide = "left" }
         end
         tg.petHappiness = { section = happyHeader, target = happyRow, slotSide = "left" }
     end
@@ -1949,10 +3342,13 @@ end
 
 function ns.UFO_BuildBossOptions(W, parent, y)
     local env = ns._UFO_OptEnv
-    local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, PP = env.AttachDebuffModeWarn, env.AttachFrameSourceCog, env.DebuffModeDropdownCfg, env.PP
+    local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, PP =
+        env.AttachDebuffModeWarn, env.AttachFrameSourceCog, env.DebuffModeDropdownCfg, env.PP
     local HideExhaustionRow = env.HideExhaustionRow
-    local PromptReloadIfUnspawned, ReloadAndUpdate, SwapAuraSlot, abs = env.PromptReloadIfUnspawned, env.ReloadAndUpdate, env.SwapAuraSlot, env.abs
-    local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues = env.buffAnchorOrder, env.buffAnchorValues, env.buffGrowthOrder, env.buffGrowthValues
+    local PromptReloadIfUnspawned, ReloadAndUpdate, SwapAuraSlot, abs =
+        env.PromptReloadIfUnspawned, env.ReloadAndUpdate, env.SwapAuraSlot, env.abs
+    local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues =
+        env.buffAnchorOrder, env.buffAnchorValues, env.buffGrowthOrder, env.buffGrowthValues
     local db = env.db
     local _, h
 
@@ -1961,17 +3357,25 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     -- off: the in-game preview rides on the real (now-disabled) boss frames and renders broken.
     local activateBtnFrame, activateBtnLbl, activateBtn
     local function PreviewLabel()
-        return ns._bossPreviewActive and CludesUI.L("Deactivate Boss Preview") or CludesUI.L("Activate Boss Preview")
+        return ns._bossPreviewActive and CludesUI.L("Deactivate Boss Preview")
+            or CludesUI.L("Activate Boss Preview")
     end
     local function BossFramesDisabled()
         return ns.GetUnitFrameSource("boss") ~= "cui"
     end
     activateBtnFrame, h = W:WideButton(parent, PreviewLabel(), y, function()
-        if BossFramesDisabled() then return end
-        if not ns.SetBossPreview then return end
+        if BossFramesDisabled() then
+            return
+        end
+        if not ns.SetBossPreview then
+            return
+        end
         ns.SetBossPreview(not ns._bossPreviewActive)
-        if activateBtnLbl then activateBtnLbl:SetText(PreviewLabel()) end
-    end);  y = y - h
+        if activateBtnLbl then
+            activateBtnLbl:SetText(PreviewLabel())
+        end
+    end)
+    y = y - h
     do
         -- The row's button and its label, picked by kind and use rather than by
         -- position: on a kept page the row frame may still hold idle children
@@ -1980,7 +3384,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         for i = 1, #kids do
             local c = kids[i]
             if c:GetObjectType() == "Button" and not PoolIsIdle(c) then
-                activateBtn = c; break
+                activateBtn = c
+                break
             end
         end
         if activateBtn then
@@ -1989,14 +3394,19 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 local rgn = regions[i]
                 if rgn and rgn.GetText and not PoolIsIdle(rgn) then
                     local t = rgn:GetText()
-                    if t and t ~= "" then activateBtnLbl = rgn; break end
+                    if t and t ~= "" then
+                        activateBtnLbl = rgn
+                        break
+                    end
                 end
             end
         end
     end
     local function UpdateActivateBtn()
         local off = BossFramesDisabled()
-        if activateBtnLbl then activateBtnLbl:SetText(PreviewLabel()) end
+        if activateBtnLbl then
+            activateBtnLbl:SetText(PreviewLabel())
+        end
         if activateBtn then
             activateBtn:SetAlpha(off and 0.4 or 1)
             activateBtn:EnableMouse(not off)
@@ -2012,10 +3422,13 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     local function enableRow(Ww, pp, yy)
         local isCUI = ns.GetUnitFrameSource("boss") == "cui"
         local eh
-        portraitRow, eh = Ww:DualRow(pp, yy,
-            { type="toggle", text="Enable Boss Frames",
-              getValue=function() return db.profile.enabledFrames.boss ~= false end,
-              setValue=function(v)
+        portraitRow, eh = Ww:DualRow(pp, yy, {
+            type = "toggle",
+            text = "Enable Boss Frames",
+            getValue = function()
+                return db.profile.enabledFrames.boss ~= false
+            end,
+            setValue = function(v)
                 db.profile.enabledFrames.boss = v
                 -- Force-stop the in-game preview when disabling boss frames;
                 -- it rides on the now-disabled frames and renders broken.
@@ -2025,18 +3438,25 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 -- Live apply on the spawned CUI frames (unit-watch register/
                 -- unregister). Frames never spawned this session no-op here
                 -- and hit the reload prompt below instead.
-                if ns.UF_SetBossFramesActive then ns.UF_SetBossFramesActive(v) end
+                if ns.UF_SetBossFramesActive then
+                    ns.UF_SetBossFramesActive(v)
+                end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "boss" })
-              end },
-            isCUI and CludesUI.BlizzStyle.Gate("unitframes", { type="toggle", text="Show Portrait",
-              getValue=function() return CludesUI.BlizzStyle.Get("unitframes") or db.profile.boss.showPortrait ~= false end,
-              setValue=function(v)
+            end,
+        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+            type = "toggle",
+            text = "Show Portrait",
+            getValue = function()
+                return CludesUI.BlizzStyle.Get("unitframes") or db.profile.boss.showPortrait ~= false
+            end,
+            setValue = function(v)
                 db.profile.boss.showPortrait = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
-              end }) or { type="label", text="" })
+            end,
+        }) or { type = "label", text = "" })
         if isCUI and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitRow._rightRegion, db.profile.boss, false, "boss")
         end
@@ -2051,14 +3471,39 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         })
         local total = eh
         if isCUI then
-            local castRow, ch = Ww:DualRow(pp, yy - eh,
-                { type="segmented", text="Stack Direction", values={ up="Up", down="Down" }, order={ "up", "down" },
-                  getValue=function() return db.profile.boss.bossStackDirection or "down" end,
-                  setValue=function(v) db.profile.boss.bossStackDirection = v; ReloadAndUpdate() end },
+            local castRow, ch = Ww:DualRow(
+                pp,
+                yy - eh,
+                {
+                    type = "segmented",
+                    text = "Stack Direction",
+                    values = { up = "Up", down = "Down" },
+                    order = { "up", "down" },
+                    getValue = function()
+                        return db.profile.boss.bossStackDirection or "down"
+                    end,
+                    setValue = function(v)
+                        db.profile.boss.bossStackDirection = v
+                        ReloadAndUpdate()
+                    end,
+                },
                 -- Top-to-top step; Stack Direction sets the side, so no negatives.
-                { type="slider", pixel=true, text="Vertical Spacing", min=0, max=200, step=1,
-                  getValue=function() return math.abs(db.profile.bossSpacing or 80) end,
-                  setValue=function(v) db.profile.bossSpacing = v; ReloadAndUpdate() end })
+                {
+                    type = "slider",
+                    pixel = true,
+                    text = "Vertical Spacing",
+                    min = 0,
+                    max = 200,
+                    step = 1,
+                    getValue = function()
+                        return math.abs(db.profile.bossSpacing or 80)
+                    end,
+                    setValue = function(v)
+                        db.profile.bossSpacing = v
+                        ReloadAndUpdate()
+                    end,
+                }
+            )
             total = total + ch
         end
         return portraitRow, total
@@ -2067,7 +3512,8 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     local function bossAfterSize(Ww, pp, yy)
         local _, hh
         -- BUFFS AND DEBUFFS section (below DISPLAY)
-        bossAuraHeader, hh = Ww:SectionHeader(pp, "BUFFS AND DEBUFFS", yy);  yy = yy - hh
+        bossAuraHeader, hh = Ww:SectionHeader(pp, "BUFFS AND DEBUFFS", yy)
+        yy = yy - hh
 
         -- Effective boss aura locations: Simple display overrides the stored
         -- location at runtime (dropdowns show None while active), so every
@@ -2076,13 +3522,19 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- debuffAnchor="bottomleft", locking BOTH the Simple dropdown (raw anchor not none) and the Location dropdown (simple active) at once.
         local function BossDebuffLocationActive()
             local s = db.profile.boss
-            if ns.GetBossSimpleDebuffMode(s) ~= "none" then return false end
+            if ns.GetBossSimpleDebuffMode(s) ~= "none" then
+                return false
+            end
             return (s.debuffAnchor or "bottomleft") ~= "none"
         end
         local function BossBuffLocationActive()
             local s = db.profile.boss
-            if ns.GetBossSimpleBuffMode(s) ~= "none" then return false end
-            if s.showBuffs == false then return false end
+            if ns.GetBossSimpleBuffMode(s) ~= "none" then
+                return false
+            end
+            if s.showBuffs == false then
+                return false
+            end
             return (s.buffAnchor or "topleft") ~= "none"
         end
         -- Composite show-state of the two aura sizing rows (Buff/Debuff Size +
@@ -2107,44 +3559,64 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- the frame height, overriding Buffs Location + Buff Size while active.
         local simpleBuffTextOff = function()
             return BossBuffLocationActive()
-            or ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
-            or not db.profile.boss.simpleBuffShowCooldownText
+                or ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
+                or not db.profile.boss.simpleBuffShowCooldownText
         end
-        simpleBuffRow, hh = Ww:DualRow(pp, yy,
-            { type="segmented", text="Simple Buff Display",
-              disabled = function()
-                  return BossBuffLocationActive()
-              end,
-              disabledTooltip="Buffs Location", requireState="disabled",
-              tooltip = "Force boss buffs into a single large column matched to the frame height.",
-              values = { none = "None", left = "Left", right = "Right" },
-              order = { "none", "left", "right" },
-              getValue=function() return ns.GetBossSimpleBuffMode(db.profile.boss) end,
-              setValue=function(v)
-                  local prevState = BossAuraRowsState()
-                  db.profile.boss.simpleBuffs = v
-                  if v ~= "none" then
-                      -- Same-side collision: if Simple Debuff Display occupies this
-                      -- side, push it off (set to None) so they never overlap.
-                      if ns.GetBossSimpleDebuffMode(db.profile.boss) == v then
-                          db.profile.boss.simpleDebuffs = "none"
-                      end
-                      -- Selecting a side takes over from the normal Buffs
-                      -- Location, so force that setting to None.
-                      db.profile.boss.showBuffs = false
-                  end
-                  ReloadAndUpdate()
-                  if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                  if BossAuraRowsState() ~= prevState then
-                      CludesUI:RefreshPage(true)
-                  else
-                      CludesUI:RefreshPage()
-                  end
-              end },
-            { type="slider", text="Buff Text Size", min=6, max=100, step=1, trackWidth=120,
-              disabled=simpleBuffTextOff, disabledTooltip="Show Duration (Inside Cog)",
-              getValue=function() return db.profile.boss.simpleBuffCooldownTextSize or 14 end,
-              setValue=function(v) db.profile.boss.simpleBuffCooldownTextSize = v; ReloadAndUpdate() end });  yy = yy - hh
+        simpleBuffRow, hh = Ww:DualRow(pp, yy, {
+            type = "segmented",
+            text = "Simple Buff Display",
+            disabled = function()
+                return BossBuffLocationActive()
+            end,
+            disabledTooltip = "Buffs Location",
+            requireState = "disabled",
+            tooltip = "Force boss buffs into a single large column matched to the frame height.",
+            values = { none = "None", left = "Left", right = "Right" },
+            order = { "none", "left", "right" },
+            getValue = function()
+                return ns.GetBossSimpleBuffMode(db.profile.boss)
+            end,
+            setValue = function(v)
+                local prevState = BossAuraRowsState()
+                db.profile.boss.simpleBuffs = v
+                if v ~= "none" then
+                    -- Same-side collision: if Simple Debuff Display occupies this
+                    -- side, push it off (set to None) so they never overlap.
+                    if ns.GetBossSimpleDebuffMode(db.profile.boss) == v then
+                        db.profile.boss.simpleDebuffs = "none"
+                    end
+                    -- Selecting a side takes over from the normal Buffs
+                    -- Location, so force that setting to None.
+                    db.profile.boss.showBuffs = false
+                end
+                ReloadAndUpdate()
+                if ns.RefreshBossPreviewDebuffs then
+                    ns.RefreshBossPreviewDebuffs()
+                end
+                if BossAuraRowsState() ~= prevState then
+                    CludesUI:RefreshPage(true)
+                else
+                    CludesUI:RefreshPage()
+                end
+            end,
+        }, {
+            type = "slider",
+            text = "Buff Text Size",
+            min = 6,
+            max = 100,
+            step = 1,
+            trackWidth = 120,
+            disabled = simpleBuffTextOff,
+            disabledTooltip = "Show Duration (Inside Cog)",
+            getValue = function()
+                return db.profile.boss.simpleBuffCooldownTextSize or 14
+            end,
+            setValue = function(v)
+                db.profile.boss.simpleBuffCooldownTextSize = v
+                ReloadAndUpdate()
+            end,
+        })
+        yy = yy - hh
 
         -- Directions cog on Simple Buff Display: the simple column's own X/Y
         -- offset (defaults to the regular buff offsets via ns.GetBossSimpleBuffOffset);
@@ -2152,32 +3624,107 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         if not CludesUI._prebuilding then
             local leftRgn = simpleBuffRow._leftRegion
             CludesUI.BuildInlineCog(leftRgn, {
-                disabled = function() return ns.GetBossSimpleBuffMode(db.profile.boss) == "none" end,
+                disabled = function()
+                    return ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
+                end,
                 disabledTooltip = "Simple Buff Display",
                 title = "Simple Buff Position",
                 rows = {
                     -- Max buffs shown in simple mode. Shares the boss maxBuffs key
                     -- with Buffs Location (the two modes are mutually exclusive);
                     -- the runtime caps frame.Buffs.num to it.
-                    { type="slider", label="Max Count", min=1, max=20, step=1,
-                      tooltip=ns.UFO_MAX_COUNT_TOOLTIP,
-                      get=function() return db.profile.boss.maxBuffs or 4 end,
-                      set=function(v) db.profile.boss.maxBuffs = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "slider",
+                        label = "Max Count",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        get = function()
+                            return db.profile.boss.maxBuffs or 4
+                        end,
+                        set = function(v)
+                            db.profile.boss.maxBuffs = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                     -- Shares the boss buffMaxPerRow key with Buffs Location
                     -- (mutually exclusive modes), like Max Count above.
-                    { type="slider", label="Max Per Row", min=1, max=20, step=1,
-                      get=function() return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4 end,
-                      set=function(v) db.profile.boss.buffMaxPerRow = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset X", min=-200, max=200, step=1,
-                      get=function() local x = ns.GetBossSimpleBuffOffset(db.profile.boss); return x end,
-                      set=function(v) db.profile.boss.simpleBuffOffsetX = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset Y", min=-200, max=200, step=1,
-                      get=function() local _, y = ns.GetBossSimpleBuffOffset(db.profile.boss); return y end,
-                      set=function(v) db.profile.boss.simpleBuffOffsetY = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "slider",
+                        label = "Max Per Row",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4
+                        end,
+                        set = function(v)
+                            db.profile.boss.buffMaxPerRow = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            local x = ns.GetBossSimpleBuffOffset(db.profile.boss)
+                            return x
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleBuffOffsetX = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            local _, y = ns.GetBossSimpleBuffOffset(db.profile.boss)
+                            return y
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleBuffOffsetY = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                     -- Physical-pixel-perfect gap between the simple buff icons.
-                    { type="slider", pixel=true, label="Spacing", min=-1, max=10, step=1,
-                      get=function() return db.profile.boss.simpleBuffSpacing or 1 end,
-                      set=function(v) db.profile.boss.simpleBuffSpacing = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Spacing",
+                        min = -1,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.simpleBuffSpacing or 1
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleBuffSpacing = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                 },
             })
         end
@@ -2187,56 +3734,175 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             local rightRgn = simpleBuffRow._rightRegion
             -- Inline Duration + Stack swatches mirroring the regular Buff Text Size
             -- swatches (same keys); greyed + disabled on this row cog's condition.
-            local buffOff = function() return BossBuffLocationActive() or ns.GetBossSimpleBuffMode(db.profile.boss) == "none" end
-            CludesUI.BuildInlineCog(rightRgn, { disabled = buffOff, disabledTooltip = "Simple Buff Display",
-                title = "Duration & Stack",
-                rows = {
-                    { type="toggle", label="Show Duration",
-                      get=function() return db.profile.boss.simpleBuffShowCooldownText end,
-                      set=function(v) db.profile.boss.simpleBuffShowCooldownText = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-                    { type="slider", label="Duration X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.simpleBuffCooldownTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.simpleBuffCooldownTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Duration Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.simpleBuffCooldownTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.simpleBuffCooldownTextOffsetY = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Size", min=6, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextSize or 14 end,
-                      set=function(v) db.profile.boss.buffStackTextSize = v; ReloadAndUpdate() end },
-                    { type="dropdown", label="Stack Position",
-                      values={ bottomright="Bottom Right", bottomleft="Bottom Left", topright="Top Right", topleft="Top Left", center="Center" },
-                      order={ "bottomright", "bottomleft", "topright", "topleft", "center" },
-                      get=function() return db.profile.boss.buffStackTextPosition or "bottomright" end,
-                      set=function(v) db.profile.boss.buffStackTextPosition = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.buffStackTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.buffStackTextOffsetY = v; ReloadAndUpdate() end },
-                },
-            })
+            local buffOff = function()
+                return BossBuffLocationActive() or ns.GetBossSimpleBuffMode(db.profile.boss) == "none"
+            end
+            CludesUI.BuildInlineCog(
+                rightRgn,
+                {
+                    disabled = buffOff,
+                    disabledTooltip = "Simple Buff Display",
+                    title = "Duration & Stack",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Show Duration",
+                            get = function()
+                                return db.profile.boss.simpleBuffShowCooldownText
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleBuffShowCooldownText = v
+                                ReloadAndUpdate()
+                                CludesUI:RefreshPage()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Duration X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.simpleBuffCooldownTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleBuffCooldownTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Duration Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.simpleBuffCooldownTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleBuffCooldownTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Size",
+                            min = 6,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffStackTextSize or 14
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffStackTextSize = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "dropdown",
+                            label = "Stack Position",
+                            values = {
+                                bottomright = "Bottom Right",
+                                bottomleft = "Bottom Left",
+                                topright = "Top Right",
+                                topleft = "Top Left",
+                                center = "Center",
+                            },
+                            order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                            get = function()
+                                return db.profile.boss.buffStackTextPosition or "bottomright"
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffStackTextPosition = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffStackTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffStackTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffStackTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffStackTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                }
+            )
             do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.buffCooldownTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.buffCooldownTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Duration Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
+                    local c = db.profile.boss.buffCooldownTextColor
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end, function(r, g, b)
+                    db.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
+                end)
+                sw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
-                local function apply() upd(); local o = buffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+                local function apply()
+                    upd()
+                    local o = buffOff()
+                    sw:SetAlpha(o and 0.3 or 1)
+                    sw:EnableMouse(not o)
+                end
+                apply()
+                CludesUI.RegisterWidgetRefresh(apply)
             end
             do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.buffStackTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.buffStackTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Stack Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
+                    local c = db.profile.boss.buffStackTextColor
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end, function(r, g, b)
+                    db.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
+                end)
+                sw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
-                local function apply() upd(); local o = buffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+                local function apply()
+                    upd()
+                    local o = buffOff()
+                    sw:SetAlpha(o and 0.3 or 1)
+                    sw:EnableMouse(not o)
+                end
+                apply()
+                CludesUI.RegisterWidgetRefresh(apply)
             end
         end
         -- (Show Duration toggle lives inside the Duration & Stack cog above.)
@@ -2249,44 +3915,64 @@ function ns.UFO_BuildBossOptions(W, parent, y)
 
         local simpleTextOff = function()
             return BossDebuffLocationActive()
-            or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
-            or not db.profile.boss.simpleDebuffShowCooldownText
+                or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
+                or not db.profile.boss.simpleDebuffShowCooldownText
         end
-        simpleRow, hh = Ww:DualRow(pp, yy,
-            { type="segmented", text="Simple Debuff Display",
-              disabled = function()
-                  return BossDebuffLocationActive()
-              end,
-              disabledTooltip="Debuffs Location", requireState="disabled",
-              tooltip = "Force boss debuffs into a single large column matched to the frame height.",
-              values = { none = "None", left = "Left", right = "Right" },
-              order = { "none", "left", "right" },
-              getValue=function() return ns.GetBossSimpleDebuffMode(db.profile.boss) end,
-              setValue=function(v)
-                  local prevState = BossAuraRowsState()
-                  db.profile.boss.simpleDebuffs = v
-                  if v ~= "none" then
-                      -- Same-side collision: if Simple Buff Display occupies this
-                      -- side, push it off (set to None) so they never overlap.
-                      if ns.GetBossSimpleBuffMode(db.profile.boss) == v then
-                          db.profile.boss.simpleBuffs = "none"
-                      end
-                      -- Selecting a side takes over from the normal Debuffs
-                      -- Location, so force that setting to None.
-                      db.profile.boss.debuffAnchor = "none"
-                  end
-                  ReloadAndUpdate()
-                  if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                  if BossAuraRowsState() ~= prevState then
-                      CludesUI:RefreshPage(true)
-                  else
-                      CludesUI:RefreshPage()
-                  end
-              end },
-            { type="slider", text="Debuff Text Size", min=6, max=100, step=1, trackWidth=120,
-              disabled=simpleTextOff, disabledTooltip="Show Duration (Inside Cog)",
-              getValue=function() return db.profile.boss.simpleDebuffCooldownTextSize or 14 end,
-              setValue=function(v) db.profile.boss.simpleDebuffCooldownTextSize = v; ReloadAndUpdate() end });  yy = yy - hh
+        simpleRow, hh = Ww:DualRow(pp, yy, {
+            type = "segmented",
+            text = "Simple Debuff Display",
+            disabled = function()
+                return BossDebuffLocationActive()
+            end,
+            disabledTooltip = "Debuffs Location",
+            requireState = "disabled",
+            tooltip = "Force boss debuffs into a single large column matched to the frame height.",
+            values = { none = "None", left = "Left", right = "Right" },
+            order = { "none", "left", "right" },
+            getValue = function()
+                return ns.GetBossSimpleDebuffMode(db.profile.boss)
+            end,
+            setValue = function(v)
+                local prevState = BossAuraRowsState()
+                db.profile.boss.simpleDebuffs = v
+                if v ~= "none" then
+                    -- Same-side collision: if Simple Buff Display occupies this
+                    -- side, push it off (set to None) so they never overlap.
+                    if ns.GetBossSimpleBuffMode(db.profile.boss) == v then
+                        db.profile.boss.simpleBuffs = "none"
+                    end
+                    -- Selecting a side takes over from the normal Debuffs
+                    -- Location, so force that setting to None.
+                    db.profile.boss.debuffAnchor = "none"
+                end
+                ReloadAndUpdate()
+                if ns.RefreshBossPreviewDebuffs then
+                    ns.RefreshBossPreviewDebuffs()
+                end
+                if BossAuraRowsState() ~= prevState then
+                    CludesUI:RefreshPage(true)
+                else
+                    CludesUI:RefreshPage()
+                end
+            end,
+        }, {
+            type = "slider",
+            text = "Debuff Text Size",
+            min = 6,
+            max = 100,
+            step = 1,
+            trackWidth = 120,
+            disabled = simpleTextOff,
+            disabledTooltip = "Show Duration (Inside Cog)",
+            getValue = function()
+                return db.profile.boss.simpleDebuffCooldownTextSize or 14
+            end,
+            setValue = function(v)
+                db.profile.boss.simpleDebuffCooldownTextSize = v
+                ReloadAndUpdate()
+            end,
+        })
+        yy = yy - hh
 
         -- Directions cog on Simple Debuff Display: the simple column's own X/Y
         -- offset. Defaults to the regular debuff offsets for existing users
@@ -2295,33 +3981,110 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         if not CludesUI._prebuilding then
             local leftRgn = simpleRow._leftRegion
             CludesUI.BuildInlineCog(leftRgn, {
-                disabled = function() return ns.GetBossSimpleDebuffMode(db.profile.boss) == "none" end,
+                disabled = function()
+                    return ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
+                end,
                 disabledTooltip = "Simple Debuff Display",
                 title = "Simple Debuff Position",
                 rows = {
                     -- Max debuffs shown in simple mode. Shares the boss maxDebuffs
                     -- key with Debuffs Location (the two modes are mutually
                     -- exclusive); the runtime caps frame.Debuffs.num to it.
-                    { type="slider", label="Max Count", min=1, max=20, step=1,
-                      tooltip=ns.UFO_MAX_COUNT_TOOLTIP,
-                      get=function() return db.profile.boss.maxDebuffs or 10 end,
-                      set=function(v) db.profile.boss.maxDebuffs = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    ns.UFO_MaxImportantRow(function() return db.profile.boss end, ReloadAndUpdate, 20, 10),
+                    {
+                        type = "slider",
+                        label = "Max Count",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        get = function()
+                            return db.profile.boss.maxDebuffs or 10
+                        end,
+                        set = function(v)
+                            db.profile.boss.maxDebuffs = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    ns.UFO_MaxImportantRow(function()
+                        return db.profile.boss
+                    end, ReloadAndUpdate, 20, 10),
                     -- Shares the boss debuffMaxPerRow key with Debuffs Location
                     -- (mutually exclusive modes), like Max Count above.
-                    { type="slider", label="Max Per Row", min=1, max=20, step=1,
-                      get=function() return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10 end,
-                      set=function(v) db.profile.boss.debuffMaxPerRow = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset X", min=-200, max=200, step=1,
-                      get=function() local x = ns.GetBossSimpleDebuffOffset(db.profile.boss); return x end,
-                      set=function(v) db.profile.boss.simpleDebuffOffsetX = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset Y", min=-200, max=200, step=1,
-                      get=function() local _, y = ns.GetBossSimpleDebuffOffset(db.profile.boss); return y end,
-                      set=function(v) db.profile.boss.simpleDebuffOffsetY = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "slider",
+                        label = "Max Per Row",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10
+                        end,
+                        set = function(v)
+                            db.profile.boss.debuffMaxPerRow = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            local x = ns.GetBossSimpleDebuffOffset(db.profile.boss)
+                            return x
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleDebuffOffsetX = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            local _, y = ns.GetBossSimpleDebuffOffset(db.profile.boss)
+                            return y
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleDebuffOffsetY = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                     -- Physical-pixel-perfect gap between the simple debuff icons.
-                    { type="slider", pixel=true, label="Spacing", min=-1, max=10, step=1,
-                      get=function() return db.profile.boss.simpleDebuffSpacing or 1 end,
-                      set=function(v) db.profile.boss.simpleDebuffSpacing = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "slider",
+                        pixel = true,
+                        label = "Spacing",
+                        min = -1,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.simpleDebuffSpacing or 1
+                        end,
+                        set = function(v)
+                            db.profile.boss.simpleDebuffSpacing = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                 },
             })
         end
@@ -2332,112 +4095,256 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Inline Duration + Stack swatches mirroring the regular Debuff Text
             -- Size swatches (same keys); greyed + disabled on this row cog's
             -- condition.
-            local debuffOff = function() return BossDebuffLocationActive() or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none" end
-            CludesUI.BuildInlineCog(rightRgn, { disabled = debuffOff, disabledTooltip = "Simple Debuff Display",
-                title = "Duration & Stack",
-                rows = {
-                    { type="toggle", label="Show Duration",
-                      get=function() return db.profile.boss.simpleDebuffShowCooldownText end,
-                      set=function(v) db.profile.boss.simpleDebuffShowCooldownText = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-                    { type="slider", label="Duration X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.simpleDebuffCooldownTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.simpleDebuffCooldownTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Duration Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.simpleDebuffCooldownTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.simpleDebuffCooldownTextOffsetY = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Size", min=6, max=100, step=1,
-                      get=function() return db.profile.boss.debuffStackTextSize or 14 end,
-                      set=function(v) db.profile.boss.debuffStackTextSize = v; ReloadAndUpdate() end },
-                    { type="dropdown", label="Stack Position",
-                      values={ bottomright="Bottom Right", bottomleft="Bottom Left", topright="Top Right", topleft="Top Left", center="Center" },
-                      order={ "bottomright", "bottomleft", "topright", "topleft", "center" },
-                      get=function() return db.profile.boss.debuffStackTextPosition or "bottomright" end,
-                      set=function(v) db.profile.boss.debuffStackTextPosition = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.debuffStackTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.debuffStackTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.debuffStackTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.debuffStackTextOffsetY = v; ReloadAndUpdate() end },
-                },
-            })
+            local debuffOff = function()
+                return BossDebuffLocationActive() or ns.GetBossSimpleDebuffMode(db.profile.boss) == "none"
+            end
+            CludesUI.BuildInlineCog(
+                rightRgn,
+                {
+                    disabled = debuffOff,
+                    disabledTooltip = "Simple Debuff Display",
+                    title = "Duration & Stack",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Show Duration",
+                            get = function()
+                                return db.profile.boss.simpleDebuffShowCooldownText
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleDebuffShowCooldownText = v
+                                ReloadAndUpdate()
+                                CludesUI:RefreshPage()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Duration X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.simpleDebuffCooldownTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleDebuffCooldownTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Duration Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.simpleDebuffCooldownTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.simpleDebuffCooldownTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Size",
+                            min = 6,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.debuffStackTextSize or 14
+                            end,
+                            set = function(v)
+                                db.profile.boss.debuffStackTextSize = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "dropdown",
+                            label = "Stack Position",
+                            values = {
+                                bottomright = "Bottom Right",
+                                bottomleft = "Bottom Left",
+                                topright = "Top Right",
+                                topleft = "Top Left",
+                                center = "Center",
+                            },
+                            order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                            get = function()
+                                return db.profile.boss.debuffStackTextPosition or "bottomright"
+                            end,
+                            set = function(v)
+                                db.profile.boss.debuffStackTextPosition = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack X",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.debuffStackTextOffsetX or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.debuffStackTextOffsetX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Stack Y",
+                            min = -100,
+                            max = 100,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.debuffStackTextOffsetY or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.debuffStackTextOffsetY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                }
+            )
             do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.debuffCooldownTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.debuffCooldownTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Duration Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
+                    local c = db.profile.boss.debuffCooldownTextColor
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end, function(r, g, b)
+                    db.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
+                end)
+                sw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
-                local function apply() upd(); local o = debuffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+                local function apply()
+                    upd()
+                    local o = debuffOff()
+                    sw:SetAlpha(o and 0.3 or 1)
+                    sw:EnableMouse(not o)
+                end
+                apply()
+                CludesUI.RegisterWidgetRefresh(apply)
             end
             do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.debuffStackTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.debuffStackTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Stack Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
+                    local c = db.profile.boss.debuffStackTextColor
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 1, 1, 1
+                end, function(r, g, b)
+                    db.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
+                end)
+                sw:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
                 rightRgn._lastInline = sw
-                local function apply() upd(); local o = debuffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+                local function apply()
+                    upd()
+                    local o = debuffOff()
+                    sw:SetAlpha(o and 0.3 or 1)
+                    sw:EnableMouse(not o)
+                end
+                apply()
+                CludesUI.RegisterWidgetRefresh(apply)
             end
         end
         -- (Show Duration toggle lives inside the Duration & Stack cog above.)
 
-        bossAuraRow, hh = Ww:DualRow(pp, yy,
-            { type="dropdown", text="Buffs Location", values=buffAnchorValues, order=buffAnchorOrder,
-              disabled = function() return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" end,
-              disabledTooltip = "Simple Buff Display", requireState = "disabled",
-              getValue=function()
-                  local s = db.profile.boss
-                  -- Forced to None while Simple Buff Display is active (it takes
-                  -- over placement); the setter also stores None (showBuffs=false).
-                  if ns.GetBossSimpleBuffMode(s) ~= "none" then return "none" end
-                  if s.showBuffs == false then return "none" end
-                  return s.buffAnchor or "topleft"
-              end,
-              setValue=function(v)
-                  local prevState = BossAuraRowsState()
-                  local s = db.profile.boss
-                  if v == "none" then
-                      s.showBuffs = false
-                  else
-                      s.showBuffs = true
-                      SwapAuraSlot(s, "buffAnchor", v)
-                  end
-                  ReloadAndUpdate()
-                  if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                  if BossAuraRowsState() ~= prevState then
-                      CludesUI:RefreshPage(true)
-                  else
-                      CludesUI:RefreshPage()
-                  end
-              end },
-            { type="dropdown", text="Debuffs Location", values=buffAnchorValues, order=buffAnchorOrder,
-              disabled = function() return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" end,
-              disabledTooltip = "Simple Debuff Display", requireState = "disabled",
-              getValue=function()
-                  -- Forced to None while Simple Debuff Display is active (it
-                  -- takes over placement); the setter also stores None.
-                  if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then return "none" end
-                  return db.profile.boss.debuffAnchor or "bottomleft"
-              end,
-              setValue=function(v)
-                  local prevState = BossAuraRowsState()
-                  SwapAuraSlot(db.profile.boss, "debuffAnchor", v)
-                  ReloadAndUpdate()
-                  if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                  -- Full rebuild when either aura row's visibility flipped;
-                  -- otherwise the fast refresh keeps dependent disabled
-                  -- states (Boss Debuff Filter) current.
-                  if BossAuraRowsState() ~= prevState then
-                      CludesUI:RefreshPage(true)
-                  else
-                      CludesUI:RefreshPage()
-                  end
-              end });  yy = yy - hh
+        bossAuraRow, hh = Ww:DualRow(pp, yy, {
+            type = "dropdown",
+            text = "Buffs Location",
+            values = buffAnchorValues,
+            order = buffAnchorOrder,
+            disabled = function()
+                return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none"
+            end,
+            disabledTooltip = "Simple Buff Display",
+            requireState = "disabled",
+            getValue = function()
+                local s = db.profile.boss
+                -- Forced to None while Simple Buff Display is active (it takes
+                -- over placement); the setter also stores None (showBuffs=false).
+                if ns.GetBossSimpleBuffMode(s) ~= "none" then
+                    return "none"
+                end
+                if s.showBuffs == false then
+                    return "none"
+                end
+                return s.buffAnchor or "topleft"
+            end,
+            setValue = function(v)
+                local prevState = BossAuraRowsState()
+                local s = db.profile.boss
+                if v == "none" then
+                    s.showBuffs = false
+                else
+                    s.showBuffs = true
+                    SwapAuraSlot(s, "buffAnchor", v)
+                end
+                ReloadAndUpdate()
+                if ns.RefreshBossPreviewDebuffs then
+                    ns.RefreshBossPreviewDebuffs()
+                end
+                if BossAuraRowsState() ~= prevState then
+                    CludesUI:RefreshPage(true)
+                else
+                    CludesUI:RefreshPage()
+                end
+            end,
+        }, {
+            type = "dropdown",
+            text = "Debuffs Location",
+            values = buffAnchorValues,
+            order = buffAnchorOrder,
+            disabled = function()
+                return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none"
+            end,
+            disabledTooltip = "Simple Debuff Display",
+            requireState = "disabled",
+            getValue = function()
+                -- Forced to None while Simple Debuff Display is active (it
+                -- takes over placement); the setter also stores None.
+                if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
+                    return "none"
+                end
+                return db.profile.boss.debuffAnchor or "bottomleft"
+            end,
+            setValue = function(v)
+                local prevState = BossAuraRowsState()
+                SwapAuraSlot(db.profile.boss, "debuffAnchor", v)
+                ReloadAndUpdate()
+                if ns.RefreshBossPreviewDebuffs then
+                    ns.RefreshBossPreviewDebuffs()
+                end
+                -- Full rebuild when either aura row's visibility flipped;
+                -- otherwise the fast refresh keeps dependent disabled
+                -- states (Boss Debuff Filter) current.
+                if BossAuraRowsState() ~= prevState then
+                    CludesUI:RefreshPage(true)
+                else
+                    CludesUI:RefreshPage()
+                end
+            end,
+        })
+        yy = yy - hh
 
         -- Boss Buff Size | Debuff Size: icon size sliders, each with an inline
         -- DIRECTIONS cog holding the cluster X/Y offset; setters refresh live
@@ -2457,115 +4364,341 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- Buff Text Size gates on the "Show Duration" toggle inside its
         -- Duration & Stack cog (mirrors Debuff Text Size on the row below).
         local buffTextOff = function()
-            return not BossBuffLocationActive()
-            or not db.profile.boss.buffShowCooldownText
+            return not BossBuffLocationActive() or not db.profile.boss.buffShowCooldownText
         end
         -- Buff Size | Buff Text Size row: HIDDEN entirely while the buff
         -- column's effective Location is None (see BossBuffRowShown; the
         -- dropdown setters above force the rebuild on flips).
         if BossBuffRowShown() then
-        local bossAuraSizeRow
-        bossAuraSizeRow, hh = Ww:DualRow(pp, yy,
-            { type="slider", text="Buff Size", min=10, max=70, step=1,
-              disabled=bossBuffSizeOff,
-              disabledTooltip=function()
-                  if ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" then
-                      return CludesUI.DisabledTooltip("Simple Buff Display", "disabled")
-                  end
-                  return CludesUI.DisabledTooltip("Buffs Location")
-              end,
-              rawTooltip=true,
-              getValue=function() return db.profile.boss.buffSize or 22 end,
-              setValue=function(v)
-                  db.profile.boss.buffSize = v; ReloadAndUpdate()
-                  if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-              end },
-            { type="slider", text="Buff Text Size", min=6, max=100, step=1, trackWidth=120,
-              disabled=buffTextOff, disabledTooltip="Show Duration (Inside Cog)",
-              getValue=function() return db.profile.boss.buffCooldownTextSize or 10 end,
-              setValue=function(v) db.profile.boss.buffCooldownTextSize = v; ReloadAndUpdate() end });  yy = yy - hh
-        if not CludesUI._prebuilding then  -- Directions cog on Buff Size (X/Y cluster offset)
-            CludesUI.BuildInlineCog(bossAuraSizeRow._leftRegion, { disabled = bossBuffSizeOff, title = "Buff Position", rows = {
-                { type="slider", label="Offset X", min=-200, max=200, step=1,
-                  get=function() return db.profile.boss.buffOffsetX or 0 end,
-                  set=function(v) db.profile.boss.buffOffsetX = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                { type="slider", label="Offset Y", min=-200, max=200, step=1,
-                  get=function() return db.profile.boss.buffOffsetY or 0 end,
-                  set=function(v) db.profile.boss.buffOffsetY = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                -- Physical-pixel-perfect gap between the boss buff icons.
-                { type="slider", pixel=true, label="Spacing", min=-1, max=10, step=1,
-                  get=function() return db.profile.boss.buffSpacing or 1 end,
-                  set=function(v) db.profile.boss.buffSpacing = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-            } })
-        end
-        if not CludesUI._prebuilding then  -- Icon Zoom cog on Buff Size (gated only on buffs hidden, so it
-            -- stays adjustable in Simple Buff Display, where zoom still applies)
-            local bossBuffZoomOff = function() return db.profile.boss.showBuffs == false end
-            CludesUI.BuildInlineCog(bossAuraSizeRow._leftRegion, { disabled = bossBuffZoomOff, disabledTooltip = "Buffs Location", title = "Icon Zoom", rows = {
-                { type="slider", label="Zoom", min=0, max=0.20, step=0.01,
-                  get=function() return db.profile.boss.buffIconZoom or 0.07 end,
-                  set=function(v) db.profile.boss.buffIconZoom = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-            } })
-        end
-        -- Buff Text Size cog + swatches (right slot): Show Duration +
-        -- Duration X/Y + Stack, with inline Duration/Stack text-color
-        -- swatches; greyed on the same condition as the cog.
-        if not CludesUI._prebuilding then
-            local PP = CludesUI.PanelPP
-            local rightRgn = bossAuraSizeRow._rightRegion
-            local buffOff = function() return not BossBuffLocationActive() end
-            CludesUI.BuildInlineCog(rightRgn, { disabled = buffOff, disabledTooltip = "Buffs Location",
-                title = "Duration & Stack",
-                rows = {
-                    { type="toggle", label="Show Duration",
-                      get=function() return db.profile.boss.buffShowCooldownText end,
-                      set=function(v) db.profile.boss.buffShowCooldownText = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-                    { type="slider", label="Duration X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffCooldownTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.buffCooldownTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Duration Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffCooldownTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.buffCooldownTextOffsetY = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Size", min=6, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextSize or 14 end,
-                      set=function(v) db.profile.boss.buffStackTextSize = v; ReloadAndUpdate() end },
-                    { type="dropdown", label="Stack Position",
-                      values={ bottomright="Bottom Right", bottomleft="Bottom Left", topright="Top Right", topleft="Top Left", center="Center" },
-                      order={ "bottomright", "bottomleft", "topright", "topleft", "center" },
-                      get=function() return db.profile.boss.buffStackTextPosition or "bottomright" end,
-                      set=function(v) db.profile.boss.buffStackTextPosition = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack X", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextOffsetX or 0 end,
-                      set=function(v) db.profile.boss.buffStackTextOffsetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Stack Y", min=-100, max=100, step=1,
-                      get=function() return db.profile.boss.buffStackTextOffsetY or 0 end,
-                      set=function(v) db.profile.boss.buffStackTextOffsetY = v; ReloadAndUpdate() end },
-                },
+            local bossAuraSizeRow
+            bossAuraSizeRow, hh = Ww:DualRow(pp, yy, {
+                type = "slider",
+                text = "Buff Size",
+                min = 10,
+                max = 70,
+                step = 1,
+                disabled = bossBuffSizeOff,
+                disabledTooltip = function()
+                    if ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" then
+                        return CludesUI.DisabledTooltip("Simple Buff Display", "disabled")
+                    end
+                    return CludesUI.DisabledTooltip("Buffs Location")
+                end,
+                rawTooltip = true,
+                getValue = function()
+                    return db.profile.boss.buffSize or 22
+                end,
+                setValue = function(v)
+                    db.profile.boss.buffSize = v
+                    ReloadAndUpdate()
+                    if ns.RefreshBossPreviewDebuffs then
+                        ns.RefreshBossPreviewDebuffs()
+                    end
+                end,
+            }, {
+                type = "slider",
+                text = "Buff Text Size",
+                min = 6,
+                max = 100,
+                step = 1,
+                trackWidth = 120,
+                disabled = buffTextOff,
+                disabledTooltip = "Show Duration (Inside Cog)",
+                getValue = function()
+                    return db.profile.boss.buffCooldownTextSize or 10
+                end,
+                setValue = function(v)
+                    db.profile.boss.buffCooldownTextSize = v
+                    ReloadAndUpdate()
+                end,
             })
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.buffCooldownTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.buffCooldownTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Duration Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply() upd(); local o = buffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+            yy = yy - hh
+            if not CludesUI._prebuilding then -- Directions cog on Buff Size (X/Y cluster offset)
+                CludesUI.BuildInlineCog(bossAuraSizeRow._leftRegion, {
+                    disabled = bossBuffSizeOff,
+                    title = "Buff Position",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Offset X",
+                            min = -200,
+                            max = 200,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffOffsetX or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffOffsetX = v
+                                ReloadAndUpdate()
+                                if ns.RefreshBossPreviewDebuffs then
+                                    ns.RefreshBossPreviewDebuffs()
+                                end
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Offset Y",
+                            min = -200,
+                            max = 200,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffOffsetY or 0
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffOffsetY = v
+                                ReloadAndUpdate()
+                                if ns.RefreshBossPreviewDebuffs then
+                                    ns.RefreshBossPreviewDebuffs()
+                                end
+                            end,
+                        },
+                        -- Physical-pixel-perfect gap between the boss buff icons.
+                        {
+                            type = "slider",
+                            pixel = true,
+                            label = "Spacing",
+                            min = -1,
+                            max = 10,
+                            step = 1,
+                            get = function()
+                                return db.profile.boss.buffSpacing or 1
+                            end,
+                            set = function(v)
+                                db.profile.boss.buffSpacing = v
+                                ReloadAndUpdate()
+                                if ns.RefreshBossPreviewDebuffs then
+                                    ns.RefreshBossPreviewDebuffs()
+                                end
+                            end,
+                        },
+                    },
+                })
             end
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                    function() local c = db.profile.boss.buffStackTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                    function(r, g, b) db.profile.boss.buffStackTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Stack Text Color") end)
-                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply() upd(); local o = buffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                apply(); CludesUI.RegisterWidgetRefresh(apply)
+            if not CludesUI._prebuilding then -- Icon Zoom cog on Buff Size (gated only on buffs hidden, so it
+                -- stays adjustable in Simple Buff Display, where zoom still applies)
+                local bossBuffZoomOff = function()
+                    return db.profile.boss.showBuffs == false
+                end
+                CludesUI.BuildInlineCog(
+                    bossAuraSizeRow._leftRegion,
+                    {
+                        disabled = bossBuffZoomOff,
+                        disabledTooltip = "Buffs Location",
+                        title = "Icon Zoom",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Zoom",
+                                min = 0,
+                                max = 0.20,
+                                step = 0.01,
+                                get = function()
+                                    return db.profile.boss.buffIconZoom or 0.07
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffIconZoom = v
+                                    ReloadAndUpdate()
+                                    if ns.RefreshBossPreviewDebuffs then
+                                        ns.RefreshBossPreviewDebuffs()
+                                    end
+                                end,
+                            },
+                        },
+                    }
+                )
             end
-        end
-        end   -- close buff sizing row hidden-while-None gate
+            -- Buff Text Size cog + swatches (right slot): Show Duration +
+            -- Duration X/Y + Stack, with inline Duration/Stack text-color
+            -- swatches; greyed on the same condition as the cog.
+            if not CludesUI._prebuilding then
+                local PP = CludesUI.PanelPP
+                local rightRgn = bossAuraSizeRow._rightRegion
+                local buffOff = function()
+                    return not BossBuffLocationActive()
+                end
+                CludesUI.BuildInlineCog(
+                    rightRgn,
+                    {
+                        disabled = buffOff,
+                        disabledTooltip = "Buffs Location",
+                        title = "Duration & Stack",
+                        rows = {
+                            {
+                                type = "toggle",
+                                label = "Show Duration",
+                                get = function()
+                                    return db.profile.boss.buffShowCooldownText
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffShowCooldownText = v
+                                    ReloadAndUpdate()
+                                    CludesUI:RefreshPage()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Duration X",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.buffCooldownTextOffsetX or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffCooldownTextOffsetX = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Duration Y",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.buffCooldownTextOffsetY or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffCooldownTextOffsetY = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack Size",
+                                min = 6,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.buffStackTextSize or 14
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffStackTextSize = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "dropdown",
+                                label = "Stack Position",
+                                values = {
+                                    bottomright = "Bottom Right",
+                                    bottomleft = "Bottom Left",
+                                    topright = "Top Right",
+                                    topleft = "Top Left",
+                                    center = "Center",
+                                },
+                                order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                                get = function()
+                                    return db.profile.boss.buffStackTextPosition or "bottomright"
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffStackTextPosition = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack X",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.buffStackTextOffsetX or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffStackTextOffsetX = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Stack Y",
+                                min = -100,
+                                max = 100,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.buffStackTextOffsetY or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.buffStackTextOffsetY = v
+                                    ReloadAndUpdate()
+                                end,
+                            },
+                        },
+                    }
+                )
+                do
+                    local sw, upd = CludesUI.BuildColorSwatch(
+                        rightRgn,
+                        rightRgn:GetFrameLevel() + 5,
+                        function()
+                            local c = db.profile.boss.buffCooldownTextColor
+                            if c then
+                                return c.r, c.g, c.b
+                            end
+                            return 1, 1, 1
+                        end,
+                        function(r, g, b)
+                            db.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
+                            ReloadAndUpdate()
+                        end,
+                        false,
+                        20
+                    )
+                    sw:HookScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
+                    end)
+                    sw:HookScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
+                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                    rightRgn._lastInline = sw
+                    local function apply()
+                        upd()
+                        local o = buffOff()
+                        sw:SetAlpha(o and 0.3 or 1)
+                        sw:EnableMouse(not o)
+                    end
+                    apply()
+                    CludesUI.RegisterWidgetRefresh(apply)
+                end
+                do
+                    local sw, upd = CludesUI.BuildColorSwatch(
+                        rightRgn,
+                        rightRgn:GetFrameLevel() + 5,
+                        function()
+                            local c = db.profile.boss.buffStackTextColor
+                            if c then
+                                return c.r, c.g, c.b
+                            end
+                            return 1, 1, 1
+                        end,
+                        function(r, g, b)
+                            db.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
+                            ReloadAndUpdate()
+                        end,
+                        false,
+                        20
+                    )
+                    sw:HookScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
+                    end)
+                    sw:HookScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
+                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                    rightRgn._lastInline = sw
+                    local function apply()
+                        upd()
+                        local o = buffOff()
+                        sw:SetAlpha(o and 0.3 or 1)
+                        sw:EnableMouse(not o)
+                    end
+                    apply()
+                    CludesUI.RegisterWidgetRefresh(apply)
+                end
+            end
+        end -- close buff sizing row hidden-while-None gate
 
         -- Per-unit aura filters for boss frames (NOT synced; boss1-5 share the
         -- one "boss" settings table). Debuff Filter = the single-select mode
@@ -2574,130 +4707,382 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         do
             local PP = CludesUI.PanelPP
             local buffFilterItems, BUFF_FILTER_KEYS, BOSS_BUFF_NEG_SKEYS
-                -- Non-player buff vocabulary is just these three (see
-                -- the Main Frames list).
-                buffFilterItems = {
-                    { isHeader = true, label = "Show", rightLabel = "Hide" },
-                    { key = "stealable",         label = "Stealable",          dual = true, tooltip = "Buffs you can spellsteal or purge" },
-                    { key = "bigDefensive",      label = "Big Defensive",      dual = true, tooltip = "Major defensive cooldowns" },
-                    { key = "dispellable",       label = "Dispellable",        dual = true, tooltip = "Auras with a dispel type you can dispel" },
-                }
-                BUFF_FILTER_KEYS = { ownOnly = "onlyPlayerBuffs", raidFrames = "buffRaid", raidInCombat = "buffRaidInCombat", dispellable = "buffDispellable", crowdControl = "buffCrowdControl", bigDefensive = "buffBigDefensive", externalDefensive = "buffExternalDefensive", cancelable = "buffCancelable", stealable = "buffStealable" }
-                BOSS_BUFF_NEG_SKEYS   = { stealable = "Stealable", bigDefensive = "BigDefensive", dispellable = "Dispellable" }
+            -- Non-player buff vocabulary is just these three (see
+            -- the Main Frames list).
+            buffFilterItems = {
+                { isHeader = true, label = "Show", rightLabel = "Hide" },
+                {
+                    key = "stealable",
+                    label = "Stealable",
+                    dual = true,
+                    tooltip = "Buffs you can spellsteal or purge",
+                },
+                {
+                    key = "bigDefensive",
+                    label = "Big Defensive",
+                    dual = true,
+                    tooltip = "Major defensive cooldowns",
+                },
+                {
+                    key = "dispellable",
+                    label = "Dispellable",
+                    dual = true,
+                    tooltip = "Auras with a dispel type you can dispel",
+                },
+            }
+            BUFF_FILTER_KEYS = {
+                ownOnly = "onlyPlayerBuffs",
+                raidFrames = "buffRaid",
+                raidInCombat = "buffRaidInCombat",
+                dispellable = "buffDispellable",
+                crowdControl = "buffCrowdControl",
+                bigDefensive = "buffBigDefensive",
+                externalDefensive = "buffExternalDefensive",
+                cancelable = "buffCancelable",
+                stealable = "buffStealable",
+            }
+            BOSS_BUFF_NEG_SKEYS =
+                { stealable = "Stealable", bigDefensive = "BigDefensive", dispellable = "Dispellable" }
             -- Debuff Size | Debuff Text Size: mirrors the buff pair above. Debuff
             -- Text Size gates on "Show Duration" inside its Duration & Stack cog
             -- (also holds Duration X/Y + Stack size/position/X/Y). HIDDEN while the
             -- debuff column's effective Location is None (BossDebuffRowShown; setters above force rebuild on flips).
             if BossDebuffRowShown() then
-            local debuffTextOff = function()
-                return not BossDebuffLocationActive()
-                or not db.profile.boss.debuffShowCooldownText
-            end
-            local textSizeRow
-            textSizeRow, hh = Ww:DualRow(pp, yy,
-                { type="slider", text="Debuff Size", min=10, max=70, step=1,
-                  disabled=bossDebuffSizeOff,
-                  disabledTooltip=function()
-                      if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
-                          return CludesUI.DisabledTooltip("Simple Debuff Display", "disabled")
-                      end
-                      return CludesUI.DisabledTooltip("Debuffs Location")
-                  end,
-                  rawTooltip=true,
-                  getValue=function() return db.profile.boss.debuffSize or 22 end,
-                  setValue=function(v)
-                      db.profile.boss.debuffSize = v; ReloadAndUpdate()
-                      if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                  end },
-                { type="slider", text="Debuff Text Size", min=6, max=100, step=1, trackWidth=120,
-                  disabled=debuffTextOff, disabledTooltip="Show Duration (Inside Cog)",
-                  getValue=function() return db.profile.boss.debuffCooldownTextSize or 10 end,
-                  setValue=function(v) db.profile.boss.debuffCooldownTextSize = v; ReloadAndUpdate() end });  yy = yy - hh
-            if not CludesUI._prebuilding then  -- Directions cog on Debuff Size (X/Y cluster offset)
-                CludesUI.BuildInlineCog(textSizeRow._leftRegion, { disabled = bossDebuffSizeOff, title = "Debuff Position", rows = {
-                    { type="slider", label="Offset X", min=-200, max=200, step=1,
-                      get=function() return db.profile.boss.debuffOffsetX or 0 end,
-                      set=function(v) db.profile.boss.debuffOffsetX = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset Y", min=-200, max=200, step=1,
-                      get=function() return db.profile.boss.debuffOffsetY or 0 end,
-                      set=function(v) db.profile.boss.debuffOffsetY = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    -- Physical-pixel-perfect gap between the boss debuff icons.
-                    { type="slider", pixel=true, label="Spacing", min=-1, max=10, step=1,
-                      get=function() return db.profile.boss.debuffSpacing or 1 end,
-                      set=function(v) db.profile.boss.debuffSpacing = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                } })
-            end
-            if not CludesUI._prebuilding then  -- Icon Zoom cog on Debuff Size
-                local bossDebuffZoomOff = function() return (db.profile.boss.debuffAnchor or "bottomleft") == "none" end
-                CludesUI.BuildInlineCog(textSizeRow._leftRegion, { disabled = bossDebuffZoomOff, disabledTooltip = "Debuffs Location", title = "Icon Zoom", rows = {
-                    { type="slider", label="Zoom", min=0, max=0.20, step=0.01,
-                      get=function() return db.profile.boss.debuffIconZoom or 0.07 end,
-                      set=function(v) db.profile.boss.debuffIconZoom = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                } })
-            end
-            -- Debuff Text Size cog (right): Show Duration + Duration X/Y + Stack.
-            -- Disabled while Simple Debuff Display is active.
-            if not CludesUI._prebuilding then
-                local rightRgn = textSizeRow._rightRegion
-                -- Inline Duration + Stack text-color swatches on the Debuff Text
-                -- Size slider; greyed + mouse-disabled on the same condition as
-                -- the row's cog.
-                local debuffOff = function() return not BossDebuffLocationActive() end
-                CludesUI.BuildInlineCog(rightRgn, { disabled = debuffOff, disabledTooltip = "Debuffs Location",
-                    title = "Duration & Stack",
-                    rows = {
-                        { type="toggle", label="Show Duration",
-                          get=function() return db.profile.boss.debuffShowCooldownText end,
-                          set=function(v) db.profile.boss.debuffShowCooldownText = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-                        { type="slider", label="Duration X", min=-100, max=100, step=1,
-                          get=function() return db.profile.boss.debuffCooldownTextOffsetX or 0 end,
-                          set=function(v) db.profile.boss.debuffCooldownTextOffsetX = v; ReloadAndUpdate() end },
-                        { type="slider", label="Duration Y", min=-100, max=100, step=1,
-                          get=function() return db.profile.boss.debuffCooldownTextOffsetY or 0 end,
-                          set=function(v) db.profile.boss.debuffCooldownTextOffsetY = v; ReloadAndUpdate() end },
-                        { type="slider", label="Stack Size", min=6, max=100, step=1,
-                          get=function() return db.profile.boss.debuffStackTextSize or 14 end,
-                          set=function(v) db.profile.boss.debuffStackTextSize = v; ReloadAndUpdate() end },
-                        { type="dropdown", label="Stack Position",
-                          values={ bottomright="Bottom Right", bottomleft="Bottom Left", topright="Top Right", topleft="Top Left", center="Center" },
-                          order={ "bottomright", "bottomleft", "topright", "topleft", "center" },
-                          get=function() return db.profile.boss.debuffStackTextPosition or "bottomright" end,
-                          set=function(v) db.profile.boss.debuffStackTextPosition = v; ReloadAndUpdate() end },
-                        { type="slider", label="Stack X", min=-100, max=100, step=1,
-                          get=function() return db.profile.boss.debuffStackTextOffsetX or 0 end,
-                          set=function(v) db.profile.boss.debuffStackTextOffsetX = v; ReloadAndUpdate() end },
-                        { type="slider", label="Stack Y", min=-100, max=100, step=1,
-                          get=function() return db.profile.boss.debuffStackTextOffsetY or 0 end,
-                          set=function(v) db.profile.boss.debuffStackTextOffsetY = v; ReloadAndUpdate() end },
-                    },
+                local debuffTextOff = function()
+                    return not BossDebuffLocationActive() or not db.profile.boss.debuffShowCooldownText
+                end
+                local textSizeRow
+                textSizeRow, hh = Ww:DualRow(pp, yy, {
+                    type = "slider",
+                    text = "Debuff Size",
+                    min = 10,
+                    max = 70,
+                    step = 1,
+                    disabled = bossDebuffSizeOff,
+                    disabledTooltip = function()
+                        if ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" then
+                            return CludesUI.DisabledTooltip("Simple Debuff Display", "disabled")
+                        end
+                        return CludesUI.DisabledTooltip("Debuffs Location")
+                    end,
+                    rawTooltip = true,
+                    getValue = function()
+                        return db.profile.boss.debuffSize or 22
+                    end,
+                    setValue = function(v)
+                        db.profile.boss.debuffSize = v
+                        ReloadAndUpdate()
+                        if ns.RefreshBossPreviewDebuffs then
+                            ns.RefreshBossPreviewDebuffs()
+                        end
+                    end,
+                }, {
+                    type = "slider",
+                    text = "Debuff Text Size",
+                    min = 6,
+                    max = 100,
+                    step = 1,
+                    trackWidth = 120,
+                    disabled = debuffTextOff,
+                    disabledTooltip = "Show Duration (Inside Cog)",
+                    getValue = function()
+                        return db.profile.boss.debuffCooldownTextSize or 10
+                    end,
+                    setValue = function(v)
+                        db.profile.boss.debuffCooldownTextSize = v
+                        ReloadAndUpdate()
+                    end,
                 })
-                -- Disabled while Simple Debuff Display is active: simple mode
-                -- uses its own (simpleDebuff*) cooldown text, so the regular
-                -- debuff Duration & Stack controls do not apply.
-                do
-                    local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                        function() local c = db.profile.boss.debuffCooldownTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                        function(r, g, b) db.profile.boss.debuffCooldownTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                    sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Duration Text Color") end)
-                    sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                    rightRgn._lastInline = sw
-                    local function apply() upd(); local o = debuffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                    apply(); CludesUI.RegisterWidgetRefresh(apply)
+                yy = yy - hh
+                if not CludesUI._prebuilding then -- Directions cog on Debuff Size (X/Y cluster offset)
+                    CludesUI.BuildInlineCog(textSizeRow._leftRegion, {
+                        disabled = bossDebuffSizeOff,
+                        title = "Debuff Position",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Offset X",
+                                min = -200,
+                                max = 200,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.debuffOffsetX or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.debuffOffsetX = v
+                                    ReloadAndUpdate()
+                                    if ns.RefreshBossPreviewDebuffs then
+                                        ns.RefreshBossPreviewDebuffs()
+                                    end
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Offset Y",
+                                min = -200,
+                                max = 200,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.debuffOffsetY or 0
+                                end,
+                                set = function(v)
+                                    db.profile.boss.debuffOffsetY = v
+                                    ReloadAndUpdate()
+                                    if ns.RefreshBossPreviewDebuffs then
+                                        ns.RefreshBossPreviewDebuffs()
+                                    end
+                                end,
+                            },
+                            -- Physical-pixel-perfect gap between the boss debuff icons.
+                            {
+                                type = "slider",
+                                pixel = true,
+                                label = "Spacing",
+                                min = -1,
+                                max = 10,
+                                step = 1,
+                                get = function()
+                                    return db.profile.boss.debuffSpacing or 1
+                                end,
+                                set = function(v)
+                                    db.profile.boss.debuffSpacing = v
+                                    ReloadAndUpdate()
+                                    if ns.RefreshBossPreviewDebuffs then
+                                        ns.RefreshBossPreviewDebuffs()
+                                    end
+                                end,
+                            },
+                        },
+                    })
                 end
-                do
-                    local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5,
-                        function() local c = db.profile.boss.debuffStackTextColor; if c then return c.r, c.g, c.b end; return 1, 1, 1 end,
-                        function(r, g, b) db.profile.boss.debuffStackTextColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-                    sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, "Stack Text Color") end)
-                    sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-                    PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                    rightRgn._lastInline = sw
-                    local function apply() upd(); local o = debuffOff(); sw:SetAlpha(o and 0.3 or 1); sw:EnableMouse(not o) end
-                    apply(); CludesUI.RegisterWidgetRefresh(apply)
+                if not CludesUI._prebuilding then -- Icon Zoom cog on Debuff Size
+                    local bossDebuffZoomOff = function()
+                        return (db.profile.boss.debuffAnchor or "bottomleft") == "none"
+                    end
+                    CludesUI.BuildInlineCog(
+                        textSizeRow._leftRegion,
+                        {
+                            disabled = bossDebuffZoomOff,
+                            disabledTooltip = "Debuffs Location",
+                            title = "Icon Zoom",
+                            rows = {
+                                {
+                                    type = "slider",
+                                    label = "Zoom",
+                                    min = 0,
+                                    max = 0.20,
+                                    step = 0.01,
+                                    get = function()
+                                        return db.profile.boss.debuffIconZoom or 0.07
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffIconZoom = v
+                                        ReloadAndUpdate()
+                                        if ns.RefreshBossPreviewDebuffs then
+                                            ns.RefreshBossPreviewDebuffs()
+                                        end
+                                    end,
+                                },
+                            },
+                        }
+                    )
                 end
-            end
-            end   -- close debuff sizing row hidden-while-None gate
+                -- Debuff Text Size cog (right): Show Duration + Duration X/Y + Stack.
+                -- Disabled while Simple Debuff Display is active.
+                if not CludesUI._prebuilding then
+                    local rightRgn = textSizeRow._rightRegion
+                    -- Inline Duration + Stack text-color swatches on the Debuff Text
+                    -- Size slider; greyed + mouse-disabled on the same condition as
+                    -- the row's cog.
+                    local debuffOff = function()
+                        return not BossDebuffLocationActive()
+                    end
+                    CludesUI.BuildInlineCog(
+                        rightRgn,
+                        {
+                            disabled = debuffOff,
+                            disabledTooltip = "Debuffs Location",
+                            title = "Duration & Stack",
+                            rows = {
+                                {
+                                    type = "toggle",
+                                    label = "Show Duration",
+                                    get = function()
+                                        return db.profile.boss.debuffShowCooldownText
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffShowCooldownText = v
+                                        ReloadAndUpdate()
+                                        CludesUI:RefreshPage()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Duration X",
+                                    min = -100,
+                                    max = 100,
+                                    step = 1,
+                                    get = function()
+                                        return db.profile.boss.debuffCooldownTextOffsetX or 0
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffCooldownTextOffsetX = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Duration Y",
+                                    min = -100,
+                                    max = 100,
+                                    step = 1,
+                                    get = function()
+                                        return db.profile.boss.debuffCooldownTextOffsetY or 0
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffCooldownTextOffsetY = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Stack Size",
+                                    min = 6,
+                                    max = 100,
+                                    step = 1,
+                                    get = function()
+                                        return db.profile.boss.debuffStackTextSize or 14
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffStackTextSize = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "dropdown",
+                                    label = "Stack Position",
+                                    values = {
+                                        bottomright = "Bottom Right",
+                                        bottomleft = "Bottom Left",
+                                        topright = "Top Right",
+                                        topleft = "Top Left",
+                                        center = "Center",
+                                    },
+                                    order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
+                                    get = function()
+                                        return db.profile.boss.debuffStackTextPosition or "bottomright"
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffStackTextPosition = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Stack X",
+                                    min = -100,
+                                    max = 100,
+                                    step = 1,
+                                    get = function()
+                                        return db.profile.boss.debuffStackTextOffsetX or 0
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffStackTextOffsetX = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Stack Y",
+                                    min = -100,
+                                    max = 100,
+                                    step = 1,
+                                    get = function()
+                                        return db.profile.boss.debuffStackTextOffsetY or 0
+                                    end,
+                                    set = function(v)
+                                        db.profile.boss.debuffStackTextOffsetY = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                            },
+                        }
+                    )
+                    -- Disabled while Simple Debuff Display is active: simple mode
+                    -- uses its own (simpleDebuff*) cooldown text, so the regular
+                    -- debuff Duration & Stack controls do not apply.
+                    do
+                        local sw, upd = CludesUI.BuildColorSwatch(
+                            rightRgn,
+                            rightRgn:GetFrameLevel() + 5,
+                            function()
+                                local c = db.profile.boss.debuffCooldownTextColor
+                                if c then
+                                    return c.r, c.g, c.b
+                                end
+                                return 1, 1, 1
+                            end,
+                            function(r, g, b)
+                                db.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
+                                ReloadAndUpdate()
+                            end,
+                            false,
+                            20
+                        )
+                        sw:HookScript("OnEnter", function()
+                            CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
+                        end)
+                        sw:HookScript("OnLeave", function()
+                            CludesUI.HideWidgetTooltip()
+                        end)
+                        PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                        rightRgn._lastInline = sw
+                        local function apply()
+                            upd()
+                            local o = debuffOff()
+                            sw:SetAlpha(o and 0.3 or 1)
+                            sw:EnableMouse(not o)
+                        end
+                        apply()
+                        CludesUI.RegisterWidgetRefresh(apply)
+                    end
+                    do
+                        local sw, upd = CludesUI.BuildColorSwatch(
+                            rightRgn,
+                            rightRgn:GetFrameLevel() + 5,
+                            function()
+                                local c = db.profile.boss.debuffStackTextColor
+                                if c then
+                                    return c.r, c.g, c.b
+                                end
+                                return 1, 1, 1
+                            end,
+                            function(r, g, b)
+                                db.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
+                                ReloadAndUpdate()
+                            end,
+                            false,
+                            20
+                        )
+                        sw:HookScript("OnEnter", function()
+                            CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
+                        end)
+                        sw:HookScript("OnLeave", function()
+                            CludesUI.HideWidgetTooltip()
+                        end)
+                        PP.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+                        rightRgn._lastInline = sw
+                        local function apply()
+                            upd()
+                            local o = debuffOff()
+                            sw:SetAlpha(o and 0.3 or 1)
+                            sw:EnableMouse(not o)
+                        end
+                        apply()
+                        CludesUI.RegisterWidgetRefresh(apply)
+                    end
+                end
+            end -- close debuff sizing row hidden-while-None gate
 
             -- Built alongside the aura controls, then appended at the end
             -- of this section to keep border settings consistently last.
@@ -2705,88 +5090,247 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 local B = db.profile.boss
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
-                borderRow, hh = Ww:DualRow(pp, yy,
-                    CludesUI.BlizzStyle.Gate("unitframes", { type="dropdown", text="Border Style", values=texValues, order=texOrder,
-                      getValue=function() return B.auraBorderTexture or "solid" end,
-                      setValue=function(v)
-                          local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(v)
-                          B.auraBorderTexture = v
-                          B.auraBorderTextureOffset = nil; B.auraBorderTextureOffsetY = nil
-                          B.auraBorderTextureShiftX = nil; B.auraBorderTextureShiftY = nil
-                          B.auraBorderBehind = behind
-                          B.auraBorderBehindUnitFrame = behindUnitFrame
-                          B.auraBorderR=color.r; B.auraBorderG=color.g; B.auraBorderB=color.b; B.auraBorderA=1
-                          local ds=CludesUI.GetBorderDefaultSize("unitframes",v); if ds then B.auraBorderSize=ds end
-                          -- A style pick returns the icons to their legacy step; clear a
-                          -- set exact size (false travels through mirror sync, nil would not).
-                          if B.auraBorderSizePx then B.auraBorderSizePx = false end
-                          ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end
-                          -- The Width / Height Offset row exists only under a textured style.
-                          CludesUI:RefreshPage(true)
-                      end }),
-                    CludesUI.BlizzStyle.Gate("unitframes", CludesUI.BorderPxSliderCfg({ text="Border Size", trackWidth=120,
-                      getStep=function() return B.auraBorderSize or 1 end,
-                      setStep=function(step) B.auraBorderSize=step end,
-                      getTex=function() return B.auraBorderTexture or "solid" end,
-                      getPx=function() return B.auraBorderSizePx end,
-                      setPx=function(v) B.auraBorderSizePx=v end,
-                      apply=function() ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end }))
-                ); yy = yy - hh
+                borderRow, hh = Ww:DualRow(
+                    pp,
+                    yy,
+                    CludesUI.BlizzStyle.Gate("unitframes", {
+                        type = "dropdown",
+                        text = "Border Style",
+                        values = texValues,
+                        order = texOrder,
+                        getValue = function()
+                            return B.auraBorderTexture or "solid"
+                        end,
+                        setValue = function(v)
+                            local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(v)
+                            B.auraBorderTexture = v
+                            B.auraBorderTextureOffset = nil
+                            B.auraBorderTextureOffsetY = nil
+                            B.auraBorderTextureShiftX = nil
+                            B.auraBorderTextureShiftY = nil
+                            B.auraBorderBehind = behind
+                            B.auraBorderBehindUnitFrame = behindUnitFrame
+                            B.auraBorderR = color.r
+                            B.auraBorderG = color.g
+                            B.auraBorderB = color.b
+                            B.auraBorderA = 1
+                            local ds = CludesUI.GetBorderDefaultSize("unitframes", v)
+                            if ds then
+                                B.auraBorderSize = ds
+                            end
+                            -- A style pick returns the icons to their legacy step; clear a
+                            -- set exact size (false travels through mirror sync, nil would not).
+                            if B.auraBorderSizePx then
+                                B.auraBorderSizePx = false
+                            end
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                            -- The Width / Height Offset row exists only under a textured style.
+                            CludesUI:RefreshPage(true)
+                        end,
+                    }),
+                    CludesUI.BlizzStyle.Gate(
+                        "unitframes",
+                        CludesUI.BorderPxSliderCfg({
+                            text = "Border Size",
+                            trackWidth = 120,
+                            getStep = function()
+                                return B.auraBorderSize or 1
+                            end,
+                            setStep = function(step)
+                                B.auraBorderSize = step
+                            end,
+                            getTex = function()
+                                return B.auraBorderTexture or "solid"
+                            end,
+                            getPx = function()
+                                return B.auraBorderSizePx
+                            end,
+                            setPx = function(v)
+                                B.auraBorderSizePx = v
+                            end,
+                            apply = function()
+                                ReloadAndUpdate()
+                                if ns.RefreshBossPreviewDebuffs then
+                                    ns.RefreshBossPreviewDebuffs()
+                                end
+                            end,
+                        })
+                    )
+                )
+                yy = yy - hh
                 -- Width Offset | Height Offset: a textured aura border's outward
                 -- offsets (a Solid border has none).
                 do
                     local abTex = B.auraBorderTexture or "solid"
                     if abTex ~= "solid" and abTex ~= "" then
                         local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
-                            addonKey="unitframes",
-                            getTex=function() return B.auraBorderTexture or "solid" end,
-                            getStep=function() return B.auraBorderSize or 1 end,
-                            getSizeKey=function() return B.auraBorderSize or 1 end,
-                            getPx=function() return B.auraBorderSizePx end,
-                            getX=function() return B.auraBorderTextureOffset end,
-                            setX=function(v) B.auraBorderTextureOffset=v end,
-                            getY=function() return B.auraBorderTextureOffsetY end,
-                            setY=function(v) B.auraBorderTextureOffsetY=v end,
-                            apply=function() ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end,
+                            addonKey = "unitframes",
+                            getTex = function()
+                                return B.auraBorderTexture or "solid"
+                            end,
+                            getStep = function()
+                                return B.auraBorderSize or 1
+                            end,
+                            getSizeKey = function()
+                                return B.auraBorderSize or 1
+                            end,
+                            getPx = function()
+                                return B.auraBorderSizePx
+                            end,
+                            getX = function()
+                                return B.auraBorderTextureOffset
+                            end,
+                            setX = function(v)
+                                B.auraBorderTextureOffset = v
+                            end,
+                            getY = function()
+                                return B.auraBorderTextureOffsetY
+                            end,
+                            setY = function(v)
+                                B.auraBorderTextureOffsetY = v
+                            end,
+                            apply = function()
+                                ReloadAndUpdate()
+                                if ns.RefreshBossPreviewDebuffs then
+                                    ns.RefreshBossPreviewDebuffs()
+                                end
+                            end,
                         })
                         local offRow
-                        offRow, hh = Ww:DualRow(pp, yy,
+                        offRow, hh = Ww:DualRow(
+                            pp,
+                            yy,
                             CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
-                            CludesUI.BlizzStyle.Gate("unitframes", ocfgR)); yy = yy - hh
+                            CludesUI.BlizzStyle.Gate("unitframes", ocfgR)
+                        )
+                        yy = yy - hh
                     end
                 end
                 if not CludesUI._prebuilding then
-                    local rgn=borderRow._leftRegion
-                    local btn = CludesUI.BuildInlineCog(rgn, { title="Border Options", rows={
-                        { type="slider",label="Shift X",min=-10,max=10,step=1,
-                          get=function() local v=B.auraBorderTextureShiftX;if v~=nil then return v end;local _,_,x=CludesUI.GetBorderDefaults("unitframes",B.auraBorderTexture or "solid",B.auraBorderSize or 1);return x end,
-                          set=function(v) B.auraBorderTextureShiftX=v==0 and nil or v;ReloadAndUpdate() end },
-                        { type="slider",label="Shift Y",min=-10,max=10,step=1,
-                          get=function() local v=B.auraBorderTextureShiftY;if v~=nil then return v end;local _,_,_,y=CludesUI.GetBorderDefaults("unitframes",B.auraBorderTexture or "solid",B.auraBorderSize or 1);return y end,
-                          set=function(v) B.auraBorderTextureShiftY=v==0 and nil or v;ReloadAndUpdate() end },
-                        { type="toggle",label="Show Behind",get=function() return B.auraBorderBehind or false end,set=function(v) B.auraBorderBehind=v;ReloadAndUpdate() end },
-                        { type="toggle",label="Behind Unit Frame",get=function() return B.auraBorderBehindUnitFrame or false end,set=function(v) B.auraBorderBehindUnitFrame=v;ReloadAndUpdate() end },
-                        { type="toggle",label="Border Above Effects",
-                          tooltip="Draws boss aura icon borders over their cooldown swipes and glows. Duration and stack text stay above the borders.",
-                          disabled=function()
-                              local tex = B.auraBorderTexture or "solid"
-                              return B.auraBorderBehind or B.auraBorderBehindUnitFrame
-                                  or tex == "solid" or tex == "" or (B.auraBorderSize or 1) <= 0
-                          end,
-                          disabledTooltip="This option requires a textured Aura Border with a size above 0, and its Show Behind and Behind Unit Frame options disabled.",
-                          rawTooltip=true,
-                          get=function() return B.auraBorderAboveEffects == true end,
-                          set=function(v) B.auraBorderAboveEffects=v;ReloadAndUpdate() end },
-                    } })
-                    local function vis() if (B.auraBorderTexture or "solid")=="solid" then btn:Hide() else btn:Show() end end
-                    CludesUI.RegisterWidgetRefresh(vis);vis()
+                    local rgn = borderRow._leftRegion
+                    local btn = CludesUI.BuildInlineCog(
+                        rgn,
+                        {
+                            title = "Border Options",
+                            rows = {
+                                {
+                                    type = "slider",
+                                    label = "Shift X",
+                                    min = -10,
+                                    max = 10,
+                                    step = 1,
+                                    get = function()
+                                        local v = B.auraBorderTextureShiftX
+                                        if v ~= nil then
+                                            return v
+                                        end
+                                        local _, _, x = CludesUI.GetBorderDefaults(
+                                            "unitframes",
+                                            B.auraBorderTexture or "solid",
+                                            B.auraBorderSize or 1
+                                        )
+                                        return x
+                                    end,
+                                    set = function(v)
+                                        B.auraBorderTextureShiftX = v == 0 and nil or v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "slider",
+                                    label = "Shift Y",
+                                    min = -10,
+                                    max = 10,
+                                    step = 1,
+                                    get = function()
+                                        local v = B.auraBorderTextureShiftY
+                                        if v ~= nil then
+                                            return v
+                                        end
+                                        local _, _, _, y = CludesUI.GetBorderDefaults(
+                                            "unitframes",
+                                            B.auraBorderTexture or "solid",
+                                            B.auraBorderSize or 1
+                                        )
+                                        return y
+                                    end,
+                                    set = function(v)
+                                        B.auraBorderTextureShiftY = v == 0 and nil or v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "toggle",
+                                    label = "Show Behind",
+                                    get = function()
+                                        return B.auraBorderBehind or false
+                                    end,
+                                    set = function(v)
+                                        B.auraBorderBehind = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "toggle",
+                                    label = "Behind Unit Frame",
+                                    get = function()
+                                        return B.auraBorderBehindUnitFrame or false
+                                    end,
+                                    set = function(v)
+                                        B.auraBorderBehindUnitFrame = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                                {
+                                    type = "toggle",
+                                    label = "Border Above Effects",
+                                    tooltip = "Draws boss aura icon borders over their cooldown swipes and glows. Duration and stack text stay above the borders.",
+                                    disabled = function()
+                                        local tex = B.auraBorderTexture or "solid"
+                                        return B.auraBorderBehind
+                                            or B.auraBorderBehindUnitFrame
+                                            or tex == "solid"
+                                            or tex == ""
+                                            or (B.auraBorderSize or 1) <= 0
+                                    end,
+                                    disabledTooltip = "This option requires a textured Aura Border with a size above 0, and its Show Behind and Behind Unit Frame options disabled.",
+                                    rawTooltip = true,
+                                    get = function()
+                                        return B.auraBorderAboveEffects == true
+                                    end,
+                                    set = function(v)
+                                        B.auraBorderAboveEffects = v
+                                        ReloadAndUpdate()
+                                    end,
+                                },
+                            },
+                        }
+                    )
+                    local function vis()
+                        if (B.auraBorderTexture or "solid") == "solid" then
+                            btn:Hide()
+                        else
+                            btn:Show()
+                        end
+                    end
+                    CludesUI.RegisterWidgetRefresh(vis)
+                    vis()
                 end
                 if not CludesUI._prebuilding then
-                    local rgn=borderRow._rightRegion
-                    local sw,upd=CludesUI.BuildColorSwatch(rgn,borderRow:GetFrameLevel()+3,
-                        function() return B.auraBorderR or 0,B.auraBorderG or 0,B.auraBorderB or 0,B.auraBorderA or 1 end,
-                        function(r,g,b,a) B.auraBorderR=r;B.auraBorderG=g;B.auraBorderB=b;B.auraBorderA=a;ReloadAndUpdate() end,true,20)
-                    PP.Point(sw,"RIGHT",rgn._control,"LEFT",-8,0)
+                    local rgn = borderRow._rightRegion
+                    local sw, upd = CludesUI.BuildColorSwatch(rgn, borderRow:GetFrameLevel() + 3, function()
+                        return B.auraBorderR or 0, B.auraBorderG or 0, B.auraBorderB or 0, B.auraBorderA or 1
+                    end, function(r, g, b, a)
+                        B.auraBorderR = r
+                        B.auraBorderG = g
+                        B.auraBorderB = b
+                        B.auraBorderA = a
+                        ReloadAndUpdate()
+                    end, true, 20)
+                    PP.Point(sw, "RIGHT", rgn._control, "LEFT", -8, 0)
                     CludesUI.RegisterWidgetRefresh(upd)
                 end
             end
@@ -2800,21 +5344,41 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 local p = db.profile.boss
                 return ns.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") == "none"
             end
-            local function BossS() return db.profile.boss end
+            local function BossS()
+                return db.profile.boss
+            end
             local buffFilterOff
-            local bossFilterRightSlot = { type="label", text="" }
-                buffFilterOff = function()
-                    local p = db.profile.boss
-                    return ns.GetBossSimpleBuffMode(p) == "none" and not p.showBuffs
-                end
-                bossFilterRightSlot = { type="dropdown", text="Boss Buff Filter",
-                  disabled=buffFilterOff, disabledTooltip="Buffs", requireState="displayed",
-                  values={ __placeholder="..." }, order={ "__placeholder" },
-                  getValue=function() return "__placeholder" end, setValue=function() end }
-            filterRow, hh = Ww:DualRow(pp, yy,
-                DebuffModeDropdownCfg("Boss Debuff Filter", "boss", BossS, ReloadAndUpdate,
-                  { disabled=filterOff, disabledTooltip="Debuffs", requireState="displayed" }),
-                bossFilterRightSlot);  yy = yy - hh
+            local bossFilterRightSlot = { type = "label", text = "" }
+            buffFilterOff = function()
+                local p = db.profile.boss
+                return ns.GetBossSimpleBuffMode(p) == "none" and not p.showBuffs
+            end
+            bossFilterRightSlot = {
+                type = "dropdown",
+                text = "Boss Buff Filter",
+                disabled = buffFilterOff,
+                disabledTooltip = "Buffs",
+                requireState = "displayed",
+                values = { __placeholder = "..." },
+                order = { "__placeholder" },
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            }
+            filterRow, hh = Ww:DualRow(
+                pp,
+                yy,
+                DebuffModeDropdownCfg(
+                    "Boss Debuff Filter",
+                    "boss",
+                    BossS,
+                    ReloadAndUpdate,
+                    { disabled = filterOff, disabledTooltip = "Debuffs", requireState = "displayed" }
+                ),
+                bossFilterRightSlot
+            )
+            yy = yy - hh
             if not CludesUI._prebuilding then
                 AttachDebuffModeWarn(filterRow._leftRegion, BossS, filterOff)
                 -- Hide Exhaustion, the Debuff Filter cog row every unit shares.
@@ -2830,9 +5394,14 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             -- Right slot: Boss Buff Filter (two-lane checkbox dropdown).
             if not CludesUI._prebuilding then
                 local rgn = filterRow._rightRegion
-                if rgn._control then rgn._control:Hide() end
+                if rgn._control then
+                    rgn._control:Hide()
+                end
                 local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    rgn, 210, rgn:GetFrameLevel() + 2, buffFilterItems,
+                    rgn,
+                    210,
+                    rgn:GetFrameLevel() + 2,
+                    buffFilterItems,
                     function(k, neg)
                         if neg then
                             local m = db.profile.boss.buffNegClasses
@@ -2845,23 +5414,33 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                         local bt = db.profile.boss
                         local sk = BOSS_BUFF_NEG_SKEYS[k]
                         if neg then
-                            if not sk then return end
+                            if not sk then
+                                return
+                            end
                             bt.buffNegClasses = bt.buffNegClasses or {}
                             bt.buffNegClasses[sk] = v and true or nil
-                            if not next(bt.buffNegClasses) then bt.buffNegClasses = nil end
-                            if v then bt[BUFF_FILTER_KEYS[k]] = nil end
+                            if not next(bt.buffNegClasses) then
+                                bt.buffNegClasses = nil
+                            end
+                            if v then
+                                bt[BUFF_FILTER_KEYS[k]] = nil
+                            end
                             ReloadAndUpdate()
                             return
                         end
                         if v and sk and bt.buffNegClasses then
                             bt.buffNegClasses[sk] = nil
-                            if not next(bt.buffNegClasses) then bt.buffNegClasses = nil end
+                            if not next(bt.buffNegClasses) then
+                                bt.buffNegClasses = nil
+                            end
                         end
                         bt[BUFF_FILTER_KEYS[k]] = v
                         ReloadAndUpdate()
-                    end)
+                    end
+                )
                 PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                rgn._control = cbDD; rgn._lastInline = nil
+                rgn._control = cbDD
+                rgn._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbRefresh)
                 local buffFilterBlock = CreateFrame("Frame", nil, cbDD)
                 buffFilterBlock:SetAllPoints()
@@ -2870,12 +5449,16 @@ function ns.UFO_BuildBossOptions(W, parent, y)
                 buffFilterBlock:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(cbDD, CludesUI.DisabledTooltip("Buffs", "displayed"))
                 end)
-                buffFilterBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                buffFilterBlock:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 local function UpdateBuffFilterDisabled()
                     if buffFilterOff() then
-                        cbDD:SetAlpha(0.3); buffFilterBlock:Show()
+                        cbDD:SetAlpha(0.3)
+                        buffFilterBlock:Show()
                     else
-                        cbDD:SetAlpha(1); buffFilterBlock:Hide()
+                        cbDD:SetAlpha(1)
+                        buffFilterBlock:Hide()
                     end
                 end
                 UpdateBuffFilterDisabled()
@@ -2890,25 +5473,71 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             CludesUI.BuildInlineCog(leftRgn, {
                 disabled = bossBuffSizeOff,
                 -- Both branches are whole sentences (raw), so translated clients wrap once.
-                disabledTooltip = function() return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" and CludesUI.DisabledTooltip("Simple Buff Display", "disabled") or CludesUI.DisabledTooltip("Buffs Location") end,
+                disabledTooltip = function()
+                    return ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none"
+                            and CludesUI.DisabledTooltip("Simple Buff Display", "disabled")
+                        or CludesUI.DisabledTooltip("Buffs Location")
+                end,
                 rawTooltip = true,
                 title = "Buff Settings",
                 rows = {
-                    { type="dropdown", label="Growth Direction", values=buffGrowthValues, order=buffGrowthOrder,
-                      get=function() return db.profile.boss.buffGrowth or "auto" end,
-                      set=function(v) db.profile.boss.buffGrowth = v; ReloadAndUpdate() end },
-                    { type="slider", label="Max Count", min=1, max=20, step=1,
-                      tooltip=ns.UFO_MAX_COUNT_TOOLTIP,
-                      get=function() return db.profile.boss.maxBuffs or 4 end,
-                      set=function(v) db.profile.boss.maxBuffs = v; ReloadAndUpdate() end },
-                    { type="slider", label="Max Per Row", min=1, max=20, step=1,
-                      get=function() return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4 end,
-                      set=function(v) db.profile.boss.buffMaxPerRow = v; ReloadAndUpdate() end },
-                    { type="toggle", label="Dispel Type Borders",
-                      disabled=function() return CludesUI.BlizzStyle.Get("unitframes") end,
-                      disabledTooltip="This option requires Blizzard Style to be disabled",
-                      get=function() return db.profile.boss.buffDispelBorder == true end,
-                      set=function(v) db.profile.boss.buffDispelBorder = v; ReloadAndUpdate() end },
+                    {
+                        type = "dropdown",
+                        label = "Growth Direction",
+                        values = buffGrowthValues,
+                        order = buffGrowthOrder,
+                        get = function()
+                            return db.profile.boss.buffGrowth or "auto"
+                        end,
+                        set = function(v)
+                            db.profile.boss.buffGrowth = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Max Count",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        get = function()
+                            return db.profile.boss.maxBuffs or 4
+                        end,
+                        set = function(v)
+                            db.profile.boss.maxBuffs = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Max Per Row",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.buffMaxPerRow or db.profile.boss.maxBuffs or 4
+                        end,
+                        set = function(v)
+                            db.profile.boss.buffMaxPerRow = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Dispel Type Borders",
+                        disabled = function()
+                            return CludesUI.BlizzStyle.Get("unitframes")
+                        end,
+                        disabledTooltip = "This option requires Blizzard Style to be disabled",
+                        get = function()
+                            return db.profile.boss.buffDispelBorder == true
+                        end,
+                        set = function(v)
+                            db.profile.boss.buffDispelBorder = v
+                            ReloadAndUpdate()
+                        end,
+                    },
                 },
             })
         end
@@ -2918,24 +5547,61 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             local rightRgn = bossAuraRow._rightRegion
             CludesUI.BuildInlineCog(rightRgn, {
                 disabled = bossDebuffSizeOff,
-                disabledTooltip = function() return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none" and CludesUI.DisabledTooltip("Simple Debuff Display", "disabled") or CludesUI.DisabledTooltip("Debuffs Location") end,
+                disabledTooltip = function()
+                    return ns.GetBossSimpleDebuffMode(db.profile.boss) ~= "none"
+                            and CludesUI.DisabledTooltip("Simple Debuff Display", "disabled")
+                        or CludesUI.DisabledTooltip("Debuffs Location")
+                end,
                 rawTooltip = true,
                 title = "Debuff Settings",
                 rows = {
-                    { type="dropdown", label="Growth Direction", values=buffGrowthValues, order=buffGrowthOrder,
-                      get=function() return db.profile.boss.debuffGrowth or "auto" end,
-                      set=function(v) db.profile.boss.debuffGrowth = v; ReloadAndUpdate() end },
-                    { type="slider", label="Max Count", min=1, max=20, step=1,
-                      tooltip=ns.UFO_MAX_COUNT_TOOLTIP,
-                      get=function() return db.profile.boss.maxDebuffs or 10 end,
-                      set=function(v) db.profile.boss.maxDebuffs = v; ReloadAndUpdate() end },
-                    ns.UFO_MaxImportantRow(function() return db.profile.boss end, ReloadAndUpdate, 20, 10),
-                    { type="slider", label="Max Per Row", min=1, max=20, step=1,
-                      get=function() return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10 end,
-                      set=function(v) db.profile.boss.debuffMaxPerRow = v; ReloadAndUpdate() end },
+                    {
+                        type = "dropdown",
+                        label = "Growth Direction",
+                        values = buffGrowthValues,
+                        order = buffGrowthOrder,
+                        get = function()
+                            return db.profile.boss.debuffGrowth or "auto"
+                        end,
+                        set = function(v)
+                            db.profile.boss.debuffGrowth = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Max Count",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        tooltip = ns.UFO_MAX_COUNT_TOOLTIP,
+                        get = function()
+                            return db.profile.boss.maxDebuffs or 10
+                        end,
+                        set = function(v)
+                            db.profile.boss.maxDebuffs = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    ns.UFO_MaxImportantRow(function()
+                        return db.profile.boss
+                    end, ReloadAndUpdate, 20, 10),
+                    {
+                        type = "slider",
+                        label = "Max Per Row",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.debuffMaxPerRow or db.profile.boss.maxDebuffs or 10
+                        end,
+                        set = function(v)
+                            db.profile.boss.debuffMaxPerRow = v
+                            ReloadAndUpdate()
+                        end,
+                    },
                 },
             })
-
         end
 
         -- Buff/Debuff text colors now live as inline swatches on the Buff Text
@@ -2950,23 +5616,38 @@ function ns.UFO_BuildBossOptions(W, parent, y)
     local function bossIndicators(Ww, pp, yy)
         local hh
 
-        _, hh = Ww:SectionHeader(pp, "INDICATORS", yy);  yy = yy - hh
+        _, hh = Ww:SectionHeader(pp, "INDICATORS", yy)
+        yy = yy - hh
 
         -- Row 1: Out of Range Alpha | Spell Target
         -- (Out of Range read live by the range ticker, so no reload needed.)
         local bossTgtRow
-        bossTgtRow, hh = Ww:DualRow(pp, yy,
-            { type="slider", text="Out of Range Alpha", min=10, max=100, step=1,
-              tooltip="Fades boss frames when the boss is out of range of your spells. Set to 100% to disable the fade.",
-              getValue=function() return math.floor(((db.profile.boss.oorAlpha or 0.4) * 100) + 0.5) end,
-              setValue=function(v) db.profile.boss.oorAlpha = v / 100 end },
-            { type="toggle", text="Spell Target",
-              tooltip = "Show the name of who the boss is casting on.",
-              getValue=function() return db.profile.boss.showCastTarget == true end,
-              setValue=function(v)
-                  db.profile.boss.showCastTarget = v
-                  ReloadAndUpdate()
-              end });  yy = yy - hh
+        bossTgtRow, hh = Ww:DualRow(pp, yy, {
+            type = "slider",
+            text = "Out of Range Alpha",
+            min = 10,
+            max = 100,
+            step = 1,
+            tooltip = "Fades boss frames when the boss is out of range of your spells. Set to 100% to disable the fade.",
+            getValue = function()
+                return math.floor(((db.profile.boss.oorAlpha or 0.4) * 100) + 0.5)
+            end,
+            setValue = function(v)
+                db.profile.boss.oorAlpha = v / 100
+            end,
+        }, {
+            type = "toggle",
+            text = "Spell Target",
+            tooltip = "Show the name of who the boss is casting on.",
+            getValue = function()
+                return db.profile.boss.showCastTarget == true
+            end,
+            setValue = function(v)
+                db.profile.boss.showCastTarget = v
+                ReloadAndUpdate()
+            end,
+        })
+        yy = yy - hh
         -- Inline cog on Spell Target: X/Y offsets for the cast target
         -- text. Boss-scoped copies of the shared castbar keys, which the
         -- runtime and preview already consume (castSpellTargetX/Y ->
@@ -2975,12 +5656,34 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             CludesUI.BuildInlineCog(bossTgtRow._rightRegion, {
                 title = "Spell Target",
                 rows = {
-                    { type="slider", label="X Offset", min=-300, max=300, step=1,
-                      get=function() return db.profile.boss.castSpellTargetX or 0 end,
-                      set=function(v) db.profile.boss.castSpellTargetX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Y Offset", min=-300, max=300, step=1,
-                      get=function() return db.profile.boss.castSpellTargetY or 0 end,
-                      set=function(v) db.profile.boss.castSpellTargetY = v; ReloadAndUpdate() end },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -300,
+                        max = 300,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.castSpellTargetX or 0
+                        end,
+                        set = function(v)
+                            db.profile.boss.castSpellTargetX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -300,
+                        max = 300,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.castSpellTargetY or 0
+                        end,
+                        set = function(v)
+                            db.profile.boss.castSpellTargetY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
                 },
             })
         end
@@ -2990,32 +5693,80 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             return db.profile.boss.raidMarkerEnabled == false
         end
         local bossRmRow
-        bossRmRow, hh = Ww:DualRow(pp, yy,
-            { type="toggle", text="Show Raid Marker",
-              tooltip="Shows the raid target marker icon on boss frames.",
-              getValue=function() return db.profile.boss.raidMarkerEnabled ~= false end,
-              setValue=function(v)
+        bossRmRow, hh = Ww:DualRow(pp, yy, {
+            type = "toggle",
+            text = "Show Raid Marker",
+            tooltip = "Shows the raid target marker icon on boss frames.",
+            getValue = function()
+                return db.profile.boss.raidMarkerEnabled ~= false
+            end,
+            setValue = function(v)
                 db.profile.boss.raidMarkerEnabled = v
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
-              end },
-            { type="slider", text="Raid Marker Size", min=12, max=48, step=1,
-              disabled=bossRmOff, disabledTooltip="Raid Marker",
-              getValue=function() return db.profile.boss.raidMarkerSize or 28 end,
-              setValue=function(v) db.profile.boss.raidMarkerSize = v; ReloadAndUpdate() end });  yy = yy - hh
+            end,
+        }, {
+            type = "slider",
+            text = "Raid Marker Size",
+            min = 12,
+            max = 48,
+            step = 1,
+            disabled = bossRmOff,
+            disabledTooltip = "Raid Marker",
+            getValue = function()
+                return db.profile.boss.raidMarkerSize or 28
+            end,
+            setValue = function(v)
+                db.profile.boss.raidMarkerSize = v
+                ReloadAndUpdate()
+            end,
+        })
+        yy = yy - hh
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(bossRmRow._leftRegion, {
                 title = "Raid Marker Position",
                 rows = {
-                    { type="slider", label="X Offset", min=-50, max=50, step=1,
-                      get=function() return db.profile.boss.raidMarkerX or 0 end,
-                      set=function(v) db.profile.boss.raidMarkerX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Y Offset", min=-50, max=50, step=1,
-                      get=function() return db.profile.boss.raidMarkerY or 0 end,
-                      set=function(v) db.profile.boss.raidMarkerY = v; ReloadAndUpdate() end },
-                    { type="dropdown", label="Alignment", values={ left="Left", center="Center", right="Right" }, order={ "left", "center", "right" },
-                      get=function() return db.profile.boss.raidMarkerAlign or "left" end,
-                      set=function(v) db.profile.boss.raidMarkerAlign = v; ReloadAndUpdate() end },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.raidMarkerX or 0
+                        end,
+                        set = function(v)
+                            db.profile.boss.raidMarkerX = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return db.profile.boss.raidMarkerY or 0
+                        end,
+                        set = function(v)
+                            db.profile.boss.raidMarkerY = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Alignment",
+                        values = { left = "Left", center = "Center", right = "Right" },
+                        order = { "left", "center", "right" },
+                        get = function()
+                            return db.profile.boss.raidMarkerAlign or "left"
+                        end,
+                        set = function(v)
+                            db.profile.boss.raidMarkerAlign = v
+                            ReloadAndUpdate()
+                        end,
+                    },
                 },
             })
         end
@@ -3037,7 +5788,9 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- widget-refresh fast path (mirrors AddDarkModeBlock). The toggle's own color swatches gate separately so the toggle stays interactive.
         local castColorSwatches = {}
         local function AddCastBlock(rgn, enabledAlpha)
-            if not rgn then return end
+            if not rgn then
+                return
+            end
             local block = CreateFrame("Frame", nil, rgn)
             block:SetAllPoints()
             block:SetFrameLevel(rgn:GetFrameLevel() + 50)
@@ -3045,75 +5798,189 @@ function ns.UFO_BuildBossOptions(W, parent, y)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Show Cast Bar"))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function Update()
                 if B.showCastbar == false then
-                    rgn:SetAlpha(0.3); block:Show()
+                    rgn:SetAlpha(0.3)
+                    block:Show()
                 else
-                    rgn:SetAlpha(enabledAlpha and enabledAlpha() or 1); block:Hide()
+                    rgn:SetAlpha(enabledAlpha and enabledAlpha() or 1)
+                    block:Hide()
                 end
             end
             Update()
             CludesUI.RegisterWidgetRefresh(Update)
         end
 
-        bossCastHeader, hh = Ww:SectionHeader(pp, "CAST BAR", yy);  yy = yy - hh
+        bossCastHeader, hh = Ww:SectionHeader(pp, "CAST BAR", yy)
+        yy = yy - hh
 
         -- Row 1: Show Cast Bar (+ inline fill-color swatch) | Cast Bar Height
-        castMainRow, hh = Ww:DualRow(pp, yy,
-            { type="toggle", text="Show Cast Bar",
-              getValue=function() return B.showCastbar ~= false end,
-              -- DependentSetValue: rows 2-4 below are hidden while the
-              -- cast bar is off; the flip forces the full rebuild.
-              setValue=CludesUI.DependentSetValue(
-                  function() return B.showCastbar ~= false end,
-                  function(v) B.showCastbar = v; ReloadAndUpdate(); CludesUI:RefreshPage() end) },
-            { type="slider", text="Cast Bar Height", min=1, max=40, step=1,
-              disabled=function() return B.showCastbar == false end,
-              disabledTooltip="Show Cast Bar",
-              getValue=function() return B.castbarHeight or 14 end,
-              setValue=function(v) B.castbarHeight = v; ReloadAndUpdate() end });  yy = yy - hh
+        castMainRow, hh = Ww:DualRow(pp, yy, {
+            type = "toggle",
+            text = "Show Cast Bar",
+            getValue = function()
+                return B.showCastbar ~= false
+            end,
+            -- DependentSetValue: rows 2-4 below are hidden while the
+            -- cast bar is off; the flip forces the full rebuild.
+            setValue = CludesUI.DependentSetValue(function()
+                return B.showCastbar ~= false
+            end, function(v)
+                B.showCastbar = v
+                ReloadAndUpdate()
+                CludesUI:RefreshPage()
+            end),
+        }, {
+            type = "slider",
+            text = "Cast Bar Height",
+            min = 1,
+            max = 40,
+            step = 1,
+            disabled = function()
+                return B.showCastbar == false
+            end,
+            disabledTooltip = "Show Cast Bar",
+            getValue = function()
+                return B.castbarHeight or 14
+            end,
+            setValue = function(v)
+                B.castbarHeight = v
+                ReloadAndUpdate()
+            end,
+        })
+        yy = yy - hh
         -- Inline settings cog matching target/focus, plus boss positioning.
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(castMainRow._leftRegion, {
-                disabled = function() return B.showCastbar == false end, disabledTooltip = "Show Cast Bar",
+                disabled = function()
+                    return B.showCastbar == false
+                end,
+                disabledTooltip = "Show Cast Bar",
                 title = "Cast Bar",
                 rows = {
-                    { type="toggle", label="Hide When Idle",
-                      tooltip="Only show the cast bar while a cast is in progress; hide it the rest of the time.",
-                      get=function() return B.castbarHideWhenInactive ~= false end,
-                      set=function(v) B.castbarHideWhenInactive = v; ReloadAndUpdate() end },
-                    { type="slider", label="Fill Opacity", min=0, max=100, step=1,
-                      tooltip="Opacity of the cast bar fill; below 100 the world shows through the fill instead of the background.",
-                      get=function() return B.castFillOpacity or 100 end,
-                      set=function(v) B.castFillOpacity = v; ReloadAndUpdate() end },
-                    { type="toggle", label="Raise Cast Bar Strata (All)",
-                      tooltip="Lifts player, target, focus, and boss cast bars above other frames so they are never hidden behind them.",
-                      get=function() return db.profile.raiseCastbarStrata ~= false end,
-                      set=function(v) db.profile.raiseCastbarStrata = v; ReloadAndUpdate() end },
-                    { type="toggle", label="Show Kick Ready Mid-Cast Tick",
-                      tooltip="Shows a small white tick mark where the cast will be when your interrupt comes off cooldown.",
-                      get=function() return B.castbarKickTickEnabled ~= false end,
-                      set=function(v) B.castbarKickTickEnabled = v; ReloadAndUpdate() end },
-                    { type="toggle", label="Show Kick Ready Mid-Cast Bar",
-                      tooltip="Colors the cast segment during which your interrupt will be available.",
-                      get=function() return B.castbarInterruptMidCastEnabled == true end,
-                      set=function(v) B.castbarInterruptMidCastEnabled = v; ReloadAndUpdate(); CludesUI:RefreshPage() end },
-                    { type="slider", label="Offset X", min=-500, max=500, step=1,
-                      get=function() return B.castbarOffsetX or 0 end,
-                      set=function(v) B.castbarOffsetX = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
-                    { type="slider", label="Offset Y", min=-200, max=200, step=1,
-                      get=function() return B.castbarOffsetY or 0 end,
-                      set=function(v) B.castbarOffsetY = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end },
+                    {
+                        type = "toggle",
+                        label = "Hide When Idle",
+                        tooltip = "Only show the cast bar while a cast is in progress; hide it the rest of the time.",
+                        get = function()
+                            return B.castbarHideWhenInactive ~= false
+                        end,
+                        set = function(v)
+                            B.castbarHideWhenInactive = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Fill Opacity",
+                        min = 0,
+                        max = 100,
+                        step = 1,
+                        tooltip = "Opacity of the cast bar fill; below 100 the world shows through the fill instead of the background.",
+                        get = function()
+                            return B.castFillOpacity or 100
+                        end,
+                        set = function(v)
+                            B.castFillOpacity = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Raise Cast Bar Strata (All)",
+                        tooltip = "Lifts player, target, focus, and boss cast bars above other frames so they are never hidden behind them.",
+                        get = function()
+                            return db.profile.raiseCastbarStrata ~= false
+                        end,
+                        set = function(v)
+                            db.profile.raiseCastbarStrata = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Show Kick Ready Mid-Cast Tick",
+                        tooltip = "Shows a small white tick mark where the cast will be when your interrupt comes off cooldown.",
+                        get = function()
+                            return B.castbarKickTickEnabled ~= false
+                        end,
+                        set = function(v)
+                            B.castbarKickTickEnabled = v
+                            ReloadAndUpdate()
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Show Kick Ready Mid-Cast Bar",
+                        tooltip = "Colors the cast segment during which your interrupt will be available.",
+                        get = function()
+                            return B.castbarInterruptMidCastEnabled == true
+                        end,
+                        set = function(v)
+                            B.castbarInterruptMidCastEnabled = v
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -500,
+                        max = 500,
+                        step = 1,
+                        get = function()
+                            return B.castbarOffsetX or 0
+                        end,
+                        set = function(v)
+                            B.castbarOffsetX = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -200,
+                        max = 200,
+                        step = 1,
+                        get = function()
+                            return B.castbarOffsetY or 0
+                        end,
+                        set = function(v)
+                            B.castbarOffsetY = v
+                            ReloadAndUpdate()
+                            if ns.RefreshBossPreviewDebuffs then
+                                ns.RefreshBossPreviewDebuffs()
+                            end
+                        end,
+                    },
                     -- Opt-in for the Border Style | Border Size rows (built
                     -- below only while on; the rebuild shows or drops them).
-                    { type="toggle", label="Custom Border Style",
-                      tooltip="Show the border style and size controls for the cast bar.",
-                      disabled=function() return CludesUI.BlizzStyle.Get("unitframes") end,
-                      disabledTooltip=function() return CludesUI.BlizzStyle.Label("unitframes") end,
-                      requireState="disabled",
-                      get=function() return B.castBorderCustom == true end,
-                      set=function(v) B.castBorderCustom = v; ReloadAndUpdate(); CludesUI:RefreshPage(true) end },
+                    {
+                        type = "toggle",
+                        label = "Custom Border Style",
+                        tooltip = "Show the border style and size controls for the cast bar.",
+                        disabled = function()
+                            return CludesUI.BlizzStyle.Get("unitframes")
+                        end,
+                        disabledTooltip = function()
+                            return CludesUI.BlizzStyle.Label("unitframes")
+                        end,
+                        requireState = "disabled",
+                        get = function()
+                            return B.castBorderCustom == true
+                        end,
+                        set = function(v)
+                            B.castBorderCustom = v
+                            ReloadAndUpdate()
+                            CludesUI:RefreshPage(true)
+                        end,
+                    },
                 },
             })
         end
@@ -3121,38 +5988,59 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         if not CludesUI._prebuilding then
             local rgn = castMainRow._leftRegion
             local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
-                local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                    function()
-                        local c = B[colorKey] or fallback
-                        return c.r, c.g, c.b, 1
-                    end,
-                    function(r, g, b)
-                        B[colorKey] = { r=r, g=g, b=b }
-                        ReloadAndUpdate()
-                    end, false, 20)
+                local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local c = B[colorKey] or fallback
+                    return c.r, c.g, c.b, 1
+                end, function(r, g, b)
+                    B[colorKey] = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
                 sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                sw:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, tooltip) end)
-                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                sw:SetScript("OnEnter", function(self)
+                    CludesUI.ShowWidgetTooltip(self, tooltip)
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
                 rgn._lastInline = sw
-                castColorSwatches[#castColorSwatches + 1] = { sw = sw, enabledAlpha = disabledFn
-                    and function() return disabledFn() and 0.3 or 1 end }
+                castColorSwatches[#castColorSwatches + 1] = {
+                    sw = sw,
+                    enabledAlpha = disabledFn and function()
+                        return disabledFn() and 0.3 or 1
+                    end,
+                }
                 if disabledFn then
                     local function Update()
                         local off = disabledFn()
                         sw:SetAlpha(off and 0.3 or 1)
                         sw:EnableMouse(not off)
-                        if updateSw then updateSw() end
+                        if updateSw then
+                            updateSw()
+                        end
                     end
                     Update()
                     CludesUI.RegisterWidgetRefresh(Update)
                 end
             end
-            AddCastColorSwatch("Interrupt Ready Mid-Cast", "castbarInterruptMidCastColor",
-                { r=0.318, g=0.820, b=0.357 },
-                function() return B.castbarInterruptMidCastEnabled ~= true end)
-            AddCastColorSwatch("Interrupt on CD", "castbarInterruptReadyColor", { r=0.92, g=0.35, b=0.20 })
-            AddCastColorSwatch("Uninterruptible Cast", "castbarUninterruptibleColor", { r=0.5, g=0.5, b=0.5 })
-            AddCastColorSwatch("Interruptible Cast", "castbarFillColor", { r=0.863, g=0.820, b=0.639 })
+            AddCastColorSwatch(
+                "Interrupt Ready Mid-Cast",
+                "castbarInterruptMidCastColor",
+                { r = 0.318, g = 0.820, b = 0.357 },
+                function()
+                    return B.castbarInterruptMidCastEnabled ~= true
+                end
+            )
+            AddCastColorSwatch(
+                "Interrupt on CD",
+                "castbarInterruptReadyColor",
+                { r = 0.92, g = 0.35, b = 0.20 }
+            )
+            AddCastColorSwatch(
+                "Uninterruptible Cast",
+                "castbarUninterruptibleColor",
+                { r = 0.5, g = 0.5, b = 0.5 }
+            )
+            AddCastColorSwatch("Interruptible Cast", "castbarFillColor", { r = 0.863, g = 0.820, b = 0.639 })
         end
 
         -- Rows 2-4 are HIDDEN entirely while Show Cast Bar is off (the
@@ -3160,225 +6048,462 @@ function ns.UFO_BuildBossOptions(W, parent, y)
         -- master row's own inlines (color swatches) keep the
         -- AddCastBlock grey+block treatment; its cog disables itself.
         if B.showCastbar ~= false then
-        -- Row 2: Show Cast Icon (+ icon cog) | Cast Bar Width (right under Cast
-        -- Bar Height so the two dimensions sit stacked in the same column)
-        growthRow, hh = Ww:DualRow(pp, yy,
-            { type="toggle", text="Show Cast Icon",
-              getValue=function() return B.showCastIcon ~= false end,
-              setValue=function(v) B.showCastIcon = v; ReloadAndUpdate() end },
-            { type="slider", text="Cast Bar Width", min=0, max=500, step=1,
-              tooltip="Sets a custom width for the cast bar. Set to 0 to match the boss frame width.",
-              getValue=function() return B.castbarWidth or 0 end,
-              -- Custom widths floor at 30 (matches the unlock-mode resize
-              -- minimum): below the cast icon size the bar layout inverts.
-              setValue=function(v) if v > 0 and v < 30 then v = 30 end; B.castbarWidth = v; ReloadAndUpdate(); if ns.RefreshBossPreviewDebuffs then ns.RefreshBossPreviewDebuffs() end end });  yy = yy - hh
-        -- Icon cog (left): "Icon Border" / "Make Icon Part of the Bar" /
-        -- "Border Wraps Icon" / "Vertical Separator" / "Show Icon on Right".
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(growthRow._leftRegion, {
-                title = "Cast Icon",
-                rows = {
-                    { type = "toggle", label = "Icon Border",
-                      tooltip = "Use the cast bar's border style, size and color around the icon.",
-                      disabled = function() return CludesUI.BlizzStyle.Get("unitframes") or B.showCastIcon == false end,
-                      disabledTooltip = "This option requires Show Icon and the CludesUI style.",
-                      get = function() return B.castIconBorder == true end,
-                      set = function(v) B.castIconBorder = v; ReloadAndUpdate() end },
-                    { type = "toggle", label = "Make Icon Part of the Bar",
-                      tooltip = "This makes it so the width of the cast bar includes the icon, rather than placing it to the left of the cast bars width.",
-                      -- The stock styles count a shown icon as part of the bar
-                      -- (their frame art wraps both), so the toggle reads on and locks.
-                      disabled = function() return CludesUI.BlizzStyle.Get("unitframes") end,
-                      disabledTooltip = function() return CludesUI.BlizzStyle.Label("unitframes") end,
-                      requireState = "disabled",
-                      get = function()
-                          if CludesUI.BlizzStyle.Get("unitframes") then return true end
-                          return B.castbarIconInWidth ~= false
-                      end,
-                      set = function(v) B.castbarIconInWidth = v; ReloadAndUpdate() end },
-                    { type = "toggle", label = "Border Wraps Icon",
-                      tooltip = "Draw the custom cast bar border around the icon and the bar together. An icon with an offset keeps its own border.",
-                      disabled = function()
-                          return CludesUI.BlizzStyle.Get("unitframes") or B.castBorderCustom ~= true
-                              or not ns.UF_CastIconInWidth("boss", B)
-                      end,
-                      disabledTooltip = "This option requires Custom Border Style, Show Icon and Make Icon Part of the Bar, with the CludesUI style.",
-                      get = function() return B.castBorderWrapIcon == true end,
-                      set = function(v) B.castBorderWrapIcon = v; ReloadAndUpdate() end },
-                    { type = "toggle", label = "Vertical Separator",
-                      tooltip = "Draw a divider between the integrated icon and the bar, using the cast bar's border appearance.",
-                      disabled = function()
-                          return CludesUI.BlizzStyle.Get("unitframes") or not ns.UF_CastIconInWidth("boss", B)
-                              or not ns.UF_CastIconSeamOK(B)
-                      end,
-                      disabledTooltip = function()
-                          if CludesUI.BlizzStyle.Get("unitframes") or not ns.UF_CastIconInWidth("boss", B) then
-                              return "This option requires Show Icon and Make Icon Part of the Bar, with the CludesUI style."
-                          end
-                          return "This option requires Solid or a border style with divider art, and a Border Size above 0."
-                      end,
-                      get = function() return B.castIconSeparator == true end,
-                      set = function(v) B.castIconSeparator = v; ReloadAndUpdate() end },
-                    { type = "toggle", label = "Show Icon on Right",
-                      tooltip = "Place the cast icon on the right side of the bar instead of the left.",
-                      get = function() return B.castbarIconRight == true end,
-                      set = function(v) B.castbarIconRight = v; ReloadAndUpdate() end },
-                },
-            })
-        end
-        -- Row 3: Reverse Fill | Bar Background (opacity slider + color swatch).
-        -- Bar Background sits right below the size sliders (mirrors the main
-        -- frames' cast bar section, where it follows the Height row).
-        local reverseRow
-        reverseRow, hh = Ww:DualRow(pp, yy,
-            { type="toggle", text="Reverse Fill",
-              getValue=function() return B.castReverseFill == true end,
-              setValue=function(v) B.castReverseFill = v; ReloadAndUpdate() end },
-            { type="slider", text="Bar Background", min=0, max=100, step=1,
-              getValue=function() return math.floor((B.castBgAlpha or 0.5) * 100 + 0.5) end,
-              setValue=function(v) B.castBgAlpha = v / 100; ReloadAndUpdate() end });  yy = yy - hh
-        -- Inline color swatch on Bar Background (right region).
-        if not CludesUI._prebuilding then
-            local rgn = reverseRow._rightRegion
-            local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                function()
-                    local c = B.castBgColor
-                    if c then return c.r, c.g, c.b end
-                    return 0, 0, 0
+            -- Row 2: Show Cast Icon (+ icon cog) | Cast Bar Width (right under Cast
+            -- Bar Height so the two dimensions sit stacked in the same column)
+            growthRow, hh = Ww:DualRow(pp, yy, {
+                type = "toggle",
+                text = "Show Cast Icon",
+                getValue = function()
+                    return B.showCastIcon ~= false
                 end,
-                function(r, g, b) B.castBgColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-            sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            sw:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, "Cast Background") end)
-            sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-            rgn._lastInline = sw
-        end
-
-        -- Row 4: Spell Name (dropdown + Size/X/Y cog + swatch) | Duration (same)
-        local castTextRow
-        castTextRow, hh = Ww:DualRow(pp, yy,
-            { type="dropdown", text="Spell Name",
-              values={ none="None", left="Left", right="Right", center="Center" },
-              order={ "none", "left", "right", "center" },
-              getValue=function() return B.castSpellNameSide or "left" end,
-              setValue=function(v)
-                B.castSpellNameSide = v
-                -- Conflict rule (mirrors player): name and the spell target may
-                -- not share a side -- setting the name onto the target's side
-                -- turns the target (Indicators) off.
-                if v ~= "none" and (B.showCastTarget ~= false) and (B.castSpellTargetSide or "right") == v then
-                    B.showCastTarget = false
-                end
-                ReloadAndUpdate(); CludesUI:RefreshPage()
-              end },
-            { type="segmented", text="Duration",
-              values={ none="None", right="Right", left="Left" },
-              order={ "none", "right", "left" },
-              getValue=function()
-                if B.showCastDuration == false then return "none" end
-                return B.castDurationSide or "right"
-              end,
-              setValue=function(v)
-                if v == "none" then
-                    B.showCastDuration = false
-                else
-                    B.showCastDuration = true
-                    B.castDurationSide = v
-                end
-                ReloadAndUpdate(); CludesUI:RefreshPage()
-              end });  yy = yy - hh
-        -- Spell Name (left): Size/X/Y cog + color swatch
-        if not CludesUI._prebuilding then
-            local rgn = castTextRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Spell Name",
-                rows = {
-                    { type="slider", label="Size", min=6, max=20, step=1,
-                      get=function() return B.castSpellNameSize or 11 end,
-                      set=function(v) B.castSpellNameSize = v; ReloadAndUpdate() end },
-                    { type="slider", label="X Offset", min=-50, max=50, step=1,
-                      get=function() return B.castSpellNameX or 0 end,
-                      set=function(v) B.castSpellNameX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Y Offset", min=-50, max=50, step=1,
-                      get=function() return B.castSpellNameY or 0 end,
-                      set=function(v) B.castSpellNameY = v; ReloadAndUpdate() end },
-                },
+                setValue = function(v)
+                    B.showCastIcon = v
+                    ReloadAndUpdate()
+                end,
+            }, {
+                type = "slider",
+                text = "Cast Bar Width",
+                min = 0,
+                max = 500,
+                step = 1,
+                tooltip = "Sets a custom width for the cast bar. Set to 0 to match the boss frame width.",
+                getValue = function()
+                    return B.castbarWidth or 0
+                end,
+                -- Custom widths floor at 30 (matches the unlock-mode resize
+                -- minimum): below the cast icon size the bar layout inverts.
+                setValue = function(v)
+                    if v > 0 and v < 30 then
+                        v = 30
+                    end
+                    B.castbarWidth = v
+                    ReloadAndUpdate()
+                    if ns.RefreshBossPreviewDebuffs then
+                        ns.RefreshBossPreviewDebuffs()
+                    end
+                end,
             })
-            local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                function() local c = B.castSpellNameColor or { r=1, g=1, b=1 }; return c.r, c.g, c.b end,
-                function(r, g, b) B.castSpellNameColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-            sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = sw
-        end
-        -- Duration (right): Size/X/Y cog + color swatch
-        if not CludesUI._prebuilding then
-            local rgn = castTextRow._rightRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Duration",
-                rows = {
-                    { type="slider", label="Size", min=6, max=20, step=1,
-                      get=function() return B.castDurationSize or 10 end,
-                      set=function(v) B.castDurationSize = v; ReloadAndUpdate() end },
-                    { type="slider", label="X Offset", min=-50, max=50, step=1,
-                      get=function() return B.castDurationX or 0 end,
-                      set=function(v) B.castDurationX = v; ReloadAndUpdate() end },
-                    { type="slider", label="Y Offset", min=-50, max=50, step=1,
-                      get=function() return B.castDurationY or 0 end,
-                      set=function(v) B.castDurationY = v; ReloadAndUpdate() end },
-                },
+            yy = yy - hh
+            -- Icon cog (left): "Icon Border" / "Make Icon Part of the Bar" /
+            -- "Border Wraps Icon" / "Vertical Separator" / "Show Icon on Right".
+            if not CludesUI._prebuilding then
+                CludesUI.BuildInlineCog(growthRow._leftRegion, {
+                    title = "Cast Icon",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Icon Border",
+                            tooltip = "Use the cast bar's border style, size and color around the icon.",
+                            disabled = function()
+                                return CludesUI.BlizzStyle.Get("unitframes") or B.showCastIcon == false
+                            end,
+                            disabledTooltip = "This option requires Show Icon and the CludesUI style.",
+                            get = function()
+                                return B.castIconBorder == true
+                            end,
+                            set = function(v)
+                                B.castIconBorder = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Make Icon Part of the Bar",
+                            tooltip = "This makes it so the width of the cast bar includes the icon, rather than placing it to the left of the cast bars width.",
+                            -- The stock styles count a shown icon as part of the bar
+                            -- (their frame art wraps both), so the toggle reads on and locks.
+                            disabled = function()
+                                return CludesUI.BlizzStyle.Get("unitframes")
+                            end,
+                            disabledTooltip = function()
+                                return CludesUI.BlizzStyle.Label("unitframes")
+                            end,
+                            requireState = "disabled",
+                            get = function()
+                                if CludesUI.BlizzStyle.Get("unitframes") then
+                                    return true
+                                end
+                                return B.castbarIconInWidth ~= false
+                            end,
+                            set = function(v)
+                                B.castbarIconInWidth = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Border Wraps Icon",
+                            tooltip = "Draw the custom cast bar border around the icon and the bar together. An icon with an offset keeps its own border.",
+                            disabled = function()
+                                return CludesUI.BlizzStyle.Get("unitframes")
+                                    or B.castBorderCustom ~= true
+                                    or not ns.UF_CastIconInWidth("boss", B)
+                            end,
+                            disabledTooltip = "This option requires Custom Border Style, Show Icon and Make Icon Part of the Bar, with the CludesUI style.",
+                            get = function()
+                                return B.castBorderWrapIcon == true
+                            end,
+                            set = function(v)
+                                B.castBorderWrapIcon = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Vertical Separator",
+                            tooltip = "Draw a divider between the integrated icon and the bar, using the cast bar's border appearance.",
+                            disabled = function()
+                                return CludesUI.BlizzStyle.Get("unitframes")
+                                    or not ns.UF_CastIconInWidth("boss", B)
+                                    or not ns.UF_CastIconSeamOK(B)
+                            end,
+                            disabledTooltip = function()
+                                if
+                                    CludesUI.BlizzStyle.Get("unitframes")
+                                    or not ns.UF_CastIconInWidth("boss", B)
+                                then
+                                    return "This option requires Show Icon and Make Icon Part of the Bar, with the CludesUI style."
+                                end
+                                return "This option requires Solid or a border style with divider art, and a Border Size above 0."
+                            end,
+                            get = function()
+                                return B.castIconSeparator == true
+                            end,
+                            set = function(v)
+                                B.castIconSeparator = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "toggle",
+                            label = "Show Icon on Right",
+                            tooltip = "Place the cast icon on the right side of the bar instead of the left.",
+                            get = function()
+                                return B.castbarIconRight == true
+                            end,
+                            set = function(v)
+                                B.castbarIconRight = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                })
+            end
+            -- Row 3: Reverse Fill | Bar Background (opacity slider + color swatch).
+            -- Bar Background sits right below the size sliders (mirrors the main
+            -- frames' cast bar section, where it follows the Height row).
+            local reverseRow
+            reverseRow, hh = Ww:DualRow(pp, yy, {
+                type = "toggle",
+                text = "Reverse Fill",
+                getValue = function()
+                    return B.castReverseFill == true
+                end,
+                setValue = function(v)
+                    B.castReverseFill = v
+                    ReloadAndUpdate()
+                end,
+            }, {
+                type = "slider",
+                text = "Bar Background",
+                min = 0,
+                max = 100,
+                step = 1,
+                getValue = function()
+                    return math.floor((B.castBgAlpha or 0.5) * 100 + 0.5)
+                end,
+                setValue = function(v)
+                    B.castBgAlpha = v / 100
+                    ReloadAndUpdate()
+                end,
             })
-            local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5,
-                function() local c = B.castDurationColor or { r=1, g=1, b=1 }; return c.r, c.g, c.b end,
-                function(r, g, b) B.castDurationColor = { r=r, g=g, b=b }; ReloadAndUpdate() end, false, 20)
-            sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = sw
-        end
-        -- Custom Border Style rows (the Cast Bar cog's opt-in): one table
-        -- styles all five boss cast bars; no unlock element, no sync links.
-        if B.castBorderCustom == true then
-            yy = yy - ns.UF_CastBorderRows(Ww, pp, yy, function() return B end, ReloadAndUpdate)
-        end
-        -- Classic WoW UI: Border Size closes the section (odd last slot).
-        yy = yy - ns.UF_ClassicCastBorderRow(Ww, pp, yy,
-            function() return B end,
-            ns.UF_CastClassicKey("boss"),
-            function() ReloadAndUpdate() end)
+            yy = yy - hh
+            -- Inline color swatch on Bar Background (right region).
+            if not CludesUI._prebuilding then
+                local rgn = reverseRow._rightRegion
+                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local c = B.castBgColor
+                    if c then
+                        return c.r, c.g, c.b
+                    end
+                    return 0, 0, 0
+                end, function(r, g, b)
+                    B.castBgColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                sw:SetScript("OnEnter", function(self)
+                    CludesUI.ShowWidgetTooltip(self, "Cast Background")
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                rgn._lastInline = sw
+            end
 
-        end   -- close boss Cast Bar hidden-while-disabled gate
+            -- Row 4: Spell Name (dropdown + Size/X/Y cog + swatch) | Duration (same)
+            local castTextRow
+            castTextRow, hh = Ww:DualRow(pp, yy, {
+                type = "dropdown",
+                text = "Spell Name",
+                values = { none = "None", left = "Left", right = "Right", center = "Center" },
+                order = { "none", "left", "right", "center" },
+                getValue = function()
+                    return B.castSpellNameSide or "left"
+                end,
+                setValue = function(v)
+                    B.castSpellNameSide = v
+                    -- Conflict rule (mirrors player): name and the spell target may
+                    -- not share a side -- setting the name onto the target's side
+                    -- turns the target (Indicators) off.
+                    if
+                        v ~= "none"
+                        and (B.showCastTarget ~= false)
+                        and (B.castSpellTargetSide or "right") == v
+                    then
+                        B.showCastTarget = false
+                    end
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
+                end,
+            }, {
+                type = "segmented",
+                text = "Duration",
+                values = { none = "None", right = "Right", left = "Left" },
+                order = { "none", "right", "left" },
+                getValue = function()
+                    if B.showCastDuration == false then
+                        return "none"
+                    end
+                    return B.castDurationSide or "right"
+                end,
+                setValue = function(v)
+                    if v == "none" then
+                        B.showCastDuration = false
+                    else
+                        B.showCastDuration = true
+                        B.castDurationSide = v
+                    end
+                    ReloadAndUpdate()
+                    CludesUI:RefreshPage()
+                end,
+            })
+            yy = yy - hh
+            -- Spell Name (left): Size/X/Y cog + color swatch
+            if not CludesUI._prebuilding then
+                local rgn = castTextRow._leftRegion
+                CludesUI.BuildInlineCog(rgn, {
+                    title = "Spell Name",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                return B.castSpellNameSize or 11
+                            end,
+                            set = function(v)
+                                B.castSpellNameSize = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -50,
+                            max = 50,
+                            step = 1,
+                            get = function()
+                                return B.castSpellNameX or 0
+                            end,
+                            set = function(v)
+                                B.castSpellNameX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -50,
+                            max = 50,
+                            step = 1,
+                            get = function()
+                                return B.castSpellNameY or 0
+                            end,
+                            set = function(v)
+                                B.castSpellNameY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                })
+                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local c = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                    return c.r, c.g, c.b
+                end, function(r, g, b)
+                    B.castSpellNameColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                rgn._lastInline = sw
+            end
+            -- Duration (right): Size/X/Y cog + color swatch
+            if not CludesUI._prebuilding then
+                local rgn = castTextRow._rightRegion
+                CludesUI.BuildInlineCog(rgn, {
+                    title = "Duration",
+                    rows = {
+                        {
+                            type = "slider",
+                            label = "Size",
+                            min = 6,
+                            max = 20,
+                            step = 1,
+                            get = function()
+                                return B.castDurationSize or 10
+                            end,
+                            set = function(v)
+                                B.castDurationSize = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "X Offset",
+                            min = -50,
+                            max = 50,
+                            step = 1,
+                            get = function()
+                                return B.castDurationX or 0
+                            end,
+                            set = function(v)
+                                B.castDurationX = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Y Offset",
+                            min = -50,
+                            max = 50,
+                            step = 1,
+                            get = function()
+                                return B.castDurationY or 0
+                            end,
+                            set = function(v)
+                                B.castDurationY = v
+                                ReloadAndUpdate()
+                            end,
+                        },
+                    },
+                })
+                local sw = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+                    local c = B.castDurationColor or { r = 1, g = 1, b = 1 }
+                    return c.r, c.g, c.b
+                end, function(r, g, b)
+                    B.castDurationColor = { r = r, g = g, b = b }
+                    ReloadAndUpdate()
+                end, false, 20)
+                sw:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+                rgn._lastInline = sw
+            end
+            -- Custom Border Style rows (the Cast Bar cog's opt-in): one table
+            -- styles all five boss cast bars; no unlock element, no sync links.
+            if B.castBorderCustom == true then
+                yy = yy - ns.UF_CastBorderRows(Ww, pp, yy, function()
+                    return B
+                end, ReloadAndUpdate)
+            end
+            -- Classic WoW UI: Border Size closes the section (odd last slot).
+            yy = yy
+                - ns.UF_ClassicCastBorderRow(
+                    Ww,
+                    pp,
+                    yy,
+                    function()
+                        return B
+                    end,
+                    ns.UF_CastClassicKey("boss"),
+                    function()
+                        ReloadAndUpdate()
+                    end
+                )
+        end -- close boss Cast Bar hidden-while-disabled gate
 
         -- The Show Cast Bar toggle's own color swatches stay gated grey +
         -- blocked while the cast bar is off (the Height slider uses a
         -- native disabled state; the hidden rows need nothing).
-        for _, item in ipairs(castColorSwatches) do AddCastBlock(item.sw, item.enabledAlpha) end
+        for _, item in ipairs(castColorSwatches) do
+            AddCastBlock(item.sw, item.enabledAlpha)
+        end
         return yy
     end
 
     local displayHeader, sizeRow, textHeader, textRow
-    y, displayHeader, sizeRow, textHeader, textRow = BuildMiniTextAndSize(W, parent, y, db.profile.boss, "boss", enableRow, bossAfterSize, { hasPowerBar = true, afterPowerRow = function(Ww, pp, yy)
-        yy = bossCastBar(Ww, pp, yy)
-        return bossIndicators(Ww, pp, yy)
-    end })
+    y, displayHeader, sizeRow, textHeader, textRow =
+        BuildMiniTextAndSize(W, parent, y, db.profile.boss, "boss", enableRow, bossAfterSize, {
+            hasPowerBar = true,
+            afterPowerRow = function(Ww, pp, yy)
+                yy = bossCastBar(Ww, pp, yy)
+                return bossIndicators(Ww, pp, yy)
+            end,
+        })
 
     -- Store click targets for hover highlight system
     parent._ufClickTargets = {
         -- Health bar -> Health Bar Height (sizeRow left, HEALTH BAR section);
         -- Power bar -> Power Bar Height (pwrRow1 left, POWER BAR section).
-        healthBar  = { section = textHeader or displayHeader,  target = sizeRow,  slotSide = "left" },
-        powerBar   = { section = parent._powerHeaderFrame or displayHeader,  target = parent._powerHeightRow,  slotSide = "left" },
-        powerBarText = { section = parent._powerHeaderFrame or displayHeader,  target = parent._powerTextRow,  slotSide = "left" },
-        portrait   = { section = displayHeader,  target = portraitRow,   slotSide = "right" },
-        nameText = ns.UFO_TextClickTarget(parent, "leftText", textHeader or displayHeader, textRow or sizeRow),
-        healthText = ns.UFO_TextClickTarget(parent, "rightText", textHeader or displayHeader, textRow or sizeRow),
-        centerText = ns.UFO_TextClickTarget(parent, "centerText", textHeader or displayHeader, textRow or sizeRow),
-        extraText = ns.UFO_TextClickTarget(parent, "extraText", textHeader or displayHeader, textRow or sizeRow),
+        healthBar = { section = textHeader or displayHeader, target = sizeRow, slotSide = "left" },
+        powerBar = {
+            section = parent._powerHeaderFrame or displayHeader,
+            target = parent._powerHeightRow,
+            slotSide = "left",
+        },
+        powerBarText = {
+            section = parent._powerHeaderFrame or displayHeader,
+            target = parent._powerTextRow,
+            slotSide = "left",
+        },
+        portrait = { section = displayHeader, target = portraitRow, slotSide = "right" },
+        nameText = ns.UFO_TextClickTarget(
+            parent,
+            "leftText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        healthText = ns.UFO_TextClickTarget(
+            parent,
+            "rightText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        centerText = ns.UFO_TextClickTarget(
+            parent,
+            "centerText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
+        extraText = ns.UFO_TextClickTarget(
+            parent,
+            "extraText",
+            textHeader or displayHeader,
+            textRow or sizeRow
+        ),
         -- Blizzard Style level number -> Show Level (+ its cog).
-        levelText  = { section = textHeader or displayHeader,  target = parent._ufLevelRow, slotSide = "left" },
+        levelText = { section = textHeader or displayHeader, target = parent._ufLevelRow, slotSide = "left" },
         -- Cast bar -> Cast Bar Height; spell icon -> Show Cast Icon. Both live
         -- in growthRow after the swap (Show Cast Icon left, Cast Bar Height right).
-        castBar    = { section = bossCastHeader or displayHeader,  target = castMainRow or growthRow,  slotSide = "left" },
-        castIcon   = { section = bossCastHeader or displayHeader,  target = growthRow,  slotSide = "left" },
+        castBar = {
+            section = bossCastHeader or displayHeader,
+            target = castMainRow or growthRow,
+            slotSide = "left",
+        },
+        castIcon = { section = bossCastHeader or displayHeader, target = growthRow, slotSide = "left" },
         -- Buffs/Debuffs scroll to the active control: Simple Display when it's
         -- on (the column is forced), otherwise the normal Location dropdown.
-        buffIcon   = function()
+        buffIcon = function()
             if ns.GetBossSimpleBuffMode(db.profile.boss) ~= "none" then
                 return { section = bossAuraHeader or displayHeader, target = simpleBuffRow }
             end

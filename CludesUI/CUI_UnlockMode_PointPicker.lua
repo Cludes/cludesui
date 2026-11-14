@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Nine-point picking lives on movers; gameplay frames receive no mouse hooks.
 local _, ns = ...
 ns = ns.__cuiCoreNS or ns
@@ -21,13 +23,21 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     local function Eligible(mover, source)
-        if not mover or not mover:IsShown() or mover._tempHidden then return false end
+        if not mover or not mover:IsShown() or mover._tempHidden then
+            return false
+        end
         local key = mover._barKey
         local elem = UM.registeredElements[key]
-        if not elem or CludesUI.IsScreenEdgeKey(key) then return false end
+        if not elem or CludesUI.IsScreenEdgeKey(key) then
+            return false
+        end
         if source then
-            if elem.noAnchorTo or elem.ownsPosition or ns.IsMoverPosLocked(key) then return false end
-            if elem.isAnchored and elem.isAnchored(key) then return false end
+            if elem.noAnchorTo or elem.ownsPosition or ns.IsMoverPosLocked(key) then
+                return false
+            end
+            if elem.isAnchored and elem.isAnchored(key) then
+                return false
+            end
         elseif elem.noAnchorTarget then
             return false
         end
@@ -35,37 +45,61 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     local function FrameDependsOn(frame, wanted, seen, depth)
-        if frame == wanted then return true end
-        if not frame or frame == UIParent or seen[frame] then return false end
-        if depth > 30 then return true end
+        if frame == wanted then
+            return true
+        end
+        if not frame or frame == UIParent or seen[frame] then
+            return false
+        end
+        if depth > 30 then
+            return true
+        end
         seen[frame] = true
         local ok, count = pcall(frame.GetNumPoints, frame)
-        if not ok or (issecretvalue and issecretvalue(count)) or type(count) ~= "number" then return true end
+        if not ok or (issecretvalue and issecretvalue(count)) or type(count) ~= "number" then
+            return true
+        end
         for i = 1, count do
             local plain, _, relative = pcall(frame.GetPoint, frame, i)
-            if not plain or (issecretvalue and issecretvalue(relative)) then return true end
-            if relative and FrameDependsOn(relative, wanted, seen, depth + 1) then return true end
+            if not plain or (issecretvalue and issecretvalue(relative)) then
+                return true
+            end
+            if relative and FrameDependsOn(relative, wanted, seen, depth + 1) then
+                return true
+            end
         end
         return false
     end
 
     local function CanLink(source, target)
-        if not Eligible(source, true) or not Eligible(target, false) then return false end
+        if not Eligible(source, true) or not Eligible(target, false) then
+            return false
+        end
         local childKey, targetKey = source._barKey, target._barKey
         local childFrame = UM.GetBarFrame(childKey)
-        if childKey == targetKey or FrameDependsOn(UM.GetBarFrame(targetKey), childFrame, {}, 0) then return false end
+        if childKey == targetKey or FrameDependsOn(UM.GetBarFrame(targetKey), childFrame, {}, 0) then
+            return false
+        end
         local seen, stack = {}, { targetKey }
         while #stack > 0 do
             local key = table.remove(stack)
-            if key == childKey or UM.GetBarFrame(key) == childFrame then return false end
+            if key == childKey or UM.GetBarFrame(key) == childFrame then
+                return false
+            end
             if not seen[key] then
                 seen[key] = true
                 local info = UM.GetAnchorInfo(key)
-                if info and info.target then stack[#stack + 1] = info.target end
-                if info and info.fallback and info.fallback.target then stack[#stack + 1] = info.fallback.target end
+                if info and info.target then
+                    stack[#stack + 1] = info.target
+                end
+                if info and info.fallback and info.fallback.target then
+                    stack[#stack + 1] = info.fallback.target
+                end
                 local overrides = CludesUI._OverrideAnchorTargets and CludesUI._OverrideAnchorTargets(key)
                 if overrides then
-                    for i = 1, #overrides do stack[#stack + 1] = overrides[i] end
+                    for i = 1, #overrides do
+                        stack[#stack + 1] = overrides[i]
+                    end
                 end
             end
         end
@@ -90,10 +124,15 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     local function Choose(set, point)
-        if not UM.isUnlocked or InCombatLockdown() or not Enabled() then return end
+        if not UM.isUnlocked or InCombatLockdown() or not Enabled() then
+            return
+        end
         local source = UM.pickModeMover
         if set == sourceSet and UM.pickMode == "anchorTo" then
-            if not Eligible(source, true) then UM.CancelPickMode(); return end
+            if not Eligible(source, true) then
+                UM.CancelPickMode()
+                return
+            end
             sourcePoint = point
             UM.pickMode = "pointAnchor"
             for _, button in ipairs(sourceSet.buttons) do
@@ -102,18 +141,28 @@ ns.unlockParts.PointPicker = function(UM)
                 button:SetShown(button.point == point)
                 button:EnableMouse(false)
             end
-            if source._showPickText then source._showPickText(CludesUI.L("Click a point on another element")) end
+            if source._showPickText then
+                source._showPickText(CludesUI.L("Click a point on another element"))
+            end
             return
         end
-        if set ~= targetSet or UM.pickMode ~= "pointAnchor" or not sourcePoint then return end
+        if set ~= targetSet or UM.pickMode ~= "pointAnchor" or not sourcePoint then
+            return
+        end
         local target = set.mover
         if not CanLink(source, target) then
             Reject(target, CludesUI.L("This point anchor is unavailable or would create a circular anchor"))
             return
         end
         local childKey, targetKey = source._barKey, target._barKey
-        local info = { mode = "POINT", target = targetKey, sourcePoint = sourcePoint,
-            targetPoint = point, offsetX = 0, offsetY = 0 }
+        local info = {
+            mode = "POINT",
+            target = targetKey,
+            sourcePoint = sourcePoint,
+            targetPoint = point,
+            offsetX = 0,
+            offsetY = 0,
+        }
         if not PA.Center(childKey, UM.GetBarFrame(childKey), info, UM.GetBarFrame(targetKey)) then
             Reject(target, CludesUI.L("This element's position is not available yet"))
             return
@@ -125,9 +174,15 @@ ns.unlockParts.PointPicker = function(UM)
         stored.edge = nil -- An explicit point owns both axes of the new relationship.
         UM.hasChanges = true
         UM.ApplyAnchorPosition(childKey, targetKey)
-        if source.RefreshAnchoredText then source:RefreshAnchoredText() end
-        UM.DeferMoverSync(source, function(m) m:Sync() end, UM.GetBarFrame(childKey))
-        C_Timer.After(0, function() UM.PropagateAnchorChain(childKey) end)
+        if source.RefreshAnchoredText then
+            source:RefreshAnchoredText()
+        end
+        UM.DeferMoverSync(source, function(m)
+            m:Sync()
+        end, UM.GetBarFrame(childKey))
+        C_Timer.After(0, function()
+            UM.PropagateAnchorChain(childKey)
+        end)
     end
 
     local function Layout(set)
@@ -149,9 +204,15 @@ ns.unlockParts.PointPicker = function(UM)
         set:EnableMouse(false)
         set.buttons = {}
         local labels = {
-            TOPLEFT = CludesUI.L("Top Left"), TOP = CludesUI.L("Top"), TOPRIGHT = CludesUI.L("Top Right"),
-            LEFT = CludesUI.L("Left"), CENTER = CludesUI.L("Center"), RIGHT = CludesUI.L("Right"),
-            BOTTOMLEFT = CludesUI.L("Bottom Left"), BOTTOM = CludesUI.L("Bottom"), BOTTOMRIGHT = CludesUI.L("Bottom Right"),
+            TOPLEFT = CludesUI.L("Top Left"),
+            TOP = CludesUI.L("Top"),
+            TOPRIGHT = CludesUI.L("Top Right"),
+            LEFT = CludesUI.L("Left"),
+            CENTER = CludesUI.L("Center"),
+            RIGHT = CludesUI.L("Right"),
+            BOTTOMLEFT = CludesUI.L("Bottom Left"),
+            BOTTOM = CludesUI.L("Bottom"),
+            BOTTOMRIGHT = CludesUI.L("Bottom Right"),
         }
         for _, point in ipairs(PA.order) do
             local button = CreateFrame("Button", nil, set)
@@ -178,21 +239,35 @@ ns.unlockParts.PointPicker = function(UM)
             end)
             button:SetScript("OnLeave", function()
                 button.hovered = nil
-                if set.mover._pointHandleHovered == button then set.mover._pointHandleHovered = nil end
+                if set.mover._pointHandleHovered == button then
+                    set.mover._pointHandleHovered = nil
+                end
                 UpdateDot(button, true)
                 CludesUI.HideWidgetTooltip()
                 local leave = set.mover:GetScript("OnLeave")
-                if leave then leave(set.mover) else picker.Leave(set.mover) end
+                if leave then
+                    leave(set.mover)
+                else
+                    picker.Leave(set.mover)
+                end
             end)
             button:SetScript("OnHide", function()
-                if button.hovered then CludesUI.HideWidgetTooltip() end
-                if set.mover and set.mover._pointHandleHovered == button then set.mover._pointHandleHovered = nil end
+                if button.hovered then
+                    CludesUI.HideWidgetTooltip()
+                end
+                if set.mover and set.mover._pointHandleHovered == button then
+                    set.mover._pointHandleHovered = nil
+                end
                 button.hovered, button.selected = nil, nil
                 UpdateDot(button, false)
             end)
             button:SetScript("OnClick", function(_, mouse)
                 CludesUI.HideWidgetTooltip()
-                if mouse == "RightButton" then UM.CancelPickMode() else Choose(set, point) end
+                if mouse == "RightButton" then
+                    UM.CancelPickMode()
+                else
+                    Choose(set, point)
+                end
             end)
             set.buttons[#set.buttons + 1] = button
         end
@@ -201,7 +276,9 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     local function Show(set, mover)
-        if set.mover ~= mover then set:Hide() end
+        if set.mover ~= mover then
+            set:Hide()
+        end
         set.mover = mover
         set:SetParent(mover)
         visuals.RaiseAboveMover(set, mover)
@@ -229,16 +306,22 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     function picker.Begin(mover)
-        if not Enabled() or not Eligible(mover, true) then return end
+        if not Enabled() or not Eligible(mover, true) then
+            return
+        end
         sourceSet = sourceSet or CreateSet()
         sourcePoint = nil
         Show(sourceSet, mover)
     end
 
     function picker.Enter(mover)
-        if UM.pickMode ~= "pointAnchor" or not sourcePoint or mover == UM.pickModeMover then return end
+        if UM.pickMode ~= "pointAnchor" or not sourcePoint or mover == UM.pickModeMover then
+            return
+        end
         if not Eligible(mover, false) then
-            if targetSet then targetSet:Hide() end
+            if targetSet then
+                targetSet:Hide()
+            end
             return
         end
         targetSet = targetSet or CreateSet()
@@ -246,7 +329,9 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     function picker.Leave(mover)
-        if not targetSet or targetSet.mover ~= mover or not targetSet:IsShown() then return end
+        if not targetSet or targetSet.mover ~= mover or not targetSet:IsShown() then
+            return
+        end
         -- Let the next mouse focus settle when crossing onto an edge handle.
         C_Timer.After(0, function()
             if targetSet.mover == mover and not mover:IsMouseOver() and not mover._pointHandleHovered then
@@ -256,21 +341,37 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     function picker.Refresh(mover)
-        if not UM.isUnlocked or not UM.pickMode then return end
-        if sourceSet and sourceSet.mover == mover and sourceSet:IsShown() then Show(sourceSet, mover) end
-        if targetSet and targetSet.mover == mover and targetSet:IsShown() then Show(targetSet, mover) end
+        if not UM.isUnlocked or not UM.pickMode then
+            return
+        end
+        if sourceSet and sourceSet.mover == mover and sourceSet:IsShown() then
+            Show(sourceSet, mover)
+        end
+        if targetSet and targetSet.mover == mover and targetSet:IsShown() then
+            Show(targetSet, mover)
+        end
     end
 
     function picker.BodyClick(mover, button)
-        if UM.pickMode ~= "pointAnchor" or button ~= "LeftButton" then return false end
-        if mover == UM.pickModeMover then UM.CancelPickMode() end
+        if UM.pickMode ~= "pointAnchor" or button ~= "LeftButton" then
+            return false
+        end
+        if mover == UM.pickModeMover then
+            UM.CancelPickMode()
+        end
         return true
     end
 
     function picker.Cancel()
-        if sourceSet and sourceSet:IsShown() then CludesUI.HideWidgetTooltip() end
-        if sourceSet then sourceSet:Hide() end
-        if targetSet then targetSet:Hide() end
+        if sourceSet and sourceSet:IsShown() then
+            CludesUI.HideWidgetTooltip()
+        end
+        if sourceSet then
+            sourceSet:Hide()
+        end
+        if targetSet then
+            targetSet:Hide()
+        end
         sourcePoint = nil
     end
 
@@ -279,6 +380,8 @@ ns.unlockParts.PointPicker = function(UM)
     end
 
     PA.cancelPicker = function()
-        if picker.Active() then UM.CancelPickMode() end
+        if picker.Active() then
+            UM.CancelPickMode()
+        end
     end
 end

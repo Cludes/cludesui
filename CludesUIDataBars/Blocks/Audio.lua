@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Audio.lua
 -- Audio volume block factory.
 
@@ -8,32 +10,32 @@ local K = ns.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
-local ipairs      = ipairs
-local type        = type
-local floor       = math.floor
-local max         = math.max
-local Clamp       = Clamp
+local ipairs = ipairs
+local type = type
+local floor = math.floor
+local max = math.max
+local Clamp = Clamp
 
-local ICON_GAP             = K.ICON_GAP
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local IconColorOf          = K.IconColorOf
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  AUDIO (interactive volume bar; channel picked in block settings)
 --  Volume rides the sound CVars, which are unprotected: reads and writes are combat-legal.
 -------------------------------------------------------------------------------
 local AUDIO_CHANNELS = {
-    master   = { cvar = "Sound_MasterVolume",   enable = "Sound_EnableAllSound", label = "AUDIO_MASTER" },
-    sfx      = { cvar = "Sound_SFXVolume",      enable = "Sound_EnableSFX",      label = "AUDIO_SFX" },
-    music    = { cvar = "Sound_MusicVolume",    enable = "Sound_EnableMusic",    label = "AUDIO_MUSIC" },
+    master = { cvar = "Sound_MasterVolume", enable = "Sound_EnableAllSound", label = "AUDIO_MASTER" },
+    sfx = { cvar = "Sound_SFXVolume", enable = "Sound_EnableSFX", label = "AUDIO_SFX" },
+    music = { cvar = "Sound_MusicVolume", enable = "Sound_EnableMusic", label = "AUDIO_MUSIC" },
     ambience = { cvar = "Sound_AmbienceVolume", enable = "Sound_EnableAmbience", label = "AUDIO_AMBIENCE" },
-    dialog   = { cvar = "Sound_DialogVolume",   enable = "Sound_EnableDialog",   label = "AUDIO_DIALOG" },
+    dialog = { cvar = "Sound_DialogVolume", enable = "Sound_EnableDialog", label = "AUDIO_DIALOG" },
 }
 local AUDIO_CHANNEL_ORDER = { "master", "sfx", "music", "ambience", "dialog" }
 ns.AUDIO_CHANNELS = AUDIO_CHANNELS
@@ -47,8 +49,12 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
     local mouseOver = false
     local dragging = false
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local function Chan()
         return AUDIO_CHANNELS[D().channel] or AUDIO_CHANNELS.master
@@ -57,7 +63,9 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
     local function ReadVol(ch)
         return Clamp(tonumber(GetCVar(ch.cvar)) or 1, 0, 1)
     end
-    local function GetVol() return ReadVol(Chan()) end
+    local function GetVol()
+        return ReadVol(Chan())
+    end
     -- Wheel step: 1%, or 10% with Shift. Rounds to whole percents so repeated steps never drift; SetChanVol clamps.
     local function WheelStep(v, delta)
         return floor((v + delta * (IsShiftKeyDown() and 0.10 or 0.01)) * 100 + 0.5) / 100
@@ -70,7 +78,9 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
     local function SetChanVol(ch, v)
         SetCVar(ch.cvar, Clamp(v, 0, 1))
     end
-    local function SetVol(v) SetChanVol(Chan(), v) end
+    local function SetVol(v)
+        SetChanVol(Chan(), v)
+    end
 
     local audioButton = CreateFrame("Button", nil, content)
     audioButton:SetAllPoints()
@@ -93,23 +103,31 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
     local function SetFromCursor()
         local left = volTrack:GetLeft()
         local w = volTrack:GetWidth()
-        if not left or not w or w <= 0 then return end
+        if not left or not w or w <= 0 then
+            return
+        end
         local scale = volTrack:GetEffectiveScale()
-        if not scale or scale == 0 then scale = 1 end
+        if not scale or scale == 0 then
+            scale = 1
+        end
         local cx = GetCursorPosition() / scale
         -- SetVol clamps; the synchronous CVAR_UPDATE refresh paints the bar.
         SetVol((cx - left) / w)
     end
 
     hit:SetScript("OnMouseDown", function(_, btn)
-        if btn ~= "LeftButton" then return end
+        if btn ~= "LeftButton" then
+            return
+        end
         dragging = true
         SetFromCursor()
         -- OnUpdate lives only for the duration of the drag.
         hit:SetScript("OnUpdate", SetFromCursor)
     end)
     hit:SetScript("OnMouseUp", function()
-        if not dragging then return end
+        if not dragging then
+            return
+        end
         dragging = false
         hit:SetScript("OnUpdate", nil)
         inst:Refresh()
@@ -126,14 +144,18 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
 
     -- Left-click off the bar (icon) toggles mute for the block's channel; the bar's hit frame keeps drag-to-set.
     audioButton:RegisterForClicks("LeftButtonUp")
-    audioButton:SetScript("OnClick", function() ToggleMute(Chan()) end)
+    audioButton:SetScript("OnClick", function()
+        ToggleMute(Chan())
+    end)
 
     -- Per-channel tooltip row handlers, built once: left-click toggles mute, wheel steps volume; other buttons do nothing.
     local rowClick, rowWheel = {}, {}
     for _, key in ipairs(AUDIO_CHANNEL_ORDER) do
         local ch = AUDIO_CHANNELS[key]
         rowClick[key] = function(mouseButton)
-            if mouseButton == "LeftButton" then ToggleMute(ch) end
+            if mouseButton == "LeftButton" then
+                ToggleMute(ch)
+            end
         end
         rowWheel[key] = function(delta)
             SetChanVol(ch, WheelStep(ReadVol(ch), delta))
@@ -204,7 +226,12 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
 
         -- Show Icon (default ON): hidden drops the icon and its gap entirely.
         local showIcon = D().showIcon ~= false
-        if showIcon then audioIcon:Show() else audioIcon:Hide(); iconSz = 0 end
+        if showIcon then
+            audioIcon:Show()
+        else
+            audioIcon:Hide()
+            iconSz = 0
+        end
 
         -- Icon color follows the Icon Color row; hover sweeps to accent. Muted (channel or master) paints icon and fill red.
         local ar, ag, ab = ns.GetAccent()
@@ -221,7 +248,9 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
         volBar:SetStatusBarColor(ar, ag, ab, 1)
         volBar:SetValue(GetVol())
 
-        if showIcon then audioIcon:SetSize(iconSz, iconSz) end
+        if showIcon then
+            audioIcon:SetSize(iconSz, iconSz)
+        end
         local effGap = showIcon and ICON_GAP or 0
         if isSide then
             local slotW = VSlotW(inst)
@@ -253,14 +282,15 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
         audioButton:SetAllPoints(content)
 
         -- Owned, not mouseOver: the tip must also repaint while the cursor sits on its rows.
-        if ns.Tip_IsOwned(audioButton) and not dragging then AudioTooltip() end
+        if ns.Tip_IsOwned(audioButton) and not dragging then
+            AudioTooltip()
+        end
         MaybeRelayout(inst)
     end
 
     inst.eventFrame = MakeEventFrame(inst, function(self, event, cvar)
         -- Only sound CVar flips (ours or Blizzard's own panel) repaint.
-        if event == "CVAR_UPDATE" and type(cvar) == "string"
-           and not cvar:find("^Sound_") then
+        if event == "CVAR_UPDATE" and type(cvar) == "string" and not cvar:find("^Sound_") then
             return
         end
         self:Refresh()
@@ -282,7 +312,9 @@ ns.BlockFactories.audio = function(blockCfg, slot, content, barCtx)
             return max(content:GetHeight() or 40, 40)
         end
         local iconPart = 0
-        if D().showIcon ~= false then iconPart = (fontSize + 4) + ICON_GAP end
+        if D().showIcon ~= false then
+            iconPart = (fontSize + 4) + ICON_GAP
+        end
         return iconPart + max(40, floor(CONTENT_BASE * 2 + 0.5))
     end
 

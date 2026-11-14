@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_ForeverDruidMana.lua
 -- WoW FOREVER ONLY, DRUID ONLY: Mana Bar while Shapeshifted.
 --
@@ -28,9 +30,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local CludesUI = _G.CludesUI
 
-if not CludesUI.IS_FOREVER then return end
+if not CludesUI.IS_FOREVER then
+    return
+end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "DRUID" then return end
+if playerClass ~= "DRUID" then
+    return
+end
 
 local MANA = (Enum and Enum.PowerType and Enum.PowerType.Mana) or 0
 local WHITE = "Interface\\Buttons\\WHITE8x8"
@@ -57,7 +63,11 @@ local S = { enabled = false, shown = false, live = false, pbVis = true, parked =
 -- Returns the host ONLY while it is shown for the current form, so the reserved
 -- footprint tracks the form (not transient paint state) and is nil on every other
 -- client/class and in the carve/inside modes that add no height below the frame.
-ns._FDMStackBottomFrame = function() if S.shown and not S.parked and S.host then return S.host end end
+ns._FDMStackBottomFrame = function()
+    if S.shown and not S.parked and S.host then
+        return S.host
+    end
+end
 
 -------------------------------------------------------------------------------
 --  Helpers
@@ -73,16 +83,20 @@ end
 -- Type "Mana" (the bar itself stays on mana) reads as mana here too. A
 -- restricted answer keeps the last verdict.
 local function FormWantsBar()
-    local pt = _G._ERB_GetPrimaryPowerType()
-    if not Plain(pt) then return S.shown end
+    local pt = _G._CURB_GetPrimaryPowerType()
+    if not Plain(pt) then
+        return S.shown
+    end
     return type(pt) == "number" and pt ~= MANA
 end
 
 -- The mana colour from the Power Bar's palette (dark mode, overrides and
 -- fallbacks included). Read per apply: the palette memo is wiped on edits.
 local function ManaColor()
-    local pc = _G._ERB_PowerColors[MANA]
-    if pc then return pc[1], pc[2], pc[3] end
+    local pc = _G._CURB_PowerColors[MANA]
+    if pc then
+        return pc[1], pc[2], pc[3]
+    end
     return 1, 1, 1
 end
 
@@ -91,16 +105,37 @@ end
 local function ReachOf(pp, es)
     local bs = pp.borderSize or 0
     local tex = pp.borderTexture or "solid"
-    return CludesUI.BorderReach(bs, tex, pp.borderTextureOffset, pp.borderTextureOffsetY,
-        pp.borderTextureShiftX, pp.borderTextureShiftY, "resourcebars", bs,
-        CludesUI.BorderPx(pp.borderSizePx, bs, tex), nil, pp.borderA, es)
+    return CludesUI.BorderReach(
+        bs,
+        tex,
+        pp.borderTextureOffset,
+        pp.borderTextureOffsetY,
+        pp.borderTextureShiftX,
+        pp.borderTextureShiftY,
+        "resourcebars",
+        bs,
+        CludesUI.BorderPx(pp.borderSizePx, bs, tex),
+        nil,
+        pp.borderA,
+        es
+    )
 end
 
 -- One side ("l" / "r" / "t" / "b") of a reach, 0 when drawn inside.
 local function Side(side, l, r, t, b)
-    if not l then return 0 end
+    if not l then
+        return 0
+    end
     local v
-    if side == "l" then v = l elseif side == "r" then v = r elseif side == "t" then v = t else v = b end
+    if side == "l" then
+        v = l
+    elseif side == "r" then
+        v = r
+    elseif side == "t" then
+        v = t
+    else
+        v = b
+    end
     return (v > 0) and v or 0
 end
 
@@ -111,7 +146,9 @@ local function PowerBarReach(pp, pos, pbSide, vertical, es)
         -- The panel's opaque rim (ns.ERB_BlizzMatchPad): 2 above, 1 below,
         -- turned with a vertical bar to 2 left, 1 right. The panel's shadow
         -- draws under this bar.
-        if not ns.ERB_BlizzMatchPad(vertical) then return 0 end
+        if not ns.ERB_BlizzMatchPad(vertical) then
+            return 0
+        end
         return (pos == "above") and 2 or 1
     elseif style == "classic" then
         -- The vanilla frame's whole reach, so its art never covers this bar;
@@ -126,7 +163,9 @@ end
 -- Inside: the Power Bar's hash-line inset (an exact solid border size, else
 -- the step). The stock styles draw their frame outside the fill: none.
 local function InsideInset(pp)
-    if ns.ERB_BarsBlizz() then return 0 end
+    if ns.ERB_BarsBlizz() then
+        return 0
+    end
     local bs = pp.borderSize or 0
     local tex = pp.borderTexture
     if not tex or tex == "" or tex == "solid" then
@@ -147,14 +186,24 @@ local function Paint(force)
     local cur = UnitPower("player", MANA)
     local mx = UnitPowerMax("player", MANA)
     local curPlain, mxPlain = Plain(cur), Plain(mx)
-    if mxPlain and (type(mx) ~= "number" or mx <= 0) then return end
+    if mxPlain and (type(mx) ~= "number" or mx <= 0) then
+        return
+    end
     if curPlain then
-        if type(cur) ~= "number" then return end
-        if cur < 0 then cur = 0 end
+        if type(cur) ~= "number" then
+            return
+        end
+        if cur < 0 then
+            cur = 0
+        end
     end
     if curPlain and mxPlain then
-        if not force and cur == S.cur and mx == S.mx then return end
-        if force or mx ~= S.mx then sb:SetMinMaxValues(0, mx) end
+        if not force and cur == S.cur and mx == S.mx then
+            return
+        end
+        if force or mx ~= S.mx then
+            sb:SetMinMaxValues(0, mx)
+        end
         S.cur, S.mx = cur, mx
     else
         S.cur, S.mx = nil, nil
@@ -168,14 +217,18 @@ local function Paint(force)
         sb:SetValue(cur)
     end
 
-    if not S.textOn then return end
+    if not S.textOn then
+        return
+    end
     local fmt = S.fmt
     -- A "smart" here reads as the value: WoW Forever has no Smart Text.
     local wantPct = fmt == "perpp" or fmt == "both"
     local txt
     if wantPct then
         -- Built only for a format that shows it.
-        local pctRaw = UnitPowerPercent and UnitPowerPercent("player", MANA, true, CurveConstants and CurveConstants.ScaleTo100) or 0
+        local pctRaw = UnitPowerPercent
+                and UnitPowerPercent("player", MANA, true, CurveConstants and CurveConstants.ScaleTo100)
+            or 0
         local percentText = format("%d", pctRaw) .. S.suffix
         txt = (fmt == "both") and (ns.AbbreviateNumbers(cur) .. " | " .. percentText) or percentText
     elseif fmt == "curmaxpp" then
@@ -190,7 +243,9 @@ end
 -- edge into live repaints at once (mana moved while unregistered).
 local function UpdateLive()
     local live = (S.shown and S.pbVis) and true or false
-    if live == S.live then return end
+    if live == S.live then
+        return
+    end
     S.live = live
     if live then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
@@ -209,11 +264,15 @@ end
 local cascadeQueued = false
 local function CascadeSettled()
     cascadeQueued = false
-    if not CludesUI._unlockActive then CludesUI.PropagateAnchorChain("ERB_Power") end
+    if not CludesUI._unlockActive then
+        CludesUI.PropagateAnchorChain("ERB_Power")
+    end
 end
 local function NotifyExtent()
     local sig = (S.shown and not S.parked and S.extSide) and S.extSig or nil
-    if sig == S.extLast then return end
+    if sig == S.extLast then
+        return
+    end
     S.extLast = sig
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("ERB_Power")
@@ -241,7 +300,9 @@ evf:SetScript("OnEvent", function(_, event, _, powerType)
         Refresh()
     elseif S.live then
         -- Energy and rage ticks share these events: mana only.
-        if Plain(powerType) and powerType and powerType ~= "MANA" then return end
+        if Plain(powerType) and powerType and powerType ~= "MANA" then
+            return
+        end
         Paint(false)
     end
 end)
@@ -256,7 +317,9 @@ end)
 local function EnsureBuilt(pb)
     local host = S.host
     if host then
-        if host:GetParent() ~= pb then host:SetParent(pb) end
+        if host:GetParent() ~= pb then
+            host:SetParent(pb)
+        end
         return
     end
     host = CreateFrame("Frame", nil, pb)
@@ -300,7 +363,9 @@ local function Layout(pb, pp, g, c)
     local ori = pp.orientation or g.orientation or "HORIZONTAL"
     local vertical = ns.IsVerticalOrientation(ori)
     local pos = c.position
-    if pos ~= "above" and pos ~= "inside" then pos = "below" end
+    if pos ~= "above" and pos ~= "inside" then
+        pos = "below"
+    end
     local thick = PP.SnapForES(max(c.height or 6, 1), es)
     local ox = PP.SnapForES(c.offsetX or 0, es)
     local oy = PP.SnapForES(c.offsetY or 0, es)
@@ -310,7 +375,9 @@ local function Layout(pb, pp, g, c)
         local i = PP.SnapForES(InsideInset(pp), es)
         -- Never thicker than the Power Bar's fill.
         local room = (vertical and pb:GetWidth() or pb:GetHeight()) - 2 * i
-        if room > 0 and thick > room then thick = room end
+        if room > 0 and thick > room then
+            thick = room
+        end
         if vertical then
             host:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - i, oy - i)
             host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - i, oy + i)
@@ -334,8 +401,10 @@ local function Layout(pb, pp, g, c)
     else
         pbSide, ownSide = above and "t" or "b", above and "b" or "t"
     end
-    local d = PP.SnapForES(max(c.gap or 2, 0) + PowerBarReach(pp, pos, pbSide, vertical, es)
-        + Side(ownSide, ReachOf(pp, es)), es)
+    local d = PP.SnapForES(
+        max(c.gap or 2, 0) + PowerBarReach(pp, pos, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
+        es
+    )
     if vertical then
         if above then
             host:SetPoint("TOPRIGHT", pb, "TOPLEFT", ox - d, oy)
@@ -371,21 +440,37 @@ end
 local function ApplyBorder(pp, inside)
     local bdr = S.border
     -- Lost-rect recovery, see the cast bar border in the main file.
-    if not bdr:GetLeft() then bdr:SetAllPoints(S.host) end
+    if not bdr:GetLeft() then
+        bdr:SetAllPoints(S.host)
+    end
     if inside then
         CludesUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
         return
     end
     local bs = pp.borderSize or 0
     local tex = pp.borderTexture or "solid"
-    CludesUI.ApplyBorderStyle(bdr, bs,
-        pp.borderR or 0, pp.borderG or 0, pp.borderB or 0, pp.borderA or 1,
-        tex, pp.borderTextureOffset, pp.borderTextureOffsetY,
-        pp.borderTextureShiftX, pp.borderTextureShiftY, "resourcebars", bs,
-        nil, CludesUI.BorderPx(pp.borderSizePx, bs, tex))
+    CludesUI.ApplyBorderStyle(
+        bdr,
+        bs,
+        pp.borderR or 0,
+        pp.borderG or 0,
+        pp.borderB or 0,
+        pp.borderA or 1,
+        tex,
+        pp.borderTextureOffset,
+        pp.borderTextureOffsetY,
+        pp.borderTextureShiftX,
+        pp.borderTextureShiftY,
+        "resourcebars",
+        bs,
+        nil,
+        CludesUI.BorderPx(pp.borderSizePx, bs, tex)
+    )
     -- The strip container was levelled off the border frame when it was made.
     local edges = CludesUI.PP.GetBorders(bdr)
-    if edges then edges:SetFrameLevel(bdr:GetFrameLevel() + 1) end
+    if edges then
+        edges:SetFrameLevel(bdr:GetFrameLevel() + 1)
+    end
 end
 
 -- Orientation, the Power Bar's fill texture (the plain user texture under
@@ -402,23 +487,34 @@ local function ApplyLook(pp, g, p, ori)
         sb:SetRotatesTexture(false)
         sb:SetReverseFill(false)
     end
-    local path = CludesUI.ResolveTexturePath(_G._ERB_BarTextures,
-        (p.splitTex == true and pp.barTexture) or g.barTexture or "none", WHITE)
+    local path = CludesUI.ResolveTexturePath(
+        _G._CURB_BarTextures,
+        (p.splitTex == true and pp.barTexture) or g.barTexture or "none",
+        WHITE
+    )
     if path ~= S.texPath then
         S.texPath = path
         sb:SetStatusBarTexture(path)
         -- A new file resets the vertex colour: drop the fill memo so the
         -- paint below lands.
         local ft = sb:GetStatusBarTexture()
-        if ft then ft._lfOn, ft._lgOn = nil, nil end
+        if ft then
+            ft._lfOn, ft._lgOn = nil, nil
+        end
     end
     local r, gr, b = ManaColor()
     ns.ApplyBarFlat(sb:GetStatusBarTexture(), r, gr, b, 1)
     S.bg:SetColorTexture(pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
     -- Textured Background, as the Power Bar's: flat while Fill Color is below 100.
     if g.barTextureBg or S.bg._erbBgTex then
-        ns.ERB_BgTexture(S.bg, g.barTextureBg and (pp.fillOpacity or 100) >= 100 and path,
-            pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
+        ns.ERB_BgTexture(
+            S.bg,
+            g.barTextureBg and (pp.fillOpacity or 100) >= 100 and path,
+            pp.bgR or 0,
+            pp.bgG or 0,
+            pp.bgB or 0,
+            pp.bgA or 0.75
+        )
     end
     ns.ApplyFillOpacity(S.host, ori, pp.fillOpacity)
     return r, gr, b
@@ -446,7 +542,9 @@ end
 
 -- Off: every event dropped, the bar hidden and its anchor extent handed back.
 local function Teardown()
-    if not S.enabled then return end
+    if not S.enabled then
+        return
+    end
     S.enabled, S.shown, S.live = false, false, false
     S.cur, S.mx = nil, nil
     evf:UnregisterAllEvents()
@@ -464,9 +562,11 @@ end
 function ns.FDM_Apply(pb, pp, g)
     local ERB = ns.ERB
     local p = ERB.db and ERB.db.profile
-    if not p then return end
+    if not p then
+        return
+    end
     pb = pb or S.pb or _G.ERB_PrimaryBar
-    pp = pp or _G._ERB_ResolvePowerCfg(p)
+    pp = pp or _G._CURB_ResolvePowerCfg(p)
     local c = pp and pp.foreverDruidMana
     -- Power Type "Mana" keeps the Power Bar itself on mana: nothing to add.
     local ov = p.primary and p.primary.powerTypeOverride
@@ -489,7 +589,9 @@ function ns.FDM_Apply(pb, pp, g)
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into
     -- live painted in UpdateLive).
-    if wasLive and S.live then Paint(true) end
+    if wasLive and S.live then
+        Paint(true)
+    end
 end
 
 -- The Power Bar's visibility pass (vis = true / "mouseover" / false / nil).
@@ -497,9 +599,13 @@ end
 -- fades need nothing here: this bar is the Power Bar's child.
 function ns.FDM_Visibility(vis)
     local on = (vis == true or vis == "mouseover")
-    if on == S.pbVis then return end
+    if on == S.pbVis then
+        return
+    end
     S.pbVis = on
-    if S.enabled then UpdateLive() end
+    if S.enabled then
+        UpdateLive()
+    end
 end
 
 -- The bar frame while it is shown for the current form (Show When Missing).
@@ -512,7 +618,9 @@ end
 -- below for that time.
 function ns.FDM_Parked(parked)
     parked = parked and true or false
-    if parked == S.parked then return end
+    if parked == S.parked then
+        return
+    end
     S.parked = parked
     NotifyExtent()
 end
@@ -530,22 +638,31 @@ CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "ERB_Power" and S.shown and not S.parked and side == S.extSide then
         local host, pb = S.host, S.pb
         local v, pv
-        if side == "BOTTOM" then v, pv = host:GetBottom(), pb:GetBottom()
-        elseif side == "TOP" then v, pv = host:GetTop(), pb:GetTop()
-        elseif side == "LEFT" then v, pv = host:GetLeft(), pb:GetLeft()
-        else v, pv = host:GetRight(), pb:GetRight() end
+        if side == "BOTTOM" then
+            v, pv = host:GetBottom(), pb:GetBottom()
+        elseif side == "TOP" then
+            v, pv = host:GetTop(), pb:GetTop()
+        elseif side == "LEFT" then
+            v, pv = host:GetLeft(), pb:GetLeft()
+        else
+            v, pv = host:GetRight(), pb:GetRight()
+        end
         if v and pv then
             -- Only ever outward: an offset that tucks it back toward the
             -- Power Bar leaves the Power Bar's edge in charge.
             if side == "BOTTOM" or side == "LEFT" then
-                if pv < v then v = pv end
+                if pv < v then
+                    v = pv
+                end
             elseif pv > v then
                 v = pv
             end
             return v * host:GetEffectiveScale() / UIParent:GetEffectiveScale()
         end
     end
-    if prevExtent then return prevExtent(targetKey, side) end
+    if prevExtent then
+        return prevExtent(targetKey, side)
+    end
     return nil
 end
 
@@ -554,8 +671,12 @@ end
 -- the same edge linked elements measure from; 0 otherwise. Power Bar units
 -- (this bar is its child: one scale).
 function ns.FDM_BottomExtra()
-    if not (S.shown and not S.parked and S.extSide == "BOTTOM") then return 0 end
+    if not (S.shown and not S.parked and S.extSide == "BOTTOM") then
+        return 0
+    end
     local hb, pb = S.host:GetBottom(), S.pb:GetBottom()
-    if not (hb and pb) or hb >= pb then return 0 end
+    if not (hb and pb) or hb >= pb then
+        return 0
+    end
     return pb - hb
 end

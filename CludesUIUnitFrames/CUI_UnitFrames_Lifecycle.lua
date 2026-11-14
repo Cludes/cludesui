@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Lifecycle.lua
 --
@@ -9,7 +11,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local _, ns = ...
 
-local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization) or GetSpecialization
+local GetSpecialization = (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization)
+    or GetSpecialization
 local issecretvalue = issecretvalue
 
 local I = ns._internals
@@ -31,18 +34,15 @@ function CludesUF:OnInitialize()
     -- here, not a default: the logout strip drops a value equal to its default.
     if CludesUI._firstInstallPending then
         local tot = db.profile.targettarget
-        if tot and tot.lookSource == nil then tot.lookSource = "target" end
+        if tot and tot.lookSource == nil then
+            tot.lookSource = "target"
+        end
     end
 
     ResolveFontPath()
 
     -- Append SharedMedia textures to runtime tables so SM texture keys resolve
-    CludesUI.AppendSharedMediaTextures(
-        healthBarTextureNames,
-        healthBarTextureOrder,
-        nil,
-        healthBarTextures
-    )
+    CludesUI.AppendSharedMediaTextures(healthBarTextureNames, healthBarTextureOrder, nil, healthBarTextures)
 
     -- Blizzard options panel is registered centrally in CludesUI.lua
 end
@@ -63,17 +63,26 @@ local function EnableBody()
     -- switch back restores them.
     if ns.UF_Blizz() then
         local p = db.profile
-        if p.stockCastTextureSeeded == nil and p.classicTextureSeeded == nil
-            and p.stockCombatSeededStyle == nil and CludesUI.BankEuiStyleSlot then
+        if
+            p.stockCastTextureSeeded == nil
+            and p.classicTextureSeeded == nil
+            and p.stockCombatSeededStyle == nil
+            and CludesUI.BankEuiStyleSlot
+        then
             CludesUI.BankEuiStyleSlot(p, ns.UF_StyleSlotKeys())
         end
         -- WoW Forever's own seed the same way: the other looks' class
         -- resource goes to its Forever-only slot first.
         if ns.UF_Forever() and not p.foreverClassPowerSeeded and p.player then
             local s = p._foreverStyleSlots
-            if type(s) ~= "table" then s = {}; p._foreverStyleSlots = s end
-            s.cui = { ["player.classPowerStyle"] = p.player.classPowerStyle,
-                      ["player.showClassPowerBar"] = p.player.showClassPowerBar }
+            if type(s) ~= "table" then
+                s = {}
+                p._foreverStyleSlots = s
+            end
+            s.cui = {
+                ["player.classPowerStyle"] = p.player.classPowerStyle,
+                ["player.showClassPowerBar"] = p.player.showClassPowerBar,
+            }
         end
         ns.UF_SeedStock(p, ns.UF_Style(), ns.UF_Forever())
     end
@@ -96,7 +105,9 @@ local function EnableBody()
     C_Timer.After(0, function()
         -- Restore the threat watchers saved enabled (nothing registers when off).
         ns.SyncPlayerThreat()
-        if ns.SyncThreatPct then ns.SyncThreatPct() end
+        if ns.SyncThreatPct then
+            ns.SyncThreatPct()
+        end
     end)
     -- After InitializeFrames, which decided the target frame's source.
     ns.UF_SyncTargetSounds()
@@ -147,7 +158,9 @@ do
     ev:SetScript("OnEvent", function()
         if UnitExists("target") then
             hadTarget = true
-            if C_PlayerInteractionManager.IsReplacingUnit() then return end
+            if C_PlayerInteractionManager.IsReplacingUnit() then
+                return
+            end
             if UnitIsEnemy("target", "player") then
                 PlaySound(SOUNDKIT.IG_CREATURE_AGGRO_SELECT)
             elseif UnitIsFriend("player", "target") then
@@ -167,8 +180,7 @@ do
     -- Login, the options toggle and every reload pass (a profile switch or
     -- override changes the saved toggle without its setter).
     function ns.UF_SyncTargetSounds()
-        local on = db and db.profile.targetSounds == true
-            and ns.GetUnitFrameSource("target") ~= "blizzard"
+        local on = db and db.profile.targetSounds == true and ns.GetUnitFrameSource("target") ~= "blizzard"
         if on then
             hadTarget = UnitExists("target") and true or false
             ev:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -204,23 +216,27 @@ end
 -------------------------------------------------------------------------------
 do
     local HARM_CHAIN = {
-        DEATHKNIGHT = { 49576, 47541 },           -- Death Grip, Death Coil
+        DEATHKNIGHT = { 49576, 47541 }, -- Death Grip, Death Coil
         DEMONHUNTER = { 185123, 183752, 204021 }, -- Throw Glaive, Consume Magic, Fiery Brand
-        DRUID       = { 8921, 5176, 6795 },       -- Moonfire, Wrath, Growl
-        EVOKER      = { 362969 },                 -- Azure Strike (25yd native)
-        HUNTER      = { 75, 466930, 190925 },     -- Auto Shot, Black Arrow, Harpoon
-        MAGE        = { 116, 133, 44425, 118 },   -- Frostbolt, Fireball, Arcane Barrage, Polymorph
-        MONK        = { 117952, 115546 },         -- Crackling Jade Lightning, Provoke
-        PALADIN     = { 20271, 62124 },           -- Judgment, Hand of Reckoning
-        PRIEST      = { 589, 585, 8092 },         -- Shadow Word: Pain, Smite, Mind Blast
-        ROGUE       = { 36554, 185763, 2094 },    -- Shadowstep, Pistol Shot, Blind
-        SHAMAN      = { 188196, 370 },            -- Lightning Bolt, Purge
-        WARLOCK     = { 234153, 232670, 686, 348, 172, 5782 }, -- Drain Life, Shadow Bolt (both ids), Immolate, Corruption, Fear
-        WARRIOR     = { 355, 100 },               -- Taunt, Charge
+        DRUID = { 8921, 5176, 6795 }, -- Moonfire, Wrath, Growl
+        EVOKER = { 362969 }, -- Azure Strike (25yd native)
+        HUNTER = { 75, 466930, 190925 }, -- Auto Shot, Black Arrow, Harpoon
+        MAGE = { 116, 133, 44425, 118 }, -- Frostbolt, Fireball, Arcane Barrage, Polymorph
+        MONK = { 117952, 115546 }, -- Crackling Jade Lightning, Provoke
+        PALADIN = { 20271, 62124 }, -- Judgment, Hand of Reckoning
+        PRIEST = { 589, 585, 8092 }, -- Shadow Word: Pain, Smite, Mind Blast
+        ROGUE = { 36554, 185763, 2094 }, -- Shadowstep, Pistol Shot, Blind
+        SHAMAN = { 188196, 370 }, -- Lightning Bolt, Purge
+        WARLOCK = { 234153, 232670, 686, 348, 172, 5782 }, -- Drain Life, Shadow Bolt (both ids), Immolate, Corruption, Fear
+        WARRIOR = { 355, 100 }, -- Taunt, Charge
     }
     local HELP_HEAL = {
-        PRIEST = 2061, PALADIN = 19750, SHAMAN = 8004,
-        DRUID = 8936, MONK = 116670, EVOKER = 361469,
+        PRIEST = 2061,
+        PALADIN = 19750,
+        SHAMAN = 8004,
+        DRUID = 8936,
+        MONK = 116670,
+        EVOKER = 361469,
     }
 
     local harmSpell, helpSpell
@@ -237,23 +253,33 @@ do
         harmSpell, helpSpell = nil, nil
         local _, pClass = UnitClass("player")
         for _, sid in ipairs(HARM_CHAIN[pClass] or {}) do
-            if Known(sid) then harmSpell = sid; break end
+            if Known(sid) then
+                harmSpell = sid
+                break
+            end
         end
         local spec = GetSpecialization and GetSpecialization()
         local role = spec and GetSpecializationRole and GetSpecializationRole(spec)
-        if role == "HEALER" then helpSpell = HELP_HEAL[pClass] end
+        if role == "HEALER" then
+            helpSpell = HELP_HEAL[pClass]
+        end
         -- WoW Forever has no spec roles: a healing class counts as its healing
         -- spec and range-checks with its best heal in the spellbook.
         if CludesUI.IS_FOREVER then
             local list = CludesUI.FOREVER_HEAL_SPELLS[pClass]
             for i = 1, (list and #list or 0) do
-                if Known(list[i]) then helpSpell = list[i]; break end
+                if Known(list[i]) then
+                    helpSpell = list[i]
+                    break
+                end
             end
         end
     end
 
     local function TickOne(f, unit)
-        if not db then return end
+        if not db then
+            return
+        end
         local oor = (db.profile.boss and db.profile.boss.oorAlpha) or 0.4
         if oor >= 1 or not UnitExists(unit) then
             f:SetAlpha(1)
@@ -285,7 +311,9 @@ do
     local function Tick()
         for i = 1, 5 do
             local f = frames["boss" .. i]
-            if f and f:IsVisible() then TickOne(f, "boss" .. i) end
+            if f and f:IsVisible() then
+                TickOne(f, "boss" .. i)
+            end
         end
     end
 
@@ -301,13 +329,17 @@ do
 
     local hooked = false
     local function InstallHooks()
-        if hooked or not frames["boss1"] then return end
+        if hooked or not frames["boss1"] then
+            return
+        end
         hooked = true
         for i = 1, 5 do
             local f = frames["boss" .. i]
             if f then
                 local unit = "boss" .. i
-                if f:IsVisible() then visCount = visCount + 1 end
+                if f:IsVisible() then
+                    visCount = visCount + 1
+                end
                 f:HookScript("OnShow", function(self)
                     visCount = visCount + 1
                     TickOne(self, unit)
@@ -342,7 +374,6 @@ end
 --  (do-block: no persistent file-level locals.)
 -------------------------------------------------------------------------------
 do
-
     -- RAID_PLAYER_DISPELLABLE only knows class and spec dispels, so it answers no for
     -- every bleed: nothing a class learns removes one, only the dwarf racial does.
     -- Without this, "Only Dispellable by You" can never light up for a bleed, for
@@ -351,7 +382,7 @@ do
     -- a class that dispels those already passes the token, and treating a two-minute
     -- racial as a dispel would overlay most of what a dwarf ever catches.
     local RACIAL_DISPEL_TYPES = {
-        bleed = { Dwarf = true },  -- Stoneform
+        bleed = { Dwarf = true }, -- Stoneform
     }
     -- The token is equally blind to talent dispels: a shaman's poison removal is
     -- Poison Cleansing Totem, so Poison never passes for them. Raid Frames applies
@@ -362,12 +393,12 @@ do
     -- dispel slots when it reports a flip.
     local POISON_CLEANSING_TOTEM = 383013
     local _, ufPlayerClass = UnitClass("player")
-    local poisonTotemKnown = ufPlayerClass == "SHAMAN"
-        and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
+    local poisonTotemKnown = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
     function ns.UF_RefreshPoisonTotem()
-        local known = ufPlayerClass == "SHAMAN"
-            and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
-        if known == poisonTotemKnown then return false end
+        local known = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
+        if known == poisonTotemKnown then
+            return false
+        end
         poisonTotemKnown = known
         return true
     end
@@ -411,7 +442,9 @@ do
         collect = function()
             wipe(list)
             for _, f in pairs(frames) do
-                if type(f) == "table" and f.GetCenter then list[#list + 1] = f end
+                if type(f) == "table" and f.GetCenter then
+                    list[#list + 1] = f
+                end
             end
             return groups
         end,
@@ -422,6 +455,8 @@ end
 -- core fires its own edge (re-fired after combat for the secure frames).
 if CludesUI.RegisterVisEdge then
     CludesUI.RegisterVisEdge(function()
-        if ns.UpdateFrameVisibility then ns.UpdateFrameVisibility() end
+        if ns.UpdateFrameVisibility then
+            ns.UpdateFrameVisibility()
+        end
     end)
 end

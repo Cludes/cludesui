@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_Kick.lua
 --  Shared interrupt spell lookup and cast-bar tint helpers for nameplates
@@ -28,13 +30,13 @@ local DRUID_FORM_ID = { BEAR = 5, DIRE_BEAR = 8 }
 local foreverKicksByClass = {
     WARRIOR = {
         { 72, 1671, 1672, stances = { WARRIOR_STANCE.BATTLE, WARRIOR_STANCE.DEFENSIVE } }, -- Shield Bash
-        { 6552, 6554, stances = { WARRIOR_STANCE.BERSERKER } },                           -- Pummel
+        { 6552, 6554, stances = { WARRIOR_STANCE.BERSERKER } }, -- Pummel
     },
-    ROGUE = { { 1766, 1767, 1768, 1769 } },                       -- Kick
-    MAGE = { { 2139 } },                                          -- Counterspell
+    ROGUE = { { 1766, 1767, 1768, 1769 } }, -- Kick
+    MAGE = { { 2139 } }, -- Counterspell
     SHAMAN = { { 8042, 8044, 8045, 8046, 10412, 10413, 10414 } }, -- Earth Shock
-    PRIEST = { { 15487 } },                                       -- Silence
-    WARLOCK = { { 19244, 19647 } },                               -- Spell Lock (Felhunter)
+    PRIEST = { { 15487 } }, -- Silence
+    WARLOCK = { { 19244, 19647 } }, -- Spell Lock (Felhunter)
     DRUID = {
         { 16979, formIds = { DRUID_FORM_ID.BEAR, DRUID_FORM_ID.DIRE_BEAR } }, -- Feral Charge
     },
@@ -42,22 +44,31 @@ local foreverKicksByClass = {
 
 local function InList(list, value)
     for i = 1, #list do
-        if list[i] == value then return true end
+        if list[i] == value then
+            return true
+        end
     end
     return false
 end
 
 local function KickGroupFormOk(group)
-    if group.stances then return InList(group.stances, GetShapeshiftForm()) end
-    if group.formIds then return InList(group.formIds, GetShapeshiftFormID()) end
+    if group.stances then
+        return InList(group.stances, GetShapeshiftForm())
+    end
+    if group.formIds then
+        return InList(group.formIds, GetShapeshiftFormID())
+    end
     return true
 end
 
 -- Which spellbook knows a spell: "pet" (a summoned demon), "player", or nil.
 local function KickBank(spellId)
     if C_SpellBook and C_SpellBook.IsSpellKnownOrInSpellBook then
-        if Enum and Enum.SpellBookSpellBank
-            and C_SpellBook.IsSpellKnownOrInSpellBook(spellId, Enum.SpellBookSpellBank.Pet) then
+        if
+            Enum
+            and Enum.SpellBookSpellBank
+            and C_SpellBook.IsSpellKnownOrInSpellBook(spellId, Enum.SpellBookSpellBank.Pet)
+        then
             return "pet"
         elseif C_SpellBook.IsSpellKnownOrInSpellBook(spellId) then
             return "player"
@@ -88,7 +99,9 @@ local function RefreshKickAbility()
     local kicks = isForever and foreverKicksByClass or kickSpellsByClass
     local classKicks = kicks[playerClass]
     activeKickSpell = nil
-    if not classKicks then return end
+    if not classKicks then
+        return
+    end
     local petHit, playerHit
     -- Retail entries are bare spell ids; Forever entries are rank groups.
     for i = 1, #classKicks do
@@ -98,7 +111,11 @@ local function RefreshKickAbility()
             for j = 1, isGroup and #entry or 1 do
                 local spellId = isGroup and entry[j] or entry
                 local bank = KickBank(spellId)
-                if bank == "pet" then petHit = spellId elseif bank == "player" then playerHit = spellId end
+                if bank == "pet" then
+                    petHit = spellId
+                elseif bank == "player" then
+                    playerHit = spellId
+                end
             end
         end
     end
@@ -175,20 +192,34 @@ CludesUI.ComputeCastBarTint = ComputeCastBarTint
 -- with the first menu proxy; zero cost until a menu actually opens.
 local menuFixHooked = false
 local function InstallMenuClassifierFix()
-    if menuFixHooked or type(UnitPopup_OpenMenu) ~= "function" then return end
+    if menuFixHooked or type(UnitPopup_OpenMenu) ~= "function" then
+        return
+    end
     menuFixHooked = true
     local reopening = false
     hooksecurefunc("UnitPopup_OpenMenu", function(which, contextData)
-        if reopening then return end
-        if which ~= "PET" and which ~= "OTHERPET" and which ~= "OTHERBATTLEPET" then return end
+        if reopening then
+            return
+        end
+        if which ~= "PET" and which ~= "OTHERPET" and which ~= "OTHERBATTLEPET" then
+            return
+        end
         local unit = contextData and contextData.unit
-        if type(unit) ~= "string" then return end
+        if type(unit) ~= "string" then
+            return
+        end
         local lu = unit:lower()
         local isRaidToken = lu:match("^raid[0-9]+$") ~= nil
-        if not isRaidToken and not lu:match("^party[0-9]+$") then return end
+        if not isRaidToken and not lu:match("^party[0-9]+$") then
+            return
+        end
         local guid = UnitGUID(unit)
-        if issecretvalue and issecretvalue(guid) then return end
-        if type(guid) ~= "string" or not guid:find("^Player%-") then return end
+        if issecretvalue and issecretvalue(guid) then
+            return
+        end
+        if type(guid) ~= "string" or not guid:find("^Player%-") then
+            return
+        end
         reopening = true
         -- Menu.ModifyMenu callbacks run synchronously inside this call; the
         -- flag lets CludesUI_MenuFallbacks.lua swap the protected items of
@@ -203,12 +234,14 @@ local function InstallMenuClassifierFix()
         UnitPopup_OpenMenu(isRaidToken and "RAID_PLAYER" or "PARTY", { unit = unit })
         CludesUI._menuReopenUnit = nil
         reopening = false
-        if CludesUI._ShowReopenedMenuExtras then CludesUI._ShowReopenedMenuExtras(unit) end
+        if CludesUI._ShowReopenedMenuExtras then
+            CludesUI._ShowReopenedMenuExtras(unit)
+        end
     end)
 end
 
 local menuProxies = setmetatable({}, { __mode = "k" })
-local menuMacros = setmetatable({}, { __mode = "k" })  -- proxy -> its macrotext
+local menuMacros = setmetatable({}, { __mode = "k" }) -- proxy -> its macrotext
 -- 12.1: proxies are GLOBALLY NAMED so bindings can reach them via "/click
 -- <name>" (macro transport). 12.1 broke the "click" secure action outright
 -- (a typo: SecureTemplates.lua:564 calls HasAnyForbiddenAspects on the
@@ -220,7 +253,9 @@ local proxyCounter = 0
 -- Use this when wiring a SPECIFIC click/key binding to the menu -- it does NOT
 -- touch the frame's own type attributes (so it won't clobber other bindings).
 function CludesUI.GetSecureMenuProxy(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     InstallMenuClassifierFix()
     local proxy = menuProxies[frame]
     if not proxy then
@@ -232,12 +267,14 @@ function CludesUI.GetSecureMenuProxy(frame)
         -- menu beside the owner's rect, which an unanchored frame does not have.
         proxy:SetAllPoints(frame)
         proxy:SetAlpha(0)
-        proxy:EnableMouse(false)          -- never catches real mouse; only the secure click delegate reaches it
+        proxy:EnableMouse(false) -- never catches real mouse; only the secure click delegate reaches it
         proxy:RegisterForClicks("AnyUp")
         proxy:SetAttribute("type", "togglemenu")
         -- The secure resolver looks up type by BUTTON SUFFIX (RightButton -> type2);
         -- the bare "type" may not fall back, so set every button explicitly.
-        for i = 1, 5 do proxy:SetAttribute("type" .. i, "togglemenu") end
+        for i = 1, 5 do
+            proxy:SetAttribute("type" .. i, "togglemenu")
+        end
         menuMacros[proxy] = "/click " .. proxyName
         proxy:SetAttribute("useparent-unit", true)
         -- Act on mouse-up regardless of the "cast on key down" CVar. Without this,
@@ -257,7 +294,9 @@ end
 -- them. Used only for non-left-click target bindings (see ClickCast).
 local targetProxies = setmetatable({}, { __mode = "k" })
 function CludesUI.GetSecureTargetProxy(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local proxy = targetProxies[frame]
     if not proxy then
         local proxyName
@@ -266,11 +305,13 @@ function CludesUI.GetSecureTargetProxy(frame)
         proxy = CreateFrame("Button", proxyName, frame, "SecureActionButtonTemplate")
         proxy:SetSize(1, 1)
         proxy:SetAlpha(0)
-        proxy:EnableMouse(false)          -- never catches real mouse; only the secure click delegate reaches it
+        proxy:EnableMouse(false) -- never catches real mouse; only the secure click delegate reaches it
         proxy:RegisterForClicks("AnyUp")
         proxy:SetAttribute("type", "target")
         -- type looked up by button SUFFIX (RightButton -> type2); set every button.
-        for i = 1, 5 do proxy:SetAttribute("type" .. i, "target") end
+        for i = 1, 5 do
+            proxy:SetAttribute("type" .. i, "target")
+        end
         proxy:SetAttribute("useparent-unit", true)
         -- Act on the up-click regardless of the "cast on key down" CVar (same
         -- clickAction gate that bit the menu proxy).
@@ -290,7 +331,9 @@ end
 -- Route a unit button's default RIGHT-CLICK to the secure menu proxy via the
 -- macro transport. Clears any specific type2 so the wildcard governs.
 function CludesUI.AttachSecureUnitMenu(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local proxy = CludesUI.GetSecureMenuProxy(frame)
     frame:SetAttribute("type2", nil)
     -- Macro transport instead of the "click" action: the 12.1 click action

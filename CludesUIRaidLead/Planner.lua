@@ -11,7 +11,9 @@
 --    role   "TANK", "HEALER", "DAMAGER" or "NONE" (the role they queued as)
 --    class  the class token, e.g. "DEATHKNIGHT"
 -------------------------------------------------------------------------------
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, ns = ...
 ns = ns or {}
 
@@ -26,8 +28,12 @@ Planner.GROUP_SIZE = GROUP_SIZE
 -- classes are counted as melee; every other class counts as ranged. It is a
 -- guess for Druids, Shamans and Hunters, whose specs differ.
 local MELEE_CLASS = {
-    WARRIOR = true, ROGUE = true, DEATHKNIGHT = true,
-    DEMONHUNTER = true, PALADIN = true, MONK = true,
+    WARRIOR = true,
+    ROGUE = true,
+    DEATHKNIGHT = true,
+    DEMONHUNTER = true,
+    PALADIN = true,
+    MONK = true,
 }
 
 local KIND_ORDER = { TANK = 1, MELEE = 2, RANGED = 3, HEALER = 4 }
@@ -35,8 +41,12 @@ Planner.KIND_ORDER = KIND_ORDER
 
 --- "TANK", "MELEE", "RANGED" or "HEALER" for a member.
 function Planner.Kind(m)
-    if m.role == "TANK" then return "TANK" end
-    if m.role == "HEALER" then return "HEALER" end
+    if m.role == "TANK" then
+        return "TANK"
+    end
+    if m.role == "HEALER" then
+        return "HEALER"
+    end
     return MELEE_CLASS[m.class or ""] and "MELEE" or "RANGED"
 end
 
@@ -44,14 +54,20 @@ end
 -- so the same raid always sorts the same way.
 local function ByKind(a, b)
     local ka, kb = KIND_ORDER[Planner.Kind(a)], KIND_ORDER[Planner.Kind(b)]
-    if ka ~= kb then return ka < kb end
-    if (a.class or "") ~= (b.class or "") then return (a.class or "") < (b.class or "") end
+    if ka ~= kb then
+        return ka < kb
+    end
+    if (a.class or "") ~= (b.class or "") then
+        return (a.class or "") < (b.class or "")
+    end
     return (a.name or "") < (b.name or "")
 end
 
 local function Sorted(members)
     local list = {}
-    for i = 1, #members do list[i] = members[i] end
+    for i = 1, #members do
+        list[i] = members[i]
+    end
     table.sort(list, ByKind)
     return list
 end
@@ -82,7 +98,9 @@ function Planner.Split(members)
         turn = 3 - turn
     end
     local perSide = math.max(1, math.ceil(#sides[1] / GROUP_SIZE))
-    if perSide * 2 > MAX_GROUPS then perSide = MAX_GROUPS / 2 end
+    if perSide * 2 > MAX_GROUPS then
+        perSide = MAX_GROUPS / 2
+    end
     local target = {}
     for s = 1, 2 do
         local side = sides[s]
@@ -96,7 +114,9 @@ end
 --- The groups as they are now: target[name] = group. Used to undo a sort.
 function Planner.Snapshot(members)
     local target = {}
-    for i = 1, #members do target[members[i].name] = members[i].group end
+    for i = 1, #members do
+        target[members[i].name] = members[i].group
+    end
     return target
 end
 
@@ -110,10 +130,14 @@ end
 --- repeating this always finishes.
 function Planner.NextMove(members, target)
     local count = {}
-    for g = 1, MAX_GROUPS do count[g] = 0 end
+    for g = 1, MAX_GROUPS do
+        count[g] = 0
+    end
     for i = 1, #members do
         local g = members[i].group
-        if count[g] then count[g] = count[g] + 1 end
+        if count[g] then
+            count[g] = count[g] + 1
+        end
     end
     local setMove
     for i = 1, #members do
@@ -132,7 +156,9 @@ function Planner.NextMove(members, target)
             end
         end
     end
-    if setMove then return setMove end
+    if setMove then
+        return setMove
+    end
     -- Every wanted group is full: trade with anyone in it who belongs elsewhere.
     for i = 1, #members do
         local m = members[i]

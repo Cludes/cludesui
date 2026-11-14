@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_QuestRewards.lua  (WoW Forever only)
 --  Most Valuable Reward: among a quest's reward choices (quest window, quest
@@ -22,7 +26,7 @@ local F = module.Feature("questRewards", { enabled = false })
 local PURSE = "Interface\\Minimap\\Tracking\\Banker"
 
 local hooked, waiter, Update
-local coins = setmetatable({}, { __mode = "k" })  -- reward button -> our coin
+local coins = setmetatable({}, { __mode = "k" }) -- reward button -> our coin
 
 -- A choice button's item and count: its link, or its item ID while the client
 -- has no link for it yet (not cached), so it still counts as missing.
@@ -38,7 +42,9 @@ end
 
 local function Coin(button)
     local coin = coins[button]
-    if coin then return coin end
+    if coin then
+        return coin
+    end
     local holder = CreateFrame("Frame", nil, button)
     holder:SetAllPoints()
     holder:SetFrameLevel(button:GetFrameLevel() + 2)
@@ -66,10 +72,16 @@ end
 -- The coin on the shown choice that sells for most. Off, Apply has hidden
 -- the coins.
 function Update()
-    if not F.Enabled() then return end
-    for _, coin in pairs(coins) do coin:Hide() end
+    if not F.Enabled() then
+        return
+    end
+    for _, coin in pairs(coins) do
+        coin:Hide()
+    end
     local rewards = QuestInfoFrame.rewardsFrame
-    if not (rewards and rewards.RewardButtons) then return end
+    if not (rewards and rewards.RewardButtons) then
+        return
+    end
     local best, bestValue, missing = nil, 0, false
     for _, button in ipairs(rewards.RewardButtons) do
         if button:IsShown() and button.type == "choice" and button.objectType == "item" then
@@ -84,8 +96,12 @@ function Update()
             end
         end
     end
-    if missing then WaitForItems() end
-    if best then Coin(best):Show() end
+    if missing then
+        WaitForItems()
+    end
+    if best then
+        Coin(best):Show()
+    end
 end
 
 -- The hook goes in the first time the setting is on; off, it hides the coin
@@ -96,7 +112,9 @@ local function Apply()
         hooksecurefunc("QuestInfo_Display", Update)
     end
     if not F.Enabled() then
-        for _, coin in pairs(coins) do coin:Hide() end
+        for _, coin in pairs(coins) do
+            coin:Hide()
+        end
     end
 end
 

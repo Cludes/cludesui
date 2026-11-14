@@ -1,12 +1,27 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIMinimap.lua
 --  Custom minimap skin and layout for CludesUI.
 -------------------------------------------------------------------------------
 local ADDON_NAME = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals and CludesUI.NewCombatQueue and CludesUI.NewFrameData and CludesUI.PadGamepadUI and CludesUI.SetFontFamily) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the friends tooltip's names and notes take font families through SetFontFamily, and the tracking button reads WoW Forever's Gamepad interface style through PadGamepadUI)
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewInternals
+        and CludesUI.NewCombatQueue
+        and CludesUI.NewFrameData
+        and CludesUI.PadGamepadUI
+        and CludesUI.SetFontFamily
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the friends tooltip's names and notes take font families through SetFontFamily, and the tracking button reads WoW Forever's Gamepad interface style through PadGamepadUI)
 local ns = select(2, ...)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local EBS = CludesUI.Lite.NewAddon("CludesUIMinimap")
@@ -27,7 +42,7 @@ local TEMP_DISABLED = {}
 local defaults = {
     profile = {
         minimap = {
-            enabled       = true,
+            enabled = true,
             -- Blizzard Style (Global Settings > Style): the stock compass ring,
             -- top border bar and element placement on our map with every CUI
             -- feature intact. Default OFF; reload-gated.
@@ -44,123 +59,131 @@ local defaults = {
             -- the same way): "square" = the square map in the slim bronze
             -- line, the default there, "circle" = the round map in Blizzard's
             -- ring. Nil on every other client, where nothing reads it.
-            blizzBorder   = (CludesUI.IS_FOREVER == true) and "square" or nil,
-            shape         = "square",
+            blizzBorder = (CludesUI.IS_FOREVER == true) and "square" or nil,
+            shape = "square",
             rotateMinimap = false,
-            borderSize    = 1,
-            showCoords    = false,
+            borderSize = 1,
+            showCoords = false,
             coordPrecision = 0,
             -- Coords: mode (never/hover/always) + anchor; migrated from coordsBelow (minimap_coords_mode_position_v1, see GetCoordsModePos).
-            coordsMode     = "always",
+            coordsMode = "always",
             coordsPosition = "topLeft",
-            coordsScale    = 1.0,
+            coordsScale = 1.0,
             -- FPS/MS readout (Text section); options mirror the QoL FPS counter
-            showFPS           = false,
-            fpsTextSize       = 12,
-            fpsScale          = 1.0,
-            fpsShowLocalMS    = true,
-            fpsShowWorldMS    = false,
-            fpsUseAccent      = false,  -- description text: accent vs custom fpsColor
-            fpsColorClockAMPM = false,  -- also tint the clock's AM/PM suffix
-            fpsPosition       = "bottomLeft",
-            fpsOffsetX        = 0,
-            fpsOffsetY        = 0,
-            fpsHoverTooltip   = "none",  -- none | lockouts | vault
-            fpsUpdateInterval = 3,       -- seconds between FPS/MS refreshes (1-5)
+            showFPS = false,
+            fpsTextSize = 12,
+            fpsScale = 1.0,
+            fpsShowLocalMS = true,
+            fpsShowWorldMS = false,
+            fpsUseAccent = false, -- description text: accent vs custom fpsColor
+            fpsColorClockAMPM = false, -- also tint the clock's AM/PM suffix
+            fpsPosition = "bottomLeft",
+            fpsOffsetX = 0,
+            fpsOffsetY = 0,
+            fpsHoverTooltip = "none", -- none | lockouts | vault
+            fpsUpdateInterval = 3, -- seconds between FPS/MS refreshes (1-5)
             clockHoverTooltip = "none",
             -- Instance Difficulty as Text: compact "20M" readout replacing Blizzard's flag.
-            diffTextEnabled   = false,
-            diffTextPosition  = "topLeft",
-            diffTextSize      = 12,
-            diffTextOffsetX   = 0,
-            diffTextOffsetY   = 0,
+            diffTextEnabled = false,
+            diffTextPosition = "topLeft",
+            diffTextSize = 12,
+            diffTextOffsetX = 0,
+            diffTextOffsetY = 0,
             -- Accented Text: which elements colour their descriptions (clock AM/PM =
             -- fpsColorClockAMPM); diffTextReactive (tier) and diffTextAccent (flat) are mutually exclusive.
-            fpsColorSuffix    = true,
-            diffTextAccent    = false,
-            diffTextReactive  = false,
-            borderR       = 0, borderG = 0, borderB = 0, borderA = 1,
+            fpsColorSuffix = true,
+            diffTextAccent = false,
+            diffTextReactive = false,
+            borderR = 0,
+            borderG = 0,
+            borderB = 0,
+            borderA = 1,
             useClassColor = false,
             -- Location/clock: none | inside (on the map) | edge (boxed on the map edge); migrated by minimap_clock_location_mode_v2 (see GetElementModes).
-            locationMode  = "inside",
+            locationMode = "inside",
             locationPosition = "bottom",
-            zoneReactiveColor = false,  -- tint zone text by the zone's PvP ruleset
-            zoneShowSubZone   = false,  -- prefer the subzone name (zone fallback)
-            scrollZoom    = true,
+            zoneReactiveColor = false, -- tint zone text by the zone's PvP ruleset
+            zoneShowSubZone = false, -- prefer the subzone name (zone fallback)
+            scrollZoom = true,
             openMicroMenuOnMiddleClick = true,
-            savedZoom     = 0,
+            savedZoom = 0,
             -- Auto Zoom Reset: seconds of inactivity after a manual zoom change before snapping back to zoom level 0 (max distance). 0 = disabled (default).
             zoomResetSeconds = 0,
             -- false = Zoom +/- Icons checked in Show Blizzard Elements (buttons hover-show). The old true default was inert on Midnight (targeted pre-Midnight global button names), so flipping it changed nobody's visual state.
-            hideZoomButtons      = false,
+            hideZoomButtons = false,
             -- false = Tracking checked in Show Blizzard Elements on both clients (user
             -- decision 2026-09-21); a profile that never touched the row gains the button.
-            hideTrackingButton   = false,
-            hideGameTime         = false,
-            hideMail             = false,
+            hideTrackingButton = false,
+            hideGameTime = false,
+            hideMail = false,
             -- Mail indicator: "button" = element row, or a map corner (TOPLEFT/TOPRIGHT/BOTTOMLEFT/BOTTOMRIGHT) pinned like Omnium Folio's, nudged by X/Y offsets.
-            mailPosition         = "button",
-            mailOffsetX          = 0,
-            mailOffsetY          = 0,
-            hideRaidDifficulty   = false,
-            hideCraftingOrder    = false,
-            friendsMaxRows       = 0,   -- 0 = no cap; else cap per section, show "...and N more"
-            friendsShowNotes     = false,  -- guild/friend note on a second line under each row
-            hideExtraBtns        = { greatVault = false, portals = false, friendsOnline = false, groupButton = false },
-            mouseoverExtraBtns   = false,  -- extra buttons only show on minimap mouseover
-            greatVaultExtraInfo  = true,
+            mailPosition = "button",
+            mailOffsetX = 0,
+            mailOffsetY = 0,
+            hideRaidDifficulty = false,
+            hideCraftingOrder = false,
+            friendsMaxRows = 0, -- 0 = no cap; else cap per section, show "...and N more"
+            friendsShowNotes = false, -- guild/friend note on a second line under each row
+            hideExtraBtns = {
+                greatVault = false,
+                portals = false,
+                friendsOnline = false,
+                groupButton = false,
+            },
+            mouseoverExtraBtns = false, -- extra buttons only show on minimap mouseover
+            greatVaultExtraInfo = true,
             -- Addon compartment: Blizzard's button lives in MinimapCluster,
             -- which this module alpha-zeroes -- it is reparented onto our own
             -- Minimap and pinned like the Omnium Folio (corner + X/Y nudge).
             -- Hidden by default (product decision): users opt in via the
             -- Show Addon Compartment toggle.
-            hideAddonCompartment    = true,
-            addonCompartmentCorner  = "TOPRIGHT",
-            addonCompartmentX       = 0,
-            addonCompartmentY       = 0,
-            addonCompartmentScale   = 0.9,
+            hideAddonCompartment = true,
+            addonCompartmentCorner = "TOPRIGHT",
+            addonCompartmentX = 0,
+            addonCompartmentY = 0,
+            addonCompartmentScale = 0.9,
             -- Expansion landing page button: never | hover | always. Migrated from showOmniumFolio (minimap_omnium_folio_mode_v1).
-            omniumFolioMode      = "always",
-            omniumFolioCorner    = "BOTTOMLEFT",  -- which minimap corner to anchor to
-            omniumFolioX         = 0,
-            omniumFolioY         = 0,
-            omniumFolioScale     = 0.75,
-            hideAddonButtons     = false,
-            addonBtnSize         = 24,
-            interactableBtnSize  = 21,
-            ungroupedButtons     = {},
-            freeMoveBtns         = false,
-            btnBackgrounds       = true,
-            btnPositions         = {},
-            btnRowPosition       = "blUp",   -- blUp = original corner + direction
-            btnRowSpacing        = 0,
-            btnRowDistance       = 0,
-            flyoutGrowDir        = "auto",   -- Grow Tooltip/Popup: auto/up/down/left/right
-            elementRowPosition   = "tlDown", -- tlDown = original corner + direction
-            elementRowSpacing    = 0,
-            elementRowDistance   = 0,
+            omniumFolioMode = "always",
+            omniumFolioCorner = "BOTTOMLEFT", -- which minimap corner to anchor to
+            omniumFolioX = 0,
+            omniumFolioY = 0,
+            omniumFolioScale = 0.75,
+            hideAddonButtons = false,
+            addonBtnSize = 24,
+            interactableBtnSize = 21,
+            ungroupedButtons = {},
+            freeMoveBtns = false,
+            btnBackgrounds = true,
+            btnPositions = {},
+            btnRowPosition = "blUp", -- blUp = original corner + direction
+            btnRowSpacing = 0,
+            btnRowDistance = 0,
+            flyoutGrowDir = "auto", -- Grow Tooltip/Popup: auto/up/down/left/right
+            elementRowPosition = "tlDown", -- tlDown = original corner + direction
+            elementRowSpacing = 0,
+            elementRowDistance = 0,
 
-            extraFlyoutScale     = 1.0,   -- M+ Portals flyout scale
-            customTooltipScale   = 1.0,   -- custom tooltips on the unique minimap buttons
-            clockMode     = "inside",
+            extraFlyoutScale = 1.0, -- M+ Portals flyout scale
+            customTooltipScale = 1.0, -- custom tooltips on the unique minimap buttons
+            clockMode = "inside",
             clockPosition = "top",
-            clockFormat   = "12h",
-            clockScale    = 1.15,
-            clockOffsetX  = 0,
-            clockOffsetY  = 0,
+            clockFormat = "12h",
+            clockScale = 1.15,
+            clockOffsetX = 0,
+            clockOffsetY = 0,
             locationScale = 1.15,
             locationOffsetX = 0,
             locationOffsetY = 0,
-            lock          = false,
-            position      = nil,
-            visibility    = "always",
+            lock = false,
+            position = nil,
+            visibility = "always",
             -- Opacity (Visibility cog), percent 10-100: the alpha of the shown map (EBS._MapAlpha).
-            opacity       = 100,
+            opacity = 100,
             visOnlyInstances = false,
-            visHideHousing   = false,
-            visHideMounted   = false,
-            visHideNoTarget  = false,
-            visHideNoEnemy   = false,
+            visHideHousing = false,
+            visHideMounted = false,
+            visHideNoTarget = false,
+            visHideNoEnemy = false,
         },
     },
 }
@@ -181,13 +204,17 @@ end
 local function GetBorderStyleColor(cfg)
     if cfg.borderUseClassColor and CludesUI.GetClassColor then
         local cc = CludesUI.GetClassColor(select(2, UnitClass("player")))
-        if cc then return cc.r, cc.g, cc.b, cfg.borderA or 1 end
+        if cc then
+            return cc.r, cc.g, cc.b, cfg.borderA or 1
+        end
     end
     if cfg.useClassColor then
         return EG.r, EG.g, EG.b, cfg.borderA or 1
     end
     local c = cfg.borderColor
-    if c then return c.r, c.g, c.b, cfg.borderA or 1 end
+    if c then
+        return c.r, c.g, c.b, cfg.borderA or 1
+    end
     return GetBorderColor(cfg)
 end
 
@@ -195,14 +222,16 @@ end
 -- a square frame on the Forever client (its bronze frame takes no colour, and
 -- the border colour rows are hidden there). An EBS field.
 function EBS._EdgeBoxColor(cfg)
-    if EBS._fvSquare then return 0, 0, 0 end
+    if EBS._fvSquare then
+        return 0, 0, 0
+    end
     return GetBorderStyleColor(cfg)
 end
 
 -------------------------------------------------------------------------------
 --  Combat safety
 -------------------------------------------------------------------------------
-local ApplyAll  -- forward declaration
+local ApplyAll -- forward declaration
 
 -- Keyed queue entry: repeat requests before regen collapse into one apply.
 local function QueueApplyAll()
@@ -231,7 +260,7 @@ local minimapDecorations = {
 }
 
 local cachedAddonButtons = {}
-local _addonVisible = {}       -- persistent: tracks whether each addon WANTS its button visible
+local _addonVisible = {} -- persistent: tracks whether each addon WANTS its button visible
 EBS._suppressVisTrack = false -- flag to suppress tracking during our own Show/Hide calls
 local flyoutOwnedFrames = {}
 
@@ -246,23 +275,48 @@ local flyoutOwnedFrames = {}
 -- broken: true while an CUI_Minimap_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_internals", {
-    _addonVisible = _addonVisible, ADDON_NAME = ADDON_NAME,
-    cachedAddonButtons = cachedAddonButtons, defaults = defaults, EBS = EBS, EG = EG,
-    flyoutOwnedFrames = flyoutOwnedFrames, GetBorderStyleColor = GetBorderStyleColor,
-    GetFFD = GetFFD, minimapDecorations = minimapDecorations, PP = PP,
-    QueueApplyAll = QueueApplyAll, TEMP_DISABLED = TEMP_DISABLED,
-    applyAllSetters = { function(v) ApplyAll = v end },
+    _addonVisible = _addonVisible,
+    ADDON_NAME = ADDON_NAME,
+    cachedAddonButtons = cachedAddonButtons,
+    defaults = defaults,
+    EBS = EBS,
+    EG = EG,
+    flyoutOwnedFrames = flyoutOwnedFrames,
+    GetBorderStyleColor = GetBorderStyleColor,
+    GetFFD = GetFFD,
+    minimapDecorations = minimapDecorations,
+    PP = PP,
+    QueueApplyAll = QueueApplyAll,
+    TEMP_DISABLED = TEMP_DISABLED,
+    applyAllSetters = {
+        function(v)
+            ApplyAll = v
+        end,
+    },
     applyMinimapSetters = {},
-    moEvaluateSetters = {}, flyoutToggleSetters = {}, flyoutPanelSetters = {},
-    portalFlyoutSetters = {}, coordFrameSetters = {}, coordTickerSetters = {},
-    clockFrameSetters = {}, clockBgSetters = {}, locationFrameSetters = {},
-    locationBgSetters = {}, mmKeyHiddenSetters = {},
+    moEvaluateSetters = {},
+    flyoutToggleSetters = {},
+    flyoutPanelSetters = {},
+    portalFlyoutSetters = {},
+    coordFrameSetters = {},
+    coordTickerSetters = {},
+    clockFrameSetters = {},
+    clockBgSetters = {},
+    locationFrameSetters = {},
+    locationBgSetters = {},
+    mmKeyHiddenSetters = {},
 }, {
-    SetApplyAll = "applyAllSetters", SetMOEvaluate = "moEvaluateSetters",
-    SetFlyoutToggle = "flyoutToggleSetters", SetFlyoutPanel = "flyoutPanelSetters",
-    SetPortalFlyout = "portalFlyoutSetters", SetCoordFrame = "coordFrameSetters",
-    SetCoordTicker = "coordTickerSetters", SetClockFrame = "clockFrameSetters",
-    SetClockBg = "clockBgSetters", SetLocationFrame = "locationFrameSetters",
-    SetLocationBg = "locationBgSetters", SetMMKeyHidden = "mmKeyHiddenSetters",
+    SetApplyAll = "applyAllSetters",
+    SetMOEvaluate = "moEvaluateSetters",
+    SetFlyoutToggle = "flyoutToggleSetters",
+    SetFlyoutPanel = "flyoutPanelSetters",
+    SetPortalFlyout = "portalFlyoutSetters",
+    SetCoordFrame = "coordFrameSetters",
+    SetCoordTicker = "coordTickerSetters",
+    SetClockFrame = "clockFrameSetters",
+    SetClockBg = "clockBgSetters",
+    SetLocationFrame = "locationFrameSetters",
+    SetLocationBg = "locationBgSetters",
+    SetMMKeyHidden = "mmKeyHiddenSetters",
     SetApplyMinimap = "applyMinimapSetters",
 })

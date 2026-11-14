@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Conditions.lua
 --  Conditional Overrides engine: condition definitions, the active-group
@@ -32,7 +34,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  twice during a fight).
 -------------------------------------------------------------------------------
 
-local L = function(s) return CludesUI.L(s) or s end
+local L = function(s)
+    return CludesUI.L(s) or s
+end
 
 -------------------------------------------------------------------------------
 --  Condition definitions (ordered display list for the picker UI; the
@@ -43,43 +47,51 @@ local L = function(s) return CludesUI.L(s) or s end
 -- except the class resource bar's (the Dark Mode checkbox dropdown on
 -- Global Settings > Colors; users commonly dark one without the other).
 -- That is exactly what the old main "Dark Mode" toggle read.
-local function _dmMainFilter(p) return p.id ~= "resourceBars" end
+local function _dmMainFilter(p)
+    return p.id ~= "resourceBars"
+end
 local function DarkModeMasterOn()
     return (CludesUI.IsDarkModeAllOn(_dmMainFilter)) or false
 end
 
 CludesUI.CONDITIONS = {
-    { id = "keybind",      label = "Keybind (out of combat)" },
-    { id = "party",        label = "Party (in a group, not a raid)" },
-    { id = "dungeon",      label = "Dungeon" },
-    { id = "raid",         label = "Raid" },
-    { id = "arena",        label = "Arena" },
+    { id = "keybind", label = "Keybind (out of combat)" },
+    { id = "party", label = "Party (in a group, not a raid)" },
+    { id = "dungeon", label = "Dungeon" },
+    { id = "raid", label = "Raid" },
+    { id = "arena", label = "Arena" },
     { id = "battleground", label = "Battleground" },
-    { id = "solo",         label = "Solo (not in a group)" },
+    { id = "solo", label = "Solo (not in a group)" },
     -- requires: pickable in the condition picker only while it returns true
     -- (newly checking is refused and the row renders dimmed with the hint;
     -- UNchecking is always allowed so an existing group can never be
     -- trapped). Same predicate the resolver reads, so the picker never
     -- offers a condition that cannot currently hold.
     -- tooltip: shown on hover whenever the requirement hint is not.
-    { id = "darkmode",     label = "Dark Mode",
-      requires = DarkModeMasterOn,
-      tooltip = "Active while Dark Mode is on.",
-      requiresHint = "Check every Dark Mode in Global Settings > Colors, except Class Resource Bar, to use this condition." },
+    {
+        id = "darkmode",
+        label = "Dark Mode",
+        requires = DarkModeMasterOn,
+        tooltip = "Active while Dark Mode is on.",
+        requiresHint = "Check every Dark Mode in Global Settings > Colors, except Class Resource Bar, to use this condition.",
+    },
 }
 -- WoW Forever only: its Gamepad interface style has no retail counterpart
 -- (PadGamepadUI reads false there), so retail lists no row or icon for it; a
 -- group imported there with it checked simply never matches on it.
 if CludesUI.IS_FOREVER == true then
-    CludesUI.CONDITIONS[#CludesUI.CONDITIONS + 1] = { id = "gamepad", label = "Gamepad Mode",
-        tooltip = "Active while WoW's gamepad interface is on." }
+    CludesUI.CONDITIONS[#CludesUI.CONDITIONS + 1] = {
+        id = "gamepad",
+        label = "Gamepad Mode",
+        tooltip = "Active while WoW's gamepad interface is on.",
+    }
 end
 
 local INSTANCE_COND = {
     party = "dungeon",
-    raid  = "raid",
+    raid = "raid",
     arena = "arena",
-    pvp   = "battleground",
+    pvp = "battleground",
 }
 
 -------------------------------------------------------------------------------
@@ -90,7 +102,9 @@ local INSTANCE_COND = {
 --  key/keyOn only meaningful when conds.keybind; keyOn persists (profile).
 -------------------------------------------------------------------------------
 local function GetProfileRoot()
-    if not (CludesUIDB and CludesUI.GetProfilesDB) then return nil end
+    if not (CludesUIDB and CludesUI.GetProfilesDB) then
+        return nil
+    end
     local pdb = CludesUI.GetProfilesDB()
     local name = pdb.activeProfile or "Default"
     return pdb.profiles and pdb.profiles[name]
@@ -98,9 +112,13 @@ end
 
 function CludesUI.Conditions_GetGroups(create)
     local prof = GetProfileRoot()
-    if not prof then return nil end
+    if not prof then
+        return nil
+    end
     if not prof.condOverrideGroups then
-        if not create then return nil end
+        if not create then
+            return nil
+        end
         prof.condOverrideGroups = {}
     end
     return prof.condOverrideGroups
@@ -108,9 +126,13 @@ end
 
 function CludesUI.Conditions_GroupById(gid)
     local groups = CludesUI.Conditions_GetGroups()
-    if not groups then return nil end
+    if not groups then
+        return nil
+    end
     for _, g in ipairs(groups) do
-        if g.id == gid then return g end
+        if g.id == gid then
+            return g
+        end
     end
     return nil
 end
@@ -123,11 +145,17 @@ function CludesUI.Conditions_NewGroupId()
     local groups = CludesUI.Conditions_GetGroups(true)
     local maxId = 0
     for _, g in ipairs(groups or {}) do
-        if type(g.id) == "number" and g.id > maxId then maxId = g.id end
+        if type(g.id) == "number" and g.id > maxId then
+            maxId = g.id
+        end
     end
-    if not prof then return maxId + 1 end
+    if not prof then
+        return maxId + 1
+    end
     local nextId = prof.condOverrideNextId or 0
-    if nextId <= maxId then nextId = maxId end
+    if nextId <= maxId then
+        nextId = maxId
+    end
     nextId = nextId + 1
     prof.condOverrideNextId = nextId
     return nextId
@@ -142,9 +170,13 @@ end
 -- nil for every profile with no such group, so the other tiers resolve as if
 -- this one were not there.
 local function PartyGroup(groups)
-    if not IsInGroup() or IsInRaid() then return nil end
+    if not IsInGroup() or IsInRaid() then
+        return nil
+    end
     for _, g in ipairs(groups) do
-        if g.conds and g.conds.party then return g end
+        if g.conds and g.conds.party then
+            return g
+        end
     end
     return nil
 end
@@ -152,16 +184,22 @@ end
 --- The currently-ACTIVE conditional group per the ladder, or nil.
 function CludesUI.Conditions_ActiveGroup()
     local groups = CludesUI.Conditions_GetGroups()
-    if not groups or #groups == 0 then return nil end
+    if not groups or #groups == 0 then
+        return nil
+    end
     -- Tier 1: keybind toggles (explicit user action).
     for _, g in ipairs(groups) do
-        if g.conds and g.conds.keybind and g.keyOn then return g end
+        if g.conds and g.conds.keybind and g.keyOn then
+            return g
+        end
     end
     -- Tier 2: WoW Forever's Gamepad interface style (an explicit input-mode
     -- switch, so it outranks the ambient tiers; always false on retail).
     if CludesUI.PadGamepadUI() then
         for _, g in ipairs(groups) do
-            if g.conds and g.conds.gamepad then return g end
+            if g.conds and g.conds.gamepad then
+                return g
+            end
         end
     end
     -- Tier 3: every per-module Dark Mode but the Class Resource Bar's (it is
@@ -169,7 +207,9 @@ function CludesUI.Conditions_ActiveGroup()
     -- Location-independent, so it is checked BEFORE the instance early-outs.
     if DarkModeMasterOn() then
         for _, g in ipairs(groups) do
-            if g.conds and g.conds.darkmode then return g end
+            if g.conds and g.conds.darkmode then
+                return g
+            end
         end
     end
     -- Tier 4: instance type (client reports exactly one).
@@ -177,18 +217,24 @@ function CludesUI.Conditions_ActiveGroup()
     local cond = instanceType and INSTANCE_COND[instanceType]
     if cond then
         for _, g in ipairs(groups) do
-            if g.conds and g.conds[cond] then return g end
+            if g.conds and g.conds[cond] then
+                return g
+            end
         end
         -- In an instance: party can still apply, solo never does.
         return PartyGroup(groups)
     end
     -- Tier 5: party.
     local pg = PartyGroup(groups)
-    if pg then return pg end
+    if pg then
+        return pg
+    end
     -- Tier 6: solo.
     if not IsInGroup() then
         for _, g in ipairs(groups) do
-            if g.conds and g.conds.solo then return g end
+            if g.conds and g.conds.solo then
+                return g
+            end
         end
     end
     return nil
@@ -201,9 +247,9 @@ end
 --  transition, editing session open) -- the next event or the spec
 --  pipeline's own Conditions_Recheck tail retries with fresh state.
 -------------------------------------------------------------------------------
-local _appliedGid = nil        -- gid of the conditional group currently applied
+local _appliedGid = nil -- gid of the conditional group currently applied
 local _flipPending = false
-local _establish = false       -- post profile-apply: apply-only, no harvests
+local _establish = false -- post profile-apply: apply-only, no harvests
 
 -- Persisted mirror of the applied pointer (profile root). The applied conditional's
 -- values are baked into the profile's saved module data, so the pointer must survive
@@ -213,11 +259,15 @@ local _establish = false       -- post profile-apply: apply-only, no harvests
 -- /reload or login with a conditional active.
 local function PersistAppliedGid(gid)
     local prof = CludesUI.GetActiveProfileData()
-    if prof then prof.condAppliedGid = gid end
+    if prof then
+        prof.condAppliedGid = gid
+    end
 end
 
 function CludesUI.Conditions_AppliedGid()
-    if _appliedGid ~= nil then return _appliedGid end
+    if _appliedGid ~= nil then
+        return _appliedGid
+    end
     -- Stale windows (fresh login, profile-apply MarkStale before the establish Recheck
     -- lands): fall back to the persisted pointer, validated against the active
     -- profile's groups (a hand-edited or imported store may point at a deleted group).
@@ -278,7 +328,9 @@ function CludesUI.Conditions_Recheck()
         CludesUI.ForceCloseUnlockDiscard()
     end
     local handler = CludesUI.SpecOverrides_CondTransition
-    if not handler then return end
+    if not handler then
+        return
+    end
     -- Consume the establish request BEFORE the handler runs: anything inside
     -- it (a nested RefreshAllAddons tail calls MarkStale) may raise a FRESH
     -- request, which must survive this call instead of being clobbered on
@@ -339,9 +391,13 @@ end
 local _keyBtnPool = {}
 
 function CludesUI.Conditions_ToggleKey(gid)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     local g = CludesUI.Conditions_GroupById(gid)
-    if not g or not (g.conds and g.conds.keybind) then return end
+    if not g or not (g.conds and g.conds.keybind) then
+        return
+    end
     g.keyOn = not g.keyOn or nil
     CludesUI.Conditions_Recheck()
 end
@@ -355,7 +411,9 @@ function CludesUI.Conditions_RebuildKeyBindings()
         ClearOverrideBindings(btn)
     end
     local groups = CludesUI.Conditions_GetGroups()
-    if not groups then return end
+    if not groups then
+        return
+    end
     local i = 0
     for _, g in ipairs(groups) do
         if g.conds and g.conds.keybind and g.key and g.key ~= "" then
@@ -367,7 +425,9 @@ function CludesUI.Conditions_RebuildKeyBindings()
                 _keyBtnPool[i] = btn
             end
             local gid = g.id
-            btn:SetScript("OnClick", function() CludesUI.Conditions_ToggleKey(gid) end)
+            btn:SetScript("OnClick", function()
+                CludesUI.Conditions_ToggleKey(gid)
+            end)
             SetOverrideBindingClick(btn, true, g.key, btn:GetName())
         end
     end
@@ -388,9 +448,14 @@ evFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 -- The interface-style switch is WoW Forever's. Registering an event name the
 -- client does not know errors at load, so the name is checked first (as the
 -- Action Bars and Quest Tracker registrations do).
-if CludesUI.IS_FOREVER == true
-   and not (C_EventUtils and C_EventUtils.IsEventValid
-            and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION")) then
+if
+    CludesUI.IS_FOREVER == true
+    and not (
+        C_EventUtils
+        and C_EventUtils.IsEventValid
+        and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION")
+    )
+then
     evFrame:RegisterEvent("INPUT_DEVICE_INTERFACE_TRANSITION")
 end
 evFrame:SetScript("OnEvent", function(_, event)

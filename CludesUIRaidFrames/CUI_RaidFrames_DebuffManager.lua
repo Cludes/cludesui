@@ -3838,7 +3838,7 @@ end
 -------------------------------------------------------------------------------
 
 -- Snapshot of the live Debuff Manager config for layer harvests.
-function _G._ERF_DMHarvestFork()
+function _G._CURF_DMHarvestFork()
     local p = ns.db and ns.db.profile
     if not p then return nil end
     EnsureMigrated()
@@ -3849,7 +3849,7 @@ end
 
 -- Applies a SpecOverrides DM layer into the live profile (wipe + refill in place: open manager pages capture
 -- subtable refs) and re-drives the container runtime (DM_CfgFP flips on content change).
-function _G._ERF_DMApplyLayer(dm, noPageRefresh)
+function _G._CURF_DMApplyLayer(dm, noPageRefresh)
     if type(dm) ~= "table" then return false end
     local p = ns.db and ns.db.profile
     if not p then return false end

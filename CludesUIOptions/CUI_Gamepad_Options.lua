@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Gamepad_Options.lua -- Global Settings > Gamepad. The settings that
 --  apply only while a controller is connected and WoW's gamepad mode is on
@@ -28,7 +30,9 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local function ABNS()
     local ns = CludesUI.ModuleNS(AB_FOLDER)
     local EAB = ns and ns.EAB
-    if EAB and EAB.db then return ns end
+    if EAB and EAB.db then
+        return ns
+    end
     return nil
 end
 
@@ -41,8 +45,10 @@ end
 
 -- Resource Bars cast bar settings.
 local function RBCast()
-    if not CludesUI.ModuleNS(RB_FOLDER) then return nil end
-    local db = _G._ERB_AceDB
+    if not CludesUI.ModuleNS(RB_FOLDER) then
+        return nil
+    end
+    local db = _G._CURB_AceDB
     return db and db.profile.castBar
 end
 
@@ -77,7 +83,9 @@ end
 
 local function SetBarHidden(key, v)
     local s = BarSettings(key)
-    if not s then return end
+    if not s then
+        return
+    end
     s.gamepadHideBar = v and true or false
     local EAB = ABNS().EAB
     -- Controller verdict first: the Never map and the drivers read it.
@@ -111,11 +119,21 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
         intro:SetJustifyH("CENTER")
         intro:SetWordWrap(true)
         if FV then
-            intro:SetText(CludesUI.L("Everything here applies only while WoW's gamepad interface is turned on in its Gamepad settings.") .. "\n"
-                .. CludesUI.L("Keyboard and mouse play is unaffected, even with a controller connected."))
+            intro:SetText(
+                CludesUI.L(
+                    "Everything here applies only while WoW's gamepad interface is turned on in its Gamepad settings."
+                )
+                    .. "\n"
+                    .. CludesUI.L("Keyboard and mouse play is unaffected, even with a controller connected.")
+            )
         else
-            intro:SetText(CludesUI.L("Everything here applies only while a controller is connected and WoW's gamepad mode is on.") .. "\n"
-                .. CludesUI.L("Mouse and keyboard play is unaffected."))
+            intro:SetText(
+                CludesUI.L(
+                    "Everything here applies only while a controller is connected and WoW's gamepad mode is on."
+                )
+                    .. "\n"
+                    .. CludesUI.L("Mouse and keyboard play is unaffected.")
+            )
         end
     end
     y = y - 48
@@ -123,96 +141,135 @@ function _G._CUI_BuildGamepadPage(pageName, parent, yOffset)
     ---------------------------------------------------------------------------
     --  ACTION BARS
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "ACTION BARS", y);  y = y - h
+    _, h = W:SectionHeader(parent, "ACTION BARS", y)
+    y = y - h
 
     local abNS = ABNS()
     -- The checklist replaces this placeholder dropdown (DualRow only builds
     -- plain widgets); the placeholder keeps the label, its tooltip and the
     -- disabled state while Action Bars is not loaded.
     local barRow
-    barRow, h = W:DualRow(parent, y,
-        { type = "dropdown", text = "Hide Action Bars",
-          tooltip = FV and "Checked bars hide while WoW's gamepad interface is on, the way Visibility set to Never hides them."
-              or "Checked bars hide while a controller is connected and gamepad mode is on, the way Visibility set to Never hides them.",
-          values = { __placeholder = "..." }, order = { "__placeholder" },
-          getValue = function() return "__placeholder" end,
-          setValue = function() end,
-          disabled = function() return not ABNS() end,
-          disabledTooltip = "Action Bars" },
-        BLANK());  y = y - h
+    barRow, h = W:DualRow(parent, y, {
+        type = "dropdown",
+        text = "Hide Action Bars",
+        tooltip = FV
+                and "Checked bars hide while WoW's gamepad interface is on, the way Visibility set to Never hides them."
+            or "Checked bars hide while a controller is connected and gamepad mode is on, the way Visibility set to Never hides them.",
+        values = { __placeholder = "..." },
+        order = { "__placeholder" },
+        getValue = function()
+            return "__placeholder"
+        end,
+        setValue = function() end,
+        disabled = function()
+            return not ABNS()
+        end,
+        disabledTooltip = "Action Bars",
+    }, BLANK())
+    y = y - h
 
     if abNS and not CludesUI._prebuilding then
         local rgn = barRow._leftRegion
-        if rgn._control then rgn._control:Hide() end
+        if rgn._control then
+            rgn._control:Hide()
+        end
         local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn, 210, rgn:GetFrameLevel() + 2,
-            BarItems(abNS), BarHidden, SetBarHidden)
+            rgn,
+            210,
+            rgn:GetFrameLevel() + 2,
+            BarItems(abNS),
+            BarHidden,
+            SetBarHidden
+        )
         PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
         rgn._control = cbDD
         rgn._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
 
         -- Chrome only (no search entry), so the index pass skips it too.
-        y = CludesUI.BuildNoteRow(parent, y, "Hidden bars still show in Quick Keybind mode so you can bind them.")
+        y = CludesUI.BuildNoteRow(
+            parent,
+            y,
+            "Hidden bars still show in Quick Keybind mode so you can bind them."
+        )
     elseif abNS then
         -- The index pass still steps past the note (BuildNoteRow's 34px row)
         -- so the rows below index at their live positions.
         y = y - 34
     end
 
-    _, h = W:Spacer(parent, y, 20);  y = y - h
+    _, h = W:Spacer(parent, y, 20)
+    y = y - h
 
     ---------------------------------------------------------------------------
     --  CAST BARS
     ---------------------------------------------------------------------------
-    _, h = W:SectionHeader(parent, "CAST BARS", y);  y = y - h
+    _, h = W:SectionHeader(parent, "CAST BARS", y)
+    y = y - h
 
-    _, h = W:DualRow(parent, y,
-        { type = "toggle", text = "Hide Unit Frames Cast Bar",
-          tooltip = FV and "Hides the Unit Frames player cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
-              or "Hides the Unit Frames player cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
-          getValue = function()
-              local p = UFPlayer()
-              return (p and p.castbarGamepadHide == true) or false
-          end,
-          setValue = function(v)
-              local p = UFPlayer()
-              if not p then return end
-              p.castbarGamepadHide = v and true or false
-              CludesUI.ModuleNS(UF_FOLDER).UF_ApplyGamepadCastbar()
-          end,
-          -- Our player cast bar exists only on the CludesUI player frame
-          -- (a Blizzard or hidden frame source has none to hide).
-          disabled = function()
-              local p = UFPlayer()
-              if not (p and p.showPlayerCastbar) then return true end
-              return CludesUI.ModuleNS(UF_FOLDER).GetUnitFrameSource("player") ~= "cui"
-          end,
-          disabledTooltip = function()
-              if not UFPlayer() then return "Unit Frames" end
-              return "This option requires the Unit Frames player frame and its cast bar to be enabled"
-          end },
-        { type = "toggle", text = "Hide Resource Bars Cast Bar",
-          tooltip = FV and "Hides the Resource & Cast Bars cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
-              or "Hides the Resource & Cast Bars cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
-          getValue = function()
-              local cb = RBCast()
-              return (cb and cb.gamepadHide == true) or false
-          end,
-          setValue = function(v)
-              local cb = RBCast()
-              if not cb then return end
-              cb.gamepadHide = v and true or false
-              CludesUI.ModuleNS(RB_FOLDER).RB_ApplyGamepadCastbar()
-          end,
-          disabled = function()
-              local cb = RBCast()
-              return not (cb and cb.enabled)
-          end,
-          disabledTooltip = function()
-              if not RBCast() then return "Resource & Cast Bars" end
-              return "This option requires the cast bar in Resource & Cast Bars to be enabled"
-          end });  y = y - h
+    _, h = W:DualRow(parent, y, {
+        type = "toggle",
+        text = "Hide Unit Frames Cast Bar",
+        tooltip = FV
+                and "Hides the Unit Frames player cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
+            or "Hides the Unit Frames player cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
+        getValue = function()
+            local p = UFPlayer()
+            return (p and p.castbarGamepadHide == true) or false
+        end,
+        setValue = function(v)
+            local p = UFPlayer()
+            if not p then
+                return
+            end
+            p.castbarGamepadHide = v and true or false
+            CludesUI.ModuleNS(UF_FOLDER).UF_ApplyGamepadCastbar()
+        end,
+        -- Our player cast bar exists only on the CludesUI player frame
+        -- (a Blizzard or hidden frame source has none to hide).
+        disabled = function()
+            local p = UFPlayer()
+            if not (p and p.showPlayerCastbar) then
+                return true
+            end
+            return CludesUI.ModuleNS(UF_FOLDER).GetUnitFrameSource("player") ~= "cui"
+        end,
+        disabledTooltip = function()
+            if not UFPlayer() then
+                return "Unit Frames"
+            end
+            return "This option requires the Unit Frames player frame and its cast bar to be enabled"
+        end,
+    }, {
+        type = "toggle",
+        text = "Hide Resource Bars Cast Bar",
+        tooltip = FV
+                and "Hides the Resource & Cast Bars cast bar while WoW's gamepad interface is on. Blizzard's gamepad interface shows its own."
+            or "Hides the Resource & Cast Bars cast bar while a controller is connected and gamepad mode is on. Blizzard's gamepad interface shows its own.",
+        getValue = function()
+            local cb = RBCast()
+            return (cb and cb.gamepadHide == true) or false
+        end,
+        setValue = function(v)
+            local cb = RBCast()
+            if not cb then
+                return
+            end
+            cb.gamepadHide = v and true or false
+            CludesUI.ModuleNS(RB_FOLDER).RB_ApplyGamepadCastbar()
+        end,
+        disabled = function()
+            local cb = RBCast()
+            return not (cb and cb.enabled)
+        end,
+        disabledTooltip = function()
+            if not RBCast() then
+                return "Resource & Cast Bars"
+            end
+            return "This option requires the cast bar in Resource & Cast Bars to be enabled"
+        end,
+    })
+    y = y - h
 
     -- Framework contract: return the positive total content height.
     return math.abs(y)

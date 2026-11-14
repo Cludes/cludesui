@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_NumberFormat.lua
 --  Central "abbreviate a big number to K/M/B/etc." engine, shared by every module
@@ -48,10 +50,34 @@ local CreateAbbreviateConfig = CreateAbbreviateConfig
 -- there's no need for a caller-specific variant.
 local function EnglishBreakpoints()
     return {
-        { breakpoint = 1000000000, abbreviation = "B", significandDivisor = 10000000, fractionDivisor = 100, abbreviationIsGlobal = false },
-        { breakpoint = 1000000,    abbreviation = "M", significandDivisor = 10000,    fractionDivisor = 100, abbreviationIsGlobal = false },
-        { breakpoint = 1000,       abbreviation = "K", significandDivisor = 100,      fractionDivisor = 10,  abbreviationIsGlobal = false },
-        { breakpoint = 1,          abbreviation = "",  significandDivisor = 1,        fractionDivisor = 1,   abbreviationIsGlobal = false },
+        {
+            breakpoint = 1000000000,
+            abbreviation = "B",
+            significandDivisor = 10000000,
+            fractionDivisor = 100,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 1000000,
+            abbreviation = "M",
+            significandDivisor = 10000,
+            fractionDivisor = 100,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 1000,
+            abbreviation = "K",
+            significandDivisor = 100,
+            fractionDivisor = 10,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 1,
+            abbreviation = "",
+            significandDivisor = 1,
+            fractionDivisor = 1,
+            abbreviationIsGlobal = false,
+        },
     }
 end
 
@@ -67,10 +93,34 @@ local CJK_GLYPHS = {
 
 local function CJKBreakpoints(g)
     return {
-        { breakpoint = 100000000, abbreviation = g[3], significandDivisor = 1000000, fractionDivisor = 100, abbreviationIsGlobal = false },
-        { breakpoint = 10000,     abbreviation = g[2], significandDivisor = 100,     fractionDivisor = 100, abbreviationIsGlobal = false },
-        { breakpoint = 1000,      abbreviation = g[1], significandDivisor = 100,     fractionDivisor = 10,  abbreviationIsGlobal = false },
-        { breakpoint = 1,         abbreviation = "",   significandDivisor = 1,       fractionDivisor = 1,   abbreviationIsGlobal = false },
+        {
+            breakpoint = 100000000,
+            abbreviation = g[3],
+            significandDivisor = 1000000,
+            fractionDivisor = 100,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 10000,
+            abbreviation = g[2],
+            significandDivisor = 100,
+            fractionDivisor = 100,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 1000,
+            abbreviation = g[1],
+            significandDivisor = 100,
+            fractionDivisor = 10,
+            abbreviationIsGlobal = false,
+        },
+        {
+            breakpoint = 1,
+            abbreviation = "",
+            significandDivisor = 1,
+            fractionDivisor = 1,
+            abbreviationIsGlobal = false,
+        },
     }
 end
 
@@ -84,9 +134,15 @@ end
 
 -- Locale-specific algorithms: [localeCode] -> breakpoint-table builder.
 local localeBuilders = {
-    zhCN = function() return CJKBreakpoints(CJK_GLYPHS.zhCN) end,
-    zhTW = function() return CJKBreakpoints(CJK_GLYPHS.zhTW) end,
-    koKR = function() return CJKBreakpoints(CJK_GLYPHS.koKR) end,
+    zhCN = function()
+        return CJKBreakpoints(CJK_GLYPHS.zhCN)
+    end,
+    zhTW = function()
+        return CJKBreakpoints(CJK_GLYPHS.zhTW)
+    end,
+    koKR = function()
+        return CJKBreakpoints(CJK_GLYPHS.koKR)
+    end,
 }
 
 -- A locale may add or replace its algorithm (e.g. from its CludesUILocales
@@ -133,7 +189,9 @@ local STANDARD_THRESHOLD = CludesUI.IS_FOREVER and 10000 or nil
 local DEFAULT_THRESHOLD = CludesUI.IS_FOREVER and 10000 or 1000
 
 local function NewConfig(rows, threshold)
-    if threshold then rows = TrimTiers(rows, threshold) end
+    if threshold then
+        rows = TrimTiers(rows, threshold)
+    end
     return { config = CreateAbbreviateConfig(rows) }
 end
 
@@ -184,8 +242,12 @@ end
 --                                      threshold = 1000|10000|100000 } } }
 function CludesUI.GetNumberFormatDB(create)
     local active = ActiveProfile()
-    if not active then return nil end
-    if create and not active.numberFormat then active.numberFormat = {} end
+    if not active then
+        return nil
+    end
+    if create and not active.numberFormat then
+        active.numberFormat = {}
+    end
     return active.numberFormat
 end
 
@@ -207,9 +269,13 @@ end
 local function TypeSettings(nf, valueType)
     local t = nf and nf.types and nf.types[valueType]
     local precision = t and t.precision
-    if not VALID_PRECISION[precision] then precision = "standard" end
+    if not VALID_PRECISION[precision] then
+        precision = "standard"
+    end
     local threshold = t and t.threshold
-    if not VALID_THRESHOLD[threshold] then threshold = DEFAULT_THRESHOLD end
+    if not VALID_THRESHOLD[threshold] then
+        threshold = DEFAULT_THRESHOLD
+    end
     return precision, threshold
 end
 
@@ -223,8 +289,8 @@ end
 -- Unit bases, largest first: { base, upper, lower }.
 local WESTERN_UNITS = {
     { 1000000000, "B", "b" },
-    { 1000000,    "M", "m" },
-    { 1000,       "K", "k" },
+    { 1000000, "M", "m" },
+    { 1000, "K", "k" },
 }
 
 -- precision "smart" | 0 | 1 | 2, glyphs (CJK) or nil (K/M/B) -> rows, largest first.
@@ -247,15 +313,33 @@ local function BuildRows(precision, glyphs, lower)
                 local bp = base * 10 ^ k
                 if not cap or bp < cap then
                     local d = 10 ^ (2 - k)
-                    rows[#rows + 1] = { breakpoint = bp, abbreviation = abbr, significandDivisor = base / d, fractionDivisor = d, abbreviationIsGlobal = false }
+                    rows[#rows + 1] = {
+                        breakpoint = bp,
+                        abbreviation = abbr,
+                        significandDivisor = base / d,
+                        fractionDivisor = d,
+                        abbreviationIsGlobal = false,
+                    }
                 end
             end
         else
             local d = 10 ^ precision
-            rows[#rows + 1] = { breakpoint = base, abbreviation = abbr, significandDivisor = base / d, fractionDivisor = d, abbreviationIsGlobal = false }
+            rows[#rows + 1] = {
+                breakpoint = base,
+                abbreviation = abbr,
+                significandDivisor = base / d,
+                fractionDivisor = d,
+                abbreviationIsGlobal = false,
+            }
         end
     end
-    rows[#rows + 1] = { breakpoint = 1, abbreviation = "", significandDivisor = 1, fractionDivisor = 1, abbreviationIsGlobal = false }
+    rows[#rows + 1] = {
+        breakpoint = 1,
+        abbreviation = "",
+        significandDivisor = 1,
+        fractionDivisor = 1,
+        abbreviationIsGlobal = false,
+    }
     return rows
 end
 
@@ -294,15 +378,26 @@ local function ResolveOptions(valueType, forceWestern)
     local precision, threshold = TypeSettings(nf, valueType)
     local glyphs, western = ActiveUnits(nf)
     local lower = nf ~= nil and nf.case == "lower" and not glyphs
-    if forceWestern then glyphs, western = nil, true end
+    if forceWestern then
+        glyphs, western = nil, true
+    end
 
     if precision == "standard" then
-        if western then return BuildConfig(true), active ~= nil end
-        if valueType == "meter" then return BuildConfig(false), active ~= nil end
+        if western then
+            return BuildConfig(true), active ~= nil
+        end
+        if valueType == "meter" then
+            return BuildConfig(false), active ~= nil
+        end
         return false, active ~= nil
     end
 
-    local key = (glyphs and CludesUI.LOCALE or "en") .. ":" .. precision .. ":" .. threshold .. (lower and ":l" or ":u")
+    local key = (glyphs and CludesUI.LOCALE or "en")
+        .. ":"
+        .. precision
+        .. ":"
+        .. threshold
+        .. (lower and ":l" or ":u")
     local cfg = cfgBySpec[key]
     if not cfg then
         cfg = NewConfig(BuildRows(precision, glyphs, lower), threshold)
@@ -325,11 +420,17 @@ function CludesUI.NumberFormatOptions(valueType, forceWestern)
     if o == nil then
         local cacheable
         o, cacheable = ResolveOptions(valueType, forceWestern)
-        if not lastSignature then lastSignature = Signature() end
+        if not lastSignature then
+            lastSignature = Signature()
+        end
         if cacheable then
             cache[valueType] = o
             if valueType == "meter" then
-                if forceWestern then meterOptsW = o else meterOpts = o end
+                if forceWestern then
+                    meterOptsW = o
+                else
+                    meterOpts = o
+                end
             end
         end
     end
@@ -356,19 +457,27 @@ function CludesUI.RefreshNumberFormat()
     wipe(optsByTypeW)
     meterOpts, meterOptsW = nil, nil
     local signature = Signature()
-    if signature == lastSignature then return end
+    if signature == lastSignature then
+        return
+    end
     local drawn = lastSignature ~= nil
     lastSignature = signature
-    if not drawn then return end
+    if not drawn then
+        return
+    end
     local handler = geterrorhandler()
-    for i = 1, #refreshCallbacks do xpcall(refreshCallbacks[i], handler) end
+    for i = 1, #refreshCallbacks do
+        xpcall(refreshCallbacks[i], handler)
+    end
 end
 
 -- CludesUI.ResetNumberFormat()
 --   The active profile back to the default Number Format, then redrawn.
 function CludesUI.ResetNumberFormat()
     local active = ActiveProfile()
-    if active then active.numberFormat = nil end
+    if active then
+        active.numberFormat = nil
+    end
     CludesUI.RefreshNumberFormat()
 end
 
@@ -391,8 +500,12 @@ end
 local IS_FOREVER = CludesUI.IS_FOREVER
 function CludesUI.AbbreviateValue(v, valueType)
     local opts = NumberFormatOptions(valueType)
-    if opts then return AbbreviateNumbers(v, opts) end
-    if IS_FOREVER then return AbbreviateNumbers(v, BuildConfig(false)) end
+    if opts then
+        return AbbreviateNumbers(v, opts)
+    end
+    if IS_FOREVER then
+        return AbbreviateNumbers(v, BuildConfig(false))
+    end
     return AbbreviateNumbers(v)
 end
 
@@ -405,7 +518,9 @@ end
 do
     local probe
     function CludesUI.IsZeroValue(v)
-        if not issecretvalue(v) then return v == 0 end
+        if not issecretvalue(v) then
+            return v == 0
+        end
         if not probe then
             local holder = CreateFrame("Frame")
             holder:Hide()

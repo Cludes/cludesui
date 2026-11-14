@@ -271,7 +271,7 @@ end
 -- Legacy truth is LIVE bmIndicators, deliberately even while a BM override
 -- fork is applied: the runtime pointer says live IS the fork, so the store
 -- must mirror it (the first harvest banks live v2 data into the fork's
--- layer). Baseline and other forks convert lazily in _ERF_BM2ApplyLayer.
+-- layer). Baseline and other forks convert lazily in _CURF_BM2ApplyLayer.
 local function ImportLegacyProfile(p, b)
     local fork = ns.BM2_ConvertLegacySet(p.bmIndicators, p.bmDisplayMode)
     b.specs = fork.specs
@@ -305,7 +305,7 @@ end
 -------------------------------------------------------------------------------
 
 -- Snapshot of the live v2 fork data for layer harvests.
-function _G._ERF_BM2HarvestFork()
+function _G._CURF_BM2HarvestFork()
     local b = Store()
     if not b then return nil end
     return { specs = LegacyCopy(b.specs), seeded = LegacyCopy(b.seeded) }
@@ -317,7 +317,7 @@ end
 -- content (healer keys + the shared non-healer key) pre-seeded EMPTY, so nothing
 -- renders anywhere until the user builds it; the additive group buckets start
 -- empty either way.
-function _G._ERF_BM2PresetFork(kind)
+function _G._CURF_BM2PresetFork(kind)
     local out = { specs = {}, seeded = {} }
     -- WoW Forever builds "default" exactly like "empty": nothing seeds there,
     -- and the pre-seeded payload reads blank on the other client as well
@@ -337,7 +337,7 @@ end
 -- Applies a BM layer's v2 payload into the live store, converting legacy-only
 -- layers in place on first touch. layer.bm2 doubles as the conversion marker:
 -- layers already carrying v2 data are never re-derived from legacy fields.
-function _G._ERF_BM2ApplyLayer(layer)
+function _G._CURF_BM2ApplyLayer(layer)
     local b = Store()
     if not b or not layer then return end
     if not layer.bm2 then
@@ -1093,7 +1093,7 @@ end
 -- re-reads them on every geometry fingerprint/anchor pass, so a fresh table
 -- per call freezes position/growth edits until reload. Not keyed by the store
 -- table: an override layer swap replaces every store indicator with a copy
--- (_ERF_BM2ApplyLayer) without changing the container signature. Bounded by
+-- (_CURF_BM2ApplyLayer) without changing the container signature. Bounded by
 -- the indicators ever rendered this session. [bucket][id] -> view: the
 -- per-button container builds call this too, so the key is the id itself (a
 -- string only for id-less legacy rows).

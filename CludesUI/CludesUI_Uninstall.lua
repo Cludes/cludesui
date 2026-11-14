@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Uninstall.lua
 --  The game settings CludesUI changes that outlive it, and what puts them
@@ -66,14 +68,16 @@ local KEY = "restoreOnUninstall"
 -- A standalone build is one addon: no part of it can be off while it runs
 -- (the Lite lifecycle's folder-name test, which the build never renames).
 local IS_STANDALONE = ADDON_NAME:find("Standalone") ~= nil
-local _fresh       -- nil until this addon's saved data has loaded
+local _fresh -- nil until this addon's saved data has loaded
 local _uninstalled -- set once Uninstall ran: nothing re-applies before the reload
 local _putBack = {} -- lowercase CVar names written back this session
 
 -- The account started fresh: no saved data, or no profile holding any
 -- module's settings yet (the first-install picker's own test).
 local function IsFreshAccount(db)
-    if type(db) ~= "table" then return true end
+    if type(db) ~= "table" then
+        return true
+    end
     if type(db.profiles) == "table" then
         for _, prof in pairs(db.profiles) do
             if type(prof) == "table" and type(prof.addons) == "table" and next(prof.addons) then
@@ -102,11 +106,15 @@ end
 -- with peek while it holds nothing).
 local function CharRecord(peek)
     local guid = UnitGUID("player")
-    if not guid then return nil end
+    if not guid then
+        return nil
+    end
     local r = Record()
     local chars = r.chars
     if not chars then
-        if peek then return nil end
+        if peek then
+            return nil
+        end
         chars = {}
         r.chars = chars
     end
@@ -120,7 +128,10 @@ end
 
 local function Sub(t, k)
     local s = t[k]
-    if not s then s = {}; t[k] = s end
+    if not s then
+        s = {}
+        t[k] = s
+    end
     return s
 end
 
@@ -142,7 +153,9 @@ CludesUI.Lite.OnSavedVariablesLoaded(function()
     f:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         Record()
-        if IS_STANDALONE then return end
+        if IS_STANDALONE then
+            return
+        end
         -- After a reload in combat the module pass waits for it to end: some
         -- CVars cannot change in combat.
         if InCombatLockdown() then
@@ -162,14 +175,20 @@ local GetCVar, GetCVarBitfield = C_CVar.GetCVar, C_CVar.GetCVarBitfield
 -- per-character one (nil while the character is unknown).
 local function CVarRoot(name)
     local _, _, _, perChar = C_CVar.GetCVarInfo(name)
-    if perChar then return CharRecord() end
+    if perChar then
+        return CharRecord()
+    end
     return Record()
 end
 
 -- What the game's own SetCVar passes on: true/false as "1"/"0", the rest as text.
 local function CVarString(value)
-    if type(value) == "boolean" then return value and "1" or "0" end
-    if value ~= nil then return tostring(value) end
+    if type(value) == "boolean" then
+        return value and "1" or "0"
+    end
+    if value ~= nil then
+        return tostring(value)
+    end
     return nil
 end
 
@@ -178,16 +197,22 @@ end
 local function Note(name, before, owner)
     -- Nothing to record into before this addon's saved data loads, and an
     -- unknown CVar is nothing to put back.
-    if _fresh == nil or before == nil then return end
+    if _fresh == nil or before == nil then
+        return
+    end
     local root = CVarRoot(name)
-    if not root then return end
+    if not root then
+        return
+    end
     local t = Sub(root, "cvar")
     local key = name:lower()
     local e = t[key]
     if not e then
         e = {}
         t[key] = e
-        if Record().fresh then e.b = before end
+        if Record().fresh then
+            e.b = before
+        end
     end
     e.a = GetCVar(name)
     e.o = owner
@@ -197,18 +222,24 @@ end
 --- that sets it (its addon folder name, also from its options page; nil for
 --- the parent): turning that module off puts the value back.
 function CludesUI.SetCVar(name, value, owner)
-    if _uninstalled then return false end
+    if _uninstalled then
+        return false
+    end
     local before = GetCVar(name)
     local ok = C_CVar.SetCVar(name, CVarString(value))
     -- A refused write (a locked or protected CVar) changed nothing.
-    if ok then Note(name, before, owner) end
+    if ok then
+        Note(name, before, owner)
+    end
     return ok
 end
 
 --- For a CVar CludesUI holds only for a while: SetCVar, keeping what the
 --- record held before, which ReleaseCVar puts back.
 function CludesUI.HoldCVar(name, value, owner)
-    if _uninstalled then return false end
+    if _uninstalled then
+        return false
+    end
     local cur = GetCVar(name)
     local root = _fresh ~= nil and cur ~= nil and CVarRoot(name)
     local key = name:lower()
@@ -218,7 +249,9 @@ function CludesUI.HoldCVar(name, value, owner)
         snap = { e = e and { b = e.b, a = e.a, o = e.o } or false, v = cur, o = owner }
     end
     local ok = CludesUI.SetCVar(name, value, owner)
-    if ok and snap then Sub(root, "held")[key] = snap end
+    if ok and snap then
+        Sub(root, "held")[key] = snap
+    end
     return ok
 end
 
@@ -229,7 +262,9 @@ function CludesUI.ReleaseCVar(name, value, owner)
     local key = name:lower()
     -- After Uninstall the record is final, and what Uninstall put back stays.
     if _uninstalled then
-        if value == nil or _putBack[key] then return false end
+        if value == nil or _putBack[key] then
+            return false
+        end
         return C_CVar.SetCVar(name, CVarString(value))
     end
     local prior = GetCVar(name)
@@ -237,12 +272,18 @@ function CludesUI.ReleaseCVar(name, value, owner)
     if value ~= nil then
         ok = C_CVar.SetCVar(name, CVarString(value))
         -- Refused: the hold stands (Uninstall or the module pass releases it).
-        if not ok then return ok end
+        if not ok then
+            return ok
+        end
     end
     local cur = GetCVar(name)
-    if _fresh == nil or cur == nil then return ok end
+    if _fresh == nil or cur == nil then
+        return ok
+    end
     local root = CVarRoot(name)
-    if not root then return ok end
+    if not root then
+        return ok
+    end
     local h = root.held and root.held[key]
     if h and cur == h.v then
         root.held[key] = nil
@@ -270,7 +311,9 @@ end
 --- SetCVarBitfield likewise. Recorded per bit, so only the bits CludesUI
 --- set go back, never one the game set since.
 function CludesUI.SetCVarBitfield(name, index, value, owner)
-    if _uninstalled then return false end
+    if _uninstalled then
+        return false
+    end
     local before = GetCVarBitfield(name, index)
     local ok = C_CVar.SetCVarBitfield(name, index, value)
     local root = ok and _fresh ~= nil and before ~= nil and CVarRoot(name)
@@ -280,7 +323,9 @@ function CludesUI.SetCVarBitfield(name, index, value, owner)
         if not e then
             e = {}
             t[index] = e
-            if Record().fresh then e.b = before end
+            if Record().fresh then
+                e.b = before
+            end
         end
         e.a = GetCVarBitfield(name, index)
         e.o = owner
@@ -307,19 +352,27 @@ end
 
 local function ReleaseHolds(root)
     local held = root and root.held
-    if not held then return end
-    for key, h in pairs(held) do ReleaseHold(root, key, h) end
+    if not held then
+        return
+    end
+    for key, h in pairs(held) do
+        ReleaseHold(root, key, h)
+    end
 end
 
 --- The player changed a CVar while owner held it: the hold ends with no write,
 --- and the record goes back as it was before the hold, so neither Uninstall
 --- nor a later login puts the held value back over the player's.
 function CludesUI.DropHold(name, owner)
-    if _fresh == nil then return end
+    if _fresh == nil then
+        return
+    end
     local root = CVarRoot(name)
     local key = name:lower()
     local h = root and root.held and root.held[key]
-    if not (h and h.o == owner) then return end
+    if not (h and h.o == owner) then
+        return
+    end
     root.held[key] = nil
     if h.e then
         Sub(root, "cvar")[key] = h.e
@@ -333,17 +386,23 @@ end
 --- as the module pass does, the value from before the hold only while the CVar
 --- still reads CludesUI's.
 function CludesUI.ReleaseStaleHold(name, owner)
-    if _uninstalled or _fresh == nil then return end
+    if _uninstalled or _fresh == nil then
+        return
+    end
     local root = CVarRoot(name)
     local key = name:lower()
     local h = root and root.held and root.held[key]
-    if h and h.o == owner then ReleaseHold(root, key, h) end
+    if h and h.o == owner then
+        ReleaseHold(root, key, h)
+    end
 end
 
 -- Puts back every recorded CVar that still holds CludesUI's value: to its
 -- snapshot, else the game's default.
 local function RestoreCVars(t)
-    if not t then return end
+    if not t then
+        return
+    end
     for name, e in pairs(t) do
         local cur = GetCVar(name)
         if cur ~= nil and cur == e.a then
@@ -361,22 +420,32 @@ end
 -- the bit of index in the CVar's default.
 local function DefaultBit(name, index)
     local def = C_CVar.GetCVarDefault(name)
-    if type(def) ~= "string" then return nil end
+    if type(def) ~= "string" then
+        return nil
+    end
     local i = index - 1
     local byte = def:byte(2 + math.floor(i / 6))
-    if not byte then return false end
+    if not byte then
+        return false
+    end
     return math.floor(byte / 2 ^ (i % 6)) % 2 == 1
 end
 
 local function RestoreBits(t)
-    if not t then return end
+    if not t then
+        return
+    end
     for name, bits in pairs(t) do
         for index, e in pairs(bits) do
             local cur = GetCVarBitfield(name, index)
             if cur ~= nil and cur == e.a then
                 local want = e.b
-                if want == nil then want = DefaultBit(name, index) end
-                if want ~= nil and want ~= cur then pcall(C_CVar.SetCVarBitfield, name, index, want) end
+                if want == nil then
+                    want = DefaultBit(name, index)
+                end
+                if want ~= nil and want ~= cur then
+                    pcall(C_CVar.SetCVarBitfield, name, index, want)
+                end
             end
         end
     end
@@ -390,8 +459,11 @@ end
 -- for a record of the account's (acct), which every character shares, it is
 -- off for every character too, or gone.
 local function ModuleOff(owner, acct)
-    if owner == nil or owner == ADDON_NAME or C_AddOns.IsAddOnLoaded(owner) then return false end
-    return not acct or not C_AddOns.DoesAddOnExist(owner)
+    if owner == nil or owner == ADDON_NAME or C_AddOns.IsAddOnLoaded(owner) then
+        return false
+    end
+    return not acct
+        or not C_AddOns.DoesAddOnExist(owner)
         or C_AddOns.GetAddOnEnableState(owner) == Enum.AddOnEnableState.None
 end
 
@@ -401,13 +473,19 @@ end
 -- the CVar holds CludesUI's value, so Uninstall can still put it back to
 -- the game's default. A hold such a module left open is released.
 local function RevertOffModules(root, acct)
-    if not root then return end
+    if not root then
+        return
+    end
     local held = root.held
     if held then
         for key, h in pairs(held) do
-            if ModuleOff(h.o) then ReleaseHold(root, key, h) end
+            if ModuleOff(h.o) then
+                ReleaseHold(root, key, h)
+            end
         end
-        if next(held) == nil then root.held = nil end
+        if next(held) == nil then
+            root.held = nil
+        end
     end
     local t = root.cvar
     if t then
@@ -418,10 +496,14 @@ local function RevertOffModules(root, acct)
                     pcall(C_CVar.SetCVar, key, e.b)
                     _putBack[key] = true
                 end
-                if e.b ~= nil or cur ~= e.a then t[key] = nil end
+                if e.b ~= nil or cur ~= e.a then
+                    t[key] = nil
+                end
             end
         end
-        if next(t) == nil then root.cvar = nil end
+        if next(t) == nil then
+            root.cvar = nil
+        end
     end
     local bits = root.bits
     if bits then
@@ -432,12 +514,18 @@ local function RevertOffModules(root, acct)
                     if e.b ~= nil and e.b ~= e.a and cur == e.a then
                         pcall(C_CVar.SetCVarBitfield, name, index, e.b)
                     end
-                    if e.b ~= nil or cur ~= e.a then byIndex[index] = nil end
+                    if e.b ~= nil or cur ~= e.a then
+                        byIndex[index] = nil
+                    end
                 end
             end
-            if next(byIndex) == nil then bits[name] = nil end
+            if next(byIndex) == nil then
+                bits[name] = nil
+            end
         end
-        if next(bits) == nil then root.bits = nil end
+        if next(bits) == nil then
+            root.bits = nil
+        end
     end
 end
 
@@ -446,9 +534,13 @@ end
 CheckModules = function()
     RevertOffModules(Record(), true)
     local c = CharRecord(true)
-    if not c then return end
+    if not c then
+        return
+    end
     RevertOffModules(c, false)
-    if next(c) == nil then Record().chars[UnitGUID("player")] = nil end
+    if next(c) == nil then
+        Record().chars[UnitGUID("player")] = nil
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -460,7 +552,9 @@ local CHAR_LAYOUT = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType
 --- exit, over anything written meanwhile.
 function CludesUI.EditModeOpen()
     local emf = _G.EditModeManagerFrame
-    if not emf then return false end
+    if not emf then
+        return false
+    end
     return (emf.editModeActive or (emf.IsShown and emf:IsShown())) and true or false
 end
 local EditModeOpen = CludesUI.EditModeOpen
@@ -472,12 +566,18 @@ local EditModeOpen = CludesUI.EditModeOpen
 --- short list).
 function CludesUI.EditModeLayoutsForSave()
     local ok, info = pcall(C_EditMode.GetLayouts)
-    if not ok or type(info) ~= "table" or type(info.layouts) ~= "table" then return nil end
+    if not ok or type(info) ~= "table" or type(info.layouts) ~= "table" then
+        return nil
+    end
     local mgr = EditModePresetLayoutManager
     local presets = mgr and mgr.GetCopyOfPresetLayouts and mgr:GetCopyOfPresetLayouts()
-    if type(presets) ~= "table" or #presets == 0 then return nil end
+    if type(presets) ~= "table" or #presets == 0 then
+        return nil
+    end
     local numPresets = #presets
-    for i = 1, #info.layouts do presets[numPresets + i] = info.layouts[i] end
+    for i = 1, #info.layouts do
+        presets[numPresets + i] = info.layouts[i]
+    end
     info.layouts = presets
     return info, numPresets
 end
@@ -489,21 +589,31 @@ local LayoutsForSave = CludesUI.EditModeLayoutsForSave
 -- every login.
 local function ListLayouts(acct, mine)
     local newA, newM = not acct.emKnown, mine ~= nil and not mine.emKnown
-    if not (newA or newM) then return end
+    if not (newA or newM) then
+        return
+    end
     local ok, info = pcall(C_EditMode.GetLayouts)
-    if not ok or type(info) ~= "table" or type(info.layouts) ~= "table" then return end
+    if not ok or type(info) ~= "table" or type(info.layouts) ~= "table" then
+        return
+    end
     local a, m = newA and {} or nil, newM and {} or nil
     for _, layout in ipairs(info.layouts) do
         if type(layout) == "table" and type(layout.layoutName) == "string" then
             if layout.layoutType == CHAR_LAYOUT then
-                if m then m[layout.layoutName] = true end
+                if m then
+                    m[layout.layoutName] = true
+                end
             elseif a then
                 a[layout.layoutName] = true
             end
         end
     end
-    if a then acct.emKnown = a end
-    if m then mine.emKnown = m end
+    if a then
+        acct.emKnown = a
+    end
+    if m then
+        mine.emKnown = m
+    end
 end
 
 -- The record of key (a setting, or "anchor") of sysInfo in layout, made on
@@ -513,11 +623,21 @@ local function EditModeEntry(layout, sysInfo, key, before, fallback)
     local r = Record()
     local isChar = layout.layoutType == CHAR_LAYOUT
     local mine
-    if r.fresh or isChar then mine = CharRecord() end
-    if r.fresh then ListLayouts(r, mine) end
+    if r.fresh or isChar then
+        mine = CharRecord()
+    end
+    if r.fresh then
+        ListLayouts(r, mine)
+    end
     local root
-    if isChar then root = mine else root = r end
-    if not root then return nil end
+    if isChar then
+        root = mine
+    else
+        root = r
+    end
+    if not root then
+        return nil
+    end
     local t = Sub(Sub(Sub(root, "em"), layout.layoutName), sysInfo.system * 1000 + (sysInfo.systemIndex or 0))
     local e = t[key]
     if not e then
@@ -542,26 +662,41 @@ end
 --- setting that only means something together with this one (a size's
 --- hundreds and the rest): the two go back together or not at all.
 function CludesUI.NoteEditModeSetting(layout, sysInfo, setting, before, value, fallback, pair)
-    if _fresh == nil or before == nil then return end
-    if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then return end
+    if _fresh == nil or before == nil then
+        return
+    end
+    if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then
+        return
+    end
     local e = EditModeEntry(layout, sysInfo, setting, before, fallback)
-    if not e then return end
+    if not e then
+        return
+    end
     e.a = value
     e.p = pair
 end
 
 local function AnchorCopy(info)
-    if type(info) ~= "table" then return nil end
+    if type(info) ~= "table" then
+        return nil
+    end
     return {
-        point = info.point, relativeTo = info.relativeTo, relativePoint = info.relativePoint,
-        offsetX = info.offsetX, offsetY = info.offsetY,
+        point = info.point,
+        relativeTo = info.relativeTo,
+        relativePoint = info.relativePoint,
+        offsetX = info.offsetX,
+        offsetY = info.offsetY,
     }
 end
 
 -- A system's position: its anchors and whether Edit Mode counts it as the
 -- default one.
 local function Position(sys)
-    return { i = AnchorCopy(sys.anchorInfo), i2 = AnchorCopy(sys.anchorInfo2), d = sys.isInDefaultPosition == true }
+    return {
+        i = AnchorCopy(sys.anchorInfo),
+        i2 = AnchorCopy(sys.anchorInfo2),
+        d = sys.isInDefaultPosition == true,
+    }
 end
 
 --- Before CludesUI moves sysInfo (a system entry of layout, as for
@@ -569,18 +704,28 @@ end
 --- system's position then and anchor. Where the position from before is
 --- unknown, Uninstall leaves the system where it is.
 function CludesUI.NoteEditModeAnchor(layout, sysInfo, anchor)
-    if _fresh == nil or type(anchor) ~= "table" then return end
-    if type(sysInfo) ~= "table" or type(sysInfo.anchorInfo) ~= "table" then return end
-    if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then return end
+    if _fresh == nil or type(anchor) ~= "table" then
+        return
+    end
+    if type(sysInfo) ~= "table" or type(sysInfo.anchorInfo) ~= "table" then
+        return
+    end
+    if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then
+        return
+    end
     local e = EditModeEntry(layout, sysInfo, "anchor", Position(sysInfo))
-    if not e then return end
+    if not e then
+        return
+    end
     e.a = AnchorCopy(anchor)
 end
 
 -- The rows of one system that go back, as row -> value (nil: none).
 local function SystemRestores(sys, bySys)
     local rows = {}
-    for _, row in ipairs(sys.settings) do rows[row.setting] = row end
+    for _, row in ipairs(sys.settings) do
+        rows[row.setting] = row
+    end
     local function Ours(setting)
         local e, row = bySys[setting], rows[setting]
         return e ~= nil and row ~= nil and row.value == e.a
@@ -589,7 +734,9 @@ local function SystemRestores(sys, bySys)
     for setting, e in pairs(bySys) do
         if Ours(setting) and (e.p == nil or Ours(e.p)) then
             local want = e.b
-            if want == nil then want = e.f end
+            if want == nil then
+                want = e.f
+            end
             if want ~= nil and want ~= rows[setting].value then
                 out = out or {}
                 out[rows[setting]] = want
@@ -601,11 +748,17 @@ end
 
 -- Within Edit Mode's own tolerance for anchors (0.1).
 local function SameAnchor(a, b)
-    return type(a) == "table" and type(b) == "table"
-        and a.point == b.point and a.relativeTo == b.relativeTo and a.relativePoint == b.relativePoint
-        and type(a.offsetX) == "number" and type(b.offsetX) == "number"
-        and type(a.offsetY) == "number" and type(b.offsetY) == "number"
-        and math.abs(a.offsetX - b.offsetX) < 0.1 and math.abs(a.offsetY - b.offsetY) < 0.1
+    return type(a) == "table"
+        and type(b) == "table"
+        and a.point == b.point
+        and a.relativeTo == b.relativeTo
+        and a.relativePoint == b.relativePoint
+        and type(a.offsetX) == "number"
+        and type(b.offsetX) == "number"
+        and type(a.offsetY) == "number"
+        and type(b.offsetY) == "number"
+        and math.abs(a.offsetX - b.offsetX) < 0.1
+        and math.abs(a.offsetY - b.offsetY) < 0.1
 end
 
 -- Puts the system's position back while it is still CludesUI's (its only
@@ -615,8 +768,12 @@ local function RestoreAnchor(sys, e)
         return false
     end
     local want = e.b
-    if type(want) ~= "table" or not want.i then return false end
-    if want.i2 == nil and SameAnchor(sys.anchorInfo, want.i) then return false end
+    if type(want) ~= "table" or not want.i then
+        return false
+    end
+    if want.i2 == nil and SameAnchor(sys.anchorInfo, want.i) then
+        return false
+    end
     sys.anchorInfo = AnchorCopy(want.i)
     sys.anchorInfo2 = AnchorCopy(want.i2)
     sys.isInDefaultPosition = want.d == true
@@ -625,28 +782,42 @@ end
 
 -- True once the layouts were gone through (false: they could not be read).
 local function RestoreEditMode(acct, mine)
-    if not (acct or mine) then return true end
+    if not (acct or mine) then
+        return true
+    end
     local info, numPresets = LayoutsForSave()
-    if not info then return false end
+    if not info then
+        return false
+    end
     local changed = false
     for i = numPresets + 1, #info.layouts do
         local layout = info.layouts[i]
         local src
-        if layout.layoutType == CHAR_LAYOUT then src = mine else src = acct end
+        if layout.layoutType == CHAR_LAYOUT then
+            src = mine
+        else
+            src = acct
+        end
         local byLayout = src and src[layout.layoutName]
         if byLayout and type(layout.systems) == "table" then
             for _, sys in ipairs(layout.systems) do
                 local bySys = byLayout[sys.system * 1000 + (sys.systemIndex or 0)]
                 local out = bySys and type(sys.settings) == "table" and SystemRestores(sys, bySys)
                 if out then
-                    for row, want in pairs(out) do row.value = want end
+                    for row, want in pairs(out) do
+                        row.value = want
+                    end
                     changed = true
                 end
-                if bySys and RestoreAnchor(sys, bySys.anchor) then changed = true end
+                if bySys and RestoreAnchor(sys, bySys.anchor) then
+                    changed = true
+                end
             end
         end
     end
-    if changed then C_EditMode.SaveLayouts(info) end
+    if changed then
+        C_EditMode.SaveLayouts(info)
+    end
     return true
 end
 
@@ -657,25 +828,35 @@ end
 --- SetChatWindowSize for a font size CludesUI applies on its own (stored
 --- per character, like the window itself).
 function CludesUI.SetChatWindowSize(index, size)
-    if _uninstalled then return end
+    if _uninstalled then
+        return
+    end
     local _, before = GetChatWindowInfo(index)
     SetChatWindowSize(index, size)
-    if _fresh == nil or before == nil then return end
+    if _fresh == nil or before == nil then
+        return
+    end
     local c = CharRecord()
-    if not c then return end
+    if not c then
+        return
+    end
     local t = Sub(c, "chatFont")
     local e = t[index]
     if not e then
         e = {}
         t[index] = e
-        if Record().fresh then e.b = before end
+        if Record().fresh then
+            e.b = before
+        end
     end
     local _, after = GetChatWindowInfo(index)
     e.a = after
 end
 
 local function RestoreChatFonts(t)
-    if not t then return end
+    if not t then
+        return
+    end
     for index, e in pairs(t) do
         local _, cur = GetChatWindowInfo(index)
         if cur ~= nil and cur == e.a and e.b ~= nil and e.b ~= cur then
@@ -693,13 +874,23 @@ end
 --- action the player gave the key counts; an empty key or one of
 --- CludesUI's own commands never replaces it.
 function CludesUI.NoteBinding(key, before)
-    if _fresh == nil or not key then return end
+    if _fresh == nil or not key then
+        return
+    end
     local root
-    if GetCurrentBindingSet() == 2 then root = CharRecord() else root = Record() end
-    if not root then return end
+    if GetCurrentBindingSet() == 2 then
+        root = CharRecord()
+    else
+        root = Record()
+    end
+    if not root then
+        return
+    end
     local t = Sub(root, "bind")
     local action = type(before) == "string" and before ~= "" and not before:find("^CUI_") and before or false
-    if t[key] == nil or action then t[key] = action end
+    if t[key] == nil or action then
+        t[key] = action
+    end
 end
 
 -- A key CludesUI took from another action goes back to it while the key
@@ -710,7 +901,11 @@ end
 local function RestoreBindings(acct, mine)
     local set = GetCurrentBindingSet()
     local rec
-    if set == 2 then rec = mine.bind else rec = acct.bind end
+    if set == 2 then
+        rec = mine.bind
+    else
+        rec = acct.bind
+    end
     if rec then
         local changed = false
         for key, before in pairs(rec) do
@@ -720,7 +915,9 @@ local function RestoreBindings(acct, mine)
                 changed = true
             end
         end
-        if changed then SaveBindings(set) end
+        if changed then
+            SaveBindings(set)
+        end
     end
     return set
 end
@@ -761,7 +958,9 @@ end
 --- nothing changed, in combat (key bindings and protected CVars cannot change
 --- then) and while Edit Mode is open. Returns true when it ran.
 function CludesUI.Uninstall()
-    if _uninstalled or InCombatLockdown() or EditModeOpen() then return false end
+    if _uninstalled or InCombatLockdown() or EditModeOpen() then
+        return false
+    end
     -- From here on nothing re-applies a setting, not even a handler the
     -- writes below wake.
     _uninstalled = true
@@ -773,21 +972,37 @@ function CludesUI.Uninstall()
     -- failed keeps its records for a later Uninstall.
     pcall(ReleaseHolds, r)
     pcall(ReleaseHolds, mine)
-    if pcall(RestoreCVars, r.cvar) then r.cvar = nil end
-    if pcall(RestoreCVars, mine.cvar) then mine.cvar = nil end
-    if pcall(RestoreBits, r.bits) then r.bits = nil end
-    if pcall(RestoreBits, mine.bits) then mine.bits = nil end
+    if pcall(RestoreCVars, r.cvar) then
+        r.cvar = nil
+    end
+    if pcall(RestoreCVars, mine.cvar) then
+        mine.cvar = nil
+    end
+    if pcall(RestoreBits, r.bits) then
+        r.bits = nil
+    end
+    if pcall(RestoreBits, mine.bits) then
+        mine.bits = nil
+    end
     local okEM, emDone = pcall(RestoreEditMode, r.em, mine.em)
     if okEM and emDone then
         r.em, mine.em = nil, nil
         r.emKnown, mine.emKnown = nil, nil
     end
-    if pcall(RestoreChatFonts, mine.chatFont) then mine.chatFont = nil end
+    if pcall(RestoreChatFonts, mine.chatFont) then
+        mine.chatFont = nil
+    end
     local okBind, set = pcall(RestoreBindings, r, mine)
     if okBind then
-        if set == 2 then mine.bind = nil else r.bind = nil end
+        if set == 2 then
+            mine.bind = nil
+        else
+            r.bind = nil
+        end
     end
-    for i = 1, #_steps do pcall(_steps[i]) end
+    for i = 1, #_steps do
+        pcall(_steps[i])
+    end
     -- Everything CludesUI changed is back, so from here on every snapshot
     -- holds the player's own values.
     r.fresh = true

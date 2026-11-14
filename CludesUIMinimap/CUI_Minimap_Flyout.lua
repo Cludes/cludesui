@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Flyout.lua
 --
@@ -10,7 +12,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local _addonVisible, cachedAddonButtons, EBS = I._addonVisible, I.cachedAddonButtons, I.EBS
@@ -23,27 +27,33 @@ local SetFlyoutToggle = I.SetFlyoutToggle
 -- Assigned in CUI_Minimap_Layout.lua (see SetMOEvaluate), so the flyout
 -- panels created here can fire it from OnShow/OnHide.
 local MO_Evaluate
-I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v) MO_Evaluate = v end
+I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v)
+    MO_Evaluate = v
+end
 
 -------------------------------------------------------------------------------
 --  Minimap Button Flyout
 -------------------------------------------------------------------------------
-local flyoutToggle = nil   -- the square trigger button
-local flyoutPanel  = nil   -- the popup grid container
-I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v) flyoutToggle = v end
-I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v) flyoutPanel = v end
-local flyoutSavedParents = {}  -- original parent/point data for restore
-local flyoutSavedRegions = {}  -- original region states for restore
+local flyoutToggle = nil -- the square trigger button
+local flyoutPanel = nil -- the popup grid container
+I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v)
+    flyoutToggle = v
+end
+I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v)
+    flyoutPanel = v
+end
+local flyoutSavedParents = {} -- original parent/point data for restore
+local flyoutSavedRegions = {} -- original region states for restore
 
 local FLYOUT_BTN_SIZE = 24
-local FLYOUT_PADDING  = 4
-local FLYOUT_COLS     = 4
+local FLYOUT_PADDING = 4
+local FLYOUT_COLS = 4
 
 -- Textures that are decorative borders/backgrounds on minimap buttons
 local MINIMAP_BTN_JUNK = {
-    [136467] = true,  -- UI-Minimap-Background
-    [136430] = true,  -- MiniMap-TrackingBorder
-    [136477] = true,  -- UI-Minimap-ZoomButton-Highlight (used on some buttons)
+    [136467] = true, -- UI-Minimap-Background
+    [136430] = true, -- MiniMap-TrackingBorder
+    [136477] = true, -- UI-Minimap-ZoomButton-Highlight (used on some buttons)
 }
 local MINIMAP_BTN_JUNK_PATH = {
     ["Interface\\Minimap\\MiniMap%-TrackingBorder"] = true,
@@ -56,11 +66,15 @@ local function IsJunkTexture(region)
         return false
     end
     local texID = region.GetTextureFileID and region:GetTextureFileID()
-    if texID and MINIMAP_BTN_JUNK[texID] then return true end
+    if texID and MINIMAP_BTN_JUNK[texID] then
+        return true
+    end
     local texPath = region:GetTexture()
     if texPath and type(texPath) == "string" then
         for pattern in pairs(MINIMAP_BTN_JUNK_PATH) do
-            if texPath:match(pattern) then return true end
+            if texPath:match(pattern) then
+                return true
+            end
         end
     end
     return false
@@ -71,7 +85,8 @@ local function StripButtonDecorations(btn)
         local saved = { junk = {} }
         for _, region in ipairs({ btn:GetRegions() }) do
             if IsJunkTexture(region) then
-                saved.junk[#saved.junk + 1] = { region = region, alpha = region:GetAlpha(), shown = region:IsShown() }
+                saved.junk[#saved.junk + 1] =
+                    { region = region, alpha = region:GetAlpha(), shown = region:IsShown() }
             end
         end
         local hl = btn.GetHighlightTexture and btn:GetHighlightTexture()
@@ -102,10 +117,14 @@ end
 
 local function RestoreButtonDecorations(btn)
     local saved = flyoutSavedRegions[btn]
-    if not saved then return end
+    if not saved then
+        return
+    end
     for _, info in ipairs(saved.junk) do
         info.region:SetAlpha(info.alpha)
-        if info.shown then info.region:Show() end
+        if info.shown then
+            info.region:Show()
+        end
     end
     if saved.icon and saved.iconPoints then
         saved.icon:ClearAllPoints()
@@ -125,16 +144,23 @@ end
 local function IsUngrouped(btn)
     -- A group of one has nothing to open: the only grouped button stands on
     -- the row by itself (decided per scan, see GatherMinimapButtons).
-    if btn == EBS._soloAddonButton then return true end
+    if btn == EBS._soloAddonButton then
+        return true
+    end
     local mp = EBS.db and EBS.db.profile.minimap
-    if not mp or not mp.ungroupedButtons then return false end
+    if not mp or not mp.ungroupedButtons then
+        return false
+    end
     local name = btn:GetName()
     return name and mp.ungroupedButtons[name]
 end
 
 local function GetMinimapButtonLabel(btn)
     local name = btn:GetName() or ""
-    return name:gsub("^LibDBIcon10_", ""):gsub("^Lib_GPI_Minimap_", ""):gsub("MinimapButton$", ""):gsub("_MinimapButton$", "")
+    return name:gsub("^LibDBIcon10_", "")
+        :gsub("^Lib_GPI_Minimap_", "")
+        :gsub("MinimapButton$", "")
+        :gsub("_MinimapButton$", "")
 end
 
 local function CollectFlyoutButtons()
@@ -177,7 +203,9 @@ end
 -- Raise popups an addon parents to its button after layout above the grid. The
 -- button's own black box stays below it, where the layout pinned it.
 function EBS._RaiseLateFlyoutChildren(btn)
-    if not flyoutPanel or btn:GetParent() ~= flyoutPanel then return end
+    if not flyoutPanel or btn:GetParent() ~= flyoutPanel then
+        return
+    end
     local combat = InCombatLockdown()
     local box = GetFFD(btn).ungroupBg
     local function raise(frame, level)
@@ -196,15 +224,21 @@ end
 function EBS._MouseOverFlyoutChild(panel)
     local focus = GetMouseFoci()[1]
     while focus do
-        if focus:IsForbidden() then return false end
-        if focus == panel then return true end
+        if focus:IsForbidden() then
+            return false
+        end
+        if focus == panel then
+            return true
+        end
         focus = focus:GetParent()
     end
     return false
 end
 
 local function LayoutFlyoutButtons()
-    if not flyoutPanel then return end
+    if not flyoutPanel then
+        return
+    end
     local buttons = CollectFlyoutButtons()
     -- Same lockdown rule as HideMinimapChild: every per-button call in the loop below
     -- (SetParent/SetFrameStrata/SetPoint/SetSize/Show/SetFrameLevel) is protected and
@@ -225,7 +259,9 @@ local function LayoutFlyoutButtons()
                 buttons[kept] = btn
             end
         end
-        for i = #buttons, kept + 1, -1 do buttons[i] = nil end
+        for i = #buttons, kept + 1, -1 do
+            buttons[i] = nil
+        end
     end
     local count = #buttons
     if count == 0 then
@@ -254,7 +290,11 @@ local function LayoutFlyoutButtons()
             flyoutSavedParents[btn] = {
                 parent = btn:GetParent(),
                 strata = btn:GetFrameStrata(),
-                point = p1, relTo = rel, relPoint = p2, x = ox, y = oy,
+                point = p1,
+                relTo = rel,
+                relPoint = p2,
+                x = ox,
+                y = oy,
             }
         end
 
@@ -265,10 +305,16 @@ local function LayoutFlyoutButtons()
 
         btn:SetParent(flyoutPanel)
         -- Unlock fixed strata/level first (LibDBIcon locks these)
-        if btn.SetFixedFrameStrata then btn:SetFixedFrameStrata(false) end
-        if btn.SetFixedFrameLevel then btn:SetFixedFrameLevel(false) end
+        if btn.SetFixedFrameStrata then
+            btn:SetFixedFrameStrata(false)
+        end
+        if btn.SetFixedFrameLevel then
+            btn:SetFixedFrameLevel(false)
+        end
         btn:SetFrameStrata("DIALOG")
-        if btn.SetFixedFrameStrata then btn:SetFixedFrameStrata(true) end
+        if btn.SetFixedFrameStrata then
+            btn:SetFixedFrameStrata(true)
+        end
         btn:ClearAllPoints()
         btn:SetPoint("TOPLEFT", flyoutPanel, "TOPLEFT", xOff, yOff)
         btn:SetSize(btnSize, btnSize)
@@ -277,12 +323,20 @@ local function LayoutFlyoutButtons()
         btn:Show()
         EBS._suppressVisTrack = false
         btn:SetFrameLevel(flyoutPanel:GetFrameLevel() + 5)
-        if btn.SetFixedFrameLevel then btn:SetFixedFrameLevel(true) end
+        if btn.SetFixedFrameLevel then
+            btn:SetFixedFrameLevel(true)
+        end
         StripButtonDecorations(btn)
         -- Overlays left over from a previous ungroup cycle (or the other cell style)
-        if not boxes and GetFFD(btn).ungroupBg then GetFFD(btn).ungroupBg:Hide() end
-        if boxes and GetFFD(btn).flyoutRing then GetFFD(btn).flyoutRing:Hide() end
-        if btn._ungroupRing then btn._ungroupRing:Hide() end
+        if not boxes and GetFFD(btn).ungroupBg then
+            GetFFD(btn).ungroupBg:Hide()
+        end
+        if boxes and GetFFD(btn).flyoutRing then
+            GetFFD(btn).flyoutRing:Hide()
+        end
+        if btn._ungroupRing then
+            btn._ungroupRing:Hide()
+        end
         -- Children must ride the same strata/level as the button.
         for _, child in ipairs({ btn:GetChildren() }) do
             child:SetFrameStrata("DIALOG")
@@ -290,13 +344,19 @@ local function LayoutFlyoutButtons()
         end
         if not GetFFD(btn).lateChildHook then
             GetFFD(btn).lateChildHook = true
-            if btn:HasScript("OnClick") then btn:HookScript("OnClick", EBS._RaiseLateFlyoutChildren) end
+            if btn:HasScript("OnClick") then
+                btn:HookScript("OnClick", EBS._RaiseLateFlyoutChildren)
+            end
         end
         local icon = btn.icon or btn.Icon
         if not icon then
             for _, region in ipairs({ btn:GetRegions() }) do
-                if region:IsObjectType("Texture") and region:IsShown()
-                   and region:GetAlpha() > 0 and not IsJunkTexture(region) then
+                if
+                    region:IsObjectType("Texture")
+                    and region:IsShown()
+                    and region:GetAlpha() > 0
+                    and not IsJunkTexture(region)
+                then
                     icon = region
                     break
                 end
@@ -310,7 +370,9 @@ local function LayoutFlyoutButtons()
             icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
             pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
-            if CludesUI.PP then CludesUI.PP.DisablePixelSnap(icon) end
+            if CludesUI.PP then
+                CludesUI.PP.DisablePixelSnap(icon)
+            end
         end
         if boxes then
             -- After the child loop above, which lifted the box over the icon
@@ -336,16 +398,16 @@ end
 -- (vault tooltip); tt = named sides for ShowWidgetTooltip labels.
 EBS._Grow = {
     edge = {
-        left  = { "TOPRIGHT",   "TOPLEFT",    -4, 0 },
-        right = { "TOPLEFT",    "TOPRIGHT",    4, 0 },
-        up    = { "BOTTOMLEFT", "TOPLEFT",     0, 4 },
-        down  = { "TOPLEFT",    "BOTTOMLEFT",  0, -4 },
+        left = { "TOPRIGHT", "TOPLEFT", -4, 0 },
+        right = { "TOPLEFT", "TOPRIGHT", 4, 0 },
+        up = { "BOTTOMLEFT", "TOPLEFT", 0, 4 },
+        down = { "TOPLEFT", "BOTTOMLEFT", 0, -4 },
     },
     center = {
-        left  = { "RIGHT",  "LEFT",   -4, 0 },
-        right = { "LEFT",   "RIGHT",   4, 0 },
-        up    = { "BOTTOM", "TOP",     0, 4 },
-        down  = { "TOP",    "BOTTOM",  0, -4 },
+        left = { "RIGHT", "LEFT", -4, 0 },
+        right = { "LEFT", "RIGHT", 4, 0 },
+        up = { "BOTTOM", "TOP", 0, 4 },
+        down = { "TOP", "BOTTOM", 0, -4 },
     },
     tt = { left = "left", right = "right", up = "above", down = "below" },
 }
@@ -353,7 +415,9 @@ EBS._Grow = {
 function EBS._Grow.Dir()
     local mp = EBS.db and EBS.db.profile.minimap
     local g = (mp and mp.flyoutGrowDir) or "auto"
-    if g ~= "auto" then return g end
+    if g ~= "auto" then
+        return g
+    end
     local rp = (mp and mp.btnRowPosition) or "blUp"
     if rp == "blUp" or rp == "tlDown" or rp == "brUp" or rp == "trDown" then
         return "left"
@@ -375,7 +439,7 @@ local function EnsureFlyoutPanel()
         SetFlyoutPanel(CreateFrame("Frame", nil, overlayParent, "BackdropTemplate"))
         flyoutPanel:SetFrameStrata("DIALOG")
         flyoutPanel:SetBackdrop({
-            bgFile   = "Interface\\ChatFrame\\ChatFrameBackground",
+            bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
             edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
             edgeSize = 1,
         })
@@ -385,8 +449,16 @@ local function EnsureFlyoutPanel()
         flyoutPanel:SetClampedToScreen(true)
         flyoutOwnedFrames[flyoutPanel] = true
         -- Keep the mouseover stack in sync while this flyout opens/closes.
-        flyoutPanel:HookScript("OnShow", function() if MO_Evaluate then MO_Evaluate() end end)
-        flyoutPanel:HookScript("OnHide", function() if MO_Evaluate then MO_Evaluate() end end)
+        flyoutPanel:HookScript("OnShow", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
+        flyoutPanel:HookScript("OnHide", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
         -- Start hidden: frames spawn SHOWN and OnShow fires only on a real hide->show,
         -- so without this the first open never installs the watcher below.
         flyoutPanel:Hide()
@@ -396,10 +468,12 @@ local function EnsureFlyoutPanel()
         -- closes without a reopen race.
         flyoutPanel:HookScript("OnShow", function(self)
             self:SetScript("OnUpdate", function(m)
-                if IsMouseButtonDown("LeftButton")
-                   and not m:IsMouseOver()
-                   and not (flyoutToggle and flyoutToggle:IsMouseOver())
-                   and not EBS._MouseOverFlyoutChild(m) then
+                if
+                    IsMouseButtonDown("LeftButton")
+                    and not m:IsMouseOver()
+                    and not (flyoutToggle and flyoutToggle:IsMouseOver())
+                    and not EBS._MouseOverFlyoutChild(m)
+                then
                     m:Hide()
                 end
             end)
@@ -428,7 +502,7 @@ local function InvalidateFlyout()
 end
 
 -- Profile-swap refresh: invalidate for the next open, re-show buttons re-init hid.
-_G._EMIN_RefreshFlyout = function()
+_G._CUMIN_RefreshFlyout = function()
     InvalidateFlyout()
     if flyoutPanel and flyoutPanel:IsShown() then
         BuildFlyoutContents()
@@ -493,17 +567,89 @@ end
 -- arcDir = which way the row walks from it (+1 counter-clockwise, -1 clockwise).
 local BTN_ROW_MODES = {
     -- Left edge (vertical)
-    blUp    = { point = "BOTTOMRIGHT", rel = "BOTTOMLEFT",  dirX = 0,  dirY = 1,  awayX = -1, awayY = 0,  arc = 225, arcDir = -1 },
-    tlDown  = { point = "TOPRIGHT",    rel = "TOPLEFT",     dirX = 0,  dirY = -1, awayX = -1, awayY = 0,  arc = 135, arcDir = 1 },
+    blUp = {
+        point = "BOTTOMRIGHT",
+        rel = "BOTTOMLEFT",
+        dirX = 0,
+        dirY = 1,
+        awayX = -1,
+        awayY = 0,
+        arc = 225,
+        arcDir = -1,
+    },
+    tlDown = {
+        point = "TOPRIGHT",
+        rel = "TOPLEFT",
+        dirX = 0,
+        dirY = -1,
+        awayX = -1,
+        awayY = 0,
+        arc = 135,
+        arcDir = 1,
+    },
     -- Right edge (vertical)
-    brUp    = { point = "BOTTOMLEFT",  rel = "BOTTOMRIGHT", dirX = 0,  dirY = 1,  awayX = 1,  awayY = 0,  arc = 315, arcDir = 1 },
-    trDown  = { point = "TOPLEFT",     rel = "TOPRIGHT",    dirX = 0,  dirY = -1, awayX = 1,  awayY = 0,  arc = 45,  arcDir = -1 },
+    brUp = {
+        point = "BOTTOMLEFT",
+        rel = "BOTTOMRIGHT",
+        dirX = 0,
+        dirY = 1,
+        awayX = 1,
+        awayY = 0,
+        arc = 315,
+        arcDir = 1,
+    },
+    trDown = {
+        point = "TOPLEFT",
+        rel = "TOPRIGHT",
+        dirX = 0,
+        dirY = -1,
+        awayX = 1,
+        awayY = 0,
+        arc = 45,
+        arcDir = -1,
+    },
     -- Above the map (horizontal)
-    tlRight = { point = "BOTTOMLEFT",  rel = "TOPLEFT",     dirX = 1,  dirY = 0,  awayX = 0,  awayY = 1,  arc = 135, arcDir = -1 },
-    trLeft  = { point = "BOTTOMRIGHT", rel = "TOPRIGHT",    dirX = -1, dirY = 0,  awayX = 0,  awayY = 1,  arc = 45,  arcDir = 1 },
+    tlRight = {
+        point = "BOTTOMLEFT",
+        rel = "TOPLEFT",
+        dirX = 1,
+        dirY = 0,
+        awayX = 0,
+        awayY = 1,
+        arc = 135,
+        arcDir = -1,
+    },
+    trLeft = {
+        point = "BOTTOMRIGHT",
+        rel = "TOPRIGHT",
+        dirX = -1,
+        dirY = 0,
+        awayX = 0,
+        awayY = 1,
+        arc = 45,
+        arcDir = 1,
+    },
     -- Below the map (horizontal)
-    blRight = { point = "TOPLEFT",     rel = "BOTTOMLEFT",  dirX = 1,  dirY = 0,  awayX = 0,  awayY = -1, arc = 225, arcDir = 1 },
-    brLeft  = { point = "TOPRIGHT",    rel = "BOTTOMRIGHT", dirX = -1, dirY = 0,  awayX = 0,  awayY = -1, arc = 315, arcDir = -1 },
+    blRight = {
+        point = "TOPLEFT",
+        rel = "BOTTOMLEFT",
+        dirX = 1,
+        dirY = 0,
+        awayX = 0,
+        awayY = -1,
+        arc = 225,
+        arcDir = 1,
+    },
+    brLeft = {
+        point = "TOPRIGHT",
+        rel = "BOTTOMRIGHT",
+        dirX = -1,
+        dirY = 0,
+        awayX = 0,
+        awayY = -1,
+        arc = 315,
+        arcDir = -1,
+    },
 }
 
 local function GetBtnRowMode(mp)
@@ -536,9 +682,15 @@ local function CreateFlyoutToggle()
         -- Re-apply the current accent so a later ApplyAll (e.g. at PLAYER_ENTERING_WORLD,
         -- after theme resolution mutated CLUDES_GREEN) picks up the right color.
         local EG2 = CludesUI.CLUDES_GREEN
-        if flyoutToggle._norm   then flyoutToggle._norm:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)   end
-        if flyoutToggle._pushed then flyoutToggle._pushed:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
-        if flyoutToggle._hl     then flyoutToggle._hl:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)     end
+        if flyoutToggle._norm then
+            flyoutToggle._norm:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
+        end
+        if flyoutToggle._pushed then
+            flyoutToggle._pushed:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
+        end
+        if flyoutToggle._hl then
+            flyoutToggle._hl:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
+        end
         return flyoutToggle
     end
 
@@ -586,15 +738,23 @@ local function CreateFlyoutToggle()
     btn._bg = bg
 
     btn:SetScript("OnClick", function(self)
-        if GetFFD(self).freeMoveJustDragged then return end
+        if GetFFD(self).freeMoveJustDragged then
+            return
+        end
         -- Opening the grid replaces the label tooltip (same as M+ Portals)
         CludesUI.HideWidgetTooltip(true)
         ToggleFlyoutPanel()
     end)
     btn:SetScript("OnEnter", function(self)
-        if flyoutPanel and flyoutPanel:IsShown() then return end
+        if flyoutPanel and flyoutPanel:IsShown() then
+            return
+        end
         if not GetFFD(self).freeMoveJustDragged and CludesUI.ShowWidgetTooltip then
-            CludesUI.ShowWidgetTooltip(self, "Addon Buttons", { anchor = EBS._Grow.TT(), scale = GetCustomTooltipScale() })
+            CludesUI.ShowWidgetTooltip(
+                self,
+                "Addon Buttons",
+                { anchor = EBS._Grow.TT(), scale = GetCustomTooltipScale() }
+            )
         end
     end)
     btn:SetScript("OnLeave", function(self)

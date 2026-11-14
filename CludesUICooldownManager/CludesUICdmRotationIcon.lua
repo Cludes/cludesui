@@ -1,6 +1,10 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, ns = ...
-if not ns.ECME then return end
+if not ns.ECME then
+    return
+end
 
 -- A display-only consumer of Blizzard's recommendation changes. No secure
 -- action button, Blizzard-frame writes, hooks, timers or polling.
@@ -28,8 +32,11 @@ local CB_ROTATION = "AssistedCombatManager.RotationSpellsUpdated"
 local CB_STATE = "AssistedCombatManager.OnSetUseAssistedHighlight"
 local edgeEvents = { "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
 local watchEvents = {
-    "UPDATE_SHAPESHIFT_FORM", "UPDATE_OVERRIDE_ACTIONBAR", "UPDATE_VEHICLE_ACTIONBAR",
-    "PET_BATTLE_OPENING_START", "PET_BATTLE_CLOSE",
+    "UPDATE_SHAPESHIFT_FORM",
+    "UPDATE_OVERRIDE_ACTIONBAR",
+    "UPDATE_VEHICLE_ACTIONBAR",
+    "PET_BATTLE_OPENING_START",
+    "PET_BATTLE_CLOSE",
 }
 
 -- Where the icon sits until it is dragged or offset. The options page reads
@@ -40,7 +47,9 @@ ns.CDM_ROTATION_ICON_DEFAULT_POS = DEFAULT_POS
 -- Every recommendation comes from Blizzard's Assisted Highlight; WoW Forever
 -- has no assisted combat at all.
 function ns.RotationAssistAvailable()
-    if CludesUI.IS_FOREVER then return false end
+    if CludesUI.IS_FOREVER then
+        return false
+    end
     return GetCVarBool("assistedCombatHighlight") == true
 end
 
@@ -50,7 +59,9 @@ local function Settings()
 end
 
 local function SpellID(value)
-    if issecretvalue(value) or type(value) ~= "number" or value <= 0 then return nil end
+    if issecretvalue(value) or type(value) ~= "number" or value <= 0 then
+        return nil
+    end
     return value
 end
 
@@ -73,7 +84,10 @@ end
 -- after the frame's events), so a later state in that frame is never dropped.
 local function UpdateGCD()
     local now = GetTime()
-    if gcdStamp == now then driver:Show(); return end
+    if gcdStamp == now then
+        driver:Show()
+        return
+    end
     gcdStamp = now
     PaintGCD()
 end
@@ -81,11 +95,16 @@ end
 -- SPELL_UPDATE_COOLDOWN rides the icon's show edge (Show GCD with a
 -- recommendation on screen) and is dropped again on its hide edge.
 local function ArmGCD(on)
-    if on == gcdArmed then return end
+    if on == gcdArmed then
+        return
+    end
     gcdArmed = on
     if not on then
         driver:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
-        if gcd then gcd:Clear(); gcd:Hide() end
+        if gcd then
+            gcd:Clear()
+            gcd:Hide()
+        end
         return
     end
     if not gcd then
@@ -114,16 +133,22 @@ end
 -- The show-edge sources: armed while the icon may show, dropped while Only
 -- in Combat hides it out of combat (the combat edges re-arm them).
 local function SetWatch(on)
-    if on == watching then return end
+    if on == watching then
+        return
+    end
     watching = on
     if on then
-        for i = 1, #watchEvents do driver:RegisterEvent(watchEvents[i]) end
+        for i = 1, #watchEvents do
+            driver:RegisterEvent(watchEvents[i])
+        end
         EventRegistry:RegisterCallback(CB_SPELL, Queue, driver)
         EventRegistry:RegisterCallback(CB_ROTATION, Queue, driver)
         ns.UpdateRotationAssistIconKeybind = Queue
         return
     end
-    for i = 1, #watchEvents do driver:UnregisterEvent(watchEvents[i]) end
+    for i = 1, #watchEvents do
+        driver:UnregisterEvent(watchEvents[i])
+    end
     EventRegistry:UnregisterCallback(CB_SPELL, driver)
     EventRegistry:UnregisterCallback(CB_ROTATION, driver)
     ns.UpdateRotationAssistIconKeybind = nil
@@ -132,21 +157,36 @@ end
 local function Update()
     -- A direct pass also consumes a queued one.
     driver:Hide()
-    if not live then return end
+    if not live then
+        return
+    end
     local cfg = Settings()
-    if not cfg or not cfg.enabled then HideIcon(); return end
+    if not cfg or not cfg.enabled then
+        HideIcon()
+        return
+    end
     local editing = preview and not inCombat
     local mayShow = editing or inCombat or not cfg.onlyInCombat
     SetWatch(mayShow)
     local spellID
-    if mayShow
-        and not C_ActionBar.HasVehicleActionBar() and not C_ActionBar.HasOverrideActionBar()
-        and not C_PetBattles.IsInBattle() and C_AssistedCombat.IsAvailable() then
+    if
+        mayShow
+        and not C_ActionBar.HasVehicleActionBar()
+        and not C_ActionBar.HasOverrideActionBar()
+        and not C_PetBattles.IsInBattle()
+        and C_AssistedCombat.IsAvailable()
+    then
         spellID = SpellID(C_AssistedCombat.GetNextCastSpell(true))
     end
-    if not spellID and not editing then HideIcon(); return end
+    if not spellID and not editing then
+        HideIcon()
+        return
+    end
     local texture = spellID and C_Spell.GetSpellTexture(spellID) or 134400
-    if issecretvalue(texture) then HideIcon(); return end
+    if issecretvalue(texture) then
+        HideIcon()
+        return
+    end
     if texture ~= paintedTexture then
         paintedTexture = texture
         icon:SetTexture(texture)
@@ -160,11 +200,16 @@ local function Update()
     end
     frame:Show()
     ArmGCD(cfg.showGCD == true and spellID ~= nil)
-    if gcdArmed then PaintGCD() end
+    if gcdArmed then
+        PaintGCD()
+    end
 end
 
 local function OnEvent(self, event)
-    if event == "SPELL_UPDATE_COOLDOWN" then UpdateGCD(); return end
+    if event == "SPELL_UPDATE_COOLDOWN" then
+        UpdateGCD()
+        return
+    end
     -- Combat state comes from the edge itself: InCombatLockdown() still
     -- reads false inside the PLAYER_REGEN_DISABLED dispatch.
     if event == "PLAYER_REGEN_DISABLED" then
@@ -178,7 +223,9 @@ local function OnEvent(self, event)
 end
 
 local function ApplyPosition()
-    if not frame or CludesUI._unlockActive then return end
+    if not frame or CludesUI._unlockActive then
+        return
+    end
     local cfg = Settings()
     local pos = cfg and cfg.position or DEFAULT_POS
     frame:ClearAllPoints()
@@ -187,7 +234,9 @@ end
 
 local function OnUnlock(activeSession)
     preview = activeSession and true or false
-    if not activeSession then ApplyPosition() end
+    if not activeSession then
+        ApplyPosition()
+    end
     Update()
 end
 
@@ -197,23 +246,52 @@ local function RegisterMover()
     local map = CludesUI._ELEMENT_SETTINGS_MAP or {}
     CludesUI._ELEMENT_SETTINGS_MAP = map
     if not map[moverKey] then
-        map[moverKey] = { module = "CludesUICooldownManager", page = "Rotation Assist Icon",
-            sectionName = "ROTATION ASSIST ICON", highlightText = "Show Rotation Assist Icon" }
+        map[moverKey] = {
+            module = "CludesUICooldownManager",
+            page = "Rotation Assist Icon",
+            sectionName = "ROTATION ASSIST ICON",
+            highlightText = "Show Rotation Assist Icon",
+        }
     end
-    CludesUI:RegisterUnlockElements({ CludesUI.MakeUnlockElement({
-        key = moverKey, label = "Rotation Assist Icon", group = "Cooldown Manager", order = 601,
-        getFrame = function() return frame end,
-        getSize = function() return frame:GetWidth(), frame:GetHeight() end,
-        noResize = true, noAnchorTo = true, noAnchorTarget = true, noSizeMatchTarget = true,
-        savePos = function(_, point, relPoint, x, y)
-            local cfg = Settings()
-            if cfg then cfg.position = { point = point, relPoint = relPoint, x = x, y = y } end
-            ApplyPosition()
-        end,
-        loadPos = function() local cfg = Settings(); return cfg and cfg.position end,
-        clearPos = function() local cfg = Settings(); if cfg then cfg.position = nil end end,
-        applyPos = ApplyPosition,
-    }) }, "CludesUICooldownManager")
+    CludesUI:RegisterUnlockElements(
+        {
+            CludesUI.MakeUnlockElement({
+                key = moverKey,
+                label = "Rotation Assist Icon",
+                group = "Cooldown Manager",
+                order = 601,
+                getFrame = function()
+                    return frame
+                end,
+                getSize = function()
+                    return frame:GetWidth(), frame:GetHeight()
+                end,
+                noResize = true,
+                noAnchorTo = true,
+                noAnchorTarget = true,
+                noSizeMatchTarget = true,
+                savePos = function(_, point, relPoint, x, y)
+                    local cfg = Settings()
+                    if cfg then
+                        cfg.position = { point = point, relPoint = relPoint, x = x, y = y }
+                    end
+                    ApplyPosition()
+                end,
+                loadPos = function()
+                    local cfg = Settings()
+                    return cfg and cfg.position
+                end,
+                clearPos = function()
+                    local cfg = Settings()
+                    if cfg then
+                        cfg.position = nil
+                    end
+                end,
+                applyPos = ApplyPosition,
+            }),
+        },
+        "CludesUICooldownManager"
+    )
     CludesUI:RegisterUnlockModeListener(frame, OnUnlock)
 end
 
@@ -221,11 +299,15 @@ end
 -- the highlight-state callback stays armed (no events, mover or listener).
 -- Going live arms the combat edges; the next Update arms the rest.
 local function SetLive(on)
-    if on == live then return end
+    if on == live then
+        return
+    end
     live = on
     if on then
         inCombat = (InCombatLockdown() or UnitAffectingCombat("player")) and true or false
-        for i = 1, #edgeEvents do driver:RegisterEvent(edgeEvents[i]) end
+        for i = 1, #edgeEvents do
+            driver:RegisterEvent(edgeEvents[i])
+        end
         RegisterMover()
         return
     end
@@ -274,16 +356,22 @@ end
 
 function ns.RefreshRotationAssistIcon()
     -- Kept defined on WoW Forever (called unguarded), where it does nothing.
-    if CludesUI.IS_FOREVER then return end
+    if CludesUI.IS_FOREVER then
+        return
+    end
     local cfg = Settings()
     if not cfg or not cfg.enabled then
-        if not active then return end
+        if not active then
+            return
+        end
         active = false
         EventRegistry:UnregisterCallback(CB_STATE, driver)
         SetLive(false)
         return
     end
-    if not frame then CreateIcon() end
+    if not frame then
+        CreateIcon()
+    end
     local size = cfg.iconSize or 48
     CludesUI.PP.Size(frame, size, size)
     ns.StyleCDMKeybind(keybind, cfg, textOverlay, CludesUI.PP.mult, ns.GetCDMFont())

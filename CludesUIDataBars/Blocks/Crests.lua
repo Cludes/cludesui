@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- no season crests on WoW Forever: no factory, no ns.CrestColorMode (the main file drops the block from BLOCK_TYPES too)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then
+    return
+end -- no season crests on WoW Forever: no factory, no ns.CrestColorMode (the main file drops the block from BLOCK_TYPES too)
 -- Blocks\Crests.lua
 -- Crests block factory.
 
@@ -9,24 +13,24 @@ local K = ns.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
-local wipe        = wipe
-local format      = string.format
-local tconcat     = table.concat
-local floor       = math.floor
-local max         = math.max
-local min         = math.min
+local wipe = wipe
+local format = string.format
+local tconcat = table.concat
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local CONTENT_BASE         = K.CONTENT_BASE
-local CRESTS               = K.CRESTS
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local CONTENT_BASE = K.CONTENT_BASE
+local CRESTS = K.CRESTS
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  CRESTS (season upgrade currencies, one compact readout)
@@ -48,8 +52,8 @@ local CREST_DIM = "|cffaaaaaa"
 
 local CREST_SEPARATORS = {
     slash = " / ",
-    line  = " || ",
-    dash  = " - ",
+    line = " || ",
+    dash = " - ",
     space = "   ",
 }
 
@@ -59,9 +63,10 @@ local CREST_SEPARATORS = {
 -- click seeds b.color, which takes over. Shared with the options page so the
 -- 4th swatch lights on exactly this test.
 function ns.CrestColorMode(b)
-    if b.useCrestColor then return true end
-    return not b.useClassColor and not b.useAccentColor
-        and not b.useDynamicColor and b.color == nil
+    if b.useCrestColor then
+        return true
+    end
+    return not b.useClassColor and not b.useAccentColor and not b.useDynamicColor and b.color == nil
 end
 
 ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
@@ -74,8 +79,12 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
     -- so a fresh table per pass would allocate in a hot path.
     local _segBuf = {}
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local button = CreateFrame("Button", nil, content)
     button:SetAllPoints()
@@ -86,12 +95,16 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
     AttachTextOffset(inst, crestText)
 
     local function GetInfo(id)
-        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then return nil end
+        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
+            return nil
+        end
         return C_CurrencyInfo.GetCurrencyInfo(id)
     end
 
     local function Num(v)
-        if BreakUpLargeNumbers then return BreakUpLargeNumbers(v or 0) end
+        if BreakUpLargeNumbers then
+            return BreakUpLargeNumbers(v or 0)
+        end
         return tostring(v or 0)
     end
 
@@ -100,11 +113,17 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
     -- the option is labelled Show Season Progress rather than Show Cap.
     local function AmountText(info, seasonProgress)
         local qty = info.quantity or 0
-        if not seasonProgress then return Num(qty) end
+        if not seasonProgress then
+            return Num(qty)
+        end
         local cap = info.maxQuantity
-        if not cap or cap <= 0 then return Num(qty) end
+        if not cap or cap <= 0 then
+            return Num(qty)
+        end
         local shown = qty
-        if info.useTotalEarnedForMaxQty then shown = info.totalEarned or qty end
+        if info.useTotalEarnedForMaxQty then
+            shown = info.totalEarned or qty
+        end
         return Num(shown) .. "/" .. Num(cap)
     end
 
@@ -115,9 +134,13 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
     local function TooltipAmount(info)
         local owned = Num(info.quantity or 0)
         local cap = info.maxQuantity
-        if not cap or cap <= 0 then return owned end
+        if not cap or cap <= 0 then
+            return owned
+        end
         local earned = info.quantity or 0
-        if info.useTotalEarnedForMaxQty then earned = info.totalEarned or earned end
+        if info.useTotalEarnedForMaxQty then
+            earned = info.totalEarned or earned
+        end
         return owned .. " " .. CREST_DIM .. "(" .. Num(earned) .. "/" .. Num(cap) .. ")|r"
     end
 
@@ -128,16 +151,18 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
         local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
 
-        local showIcons  = s.showIcons ~= false
+        local showIcons = s.showIcons ~= false
         local seasonProg = s.showSeasonProgress == true
-        local hideEmpty  = s.hideEmpty == true
+        local hideEmpty = s.hideEmpty == true
         -- Crest tints are baked into the string, so hovering has to fall back
         -- to plain segments for the accent wash to read (same as Gold).
         local crestMode = ns.CrestColorMode(blockCfg) and not mouseOver
         local iconSz = fontSize + 2
 
         local from, to, step = 1, #CRESTS, 1
-        if s.reverse == true then from, to, step = #CRESTS, 1, -1 end
+        if s.reverse == true then
+            from, to, step = #CRESTS, 1, -1
+        end
 
         wipe(_segBuf)
         for i = from, to, step do
@@ -149,15 +174,19 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
                     if not (hideEmpty and (info.quantity or 0) <= 0) then
                         seg = AmountText(info, seasonProg)
                         if showIcons and info.iconFileID then
-                            seg = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", info.iconFileID,
-                                iconSz, iconSz) .. seg
+                            seg = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", info.iconFileID, iconSz, iconSz)
+                                .. seg
                         end
-                        if crestMode then seg = "|cff" .. c.hex .. seg .. "|r" end
+                        if crestMode then
+                            seg = "|cff" .. c.hex .. seg .. "|r"
+                        end
                     end
                 else
                     seg = "-"
                 end
-                if seg then _segBuf[#_segBuf + 1] = seg end
+                if seg then
+                    _segBuf[#_segBuf + 1] = seg
+                end
             end
         end
 
@@ -172,7 +201,9 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
             text = tconcat(_segBuf, "\n")
         else
             local sep = CREST_SEPARATORS[s.separator or "slash"] or CREST_SEPARATORS.slash
-            if crestMode then sep = "|cff808080" .. sep .. "|r" end
+            if crestMode then
+                sep = "|cff808080" .. sep .. "|r"
+            end
             text = tconcat(_segBuf, sep)
         end
 
@@ -225,8 +256,7 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
             local c = CRESTS[i]
             local info = GetInfo(c.id)
             if info then
-                ns.Tip_AddDouble(info.name or "?", TooltipAmount(info),
-                    c.r, c.g, c.b, 1, 1, 1)
+                ns.Tip_AddDouble(info.name or "?", TooltipAmount(info), c.r, c.g, c.b, 1, 1, 1)
             end
         end
         ns.Tip_AddLine(" ")
@@ -245,7 +275,9 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
         inst:Refresh()
     end)
     button:SetScript("OnClick", function(_, mb)
-        if mb ~= "LeftButton" then return end
+        if mb ~= "LeftButton" then
+            return
+        end
         if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
             C_CurrencyInfo.OpenCurrencyPanel()
         elseif ToggleCharacter then
@@ -256,7 +288,9 @@ ns.BlockFactories.crests = function(blockCfg, slot, content, barCtx)
     -- Payload-gated: a single-currency update that is not a crest is skipped;
     -- a nil currencyType (bulk update) refreshes.
     inst.eventFrame = MakeEventFrame(inst, function(self, _, currencyType)
-        if currencyType and not ns.CREST_IDS[currencyType] then return end
+        if currencyType and not ns.CREST_IDS[currencyType] then
+            return
+        end
         self:Refresh()
     end)
 

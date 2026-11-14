@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no skyriding on WoW Forever: no DB, no events, no HUD; its options tab is not registered there
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then
+    return
+end -- no skyriding on WoW Forever: no DB, no events, no HUD; its options tab is not registered there
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_DragonRiding.lua - Skyriding HUD
 -------------------------------------------------------------------------------
@@ -22,13 +26,13 @@ ns.EDR_BAR_TEXTURES = (CludesUI.BuildBarTextureTables())
 
 -- Constants
 local SPELL = {
-    SKYWARD_ASCENT  = 372610,
-    SECOND_WIND     = 425782,
-    WHIRLING_SURGE  = 361584,
+    SKYWARD_ASCENT = 372610,
+    SECOND_WIND = 425782,
+    WHIRLING_SURGE = 361584,
 }
-local SKYRIDING_PIPS  = 6
+local SKYRIDING_PIPS = 6
 local SECONDWIND_PIPS = 3
-local BASE_RUN_SPEED  = 7.0
+local BASE_RUN_SPEED = 7.0
 
 -- Classic vigor gems: Blizzard's pre-12.0 FillUpFrames widget, rebuilt from the
 -- art the client still ships (interface/widgets/dragonridingvigorwidgets.blp).
@@ -36,15 +40,23 @@ local BASE_RUN_SPEED  = 7.0
 -- Blizzard_UIWidgetTemplateFillUpFrames.lua; art sizes are the atlas pixel sizes
 -- halved (the sheet is 2x).
 local CLASSIC = {
-    kit         = "dragonriding_vigor",
-    cellW       = 42,   cellH   = 45,
-    edgePad     = -20,  decorTop = 8,
-    decorW      = 46.5, decorH  = 58.5,
-    frameW      = 60,   frameH  = 65,
-    bgW         = 30.5, bgH     = 35.5,
-    fillW       = 36,   fillH   = 36,
-    sparkW      = 46.5, sparkH  = 10,
-    maskW       = 64,   maskH   = 64,
+    kit = "dragonriding_vigor",
+    cellW = 42,
+    cellH = 45,
+    edgePad = -20,
+    decorTop = 8,
+    decorW = 46.5,
+    decorH = 58.5,
+    frameW = 60,
+    frameH = 65,
+    bgW = 30.5,
+    bgH = 35.5,
+    fillW = 36,
+    fillH = 36,
+    sparkW = 46.5,
+    sparkH = 10,
+    maskW = 64,
+    maskH = 64,
 }
 local CLASSIC_W = CLASSIC.decorW * 2 + CLASSIC.edgePad * 2 + CLASSIC.cellW * SKYRIDING_PIPS
 local CLASSIC_H = max(CLASSIC.cellH, CLASSIC.decorTop + CLASSIC.decorH)
@@ -53,61 +65,61 @@ local FULL_CHARGE_SOUND = SOUNDKIT and SOUNDKIT.UI_DRAGONRIDING_FULL_NODE
 -- Database defaults
 local DB_DEFAULTS = {
     profile = {
-        enabled          = false,
-        hideInCombat     = false,
+        enabled = false,
+        hideInCombat = false,
 
         -- Bar art (Global Settings > Style, "Skyriding HUD"): the Classic flag
         -- = Classic WoW UI, else the Blizzard flag = Blizzard Style, else the
         -- CludesUI look. Read through the session latch ns.EDR_Style().
-        useBlizzardStyle  = false,
-        useClassicStyle   = false,
-        classicFrameSize  = nil,  -- Classic WoW UI frame %, nil = shared default
+        useBlizzardStyle = false,
+        useClassicStyle = false,
+        classicFrameSize = nil, -- Classic WoW UI frame %, nil = shared default
         -- Charges: "bars" = a pip row in the bar column, "gems" = Blizzard's
         -- original vigor gems above the column. Independent of the bar art.
-        vigorStyle        = "bars",
-        classicScale      = 1.0,
-        chargeSound       = false,
-        showSpeed         = true,
-        showSecondWind    = true,
+        vigorStyle = "bars",
+        classicScale = 1.0,
+        chargeSound = false,
+        showSpeed = true,
+        showSecondWind = true,
         showWhirlingSurge = true,
-        iconSize          = nil,  -- nil = as tall as the full bar column
+        iconSize = nil, -- nil = as tall as the full bar column
 
-        width            = 240,
-        speedHeight      = 14,
-        skyridingHeight  = 10,
+        width = 240,
+        speedHeight = 14,
+        skyridingHeight = 10,
         secondWindHeight = 6,
-        gap              = 2,
-        stackSpacing     = 2,
+        gap = 2,
+        stackSpacing = 2,
 
         borderThickness = 0,
-        borderColor     = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
+        borderColor = { r = 0.0, g = 0.0, b = 0.0, a = 1.0 },
 
-        maxSpeed          = 1300,
-        thrillThreshold   = 789,
+        maxSpeed = 1300,
+        thrillThreshold = 789,
         thrillColorToggle = true,
-        normalColor       = { r = 0.055, g = 0.667, b = 0.761, a = 1.0 },
-        thrillColor       = { r = 0.902, g = 0.494, b = 0.133, a = 1.0 },
-        speedBarBg        = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
-        tickColor         = { r = 1.00, g = 1.00, b = 1.00, a = 0.50 },
+        normalColor = { r = 0.055, g = 0.667, b = 0.761, a = 1.0 },
+        thrillColor = { r = 0.902, g = 0.494, b = 0.133, a = 1.0 },
+        speedBarBg = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
+        tickColor = { r = 1.00, g = 1.00, b = 1.00, a = 0.50 },
 
         speedText = {
             enabled = true,
             justify = "CENTER",
-            size    = 12,
+            size = 12,
             offsetX = 0,
             offsetY = 0,
         },
 
-        skyridingFilled  = { r = 0.298, g = 0.788, b = 0.941, a = 1.0 },
-        skyridingBg      = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
+        skyridingFilled = { r = 0.298, g = 0.788, b = 0.941, a = 1.0 },
+        skyridingBg = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
 
         secondWindFilled = { r = 0.902, g = 0.706, b = 0.133, a = 1.0 },
-        secondWindBg     = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
+        secondWindBg = { r = 0.10, g = 0.10, b = 0.10, a = 0.80 },
 
         whirlingSurgeText = {
             enabled = true,
             justify = "CENTER",
-            size    = 12,
+            size = 12,
             offsetX = 0,
             offsetY = 0,
         },
@@ -119,24 +131,24 @@ local DB_DEFAULTS = {
 -- State
 local db
 local rootFrame, speedBar, stackFrame, swFrame, wsIcon, classicFrame
-local skyridingDirty  = true
+local skyridingDirty = true
 local secondWindDirty = true
-local whirlingDirty   = true
-local lastSpeedApplied  = -1
+local whirlingDirty = true
+local lastSpeedApplied = -1
 local lastCdStart, lastCdDur = -1, -1
 local lastSkyCur, lastSkyProgress = -1, -1
-local lastSwCur,  lastSwProgress  = -1, -1
+local lastSwCur, lastSwProgress = -1, -1
 local lastClassicCur, lastClassicProgress = -1, -1
 -- Charge count the full-charge sound last saw; -1 after every Redraw so a
 -- repaint (login, settings change, style switch) never plays it.
 local lastSoundCur = -1
 local UPDATE_THROTTLE = 1 / 60
-local elapsed         = 0
-local smoothedSpeed   = 0
+local elapsed = 0
+local smoothedSpeed = 0
 local SPEED_EMA_ALPHA = 0.25
-local evtFrame        -- event frame (created on first enable)
+local evtFrame -- event frame (created on first enable)
 local _spellEventsRegistered = false
-local _cdEventRegistered     = false
+local _cdEventRegistered = false
 -- True only while actually airborne skyriding: PLAYER_IS_GLIDING_CHANGED edges
 -- plus a fresh read at every visibility evaluation. Gates the speed poll -- the
 -- OnUpdate is armed only while gliding, while the landing decay is still
@@ -152,7 +164,9 @@ function ns.EDR_Style()
     local v = ns._edrStyle
     if v == nil then
         local p = db and db.profile
-        if not p then return "cui" end
+        if not p then
+            return "cui"
+        end
         v = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
         ns._edrStyle = v
     end
@@ -162,8 +176,11 @@ end
 -- Returns true when the module should be hard-disabled (M+ or raid instance).
 -- No frames shown, no events processed, no OnUpdate.
 local function IsInLockedContent()
-    if C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive
-       and C_ChallengeMode.IsChallengeModeActive() then
+    if
+        C_ChallengeMode
+        and C_ChallengeMode.IsChallengeModeActive
+        and C_ChallengeMode.IsChallengeModeActive()
+    then
         return true
     end
     local _, instanceType = IsInInstance()
@@ -179,7 +196,9 @@ local function GetSkyridingSpeed()
         smoothedSpeed = smoothedSpeed * (1 - SPEED_EMA_ALPHA)
         -- Floor the landing decay to exactly 0 so the final empty-bar state
         -- paints once and the tick can then disarm (TickWanted reads > 0).
-        if smoothedSpeed < 0.01 then smoothedSpeed = 0 end
+        if smoothedSpeed < 0.01 then
+            smoothedSpeed = 0
+        end
         return false, smoothedSpeed
     end
     smoothedSpeed = smoothedSpeed + SPEED_EMA_ALPHA * ((forwardSpeed or 0) - smoothedSpeed)
@@ -200,13 +219,16 @@ local function RegisterUnlockElements() end
 -- with full charges and a settled bar = no OnUpdate and no API reads at all.
 -- Unlock Mode force-arms so the HUD stays editable off-mount.
 local function TickWanted()
-    return skyridingDirty or secondWindDirty or whirlingDirty
+    return skyridingDirty
+        or secondWindDirty
+        or whirlingDirty
         or ((_gliding or smoothedSpeed > 0) and db.profile.showSpeed ~= false)
 end
 local function SyncTick()
-    if not rootFrame then return end
-    if rootFrame:IsShown() and (TickWanted()
-            or (CludesUI and CludesUI._unlockActive)) then
+    if not rootFrame then
+        return
+    end
+    if rootFrame:IsShown() and (TickWanted() or (CludesUI and CludesUI._unlockActive)) then
         rootFrame:SetScript("OnUpdate", OnUpdate)
     else
         rootFrame:SetScript("OnUpdate", nil)
@@ -219,7 +241,9 @@ end
 -- while the icon is hidden; every Rebuild ends in UpdateVisibility, which
 -- re-syncs it when Show Whirling Surge flips.
 local function RegisterSpellEvents()
-    if not evtFrame then return end
+    if not evtFrame then
+        return
+    end
     if not _spellEventsRegistered then
         evtFrame:RegisterEvent("SPELL_UPDATE_CHARGES")
         _spellEventsRegistered = true
@@ -235,7 +259,9 @@ local function RegisterSpellEvents()
     end
 end
 local function UnregisterSpellEvents()
-    if not evtFrame then return end
+    if not evtFrame then
+        return
+    end
     if _spellEventsRegistered then
         evtFrame:UnregisterEvent("SPELL_UPDATE_CHARGES")
         _spellEventsRegistered = false
@@ -250,7 +276,9 @@ end
 --  Visibility
 -------------------------------------------------------------------------------
 local function IsOnSkyridingMount()
-    if not CludesUI.IsPlayerMountedLike() then return false end
+    if not CludesUI.IsPlayerMountedLike() then
+        return false
+    end
     local _, canGlide = C_PlayerInfo.GetGlidingInfo()
     return canGlide == true
 end
@@ -265,7 +293,9 @@ local function MarkReshown()
 end
 
 function UpdateVisibility()
-    if not rootFrame then return end
+    if not rootFrame then
+        return
+    end
     local p = db and db.profile
     if not p or not p.enabled or IsInLockedContent() then
         rootFrame:Hide()
@@ -275,7 +305,9 @@ function UpdateVisibility()
     end
     local wasShown = rootFrame:IsShown()
     if CludesUI and CludesUI._unlockActive then
-        if not wasShown then MarkReshown() end
+        if not wasShown then
+            MarkReshown()
+        end
         rootFrame:Show()
         rootFrame:SetScript("OnUpdate", OnUpdate)
         RegisterSpellEvents()
@@ -286,7 +318,9 @@ function UpdateVisibility()
     local visible = onSky and not hideCombat
     rootFrame:SetShown(visible)
     if visible then
-        if not wasShown then MarkReshown() end
+        if not wasShown then
+            MarkReshown()
+        end
         -- Seed the airborne flag from a fresh read (covers /reload mid-flight
         -- and any edge missed while hidden), then arm only if there is work.
         local isGliding = C_PlayerInfo.GetGlidingInfo()
@@ -305,15 +339,14 @@ end
 -- dismounting during Unlock Mode left it stuck visible until an unrelated
 -- mount/dismount happened to call UpdateVisibility() again. Called from
 -- CUI_UnlockMode.lua's exit path, matching the Quest Tracker's same pattern.
-_G._EDR_UpdateVisibility = function()
+_G._CUDR_UpdateVisibility = function()
     UpdateVisibility()
 end
 
 -------------------------------------------------------------------------------
 --  OnUpdate
 -------------------------------------------------------------------------------
-local function ApplyPipRow(pips, pipCount, cur, maxC, progress,
-                            lastCur, lastProgress, filled, bgAlpha)
+local function ApplyPipRow(pips, pipCount, cur, maxC, progress, lastCur, lastProgress, filled, bgAlpha)
     if cur ~= lastCur then
         for i = 1, pipCount do
             local pip = pips[i]
@@ -331,7 +364,9 @@ local function ApplyPipRow(pips, pipCount, cur, maxC, progress,
         return cur, progress
     elseif cur < maxC and abs(progress - lastProgress) > 0.005 then
         local pip = pips[cur + 1]
-        if pip then pip:SetValue(progress) end
+        if pip then
+            pip:SetValue(progress)
+        end
         return cur, progress
     end
     return lastCur, lastProgress
@@ -357,10 +392,14 @@ local function SetClassicFilling(cell, progress)
 end
 
 local function SetClassicFull(cell, full)
-    if cell.isFull == full then return end
+    if cell.isFull == full then
+        return
+    end
     cell.isFull = full
     local atlas = full and cell.fillFullAtlas or cell.fillAtlas
-    if atlas then cell.bar:SetStatusBarTexture(atlas) end
+    if atlas then
+        cell.bar:SetStatusBarTexture(atlas)
+    end
     cell.spark:ClearAllPoints()
     cell.spark:SetPoint("CENTER", cell.bar:GetStatusBarTexture(), "TOP", 0, 0)
     if cell.flipMask then
@@ -383,7 +422,10 @@ local function ApplyClassicRow(cur, maxC, progress)
                 cell.bar:SetValue(1)
                 cell.spark:Hide()
                 cell.pulseAnim:Stop()
-                if cell.flipAnim then cell.flipAnim:Stop(); cell.flip:Hide() end
+                if cell.flipAnim then
+                    cell.flipAnim:Stop()
+                    cell.flip:Hide()
+                end
                 if gained and i > lastClassicCur then
                     cell.flashAnim:Restart()
                 end
@@ -402,7 +444,9 @@ local function ApplyClassicRow(cur, maxC, progress)
         return cur, progress
     elseif cur < maxC and abs(progress - lastClassicProgress) > 0.005 then
         local cell = cells[cur + 1]
-        if cell then SetClassicFilling(cell, progress) end
+        if cell then
+            SetClassicFilling(cell, progress)
+        end
         return cur, progress
     end
     return lastClassicCur, lastClassicProgress
@@ -413,14 +457,20 @@ local function FormatSpeedText(speedPct)
 end
 
 local function FormatCooldownText(remaining)
-    if remaining >= 10 then return format("%d", floor(remaining + 0.5))
-    elseif remaining >= 1 then return format("%d", floor(remaining))
-    else return format("%.1f", remaining) end
+    if remaining >= 10 then
+        return format("%d", floor(remaining + 0.5))
+    elseif remaining >= 1 then
+        return format("%d", floor(remaining))
+    else
+        return format("%.1f", remaining)
+    end
 end
 
 function OnUpdate(self, dt)
     elapsed = elapsed + dt
-    if elapsed < UPDATE_THROTTLE then return end
+    if elapsed < UPDATE_THROTTLE then
+        return
+    end
     elapsed = 0
 
     local p = db.profile
@@ -429,33 +479,32 @@ function OnUpdate(self, dt)
     -- decay floors to exactly 0 so the final empty-bar state paints once.
     -- Nothing to poll while the speed bar is hidden.
     if (_gliding or smoothedSpeed > 0) and p.showSpeed ~= false then
-    local _, curSpeed = GetSkyridingSpeed()
-    local speedPct = curSpeed / BASE_RUN_SPEED * 100
-    local frac = (p.maxSpeed > 0) and (speedPct / p.maxSpeed) or 0
-    frac = max(0, min(1, frac))
-    if frac ~= lastSpeedApplied then
-        speedBar:SetValue(frac)
-        if p.speedText.enabled ~= false then
-            speedBar.text:SetText(FormatSpeedText(speedPct))
+        local _, curSpeed = GetSkyridingSpeed()
+        local speedPct = curSpeed / BASE_RUN_SPEED * 100
+        local frac = (p.maxSpeed > 0) and (speedPct / p.maxSpeed) or 0
+        frac = max(0, min(1, frac))
+        if frac ~= lastSpeedApplied then
+            speedBar:SetValue(frac)
+            if p.speedText.enabled ~= false then
+                speedBar.text:SetText(FormatSpeedText(speedPct))
+            end
+            local aboveThrill = (speedPct >= (p.thrillThreshold or 0))
+            local c = (p.thrillColorToggle and aboveThrill) and p.thrillColor or p.normalColor
+            speedBar:SetStatusBarColor(c.r, c.g, c.b, c.a)
+            lastSpeedApplied = frac
         end
-        local aboveThrill = (speedPct >= (p.thrillThreshold or 0))
-        local c = (p.thrillColorToggle and aboveThrill) and p.thrillColor or p.normalColor
-        speedBar:SetStatusBarColor(c.r, c.g, c.b, c.a)
-        lastSpeedApplied = frac
-    end
     end -- speed-poll gate
 
     if skyridingDirty then
         local info = C_Spell.GetSpellCharges(SPELL.SKYWARD_ASCENT)
-        local cur  = info and info.currentCharges or 0
+        local cur = info and info.currentCharges or 0
         local maxC = info and info.maxCharges or SKYRIDING_PIPS
         local progress = 0
         if info and info.cooldownDuration and info.cooldownDuration > 0 then
             local e = GetTime() - (info.cooldownStartTime or 0)
             progress = max(0, min(1, e / info.cooldownDuration))
         end
-        if p.chargeSound and lastSoundCur >= 0 and cur > lastSoundCur
-                and FULL_CHARGE_SOUND then
+        if p.chargeSound and lastSoundCur >= 0 and cur > lastSoundCur and FULL_CHARGE_SOUND then
             PlaySound(FULL_CHARGE_SOUND)
         end
         lastSoundCur = cur
@@ -463,8 +512,16 @@ function OnUpdate(self, dt)
             lastClassicCur, lastClassicProgress = ApplyClassicRow(cur, maxC, progress)
         else
             lastSkyCur, lastSkyProgress = ApplyPipRow(
-                stackFrame.pips, SKYRIDING_PIPS, cur, maxC, progress,
-                lastSkyCur, lastSkyProgress, p.skyridingFilled, 0.4)
+                stackFrame.pips,
+                SKYRIDING_PIPS,
+                cur,
+                maxC,
+                progress,
+                lastSkyCur,
+                lastSkyProgress,
+                p.skyridingFilled,
+                0.4
+            )
         end
         skyridingDirty = (cur < maxC)
     end
@@ -473,7 +530,7 @@ function OnUpdate(self, dt)
         secondWindDirty = false -- hidden; showing it again redraws it
     elseif secondWindDirty then
         local info = C_Spell.GetSpellCharges(SPELL.SECOND_WIND)
-        local cur  = info and info.currentCharges or 0
+        local cur = info and info.currentCharges or 0
         local maxC = info and info.maxCharges or SECONDWIND_PIPS
         local progress = 0
         if info and info.cooldownDuration and info.cooldownDuration > 0 then
@@ -481,8 +538,16 @@ function OnUpdate(self, dt)
             progress = max(0, min(1, e / info.cooldownDuration))
         end
         lastSwCur, lastSwProgress = ApplyPipRow(
-            swFrame.pips, SECONDWIND_PIPS, cur, maxC, progress,
-            lastSwCur, lastSwProgress, p.secondWindFilled, 0.4)
+            swFrame.pips,
+            SECONDWIND_PIPS,
+            cur,
+            maxC,
+            progress,
+            lastSwCur,
+            lastSwProgress,
+            p.secondWindFilled,
+            0.4
+        )
         secondWindDirty = (cur < maxC)
     end
 
@@ -491,7 +556,7 @@ function OnUpdate(self, dt)
     elseif whirlingDirty then
         local info = C_Spell.GetSpellCooldown(SPELL.WHIRLING_SURGE)
         local start = info and info.startTime or 0
-        local dur   = info and info.duration  or 0
+        local dur = info and info.duration or 0
         if dur > 1.5 then
             if start ~= lastCdStart or dur ~= lastCdDur then
                 wsIcon.cd:SetCooldown(start, dur)
@@ -519,7 +584,9 @@ function OnUpdate(self, dt)
 
     -- Self-disarm once every section settled and we are grounded; every dirty
     -- writer and the gliding edge re-arm through SyncTick.
-    if not TickWanted() then SyncTick() end
+    if not TickWanted() then
+        SyncTick()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -542,29 +609,36 @@ local STYLE_ROWS_GEMS = { "speed", "sw" }
 -- texture reads recessed. The panel's opaque rim is 1 left and right, 2
 -- above, 1 below.
 local BLIZZ_CHROME = {
-    bg   = "UI-HUD-CoolDownManager-Bar-BG",
+    bg = "UI-HUD-CoolDownManager-Bar-BG",
     fill = "UI-HUD-CoolDownManager-Bar",
-    rimX = 1, rimT = 2, rimB = 1,
+    rimX = 1,
+    rimT = 2,
+    rimB = 1,
 }
-local SHADE_CLEAR  = CreateColor(0, 0, 0, 0)
-local SHADE_TOP    = CreateColor(0, 0, 0, 0.55)
+local SHADE_CLEAR = CreateColor(0, 0, 0, 0)
+local SHADE_TOP = CreateColor(0, 0, 0, 0.55)
 local SHADE_BOTTOM = CreateColor(0, 0, 0, 0.30)
-local SHADE_END    = CreateColor(0, 0, 0, 0.35)
+local SHADE_END = CreateColor(0, 0, 0, 0.35)
 -- Whirling Surge icon, Blizzard: action button frame (46x45 around a 45 icon,
 -- anchored TOPLEFT) and mask, with the rounded swipe AuraKit and the Cooldown
 -- Manager use (Cooldown frames cannot take a MaskTexture). Classic WoW UI: the
 -- vanilla slot ring the classic action buttons wear (66/36 of the icon,
 -- 1/36 low).
 local BLIZZ_ICON = {
-    frame = "ui-hud-actionbar-iconframe", frameW = 46, frameH = 45, iconSize = 45,
-    mask  = "ui-hud-actionbar-iconframe-mask",
+    frame = "ui-hud-actionbar-iconframe",
+    frameW = 46,
+    frameH = 45,
+    iconSize = 45,
+    mask = "ui-hud-actionbar-iconframe-mask",
     swipe = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe",
-    ring  = "Interface\\Buttons\\UI-Quickslot2",
+    ring = "Interface\\Buttons\\UI-Quickslot2",
 }
 
 local function PPSnap(v)
     local PPdr = CludesUI and CludesUI.PP
-    if PPdr and PPdr.Snap then return PPdr.Snap(v) end
+    if PPdr and PPdr.Snap then
+        return PPdr.Snap(v)
+    end
     return floor(v + 0.5)
 end
 -- Round a frame dimension UP to a whole number of physical pixel PAIRS. The HUD
@@ -574,7 +648,9 @@ end
 local function SnapEven(v)
     local PPdr = CludesUI and CludesUI.PP
     local m = PPdr and PPdr.mult or 1
-    if m <= 0 then m = 1 end
+    if m <= 0 then
+        m = 1
+    end
     return math.ceil(v / (2 * m) - 1e-6) * 2 * m
 end
 
@@ -589,7 +665,9 @@ local function ArtOverhang(chrome, k)
         return PPSnap((C.rimT + C.rimB) / 2), PPSnap(C.rimX)
     elseif chrome == "classic" then
         local CF = CludesUI.ClassicFrame
-        if not CF then return 0, 0 end
+        if not CF then
+            return 0, 0
+        end
         local padW, padH = CF.Pad(k)
         return PPSnap(padH / 2), PPSnap(padW / 2)
     end
@@ -599,7 +677,9 @@ end
 -- Height a list of rows occupies stacked with gaps, including the frame rim
 -- (ov, from ArtOverhang).
 local function StackHeight(p, rows, ov)
-    if #rows == 0 then return 0 end
+    if #rows == 0 then
+        return 0
+    end
     local total = 2 * ov
     for i, key in ipairs(rows) do
         total = total + p[ROW_FIELD[key]] + (i > 1 and p.gap or 0)
@@ -628,9 +708,15 @@ local function ComputeLayout(p)
     local k = chrome == "classic" and ClassicFrameK(p) or 1
 
     local rows = {}
-    if p.showSpeed ~= false then rows[#rows + 1] = "speed" end
-    if not classic then rows[#rows + 1] = "sky" end
-    if p.showSecondWind ~= false then rows[#rows + 1] = "sw" end
+    if p.showSpeed ~= false then
+        rows[#rows + 1] = "speed"
+    end
+    if not classic then
+        rows[#rows + 1] = "sky"
+    end
+    if p.showSecondWind ~= false then
+        rows[#rows + 1] = "sw"
+    end
 
     local ov, padX = ArtOverhang(chrome, k)
     local colH = StackHeight(p, rows, ov)
@@ -659,14 +745,26 @@ local function ComputeLayout(p)
     local even = chrome or classic
 
     return {
-        rows = rows, classic = classic, chrome = chrome, frameK = k, ov = ov,
+        rows = rows,
+        classic = classic,
+        chrome = chrome,
+        frameK = k,
+        ov = ov,
         scale = scale,
-        colH = colH, colW = colW, padX = padX, colY = PPSnap((clusterH - colH) / 2),
-        icon = icon, iconSize = iconSize, iconY = PPSnap((clusterH - iconSize) / 2),
-        clusterW = clusterW, clusterH = clusterH,
-        classicW = classicW, classicH = classicH,
+        colH = colH,
+        colW = colW,
+        padX = padX,
+        colY = PPSnap((clusterH - colH) / 2),
+        icon = icon,
+        iconSize = iconSize,
+        iconY = PPSnap((clusterH - iconSize) / 2),
+        clusterW = clusterW,
+        clusterH = clusterH,
+        classicW = classicW,
+        classicH = classicH,
         -- raw* before the even-pixel rounding (equal to total* without it).
-        rawW = rawW, rawH = rawH,
+        rawW = rawW,
+        rawH = rawH,
         totalW = even and SnapEven(rawW) or rawW,
         totalH = even and SnapEven(rawH) or rawH,
     }
@@ -676,7 +774,9 @@ end
 --  Helpers
 -------------------------------------------------------------------------------
 local function ApplyFont(fs, size)
-    if not fs then return end
+    if not fs then
+        return
+    end
     local font = CludesUI.GetFontPath("blizzardSkin") or "Fonts/FRIZQT__.TTF"
     local flag = CludesUI.GetFontOutlineFlag("blizzardSkin") or ""
     CludesUI.PrimeFontShadow(fs, flag == "")
@@ -697,8 +797,12 @@ local borderedFrames = {}
 -- bordered }. The live HUD is one set, the options header's sample another;
 -- the layout and paint passes below take the set they draw.
 local function EnsureBorder(S, frame)
-    if not frame or frame._edrBorderAdded then return end
-    if not (CludesUI and CludesUI.PP and CludesUI.PP.CreateBorder) then return end
+    if not frame or frame._edrBorderAdded then
+        return
+    end
+    if not (CludesUI and CludesUI.PP and CludesUI.PP.CreateBorder) then
+        return
+    end
     CludesUI.PP.CreateBorder(frame, 0, 0, 0, 1, 1, "OVERLAY", 7)
     frame._edrBorderAdded = true
     S.bordered[#S.bordered + 1] = frame
@@ -707,7 +811,9 @@ end
 local function ApplyBorderEdges(frame, hideL, hideR, hideT, hideB)
     local PP = CludesUI and CludesUI.PP
     local edges = PP and PP.GetBorders and PP.GetBorders(frame)
-    if not edges then return end
+    if not edges then
+        return
+    end
     edges._hideLeft = hideL or nil
     edges._hideRight = hideR or nil
     edges._hideTop = hideT or nil
@@ -716,7 +822,9 @@ end
 
 local function ApplyBordersAll(S, L)
     local PP = CludesUI and CludesUI.PP
-    if not PP then return end
+    if not PP then
+        return
+    end
     local p = db.profile
     local c = p.borderColor
     -- The Blizzard and Classic WoW UI bar styles draw their own frames instead.
@@ -754,7 +862,9 @@ local function ApplyBordersAll(S, L)
                 ApplyBorderEdges(S.speed, false, iconTouch, gapTouch and i < #rows, hideB)
             else
                 local pips, n = S.stack.pips, SKYRIDING_PIPS
-                if key == "sw" then pips, n = S.sw.pips, SECONDWIND_PIPS end
+                if key == "sw" then
+                    pips, n = S.sw.pips, SECONDWIND_PIPS
+                end
                 for j = 1, n do
                     local hideR = (stackTouch and j < n) or (iconTouch and j == n)
                     ApplyBorderEdges(pips[j], false, hideR, false, hideB)
@@ -843,24 +953,40 @@ local function LayoutBevel(shade, w, h)
     local a = max(2, floor(h * 0.2))
     local b = max(1, floor(h * 0.1))
     local e = max(2, floor(w * 0.15))
-    for i = 1, 4 do sh[i]:ClearAllPoints() end
+    for i = 1, 4 do
+        sh[i]:ClearAllPoints()
+    end
     sh[1]:SetGradient("VERTICAL", SHADE_CLEAR, SHADE_TOP)
-    sh[1]:SetPoint("TOPLEFT"); sh[1]:SetPoint("TOPRIGHT"); sh[1]:SetHeight(a)
+    sh[1]:SetPoint("TOPLEFT")
+    sh[1]:SetPoint("TOPRIGHT")
+    sh[1]:SetHeight(a)
     sh[2]:SetGradient("VERTICAL", SHADE_BOTTOM, SHADE_CLEAR)
-    sh[2]:SetPoint("BOTTOMLEFT"); sh[2]:SetPoint("BOTTOMRIGHT"); sh[2]:SetHeight(b)
+    sh[2]:SetPoint("BOTTOMLEFT")
+    sh[2]:SetPoint("BOTTOMRIGHT")
+    sh[2]:SetHeight(b)
     sh[3]:SetGradient("HORIZONTAL", SHADE_END, SHADE_CLEAR)
-    sh[3]:SetPoint("TOPLEFT"); sh[3]:SetPoint("BOTTOMLEFT"); sh[3]:SetWidth(e)
+    sh[3]:SetPoint("TOPLEFT")
+    sh[3]:SetPoint("BOTTOMLEFT")
+    sh[3]:SetWidth(e)
     sh[4]:SetGradient("HORIZONTAL", SHADE_CLEAR, SHADE_END)
-    sh[4]:SetPoint("TOPRIGHT"); sh[4]:SetPoint("BOTTOMRIGHT"); sh[4]:SetWidth(e)
+    sh[4]:SetPoint("TOPRIGHT")
+    sh[4]:SetPoint("BOTTOMRIGHT")
+    sh[4]:SetWidth(e)
 end
 
 -- Add or move a mask on a texture, once per texture object (AddMaskTexture is
 -- additive, and a status bar texture swap can mint a new fill object).
 -- mask nil takes it off.
 local function MaskTex(tex, mask)
-    if not tex or tex._edrMask == mask then return end
-    if tex._edrMask then tex:RemoveMaskTexture(tex._edrMask) end
-    if mask then tex:AddMaskTexture(mask) end
+    if not tex or tex._edrMask == mask then
+        return
+    end
+    if tex._edrMask then
+        tex:RemoveMaskTexture(tex._edrMask)
+    end
+    if mask then
+        tex:AddMaskTexture(mask)
+    end
     tex._edrMask = mask
 end
 
@@ -884,9 +1010,13 @@ local function ApplyRowChrome(host, chrome, w, h)
             host._edrMask:SetAllPoints(host)
         end
     end
-    if not shade then return end
+    if not shade then
+        return
+    end
     shade:SetShown(on)
-    if on then LayoutBevel(shade, w, h) end
+    if on then
+        LayoutBevel(shade, w, h)
+    end
     local mask = on and host._edrMask or nil
     if host.pips then
         for i = 1, #host.pips do
@@ -899,7 +1029,9 @@ local function ApplyRowChrome(host, chrome, w, h)
         MaskTex(host.bg, mask)
     end
     if shade.strips then
-        for i = 1, #shade.strips do MaskTex(shade.strips[i], mask) end
+        for i = 1, #shade.strips do
+            MaskTex(shade.strips[i], mask)
+        end
     end
 end
 
@@ -920,12 +1052,36 @@ local PANEL_PIECES = {
     { 0, 2 + PANEL_R, 0, 3 + PANEL_R, false, { "TOPLEFT", -2, 3 }, { "TOPLEFT", PANEL_R, -PANEL_R } },
     { 126 - PANEL_R, 132, 0, 3 + PANEL_R, false, { "TOPRIGHT", -PANEL_R, 3 }, { "TOPRIGHT", 6, -PANEL_R } },
     { 0, 2 + PANEL_R, 12 - PANEL_R, 19, false, { "BOTTOMLEFT", -2, PANEL_R }, { "BOTTOMLEFT", PANEL_R, -7 } },
-    { 126 - PANEL_R, 132, 12 - PANEL_R, 19, false, { "BOTTOMRIGHT", -PANEL_R, PANEL_R }, { "BOTTOMRIGHT", 6, -7 } },
+    {
+        126 - PANEL_R,
+        132,
+        12 - PANEL_R,
+        19,
+        false,
+        { "BOTTOMRIGHT", -PANEL_R, PANEL_R },
+        { "BOTTOMRIGHT", 6, -7 },
+    },
     -- edges
     { 2 + PANEL_R, 126 - PANEL_R, 0, 3, false, { "TOPLEFT", PANEL_R, 3 }, { "TOPRIGHT", -PANEL_R, 0 } },
-    { 2 + PANEL_R, 126 - PANEL_R, 12, 19, false, { "BOTTOMLEFT", PANEL_R, 0 }, { "BOTTOMRIGHT", -PANEL_R, -7 } },
+    {
+        2 + PANEL_R,
+        126 - PANEL_R,
+        12,
+        19,
+        false,
+        { "BOTTOMLEFT", PANEL_R, 0 },
+        { "BOTTOMRIGHT", -PANEL_R, -7 },
+    },
     { 0, 2, 3 + PANEL_R, 12 - PANEL_R, false, { "TOPLEFT", -2, -PANEL_R }, { "BOTTOMLEFT", 0, PANEL_R } },
-    { 126, 132, 3 + PANEL_R, 12 - PANEL_R, false, { "TOPRIGHT", 0, -PANEL_R }, { "BOTTOMRIGHT", 6, PANEL_R } },
+    {
+        126,
+        132,
+        3 + PANEL_R,
+        12 - PANEL_R,
+        false,
+        { "TOPRIGHT", 0, -PANEL_R },
+        { "BOTTOMRIGHT", 6, PANEL_R },
+    },
     -- centre (backdrop)
     { 2, 126, 3, 12, true, { "TOPLEFT", 0, 0 }, { "BOTTOMRIGHT", 0, 0 } },
 }
@@ -942,7 +1098,9 @@ local function ApplyColumnChrome(S, L, geo, w, gap, spacing)
     local col = root._edrCol
     local chrome = L.chrome
     if not chrome or #geo == 0 then
-        if col then col:Hide() end
+        if col then
+            col:Hide()
+        end
         return
     end
     if not col then
@@ -978,8 +1136,12 @@ local function ApplyColumnChrome(S, L, geo, w, gap, spacing)
             tex:SetSnapToPixelGrid(false)
             tex:SetTexelSnappingBias(0)
             tex:SetTexture(file)
-            tex:SetTexCoord(l + (r - l) * pc[1] / 132, l + (r - l) * pc[2] / 132,
-                t + (b - t) * pc[3] / 19, t + (b - t) * pc[4] / 19)
+            tex:SetTexCoord(
+                l + (r - l) * pc[1] / 132,
+                l + (r - l) * pc[2] / 132,
+                t + (b - t) * pc[3] / 19,
+                t + (b - t) * pc[4] / 19
+            )
             local p1, p2 = pc[6], pc[7]
             tex:SetPoint("TOPLEFT", col, p1[1], p1[2], p1[3])
             tex:SetPoint("BOTTOMRIGHT", col, p2[1], p2[2], p2[3])
@@ -987,7 +1149,9 @@ local function ApplyColumnChrome(S, L, geo, w, gap, spacing)
         end
     end
     if col.panel then
-        for i = 1, #col.panel do col.panel[i]:SetShown(chrome == "blizzard") end
+        for i = 1, #col.panel do
+            col.panel[i]:SetShown(chrome == "blizzard")
+        end
     end
 
     -- Classic WoW UI frame.
@@ -997,13 +1161,17 @@ local function ApplyColumnChrome(S, L, geo, w, gap, spacing)
     end
     if col.classic then
         CF.SetShown(col.classic, chrome == "classic")
-        if chrome == "classic" then CF.Seat(col.classic, col, L.frameK, false) end
+        if chrome == "classic" then
+            CF.Seat(col.classic, col, L.frameK, false)
+        end
     end
 
     -- Dividers, one physical pixel thick, snapped to whole pixels.
     local PPdr = CludesUI.PP
     local px = ((PPdr and PPdr.perfect) or 1) / col:GetEffectiveScale()
-    local function Centre(span) return floor(((span - px) / 2) / px + 0.5) * px end
+    local function Centre(span)
+        return floor(((span - px) / 2) / px + 0.5) * px
+    end
     local n = 0
     local function Sep(x, y, sw, sh)
         n = n + 1
@@ -1033,7 +1201,9 @@ local function ApplyColumnChrome(S, L, geo, w, gap, spacing)
             end
         end
     end
-    for i = n + 1, #col.seps do col.seps[i]:Hide() end
+    for i = n + 1, #col.seps do
+        col.seps[i]:Hide()
+    end
 end
 
 -- Whirling Surge icon per bar style: Blizzard = action button frame, rounded
@@ -1052,8 +1222,7 @@ local function ApplyIconArt(S, chrome)
         f.blizzFrame:SetAtlas(BLIZZ_ICON.frame)
         f.blizzFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
         f.blizzMask = f:CreateMaskTexture()
-        f.blizzMask:SetAtlas(BLIZZ_ICON.mask, false, nil, nil,
-            "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        f.blizzMask:SetAtlas(BLIZZ_ICON.mask, false, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         f.blizzMask:SetPoint("CENTER", f.tex, "CENTER")
         -- The mask art has transparent padding around its rounded square, so it
         -- is sized from its own atlas (scaled like the icon), not to the icon.
@@ -1109,11 +1278,15 @@ end
 local classicAtlasCache = {}
 local function ClassicAtlas(suffix)
     local hit = classicAtlasCache[suffix]
-    if hit ~= nil then return hit or nil end
+    if hit ~= nil then
+        return hit or nil
+    end
     local name = CLASSIC.kit .. "_" .. suffix
     if not C_Texture.GetAtlasInfo(name) then
         name = name .. "-2x"
-        if not C_Texture.GetAtlasInfo(name) then name = false end
+        if not C_Texture.GetAtlasInfo(name) then
+            name = false
+        end
     end
     classicAtlasCache[suffix] = name
     return name or nil
@@ -1121,7 +1294,9 @@ end
 
 local function SetClassicArt(tex, suffix, w, h)
     local atlas = ClassicAtlas(suffix)
-    if atlas then tex:SetAtlas(atlas) end
+    if atlas then
+        tex:SetAtlas(atlas)
+    end
     tex:SetSize(w, h)
     return atlas
 end
@@ -1132,7 +1307,9 @@ local function AddAlphaStep(group, from, to, duration, order, endDelay)
     a:SetToAlpha(to)
     a:SetDuration(duration)
     a:SetOrder(order)
-    if endDelay then a:SetEndDelay(endDelay) end
+    if endDelay then
+        a:SetEndDelay(endDelay)
+    end
 end
 
 -- One gem. Frame levels stand in for the template's draw layers: background on
@@ -1154,9 +1331,11 @@ local function CreateClassicCell(parent)
     bar:SetSize(C.fillW, C.fillH)
     bar:SetFrameLevel(cell:GetFrameLevel() + 1)
     cell.bar = bar
-    cell.fillAtlas     = ClassicAtlas("fill")
+    cell.fillAtlas = ClassicAtlas("fill")
     cell.fillFullAtlas = ClassicAtlas("fillfull")
-    if cell.fillAtlas then bar:SetStatusBarTexture(cell.fillAtlas) end
+    if cell.fillAtlas then
+        bar:SetStatusBarTexture(cell.fillAtlas)
+    end
     cell.isFull = false
 
     local flipAtlas = ClassicAtlas("fill_flipbook")
@@ -1166,8 +1345,7 @@ local function CreateClassicCell(parent)
         cell.flip:SetAtlas(flipAtlas)
         cell.flip:Hide()
         cell.flipMask = bar:CreateMaskTexture()
-        cell.flipMask:SetAtlas("AlphaMask2", true, nil, nil,
-            "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        cell.flipMask:SetAtlas("AlphaMask2", true, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         cell.flipMask:SetPoint("TOP", bar:GetStatusBarTexture(), "TOP", 0, 0)
         cell.flip:AddMaskTexture(cell.flipMask)
         cell.flipAnim = cell.flip:CreateAnimationGroup()
@@ -1192,8 +1370,7 @@ local function CreateClassicCell(parent)
     local maskAtlas = ClassicAtlas("mask")
     if maskAtlas then
         local mask = ov:CreateMaskTexture()
-        mask:SetAtlas(maskAtlas, false, nil, nil,
-            "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetAtlas(maskAtlas, false, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         mask:SetSize(C.maskW, C.maskH)
         mask:SetPoint("CENTER", cell, "CENTER")
         cell.spark:AddMaskTexture(mask)
@@ -1226,7 +1403,9 @@ end
 -- The gem row at 1x: mirrored decor, six cells, decor. Built on first use only,
 -- so the modern style never pays for it.
 local function EnsureClassicFrame(S)
-    if S.classic then return S.classic end
+    if S.classic then
+        return S.classic
+    end
     local C = CLASSIC
     local f = CreateFrame("Frame", nil, S.root)
     f:SetSize(CLASSIC_W, CLASSIC_H)
@@ -1273,7 +1452,9 @@ local function LayoutPips(frame, pipCount, width, height, spacing)
     -- floor every pip to 0 width -- pips vanishing entirely is worse than the sub-pixel
     -- gap this fix targets. Fall back to plain UI-unit distribution (pre-fix behavior)
     -- in that degenerate case so pips stay visible, just not perfectly pixel-snapped.
-    if widthAvail < px then px = 1 end
+    if widthAvail < px then
+        px = 1
+    end
     local totalUnits = floor(widthAvail / px + 1e-6)
     -- Cumulative boundary = floor(totalUnits * i / pipCount), not a fixed
     -- remainder lumped onto the first N pips. The two pip rows (6 and 3
@@ -1304,10 +1485,14 @@ local function NewSet(root, bordered)
     EnsureBorder(S, S.speed)
 
     S.stack = CreateStackFrame(root, SKYRIDING_PIPS)
-    for i = 1, SKYRIDING_PIPS do EnsureBorder(S, S.stack.pips[i]) end
+    for i = 1, SKYRIDING_PIPS do
+        EnsureBorder(S, S.stack.pips[i])
+    end
 
     S.sw = CreateStackFrame(root, SECONDWIND_PIPS)
-    for i = 1, SECONDWIND_PIPS do EnsureBorder(S, S.sw.pips[i]) end
+    for i = 1, SECONDWIND_PIPS do
+        EnsureBorder(S, S.sw.pips[i])
+    end
 
     S.icon = CreateWhirlingSurgeIcon(root)
     EnsureBorder(S, S.icon)
@@ -1317,7 +1502,9 @@ end
 local liveSet
 
 function Build()
-    if rootFrame then return end
+    if rootFrame then
+        return
+    end
     rootFrame = CreateFrame("Frame", "CludesUIDragonRidingAnchor", UIParent)
     rootFrame:SetFrameStrata("MEDIUM")
     rootFrame:Hide()
@@ -1341,9 +1528,13 @@ local function LayoutSet(S, p, L)
     -- drew its pips piled up or not at all until a later pass.
     local rowFrames = { speed = S.speed, sky = S.stack, sw = S.sw }
     local inLayout = {}
-    for _, key in ipairs(L.rows) do inLayout[key] = true end
+    for _, key in ipairs(L.rows) do
+        inLayout[key] = true
+    end
     for key, f in pairs(rowFrames) do
-        if not inLayout[key] then f:Hide() end
+        if not inLayout[key] then
+            f:Hide()
+        end
     end
     local spacing = p.stackSpacing
     local clusterX = PPSnap((L.totalW - L.clusterW) / 2)
@@ -1371,8 +1562,13 @@ local function LayoutSet(S, p, L)
     if L.icon then
         icon:Show()
         icon:ClearAllPoints()
-        icon:SetPoint("BOTTOMLEFT", S.root, "BOTTOMLEFT",
-            clusterX + L.colW + (L.colW > 0 and p.gap or 0), L.iconY)
+        icon:SetPoint(
+            "BOTTOMLEFT",
+            S.root,
+            "BOTTOMLEFT",
+            clusterX + L.colW + (L.colW > 0 and p.gap or 0),
+            L.iconY
+        )
         icon:SetSize(L.iconSize, L.iconSize)
     else
         icon:Hide()
@@ -1389,14 +1585,16 @@ local function LayoutSet(S, p, L)
     elseif S.classic then
         S.classic:Hide()
     end
-
 end
 
 -- Textures, colours, texts, borders and bevels of one set.
 local function PaintSet(S, p, L)
     -- Apply bar texture to all StatusBars
-    local texPath = CludesUI.ResolveTexturePath(ns.EDR_BAR_TEXTURES, p.barTexture or "none",
-            "Interface\\Buttons\\WHITE8x8")
+    local texPath = CludesUI.ResolveTexturePath(
+        ns.EDR_BAR_TEXTURES,
+        p.barTexture or "none",
+        "Interface\\Buttons\\WHITE8x8"
+    )
     local speed, stack, sw, icon = S.speed, S.stack, S.sw, S.icon
     speed:SetStatusBarTexture(texPath)
     for i = 1, SKYRIDING_PIPS do
@@ -1413,16 +1611,20 @@ local function PaintSet(S, p, L)
     local tickFrac = (p.thrillThreshold or 0) / (p.maxSpeed > 0 and p.maxSpeed or 1)
     tickFrac = max(0, min(1, tickFrac))
     speed.tick:ClearAllPoints()
-    speed.tick:SetPoint("TOP",    speed, "TOPLEFT",    p.width * tickFrac, 0)
+    speed.tick:SetPoint("TOP", speed, "TOPLEFT", p.width * tickFrac, 0)
     speed.tick:SetPoint("BOTTOM", speed, "BOTTOMLEFT", p.width * tickFrac, 0)
     speed.tick:SetWidth(2)
     speed.tick:SetColorTexture(p.tickColor.r, p.tickColor.g, p.tickColor.b, p.tickColor.a)
 
     ApplyFont(speed.text, p.speedText.size)
     speed.text:ClearAllPoints()
-    speed.text:SetPoint(p.speedText.justify or "CENTER", speed,
+    speed.text:SetPoint(
         p.speedText.justify or "CENTER",
-        p.speedText.offsetX or 0, p.speedText.offsetY or 0)
+        speed,
+        p.speedText.justify or "CENTER",
+        p.speedText.offsetX or 0,
+        p.speedText.offsetY or 0
+    )
     speed.text:SetJustifyH(p.speedText.justify or "CENTER")
     speed.text:SetShown(p.speedText.enabled ~= false)
 
@@ -1440,9 +1642,13 @@ local function PaintSet(S, p, L)
 
     ApplyFont(icon.text, p.whirlingSurgeText.size)
     icon.text:ClearAllPoints()
-    icon.text:SetPoint(p.whirlingSurgeText.justify or "CENTER", icon,
+    icon.text:SetPoint(
         p.whirlingSurgeText.justify or "CENTER",
-        p.whirlingSurgeText.offsetX or 0, p.whirlingSurgeText.offsetY or 0)
+        icon,
+        p.whirlingSurgeText.justify or "CENTER",
+        p.whirlingSurgeText.offsetX or 0,
+        p.whirlingSurgeText.offsetY or 0
+    )
     icon.text:SetJustifyH(p.whirlingSurgeText.justify or "CENTER")
     icon.text:SetShown(p.whirlingSurgeText.enabled ~= false)
 
@@ -1452,13 +1658,14 @@ local function PaintSet(S, p, L)
     ApplyRowChrome(speed, L.chrome, p.width, p.speedHeight)
     ApplyRowChrome(stack, L.chrome, p.width, p.skyridingHeight)
     ApplyRowChrome(sw, L.chrome, p.width, p.secondWindHeight)
-
 end
 
 local RepaintSample
 
 function Rebuild()
-    if not rootFrame then return end
+    if not rootFrame then
+        return
+    end
     local p = db.profile
     local L = ComputeLayout(p)
     LayoutSet(liveSet, p, L)
@@ -1470,19 +1677,21 @@ end
 
 -- L = the layout Rebuild already computed, or nil to compute it here.
 function Redraw(L)
-    if not rootFrame then return end
+    if not rootFrame then
+        return
+    end
     local p = db.profile
     L = L or ComputeLayout(p)
     PaintSet(liveSet, p, L)
 
-    skyridingDirty  = true
+    skyridingDirty = true
     secondWindDirty = true
-    whirlingDirty   = true
+    whirlingDirty = true
     lastSkyCur, lastSkyProgress = -1, -1
-    lastSwCur,  lastSwProgress  = -1, -1
+    lastSwCur, lastSwProgress = -1, -1
     lastClassicCur, lastClassicProgress = -1, -1
     lastSoundCur = -1
-    lastCdStart, lastCdDur      = -1, -1
+    lastCdStart, lastCdDur = -1, -1
     -- Settings applied: the repaint above rides the tick, so arm it if shown.
     SyncTick()
     -- Every settings path ends here (options, Unlock Mode mover, profile
@@ -1503,20 +1712,24 @@ local SAMPLE_SPEED_PCT = 650
 
 local function PaintSample()
     local p = db and db.profile
-    if not (sampleSet and p) then return end
+    if not (sampleSet and p) then
+        return
+    end
     local S = sampleSet
     local L = ComputeLayout(p)
     -- The options page scales and anchors the root first: the pixel snaps
     -- below read the scale the sample shows at.
-    if samplePlace then samplePlace(S.root, L.totalW, L.totalH) end
+    if samplePlace then
+        samplePlace(S.root, L.totalW, L.totalH)
+    end
     LayoutSet(S, p, L)
     PaintSet(S, p, L)
 
     local frac = (p.maxSpeed > 0) and (SAMPLE_SPEED_PCT / p.maxSpeed) or 0
     S.speed:SetValue(max(0, min(1, frac)))
     S.speed.text:SetText(FormatSpeedText(SAMPLE_SPEED_PCT))
-    local c = (p.thrillColorToggle and SAMPLE_SPEED_PCT >= (p.thrillThreshold or 0))
-        and p.thrillColor or p.normalColor
+    local c = (p.thrillColorToggle and SAMPLE_SPEED_PCT >= (p.thrillThreshold or 0)) and p.thrillColor
+        or p.normalColor
     S.speed:SetStatusBarColor(c.r, c.g, c.b, c.a)
 
     if L.classic then
@@ -1525,7 +1738,10 @@ local function PaintSample()
             cell.flashAnim:Stop()
             cell.pulseAnim:Stop()
             cell.flash:SetAlpha(0)
-            if cell.flipAnim then cell.flipAnim:Stop(); cell.flip:Hide() end
+            if cell.flipAnim then
+                cell.flipAnim:Stop()
+                cell.flip:Hide()
+            end
             SetClassicFull(cell, i <= 4)
             local v = (i <= 4 and 1) or (i == 5 and 0.5) or 0
             cell.bar:SetValue(v)
@@ -1543,14 +1759,18 @@ local function PaintSample()
 end
 
 function RepaintSample()
-    if sampleSet and sampleSet.root:IsVisible() then PaintSample() end
+    if sampleSet and sampleSet.root:IsVisible() then
+        PaintSample()
+    end
 end
 
 -- Shows the sample under parent and paints it. place(root, w, h) runs before
 -- every paint with the HUD's size in its own units, to scale and anchor the
 -- root. Returns the root, or nil before the profile exists.
 function ns.EDR_ShowSample(parent, place)
-    if not (db and db.profile) then return nil end
+    if not (db and db.profile) then
+        return nil
+    end
     if not sampleSet then
         sampleSet = NewSet(CreateFrame("Frame", nil, parent), {})
     end
@@ -1569,9 +1789,13 @@ ns.EDR_RepaintSample = RepaintSample
 --  Unlock mode
 -------------------------------------------------------------------------------
 local function SavePos(_, point, relPoint, x, y)
-    if not point then return end
+    if not point then
+        return
+    end
     local p = db and db.profile
-    if not p then return end
+    if not p then
+        return
+    end
     p.unlockPos = { point = point, relPoint = relPoint or point, x = x, y = y }
     if not CludesUI._unlockActive and rootFrame then
         rootFrame:ClearAllPoints()
@@ -1579,39 +1803,54 @@ local function SavePos(_, point, relPoint, x, y)
     end
 end
 local function LoadPos()
-    local p = db and db.profile; local pos = p and p.unlockPos
-    if not pos then return nil end
+    local p = db and db.profile
+    local pos = p and p.unlockPos
+    if not pos then
+        return nil
+    end
     return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
 end
 local function ClearPos()
-    local p = db and db.profile; if not p then return end
+    local p = db and db.profile
+    if not p then
+        return
+    end
     p.unlockPos = nil
 end
 function ApplyPos()
-    local p = db and db.profile; local pos = p and p.unlockPos
-    if not pos or not rootFrame then return end
+    local p = db and db.profile
+    local pos = p and p.unlockPos
+    if not pos or not rootFrame then
+        return
+    end
     rootFrame:ClearAllPoints()
     rootFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
 end
 
 -- Profile-swap refresh: re-read DB and rebuild the HUD.
-_G._EDR_Rebuild = function()
-    if not rootFrame then return end
+_G._CUDR_Rebuild = function()
+    if not rootFrame then
+        return
+    end
     Rebuild()
     ApplyPos()
 end
 
 function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
+    if not CludesUI or not CludesUI.RegisterUnlockElements then
+        return
+    end
     local MK = CludesUI.MakeUnlockElement
     CludesUI:RegisterUnlockElements({
         MK({
-            key   = "EDR_Cluster",
+            key = "EDR_Cluster",
             label = "Dragon Riding",
             group = "Dragon Riding",
             order = 700,
-            getFrame = function() return rootFrame end,
-            getSize  = function()
+            getFrame = function()
+                return rootFrame
+            end,
+            getSize = function()
                 local L = ComputeLayout(db.profile)
                 return L.totalW, L.totalH
             end,
@@ -1629,11 +1868,15 @@ function RegisterUnlockElements()
                 -- Where getSize reports an even-pixel total, a restore of that
                 -- exact size is a no-op; any other width (a drag, a width
                 -- match) sizes the cluster as given, so a match converges.
-                if L.totalW ~= L.rawW and abs(w - L.totalW) < 0.01 then return end
+                if L.totalW ~= L.rawW and abs(w - L.totalW) < 0.01 then
+                    return
+                end
                 local clusterW = w
                 -- A gem row wider than the bars sets the width by itself; the
                 -- column only follows the handle once it is dragged past it.
-                if L.classicW > L.clusterW and clusterW <= L.classicW then return end
+                if L.classicW > L.clusterW and clusterW <= L.classicW then
+                    return
+                end
                 local iconPart = L.icon and (p.gap + L.iconSize) or 0
                 p.width = max(60, PPSnap(clusterW - iconPart - 2 * L.padX))
                 Rebuild()
@@ -1657,7 +1900,9 @@ function RegisterUnlockElements()
                     return
                 end
                 -- A restore of getSize's even-pixel total is a no-op (see setWidth).
-                if L.totalH ~= L.rawH and abs(h - L.totalH) < 0.01 then return end
+                if L.totalH ~= L.rawH and abs(h - L.totalH) < 0.01 then
+                    return
+                end
                 local newTotalH = PPSnap(h)
                 local classicPart = L.classic and (L.classicH + p.gap) or 0
                 local k = max(8, newTotalH - classicPart) / L.clusterH
@@ -1665,7 +1910,10 @@ function RegisterUnlockElements()
                     p.iconSize = max(16, min(80, floor(L.iconSize * k + 0.5)))
                 end
                 local rows = L.rows
-                if #rows == 0 then Rebuild(); return end
+                if #rows == 0 then
+                    Rebuild()
+                    return
+                end
                 -- Bars top to bottom (Second Wind, charges, speed): the order
                 -- the leftover pass below hands a remainder out in.
                 local bars, loSum = {}, 0
@@ -1683,7 +1931,9 @@ function RegisterUnlockElements()
                 local whole = L.colH == L.clusterH
                 local colTarget = whole and (newTotalH - classicPart) or L.colH * k
                 local targetSum = colTarget - (#rows - 1) * p.gap - 2 * L.ov
-                if L.chrome or L.classic or not whole then targetSum = floor(targetSum + 0.5) end
+                if L.chrome or L.classic or not whole then
+                    targetSum = floor(targetSum + 0.5)
+                end
                 targetSum = max(loSum, targetSum)
 
                 local oldSum = 0
@@ -1695,7 +1945,9 @@ function RegisterUnlockElements()
                     -- Corrupted/legacy profile (e.g. hand-edited SavedVariables)
                     -- with every shown height at/under zero: reset to defaults so
                     -- the control self-heals instead of silently no-op'ing forever.
-                    for _, b in ipairs(bars) do p[b.field] = DB_DEFAULTS.profile[b.field] end
+                    for _, b in ipairs(bars) do
+                        p[b.field] = DB_DEFAULTS.profile[b.field]
+                    end
                     Rebuild()
                     return
                 end
@@ -1712,16 +1964,22 @@ function RegisterUnlockElements()
                 -- (bounded to one pass per bar so this always terminates).
                 for _ = 1, #bars do
                     local sum = 0
-                    for _, b in ipairs(bars) do sum = sum + b.new end
+                    for _, b in ipairs(bars) do
+                        sum = sum + b.new
+                    end
                     local leftover = targetSum - sum
-                    if leftover == 0 then break end
+                    if leftover == 0 then
+                        break
+                    end
                     local openBars = {}
                     for _, b in ipairs(bars) do
                         if (leftover > 0 and b.new < b.hi) or (leftover < 0 and b.new > b.lo) then
                             openBars[#openBars + 1] = b
                         end
                     end
-                    if #openBars == 0 then break end
+                    if #openBars == 0 then
+                        break
+                    end
                     local shareF = leftover / #openBars
                     local share = shareF >= 0 and floor(shareF + 0.5) or -floor(-shareF + 0.5)
                     if share == 0 then
@@ -1739,10 +1997,15 @@ function RegisterUnlockElements()
                     end
                 end
 
-                for _, b in ipairs(bars) do p[b.field] = b.new end
+                for _, b in ipairs(bars) do
+                    p[b.field] = b.new
+                end
                 Rebuild()
             end,
-            savePos = SavePos, loadPos = LoadPos, clearPos = ClearPos, applyPos = ApplyPos,
+            savePos = SavePos,
+            loadPos = LoadPos,
+            clearPos = ClearPos,
+            applyPos = ApplyPos,
         }),
     })
 end
@@ -1754,7 +2017,9 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
-    if not CludesUI or not CludesUI.Lite then return end
+    if not CludesUI or not CludesUI.Lite then
+        return
+    end
 
     db = CludesUI.Lite.NewDB("CludesUIDragonRidingDB", DB_DEFAULTS)
     ns.edrDB = db
@@ -1764,7 +2029,9 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- If disabled, skip all frame creation and event registration.
     -- Rebuild (called from options toggle) will lazy-init if needed.
-    if not db.profile.enabled then return end
+    if not db.profile.enabled then
+        return
+    end
 
     Build()
 
@@ -1806,7 +2073,9 @@ end)
 
 -- Exports for options page. Rebuild handles lazy-init if module was disabled at login.
 ns.edrRebuild = function()
-    if not db then return end
+    if not db then
+        return
+    end
     if not rootFrame then
         -- First enable after being disabled at login: full init
         Build()
@@ -1845,13 +2114,17 @@ ns.edrRebuild = function()
     end
     Rebuild()
 end
-ns.edrRedraw = function() Redraw() end
+ns.edrRedraw = function()
+    Redraw()
+end
 -- The icon's automatic size (as tall as every bar of the vigor style, frame
 -- rim included), whatever Icon Size holds: the options show it while Auto Size
 -- is on and hand it over when Auto Size is turned off.
 ns.edrIconSize = function()
     local p = db and db.profile
-    if not p then return 34 end
+    if not p then
+        return 34
+    end
     local L = ComputeLayout(p)
     return StackHeight(p, L.classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, L.ov)
 end

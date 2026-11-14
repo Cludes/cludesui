@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Borders.lua
 --
@@ -7,11 +9,13 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Reads the earlier Spec Overrides files through CUI_NS._soInternals.
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
-CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own table (CludesUI.lua)
+CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 local I = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local BlacklistedFKey, ConflictSpec, DeepCopy = I.BlacklistedFKey, I.ConflictSpec, I.DeepCopy
@@ -24,9 +28,13 @@ local EXCLUDED_CONTEXTS, SetRequestGoldWalk = I.EXCLUDED_CONTEXTS, I.SetRequestG
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-I.editGroupSetters[#I.editGroupSetters + 1] = function(v) _editGroup = v end
+I.editGroupSetters[#I.editGroupSetters + 1] = function(v)
+    _editGroup = v
+end
 local _defaultView = false
-I.defaultViewSetters[#I.defaultViewSetters + 1] = function(v) _defaultView = v end
+I.defaultViewSetters[#I.defaultViewSetters + 1] = function(v)
+    _defaultView = v
+end
 
 -- Forward declarations (assigned further down in this file)
 local RequestGoldWalk
@@ -48,9 +56,13 @@ end
 local function CurrentContext()
     local modFolder = CludesUI:GetActiveModule()
     local ctxFn = modFolder and _captureContexts[modFolder]
-    if not ctxFn then return nil end
+    if not ctxFn then
+        return nil
+    end
     local ok, ctx = pcall(ctxFn)
-    if ok and type(ctx) == "string" and ctx ~= "" then return ctx end
+    if ok and type(ctx) == "string" and ctx ~= "" then
+        return ctx
+    end
     return nil
 end
 
@@ -60,7 +72,9 @@ end
 local function SnapshotProfiles()
     local snap = {}
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-    if not reg then return snap end
+    if not reg then
+        return snap
+    end
     for _, db in ipairs(reg) do
         if db.folder and type(db.profile) == "table" then
             snap[db.folder] = DeepCopy(db.profile)
@@ -92,7 +106,9 @@ end
 local function DiffProfiles(snap)
     local out = {}
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-    if not reg then return out end
+    if not reg then
+        return out
+    end
     for _, db in ipairs(reg) do
         local old = db.folder and snap[db.folder]
         if old and type(db.profile) == "table" then
@@ -122,8 +138,12 @@ local _unlockValueSnap = nil
 function CludesUI.SpecOverrides_UnlockValueSnapBegin()
     _unlockValueSnap = nil
     local store = GetStore()
-    if not store or #store == 0 then return end
-    if CludesUI._specialUnlockGroup then return end
+    if not store or #store == 0 then
+        return
+    end
+    if CludesUI._specialUnlockGroup then
+        return
+    end
     _unlockValueSnap = SnapshotProfiles()
 end
 
@@ -134,17 +154,20 @@ end
 function CludesUI.SpecOverrides_UnlockValueSnapCommit()
     local snap = _unlockValueSnap
     _unlockValueSnap = nil
-    if not snap then return end
+    if not snap then
+        return
+    end
     -- Sessions/views cannot be live while unlock mode is open (the panel
     -- force-closes on entry); this guards any flow that changes that.
-    if _editGroup or _defaultView or Cond._edit then return end
+    if _editGroup or _defaultView or Cond._edit then
+        return
+    end
     local changed = false
     for _, c in ipairs(DiffProfiles(snap)) do
         local entry = EntryOwning(c.fkey)
         -- Match-owned size keys: an unlock-session diff on these is the match
         -- engine's write (re-pull on target resize), never a cog edit. Skip.
-        if entry and not BlacklistedFKey(c.fkey) and not MatchOwnedFKey(c.fkey)
-           and FKeyLoaded(c.fkey) then
+        if entry and not BlacklistedFKey(c.fkey) and not MatchOwnedFKey(c.fkey) and FKeyLoaded(c.fkey) then
             local live = ReadLive(c.fkey)
             if type(live) ~= "table" then
                 entry.values.default[c.fkey] = (live == nil) and NIL_SENT or live
@@ -152,7 +175,9 @@ function CludesUI.SpecOverrides_UnlockValueSnapCommit()
             end
         end
     end
-    if changed then RequestGoldWalk() end
+    if changed then
+        RequestGoldWalk()
+    end
 end
 
 -- EXCLUDED_CONTEXTS is declared earlier, shared with the conditional-overrides
@@ -163,11 +188,15 @@ end
 local function IsExcludedContext(section)
     local module = CludesUI:GetActiveModule()
     local ex = module and EXCLUDED_CONTEXTS[module]
-    if ex == true then return true end
+    if ex == true then
+        return true
+    end
     if type(ex) == "table" then
         local page = CludesUI:GetActivePage()
         local pex = page and ex[page]
-        if pex == true then return true end
+        if pex == true then
+            return true
+        end
         if type(pex) == "table" then
             return (section and pex[section]) and true or false
         end
@@ -183,7 +212,9 @@ end
 --- nothing owning it. The editing-as overlay is decoration only (EnableMouse(false)),
 --- so nothing else stops such a click.
 function CludesUI.SpecOverrides_SlotOverridable()
-    if not CludesUI.SpecOverrides_EditSessionActive() then return false end
+    if not CludesUI.SpecOverrides_EditSessionActive() then
+        return false
+    end
     return not IsExcludedContext()
 end
 
@@ -211,11 +242,16 @@ do
     local proxyOf = setmetatable({}, { __mode = "k" })
     local function Unwrap(v)
         local r = proxyOf[v]
-        while r do v = r; r = proxyOf[v] end
+        while r do
+            v = r
+            r = proxyOf[v]
+        end
         if type(v) == "table" then
             for k, x in next, v do
                 local rx = type(x) == "table" and proxyOf[x]
-                if rx then rawset(v, k, Unwrap(rx)) end
+                if rx then
+                    rawset(v, k, Unwrap(rx))
+                end
             end
         end
         return v
@@ -235,7 +271,9 @@ do
                 end
                 return v
             end,
-            __newindex = function(_, k, v) real[k] = Unwrap(v) end,
+            __newindex = function(_, k, v)
+                real[k] = Unwrap(v)
+            end,
         })
         proxyOf[proxy] = real
         return proxy
@@ -244,7 +282,9 @@ end
 
 local function BeginTrace()
     local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-    if not reg or _traceReal then return false end
+    if not reg or _traceReal then
+        return false
+    end
     _traceReal = {}
     for _, db in ipairs(reg) do
         if db.folder and type(db.profile) == "table" then
@@ -256,7 +296,9 @@ local function BeginTrace()
 end
 
 local function EndTrace()
-    if not _traceReal then return end
+    if not _traceReal then
+        return
+    end
     for db, real in pairs(_traceReal) do
         db.profile = real
     end
@@ -268,7 +310,9 @@ local function TraceSlot(cfg)
     _traceSink = {}
     local accs = cfg.accessors or { cfg }
     for _, acc in ipairs(accs) do
-        if acc.getValue then pcall(acc.getValue) end
+        if acc.getValue then
+            pcall(acc.getValue)
+        end
     end
     local sink = _traceSink
     _traceSink = nil
@@ -279,13 +323,16 @@ end
 -- another trace is live or the profiles cannot be traced. EndTrace runs on every
 -- path (see the gold walk below).
 local function SlotReads(cfg)
-    if not (cfg and BeginTrace()) then return {} end
+    if not (cfg and BeginTrace()) then
+        return {}
+    end
     local ok, sink = pcall(TraceSlot, cfg)
     EndTrace()
-    if ok and type(sink) == "table" then return sink end
+    if ok and type(sink) == "table" then
+        return sink
+    end
     return {}
 end
-
 
 local function MakeBorderHost(region, r, g, b)
     local host = CreateFrame("Frame", nil, region)
@@ -310,9 +357,15 @@ end
 -- the region's next dress puts it at its new frame level (as a new mark would be).
 local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
     local m = region._specOvGold
-    if m and m._soStale then m._soStale = nil; m:SetFrameLevel(region:GetFrameLevel() + 30) end
+    if m and m._soStale then
+        m._soStale = nil
+        m:SetFrameLevel(region:GetFrameLevel() + 30)
+    end
     m = region._specOvHover
-    if m and m._soStale then m._soStale = nil; m:SetFrameLevel(region:GetFrameLevel() + 31) end
+    if m and m._soStale then
+        m._soStale = nil
+        m:SetFrameLevel(region:GetFrameLevel() + 31)
+    end
     m = region._specOvRed
     if m and m._soStale then
         m._soStale = nil
@@ -329,7 +382,9 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
     if mode == "gold" and not region._specOvGold then
         region._specOvGold = MakeBorderHost(region, GOLD_R, GOLD_G, GOLD_B)
         if Pool and Pool.Gen and Pool.Gen(region) then
-            Pool.Attach(region, region._specOvGold, "_specOvGold", function(h) h._soStale = true end)
+            Pool.Attach(region, region._specOvGold, "_specOvGold", function(h)
+                h._soStale = true
+            end)
         end
     end
     if mode == "gold" and tip and not region._specOvHover then
@@ -345,7 +400,10 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
         badge:SetFrameLevel(region:GetFrameLevel() + 31)
         local ico = badge:CreateTexture(nil, "OVERLAY")
         ico:SetAllPoints()
-        if ico.SetSnapToPixelGrid then ico:SetSnapToPixelGrid(false); ico:SetTexelSnappingBias(0) end
+        if ico.SetSnapToPixelGrid then
+            ico:SetSnapToPixelGrid(false)
+            ico:SetTexelSnappingBias(0)
+        end
         ico:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-info.png")
         ico:SetVertexColor(GOLD_R, GOLD_G, GOLD_B, 0.85)
         badge:SetScript("OnEnter", function()
@@ -362,7 +420,9 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
         badge:SetMouseClickEnabled(false)
         region._specOvHover = badge
         if Pool and Pool.Gen and Pool.Gen(region) then
-            Pool.Attach(region, badge, "_specOvHover", function(h) h._soStale = true end)
+            Pool.Attach(region, badge, "_specOvHover", function(h)
+                h._soStale = true
+            end)
         end
     end
     if mode == "red" and not region._specOvRed then
@@ -385,7 +445,9 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
         host._blocker = blocker
         region._specOvRed = host
         if Pool and Pool.Gen and Pool.Gen(region) then
-            Pool.Attach(region, host, "_specOvRed", function(h) h._soStale = true end)
+            Pool.Attach(region, host, "_specOvRed", function(h)
+                h._soStale = true
+            end)
         end
     end
     if mode == "condActive" and not region._specOvCondActive then
@@ -402,7 +464,7 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
         blocker:EnableMouse(true)
         local bg = blocker:CreateTexture(nil, "OVERLAY")
         bg:SetAllPoints()
-        bg:SetColorTexture(17/255, 15/255, 12/255, 1)
+        bg:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 1)
         if CludesUI.PP and CludesUI.PP.CreateBorder then
             CludesUI.PP.CreateBorder(blocker, GOLD_R, GOLD_G, GOLD_B, 0.9, 1, "OVERLAY", 7)
         end
@@ -430,19 +492,30 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
         host._label = label
         region._specOvCondActive = host
         if Pool and Pool.Gen and Pool.Gen(region) then
-            Pool.Attach(region, host, "_specOvCondActive", function(h) h._soStale = true end)
+            Pool.Attach(region, host, "_specOvCondActive", function(h)
+                h._soStale = true
+            end)
         end
     end
-    if region._specOvGold then region._specOvGold:SetShown(mode == "gold") end
+    if region._specOvGold then
+        region._specOvGold:SetShown(mode == "gold")
+    end
     -- Tip lives only while the slot is gold; the label tooltips read it live.
-    if mode == "gold" then region._specOvTip = tip else region._specOvTip = nil end
-    if region._specOvHover then region._specOvHover:SetShown(region._specOvTip ~= nil) end
+    if mode == "gold" then
+        region._specOvTip = tip
+    else
+        region._specOvTip = nil
+    end
+    if region._specOvHover then
+        region._specOvHover:SetShown(region._specOvTip ~= nil)
+    end
     if region._specOvRed then
         region._specOvRed:SetShown(mode == "red")
         if mode == "red" and region._specOvRed._blocker then
             region._specOvRed._blocker._tipText = string.format(
                 L("This setting already has an override for %s"),
-                conflictSpecID and SpecName(conflictSpecID) or "?")
+                conflictSpecID and SpecName(conflictSpecID) or "?"
+            )
         end
     end
     if region._specOvCondActive then
@@ -455,7 +528,8 @@ local function SetSlotMark(region, mode, conflictSpecID, condName, tip)
             if host._blocker then
                 host._blocker._tipText = string.format(
                     L("Showing the '%s' override's value. Edit it from that override's editing mode."),
-                    condName or "?")
+                    condName or "?"
+                )
             end
         end
     end
@@ -477,8 +551,8 @@ local function UpdateEditLocks()
         -- the region is locked again (AttachEditLock): it stays hidden.
         if host._inactive then
             -- nothing
-        -- Predicate locks decide their own visibility per session (e.g. the
-        -- Dark Mode condition locks); plain locks show for any spec session.
+            -- Predicate locks decide their own visibility per session (e.g. the
+            -- Dark Mode condition locks); plain locks show for any spec session.
         elseif host._predicate then
             host:SetShown(host._predicate() and true or false)
         else
@@ -500,19 +574,27 @@ end
 -- state, so a spec-captured dark flag settles in one apply.
 function CludesUI.SpecOverrides_DarkCondEditActive()
     local g = Cond and Cond._edit
-    if not g then return false end
-    if g.conds and g.conds.darkmode then return true end
+    if not g then
+        return false
+    end
+    if g.conds and g.conds.darkmode then
+        return true
+    end
     local groups = CludesUI.Conditions_GetGroups and CludesUI.Conditions_GetGroups()
     if groups then
         for _, og in ipairs(groups) do
-            if og.conds and og.conds.darkmode then return true end
+            if og.conds and og.conds.darkmode then
+                return true
+            end
         end
     end
     return false
 end
 
 function CludesUI.SpecOverrides_AttachEditLock(region, tip, predicate)
-    if not region then return end
+    if not region then
+        return
+    end
     local host = _editLocks[region]
     if not host then
         host = MakeBorderHost(region, 0.9, 0.2, 0.2)
@@ -567,7 +649,7 @@ end
 -- a member value equal to the current default still pins that spec, which is
 -- exactly what a base editor needs to know. Outside a session a second line says
 -- what a base edit does. nil when no override names resolve.
-local _tipNames = {}   -- array part = names in order; hash part = dedupe set
+local _tipNames = {} -- array part = names in order; hash part = dedupe set
 local function AddTipName(name)
     if name and not _tipNames[name] then
         _tipNames[name] = true
@@ -594,12 +676,16 @@ local function SlotTipFor(sink)
                             end
                         end
                     end
-                    if not grouped then AddTipName(SpecName(k)) end
+                    if not grouped then
+                        AddTipName(SpecName(k))
+                    end
                 end
             end
             if not held and e.group then
                 local g = GroupById(e.group)
-                if g then AddTipName(g.name or "?") end
+                if g then
+                    AddTipName(g.name or "?")
+                end
             end
         end
         local ce = Cond.EntryOwning(fkey)
@@ -614,8 +700,7 @@ local function SlotTipFor(sink)
             end
             for k, m in pairs(ce.values) do
                 if type(k) == "number" and type(m) == "table" and m[fkey] ~= nil then
-                    local cg = CludesUI.Conditions_GroupById
-                        and CludesUI.Conditions_GroupById(k)
+                    local cg = CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(k)
                     if cg then
                         local tag = L("conditional")
                         if heldBy then
@@ -627,10 +712,13 @@ local function SlotTipFor(sink)
             end
         end
     end
-    if #_tipNames == 0 then return nil end
+    if #_tipNames == 0 then
+        return nil
+    end
     local s = "|cffc7a65a" .. L("Overridden by:") .. "|r " .. table.concat(_tipNames, ", ")
     if not _editGroup and not Cond._edit then
-        s = s .. "\n|cff909090"
+        s = s
+            .. "\n|cff909090"
             .. L("Changes here edit the shared default; overrides keep their own values.")
             .. "|r"
     end
@@ -649,12 +737,16 @@ local function GoldWalk(frame, forceOff, condGid, condName)
             if condGid and not condActive then
                 local ce = Cond.EntryOwning(fkey)
                 local m = ce and ce.values and ce.values[condGid]
-                if m and m[fkey] ~= nil then condActive = true end
+                if m and m[fkey] ~= nil then
+                    condActive = true
+                end
             end
             if not entry then
                 entry = EntryOwning(fkey) or Cond.EntryOwning(fkey)
             end
-            if entry and (condActive or not condGid) then break end
+            if entry and (condActive or not condGid) then
+                break
+            end
         end
         if condActive then
             SetSlotMark(frame, "condActive", nil, condName)
@@ -669,9 +761,15 @@ local function GoldWalk(frame, forceOff, condGid, condName)
             SetSlotMark(frame, false)
         end
     else
-        if frame._specOvGold then frame._specOvGold:Hide() end
-        if frame._specOvRed then frame._specOvRed:Hide() end
-        if frame._specOvCondActive then frame._specOvCondActive:Hide() end
+        if frame._specOvGold then
+            frame._specOvGold:Hide()
+        end
+        if frame._specOvRed then
+            frame._specOvRed:Hide()
+        end
+        if frame._specOvCondActive then
+            frame._specOvCondActive:Hide()
+        end
         if frame._specOvHover then
             frame._specOvTip = nil
             frame._specOvHover:Hide()
@@ -683,18 +781,24 @@ local function GoldWalk(frame, forceOff, condGid, condName)
     local kids = { frame:GetChildren() }
     for i = 1, #kids do
         local kid = kids[i]
-        if kid:IsShown() then GoldWalk(kid, forceOff, condGid, condName) end
+        if kid:IsShown() then
+            GoldWalk(kid, forceOff, condGid, condName)
+        end
     end
 end
 
 local _goldWalkQueued = false
 RequestGoldWalk = function()
-    if _goldWalkQueued then return end
+    if _goldWalkQueued then
+        return
+    end
     _goldWalkQueued = true
     C_Timer.After(0, function()
         _goldWalkQueued = false
         local root = _G.CludesUIFrame
-        if not (root and root:IsShown()) then return end
+        if not (root and root:IsShown()) then
+            return
+        end
         -- Excluded contexts never show slot marks (walk still clears stale ones)
         if IsExcludedContext() then
             GoldWalk(root, true)
@@ -705,11 +809,14 @@ RequestGoldWalk = function()
             -- session (a session view shows session values, not the overlay).
             local condGid, condName
             if not _editGroup and not Cond._edit then
-                condGid = CludesUI.Conditions_AppliedGid
-                    and CludesUI.Conditions_AppliedGid() or nil
-                local g = condGid and CludesUI.Conditions_GroupById
-                    and CludesUI.Conditions_GroupById(condGid) or nil
-                if g then condName = g.name else condGid = nil end
+                condGid = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
+                local g = condGid and CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(condGid)
+                    or nil
+                if g then
+                    condName = g.name
+                else
+                    condGid = nil
+                end
             end
             -- pcall is LOAD-BEARING: while the trace is active every db.profile
             -- in the Lite registry is a read-tracking PROXY that iterates EMPTY
@@ -719,7 +826,9 @@ RequestGoldWalk = function()
             -- wipe). EndTrace must run on every path.
             local ok, err = pcall(GoldWalk, root, nil, condGid, condName)
             EndTrace()
-            if not ok and err then geterrorhandler()(err) end
+            if not ok and err then
+                geterrorhandler()(err)
+            end
         end
     end)
 end

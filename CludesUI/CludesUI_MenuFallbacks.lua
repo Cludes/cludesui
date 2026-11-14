@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_MenuFallbacks.lua
 --
@@ -35,8 +37,12 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 local CludesUI = _G.CludesUI
-if not CludesUI then return end
-if not (Menu and Menu.ModifyMenu and Menu.GetManager and MenuUtil and MenuUtil.GetElementText) then return end
+if not CludesUI then
+    return
+end
+if not (Menu and Menu.ModifyMenu and Menu.GetManager and MenuUtil and MenuUtil.GetElementText) then
+    return
+end
 
 local HOUSING_OK = C_Housing and C_Housing.GetOthersOwnedHouses and C_Housing.VisitHouse
 
@@ -50,8 +56,7 @@ local function ResolveTheme()
     T.bgR, T.bgG, T.bgB, T.bgA = 0.08, 0.08, 0.08, 0.92
     T.insetR, T.insetG, T.insetB, T.insetA = 0.04, 0.04, 0.04, 0.85
     T.brdR, T.brdG, T.brdB, T.brdA = 0.2, 0.2, 0.2, 1
-    T.fontPath = (CludesUI.GetFontPath("blizzardSkin"))
-        or CludesUI._font or STANDARD_TEXT_FONT
+    T.fontPath = (CludesUI.GetFontPath("blizzardSkin")) or CludesUI._font or STANDARD_TEXT_FONT
     T.fontFlag = (CludesUI.GetFontOutlineFlag("blizzardSkin")) or ""
     T.fontShadow = (T.fontFlag == "")
         and (not CludesUI.GetFontUseShadow or CludesUI.GetFontUseShadow("blizzardSkin"))
@@ -67,9 +72,13 @@ end
 -- engine draws its borders (content on the frame renders above them).
 local function AddBorder(frame)
     local PP = CludesUI.PanelPP or CludesUI.PP
-    if not (PP and PP.CreateBorder) then return end
+    if not (PP and PP.CreateBorder) then
+        return
+    end
     local c = PP.CreateBorder(frame, T.brdR, T.brdG, T.brdB, T.brdA, 1, "BORDER", -7)
-    if c and c.SetFrameLevel then c:SetFrameLevel(frame:GetFrameLevel()) end
+    if c and c.SetFrameLevel then
+        c:SetFrameLevel(frame:GetFrameLevel())
+    end
 end
 
 -- family: a text that shows other players' writing (house and owner names)
@@ -88,7 +97,9 @@ end
 
 local function Panel(frame, inset)
     local r, g, b, a = T.bgR, T.bgG, T.bgB, T.bgA
-    if inset then r, g, b, a = T.insetR, T.insetG, T.insetB, T.insetA end
+    if inset then
+        r, g, b, a = T.insetR, T.insetG, T.insetB, T.insetA
+    end
     local bg = SolidTex(frame, "BACKGROUND", r, g, b, a, -6)
     bg:SetAllPoints(frame)
     AddBorder(frame)
@@ -101,7 +112,9 @@ local function MakeButton(parent, name, label, w, h, secure)
     local b = CreateFrame("Button", name, parent, secure and "SecureActionButtonTemplate" or nil)
     b:SetSize(w, h)
     b:RegisterForClicks("AnyUp")
-    if secure then b:SetAttribute("useOnKeyDown", false) end
+    if secure then
+        b:SetAttribute("useOnKeyDown", false)
+    end
     local fill = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
     fill:SetAllPoints(b)
     AddBorder(b)
@@ -122,12 +135,16 @@ local function MakeCloseButton(parent)
     x:SetSize(14, 14)
     x:SetPoint("CENTER")
     x:SetVertexColor(1, 1, 1, 0.75)
-    btn:SetScript("OnEnter", function() x:SetVertexColor(1, 1, 1, 1) end)
-    btn:SetScript("OnLeave", function() x:SetVertexColor(1, 1, 1, 0.75) end)
+    btn:SetScript("OnEnter", function()
+        x:SetVertexColor(1, 1, 1, 1)
+    end)
+    btn:SetScript("OnLeave", function()
+        x:SetVertexColor(1, 1, 1, 0.75)
+    end)
     return btn
 end
 
-local OpenHousesFor  -- defined with the house list below
+local OpenHousesFor -- defined with the house list below
 
 -------------------------------------------------------------------------------
 --  "View Houses" button, docked to the reopened menu
@@ -135,7 +152,7 @@ local OpenHousesFor  -- defined with the house list below
 local dock
 local dockEv = CreateFrame("Frame")
 local hookedMenus = setmetatable({}, { __mode = "k" })
-local reopenContext  -- the reopened menu's contextData, captured by the modifier
+local reopenContext -- the reopened menu's contextData, captured by the modifier
 
 local function BuildDock()
     ResolveTheme()
@@ -151,13 +168,17 @@ local function BuildDock()
     -- under the cursor answers HandlesGlobalMouseEvent (Menu.lua's opt-out for
     -- attached UI). Claim our clicks so the menu stays until OnClick, which
     -- then closes it itself.
-    d.houses.HandlesGlobalMouseEvent = function() return true end
+    d.houses.HandlesGlobalMouseEvent = function()
+        return true
+    end
     d.houses:SetScript("OnClick", function()
         local menu = d.menu
         d:Hide()
         if menu then
             local mgr = Menu.GetManager()
-            if mgr and mgr.CloseMenu then mgr:CloseMenu(menu) end
+            if mgr and mgr.CloseMenu then
+                mgr:CloseMenu(menu)
+            end
         end
         OpenHousesFor(reopenContext)
     end)
@@ -169,7 +190,9 @@ local function BuildDock()
     d:SetScript("OnShow", function()
         dockEv:RegisterEvent("PLAYER_ENTERING_WORLD")
     end)
-    dockEv:SetScript("OnEvent", function() d:Hide() end)
+    dockEv:SetScript("OnEvent", function()
+        d:Hide()
+    end)
     dock = d
     return d
 end
@@ -177,10 +200,14 @@ end
 -- Called by the backstop right after its (tainted) re-open, while that menu is
 -- the open one.
 function CludesUI._ShowReopenedMenuExtras(unit)
-    if not HOUSING_OK or not reopenContext or reopenContext.unit ~= unit then return end
+    if not HOUSING_OK or not reopenContext or reopenContext.unit ~= unit then
+        return
+    end
     local mgr = Menu.GetManager()
     local menu = mgr and mgr.GetOpenMenu and mgr:GetOpenMenu()
-    if not menu or (menu.IsForbidden and menu:IsForbidden()) then return end
+    if not menu or (menu.IsForbidden and menu:IsForbidden()) then
+        return
+    end
     local d = dock or BuildDock()
     d.menu = menu
     d:ClearAllPoints()
@@ -190,7 +217,9 @@ function CludesUI._ShowReopenedMenuExtras(unit)
     if not hookedMenus[menu] then
         hookedMenus[menu] = true
         menu:HookScript("OnHide", function(self)
-            if dock and dock.menu == self then dock:Hide() end
+            if dock and dock.menu == self then
+                dock:Hide()
+            end
         end)
     end
     d:Show()
@@ -206,7 +235,7 @@ local FRAME_W = 440
 local HEADER_H = 32
 
 local listFrame, rows, statusText, titleText
-local pendingHouses      -- last received house list, re-applied after combat
+local pendingHouses -- last received house list, re-applied after combat
 local listEv = CreateFrame("Frame")
 
 local function BuildList()
@@ -246,7 +275,9 @@ local function BuildList()
 
     local close = MakeCloseButton(header)
     close:SetPoint("RIGHT", header, "RIGHT", -6, 0)
-    close:SetScript("OnClick", function() f:Hide() end)
+    close:SetScript("OnClick", function()
+        f:Hide()
+    end)
 
     statusText = MakeText(f, 12, 0.7, 0.7, 0.7)
     statusText:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -(HEADER_H + 12))
@@ -282,13 +313,17 @@ local function BuildList()
         rows[i] = row
     end
 
-    if CludesUI.RegisterEscapeClose then CludesUI.RegisterEscapeClose(f) end
+    if CludesUI.RegisterEscapeClose then
+        CludesUI.RegisterEscapeClose(f)
+    end
     listFrame = f
     return f
 end
 
 local function ClearRows()
-    for i = 1, MAX_ROWS do rows[i]:Hide() end
+    for i = 1, MAX_ROWS do
+        rows[i]:Hide()
+    end
 end
 
 local function ApplyHouses(houses)
@@ -312,7 +347,9 @@ local function ApplyHouses(houses)
         row.name:SetText(h.houseName or CludesUI.L("House"))
         local where = h.neighborhoodName or ""
         if h.plotID then
-            where = where .. (where ~= "" and "  -  " or "") .. string.format(HOUSING_PLOT_NUMBER or "Plot %d", h.plotID)
+            where = where
+                .. (where ~= "" and "  -  " or "")
+                .. string.format(HOUSING_PLOT_NUMBER or "Plot %d", h.plotID)
         end
         if h.ownerName and h.ownerName ~= "" then
             where = where .. (where ~= "" and "  -  " or "") .. h.ownerName
@@ -334,10 +371,14 @@ listEv:SetScript("OnEvent", function(self, event, arg1)
         pendingHouses = arg1
         ApplyHouses(arg1)
     elseif event == "PLAYER_REGEN_ENABLED" then
-        if pendingHouses then ApplyHouses(pendingHouses) end
+        if pendingHouses then
+            ApplyHouses(pendingHouses)
+        end
     elseif event == "PLAYER_ENTERING_WORLD" then
         -- A successful visit loads a new map; the list has done its job.
-        if listFrame then listFrame:Hide() end
+        if listFrame then
+            listFrame:Hide()
+        end
     end
 end)
 
@@ -354,7 +395,9 @@ end
 
 -- Request the list for the menu's player.
 function OpenHousesFor(contextData)
-    if not contextData then return end
+    if not contextData then
+        return
+    end
     local f = listFrame
     if not f then
         f = BuildList()
@@ -362,13 +405,22 @@ function OpenHousesFor(contextData)
         f:SetScript("OnHide", ListOnHide)
     end
     local unit = contextData.unit
-    local name = (UnitPopupSharedUtil and UnitPopupSharedUtil.GetFullPlayerName
-        and UnitPopupSharedUtil.GetFullPlayerName(contextData))
-        or (unit and UnitName(unit)) or contextData.name or UNKNOWN
+    local name = (
+        UnitPopupSharedUtil
+        and UnitPopupSharedUtil.GetFullPlayerName
+        and UnitPopupSharedUtil.GetFullPlayerName(contextData)
+    )
+        or (unit and UnitName(unit))
+        or contextData.name
+        or UNKNOWN
     local guid = (unit and UnitGUID(unit))
         or (UnitPopupSharedUtil and UnitPopupSharedUtil.GetGUID and UnitPopupSharedUtil.GetGUID(contextData))
-    if issecretvalue and (issecretvalue(guid) or issecretvalue(name)) then return end
-    if not guid then return end
+    if issecretvalue and (issecretvalue(guid) or issecretvalue(name)) then
+        return
+    end
+    if not guid then
+        return
+    end
 
     pendingHouses = nil
     titleText:SetText(string.format(VIEW_HOUSES_TITLE or "%s's Houses", name))
@@ -383,8 +435,12 @@ end
 --  Menu modification: only the backstop's re-opened menu
 -------------------------------------------------------------------------------
 local function ModifyReopenedMenu(owner, rootDescription, contextData)
-    if not CludesUI._menuReopenUnit then return end
-    if not contextData or contextData.unit ~= CludesUI._menuReopenUnit then return end
+    if not CludesUI._menuReopenUnit then
+        return
+    end
+    if not contextData or contextData.unit ~= CludesUI._menuReopenUnit then
+        return
+    end
     reopenContext = contextData
     local viewHouses = UNIT_VIEW_HOUSES or "View Houses"
     local setFocus = SET_FOCUS or "Set Focus"
@@ -396,9 +452,19 @@ local function ModifyReopenedMenu(owner, rootDescription, contextData)
     local achievements = COMPARE_ACHIEVEMENTS or "Compare Achievements"
     for _, d in rootDescription:EnumerateElementDescriptions() do
         local text = MenuUtil.GetElementText(d)
-        if d.SetEnabled and (text == setFocus or text == follow or text == raidTarget
-                or text == trade or text == duel or text == petDuel or text == achievements
-                or (HOUSING_OK and text == viewHouses)) then
+        if
+            d.SetEnabled
+            and (
+                text == setFocus
+                or text == follow
+                or text == raidTarget
+                or text == trade
+                or text == duel
+                or text == petDuel
+                or text == achievements
+                or (HOUSING_OK and text == viewHouses)
+            )
+        then
             -- Range-gated entries call CheckInteractDistance from Blizzard's
             -- enabled predicate. Disable them before that predicate can run in
             -- this tainted reopen; normal secure menus keep their range checks.

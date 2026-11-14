@@ -1,42 +1,91 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  expressions.lua - type a filter like "hasBL and hasBR and healer > 0"
 --  our own little language, parsed into closures: nothing typed ever runs
 --  as lua. saved as extraExpr
 -------------------------------------------------------------------------------
 local FOLDER, ns = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[FOLDER] then
+    return
+end -- held back (CludesUIGroupFinder.lua)
 local GFNS = ns
 local CM = ns.CUI
 
 local EXPR_TEX = "Interface\\AddOns\\" .. FOLDER .. "\\media\\icons\\cui-expression.png"
 local Secret = CludesUI.IsSecret
-local function Readable(t) return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t)) end
+local function Readable(t)
+    return type(t) == "table" and not Secret(t) and not (canaccesstable and not canaccesstable(t))
+end
 
 -------------------------------------------------------------------------------
 --  words you can use (any case)
 -------------------------------------------------------------------------------
 local CLASS_WORDS = {
-    warrior = "WARRIOR", paladin = "PALADIN", hunter = "HUNTER", rogue = "ROGUE", priest = "PRIEST",
-    deathknight = "DEATHKNIGHT", dk = "DEATHKNIGHT", shaman = "SHAMAN", mage = "MAGE", warlock = "WARLOCK",
-    monk = "MONK", druid = "DRUID", demonhunter = "DEMONHUNTER", dh = "DEMONHUNTER", evoker = "EVOKER",
+    warrior = "WARRIOR",
+    paladin = "PALADIN",
+    hunter = "HUNTER",
+    rogue = "ROGUE",
+    priest = "PRIEST",
+    deathknight = "DEATHKNIGHT",
+    dk = "DEATHKNIGHT",
+    shaman = "SHAMAN",
+    mage = "MAGE",
+    warlock = "WARLOCK",
+    monk = "MONK",
+    druid = "DRUID",
+    demonhunter = "DEMONHUNTER",
+    dh = "DEMONHUNTER",
+    evoker = "EVOKER",
 }
 local WORDS = {
-    tank = "tanks", healer = "healers", dps = "dps", members = "members",
-    tankopen = "tanksLeft", healeropen = "healersLeft", dpsopen = "dpsLeft",
-    hasbl = "hasBL", hasbr = "hasBR", myclass = "myClass",
-    score = "score", ilvl = "ilvl", age = "age", friends = "friends", voice = "voice",
+    tank = "tanks",
+    healer = "healers",
+    dps = "dps",
+    members = "members",
+    tankopen = "tanksLeft",
+    healeropen = "healersLeft",
+    dpsopen = "dpsLeft",
+    hasbl = "hasBL",
+    hasbr = "hasBR",
+    myclass = "myClass",
+    score = "score",
+    ilvl = "ilvl",
+    age = "age",
+    friends = "friends",
+    voice = "voice",
 }
-for w, cls in pairs(CLASS_WORDS) do WORDS[w] = cls end
+for w, cls in pairs(CLASS_WORDS) do
+    WORDS[w] = cls
+end
 local LUST = { SHAMAN = true, MAGE = true, HUNTER = true, EVOKER = true }
 local BREZ = { DRUID = true, DEATHKNIGHT = true, WARLOCK = true, PALADIN = true }
 
 -------------------------------------------------------------------------------
 --  tokens
 -------------------------------------------------------------------------------
-local TWO = { ["<="] = "<=", [">="] = ">=", ["=="] = "==", ["~="] = "!=", ["!="] = "!=", ["&&"] = "and", ["||"] = "or" }
-local ONE = { ["+"] = "+", ["-"] = "-", ["*"] = "*", ["/"] = "/", ["("] = "(", [")"] = ")",
-    ["<"] = "<", [">"] = ">", ["="] = "==", ["!"] = "not" }
+local TWO = {
+    ["<="] = "<=",
+    [">="] = ">=",
+    ["=="] = "==",
+    ["~="] = "!=",
+    ["!="] = "!=",
+    ["&&"] = "and",
+    ["||"] = "or",
+}
+local ONE = {
+    ["+"] = "+",
+    ["-"] = "-",
+    ["*"] = "*",
+    ["/"] = "/",
+    ["("] = "(",
+    [")"] = ")",
+    ["<"] = "<",
+    [">"] = ">",
+    ["="] = "==",
+    ["!"] = "not",
+}
 local KEYWORDS = { ["and"] = "and", ["or"] = "or", ["not"] = "not" }
 
 local function Tokens(src)
@@ -54,10 +103,15 @@ local function Tokens(src)
                 i = i + #num
             elseif word then
                 local lw = word:lower()
-                if KEYWORDS[lw] then out[#out + 1] = { t = KEYWORDS[lw] }
-                elseif lw == "true" or lw == "false" then out[#out + 1] = { t = "num", v = lw == "true" and 1 or 0 }
-                elseif WORDS[lw] then out[#out + 1] = { t = "var", v = WORDS[lw] }
-                else return nil, CludesUI.Lf("unknown word: %1$s", word) end
+                if KEYWORDS[lw] then
+                    out[#out + 1] = { t = KEYWORDS[lw] }
+                elseif lw == "true" or lw == "false" then
+                    out[#out + 1] = { t = "num", v = lw == "true" and 1 or 0 }
+                elseif WORDS[lw] then
+                    out[#out + 1] = { t = "var", v = WORDS[lw] }
+                else
+                    return nil, CludesUI.Lf("unknown word: %1$s", word)
+                end
                 i = i + #word
             elseif TWO[two] then
                 out[#out + 1] = { t = TWO[two] }
@@ -66,7 +120,7 @@ local function Tokens(src)
                 out[#out + 1] = { t = ONE[c] }
                 i = i + 1
             else
-                return nil, CludesUI.Lf("can't use \"%1$s\"", c)
+                return nil, CludesUI.Lf('can\'t use "%1$s"', c)
             end
         end
     end
@@ -78,42 +132,63 @@ end
 --  a word we can't read for a group throws, and the group is kept
 -------------------------------------------------------------------------------
 local UNREADABLE = {}
-local function Truth(v) return v ~= 0 end
+local function Truth(v)
+    return v ~= 0
+end
 
 local function Compile(src)
     local toks, err = Tokens(src)
-    if not toks then return nil, err end
-    if #toks == 0 then return nil end
+    if not toks then
+        return nil, err
+    end
+    if #toks == 0 then
+        return nil
+    end
     local pos = 1
-    local function peek() return toks[pos] and toks[pos].t end
-    local function take() pos = pos + 1; return toks[pos - 1] end
+    local function peek()
+        return toks[pos] and toks[pos].t
+    end
+    local function take()
+        pos = pos + 1
+        return toks[pos - 1]
+    end
 
     local Or
     local function Primary()
         local tk = take()
-        if not tk then error(CludesUI.L("ends too soon"), 0) end
+        if not tk then
+            error(CludesUI.L("ends too soon"), 0)
+        end
         if tk.t == "num" then
             local v = tk.v
-            return function() return v end
+            return function()
+                return v
+            end
         elseif tk.t == "var" then
             local k = tk.v
             return function(env)
                 local v = env[k]
-                if v == nil then error(UNREADABLE, 0) end
+                if v == nil then
+                    error(UNREADABLE, 0)
+                end
                 return v
             end
         elseif tk.t == "(" then
             local f = Or()
-            if take() == nil or toks[pos - 1].t ~= ")" then error(CludesUI.L("missing )"), 0) end
+            if take() == nil or toks[pos - 1].t ~= ")" then
+                error(CludesUI.L("missing )"), 0)
+            end
             return f
         end
-        error(CludesUI.Lf("unexpected \"%1$s\"", tk.t), 0)
+        error(CludesUI.Lf('unexpected "%1$s"', tk.t), 0)
     end
     local function Unary()
         if peek() == "-" then
             take()
             local f = Unary()
-            return function(env) return -f(env) end
+            return function(env)
+                return -f(env)
+            end
         end
         return Primary()
     end
@@ -121,8 +196,16 @@ local function Compile(src)
         local f = Unary()
         while peek() == "*" or peek() == "/" do
             local op, a, b = take().t, f, Unary()
-            if op == "*" then f = function(env) return a(env) * b(env) end
-            else f = function(env) local d = b(env); return d == 0 and 0 or a(env) / d end end
+            if op == "*" then
+                f = function(env)
+                    return a(env) * b(env)
+                end
+            else
+                f = function(env)
+                    local d = b(env)
+                    return d == 0 and 0 or a(env) / d
+                end
+            end
         end
         return f
     end
@@ -130,15 +213,37 @@ local function Compile(src)
         local f = Mul()
         while peek() == "+" or peek() == "-" do
             local op, a, b = take().t, f, Mul()
-            if op == "+" then f = function(env) return a(env) + b(env) end
-            else f = function(env) return a(env) - b(env) end end
+            if op == "+" then
+                f = function(env)
+                    return a(env) + b(env)
+                end
+            else
+                f = function(env)
+                    return a(env) - b(env)
+                end
+            end
         end
         return f
     end
     local CMP = {
-        ["<"] = function(x, y) return x < y end, [">"] = function(x, y) return x > y end,
-        ["<="] = function(x, y) return x <= y end, [">="] = function(x, y) return x >= y end,
-        ["=="] = function(x, y) return x == y end, ["!="] = function(x, y) return x ~= y end,
+        ["<"] = function(x, y)
+            return x < y
+        end,
+        [">"] = function(x, y)
+            return x > y
+        end,
+        ["<="] = function(x, y)
+            return x <= y
+        end,
+        [">="] = function(x, y)
+            return x >= y
+        end,
+        ["=="] = function(x, y)
+            return x == y
+        end,
+        ["!="] = function(x, y)
+            return x ~= y
+        end,
     }
     local function Cmp()
         local f = Add()
@@ -146,7 +251,9 @@ local function Compile(src)
         if test then
             take()
             local a, b = f, Add()
-            f = function(env) return test(a(env), b(env)) and 1 or 0 end
+            f = function(env)
+                return test(a(env), b(env)) and 1 or 0
+            end
         end
         return f
     end
@@ -154,7 +261,9 @@ local function Compile(src)
         if peek() == "not" then
             take()
             local f = Not()
-            return function(env) return Truth(f(env)) and 0 or 1 end
+            return function(env)
+                return Truth(f(env)) and 0 or 1
+            end
         end
         return Cmp()
     end
@@ -163,7 +272,9 @@ local function Compile(src)
         while peek() == "and" do
             take()
             local a, b = f, Not()
-            f = function(env) return (Truth(a(env)) and Truth(b(env))) and 1 or 0 end
+            f = function(env)
+                return (Truth(a(env)) and Truth(b(env))) and 1 or 0
+            end
         end
         return f
     end
@@ -172,14 +283,20 @@ local function Compile(src)
         while peek() == "or" do
             take()
             local a, b = f, And()
-            f = function(env) return (Truth(a(env)) or Truth(b(env))) and 1 or 0 end
+            f = function(env)
+                return (Truth(a(env)) or Truth(b(env))) and 1 or 0
+            end
         end
         return f
     end
 
     local ok, f = pcall(Or)
-    if not ok then return nil, f end
-    if pos <= #toks then return nil, CludesUI.Lf("unexpected \"%1$s\"", toks[pos].t) end
+    if not ok then
+        return nil, f
+    end
+    if pos <= #toks then
+        return nil, CludesUI.Lf('unexpected "%1$s"', toks[pos].t)
+    end
     return f
 end
 
@@ -194,18 +311,26 @@ local function Current()
     if text ~= compiledFor then
         compiledFor = text
         compiled, compileErr = nil, nil
-        if type(text) == "string" and text:find("%S") then compiled, compileErr = Compile(text) end
+        if type(text) == "string" and text:find("%S") then
+            compiled, compileErr = Compile(text)
+        end
     end
     return compiled, compileErr
 end
 
-GFNS.ExtraExprActive = function() return Current() ~= nil end
+GFNS.ExtraExprActive = function()
+    return Current() ~= nil
+end
 
 -- one group's words, nil when the game hides one
 local env = {}
 local function Fill(id, info)
     wipe(env)
-    local function num(v) if type(v) == "number" and not Secret(v) then return v end end
+    local function num(v)
+        if type(v) == "number" and not Secret(v) then
+            return v
+        end
+    end
     local counts = C_LFGList.GetSearchResultMemberCounts(id)
     if Readable(counts) then
         env.tanks, env.healers, env.dps = num(counts.TANK), num(counts.HEALER), num(counts.DAMAGER)
@@ -217,15 +342,23 @@ local function Fill(id, info)
     if n then
         local _, mine = UnitClass("player")
         local lust, brez, same, all = 0, 0, 0, true
-        for _, cls in pairs(CLASS_WORDS) do env[cls] = 0 end
+        for _, cls in pairs(CLASS_WORDS) do
+            env[cls] = 0
+        end
         for i = 1, n do
             local p = C_LFGList.GetSearchResultPlayerInfo(id, i)
             local cls = Readable(p) and p.classFilename
             if cls and not Secret(cls) then
                 env[cls] = (env[cls] or 0) + 1
-                if LUST[cls] then lust = 1 end
-                if BREZ[cls] then brez = 1 end
-                if cls == mine then same = same + 1 end
+                if LUST[cls] then
+                    lust = 1
+                end
+                if BREZ[cls] then
+                    brez = 1
+                end
+                if cls == mine then
+                    same = same + 1
+                end
             else
                 all = false
             end
@@ -234,7 +367,9 @@ local function Fill(id, info)
         if all then
             env.hasBL, env.hasBR, env.myClass = lust, brez, same
         else
-            for _, cls in pairs(CLASS_WORDS) do env[cls] = nil end
+            for _, cls in pairs(CLASS_WORDS) do
+                env[cls] = nil
+            end
         end
     end
     env.score = num(info.leaderOverallDungeonScore)
@@ -242,17 +377,25 @@ local function Fill(id, info)
     local age = num(info.age)
     env.age = age and math.floor(age / 60)
     local f1, f2, f3 = num(info.numBNetFriends), num(info.numCharFriends), num(info.numGuildMates)
-    if f1 and f2 and f3 then env.friends = f1 + f2 + f3 end
+    if f1 and f2 and f3 then
+        env.friends = f1 + f2 + f3
+    end
     local vc = info.voiceChat
-    if not Secret(vc) then env.voice = (type(vc) == "string" and vc ~= "") and 1 or 0 end
+    if not Secret(vc) then
+        env.voice = (type(vc) == "string" and vc ~= "") and 1 or 0
+    end
 end
 
 GFNS.ExtraExprKeep = function(id, info)
     local f = Current()
-    if not f or not Readable(info) then return true end
+    if not f or not Readable(info) then
+        return true
+    end
     Fill(id, info)
     local ok, v = pcall(f, env)
-    if not ok then return true end  -- a word this group hides: keep it
+    if not ok then
+        return true
+    end -- a word this group hides: keep it
     return Truth(v)
 end
 
@@ -261,59 +404,115 @@ end
 -------------------------------------------------------------------------------
 -- the reference under the box: hover a tag for help, click to type it
 local SECTIONS = {
-    { title = CludesUI.L("Words"), boxes = {
-        { title = CludesUI.L("Open Slots"), color = { 0.35, 0.65, 1 }, cols = 1, examples = {
-            { "tankOpen >= 1", CludesUI.L("room for a tank") },
-            { "healerOpen > 0 and dpsOpen > 0", CludesUI.L("room for a healer and a dps") },
-            { "dpsOpen == 3", CludesUI.L("still needs all three dps") } }, tags = {
-            { "tankOpen", CludesUI.L("Tank spots still open.") },
-            { "healerOpen", CludesUI.L("Healer spots still open.") },
-            { "dpsOpen", CludesUI.L("DPS spots still open.") } } },
-        { title = CludesUI.L("Roles"), color = { 0.3, 0.85, 0.5 }, cols = 2, examples = {
-            { "tank == 1 and healer == 1", CludesUI.L("has its tank and healer") },
-            { "members <= 3", CludesUI.L("three players or fewer so far") },
-            { "myClass == 0", CludesUI.L("nobody of your class yet") },
-            { "mage >= 1 or priest >= 1", CludesUI.L("has a mage or a priest") },
-            { "dk + dh == 0", CludesUI.L("no death knight or demon hunter") } }, tags = {
-            { "tank", CludesUI.L("Tanks in the group.") },
-            { "healer", CludesUI.L("Healers in the group.") },
-            { "dps", CludesUI.L("DPS in the group.") },
-            { "mage", CludesUI.L("Any class name counts that class: mage, druid, priest, dk, dh...") },
-            { "members", CludesUI.L("Players in the group."), span = true },
-            { "myClass", CludesUI.L("Members of your own class."), span = true } } },
-        { title = CludesUI.L("Group"), color = { 0.72, 0.52, 1 }, cols = 2, examples = {
-            { "hasBL and hasBR", CludesUI.L("has bloodlust and a battle res") },
-            { "score >= 2500", CludesUI.L("leader has 2500 score or more") },
-            { "age <= 5", CludesUI.L("listed in the last five minutes") },
-            { "friends > 0", CludesUI.L("a friend or guildmate is in it") },
-            { "not voice", CludesUI.L("no voice chat listed") } }, tags = {
-            { "hasBL", CludesUI.L("1 when someone can Bloodlust / Heroism.") },
-            { "hasBR", CludesUI.L("1 when someone can battle res.") },
-            { "score", CludesUI.L("The leader's Mythic+ score.") },
-            { "ilvl", CludesUI.L("The group's required item level.") },
-            { "age", CludesUI.L("Minutes since the group was listed.") },
-            { "friends", CludesUI.L("Your friends and guildmates in the group.") },
-            { "voice", CludesUI.L("1 when the group lists voice chat.") } } },
-    } },
-    { title = CludesUI.L("Syntax"), boxes = {
-        { title = CludesUI.L("Math"), color = { 1, 0.55, 0.2 }, examples = {
-            { "tank + healer == 2", CludesUI.L("has both a tank and a healer") },
-            { "5 - members >= 2", CludesUI.L("at least two spots left") },
-            { "mage + priest + druid >= 2", CludesUI.L("two or more of those classes") },
-            { "(tank + healer) == 0", CludesUI.L("no tank or healer yet") } }, tags = {
-            { "+", CludesUI.L("Add.") }, { "-", CludesUI.L("Subtract.") }, { "*", CludesUI.L("Multiply.") }, { "/", CludesUI.L("Divide.") },
-            { "(", CludesUI.L("Group a part together.") }, { ")", CludesUI.L("Close the group.") } } },
-        { title = CludesUI.L("Comparisons"), color = { 1, 0.8, 0.2 }, examples = {
-            { "score > 2000", CludesUI.L("more than 2000") },
-            { "healer != 0", CludesUI.L("any healer at all") },
-            { "dps >= 1 and dps <= 2", CludesUI.L("one or two dps") },
-            { "hasBL or hasBR", CludesUI.L("either one is enough") },
-            { "not hasBL", CludesUI.L("no bloodlust") } }, tags = {
-            { ">", CludesUI.L("More than.") }, { "<", CludesUI.L("Less than.") }, { ">=", CludesUI.L("At least.") }, { "<=", CludesUI.L("At most.") },
-            { "==", CludesUI.L("Exactly.") }, { "!=", CludesUI.L("Anything but.") },
-            { "and", CludesUI.L("Both sides must be true.") }, { "or", CludesUI.L("Either side is enough.") },
-            { "not", CludesUI.L("Flips true and false.") } } },
-    } },
+    {
+        title = CludesUI.L("Words"),
+        boxes = {
+            {
+                title = CludesUI.L("Open Slots"),
+                color = { 0.35, 0.65, 1 },
+                cols = 1,
+                examples = {
+                    { "tankOpen >= 1", CludesUI.L("room for a tank") },
+                    { "healerOpen > 0 and dpsOpen > 0", CludesUI.L("room for a healer and a dps") },
+                    { "dpsOpen == 3", CludesUI.L("still needs all three dps") },
+                },
+                tags = {
+                    { "tankOpen", CludesUI.L("Tank spots still open.") },
+                    { "healerOpen", CludesUI.L("Healer spots still open.") },
+                    { "dpsOpen", CludesUI.L("DPS spots still open.") },
+                },
+            },
+            {
+                title = CludesUI.L("Roles"),
+                color = { 0.3, 0.85, 0.5 },
+                cols = 2,
+                examples = {
+                    { "tank == 1 and healer == 1", CludesUI.L("has its tank and healer") },
+                    { "members <= 3", CludesUI.L("three players or fewer so far") },
+                    { "myClass == 0", CludesUI.L("nobody of your class yet") },
+                    { "mage >= 1 or priest >= 1", CludesUI.L("has a mage or a priest") },
+                    { "dk + dh == 0", CludesUI.L("no death knight or demon hunter") },
+                },
+                tags = {
+                    { "tank", CludesUI.L("Tanks in the group.") },
+                    { "healer", CludesUI.L("Healers in the group.") },
+                    { "dps", CludesUI.L("DPS in the group.") },
+                    {
+                        "mage",
+                        CludesUI.L("Any class name counts that class: mage, druid, priest, dk, dh..."),
+                    },
+                    { "members", CludesUI.L("Players in the group."), span = true },
+                    { "myClass", CludesUI.L("Members of your own class."), span = true },
+                },
+            },
+            {
+                title = CludesUI.L("Group"),
+                color = { 0.72, 0.52, 1 },
+                cols = 2,
+                examples = {
+                    { "hasBL and hasBR", CludesUI.L("has bloodlust and a battle res") },
+                    { "score >= 2500", CludesUI.L("leader has 2500 score or more") },
+                    { "age <= 5", CludesUI.L("listed in the last five minutes") },
+                    { "friends > 0", CludesUI.L("a friend or guildmate is in it") },
+                    { "not voice", CludesUI.L("no voice chat listed") },
+                },
+                tags = {
+                    { "hasBL", CludesUI.L("1 when someone can Bloodlust / Heroism.") },
+                    { "hasBR", CludesUI.L("1 when someone can battle res.") },
+                    { "score", CludesUI.L("The leader's Mythic+ score.") },
+                    { "ilvl", CludesUI.L("The group's required item level.") },
+                    { "age", CludesUI.L("Minutes since the group was listed.") },
+                    { "friends", CludesUI.L("Your friends and guildmates in the group.") },
+                    { "voice", CludesUI.L("1 when the group lists voice chat.") },
+                },
+            },
+        },
+    },
+    {
+        title = CludesUI.L("Syntax"),
+        boxes = {
+            {
+                title = CludesUI.L("Math"),
+                color = { 1, 0.55, 0.2 },
+                examples = {
+                    { "tank + healer == 2", CludesUI.L("has both a tank and a healer") },
+                    { "5 - members >= 2", CludesUI.L("at least two spots left") },
+                    { "mage + priest + druid >= 2", CludesUI.L("two or more of those classes") },
+                    { "(tank + healer) == 0", CludesUI.L("no tank or healer yet") },
+                },
+                tags = {
+                    { "+", CludesUI.L("Add.") },
+                    { "-", CludesUI.L("Subtract.") },
+                    { "*", CludesUI.L("Multiply.") },
+                    { "/", CludesUI.L("Divide.") },
+                    { "(", CludesUI.L("Group a part together.") },
+                    { ")", CludesUI.L("Close the group.") },
+                },
+            },
+            {
+                title = CludesUI.L("Comparisons"),
+                color = { 1, 0.8, 0.2 },
+                examples = {
+                    { "score > 2000", CludesUI.L("more than 2000") },
+                    { "healer != 0", CludesUI.L("any healer at all") },
+                    { "dps >= 1 and dps <= 2", CludesUI.L("one or two dps") },
+                    { "hasBL or hasBR", CludesUI.L("either one is enough") },
+                    { "not hasBL", CludesUI.L("no bloodlust") },
+                },
+                tags = {
+                    { ">", CludesUI.L("More than.") },
+                    { "<", CludesUI.L("Less than.") },
+                    { ">=", CludesUI.L("At least.") },
+                    { "<=", CludesUI.L("At most.") },
+                    { "==", CludesUI.L("Exactly.") },
+                    { "!=", CludesUI.L("Anything but.") },
+                    { "and", CludesUI.L("Both sides must be true.") },
+                    { "or", CludesUI.L("Either side is enough.") },
+                    { "not", CludesUI.L("Flips true and false.") },
+                },
+            },
+        },
+    },
 }
 -- color words like their tags, unknown ones red
 local HUE = {}
@@ -324,15 +523,23 @@ do
             for _, tg in ipairs(bx.tags) do
                 local w = tg[1]:lower()
                 HUE[w] = bx.color
-                if WORDS[w] then byKey[WORDS[w]] = bx.color end
+                if WORDS[w] then
+                    byKey[WORDS[w]] = bx.color
+                end
             end
         end
     end
-    for w, key in pairs(WORDS) do HUE[w] = HUE[w] or byKey[key] end
+    for w, key in pairs(WORDS) do
+        HUE[w] = HUE[w] or byKey[key]
+    end
     local cmp = HUE[">"]
-    for _, op in ipairs({ "=", "~=", "&&", "||", "!" }) do HUE[op] = cmp end
+    for _, op in ipairs({ "=", "~=", "&&", "||", "!" }) do
+        HUE[op] = cmp
+    end
 end
-local function Hex(c) return string.format("|cff%02x%02x%02x", c[1] * 255, c[2] * 255, c[3] * 255) end
+local function Hex(c)
+    return string.format("|cff%02x%02x%02x", c[1] * 255, c[2] * 255, c[3] * 255)
+end
 local BAD_HEX = CludesUI.COLOR_CODES.BAD
 
 local function Colorize(text)
@@ -347,7 +554,9 @@ local function Colorize(text)
             piece = word
             local lw = word:lower()
             hue = HUE[lw]
-            if not hue and lw ~= "true" and lw ~= "false" then hue = "bad" end
+            if not hue and lw ~= "true" and lw ~= "false" then
+                hue = "bad"
+            end
         elseif num then
             piece = num
         elseif HUE[two] then
@@ -358,16 +567,20 @@ local function Colorize(text)
             piece, hue = c, HUE[c] or "bad"
         end
         local shown = piece:gsub("|", "||")
-        if hue == "bad" then out[#out + 1] = BAD_HEX .. shown .. "|r"
-        elseif hue then out[#out + 1] = Hex(hue) .. shown .. "|r"
-        else out[#out + 1] = shown end
+        if hue == "bad" then
+            out[#out + 1] = BAD_HEX .. shown .. "|r"
+        elseif hue then
+            out[#out + 1] = Hex(hue) .. shown .. "|r"
+        else
+            out[#out + 1] = shown
+        end
         i = i + #piece
     end
     return table.concat(out)
 end
 
 local TAG_H, TAG_PAD, TAG_GAP, BOX_PAD, BOX_GAP = 16, 6, 4, 6, 6
-local VPAD, ROW_GAP = 6, 8  -- group padding, gap between untitled rows
+local VPAD, ROW_GAP = 6, 8 -- group padding, gap between untitled rows
 
 -- a tag: small tinted box
 local function Tag(parent, K, spec, color, onClick)
@@ -393,7 +606,9 @@ local function Tag(parent, K, spec, color, onClick)
         self.fill:SetColorTexture(r, g, b, 0.14)
         K.Untip()
     end)
-    t:SetScript("OnClick", function() onClick(spec[1]) end)
+    t:SetScript("OnClick", function()
+        onClick(spec[1])
+    end)
     t.span = spec.span
     return t
 end
@@ -436,7 +651,12 @@ local function BuildHelp(panel, K, onClick)
                         local lines = {}
                         for _, ex in ipairs(spec.examples) do
                             -- starts with a color code so the tooltip keeps our colors
-                            lines[#lines + 1] = "|cffffffff|r" .. Colorize(ex[1]) .. "   " .. CludesUI.COLOR_CODES.DIM .. ex[2] .. "|r"
+                            lines[#lines + 1] = "|cffffffff|r"
+                                .. Colorize(ex[1])
+                                .. "   "
+                                .. CludesUI.COLOR_CODES.DIM
+                                .. ex[2]
+                                .. "|r"
                         end
                         K.Tip(self, CludesUI.Lf("%1$s Examples", spec.title), unpack(lines))
                     end)
@@ -448,7 +668,9 @@ local function BuildHelp(panel, K, onClick)
             end
             bx.cols = spec.cols
             bx.tags = {}
-            for _, tg in ipairs(spec.tags) do bx.tags[#bx.tags + 1] = Tag(bx, K, tg, spec.color, onClick) end
+            for _, tg in ipairs(spec.tags) do
+                bx.tags[#bx.tags + 1] = Tag(bx, K, tg, spec.color, onClick)
+            end
             if spec.text then
                 bx.plain = bx:CreateFontString(nil, "OVERLAY")
                 K.Font(bx.plain, 9)
@@ -475,20 +697,34 @@ local function BuildHelp(panel, K, onClick)
             local col, row = 0, 0
             for _, t in ipairs(bx.tags) do
                 local span = t.span and bx.cols or 1
-                if col > 0 and col + span > bx.cols then col, row = 0, row + 1 end
+                if col > 0 and col + span > bx.cols then
+                    col, row = 0, row + 1
+                end
                 t:SetWidth(cw * span + TAG_GAP * (span - 1))
                 t:ClearAllPoints()
-                t:SetPoint("TOPLEFT", bx, "TOPLEFT", BOX_PAD + col * (cw + TAG_GAP), -(top + row * (TAG_H + TAG_GAP)))
+                t:SetPoint(
+                    "TOPLEFT",
+                    bx,
+                    "TOPLEFT",
+                    BOX_PAD + col * (cw + TAG_GAP),
+                    -(top + row * (TAG_H + TAG_GAP))
+                )
                 col = col + span
-                if col >= bx.cols then col, row = 0, row + 1 end
+                if col >= bx.cols then
+                    col, row = 0, row + 1
+                end
             end
-            if col == 0 then row = row - 1 end
+            if col == 0 then
+                row = row - 1
+            end
             return top + (row + 1) * (TAG_H + TAG_GAP) - TAG_GAP + VPAD
         end
         local x, y = BOX_PAD, top
         for _, t in ipairs(bx.tags) do
             local tw = t:GetWidth()
-            if x > BOX_PAD and x + tw > w - BOX_PAD then x, y = BOX_PAD, y + TAG_H + TAG_GAP end
+            if x > BOX_PAD and x + tw > w - BOX_PAD then
+                x, y = BOX_PAD, y + TAG_H + TAG_GAP
+            end
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", bx, "TOPLEFT", x, -y)
             x = x + tw + TAG_GAP
@@ -516,8 +752,12 @@ local function BuildHelp(panel, K, onClick)
                 bx:ClearAllPoints()
                 bx:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", (i - 1) * (bw + BOX_GAP), -y)
             end
-            if si == #help.sections and fill and fill > y + rowH then rowH = fill - y end
-            for _, bx in ipairs(S.boxes) do bx:SetHeight(rowH) end
+            if si == #help.sections and fill and fill > y + rowH then
+                rowH = fill - y
+            end
+            for _, bx in ipairs(S.boxes) do
+                bx:SetHeight(rowH)
+            end
             y = y + rowH
         end
         return y
@@ -527,14 +767,26 @@ end
 
 local btn, panel, box, status, hint, shown
 local function Paint(K)
-    if not btn then return end
+    if not btn then
+        return
+    end
     local f, err = Current()
-    if f then btn.Glyph:SetVertexColor(K.Accent()) else btn.Glyph:SetVertexColor(K.GLYPH, K.GLYPH, K.GLYPH) end
+    if f then
+        btn.Glyph:SetVertexColor(K.Accent())
+    else
+        btn.Glyph:SetVertexColor(K.GLYPH, K.GLYPH, K.GLYPH)
+    end
     btn.activeEdge:SetShown(f ~= nil)
-    if shown and box then shown:SetText(Colorize(box:GetText())) end
-    if not status then return end
+    if shown and box then
+        shown:SetText(Colorize(box:GetText()))
+    end
+    if not status then
+        return
+    end
     local text = box and box:GetText() or ""
-    if hint then hint:SetShown(text == "") end
+    if hint then
+        hint:SetShown(text == "")
+    end
     if not text:find("%S") then
         status:SetText("")
     elseif f then
@@ -598,8 +850,12 @@ local function Build(SP, K)
         chl:SetAllPoints()
         chl:SetColorTexture(1, 1, 1, 0.1)
     end
-    clear:HookScript("OnEnter", function() ct:SetTextColor(1, 1, 1, 1) end)
-    clear:HookScript("OnLeave", function() ct:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A) end)
+    clear:HookScript("OnEnter", function()
+        ct:SetTextColor(1, 1, 1, 1)
+    end)
+    clear:HookScript("OnLeave", function()
+        ct:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    end)
 
     -- the typing box
     local well = CreateFrame("Frame", nil, panel)
@@ -638,8 +894,12 @@ local function Build(SP, K)
     hint:SetTextColor(0.45, 0.45, 0.45, 1)
     hint:SetText(CludesUI.L("e.g. hasBL and hasBR and healer > 0"))
     well:EnableMouse(true)
-    well:SetScript("OnMouseDown", function() box:SetFocus() end)
-    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    well:SetScript("OnMouseDown", function()
+        box:SetFocus()
+    end)
+    box:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
     -- our own cursor, blinks while you type
     local caret = ink:CreateTexture(nil, "OVERLAY")
     caret:SetColorTexture(1, 1, 1, 0.9)
@@ -671,7 +931,9 @@ local function Build(SP, K)
         caret:Hide()
     end)
     box:SetScript("OnTextChanged", function(self, user)
-        if not user then return end
+        if not user then
+            return
+        end
         local c = GFNS.Cfg()
         local text = self:GetText()
         c.extraExpr = text:find("%S") and text or nil
@@ -695,10 +957,16 @@ local function Build(SP, K)
     -- click a tag: typed in at the cursor
     local function Insert(word)
         local text, pos = box:GetText(), box:GetCursorPosition()
-        if not box:HasFocus() then pos = #text end
+        if not box:HasFocus() then
+            pos = #text
+        end
         local before, after = text:sub(1, pos), text:sub(pos + 1)
-        if before ~= "" and not before:find("%s$") then word = " " .. word end
-        if after ~= "" and not after:find("^%s") then word = word .. " " end
+        if before ~= "" and not before:find("%s$") then
+            word = " " .. word
+        end
+        if after ~= "" and not after:find("^%s") then
+            word = word .. " "
+        end
         box:SetText(before .. word .. after)
         box:SetFocus()
         box:SetCursorPosition(pos + #word)
@@ -711,15 +979,25 @@ local function Build(SP, K)
     local TOP, BOTTOM = 22 + 58, 10
     local function LayoutPanel()
         local w = panel:GetWidth()
-        if not w or w < 50 then return end
+        if not w or w < 50 then
+            return
+        end
         panel:SetHeight(TOP + help.Layout(well, w - 16) + BOTTOM)
     end
     panel:SetHeight(TOP + BOTTOM)
-    panel:SetScript("OnSizeChanged", function(_, w) if w and w > 50 then LayoutPanel() end end)
+    panel:SetScript("OnSizeChanged", function(_, w)
+        if w and w > 50 then
+            LayoutPanel()
+        end
+    end)
 
-    K.ClickOff(panel, function(self) return self:IsMouseOver() or btn:IsMouseOver() end)
+    K.ClickOff(panel, function(self)
+        return self:IsMouseOver() or btn:IsMouseOver()
+    end)
     panel:HookScript("OnShow", function()
-        if K.Dim then K.Dim(true) end
+        if K.Dim then
+            K.Dim(true)
+        end
         LayoutPanel()
         box:SetText(GFNS.Cfg().extraExpr or "")
         Paint(K)
@@ -728,12 +1006,17 @@ local function Build(SP, K)
     end)
     panel:HookScript("OnHide", function()
         box:ClearFocus()
-        if K.Dim then K.Dim(false) end
+        if K.Dim then
+            K.Dim(false)
+        end
     end)
     panel:Hide()
 
     btn:SetScript("OnClick", function()
-        if panel:IsShown() then panel:Hide() return end
+        if panel:IsShown() then
+            panel:Hide()
+            return
+        end
         panel:ClearAllPoints()
         local left = SP.SearchBox or btn
         panel:SetPoint("TOPLEFT", left, "BOTTOMLEFT", 0, -K.GAP)
@@ -743,17 +1026,26 @@ local function Build(SP, K)
     btn:SetScript("OnEnter", function(self)
         self.Glyph:SetAlpha(1)
         local f = Current()
-        K.Tip(self, CludesUI.L("Expressions"), f and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr) or CludesUI.L("Filter groups with your own rules"))
+        K.Tip(
+            self,
+            CludesUI.L("Expressions"),
+            f and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
+                or CludesUI.L("Filter groups with your own rules")
+        )
     end)
     btn:SetScript("OnLeave", function(self)
         self.Glyph:SetAlpha(0.8)
         K.Untip()
     end)
-    btn:SetScript("OnHide", function() panel:Hide() end)
+    btn:SetScript("OnHide", function()
+        panel:Hide()
+    end)
     GFNS.ExtraExprReset = function()
         local c = GFNS.Cfg()
         c.extraExpr = nil
-        if box then box:SetText("") end
+        if box then
+            box:SetText("")
+        end
         Paint(K)
     end
 end
@@ -765,10 +1057,14 @@ local lastK, lastSP
 local blockers = {}
 
 local function Block(target, on)
-    if not target then return end
+    if not target then
+        return
+    end
     local b = blockers[target]
     if not b then
-        if not on then return end
+        if not on then
+            return
+        end
         b = CreateFrame("Button", nil, target:GetParent() or UIParent)
         b:SetAllPoints(target)
         b:EnableMouse(true)
@@ -788,7 +1084,9 @@ end
 
 GFNS.ExtraOnDim = function(on)
     local K, SP = lastK, lastSP
-    if not (K and SP) then return end
+    if not (K and SP) then
+        return
+    end
     local exprOpen = on and panel and panel:IsShown()
     local filtersOpen = on and not exprOpen and K.FiltersOpen and K.FiltersOpen()
     Block(btn and btn:IsShown() and btn or nil, filtersOpen)
@@ -797,12 +1095,16 @@ GFNS.ExtraOnDim = function(on)
     Block(SP.SearchBox, exprOpen or filtersOpen)
     local face = GFNS.GFFilterFace and GFNS.GFFilterFace() or SP.FilterButton
     Block(face, filtersOpen)
-    if filtersOpen and face then face:SetAlpha(K.DIM_ALPHA or 0.35) end
+    if filtersOpen and face then
+        face:SetAlpha(K.DIM_ALPHA or 0.35)
+    end
 end
 
 GFNS.ExtraExprButton = function(SP, refresh, show, K)
     lastK, lastSP = K, SP
-    if not btn then Build(SP, K) end
+    if not btn then
+        Build(SP, K)
+    end
     btn.refresh = refresh
     btn:ClearAllPoints()
     btn:SetPoint("RIGHT", refresh, "LEFT", -K.GAP, 0)
@@ -814,5 +1116,7 @@ end
 -- reset with no box built yet
 GFNS.ExtraExprReset = function()
     local c = GFNS.Cfg and GFNS.Cfg()
-    if c then c.extraExpr = nil end
+    if c then
+        c.extraExpr = nil
+    end
 end

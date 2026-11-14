@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL.lua
 --  Runtime logic for all Quality-of-Life features toggled in the QoL Features
@@ -14,9 +16,21 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  shared with Cursor/BattleRes/Bloodlust: each NewDB merges its own defaults
 --  into the SAME profile table, repointed by the profile system on swap.
 -------------------------------------------------------------------------------
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue and CludesUI.SetFramePlacer and CludesUI.RAID_PREP_IDS and CludesUI.SetFontFamily) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Shifter's loot windows use the parent's frame placer; Raid Buff Check reads the parent's buff lists; the group death alert, /keys and Raid Buff Check names take the parent's font families)
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewCombatQueue
+        and CludesUI.SetFramePlacer
+        and CludesUI.RAID_PREP_IDS
+        and CludesUI.SetFontFamily
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Shifter's loot windows use the parent's frame placer; Raid Buff Check reads the parent's buff lists; the group death alert, /keys and Raid Buff Check names take the parent's font families)
 local ns = select(2, ...)
-CludesUI._ModuleNS["CludesUIQoL"] = ns  -- LOD options files read this module ns via the registry
+CludesUI._ModuleNS["CludesUIQoL"] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- Unlock-mode loadPos/clearPos for a QoL element whose slice (P()) stores pos as a
@@ -30,7 +44,10 @@ function ns.CenterPosFns(P)
         return nil
     end
     local function clearPos()
-        local p = P(); if p then p.pos = nil end
+        local p = P()
+        if p then
+            p.pos = nil
+        end
     end
     return loadPos, clearPos
 end
@@ -54,13 +71,20 @@ local function QoLExtrasProfile()
 end
 function CludesUI.QoLExtrasGet(k)
     local p = QoLExtrasProfile()
-    if p and p[k] ~= nil then return p[k] end
+    if p and p[k] ~= nil then
+        return p[k]
+    end
     return CludesUIDB and CludesUIDB[k]
 end
 function CludesUI.QoLExtrasSet(k, v)
     local p = QoLExtrasProfile()
-    if p then p[k] = v; return end
-    if not CludesUIDB then CludesUIDB = {} end
+    if p then
+        p[k] = v
+        return
+    end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     CludesUIDB[k] = v
 end
 
@@ -71,13 +95,19 @@ qolFrame:SetScript("OnEvent", function(self)
 
     -- Environment Ping keybind (CludesUI._applyEnvPing, further down):
     -- nothing is built unless a key is saved.
-    if CludesUIDB.envPingKey then CludesUI._applyEnvPing() end
+    if CludesUIDB.envPingKey then
+        CludesUI._applyEnvPing()
+    end
     -- Transparent World Map Sidebars (CludesUI._applyMapSidebars, further down;
     -- not on WoW Forever): nothing is built while off.
-    if CludesUIDB.mapSidebarsClear and CludesUI._applyMapSidebars then CludesUI._applyMapSidebars() end
+    if CludesUIDB.mapSidebarsClear and CludesUI._applyMapSidebars then
+        CludesUI._applyMapSidebars()
+    end
     -- Self Combat Text (CludesUIQoL_SelfCombatText.lua): nothing is built while off.
     ns.SCT_Refresh()
-    if CludesUI._applyUpgradeTooltips then CludesUI._applyUpgradeTooltips() end
+    if CludesUI._applyUpgradeTooltips then
+        CludesUI._applyUpgradeTooltips()
+    end
 
     ---------------------------------------------------------------------------
     -- Bonus roll confirmation. Addon-owned overlays intercept Roll/Pass clicks;
@@ -91,7 +121,8 @@ qolFrame:SetScript("OnEvent", function(self)
         local pending
 
         local function Enabled()
-            return CludesUIDB and CludesUIDB.bonusRollConfirmation == true
+            return CludesUIDB
+                and CludesUIDB.bonusRollConfirmation == true
                 and not C_AddOns.IsAddOnLoaded("BonusRollConfirm")
         end
 
@@ -100,14 +131,18 @@ qolFrame:SetScript("OnEvent", function(self)
             pending = nil
             -- The house popup is shared: the handle closes it only while it
             -- still shows this request, never another feature's dialog.
-            if old then CludesUI:CloseConfirmPopup(old.handle) end
+            if old then
+                CludesUI:CloseConfirmPopup(old.handle)
+            end
         end
 
         local function LootSpec()
             local id = GetLootSpecialization()
             if id == 0 then
                 local index = C_SpecializationInfo.GetSpecialization()
-                if index then id = C_SpecializationInfo.GetSpecializationInfo(index) end
+                if index then
+                    id = C_SpecializationInfo.GetSpecializationInfo(index)
+                end
             end
             local name = id and select(2, GetSpecializationInfoByID(id))
             return id, name or UNKNOWN
@@ -115,29 +150,46 @@ qolFrame:SetScript("OnEvent", function(self)
 
         local function IsCurrent(request)
             local frame = BonusRollFrame
-            return active and Enabled() and frame and frame:IsShown() and frame.state == "prompt"
-                and frame.spellID == request.spellID and frame.endTime == request.endTime
+            return active
+                and Enabled()
+                and frame
+                and frame:IsShown()
+                and frame.state == "prompt"
+                and frame.spellID == request.spellID
+                and frame.endTime == request.endTime
                 and (frame.remaining or 0) > 0
-                and request.button:IsShown() and request.button:IsEnabled()
+                and request.button:IsShown()
+                and request.button:IsEnabled()
                 and not request.button:IsProtected()
                 and request.button:GetScript("OnClick") == request.handler
                 and (not request.isRoll or request.specID == LootSpec())
         end
 
         local function Click(isRoll, button, mouseButton, down)
-            if not active or not Enabled() then return end
+            if not active or not Enabled() then
+                return
+            end
             Invalidate()
             local frame = BonusRollFrame
-            if not frame then return end
+            if not frame then
+                return
+            end
             local specID, specName = LootSpec()
             local request = {
-                spellID = frame.spellID, endTime = frame.endTime,
-                specID = specID, isRoll = isRoll, button = button,
+                spellID = frame.spellID,
+                endTime = frame.endTime,
+                specID = specID,
+                isRoll = isRoll,
+                button = button,
                 handler = button:GetScript("OnClick"),
             }
-            if not IsCurrent(request) then return end
+            if not IsCurrent(request) then
+                return
+            end
             request.cancel = function()
-                if pending == request then pending = nil end
+                if pending == request then
+                    pending = nil
+                end
             end
             pending = request
             request.handle = CludesUI:ShowConfirmPopup({
@@ -149,16 +201,22 @@ qolFrame:SetScript("OnEvent", function(self)
                 cancelText = CANCEL,
                 onCancel = request.cancel,
                 onConfirm = function()
-                    if pending ~= request then return end
+                    if pending ~= request then
+                        return
+                    end
                     local valid = IsCurrent(request)
                     Invalidate()
-                    if valid then button:Click(mouseButton, down) end
+                    if valid then
+                        button:Click(mouseButton, down)
+                    end
                 end,
             })
         end
 
         local function SyncOverlays()
-            if not rollOverlay then return end
+            if not rollOverlay then
+                return
+            end
             local frame = BonusRollFrame
             local show = active and Enabled() and frame and frame:IsShown() and frame.state == "prompt"
             rollOverlay:SetShown(show and true or false)
@@ -176,7 +234,9 @@ qolFrame:SetScript("OnEvent", function(self)
             overlay:SetScript("OnEnter", function(self)
                 CludesUI.ShowWidgetTooltip(self, isRoll and ROLL or PASS)
             end)
-            overlay:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            overlay:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             overlay:Hide()
             return overlay
         end
@@ -189,15 +249,22 @@ qolFrame:SetScript("OnEvent", function(self)
             local frame = BonusRollFrame
             local prompt = frame and frame.PromptFrame
             local roll, pass = prompt and prompt.RollButton, prompt and prompt.PassButton
-            if not roll or not pass or roll:IsProtected() or pass:IsProtected() then return end
-            if not roll:GetScript("OnClick") or not pass:GetScript("OnClick") then return end
+            if not roll or not pass or roll:IsProtected() or pass:IsProtected() then
+                return
+            end
+            if not roll:GetScript("OnClick") or not pass:GetScript("OnClick") then
+                return
+            end
             rollButton, passButton = roll, pass
             rollOverlay = MakeOverlay(roll, true)
             passOverlay = MakeOverlay(pass, false)
             if not lifecycleHooked then
                 lifecycleHooked = true
                 local function Changed()
-                    if active then Invalidate(); SyncOverlays() end
+                    if active then
+                        Invalidate()
+                        SyncOverlays()
+                    end
                 end
                 -- Secure post-hooks only: every prompt opens and closes through
                 -- these two (plus the events below). A script hook on the frame
@@ -214,7 +281,9 @@ qolFrame:SetScript("OnEvent", function(self)
             active = Enabled()
             if not active then
                 SyncOverlays()
-                if eventFrame then eventFrame:UnregisterAllEvents() end
+                if eventFrame then
+                    eventFrame:UnregisterAllEvents()
+                end
                 return
             end
             if not eventFrame then
@@ -251,28 +320,40 @@ qolFrame:SetScript("OnEvent", function(self)
 
         -- Walks all mount IDs so journal filters cannot hide a pending mount.
         local function AckMountAlerts()
-            if not C_MountJournal then return false end
+            if not C_MountJournal then
+                return false
+            end
             local pending = C_MountJournal.GetNumMountsNeedingFanfare
                 and C_MountJournal.GetNumMountsNeedingFanfare()
-            if not pending or pending <= 0 then return false end
+            if not pending or pending <= 0 then
+                return false
+            end
 
             for _, id in ipairs(C_MountJournal.GetMountIDs()) do
                 if C_MountJournal.NeedsFanfare(id) then
                     C_MountJournal.ClearFanfare(id)
                     pending = pending - 1
-                    if pending == 0 then break end
+                    if pending == 0 then
+                        break
+                    end
                 end
             end
             return true
         end
 
         local function AckPetAlerts()
-            if not C_PetJournal or not C_PetJournal.GetNumPetsNeedingFanfare then return false end
-            if (C_PetJournal.GetNumPetsNeedingFanfare() or 0) == 0 then return false end
+            if not C_PetJournal or not C_PetJournal.GetNumPetsNeedingFanfare then
+                return false
+            end
+            if (C_PetJournal.GetNumPetsNeedingFanfare() or 0) == 0 then
+                return false
+            end
             local any = false
             for _, id in ipairs(C_PetJournal.GetOwnedPetIDs and C_PetJournal.GetOwnedPetIDs() or {}) do
                 if id and C_PetJournal.PetNeedsFanfare and C_PetJournal.PetNeedsFanfare(id) then
-                    if C_PetJournal.ClearFanfare then C_PetJournal.ClearFanfare(id) end
+                    if C_PetJournal.ClearFanfare then
+                        C_PetJournal.ClearFanfare(id)
+                    end
                     any = true
                 end
             end
@@ -280,7 +361,9 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function AckToyAlerts()
-            if not C_ToyBoxInfo or not C_ToyBoxInfo.ClearFanfare then return false end
+            if not C_ToyBoxInfo or not C_ToyBoxInfo.ClearFanfare then
+                return false
+            end
             local any = false
             if ToyBox and ToyBox.fanfareToys then
                 for id, needs in pairs(ToyBox.fanfareToys) do
@@ -289,7 +372,9 @@ qolFrame:SetScript("OnEvent", function(self)
                         any = true
                     end
                 end
-                if any then return true end
+                if any then
+                    return true
+                end
             end
             if C_ToyBox and C_ToyBox.GetNumToys and C_ToyBox.GetToyFromIndex then
                 for i = 1, C_ToyBox.GetNumToys() do
@@ -304,8 +389,12 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function DismissCollectionAlerts()
-            if not (CludesUIDB and CludesUIDB.autoUnwrapCollections) then return end
-            if busy then return end
+            if not (CludesUIDB and CludesUIDB.autoUnwrapCollections) then
+                return
+            end
+            if busy then
+                return
+            end
             busy = true
             -- Fanfare only: calling the micro button alert functions from here
             -- taints them and blocks SetAvatarTexture in the Communities list.
@@ -313,7 +402,9 @@ qolFrame:SetScript("OnEvent", function(self)
                 busy = false
                 local mounts = AckMountAlerts()
                 local pets = AckPetAlerts()
-                if not (mounts or pets) then AckToyAlerts() end
+                if not (mounts or pets) then
+                    AckToyAlerts()
+                end
             end)
         end
 
@@ -325,7 +416,9 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         hooksecurefunc("MainMenuMicroButton_ShowAlert", function(_, text)
-            if not (CludesUIDB and CludesUIDB.autoUnwrapCollections) then return end
+            if not (CludesUIDB and CludesUIDB.autoUnwrapCollections) then
+                return
+            end
             if text == COLLECTION_UNOPENED_PLURAL or text == COLLECTION_UNOPENED_SINGULAR then
                 DismissCollectionAlerts()
             end
@@ -348,9 +441,13 @@ qolFrame:SetScript("OnEvent", function(self)
         end
         -- The options toggle: switching on also unwraps what is already pending.
         CludesUI._applyAutoUnwrap = function()
-            if SyncUnwrapEvents() then DismissCollectionAlerts() end
+            if SyncUnwrapEvents() then
+                DismissCollectionAlerts()
+            end
         end
-        if SyncUnwrapEvents() then f:RegisterEvent("PLAYER_LOGIN") end
+        if SyncUnwrapEvents() then
+            f:RegisterEvent("PLAYER_LOGIN")
+        end
         f:SetScript("OnEvent", function(self, event)
             if event == "PLAYER_LOGIN" then
                 self:UnregisterEvent("PLAYER_LOGIN")
@@ -366,8 +463,8 @@ qolFrame:SetScript("OnEvent", function(self)
     --  Auto Open Containers (incremental cache -- no login spike)
     ---------------------------------------------------------------------------
     do
-        local _openableCache = {}  -- itemID -> true/false
-        local _failedItems = {}   -- itemID -> true (failed to open, skip forever)
+        local _openableCache = {} -- itemID -> true/false
+        local _failedItems = {} -- itemID -> true (failed to open, skip forever)
         local _cacheBuilt = false
         -- In-flight opens keyed by bag/slot, set synchronously in the same tick as
         -- UseContainerItem (Lua is single-threaded, so no other pass can slip in) and
@@ -396,14 +493,18 @@ qolFrame:SetScript("OnEvent", function(self)
         -- clearing only once the server confirms. _lastBagChurn = GetTime() of the
         -- most recent raw BAG_UPDATE (real-time signal; coalesced BAG_UPDATE_DELAYED is too coarse).
         local _lastBagChurn = 0
-        local CHURN_SETTLE_WINDOW = 0.35  -- "recent" churn cutoff, seconds
-        local CHURN_SETTLE_DELAY = 0.4    -- extra wait when churn was recent
+        local CHURN_SETTLE_WINDOW = 0.35 -- "recent" churn cutoff, seconds
+        local CHURN_SETTLE_DELAY = 0.4 -- extra wait when churn was recent
         local function AODbg(...)
-            if CludesUI._AODEBUG then print("|cff33ff99[AutoOpen]|r", ...) end
+            if CludesUI._AODEBUG then
+                print("|cff33ff99[AutoOpen]|r", ...)
+            end
         end
         -- Forward-declared: scanFrame's OnUpdate calls ScanAndOpen once cache is built, so both must be in-scope upvalues (assigned further down).
         local ScanAndOpen, RequestScan
-        local function SlotKey(bag, slot) return bag * 1000 + slot end
+        local function SlotKey(bag, slot)
+            return bag * 1000 + slot
+        end
         local function IsEnabled()
             return CludesUIDB and CludesUIDB.autoOpenContainers == true
         end
@@ -411,13 +512,16 @@ qolFrame:SetScript("OnEvent", function(self)
         local ARTISAN_PAYOUT_ITEM_ID = 246585
         local SHARD_OF_DUNDUN_CURRENCY_ID = 3376
         local function ShouldHoldCappedArtisanPayout(itemID)
-            if itemID ~= ARTISAN_PAYOUT_ITEM_ID
-                or not (CludesUIDB
-                    and CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts == true) then
+            if
+                itemID ~= ARTISAN_PAYOUT_ITEM_ID
+                or not (CludesUIDB and CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts == true)
+            then
                 return false
             end
-            return C_CurrencyInfo and C_CurrencyInfo.PlayerHasMaxQuantity
-                and C_CurrencyInfo.PlayerHasMaxQuantity(SHARD_OF_DUNDUN_CURRENCY_ID) or false
+            return C_CurrencyInfo
+                    and C_CurrencyInfo.PlayerHasMaxQuantity
+                    and C_CurrencyInfo.PlayerHasMaxQuantity(SHARD_OF_DUNDUN_CURRENCY_ID)
+                or false
         end
         -- An open merchant turns UseContainerItem into a SELL, so auto-open pauses
         -- while any merchant frame is shown, or bought containers get vendored /
@@ -431,16 +535,29 @@ qolFrame:SetScript("OnEvent", function(self)
         -- but the server-tracked interaction is true at the mailbox/banker
         -- regardless of what draws the window.
         local function MailOpen()
-            return (C_PlayerInteractionManager and C_PlayerInteractionManager.IsInteractingWithNpcOfType
-                and C_PlayerInteractionManager.IsInteractingWithNpcOfType(Enum.PlayerInteractionType.MailInfo)) and true or false
+            return (
+                C_PlayerInteractionManager
+                and C_PlayerInteractionManager.IsInteractingWithNpcOfType
+                and C_PlayerInteractionManager.IsInteractingWithNpcOfType(Enum.PlayerInteractionType.MailInfo)
+            )
+                    and true
+                or false
         end
         local function BankOpen()
-            if not (C_PlayerInteractionManager and C_PlayerInteractionManager.IsInteractingWithNpcOfType) then return false end
+            if not (C_PlayerInteractionManager and C_PlayerInteractionManager.IsInteractingWithNpcOfType) then
+                return false
+            end
             -- Both bank types: character banker and the warband (account) bank.
-            local PIT, IsAt = Enum.PlayerInteractionType, C_PlayerInteractionManager.IsInteractingWithNpcOfType
+            local PIT, IsAt =
+                Enum.PlayerInteractionType, C_PlayerInteractionManager.IsInteractingWithNpcOfType
             -- some bankers open the character bank as CharacterBanker
-            return (IsAt(PIT.Banker) or (PIT.CharacterBanker and IsAt(PIT.CharacterBanker))
-                or IsAt(PIT.AccountBanker)) and true or false
+            return (
+                IsAt(PIT.Banker)
+                or (PIT.CharacterBanker and IsAt(PIT.CharacterBanker))
+                or IsAt(PIT.AccountBanker)
+            )
+                    and true
+                or false
         end
         -- "Exclude Warbound Containers": checks the item's own bind type
         -- instead of asking the bank if it would accept a deposit right now --
@@ -454,16 +571,26 @@ qolFrame:SetScript("OnEvent", function(self)
         local function IsWarboundExcluded(bag, slot)
             -- Default ON (unset behaves as enabled, matching the options UI's
             -- checked-by-default display); only explicit false disables it -- `not value` would wrongly let nil skip the exclusion.
-            if not CludesUIDB or CludesUIDB.autoOpenContainersExcludeWarbound == false then return false end
-            if not (C_Container and C_Container.GetContainerItemInfo and C_Item and C_Item.GetItemInfo) then return false end
+            if not CludesUIDB or CludesUIDB.autoOpenContainersExcludeWarbound == false then
+                return false
+            end
+            if not (C_Container and C_Container.GetContainerItemInfo and C_Item and C_Item.GetItemInfo) then
+                return false
+            end
             local info = C_Container.GetContainerItemInfo(bag, slot)
-            if not (info and info.itemID) then return false end
+            if not (info and info.itemID) then
+                return false
+            end
             local _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = C_Item.GetItemInfo(info.itemID)
             -- Item data not cached yet: fail CLOSED (skip this pass; the scan
             -- re-checks once the data lands) so a warbound container is never
             -- opened just because its bind type was not known yet.
-            if not bindType then return true end
-            if WARBOUND_BIND_TYPES[bindType] == true then return true end
+            if not bindType then
+                return true
+            end
+            if WARBOUND_BIND_TYPES[bindType] == true then
+                return true
+            end
             -- Warbound Until Equipped containers report bindType == OnEquip, same as
             -- an ordinary BoE item (no dedicated GetItemInfo enum value -- see
             -- CUI_Bags.SetBindTypeText's "WuE items report bindType == OnEquip"), so
@@ -477,11 +604,13 @@ qolFrame:SetScript("OnEvent", function(self)
             end
             return false
         end
-        local SLOTS_PER_FRAME = 3  -- check 3 slots per OnUpdate tick
+        local SLOTS_PER_FRAME = 3 -- check 3 slots per OnUpdate tick
 
         local function IsOpenableByID(itemID, bag, slot)
             local cached = _openableCache[itemID]
-            if cached ~= nil then return cached end
+            if cached ~= nil then
+                return cached
+            end
             local tip = C_TooltipInfo and C_TooltipInfo.GetBagItem and C_TooltipInfo.GetBagItem(bag, slot)
             if tip and tip.lines then
                 for _, line in ipairs(tip.lines) do
@@ -511,7 +640,10 @@ qolFrame:SetScript("OnEvent", function(self)
         local scanFrame = CreateFrame("Frame")
         scanFrame:Hide()
         scanFrame:SetScript("OnUpdate", function(self)
-            if not IsEnabled() then self:Hide(); return end
+            if not IsEnabled() then
+                self:Hide()
+                return
+            end
             local checked = 0
             while checked < SLOTS_PER_FRAME do
                 local numSlots = C_Container.GetContainerNumSlots(_scanBag)
@@ -522,7 +654,9 @@ qolFrame:SetScript("OnEvent", function(self)
                         -- Cache warm: hand off to the open cycle, which re-scans itself.
                         _cacheBuilt = true
                         self:Hide()
-                        if ScanAndOpen then ScanAndOpen(false) end
+                        if ScanAndOpen then
+                            ScanAndOpen(false)
+                        end
                         return
                     end
                 else
@@ -560,8 +694,11 @@ qolFrame:SetScript("OnEvent", function(self)
                 -- Loot window tracking (see _lootOpen).
                 containerFrame:RegisterEvent("LOOT_OPENED")
                 containerFrame:RegisterEvent("LOOT_CLOSED")
-                if CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts == true
-                    and C_CurrencyInfo and C_CurrencyInfo.PlayerHasMaxQuantity then
+                if
+                    CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts == true
+                    and C_CurrencyInfo
+                    and C_CurrencyInfo.PlayerHasMaxQuantity
+                then
                     containerFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
                 else
                     containerFrame:UnregisterEvent("CURRENCY_DISPLAY_UPDATE")
@@ -607,7 +744,9 @@ qolFrame:SetScript("OnEvent", function(self)
 
         -- Initial kick 2s after login (bags need a moment to settle)
         C_Timer.After(2, function()
-            if IsEnabled() then CludesUI._applyAutoOpenContainers() end
+            if IsEnabled() then
+                CludesUI._applyAutoOpenContainers()
+            end
         end)
         -- skipMerchantGate: MERCHANT_CLOSED's re-run fires before MerchantFrame
         -- finishes hiding, so its entry check would misread "merchant open" and bail;
@@ -627,17 +766,36 @@ qolFrame:SetScript("OnEvent", function(self)
         -- skipMailGate: MAIL_CLOSED/interaction-manager hide already settle 0.5s
         -- below, so MailOpen() is reliably false by then -- belt and suspenders, not load-bearing like skipMerchantGate.
         ScanAndOpen = function(skipMerchantGate, skipMailGate, skipBankGate)
-            if not _cacheBuilt then return end
-            if not IsEnabled() then return end
-            if InCombatLockdown() then return end
-            if not skipMerchantGate and MerchantOpen() then return end
-            if not skipMailGate and MailOpen() then return end
-            if not skipBankGate and BankOpen() then return end
-            if PlayerIsCasting() then _missedScan = true; return end
+            if not _cacheBuilt then
+                return
+            end
+            if not IsEnabled() then
+                return
+            end
+            if InCombatLockdown() then
+                return
+            end
+            if not skipMerchantGate and MerchantOpen() then
+                return
+            end
+            if not skipMailGate and MailOpen() then
+                return
+            end
+            if not skipBankGate and BankOpen() then
+                return
+            end
+            if PlayerIsCasting() then
+                _missedScan = true
+                return
+            end
             -- Loot window up: LOOT_CLOSED restarts once the payout container leaves the bag.
-            if _lootOpen then return end
+            if _lootOpen then
+                return
+            end
             -- A running cycle's finish() re-scan picks up this trigger.
-            if _openBusy then return end
+            if _openBusy then
+                return
+            end
 
             local toOpen = {}
             for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
@@ -654,7 +812,9 @@ qolFrame:SetScript("OnEvent", function(self)
                     end
                 end
             end
-            if #toOpen == 0 then return end
+            if #toOpen == 0 then
+                return
+            end
 
             _openBusy = true
             _cycleGen = _cycleGen + 1
@@ -665,60 +825,96 @@ qolFrame:SetScript("OnEvent", function(self)
             -- Only place _openBusy is cleared; every step() exit routes here so it
             -- can't leak (freezes auto-open until reload). A stale generation must NOT clear it -- belongs to the new cycle.
             local function finish()
-                if myGen ~= _cycleGen then return end
+                if myGen ~= _cycleGen then
+                    return
+                end
                 _openBusy = false
-                if (madeProgress or _missedScan) and IsEnabled()
+                if
+                    (madeProgress or _missedScan)
+                    and IsEnabled()
                     and not InCombatLockdown()
-                    and not MerchantOpen() and not MailOpen() and not BankOpen() and not _lootOpen then
+                    and not MerchantOpen()
+                    and not MailOpen()
+                    and not BankOpen()
+                    and not _lootOpen
+                then
                     _missedScan = false
-                    C_Timer.After(0.3, function() ScanAndOpen(false, false, false) end)
+                    C_Timer.After(0.3, function()
+                        ScanAndOpen(false, false, false)
+                    end)
                 end
             end
 
-            local PaceNext  -- forward-declared: assigned after step, below
+            local PaceNext -- forward-declared: assigned after step, below
             local function step(idx)
-                if myGen ~= _cycleGen then return end
-                if idx > #toOpen then return finish() end
-                if not IsEnabled() or InCombatLockdown() or MerchantOpen() or MailOpen() or BankOpen() then return finish() end
+                if myGen ~= _cycleGen then
+                    return
+                end
+                if idx > #toOpen then
+                    return finish()
+                end
+                if not IsEnabled() or InCombatLockdown() or MerchantOpen() or MailOpen() or BankOpen() then
+                    return finish()
+                end
                 -- Re-checked per step: the cycle paces itself across seconds of timers, so a cast can start long after the entry gate passed.
-                if PlayerIsCasting() then _missedScan = true; return finish() end
+                if PlayerIsCasting() then
+                    _missedScan = true
+                    return finish()
+                end
                 -- Loot window opened mid-cycle: stop; LOOT_CLOSED restarts cleanly.
-                if _lootOpen then return finish() end
+                if _lootOpen then
+                    return finish()
+                end
                 local item = toOpen[idx]
                 local key = SlotKey(item.bag, item.slot)
                 local info = C_Container.GetContainerItemInfo(item.bag, item.slot)
                 -- Never act on a slot mid-action (_openInProgress, or Blizzard's isLocked): reusing a still-resolving container strands it.
                 if info and info.itemID and not info.isLocked and not _openInProgress[key] then
-                    if IsWarboundExcluded(item.bag, item.slot)
-                        or ShouldHoldCappedArtisanPayout(info.itemID) then
+                    if
+                        IsWarboundExcluded(item.bag, item.slot)
+                        or ShouldHoldCappedArtisanPayout(info.itemID)
+                    then
                         return step(idx + 1)
                     end
                     if _openableCache[info.itemID] and not _failedItems[info.itemID] then
                         local prevID = info.itemID
                         local prevCount = info.stackCount or 1
                         _openInProgress[key] = true
-                        _pendingOpen = { bag = item.bag, slot = item.slot,
-                            itemID = prevID, count = prevCount }
-                        AODbg(("open bag=%d slot=%d item=%d"):format(
-                            item.bag, item.slot, prevID))
+                        _pendingOpen = {
+                            bag = item.bag,
+                            slot = item.slot,
+                            itemID = prevID,
+                            count = prevCount,
+                        }
+                        AODbg(("open bag=%d slot=%d item=%d"):format(item.bag, item.slot, prevID))
                         C_Container.UseContainerItem(item.bag, item.slot)
                         C_Timer.After(0.5, function()
                             -- Always release the slot flag; a stale-generation chain
                             -- stops here since its verdict would race the cycle that replaced it.
                             _openInProgress[key] = nil
                             -- No loot window claimed this open by now: drop the attribution so an unrelated later window can't inherit it.
-                            if _pendingOpen and _pendingOpen.bag == item.bag
-                                and _pendingOpen.slot == item.slot then
+                            if
+                                _pendingOpen
+                                and _pendingOpen.bag == item.bag
+                                and _pendingOpen.slot == item.slot
+                            then
                                 _pendingOpen = nil
                             end
-                            if myGen ~= _cycleGen then return end
+                            if myGen ~= _cycleGen then
+                                return
+                            end
                             local after = C_Container.GetContainerItemInfo(item.bag, item.slot)
-                            local progressed = (not after) or after.itemID ~= prevID
+                            local progressed = not after
+                                or after.itemID ~= prevID
                                 or (after.stackCount or 1) < prevCount
                             if progressed then
                                 madeProgress = true
-                            elseif after and after.itemID == prevID and not after.isLocked
-                                and not _lootOpen then
+                            elseif
+                                after
+                                and after.itemID == prevID
+                                and not after.isLocked
+                                and not _lootOpen
+                            then
                                 -- Unchanged, unlocked, no loot window => genuine failure.
                                 -- A still-locked slot is just slow, so it's left uncached for a later retry.
                                 _failedItems[prevID] = true
@@ -730,33 +926,46 @@ qolFrame:SetScript("OnEvent", function(self)
                         return
                     end
                 end
-                C_Timer.After(0.1, function() step(idx + 1) end)
+                C_Timer.After(0.1, function()
+                    step(idx + 1)
+                end)
             end
 
             -- Paces the step AFTER a real open resolves: if something else just touched
             -- the bags (e.g. Blizzard's item delivery), let it settle first. Mailbox is covered separately (pause while open, settle after close).
             PaceNext = function(idx)
-                if myGen ~= _cycleGen then return end
+                if myGen ~= _cycleGen then
+                    return
+                end
                 local extra, why = 0, nil
                 if GetTime() - _lastBagChurn < CHURN_SETTLE_WINDOW then
                     extra, why = CHURN_SETTLE_DELAY, "churn"
                 end
                 if extra > 0 then
                     AODbg(("pacing +%.1fs (%s)"):format(extra, why))
-                    C_Timer.After(extra, function() step(idx) end)
+                    C_Timer.After(extra, function()
+                        step(idx)
+                    end)
                 else
                     step(idx)
                 end
             end
 
-            C_Timer.After(0.15, function() step(1) end)
+            C_Timer.After(0.15, function()
+                step(1)
+            end)
         end
 
         -- Coalesce a burst of BAG_UPDATE_DELAYED (a single open fires several) into one next-frame scan; skips while a cycle is in flight.
         RequestScan = function()
             -- Dropped mid-cycle: remembered so finish() re-scans even with no progress.
-            if _openBusy then _missedScan = true; return end
-            if _scanScheduled then return end
+            if _openBusy then
+                _missedScan = true
+                return
+            end
+            if _scanScheduled then
+                return
+            end
             _scanScheduled = true
             C_Timer.After(0, function()
                 _scanScheduled = false
@@ -787,8 +996,12 @@ qolFrame:SetScript("OnEvent", function(self)
                     _lootSource = nil
                     if src then
                         local now = C_Container.GetContainerItemInfo(src.bag, src.slot)
-                        if now and now.itemID == src.itemID and not now.isLocked
-                            and (now.stackCount or 1) >= src.count then
+                        if
+                            now
+                            and now.itemID == src.itemID
+                            and not now.isLocked
+                            and (now.stackCount or 1) >= src.count
+                        then
                             _failedItems[src.itemID] = true
                         end
                     end
@@ -806,36 +1019,51 @@ qolFrame:SetScript("OnEvent", function(self)
                 end
                 return
             end
-            if event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_STOP"
-                or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
+            if
+                event == "UNIT_SPELLCAST_SUCCEEDED"
+                or event == "UNIT_SPELLCAST_STOP"
+                or event == "UNIT_SPELLCAST_CHANNEL_STOP"
+            then
                 -- Resume only when the casting gate actually deferred work -- these fire on every instant cast too, and walking bags each time would be constant overhead.
                 if _missedScan and not _openBusy then
                     _missedScan = false
-                    C_Timer.After(0.1, function() ScanAndOpen(false, false) end)
+                    C_Timer.After(0.1, function()
+                        ScanAndOpen(false, false)
+                    end)
                 end
                 return
             end
             if event == "BANKFRAME_CLOSED" then
                 -- Legacy path like MAIL_CLOSED below; the interaction-manager
                 -- HIDE below is the live driver on retail.
-                C_Timer.After(0.5, function() ScanAndOpen(false, false, true) end)
+                C_Timer.After(0.5, function()
+                    ScanAndOpen(false, false, true)
+                end)
                 return
             end
             if event == "MAIL_CLOSED" then
                 -- Legacy, doesn't fire on retail (kept for older clients).
-                C_Timer.After(0.5, function() ScanAndOpen(false, true, false) end)
+                C_Timer.After(0.5, function()
+                    ScanAndOpen(false, true, false)
+                end)
                 return
             end
             if event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
                 if interactionType == Enum.PlayerInteractionType.MailInfo then
                     -- The event that actually fires on retail; mail's own delivery can still unlock slots just after close, so settle first like LOOT_CLOSED.
-                    C_Timer.After(0.5, function() ScanAndOpen(false, true, false) end)
-                elseif interactionType == Enum.PlayerInteractionType.Banker
+                    C_Timer.After(0.5, function()
+                        ScanAndOpen(false, true, false)
+                    end)
+                elseif
+                    interactionType == Enum.PlayerInteractionType.Banker
                     or interactionType == Enum.PlayerInteractionType.CharacterBanker
-                    or interactionType == Enum.PlayerInteractionType.AccountBanker then
+                    or interactionType == Enum.PlayerInteractionType.AccountBanker
+                then
                     -- AccountBanker: the warband bank signals its own type, and
                     -- BankOpen() gates both (same BankFrame).
-                    C_Timer.After(0.5, function() ScanAndOpen(false, false, true) end)
+                    C_Timer.After(0.5, function()
+                        ScanAndOpen(false, false, true)
+                    end)
                 end
                 return
             end
@@ -883,39 +1111,57 @@ qolFrame:SetScript("OnEvent", function(self)
         local hooked = false
 
         local function FreeProfessionSlots()
-            if not GetProfessions then return 2 end
+            if not GetProfessions then
+                return 2
+            end
             local a, b = GetProfessions()
             return 2 - (a and 1 or 0) - (b and 1 or 0)
         end
 
         -- Purchasable given current funds/slots? Returns ok, cost, takesProfSlot.
         local function SkillIsAffordable(i, wallet, freeSlots)
-            if not GetTrainerServiceInfo or not GetTrainerServiceCost then return false, 0, false end
+            if not GetTrainerServiceInfo or not GetTrainerServiceCost then
+                return false, 0, false
+            end
             local _, kind = GetTrainerServiceInfo(i)
-            if kind ~= "available" then return false, 0, false end
+            if kind ~= "available" then
+                return false, 0, false
+            end
             local cost, takesProfSlot = GetTrainerServiceCost(i)
             cost = cost or 0
-            if cost > wallet then return false, 0, false end
-            if takesProfSlot and freeSlots <= 0 then return false, 0, false end
+            if cost > wallet then
+                return false, 0, false
+            end
+            if takesProfSlot and freeSlots <= 0 then
+                return false, 0, false
+            end
             return true, cost, takesProfSlot
         end
 
         local function TrainableSummary()
-            if not GetNumTrainerServices then return 0, 0 end
+            if not GetNumTrainerServices then
+                return 0, 0
+            end
             local n, gold = 0, 0
             local wallet = GetMoney and GetMoney() or 0
-            local slots  = FreeProfessionSlots()
+            local slots = FreeProfessionSlots()
             for i = 1, GetNumTrainerServices() do
                 local ok, cost = SkillIsAffordable(i, wallet, slots)
-                if ok then n = n + 1; gold = gold + cost end
+                if ok then
+                    n = n + 1
+                    gold = gold + cost
+                end
             end
             return n, gold
         end
 
         local function RefreshButton()
-            if not trainBtn then return end
+            if not trainBtn then
+                return
+            end
             if not (CludesUIDB and CludesUIDB.trainAllButton) then
-                trainBtn:Hide(); return
+                trainBtn:Hide()
+                return
             end
             local n = TrainableSummary()
             trainBtn:SetEnabled(n > 0)
@@ -923,9 +1169,17 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function SpawnButton()
-            if not (CludesUIDB and CludesUIDB.trainAllButton) then return end
-            if not ClassTrainerFrame or not ClassTrainerTrainButton then return end
-            if trainBtn then trainBtn:Show(); RefreshButton(); return end
+            if not (CludesUIDB and CludesUIDB.trainAllButton) then
+                return
+            end
+            if not ClassTrainerFrame or not ClassTrainerTrainButton then
+                return
+            end
+            if trainBtn then
+                trainBtn:Show()
+                RefreshButton()
+                return
+            end
 
             trainBtn = CreateFrame("Button", "CUI_TrainAllButton", ClassTrainerFrame, "MagicButtonTemplate")
             trainBtn:SetText("Train All")
@@ -935,7 +1189,7 @@ qolFrame:SetScript("OnEvent", function(self)
 
             trainBtn:SetScript("OnClick", function()
                 local wallet = GetMoney and GetMoney() or 0
-                local slots  = FreeProfessionSlots()
+                local slots = FreeProfessionSlots()
                 -- Descending: a purchase reindexes the list, so only already-
                 -- visited (higher) indices shift and no skill is skipped.
                 for i = GetNumTrainerServices(), 1, -1 do
@@ -943,21 +1197,26 @@ qolFrame:SetScript("OnEvent", function(self)
                     if ok then
                         BuyTrainerService(i)
                         wallet = wallet - cost
-                        if takesProfSlot then slots = slots - 1 end
+                        if takesProfSlot then
+                            slots = slots - 1
+                        end
                     end
                 end
             end)
 
             trainBtn:SetScript("OnEnter", function(self)
                 local n, gold = TrainableSummary()
-                if n <= 0 then return end
+                if n <= 0 then
+                    return
+                end
                 local goldStr = C_CurrencyInfo.GetCoinTextureString(gold)
-                local msg = (n == 1)
-                    and CludesUI.Lf("Learn %1$d skill for %2$s", n, goldStr)
-                    or  CludesUI.Lf("Learn %1$d skills for %2$s", n, goldStr)
+                local msg = (n == 1) and CludesUI.Lf("Learn %1$d skill for %2$s", n, goldStr)
+                    or CludesUI.Lf("Learn %1$d skills for %2$s", n, goldStr)
                 CludesUI.ShowWidgetTooltip(self, msg)
             end)
-            trainBtn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            trainBtn:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             if not hooked then
                 hooksecurefunc("ClassTrainerFrame_Update", RefreshButton)
@@ -998,12 +1257,22 @@ qolFrame:SetScript("OnEvent", function(self)
         local ahFrame = CreateFrame("Frame")
         ahFrame:RegisterEvent("AUCTION_HOUSE_SHOW")
         ahFrame:SetScript("OnEvent", function()
-            if not (CludesUIDB and CludesUIDB.ahCurrentExpansion) then return end
-            if not AuctionHouseFrame or not AuctionHouseFrame.SearchBar then return end
+            if not (CludesUIDB and CludesUIDB.ahCurrentExpansion) then
+                return
+            end
+            if not AuctionHouseFrame or not AuctionHouseFrame.SearchBar then
+                return
+            end
             C_Timer.After(0, function()
                 local fb = AuctionHouseFrame.SearchBar.FilterButton
-                if not fb or not fb.GetFilters or not fb.ToggleFilter then return end
-                if not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly) then return end
+                if not fb or not fb.GetFilters or not fb.ToggleFilter then
+                    return
+                end
+                if
+                    not (Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly)
+                then
+                    return
+                end
                 local filterEnum = Enum.AuctionHouseFilter.CurrentExpansionOnly
                 local filters = fb:GetFilters()
                 -- The filter state is Blizzard's per-character saved table,
@@ -1023,15 +1292,25 @@ qolFrame:SetScript("OnEvent", function(self)
         -- goes back off (Blizzard's default). Its saved table only exists once Blizzard's
         -- Auction House UI has loaded.
         CludesUI.OnUninstall(function()
-            if not (CludesUIDB and CludesUIDB.ahCurrentExpansion) then return end
-            local filterEnum = Enum and Enum.AuctionHouseFilter and Enum.AuctionHouseFilter.CurrentExpansionOnly
-            if not filterEnum then return end
+            if not (CludesUIDB and CludesUIDB.ahCurrentExpansion) then
+                return
+            end
+            local filterEnum = Enum
+                and Enum.AuctionHouseFilter
+                and Enum.AuctionHouseFilter.CurrentExpansionOnly
+            if not filterEnum then
+                return
+            end
             if not C_AddOns.IsAddOnLoaded("Blizzard_AuctionHouseUI") then
                 C_AddOns.LoadAddOn("Blizzard_AuctionHouseUI")
             end
-            local fb = AuctionHouseFrame and AuctionHouseFrame.SearchBar and AuctionHouseFrame.SearchBar.FilterButton
+            local fb = AuctionHouseFrame
+                and AuctionHouseFrame.SearchBar
+                and AuctionHouseFrame.SearchBar.FilterButton
             local filters = fb and fb.GetFilters and fb:GetFilters()
-            if filters and filters[filterEnum] then fb:ToggleFilter(filterEnum) end
+            if filters and filters[filterEnum] then
+                fb:ToggleFilter(filterEnum)
+            end
         end)
     end
 
@@ -1049,10 +1328,18 @@ qolFrame:SetScript("OnEvent", function(self)
         local s = floor((cost % 10000) / 100)
         local c = cost % 100
         local out = ""
-        if g > 0 then out = g .. CludesUI.L("g") end
-        if s > 0 then out = out .. (out ~= "" and " " or "") .. s .. CludesUI.L("s") end
-        if c > 0 then out = out .. (out ~= "" and " " or "") .. c .. CludesUI.L("c") end
-        if out == "" then out = "0" .. CludesUI.L("c") end
+        if g > 0 then
+            out = g .. CludesUI.L("g")
+        end
+        if s > 0 then
+            out = out .. (out ~= "" and " " or "") .. s .. CludesUI.L("s")
+        end
+        if c > 0 then
+            out = out .. (out ~= "" and " " or "") .. c .. CludesUI.L("c")
+        end
+        if out == "" then
+            out = "0" .. CludesUI.L("c")
+        end
         return out
     end
 
@@ -1066,10 +1353,10 @@ qolFrame:SetScript("OnEvent", function(self)
     do
         -- Self-rescheduling timer, not a ticker: a fixed retry cadence against the
         -- same limiter that ate the pass just gets eaten again, so the delay backs off instead.
-        local BASE_DELAY  = 0.4
-        local MAX_DELAY   = 1.6
-        local MAX_PASSES  = 12
-        local MAX_STALLS  = 3
+        local BASE_DELAY = 0.4
+        local MAX_DELAY = 1.6
+        local MAX_PASSES = 12
+        local MAX_STALLS = 3
         local pending, passes, lastCount, stalls, warned, delay
 
         local function CountJunk()
@@ -1090,7 +1377,10 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         StopJunkSweep = function()
-            if pending then pending:Cancel(); pending = nil end
+            if pending then
+                pending:Cancel()
+                pending = nil
+            end
         end
 
         local Pass
@@ -1101,22 +1391,33 @@ qolFrame:SetScript("OnEvent", function(self)
         -- Verify-and-report, no selling: the pass-cap exit's sell is still in flight, so only a re-count after the server answers says what stranded.
         local function Report()
             pending = nil
-            if not merchantOpen then return end
+            if not merchantOpen then
+                return
+            end
             local left = CountJunk()
             if left > 0 and not warned then
                 warned = true
-                CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " ..
-                    CludesUI.Lf("%d junk item(s) could not be sold.", left))
+                CludesUI.Print(
+                    CludesUI.COLOR_CODES.BRAND
+                        .. "CludesUI:|r "
+                        .. CludesUI.Lf("%d junk item(s) could not be sold.", left)
+                )
             end
         end
 
         Pass = function()
             pending = nil
-            if not merchantOpen then return end
-            if CludesUIDB and CludesUIDB.autoSellJunk == false then return end
+            if not merchantOpen then
+                return
+            end
+            if CludesUIDB and CludesUIDB.autoSellJunk == false then
+                return
+            end
 
             local junk, unknown = CountJunk()
-            if junk == 0 and unknown == 0 then return end
+            if junk == 0 and unknown == 0 then
+                return
+            end
 
             passes = passes + 1
             if junk > lastCount then
@@ -1131,8 +1432,11 @@ qolFrame:SetScript("OnEvent", function(self)
                 if stalls >= MAX_STALLS then
                     if junk > 0 and not warned then
                         warned = true
-                        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " ..
-                            CludesUI.Lf("%d junk item(s) could not be sold.", junk))
+                        CludesUI.Print(
+                            CludesUI.COLOR_CODES.BRAND
+                                .. "CludesUI:|r "
+                                .. CludesUI.Lf("%d junk item(s) could not be sold.", junk)
+                        )
                     end
                     return
                 end
@@ -1142,7 +1446,9 @@ qolFrame:SetScript("OnEvent", function(self)
 
             lastCount = junk
             -- Only round-trip when there's something to sell; junk-free is just waiting on item data to cache.
-            if junk > 0 then C_MerchantFrame.SellAllJunkItems() end
+            if junk > 0 then
+                C_MerchantFrame.SellAllJunkItems()
+            end
             if passes >= MAX_PASSES then
                 -- Cap hit while still moving; bailing silently is the exact failure this sweep fixes, so hand off one verification pass.
                 pending = C_Timer.NewTimer(delay, Report)
@@ -1160,7 +1466,9 @@ qolFrame:SetScript("OnEvent", function(self)
             if bags and bags.SellJunk and cats and cats:IsJunkMarkerEnabled() then
                 return bags:SellJunk(merchantOpen)
             end
-            if not (C_MerchantFrame and C_MerchantFrame.SellAllJunkItems) then return end
+            if not (C_MerchantFrame and C_MerchantFrame.SellAllJunkItems) then
+                return
+            end
             StopJunkSweep()
             passes, lastCount, stalls, warned = 0, math.huge, 0, false
             delay = BASE_DELAY
@@ -1177,13 +1485,15 @@ qolFrame:SetScript("OnEvent", function(self)
     -- immune to an incoming credit except one sharing the SAME PLAYER_MONEY event (nets off) -- hence the caller holds the junk sweep until the debit lands.
     local repairWatcher, repairWatchLast, repairWatchOut
     local repairWatchGen = 0
-    local repairWatchSweep  -- junk sweep on hold; see ReleaseJunkSweep
+    local repairWatchSweep -- junk sweep on hold; see ReleaseJunkSweep
 
     -- Mirrors Blizzard's guild-repair tooltip: today's remaining allowance, bounded by balance; -1 means an unlimited rank.
     local function GuildRepairFunds()
         local allowance = GetGuildBankWithdrawMoney()
         local balance = GetGuildBankMoney()
-        if allowance < 0 or allowance > balance then return balance end
+        if allowance < 0 or allowance > balance then
+            return balance
+        end
         return allowance
     end
 
@@ -1192,27 +1502,33 @@ qolFrame:SetScript("OnEvent", function(self)
         local line = CludesUI.Lf("Repaired all items for %s", RepairCostString(guildPart + ownPart))
         if guildPart > 0 then
             line = line .. CludesUI.L(" (guild bank)")
-            if ownPart > 0 then line = line .. " " .. RepairCostString(guildPart) end
+            if ownPart > 0 then
+                line = line .. " " .. RepairCostString(guildPart)
+            end
         end
         CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. line)
     end
 
     local function ReportRepairBroke()
         local cc = CludesUI.COLOR_CODES
-        CludesUI.Print(cc.BRAND .. "CludesUI:|r " .. cc.ERROR .. CludesUI.L("Not enough gold to repair.") .. "|r")
+        CludesUI.Print(
+            cc.BRAND .. "CludesUI:|r " .. cc.ERROR .. CludesUI.L("Not enough gold to repair.") .. "|r"
+        )
     end
 
     -- Releases the held-back junk sweep. Idempotent: debit or settle timer, whichever arrives first, starts it.
     local function ReleaseJunkSweep()
         local sweep = repairWatchSweep
         repairWatchSweep = nil
-        if sweep then sweep() end
+        if sweep then
+            sweep()
+        end
     end
 
     -- A remainder can outlive the watch, so it gets its own waiter instead of a
     -- verdict at the half-second mark: the held-back junk sweep often pays the rest,
     -- its first sale barely landed by then. Ends on enough gold, merchant close, or deadline (only then is broke declared).
-    local TOPUP_WINDOW = 8  -- outlasts a full junk sweep (12 passes backing off to 1.6s)
+    local TOPUP_WINDOW = 8 -- outlasts a full junk sweep (12 passes backing off to 1.6s)
     local repairTopUp, repairTopUpGen = nil, 0
 
     local function CancelRepairTopUp()
@@ -1236,36 +1552,50 @@ qolFrame:SetScript("OnEvent", function(self)
             CancelRepairTopUp()
             -- Giving up isn't the same as being broke: gold still in pocket is nobody's fault.
             if not afford then
-                if GetMoney() < remainCost then ReportRepairBroke() end
+                if GetMoney() < remainCost then
+                    ReportRepairBroke()
+                end
                 return
             end
             -- Re-read: seconds have passed, player may have repaired by hand, so the armed figure can't be trusted.
             local nowCost, stillNeed = GetRepairAllCost()
-            if not (stillNeed and nowCost > 0) then return end
+            if not (stillNeed and nowCost > 0) then
+                return
+            end
             RepairAllItems(false)
             ReportRepairOutcome(0, nowCost)
         end
 
         local function Poll(_, event)
-            if settled or gen ~= repairTopUpGen then return end
+            if settled or gen ~= repairTopUpGen then
+                return
+            end
             -- MERCHANT_CLOSED rather than merchantOpen: two frames listening for
             -- the same event have no defined order, so the flag may not be down yet
-            if event == "MERCHANT_CLOSED" or not CanMerchantRepair() then return Finish(false) end
-            if GetMoney() >= remainCost then return Finish(true) end
+            if event == "MERCHANT_CLOSED" or not CanMerchantRepair() then
+                return Finish(false)
+            end
+            if GetMoney() >= remainCost then
+                return Finish(true)
+            end
         end
 
         Poll()
-        if settled then return end
+        if settled then
+            return
+        end
         repairTopUp:SetScript("OnEvent", Poll)
         repairTopUp:RegisterEvent("PLAYER_MONEY")
         repairTopUp:RegisterEvent("MERCHANT_CLOSED")
         C_Timer.After(TOPUP_WINDOW, function()
-            if settled or gen ~= repairTopUpGen then return end
+            if settled or gen ~= repairTopUpGen then
+                return
+            end
             Finish(false)
         end)
     end
 
-    local function OnRepairWatchEvent()  -- PLAYER_MONEY: accumulate only, never decide
+    local function OnRepairWatchEvent() -- PLAYER_MONEY: accumulate only, never decide
         local now = GetMoney()
         local spent = repairWatchLast - now
         if spent > 0 then
@@ -1293,19 +1623,25 @@ qolFrame:SetScript("OnEvent", function(self)
         repairWatchLast = moneyBefore
         repairWatchOut = 0
         repairWatchSweep = sweep
-        CancelRepairTopUp()  -- a remainder from the last merchant is no longer payable
+        CancelRepairTopUp() -- a remainder from the last merchant is no longer payable
         repairWatcher:RegisterEvent("PLAYER_MONEY")
 
         local gen = repairWatchGen
         C_Timer.After(0.5, function()
-            if gen ~= repairWatchGen then return end
+            if gen ~= repairWatchGen then
+                return
+            end
             repairWatcher:UnregisterAllEvents()
             local remainCost, stillNeed = GetRepairAllCost()
-            if not (stillNeed and remainCost > 0) then remainCost = 0 end
+            if not (stillNeed and remainCost > 0) then
+                remainCost = 0
+            end
 
             local own = repairWatchOut
             local paid = cost - remainCost
-            if own > paid then own = paid end
+            if own > paid then
+                own = paid
+            end
             local guildPart = paid - own
 
             -- Backstop for a credit sharing an event with the debit: pre-repair
@@ -1316,11 +1652,15 @@ qolFrame:SetScript("OnEvent", function(self)
                 own = paid - guildPart
             end
 
-            if paid > 0 then ReportRepairOutcome(guildPart, own) end
+            if paid > 0 then
+                ReportRepairOutcome(guildPart, own)
+            end
 
             -- Release before handing the remainder over: funds can run dry mid-bill and the sweep's income is what the top-up waits for.
             ReleaseJunkSweep()
-            if remainCost > 0 then StartRepairTopUp(remainCost) end
+            if remainCost > 0 then
+                StartRepairTopUp(remainCost)
+            end
         end)
     end
 
@@ -1333,7 +1673,9 @@ qolFrame:SetScript("OnEvent", function(self)
             return StopJunkSweep()
         end
         merchantOpen = true
-        if not CludesUIDB then return end
+        if not CludesUIDB then
+            return
+        end
 
         local sweep = (CludesUIDB.autoSellJunk ~= false) and SellJunk or nil
 
@@ -1351,7 +1693,7 @@ qolFrame:SetScript("OnEvent", function(self)
                     and CanGuildBankRepair()
 
                 if not useGuild and GetMoney() < cost then
-                    ReportRepairBroke()  -- nothing was spent, so nothing to watch
+                    ReportRepairBroke() -- nothing was spent, so nothing to watch
                 elseif useGuild then
                     -- Both readings must predate the repair; only matter when the guild bank is in play.
                     local moneyBefore, guildFunds = GetMoney(), GuildRepairFunds()
@@ -1361,12 +1703,14 @@ qolFrame:SetScript("OnEvent", function(self)
                     return
                 else
                     RepairAllItems(false)
-                    ReportRepairOutcome(0, cost)  -- own gold: no ambiguity, report now
+                    ReportRepairOutcome(0, cost) -- own gold: no ambiguity, report now
                 end
             end
         end
 
-        if sweep then sweep() end
+        if sweep then
+            sweep()
+        end
     end)
 
     ---------------------------------------------------------------------------
@@ -1380,9 +1724,14 @@ qolFrame:SetScript("OnEvent", function(self)
                 if not lootFrame then
                     lootFrame = CreateFrame("Frame")
                     lootFrame:SetScript("OnEvent", function()
-                        if IsShiftKeyDown() then return end
+                        if IsShiftKeyDown() then
+                            return
+                        end
                         -- Nothing to take: no slot empties, so the window would never close by itself.
-                        if GetNumLootItems() == 0 then CloseLoot() return end
+                        if GetNumLootItems() == 0 then
+                            CloseLoot()
+                            return
+                        end
                         for i = 1, GetNumLootItems() do
                             local index = i
                             C_Timer.After(0.05 * index, function()
@@ -1413,33 +1762,52 @@ qolFrame:SetScript("OnEvent", function(self)
 
         local function OnGossipShow()
             local db = CludesUIDB
-            if db.autoGossipShiftSkip ~= false and IsShiftKeyDown() then return end
-            if db.autoGossipDisableInstance ~= false and IsInInstance() then return end
+            if db.autoGossipShiftSkip ~= false and IsShiftKeyDown() then
+                return
+            end
+            if db.autoGossipDisableInstance ~= false and IsInInstance() then
+                return
+            end
 
             local options = C_GossipInfo.GetOptions()
-            if not options or #options ~= 1 then return end
+            if not options or #options ~= 1 then
+                return
+            end
             local option = options[1]
             -- A locked or unavailable option would only fail again.
-            if option.status ~= Enum.GossipOptionStatus.Available then return end
+            if option.status ~= Enum.GossipOptionStatus.Available then
+                return
+            end
             local key = (C_GossipInfo.GetText() or "") .. "\0" .. (option.gossipOptionID or option.name)
-            if picked[key] then return end
+            if picked[key] then
+                return
+            end
 
             -- Trivial quests only stay ignorable if Quest Tracker auto-accept also ignores them.
-            local qtDB = _G._EQT_DB
+            local qtDB = _G._CUQT_DB
             local qt = qtDB and qtDB.profile and qtDB.profile.questTracker
             local ignoreTrivial = db.autoGossipIgnoreTrivial
                 and not (qt and qt.enabled ~= false and qt.autoAccept and not qt.autoAcceptIgnoreTrivial)
             for _, quest in ipairs(C_GossipInfo.GetAvailableQuests()) do
-                if not (ignoreTrivial and quest.isTrivial) then return end
+                if not (ignoreTrivial and quest.isTrivial) then
+                    return
+                end
             end
             local active = C_GossipInfo.GetActiveQuests()
             for _, quest in ipairs(active) do
-                if quest.isComplete then return end
+                if quest.isComplete then
+                    return
+                end
             end
 
             -- Blizzard already auto-selects this case itself.
-            if #active == 0 and C_GossipInfo.GetNumAvailableQuests() == 0
-                and option.selectOptionWhenOnlyOption then return end
+            if
+                #active == 0
+                and C_GossipInfo.GetNumAvailableQuests() == 0
+                and option.selectOptionWhenOnlyOption
+            then
+                return
+            end
 
             picked[key] = true
             C_GossipInfo.SelectOptionByIndex(option.orderIndex)
@@ -1478,11 +1846,19 @@ qolFrame:SetScript("OnEvent", function(self)
             local popup = _G["StaticPopup" .. i]
             if popup then
                 hooksecurefunc(popup, "Show", function(self)
-                    if not self then return end
-                    if self.which ~= "DELETE_GOOD_ITEM" and self.which ~= "DELETE_GOOD_QUEST_ITEM" then return end
-                    if not (CludesUIDB and CludesUIDB.autoFillDelete) then return end
+                    if not self then
+                        return
+                    end
+                    if self.which ~= "DELETE_GOOD_ITEM" and self.which ~= "DELETE_GOOD_QUEST_ITEM" then
+                        return
+                    end
+                    if not (CludesUIDB and CludesUIDB.autoFillDelete) then
+                        return
+                    end
                     local editBox = self.editBox or (self.GetEditBox and self:GetEditBox())
-                    if not editBox then return end
+                    if not editBox then
+                        return
+                    end
                     editBox:SetText(DELETE_ITEM_CONFIRM_STRING)
                     editBox:SetFocus()
                 end)
@@ -1501,9 +1877,15 @@ qolFrame:SetScript("OnEvent", function(self)
         -- allowed while processing a key press, so auto skip arms a one-shot
         -- cancel the key hooks consume on the cutscene's first keypress.
         local function ConsumeArmedSkip()
-            if not autoSkipArmed then return end
-            if not (CludesUIDB and CludesUIDB.skipCinematicsAuto) then return end
-            if not (CinematicFrame and CinematicFrame:IsShown()) then return end
+            if not autoSkipArmed then
+                return
+            end
+            if not (CludesUIDB and CludesUIDB.skipCinematicsAuto) then
+                return
+            end
+            if not (CinematicFrame and CinematicFrame:IsShown()) then
+                return
+            end
             autoSkipArmed = false
             if CinematicFrame.isRealCinematic then
                 StopCinematic()
@@ -1513,12 +1895,18 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function SetupCinematicHooks()
-            if cinHooked then return end
-            if not CinematicFrame or not CinematicFrame.HookScript then return end
+            if cinHooked then
+                return
+            end
+            if not CinematicFrame or not CinematicFrame.HookScript then
+                return
+            end
             cinHooked = true
 
             CinematicFrame:HookScript("OnKeyDown", function(_, key)
-                if not (CludesUIDB and CludesUIDB.skipCinematics) then return end
+                if not (CludesUIDB and CludesUIDB.skipCinematics) then
+                    return
+                end
                 if key == "ESCAPE" then
                     if CinematicFrame:IsShown() and CinematicFrame.closeDialog then
                         CinematicFrame.closeDialog:Hide()
@@ -1527,20 +1915,30 @@ qolFrame:SetScript("OnEvent", function(self)
             end)
 
             CinematicFrame:HookScript("OnKeyUp", function(_, key)
-                if not (CludesUIDB and CludesUIDB.skipCinematics) then return end
+                if not (CludesUIDB and CludesUIDB.skipCinematics) then
+                    return
+                end
                 if key == "SPACE" or key == "ESCAPE" or key == "ENTER" then
                     if CinematicFrame:IsShown() and CinematicFrame.closeDialog then
                         local confirmBtn = _G["CinematicFrameCloseDialogConfirmButton"]
-                        if confirmBtn then confirmBtn:Click() end
+                        if confirmBtn then
+                            confirmBtn:Click()
+                        end
                     end
                 end
             end)
 
             if MovieFrame and MovieFrame.HookScript then
                 MovieFrame:HookScript("OnKeyUp", function(_, key)
-                    if not (CludesUIDB and CludesUIDB.skipCinematics) then return end
+                    if not (CludesUIDB and CludesUIDB.skipCinematics) then
+                        return
+                    end
                     if key == "SPACE" or key == "ESCAPE" or key == "ENTER" then
-                        if MovieFrame:IsShown() and MovieFrame.CloseDialog and MovieFrame.CloseDialog.ConfirmButton then
+                        if
+                            MovieFrame:IsShown()
+                            and MovieFrame.CloseDialog
+                            and MovieFrame.CloseDialog.ConfirmButton
+                        then
                             MovieFrame.CloseDialog.ConfirmButton:Click()
                         end
                     end
@@ -1565,7 +1963,9 @@ qolFrame:SetScript("OnEvent", function(self)
                 autoSkipArmed = false
                 return
             end
-            if not (CludesUIDB and CludesUIDB.skipCinematicsAuto) then return end
+            if not (CludesUIDB and CludesUIDB.skipCinematicsAuto) then
+                return
+            end
             if event == "CINEMATIC_START" then
                 -- Real cinematics can still be stopped from event context;
                 -- scenes are left to the armed key-press cancel.
@@ -1574,7 +1974,9 @@ qolFrame:SetScript("OnEvent", function(self)
                     StopCinematic()
                 end
             elseif event == "PLAY_MOVIE" then
-                if MovieFrame then MovieFrame:Hide() end
+                if MovieFrame then
+                    MovieFrame:Hide()
+                end
             end
         end)
     end
@@ -1585,8 +1987,12 @@ qolFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     if not CludesUI.IS_FOREVER then
         local function InsertKeystone()
-            if CludesUIDB and CludesUIDB.autoInsertKeystone == false then return end
-            if C_ChallengeMode.GetSlottedKeystoneInfo() then return end
+            if CludesUIDB and CludesUIDB.autoInsertKeystone == false then
+                return
+            end
+            if C_ChallengeMode.GetSlottedKeystoneInfo() then
+                return
+            end
             for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
                 local slots = C_Container.GetContainerNumSlots(bag)
                 for slot = 1, slots do
@@ -1652,8 +2058,8 @@ qolFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     if not CludesUI.IS_FOREVER then
         local hooked, suppressed = false, false
-        local frameMouse, closeMouse  -- mouse states found when suppression began
-        local modelHidden = false     -- the portrait model was hidden here
+        local frameMouse, closeMouse -- mouse states found when suppression began
+        local modelHidden = false -- the portrait model was hidden here
 
         local function Wanted()
             local db = CludesUIDB
@@ -1669,7 +2075,9 @@ qolFrame:SetScript("OnEvent", function(self)
                     thf:EnableMouse(false)
                     close:EnableMouse(false)
                 end
-                if thf:GetAlpha() ~= 0 then thf:SetAlpha(0) end
+                if thf:GetAlpha() ~= 0 then
+                    thf:SetAlpha(0)
+                end
                 if model:IsShown() then
                     model:Hide()
                     modelHidden = true
@@ -1687,7 +2095,9 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function Install(thf)
-            if hooked then return end
+            if hooked then
+                return
+            end
             hooked = true
             -- Every show and hide runs through UpdateShownState: each line, its
             -- close, a loading screen, Edit Mode coming and going.
@@ -1695,7 +2105,9 @@ qolFrame:SetScript("OnEvent", function(self)
             -- The bottom managed column sets the frame's alpha back to 1 when
             -- the UI returns from Alt-Z.
             hooksecurefunc(thf, "SetAlpha", function(self, alpha)
-                if suppressed and alpha ~= 0 then ApplyTalkingHead(self) end
+                if suppressed and alpha ~= 0 then
+                    ApplyTalkingHead(self)
+                end
             end)
             -- Audio: PlayCurrent keeps the line's sound handle in voHandle.
             hooksecurefunc(thf, "PlayCurrent", function(self)
@@ -1715,7 +2127,9 @@ qolFrame:SetScript("OnEvent", function(self)
                 ApplyTalkingHead(thf)
                 return
             end
-            if waiterArmed then return end
+            if waiterArmed then
+                return
+            end
             waiterArmed = true
             local waiter = CreateFrame("Frame")
             waiter:RegisterEvent("ADDON_LOADED")
@@ -1766,25 +2180,35 @@ qolFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     do
         local DEFAULT_DELAY = 5
-        local closeGen = 0  -- bumped on every show; invalidates older timers
+        local closeGen = 0 -- bumped on every show; invalidates older timers
 
         local function HistoryFrame()
             local f = _G.GroupLootHistoryFrame
-            if not f or not f.HookScript then return nil end
-            if f.IsForbidden and f:IsForbidden() then return nil end
+            if not f or not f.HookScript then
+                return nil
+            end
+            if f.IsForbidden and f:IsForbidden() then
+                return nil
+            end
             return f
         end
 
         local function CloseDelay()
             local d = CludesUIDB and CludesUIDB.lootHistoryDelay
-            if type(d) ~= "number" or d <= 0 then return DEFAULT_DELAY end
+            if type(d) ~= "number" or d <= 0 then
+                return DEFAULT_DELAY
+            end
             return d
         end
 
         local function Enforce()
-            if not (CludesUIDB and CludesUIDB.hideLootHistory) then return end
+            if not (CludesUIDB and CludesUIDB.hideLootHistory) then
+                return
+            end
             local f = HistoryFrame()
-            if not f then return end
+            if not f then
+                return
+            end
             closeGen = closeGen + 1
             if CludesUIDB.lootHistoryMode ~= "autoclose" then
                 f:Hide()
@@ -1793,16 +2217,24 @@ qolFrame:SetScript("OnEvent", function(self)
             local gen = closeGen
             C_Timer.After(CloseDelay(), function()
                 -- A newer show (or a settings change) armed its own timer.
-                if gen ~= closeGen then return end
-                if not (CludesUIDB and CludesUIDB.hideLootHistory) then return end
+                if gen ~= closeGen then
+                    return
+                end
+                if not (CludesUIDB and CludesUIDB.hideLootHistory) then
+                    return
+                end
                 local live = HistoryFrame()
-                if live and live:IsShown() then live:Hide() end
+                if live and live:IsShown() then
+                    live:Hide()
+                end
             end)
         end
 
         local function HookHistory()
             local f = HistoryFrame()
-            if not f or CludesUI._GetFFD(f).lootHistHooked then return end
+            if not f or CludesUI._GetFFD(f).lootHistHooked then
+                return
+            end
             CludesUI._GetFFD(f).lootHistHooked = true
             f:HookScript("OnShow", Enforce)
             hooksecurefunc(f, "Show", Enforce)
@@ -1819,7 +2251,9 @@ qolFrame:SetScript("OnEvent", function(self)
                 HookHistory()
                 return
             end
-            if waiterArmed then return end
+            if waiterArmed then
+                return
+            end
             waiterArmed = true
             local waiter = CreateFrame("Frame")
             waiter:RegisterEvent("ADDON_LOADED")
@@ -1840,7 +2274,9 @@ qolFrame:SetScript("OnEvent", function(self)
             end
             closeGen = closeGen + 1
             local f = HistoryFrame()
-            if f and f:IsShown() then Enforce() end
+            if f and f:IsShown() then
+                Enforce()
+            end
         end
 
         -- Load-time install ONLY for users with the feature already on
@@ -1854,18 +2290,25 @@ qolFrame:SetScript("OnEvent", function(self)
 
     if not CludesUI.IS_FOREVER then
         local function EndHiddenBanner()
-            if not (CludesUIDB and CludesUIDB.hideBanners) then return end
+            if not (CludesUIDB and CludesUIDB.hideBanners) then
+                return
+            end
             local current = TopBannerMgr.currentBanner
             local f = current and current.frame
-            if not f then return end
+            if not f then
+                return
+            end
             if f == BossBanner then
                 -- The banner's own right-click dismiss: its state stays mid-show, so
                 -- no loot banner (or its sound) starts for this encounter; the next
                 -- boss kill starts it fresh.
                 BossBanner_Stop(f)
                 TopBannerManager_BannerFinished()
-            elseif f:GetParent() == EventToastManagerFrame and f.hideAutomatically
-                    and not f:ShouldSuppressAnimOut() then
+            elseif
+                f:GetParent() == EventToastManagerFrame
+                and f.hideAutomatically
+                and not f:ShouldSuppressAnimOut()
+            then
                 f.showAnim:Stop()
                 f.hideAnim:Stop()
                 EventToastManagerFrame:Reset()
@@ -1875,7 +2318,9 @@ qolFrame:SetScript("OnEvent", function(self)
 
         local bannerHooks = false
         CludesUI._applyHideBanners = function()
-            if not (CludesUIDB and CludesUIDB.hideBanners) then return end
+            if not (CludesUIDB and CludesUIDB.hideBanners) then
+                return
+            end
             if not bannerHooks then
                 bannerHooks = true
                 hooksecurefunc("TopBannerManager_Show", EndHiddenBanner)
@@ -1885,28 +2330,49 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local TOAST_KINDS = {
-            { key = "hideAlertToastsLoot", default = true, systems = {
-                LootAlertSystem, LootUpgradeAlertSystem, MoneyWonAlertSystem,
-                HonorAwardedAlertSystem, LegendaryItemAlertSystem,
-            } },
-            { key = "hideAlertToastsAchievements", systems = {
-                AchievementAlertSystem, CriteriaAlertSystem,
-            } },
-            { key = "hideAlertToastsHousing", systems = {
-                HousingItemEarnedAlertFrameSystem, InitiativeTaskCompleteAlertFrameSystem,
-            } },
+            {
+                key = "hideAlertToastsLoot",
+                default = true,
+                systems = {
+                    LootAlertSystem,
+                    LootUpgradeAlertSystem,
+                    MoneyWonAlertSystem,
+                    HonorAwardedAlertSystem,
+                    LegendaryItemAlertSystem,
+                },
+            },
+            {
+                key = "hideAlertToastsAchievements",
+                systems = {
+                    AchievementAlertSystem,
+                    CriteriaAlertSystem,
+                },
+            },
+            {
+                key = "hideAlertToastsHousing",
+                systems = {
+                    HousingItemEarnedAlertFrameSystem,
+                    InitiativeTaskCompleteAlertFrameSystem,
+                },
+            },
         }
         local kindOf = {}
         for i = 1, #TOAST_KINDS do
             local kind = TOAST_KINDS[i]
-            for j = 1, #kind.systems do kindOf[kind.systems[j]] = kind end
+            for j = 1, #kind.systems do
+                kindOf[kind.systems[j]] = kind
+            end
         end
 
         local function KindHidden(kind)
             local db = CludesUIDB
-            if not (db and db.hideAlertToasts) then return false end
+            if not (db and db.hideAlertToasts) then
+                return false
+            end
             local v = db[kind.key]
-            if v == nil then return kind.default or false end
+            if v == nil then
+                return kind.default or false
+            end
             return v
         end
 
@@ -1914,12 +2380,16 @@ qolFrame:SetScript("OnEvent", function(self)
 
         local function FirstShownToast(system)
             for frame in system.alertFramePool:EnumerateActive() do
-                if frame:IsShown() then return frame end
+                if frame:IsShown() then
+                    return frame
+                end
             end
         end
 
         local function HideAlertToasts(system)
-            if hidingToasts or not KindHidden(kindOf[system]) then return end
+            if hidingToasts or not KindHidden(kindOf[system]) then
+                return
+            end
             hidingToasts = true
             local frame = FirstShownToast(system)
             while frame do
@@ -1959,34 +2429,38 @@ qolFrame:SetScript("OnEvent", function(self)
 
         -- Success detected from Blizzard's CHAT_MSG_SYSTEM confirmation; the string varies by locale, so match common substrings across clients.
         local RESET_PATTERNS = {
-            "has been reset",           -- enUS / enGB
-            "wurde zur",                -- deDE (zurückgesetzt)
-            "a été réinitialisé",       -- frFR
-            "ha sido reiniciada",       -- esES / esMX
-            "è stato resettato",        -- itIT
-            "foi reiniciada",           -- ptBR / ptPT
-            "сброшен",                  -- ruRU
-            "已重置",                    -- zhCN / zhTW
-            "초기화되었습니다",           -- koKR
+            "has been reset", -- enUS / enGB
+            "wurde zur", -- deDE (zurückgesetzt)
+            "a été réinitialisé", -- frFR
+            "ha sido reiniciada", -- esES / esMX
+            "è stato resettato", -- itIT
+            "foi reiniciada", -- ptBR / ptPT
+            "сброшен", -- ruRU
+            "已重置", -- zhCN / zhTW
+            "초기화되었습니다", -- koKR
         }
 
         -- Patterns that indicate a reset FAILED because players are still inside.
         local FAIL_PATTERNS = {
-            "players still",            -- enUS / enGB: "There are players still inside..."
-            "noch spieler",             -- deDE
-            "joueurs sont encore",      -- frFR
-            "jugadores todavía",        -- esES / esMX
-            "giocatori sono ancora",    -- itIT
-            "jogadores ainda",          -- ptBR / ptPT
-            "игроки ещё",               -- ruRU
-            "还有玩家",                  -- zhCN
-            "아직 플레이어",             -- koKR
+            "players still", -- enUS / enGB: "There are players still inside..."
+            "noch spieler", -- deDE
+            "joueurs sont encore", -- frFR
+            "jugadores todavía", -- esES / esMX
+            "giocatori sono ancora", -- itIT
+            "jogadores ainda", -- ptBR / ptPT
+            "игроки ещё", -- ruRU
+            "还有玩家", -- zhCN
+            "아직 플레이어", -- koKR
         }
 
         local function MatchesAny(msg, patterns)
-            if not msg then return false end
+            if not msg then
+                return false
+            end
             local ok, lower = pcall(string.lower, msg)
-            if not ok then return false end
+            if not ok then
+                return false
+            end
             for _, pat in ipairs(patterns) do
                 local ok2, result = pcall(string.find, lower, string.lower(pat), 1, true)
                 if ok2 and result then
@@ -2004,15 +2478,23 @@ qolFrame:SetScript("OnEvent", function(self)
             -- CHAT_MSG_SYSTEM fires for every system message all session (this frame
             -- stays registered while the toggle is on, not just around /reset), and some
             -- carry secret text in protected content. Bail before touching msg at all.
-            if issecretvalue and issecretvalue(msg) then return end
-            if not (CludesUIDB and CludesUIDB.instanceResetAnnounce) then return end
+            if issecretvalue and issecretvalue(msg) then
+                return
+            end
+            if not (CludesUIDB and CludesUIDB.instanceResetAnnounce) then
+                return
+            end
 
             -- Instance group only: LE_PARTY_CATEGORY_INSTANCE covers party/raid; IsInGroup() is the older-API fallback.
-            local inInstanceGroup = (IsInGroup and LE_PARTY_CATEGORY_INSTANCE and
-                                     IsInGroup(LE_PARTY_CATEGORY_INSTANCE))
-                                 or (IsInGroup and IsInGroup())
+            local inInstanceGroup = (
+                IsInGroup
+                and LE_PARTY_CATEGORY_INSTANCE
+                and IsInGroup(LE_PARTY_CATEGORY_INSTANCE)
+            ) or (IsInGroup and IsInGroup())
 
-            if not inInstanceGroup then return end
+            if not inInstanceGroup then
+                return
+            end
 
             -- A reset cannot fail in a party: there a "players still inside" line
             -- still means the instance reset, so it announces success.
@@ -2021,24 +2503,33 @@ qolFrame:SetScript("OnEvent", function(self)
 
             -- Small delay so Blizzard's own system message renders first.
             if success then
-                if resetAnnouncePending then return end
+                if resetAnnouncePending then
+                    return
+                end
                 resetAnnouncePending = true
                 C_Timer.After(0.3, function()
                     resetAnnouncePending = false
                     local channel = IsInRaid() and "RAID" or "PARTY"
-                    local customMsg = (CludesUIDB.instanceResetAnnounceMsg and
-                                       CludesUIDB.instanceResetAnnounceMsg ~= "")
-                                      and CludesUIDB.instanceResetAnnounceMsg
-                                      or "Instance has been reset - you can re-enter now!"
+                    local customMsg = (
+                        CludesUIDB.instanceResetAnnounceMsg
+                        and CludesUIDB.instanceResetAnnounceMsg ~= ""
+                    )
+                            and CludesUIDB.instanceResetAnnounceMsg
+                        or "Instance has been reset - you can re-enter now!"
                     C_ChatInfo.SendChatMessage("[CUI] " .. customMsg, channel)
                 end)
             elseif MatchesAny(msg, FAIL_PATTERNS) then
-                if resetFailPending then return end
+                if resetFailPending then
+                    return
+                end
                 resetFailPending = true
                 C_Timer.After(0.3, function()
                     resetFailPending = false
                     local channel = IsInRaid() and "RAID" or "PARTY"
-                    C_ChatInfo.SendChatMessage("[CUI] Reset failed - there are still players inside the instance.", channel)
+                    C_ChatInfo.SendChatMessage(
+                        "[CUI] Reset failed - there are still players inside the instance.",
+                        channel
+                    )
                 end)
             end
         end)
@@ -2064,22 +2555,30 @@ qolFrame:SetScript("OnEvent", function(self)
         if saved and GetCVar("timeMgrUseMilitaryTime") ~= "1" then
             C_Timer.After(0.5, function()
                 if not TimeManagerFrame then
-                    if TimeManager_LoadUI then TimeManager_LoadUI() end
+                    if TimeManager_LoadUI then
+                        TimeManager_LoadUI()
+                    end
                 end
                 local cb = TimeManagerMilitaryTimeCheck
                 if cb then
                     cb:SetChecked(true)
                     local fn = cb:GetScript("OnClick")
-                    if fn then fn(cb) end
+                    if fn then
+                        fn(cb)
+                    end
                 end
             end)
         end
         -- Track: hook the checkbox to remember user changes
         local function HookClockCheckbox()
             local cb = TimeManagerMilitaryTimeCheck
-            if not cb then return end
+            if not cb then
+                return
+            end
             cb:HookScript("OnClick", function(self)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.clockFormat24h = self:GetChecked() and true or nil
             end)
         end
@@ -2097,7 +2596,6 @@ qolFrame:SetScript("OnEvent", function(self)
             end)
         end
     end
-
 end)
 
 -------------------------------------------------------------------------------
@@ -2107,10 +2605,16 @@ end)
 do
     local overlay
     local function ShowOverlay()
-        if not overlay then return end
-        if not (CludesUIDB and CludesUIDB.guildChatPrivacy) then return end
+        if not overlay then
+            return
+        end
+        if not (CludesUIDB and CludesUIDB.guildChatPrivacy) then
+            return
+        end
         local cf = CommunitiesFrame
-        if not cf or not cf.Chat or not cf.Chat.MessageFrame then return end
+        if not cf or not cf.Chat or not cf.Chat.MessageFrame then
+            return
+        end
         local mf = cf.Chat.MessageFrame
         overlay:SetParent(mf)
         overlay:SetAllPoints(mf)
@@ -2121,7 +2625,9 @@ do
     local function ApplyGuildChatPrivacy()
         local enabled = CludesUIDB and CludesUIDB.guildChatPrivacy
         if not enabled then
-            if overlay then overlay:Hide() end
+            if overlay then
+                overlay:Hide()
+            end
             return
         end
 
@@ -2185,14 +2691,20 @@ do
 
     -- A secret or unreadable answer counts as in combat.
     local function CasterInCombat(caster)
-        if not caster then return false end
+        if not caster then
+            return false
+        end
         local ok, v = pcall(UnitAffectingCombat, caster)
-        if not ok or IsSecret(v) then return true end
+        if not ok or IsSecret(v) then
+            return true
+        end
         return v and true or false
     end
 
     local function OnEvent(_, _, caster)
-        if not CludesUIDB.autoAcceptResCombat and CasterInCombat(caster) then return end
+        if not CludesUIDB.autoAcceptResCombat and CasterInCombat(caster) then
+            return
+        end
         AcceptResurrect()
     end
 
@@ -2202,7 +2714,9 @@ do
             frame = CreateFrame("Frame")
             frame:SetScript("OnEvent", OnEvent)
         end
-        if not frame then return end
+        if not frame then
+            return
+        end
         if on then
             frame:RegisterEvent("RESURRECT_REQUEST")
         else
@@ -2215,7 +2729,9 @@ do
     f:RegisterEvent("PLAYER_LOGIN")
     f:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        if CludesUIDB and CludesUIDB.autoAcceptRes then ApplyAutoAcceptRes() end
+        if CludesUIDB and CludesUIDB.autoAcceptRes then
+            ApplyAutoAcceptRes()
+        end
     end)
 end
 
@@ -2232,7 +2748,7 @@ do
     -- two-column split (separate right-justified values FontString) was
     -- reverted -- per-column sizing/anchor interplay caused more issues
     -- than the aligned numbers were worth.
-    local ROW_GAP = 3    -- extra pixels between rows (SetSpacing)
+    local ROW_GAP = 3 -- extra pixels between rows (SetSpacing)
 
     -- Dim span for the attached FPS rows, which build their own bodies. Every
     -- span opens and closes rather than nesting, since |r restores one level
@@ -2247,17 +2763,28 @@ do
     -- One hue per secondary so the rows scan at a glance; tertiaries share a
     -- single distinct hue so the block reads as its own group.
     local STAT_HEX = {
-        crit    = "ffd100",   -- gold
-        haste   = "2ecc71",   -- green
-        mastery = "55aaff",   -- blue
-        vers    = "c77dff",   -- violet
+        crit = "ffd100", -- gold
+        haste = "2ecc71", -- green
+        mastery = "55aaff", -- blue
+        vers = "c77dff", -- violet
     }
     local DEFAULT_STAT_ORDER = {
-        "crit", "haste", "mastery", "vers", "leech", "avoidance", "speed",
+        "crit",
+        "haste",
+        "mastery",
+        "vers",
+        "leech",
+        "avoidance",
+        "speed",
     }
     local VALID_STAT = {
-        crit = true, haste = true, mastery = true, vers = true,
-        leech = true, avoidance = true, speed = true,
+        crit = true,
+        haste = true,
+        mastery = true,
+        vers = true,
+        leech = true,
+        avoidance = true,
+        speed = true,
     }
     -- WoW Forever has none of these ratings: the block shows the stat catalog
     -- of CludesUIQoL_ForeverStats.lua instead (FV is nil on retail).
@@ -2269,7 +2796,9 @@ do
 
     local function SecondaryStatsOrder()
         local saved = CludesUI.QoLExtrasGet("secondaryStatsOrder")
-        if type(saved) ~= "table" then return DEFAULT_STAT_ORDER end
+        if type(saved) ~= "table" then
+            return DEFAULT_STAT_ORDER
+        end
 
         local order, added = {}, {}
         for _, key in ipairs(saved) do
@@ -2279,7 +2808,9 @@ do
             end
         end
         for _, key in ipairs(DEFAULT_STAT_ORDER) do
-            if not added[key] then order[#order + 1] = key end
+            if not added[key] then
+                order[#order + 1] = key
+            end
         end
         return order
     end
@@ -2317,9 +2848,13 @@ do
     local UpdateSecondaryStats
 
     local function ArmSecretHeal()
-        if _healPending then return end
+        if _healPending then
+            return
+        end
         local tries = statsFrame._secretHeals or 0
-        if tries >= 5 then return end
+        if tries >= 5 then
+            return
+        end
         statsFrame._secretHeals = tries + 1
         _healPending = true
         C_Timer.After(2, function()
@@ -2347,24 +2882,30 @@ do
     -- from a fractional origin is free to round either way.
     local function CornerFromCenter(cx, cy, w, h)
         return floor(UIParent:GetWidth() / 2 + cx - w / 2 + 0.5),
-               floor(UIParent:GetHeight() / 2 + cy + h / 2 + 0.5)
+            floor(UIParent:GetHeight() / 2 + cy + h / 2 + 0.5)
     end
     CludesUI._secondaryStatsCorner = CornerFromCenter
 
     local function ApplyStatsPosition()
         -- Unlock mode owns positioning while a session is open.
-        if not statsFrame or CludesUI._unlockActive then return end
+        if not statsFrame or CludesUI._unlockActive then
+            return
+        end
         local pos = CludesUI.QoLExtrasGet("secondaryStatsPos")
-        if not (pos and pos.point) then return end
+        if not (pos and pos.point) then
+            return
+        end
         -- Saved as a center by an earlier build. Resolve it once, at a size we
         -- know is real, and keep the corner from then on -- otherwise it would
         -- go on resolving to a different corner for the life of the profile.
         if pos.point == "CENTER" and statsFrame._measured then
             local copy = {}
-            for k, v in pairs(pos) do copy[k] = v end
+            for k, v in pairs(pos) do
+                copy[k] = v
+            end
             copy.point, copy.relPoint = "TOPLEFT", "BOTTOMLEFT"
-            copy.x, copy.y = CornerFromCenter(pos.x or 0, pos.y or 0,
-                statsFrame:GetWidth(), statsFrame:GetHeight())
+            copy.x, copy.y =
+                CornerFromCenter(pos.x or 0, pos.y or 0, statsFrame:GetWidth(), statsFrame:GetHeight())
             CludesUI.QoLExtrasSet("secondaryStatsPos", copy)
             pos = copy
         end
@@ -2375,7 +2916,9 @@ do
     CludesUI._secondaryStatsPin = ApplyStatsPosition
 
     function UpdateSecondaryStats()
-        if not statsFrame or not statsFrame:IsShown() then return end
+        if not statsFrame or not statsFrame:IsShown() then
+            return
+        end
         statUnreadable = false
         if not statsFrame._classHex then
             -- Cache ONLY a resolved class color: caching the white fallback
@@ -2386,11 +2929,12 @@ do
             -- returns a secret in restricted content and truthiness on it
             -- throws (a /reload inside an instance killed every update).
             local _, cls = UnitClass("player")
-            if issecretvalue(cls) then cls = nil end
+            if issecretvalue(cls) then
+                cls = nil
+            end
             local cc = cls and CludesUI.GetClassColor(cls)
             if cc then
-                statsFrame._classHex = format("%02x%02x%02x",
-                    cc.r * 255, cc.g * 255, cc.b * 255)
+                statsFrame._classHex = format("%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255)
             end
         end
         -- Label color mode: "palette" (multicolored, one hue per stat),
@@ -2398,8 +2942,7 @@ do
         -- color means the user was using it, so custom wins; otherwise class
         -- color, the pre-mode default look.
         local c = CludesUI.QoLExtrasGet("secondaryStatsColor")
-        local mode = CludesUI.QoLExtrasGet("secondaryStatsColorMode")
-            or (c and "custom" or "class")
+        local mode = CludesUI.QoLExtrasGet("secondaryStatsColorMode") or (c and "custom" or "class")
         local customHex
         if mode == "custom" and c then
             customHex = format("%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255)
@@ -2429,7 +2972,7 @@ do
             local versRating = GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_DONE) or 0
             local versBase = GetVersatilityBonus(CR_VERSATILITY_DAMAGE_DONE) or 0
             if issecretvalue(versRating) or issecretvalue(versBase) then
-                vers = statsFrame._versLastClean   -- nil until one exists -> "?"
+                vers = statsFrame._versLastClean -- nil until one exists -> "?"
             else
                 vers = versRating + versBase
                 statsFrame._versLastClean = vers
@@ -2473,15 +3016,25 @@ do
                 statUnreadable = true
                 body = "?"
             else
-                if issecretvalue(first) then anySecret = true end
+                if issecretvalue(first) then
+                    anySecret = true
+                end
                 vals[#vals + 1] = first
                 if showBoth then
-                    if issecretvalue(second) then anySecret = true end
+                    if issecretvalue(second) then
+                        anySecret = true
+                    end
                     vals[#vals + 1] = second
                 end
             end
-            rows[#rows + 1] = format("|cff%s%s:|r%s|cff%s%s|r",
-                hex, Esc(label), LABEL_GAP, coloredPct and hex or "ffffff", body)
+            rows[#rows + 1] = format(
+                "|cff%s%s:|r%s|cff%s%s|r",
+                hex,
+                Esc(label),
+                LABEL_GAP,
+                coloredPct and hex or "ffffff",
+                body
+            )
         end
         -- Sibling for rows whose body is already colored (the FPS pair below):
         -- Row would wrap it in a second span, and |r restores one level only.
@@ -2489,25 +3042,30 @@ do
         -- built from figures that are never secret -- so they carry no
         -- placeholder and must be escaped like any other template text.
         local function RawRow(hex, label, body)
-            rows[#rows + 1] = format("|cff%s%s:|r%s%s",
-                hex, Esc(label), LABEL_GAP, Esc(body))
+            rows[#rows + 1] = format("|cff%s%s:|r%s%s", hex, Esc(label), LABEL_GAP, Esc(body))
         end
         local hiddenStats = CludesUI.QoLExtrasGet("secondaryStatsHidden")
-        if type(hiddenStats) ~= "table" then hiddenStats = nil end
+        if type(hiddenStats) ~= "table" then
+            hiddenStats = nil
+        end
         -- The tertiaries (leech/avoidance/speed) are retail ratings too.
         local hasVisibleTertiary = false
         local tertHex, leech, avoidance, speed
         local leechRaw, avoidanceRaw, speedRaw
         if not FV then
-            hasVisibleTertiary = not (hiddenStats
-                and hiddenStats.leech and hiddenStats.avoidance and hiddenStats.speed)
+            hasVisibleTertiary = not (
+                hiddenStats
+                and hiddenStats.leech
+                and hiddenStats.avoidance
+                and hiddenStats.speed
+            )
             if hasVisibleTertiary then
                 local tc = CludesUI.QoLExtrasGet("tertiaryStatsColor")
-                local tmode = CludesUI.QoLExtrasGet("tertiaryStatsColorMode")
-                    or (tc and "custom" or "class")
+                local tmode = CludesUI.QoLExtrasGet("tertiaryStatsColorMode") or (tc and "custom" or "class")
                 tertHex = (tmode == "custom" and tc)
-                    and format("%02x%02x%02x", tc.r * 255, tc.g * 255, tc.b * 255)
-                    or statsFrame._classHex or "ffffff"
+                        and format("%02x%02x%02x", tc.r * 255, tc.g * 255, tc.b * 255)
+                    or statsFrame._classHex
+                    or "ffffff"
 
                 leech = GetLifesteal()
                 avoidance = GetAvoidance()
@@ -2546,8 +3104,7 @@ do
         -- FPS and latency, drawn here rather than by the standalone counter
         -- while Attach to Secondary Stats is on. Label color comes from the FPS
         -- swatch, falling back to class color like the other groups.
-        if CludesUI.QoLExtrasGet("fpsAttachToStats")
-           and CludesUI.QoLExtrasGet("showFPS") then
+        if CludesUI.QoLExtrasGet("fpsAttachToStats") and CludesUI.QoLExtrasGet("showFPS") then
             -- Same resolver the standalone counter uses, so the two owners
             -- cannot disagree about the color.
             local fr, fg, fb = CludesUI._fpsColorRGB()
@@ -2557,8 +3114,7 @@ do
             -- way -- they are annotations, not values.
             local VAL = "|cff" .. (coloredPct and fpsHex or "ffffff")
 
-            RawRow(fpsHex, CludesUI.L("FPS"),
-                VAL .. floor(GetFramerate() + 0.5) .. "|r")
+            RawRow(fpsHex, CludesUI.L("FPS"), VAL .. floor(GetFramerate() + 0.5) .. "|r")
 
             local showWorld, showLocal = LatencySources()
             if showWorld or showLocal then
@@ -2566,17 +3122,24 @@ do
                 local _, _, latHome, latWorld = GetNetStats()
                 local parts = {}
                 if showWorld then
-                    parts[#parts + 1] = VAL .. latWorld .. " ms|r"
+                    parts[#parts + 1] = VAL
+                        .. latWorld
+                        .. " ms|r"
                         .. (hideLabel and "" or (DIM .. " (world)|r"))
                 end
                 if showLocal then
-                    parts[#parts + 1] = VAL .. latHome .. " ms|r"
+                    parts[#parts + 1] = VAL
+                        .. latHome
+                        .. " ms|r"
                         .. (hideLabel and "" or (DIM .. " (local)|r"))
                 end
                 -- The divider takes LABEL_GAP on both sides. "||" renders one
                 -- literal pipe.
-                RawRow(fpsHex, CludesUI.L("Latency"),
-                    table.concat(parts, LABEL_GAP .. DIM .. "||" .. "|r" .. LABEL_GAP))
+                RawRow(
+                    fpsHex,
+                    CludesUI.L("Latency"),
+                    table.concat(parts, LABEL_GAP .. DIM .. "||" .. "|r" .. LABEL_GAP)
+                )
             end
         end
 
@@ -2609,7 +3172,9 @@ do
                 -- runs once.
                 statsFrame._measured = true
                 local savedPos = CludesUI.QoLExtrasGet("secondaryStatsPos")
-                if savedPos and savedPos.point == "CENTER" then ApplyStatsPosition() end
+                if savedPos and savedPos.point == "CENTER" then
+                    ApplyStatsPosition()
+                end
             end
         end
 
@@ -2628,17 +3193,18 @@ do
     -- The stat rows redraw on events; FPS and latency need their own clock.
     -- Rebuilt on every apply so the interval takes effect and never doubles up.
     local function RefreshFPSTicker()
-        if not statsFrame then return end
+        if not statsFrame then
+            return
+        end
         if statsFrame._fpsTicker then
             statsFrame._fpsTicker:Cancel()
             statsFrame._fpsTicker = nil
         end
-        if not (CludesUI.QoLExtrasGet("fpsAttachToStats")
-                and CludesUI.QoLExtrasGet("showFPS")) then
+        if not (CludesUI.QoLExtrasGet("fpsAttachToStats") and CludesUI.QoLExtrasGet("showFPS")) then
             return
         end
-        statsFrame._fpsTicker = C_Timer.NewTicker(
-            CludesUI.QoLExtrasGet("fpsUpdateInterval") or 3, UpdateSecondaryStats)
+        statsFrame._fpsTicker =
+            C_Timer.NewTicker(CludesUI.QoLExtrasGet("fpsUpdateInterval") or 3, UpdateSecondaryStats)
     end
 
     local function ApplySecondaryStats()
@@ -2682,7 +3248,9 @@ do
         end
         -- Unit-scoped events filter at the engine (player only); a plain RegisterEvent would deliver every raid member's stat changes.
         for _, ev in ipairs({
-            "UNIT_STATS", "UNIT_ATTACK_POWER", "UNIT_RANGED_ATTACK_POWER",
+            "UNIT_STATS",
+            "UNIT_ATTACK_POWER",
+            "UNIT_RANGED_ATTACK_POWER",
             "UNIT_SPELL_HASTE",
         }) do
             statsFrame:RegisterUnitEvent(ev, "player")
@@ -2697,9 +3265,13 @@ do
             statsFrame:RegisterUnitEvent("UNIT_RESISTANCES", "player")
         end
         for _, ev in ipairs({
-            "COMBAT_RATING_UPDATE", "PLAYER_EQUIPMENT_CHANGED",
-            "MASTERY_UPDATE", "SPELL_POWER_CHANGED", "PLAYER_DAMAGE_DONE_MODS",
-            "PLAYER_SPECIALIZATION_CHANGED", "PLAYER_ENTERING_WORLD",
+            "COMBAT_RATING_UPDATE",
+            "PLAYER_EQUIPMENT_CHANGED",
+            "MASTERY_UPDATE",
+            "SPELL_POWER_CHANGED",
+            "PLAYER_DAMAGE_DONE_MODS",
+            "PLAYER_SPECIALIZATION_CHANGED",
+            "PLAYER_ENTERING_WORLD",
             -- Combat-scoped stat secrecy lifts here. The figures themselves
             -- stay live through a fight (they render as arguments), but the
             -- block cannot be MEASURED while any of them is secret -- so this
@@ -2718,7 +3290,9 @@ do
         -- character sheet. Redraw at once instead, and again once the burst has
         -- settled, for the same two updates per window.
         statsFrame:SetScript("OnEvent", function()
-            if _statsPending then return end
+            if _statsPending then
+                return
+            end
             _statsPending = true
             UpdateSecondaryStats()
             C_Timer.After(0.5, function()
@@ -2735,7 +3309,9 @@ do
     -- The frame is sized from the text on every update, but only while it is
     -- shown. Catch it up when unlock mode opens so the mover box matches.
     CludesUI:RegisterUnlockModeListener("CUI_SecondaryStats", function(opening)
-        if opening then UpdateSecondaryStats() end
+        if opening then
+            UpdateSecondaryStats()
+        end
     end)
 
     CludesUI._getSecondaryStatsFrame = function()
@@ -2769,19 +3345,27 @@ do
             -- issecretvalue FIRST: UnitClass returns a secret in restricted
             -- content and truthiness on one throws.
             local _, cls = UnitClass("player")
-            if issecretvalue(cls) then cls = nil end
+            if issecretvalue(cls) then
+                cls = nil
+            end
             local cc = cls and CludesUI.GetClassColor(cls)
-            if cc then return cc.r, cc.g, cc.b, 1 end
-            return 1, 1, 1, 1   -- class color not resolved yet; retry next update
+            if cc then
+                return cc.r, cc.g, cc.b, 1
+            end
+            return 1, 1, 1, 1 -- class color not resolved yet; retry next update
         end
         local c = CludesUI.QoLExtrasGet("fpsColor")
-        if c then return c.r or 1, c.g or 1, c.b or 1, c.a or 1 end
+        if c then
+            return c.r or 1, c.g or 1, c.b or 1, c.a or 1
+        end
         return 1, 1, 1, 1
     end
     CludesUI._fpsColorRGB = FPSColorRGB
 
     local function CreateFPSCounter()
-        if fpsFrame then return end
+        if fpsFrame then
+            return
+        end
         local FONT = CludesUI.GetFontPath("extras")
         local FONT_SIZE = CludesUI.QoLExtrasGet("fpsTextSize") or 12
         local LABEL_SIZE = FONT_SIZE - 2
@@ -2870,7 +3454,9 @@ do
                     anchor = fsWorldLbl
                 end
             else
-                divWorld:Hide(); fsWorldVal:Hide(); fsWorldLbl:Hide()
+                divWorld:Hide()
+                fsWorldVal:Hide()
+                fsWorldLbl:Hide()
             end
 
             if showLocal then
@@ -2892,17 +3478,23 @@ do
                     anchor = fsLocalLbl
                 end
             else
-                divLocal:Hide(); fsLocalVal:Hide(); fsLocalLbl:Hide()
+                divLocal:Hide()
+                fsLocalVal:Hide()
+                fsLocalLbl:Hide()
             end
 
             local totalW = fsFps:GetStringWidth()
             if showWorld then
                 totalW = totalW + DIV_PAD + DIV_W + DIV_PAD + fsWorldVal:GetStringWidth()
-                if not hideLabel then totalW = totalW + 3 + fsWorldLbl:GetStringWidth() end
+                if not hideLabel then
+                    totalW = totalW + 3 + fsWorldLbl:GetStringWidth()
+                end
             end
             if showLocal then
                 totalW = totalW + DIV_PAD + DIV_W + DIV_PAD + fsLocalVal:GetStringWidth()
-                if not hideLabel then totalW = totalW + 3 + fsLocalLbl:GetStringWidth() end
+                if not hideLabel then
+                    totalW = totalW + 3 + fsLocalLbl:GetStringWidth()
+                end
             end
             self:SetSize(totalW + 4, 20)
         end
@@ -2910,11 +3502,16 @@ do
         local elapsed = 0
         fpsFrame:SetScript("OnUpdate", function(self, dt)
             elapsed = elapsed + dt
-            if elapsed < (self._interval or 3) then return end
+            if elapsed < (self._interval or 3) then
+                return
+            end
             elapsed = 0
             UpdateFPS(self)
         end)
-        fpsFrame._updateNow = function() elapsed = 0; UpdateFPS(fpsFrame) end
+        fpsFrame._updateNow = function()
+            elapsed = 0
+            UpdateFPS(fpsFrame)
+        end
         fpsFrame:Hide()
     end
 
@@ -2922,8 +3519,9 @@ do
     -- this frame. Requires that block to be on, so turning it off pops the
     -- counter back to standalone instead of making it disappear.
     local function IsAttached()
-        return (CludesUI.QoLExtrasGet("fpsAttachToStats")
-            and CludesUI.QoLExtrasGet("showSecondaryStats")) and true or false
+        return (CludesUI.QoLExtrasGet("fpsAttachToStats") and CludesUI.QoLExtrasGet("showSecondaryStats"))
+                and true
+            or false
     end
     CludesUI._fpsAttachedToStats = IsAttached
 
@@ -2936,14 +3534,28 @@ do
             local lblSz = sz - 2
             local fp = CludesUI.GetFontPath("extras")
             local outF = CludesUI.GetFontOutlineFlag("extras")
-            if fpsFrame._text then fpsFrame._text:SetFont(fp, sz, outF) end
-            if fpsFrame._textWorld then fpsFrame._textWorld:SetFont(fp, sz, outF) end
-            if fpsFrame._textLocal then fpsFrame._textLocal:SetFont(fp, sz, outF) end
-            if fpsFrame._lblWorld then fpsFrame._lblWorld:SetFont(fp, lblSz, outF) end
-            if fpsFrame._lblLocal then fpsFrame._lblLocal:SetFont(fp, lblSz, outF) end
+            if fpsFrame._text then
+                fpsFrame._text:SetFont(fp, sz, outF)
+            end
+            if fpsFrame._textWorld then
+                fpsFrame._textWorld:SetFont(fp, sz, outF)
+            end
+            if fpsFrame._textLocal then
+                fpsFrame._textLocal:SetFont(fp, sz, outF)
+            end
+            if fpsFrame._lblWorld then
+                fpsFrame._lblWorld:SetFont(fp, lblSz, outF)
+            end
+            if fpsFrame._lblLocal then
+                fpsFrame._lblLocal:SetFont(fp, lblSz, outF)
+            end
             local pos = CludesUI.QoLExtrasGet("fpsPos")
             if pos and pos.point then
-                if pos.scale then pcall(function() fpsFrame:SetScale(pos.scale) end) end
+                if pos.scale then
+                    pcall(function()
+                        fpsFrame:SetScale(pos.scale)
+                    end)
+                end
                 fpsFrame:ClearAllPoints()
                 fpsFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
             end
@@ -2954,22 +3566,30 @@ do
         end
     end
 
-    local RegisterFPSUnlockElement  -- forward: defined below
+    local RegisterFPSUnlockElement -- forward: defined below
 
     -- A settings change can move the readout between its two owners, so every
     -- FPS option writes through here rather than calling one side directly.
     CludesUI._applyFPSDisplay = function()
-        if CludesUI._applyFPSCounter then CludesUI._applyFPSCounter() end
-        if CludesUI._applySecondaryStats then CludesUI._applySecondaryStats() end
+        if CludesUI._applyFPSCounter then
+            CludesUI._applyFPSCounter()
+        end
+        if CludesUI._applySecondaryStats then
+            CludesUI._applySecondaryStats()
+        end
         -- Re-registering is how an open unlock session gains or loses a mover,
         -- so a showFPS flip (options toggle or the keybind, both of which land
         -- here) takes effect without leaving and re-entering.
-        if CludesUI._unlockActive then RegisterFPSUnlockElement() end
+        if CludesUI._unlockActive then
+            RegisterFPSUnlockElement()
+        end
     end
 
     RegisterFPSUnlockElement = function()
         local MK = CludesUI.MakeUnlockElement
-        if not MK then return end
+        if not MK then
+            return
+        end
         CludesUI:RegisterUnlockElements({
             MK({
                 key = "CUI_FPS",
@@ -2983,16 +3603,22 @@ do
                     return not CludesUI.QoLExtrasGet("showFPS") or IsAttached()
                 end,
                 getFrame = function()
-                    if not fpsFrame then CreateFPSCounter() end
+                    if not fpsFrame then
+                        CreateFPSCounter()
+                    end
                     return fpsFrame
                 end,
                 getSize = function()
-                    if fpsFrame then return fpsFrame:GetWidth(), fpsFrame:GetHeight() end
+                    if fpsFrame then
+                        return fpsFrame:GetWidth(), fpsFrame:GetHeight()
+                    end
                     return 80, 20
                 end,
                 noResize = true,
                 savePos = function(key, point, relPoint, x, y)
-                    if not point then return end
+                    if not point then
+                        return
+                    end
                     CludesUI.QoLExtrasSet("fpsPos", { point = point, relPoint = relPoint, x = x, y = y })
                     if fpsFrame and not CludesUI._unlockActive then
                         fpsFrame:ClearAllPoints()
@@ -3006,11 +3632,19 @@ do
                     CludesUI.QoLExtrasSet("fpsPos", nil)
                 end,
                 applyPos = function()
-                    if not fpsFrame then return end
+                    if not fpsFrame then
+                        return
+                    end
                     local pos = CludesUI.QoLExtrasGet("fpsPos")
                     if pos and pos.point then
                         fpsFrame:ClearAllPoints()
-                        fpsFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
+                        fpsFrame:SetPoint(
+                            pos.point,
+                            UIParent,
+                            pos.relPoint or pos.point,
+                            pos.x or 0,
+                            pos.y or 0
+                        )
                     end
                 end,
             }),
@@ -3032,7 +3666,9 @@ do
                 end,
                 getSize = function()
                     local f = CludesUI._getSecondaryStatsFrame and CludesUI._getSecondaryStatsFrame()
-                    if f then return f:GetWidth(), f:GetHeight() end
+                    if f then
+                        return f:GetWidth(), f:GetHeight()
+                    end
                     return 160, 60
                 end,
                 noResize = true,
@@ -3040,21 +3676,28 @@ do
                 -- below rather than re-applying a stored center over the top.
                 noInitHook = true,
                 savePos = function(key, point, relPoint, x, y)
-                    if not point then return end
+                    if not point then
+                        return
+                    end
                     -- Scale lives in this same table; carry it over so a drag doesn't wipe it.
                     local prev = CludesUI.QoLExtrasGet("secondaryStatsPos")
-                    local newPos = { point = point, relPoint = relPoint, x = x, y = y, scale = prev and prev.scale }
+                    local newPos =
+                        { point = point, relPoint = relPoint, x = x, y = y, scale = prev and prev.scale }
                     -- Rebase the center unlock mode hands back onto the corner
                     -- it currently resolves to, and store THAT -- a center would
                     -- name a different corner the moment a figure gains a digit.
                     -- Resolved against the handed-over center, not the frame's
                     -- own point, which on Save & Exit may not have moved yet.
                     local f = CludesUI._getSecondaryStatsFrame and CludesUI._getSecondaryStatsFrame()
-                    if f and point == "CENTER" and (relPoint or "CENTER") == "CENTER"
-                       and CludesUI._secondaryStatsCorner then
+                    if
+                        f
+                        and point == "CENTER"
+                        and (relPoint or "CENTER") == "CENTER"
+                        and CludesUI._secondaryStatsCorner
+                    then
                         newPos.point, newPos.relPoint = "TOPLEFT", "BOTTOMLEFT"
-                        newPos.x, newPos.y = CludesUI._secondaryStatsCorner(
-                            x or 0, y or 0, f:GetWidth(), f:GetHeight())
+                        newPos.x, newPos.y =
+                            CludesUI._secondaryStatsCorner(x or 0, y or 0, f:GetWidth(), f:GetHeight())
                     end
                     CludesUI.QoLExtrasSet("secondaryStatsPos", newPos)
                     if not CludesUI._unlockActive and CludesUI._secondaryStatsPin then
@@ -3070,7 +3713,9 @@ do
                 -- NotifyElementResized calls this after every resize. Re-applying
                 -- an edge anchor at a new size is a no-op, which is the point.
                 applyPos = function()
-                    if CludesUI._secondaryStatsPin then CludesUI._secondaryStatsPin() end
+                    if CludesUI._secondaryStatsPin then
+                        CludesUI._secondaryStatsPin()
+                    end
                 end,
             }),
         })
@@ -3113,7 +3758,9 @@ end
 do
     local holdBtn, pingBtn, bindOwner, holdBase
 
-    local function Release() ClearOverrideBindings(holdBtn) end
+    local function Release()
+        ClearOverrideBindings(holdBtn)
+    end
 
     local function Build()
         pingBtn = CreateFrame("Button", "CUI_EnvPingButton", UIParent, "SecureActionButtonTemplate")
@@ -3124,19 +3771,28 @@ do
         -- A key-up lost to alt-tab or a loading screen would leave every left
         -- click pinging: once the key is up, a ping releases the claim.
         pingBtn:SetScript("PostClick", function()
-            if holdBase and IsKeyDown(holdBase) then return end
-            if InCombatLockdown() then ns.CombatQueue.Defer("EnvPingRelease", Release) else Release() end
+            if holdBase and IsKeyDown(holdBase) then
+                return
+            end
+            if InCombatLockdown() then
+                ns.CombatQueue.Defer("EnvPingRelease", Release)
+            else
+                Release()
+            end
         end)
         holdBtn = CreateFrame("Button", "CUI_EnvPingHoldButton", UIParent, "SecureHandlerClickTemplate")
         holdBtn:RegisterForClicks("AnyDown", "AnyUp")
         holdBtn:SetFrameRef("ping", pingBtn)
-        holdBtn:SetAttribute("_onclick", [[
+        holdBtn:SetAttribute(
+            "_onclick",
+            [[
             if down then
                 self:SetBindingClick(true, "BUTTON1", self:GetFrameRef("ping"))
             else
                 self:ClearBindings()
             end
-        ]])
+        ]]
+        )
         bindOwner = CreateFrame("Frame")
     end
 
@@ -3146,12 +3802,18 @@ do
             return
         end
         local key = CludesUIDB.envPingKey
-        if not (key or bindOwner) then return end
-        if not bindOwner then Build() end
+        if not (key or bindOwner) then
+            return
+        end
+        if not bindOwner then
+            Build()
+        end
         ClearOverrideBindings(bindOwner)
         Release()
         holdBase = key and key:match("[^%-]+$")
-        if key then SetOverrideBindingClick(bindOwner, true, key, "CUI_EnvPingHoldButton") end
+        if key then
+            SetOverrideBindingClick(bindOwner, true, key, "CUI_EnvPingHoldButton")
+        end
     end
 end
 
@@ -3161,7 +3823,9 @@ end
 do
     local durWarnOverlay
     local function CreateDurabilityWarning()
-        if durWarnOverlay then return end
+        if durWarnOverlay then
+            return
+        end
 
         durWarnOverlay = CreateFrame("Frame", nil, UIParent)
         durWarnOverlay:SetSize(400, 40)
@@ -3180,7 +3844,13 @@ do
             durWarnOverlay:ClearAllPoints()
             local pos = CludesUIDB and CludesUIDB.durWarnPos
             if pos and pos.point then
-                durWarnOverlay:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 250)
+                durWarnOverlay:SetPoint(
+                    pos.point,
+                    UIParent,
+                    pos.relPoint or pos.point,
+                    pos.x or 0,
+                    pos.y or 250
+                )
             else
                 local yOff = CludesUIDB and CludesUIDB.durWarnYOffset or 250
                 durWarnOverlay:SetPoint("CENTER", UIParent, "CENTER", 0, yOff)
@@ -3240,18 +3910,26 @@ do
     end
 
     CludesUI._durWarnHidePreview = function()
-        if durWarnOverlay then durWarnOverlay:Hide() end
+        if durWarnOverlay then
+            durWarnOverlay:Hide()
+        end
     end
 
     local repairWarnFrame = CreateFrame("Frame", nil, UIParent)
 
     local function CheckDurabilityAndShow()
-        if not CludesUIDB then return end
-        if CludesUIDB.repairWarning == false then
-            if durWarnOverlay then durWarnOverlay:Hide() end
+        if not CludesUIDB then
             return
         end
-        if InCombatLockdown() then return end
+        if CludesUIDB.repairWarning == false then
+            if durWarnOverlay then
+                durWarnOverlay:Hide()
+            end
+            return
+        end
+        if InCombatLockdown() then
+            return
+        end
 
         -- WoW Forever: each throw spends one point of a thrown weapon's
         -- durability, so it counts remaining throws rather than wear.
@@ -3273,7 +3951,9 @@ do
             local cur, mx = GetInventoryItemDurability(slot)
             if cur and mx and mx > 0 and slot ~= thrownSlot then
                 local pct = (cur / mx) * 100
-                if pct < lowestDur then lowestDur = pct end
+                if pct < lowestDur then
+                    lowestDur = pct
+                end
             end
         end
 
@@ -3295,10 +3975,14 @@ do
     end
     repairWarnFrame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_REGEN_DISABLED" then
-            if durWarnOverlay then durWarnOverlay:Hide() end
+            if durWarnOverlay then
+                durWarnOverlay:Hide()
+            end
             return
         end
-        if durCheckPending then return end
+        if durCheckPending then
+            return
+        end
         durCheckPending = true
         C_Timer.After(0, FlushDurabilityCheck)
     end)
@@ -3307,7 +3991,9 @@ do
     CludesUI._syncDurWarnEvents = function()
         if CludesUIDB and CludesUIDB.repairWarning == false then
             repairWarnFrame:UnregisterAllEvents()
-            if durWarnOverlay then durWarnOverlay:Hide() end
+            if durWarnOverlay then
+                durWarnOverlay:Hide()
+            end
         else
             repairWarnFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
             repairWarnFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -3327,14 +4013,20 @@ end
 do
     local function ApplyPPUIScale()
         local scale = CludesUIDB and CludesUIDB.ppUIScale
-        if not scale then return end
+        if not scale then
+            return
+        end
         local mf = CludesUI._mainFrame
         local panelScaleBefore
-        if mf then panelScaleBefore = mf:GetEffectiveScale() end
+        if mf then
+            panelScaleBefore = mf:GetEffectiveScale()
+        end
         CludesUI.PP.SetUIScale(scale)
         if mf and panelScaleBefore then
             local newEff = UIParent:GetEffectiveScale()
-            if newEff > 0 then mf:SetScale(panelScaleBefore / newEff) end
+            if newEff > 0 then
+                mf:SetScale(panelScaleBefore / newEff)
+            end
         end
     end
 
@@ -3360,9 +4052,13 @@ do
     -- start, never a toggle-mouselook addon's, and costs nothing when idle.
     local mlookGuard = CreateFrame("Frame")
     mlookGuard:SetScript("OnEvent", function(self)
-        if IsMouseButtonDown("RightButton") then return end
+        if IsMouseButtonDown("RightButton") then
+            return
+        end
         self:UnregisterEvent("GLOBAL_MOUSE_UP")
-        if IsMouselooking() then MouselookStop() end
+        if IsMouselooking() then
+            MouselookStop()
+        end
     end)
 
     local mlookBtn = CreateFrame("Button", "CUI_MouseLookBtn", UIParent)
@@ -3432,12 +4128,18 @@ do
     -- would go stale against them and swallow the next arming push. All reads
     -- are clean out of combat.
     local function PushRCState()
-        local match = (UnitExists("mouseover")
+        local match = (
+            UnitExists("mouseover")
             and not UnitIsDeadOrGhost("mouseover")
             and UnitCanAttack("player", "mouseover")
             and not UnitIsWildBattlePet("mouseover")
-            and not UnitIsBattlePetCompanion("mouseover")) and 1 or 0
-        if match == (stateFrame:GetAttribute("state-rc") or 0) then return end
+            and not UnitIsBattlePetCompanion("mouseover")
+        )
+                and 1
+            or 0
+        if match == (stateFrame:GetAttribute("state-rc") or 0) then
+            return
+        end
         stateFrame:SetAttribute("state-rc", match)
     end
 
@@ -3474,8 +4176,8 @@ do
             local ruleLaneOn = enemy and not inInstance
             local macro = ""
             if enemy then
-                macro = macro .. (inInstance and "[@mouseover,harm,nodead]1;"
-                    or "[@mouseover,harm,nodead,combat]1;")
+                macro = macro
+                    .. (inInstance and "[@mouseover,harm,nodead]1;" or "[@mouseover,harm,nodead,combat]1;")
             end
             -- Ally arm = party/raid MEMBERS only. Plain [help] also matches any
             -- friendly-classified world object (a Warlock's Demonic Gateway),
@@ -3486,7 +4188,8 @@ do
             -- group nor guard anything solo. Both clauses so a 5-man and a raid
             -- read the same. Accepted: non-grouped friendlies are not guarded.
             if allyCombat then
-                macro = macro .. "[@mouseover,help,party,nodead,combat]1;[@mouseover,help,raid,nodead,combat]1;"
+                macro = macro
+                    .. "[@mouseover,help,party,nodead,combat]1;[@mouseover,help,raid,nodead,combat]1;"
             end
             macro = macro .. "0"
             SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
@@ -3547,14 +4250,16 @@ do
     -- users keep their current crosshair until a profile overrides it.
     -- CrosshairDB() is nil until the Cursor module creates it.
     local function CrosshairDB()
-        return _G._ECL_AceDB and _G._ECL_AceDB.profile
+        return _G._CUCL_AceDB and _G._CUCL_AceDB.profile
     end
     CludesUI.GetCrosshairDB = CrosshairDB
 
     -- Effective read: profile override -> global root -> nil (inline default).
     local function CrosshairGet(k)
         local p = CrosshairDB()
-        if p and p[k] ~= nil then return p[k] end
+        if p and p[k] ~= nil then
+            return p[k]
+        end
         return CludesUIDB and CludesUIDB[k]
     end
     CludesUI.GetCrosshairValue = CrosshairGet
@@ -3578,8 +4283,7 @@ do
 
     -- True only when there is an attackable, living target out of range.
     local function TargetOutOfRange()
-        if not (UnitExists("target") and UnitCanAttack("player", "target")
-                and not UnitIsDead("target")) then
+        if not (UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDead("target")) then
             return false
         end
         local cutoff = CludesUI._getCrosshairCutoffRange()
@@ -3589,7 +4293,9 @@ do
     end
 
     local function CreateCrosshair()
-        if crosshairFrame then return end
+        if crosshairFrame then
+            return
+        end
         crosshairFrame = CreateFrame("Frame", "CUI_CharacterCrosshair", UIParent)
         -- MEDIUM sits above gameplay HUD but below DIALOG/HIGH panels (talents, character, etc.).
         crosshairFrame:SetFrameStrata("MEDIUM")
@@ -3616,10 +4322,14 @@ do
         local meleeAccum = 0
         crosshairFrame:SetScript("OnUpdate", function(self, elapsed)
             meleeAccum = meleeAccum + elapsed
-            if meleeAccum < 0.15 then return end
+            if meleeAccum < 0.15 then
+                return
+            end
             meleeAccum = 0
             local nc = self._normalColor
-            if not nc then return end
+            if not nc then
+                return
+            end
             if not CrosshairGet("crosshairMeleeColorEnabled") then
                 CludesUI.Range_SetActive("crosshair", false)
                 if self._meleeActive then
@@ -3634,7 +4344,9 @@ do
             local outOfRange = TargetOutOfRange()
             if outOfRange ~= self._meleeActive then
                 self._meleeActive = outOfRange
-                local c = outOfRange and (CrosshairGet("crosshairMeleeColor") or { r = 1, g = 0, b = 0, a = 1 }) or nc
+                local c = outOfRange
+                        and (CrosshairGet("crosshairMeleeColor") or { r = 1, g = 0, b = 0, a = 1 })
+                    or nc
                 self._hBar:SetColorTexture(c.r or 1, c.g or 0, c.b or 0, c.a or 1)
                 self._vBar:SetColorTexture(c.r or 1, c.g or 0, c.b or 0, c.a or 1)
             end
@@ -3644,9 +4356,9 @@ do
     -- Presets: thickness + total arm length. Options dropdown stamps these onto
     -- H/V Width/Length and they're the fallback when unset; cog sliders fine-tune.
     CludesUI.CROSSHAIR_PRESETS = {
-        Thin   = { width = 1, length = 40 },
+        Thin = { width = 1, length = 40 },
         Normal = { width = 2, length = 40 },
-        Thick  = { width = 3, length = 40 },
+        Thick = { width = 3, length = 40 },
     }
 
     -- Re-evaluates visibility on combat/zone transitions, refreshes cutoff on
@@ -3655,15 +4367,23 @@ do
     local visWatch = CreateFrame("Frame")
     local visWatchRegistered = false
     visWatch:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_ENTERING_WORLD" or event == "TRAIT_CONFIG_UPDATED" then
+        if
+            event == "PLAYER_SPECIALIZATION_CHANGED"
+            or event == "PLAYER_ENTERING_WORLD"
+            or event == "TRAIT_CONFIG_UPDATED"
+        then
             RefreshCrosshairCutoffRange()
         end
         -- _applyCrosshair self-guards: nil DB returns, "None" hides, and it runs
         -- the one-time migration once the profile DB is ready.
-        if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+        if CludesUI._applyCrosshair then
+            CludesUI._applyCrosshair()
+        end
     end)
     local function SyncVisWatch(want)
-        if want == visWatchRegistered then return end
+        if want == visWatchRegistered then
+            return
+        end
         visWatchRegistered = want
         if want then
             visWatch:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -3686,7 +4406,9 @@ do
             SyncVisWatch(false)
             -- OnUpdate stops with the frame hidden and can't release the shared range engine itself, so release it here.
             CludesUI.Range_SetActive("crosshair", false)
-            if crosshairFrame then crosshairFrame:Hide() end
+            if crosshairFrame then
+                crosshairFrame:Hide()
+            end
             return
         end
         SyncVisWatch(true)
@@ -3712,12 +4434,12 @@ do
         local preset = CludesUI.CROSSHAIR_PRESETS[size] or CludesUI.CROSSHAIR_PRESETS.Normal
         local hWidth = G("crosshairHWidth") or preset.width
         local vWidth = G("crosshairVWidth") or preset.width
-        local hLen   = G("crosshairHLength") or preset.length
-        local vLen   = G("crosshairVLength") or preset.length
-        local xOff   = G("crosshairXOffset") or 0
-        local yOff   = G("crosshairYOffset") or 0
-        local bSize  = G("crosshairBorderSize") or 0
-        local bc     = G("crosshairBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
+        local hLen = G("crosshairHLength") or preset.length
+        local vLen = G("crosshairVLength") or preset.length
+        local xOff = G("crosshairXOffset") or 0
+        local yOff = G("crosshairYOffset") or 0
+        local bSize = G("crosshairBorderSize") or 0
+        local bc = G("crosshairBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
 
         -- (0,0) = screen center
         crosshairFrame:ClearAllPoints()
@@ -3770,11 +4492,17 @@ do
         elseif vis == "instances_combat" then
             show = IsInInstance() and inCombat
         end
-        if show then crosshairFrame:Show() else crosshairFrame:Hide() end
+        if show then
+            crosshairFrame:Show()
+        else
+            crosshairFrame:Hide()
+        end
     end
 
     C_Timer.After(1, function()
-        if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+        if CludesUI._applyCrosshair then
+            CludesUI._applyCrosshair()
+        end
     end)
 
     ---------------------------------------------------------------------------
@@ -3785,9 +4513,13 @@ do
         local coordText
 
         local function CreateCoordFrame()
-            if coordFrame then return end
+            if coordFrame then
+                return
+            end
             local mapLoaded = C_AddOns.IsAddOnLoaded("Blizzard_WorldMap")
-            if not mapLoaded or not WorldMapFrame then return end
+            if not mapLoaded or not WorldMapFrame then
+                return
+            end
 
             coordFrame = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer)
             coordFrame:SetFrameStrata("HIGH")
@@ -3825,7 +4557,9 @@ do
             local elapsed = 0
             coordFrame:SetScript("OnUpdate", function(_, dt)
                 elapsed = elapsed + dt
-                if elapsed < 0.05 then return end
+                if elapsed < 0.05 then
+                    return
+                end
                 elapsed = 0
                 local mapID = WorldMapFrame:GetMapID()
                 if not mapID then
@@ -3927,27 +4661,39 @@ if not CludesUI.IS_FOREVER then
 
     function CludesUI._applyMapSidebars()
         local on = CludesUIDB and CludesUIDB.mapSidebarsClear == true
-        if not (on or applied or loader) then return end
+        if not (on or applied or loader) then
+            return
+        end
         -- The world map loads on demand.
         if not C_AddOns.IsAddOnLoaded("Blizzard_WorldMap") then
             if on and not loader then
                 loader = CreateFrame("Frame")
                 loader:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then return end
+                    if name ~= "Blizzard_WorldMap" then
+                        return
+                    end
                     self:UnregisterEvent("ADDON_LOADED")
                     CludesUI._applyMapSidebars()
                 end)
             end
-            if on then loader:RegisterEvent("ADDON_LOADED") else loader:UnregisterEvent("ADDON_LOADED") end
+            if on then
+                loader:RegisterEvent("ADDON_LOADED")
+            else
+                loader:UnregisterEvent("ADDON_LOADED")
+            end
             return
         end
-        if not (on or applied) then return end
+        if not (on or applied) then
+            return
+        end
         if InCombatLockdown() then
             ns.CombatQueue.Defer("MapSidebars", CludesUI._applyMapSidebars)
             return
         end
         local b = WorldMapFrame.BlackoutFrame
-        if not (b and b.Blackout) then return end
+        if not (b and b.Blackout) then
+            return
+        end
         if on then
             if not applied then
                 mouseWas = b:IsMouseEnabled()
@@ -3987,10 +4733,10 @@ do
     local PROBE = "\0"
 
     local active = false
-    local switched = {}     -- [messageType] = true: switched off here
-    local roleOf            -- [messageType] = "keep" | "info" | "voice"
-    local throttled         -- [messageType] = true: a repeat refreshes the line
-    local keepText          -- [message] = true: kept error texts
+    local switched = {} -- [messageType] = true: switched off here
+    local roleOf -- [messageType] = "keep" | "info" | "voice"
+    local throttled -- [messageType] = true: a repeat refreshes the line
+    local keepText -- [message] = true: kept error texts
     local typeCount
     local f = CreateFrame("Frame")
 
@@ -3998,49 +4744,89 @@ do
     -- from 1 with no gaps; the scan stops at the first index with no name.
     local function ScanTypes()
         local KEEP = {
-            "ERR_INV_FULL", "ERR_QUEST_LOG_FULL", "ERR_RAID_GROUP_ONLY",
-            "ERR_PARTY_LFG_BOOT_LIMIT", "ERR_PARTY_LFG_BOOT_NOT_ELIGIBLE_S",
-            "ERR_PARTY_LFG_BOOT_DUNGEON_COMPLETE", "ERR_PARTY_LFG_BOOT_IN_PROGRESS",
-            "ERR_PARTY_LFG_BOOT_LOOT_ROLLS", "ERR_PARTY_LFG_TELEPORT_IN_COMBAT",
-            "ERR_PET_SPELL_DEAD", "ERR_PLAYER_DEAD", "ERR_ALREADY_PICKPOCKETED",
+            "ERR_INV_FULL",
+            "ERR_QUEST_LOG_FULL",
+            "ERR_RAID_GROUP_ONLY",
+            "ERR_PARTY_LFG_BOOT_LIMIT",
+            "ERR_PARTY_LFG_BOOT_NOT_ELIGIBLE_S",
+            "ERR_PARTY_LFG_BOOT_DUNGEON_COMPLETE",
+            "ERR_PARTY_LFG_BOOT_IN_PROGRESS",
+            "ERR_PARTY_LFG_BOOT_LOOT_ROLLS",
+            "ERR_PARTY_LFG_TELEPORT_IN_COMBAT",
+            "ERR_PET_SPELL_DEAD",
+            "ERR_PLAYER_DEAD",
+            "ERR_ALREADY_PICKPOCKETED",
         }
         -- Sent as yellow UI_INFO_MESSAGE lines (quest progress, discoveries,
         -- trades, flight paths and the like). The switch is per type, not per
         -- event, so one of these is switched only once it arrives as a red
         -- error while the option is on.
         local INFO = {
-            "ERR_TAXINOSUCHPATH", "ERR_TAXINOTENOUGHMONEY", "ERR_TAXITOOFARAWAY",
-            "ERR_TAXINOVENDORNEARBY", "ERR_TAXINOTVISITED", "ERR_TAXIPLAYERMOVING",
-            "ERR_TAXINOTSTANDING", "ERR_NEWTAXIPATH", "ERR_TRADE_CANCELLED",
-            "ERR_TRADE_COMPLETE", "ERR_USE_SPELL_FOCUS",
-            "ERR_QUEST_OBJECTIVE_COMPLETE_S", "ERR_QUEST_UNKNOWN_COMPLETE",
-            "ERR_QUEST_ADD_KILL_SII", "ERR_QUEST_ADD_FOUND_SII",
-            "ERR_QUEST_ADD_ITEM_SII", "ERR_QUEST_ADD_PLAYER_KILL_SII",
-            "ERR_QUEST_PET_BATTLE_VICTORIES_PVP_II", "ERR_ZONE_EXPLORED",
-            "ERR_DUEL_CANCELLED", "ERR_FISH_NOT_HOOKED", "ERR_FISH_ESCAPED",
-            "ERR_SPELL_FAILED_NOTUNSHEATHED", "ERR_SPELL_FAILED_LEVEL_REQUIREMENT",
-            "ERR_MAIL_SENT", "ERR_PVP_KILL_HONORABLE", "ERR_PVP_KILL_DISHONORABLE",
-            "ERR_PVP_TOGGLE_ON", "ERR_PVP_TOGGLE_OFF", "ERR_PVP_WARMODE_TOGGLE_ON",
-            "ERR_PVP_WARMODE_TOGGLE_OFF", "ERR_GROUP_JOIN_BATTLEGROUND_DESERTERS",
-            "ERR_GROUP_JOIN_BATTLEGROUND_DEAD", "ERR_SOLO_JOIN_TRAINING_GROUND",
-            "ERR_LFG_JOINED_TRAINING_GROUNDS_QUEUE", "ERR_BN_FRIEND_REQUEST_SENT",
-            "ERR_BN_BROADCAST_THROTTLE", "ERR_BATTLETAG_FRIEND_SUCCESS",
+            "ERR_TAXINOSUCHPATH",
+            "ERR_TAXINOTENOUGHMONEY",
+            "ERR_TAXITOOFARAWAY",
+            "ERR_TAXINOVENDORNEARBY",
+            "ERR_TAXINOTVISITED",
+            "ERR_TAXIPLAYERMOVING",
+            "ERR_TAXINOTSTANDING",
+            "ERR_NEWTAXIPATH",
+            "ERR_TRADE_CANCELLED",
+            "ERR_TRADE_COMPLETE",
+            "ERR_USE_SPELL_FOCUS",
+            "ERR_QUEST_OBJECTIVE_COMPLETE_S",
+            "ERR_QUEST_UNKNOWN_COMPLETE",
+            "ERR_QUEST_ADD_KILL_SII",
+            "ERR_QUEST_ADD_FOUND_SII",
+            "ERR_QUEST_ADD_ITEM_SII",
+            "ERR_QUEST_ADD_PLAYER_KILL_SII",
+            "ERR_QUEST_PET_BATTLE_VICTORIES_PVP_II",
+            "ERR_ZONE_EXPLORED",
+            "ERR_DUEL_CANCELLED",
+            "ERR_FISH_NOT_HOOKED",
+            "ERR_FISH_ESCAPED",
+            "ERR_SPELL_FAILED_NOTUNSHEATHED",
+            "ERR_SPELL_FAILED_LEVEL_REQUIREMENT",
+            "ERR_MAIL_SENT",
+            "ERR_PVP_KILL_HONORABLE",
+            "ERR_PVP_KILL_DISHONORABLE",
+            "ERR_PVP_TOGGLE_ON",
+            "ERR_PVP_TOGGLE_OFF",
+            "ERR_PVP_WARMODE_TOGGLE_ON",
+            "ERR_PVP_WARMODE_TOGGLE_OFF",
+            "ERR_GROUP_JOIN_BATTLEGROUND_DESERTERS",
+            "ERR_GROUP_JOIN_BATTLEGROUND_DEAD",
+            "ERR_SOLO_JOIN_TRAINING_GROUND",
+            "ERR_LFG_JOINED_TRAINING_GROUNDS_QUEUE",
+            "ERR_BN_FRIEND_REQUEST_SENT",
+            "ERR_BN_BROADCAST_THROTTLE",
+            "ERR_BATTLETAG_FRIEND_SUCCESS",
             "ERR_REPORT_SUBMITTED_SUCCESSFULLY",
-            "ERR_SUGGESTION_SUBMITTED_SUCCESSFULLY", "ERR_BUG_SUBMITTED_SUCCESSFULLY",
+            "ERR_SUGGESTION_SUBMITTED_SUCCESSFULLY",
+            "ERR_BUG_SUBMITTED_SUCCESSFULLY",
         }
         -- The types whose repeat of the same text refreshes the line already
         -- up instead of adding one (UIErrorsFrame's own list).
         local THROTTLED = {
-            "ERR_SPELL_FAILED_TOTEMS", "ERR_SPELL_FAILED_EQUIPPED_ITEM",
-            "ERR_SPELL_ALREADY_KNOWN_S", "ERR_SPELL_FAILED_SHAPESHIFT_FORM_S",
-            "ERR_SPELL_FAILED_ALREADY_AT_FULL_MANA", "ERR_OUT_OF_MANA",
-            "ERR_SPELL_OUT_OF_RANGE", "ERR_SPELL_FAILED_S", "ERR_SPELL_FAILED_REAGENTS",
-            "ERR_SPELL_FAILED_REAGENTS_GENERIC", "ERR_SPELL_FAILED_NOTUNSHEATHED",
-            "ERR_SPELL_UNLEARNED_S", "ERR_SPELL_FAILED_EQUIPPED_SPECIFIC_ITEM",
+            "ERR_SPELL_FAILED_TOTEMS",
+            "ERR_SPELL_FAILED_EQUIPPED_ITEM",
+            "ERR_SPELL_ALREADY_KNOWN_S",
+            "ERR_SPELL_FAILED_SHAPESHIFT_FORM_S",
+            "ERR_SPELL_FAILED_ALREADY_AT_FULL_MANA",
+            "ERR_OUT_OF_MANA",
+            "ERR_SPELL_OUT_OF_RANGE",
+            "ERR_SPELL_FAILED_S",
+            "ERR_SPELL_FAILED_REAGENTS",
+            "ERR_SPELL_FAILED_REAGENTS_GENERIC",
+            "ERR_SPELL_FAILED_NOTUNSHEATHED",
+            "ERR_SPELL_UNLEARNED_S",
+            "ERR_SPELL_FAILED_EQUIPPED_SPECIFIC_ITEM",
             "ERR_SPELL_FAILED_ALREADY_AT_FULL_POWER_S",
             "ERR_SPELL_FAILED_EQUIPPED_ITEM_CLASS_S",
-            "ERR_SPELL_FAILED_ALREADY_AT_FULL_HEALTH", "ERR_SPELL_FAILED_CANT_FLY_HERE",
-            "ERR_GENERIC_NO_VALID_TARGETS", "ERR_ITEM_COOLDOWN", "ERR_CANT_USE_ITEM",
+            "ERR_SPELL_FAILED_ALREADY_AT_FULL_HEALTH",
+            "ERR_SPELL_FAILED_CANT_FLY_HERE",
+            "ERR_GENERIC_NO_VALID_TARGETS",
+            "ERR_ITEM_COOLDOWN",
+            "ERR_CANT_USE_ITEM",
             "ERR_SPELL_FAILED_ANOTHER_IN_PROGRESS",
         }
         local role, repeats = {}, {}
@@ -4049,20 +4835,28 @@ do
             local name = KEEP[i]
             role[name] = "keep"
             local text = _G[name]
-            if type(text) == "string" then keepText[text] = true end
+            if type(text) == "string" then
+                keepText[text] = true
+            end
         end
         -- The pickpocket line arrives as a plain spell failure, so it is kept
         -- by its text alone.
         if type(SPELL_FAILED_TARGET_NO_POCKETS) == "string" then
             keepText[SPELL_FAILED_TARGET_NO_POCKETS] = true
         end
-        for i = 1, #INFO do role[INFO[i]] = "info" end
-        for i = 1, #THROTTLED do repeats[THROTTLED[i]] = true end
+        for i = 1, #INFO do
+            role[INFO[i]] = "info"
+        end
+        for i = 1, #THROTTLED do
+            repeats[THROTTLED[i]] = true
+        end
         roleOf, throttled = {}, {}
         local count = 0
         for i = 1, 8191 do
             local ok, name = pcall(GetGameMessageInfo, i)
-            if not (ok and name) then break end
+            if not (ok and name) then
+                break
+            end
             roleOf[i] = role[name]
             throttled[i] = repeats[name]
             count = i
@@ -4072,7 +4866,9 @@ do
         if Voice_GetGameErrorFromStatusCode and Enum.VoiceChatStatusCode then
             for _, code in pairs(Enum.VoiceChatStatusCode) do
                 local messageType = Voice_GetGameErrorFromStatusCode(code)
-                if type(messageType) == "number" then roleOf[messageType] = "voice" end
+                if type(messageType) == "number" then
+                    roleOf[messageType] = "voice"
+                end
             end
         end
     end
@@ -4096,12 +4892,16 @@ do
     local function ShowLine(messageType, message, r, g, b)
         local frame = UIErrorsFrame
         local ok, shown = pcall(frame.ShouldDisplayMessageType, frame, messageType, PROBE)
-        if not ok then return end
+        if not ok then
+            return
+        end
         if shown then
             switched[messageType] = nil
             return
         end
-        if frame:GetMessagesSuppressed() then return end
+        if frame:GetMessagesSuppressed() then
+            return
+        end
         if throttled[messageType] then
             local fs = frame:GetFontStringByID(messageType)
             if fs then
@@ -4123,10 +4923,16 @@ do
 
     local function Enable()
         local frame = UIErrorsFrame
-        if not (frame and frame.SetMessageTypeEnabled) then return end
-        if not typeCount then ScanTypes() end
+        if not (frame and frame.SetMessageTypeEnabled) then
+            return
+        end
+        if not typeCount then
+            ScanTypes()
+        end
         for messageType = 1, typeCount do
-            if not roleOf[messageType] then SwitchOff(frame, messageType) end
+            if not roleOf[messageType] then
+                SwitchOff(frame, messageType)
+            end
         end
         f:RegisterEvent("UI_ERROR_MESSAGE")
         f:RegisterEvent("UI_INFO_MESSAGE")
@@ -4137,7 +4943,9 @@ do
     -- true while the option is off and the switch is still in place.
     local function ApplyHideErrorMessages()
         local on = CludesUIDB and CludesUIDB.hideErrorMessages
-        if on and not active then Enable() end
+        if on and not active then
+            Enable()
+        end
         return (active and not on) and true or false
     end
     CludesUI._applyHideErrorMessages = ApplyHideErrorMessages
@@ -4148,15 +4956,21 @@ do
             ApplyHideErrorMessages()
             return
         end
-        if issecretvalue(messageType) or issecretvalue(message) then return end
+        if issecretvalue(messageType) or issecretvalue(message) then
+            return
+        end
         if switched[messageType] then
             if event == "UI_INFO_MESSAGE" then
                 ShowLine(messageType, message, YELLOW_FONT_COLOR:GetRGB())
             elseif keepText[message] then
                 ShowLine(messageType, message, RED_FONT_COLOR:GetRGB())
             end
-        elseif event == "UI_ERROR_MESSAGE" and roleOf[messageType] == "info"
-            and CludesUIDB and CludesUIDB.hideErrorMessages then
+        elseif
+            event == "UI_ERROR_MESSAGE"
+            and roleOf[messageType] == "info"
+            and CludesUIDB
+            and CludesUIDB.hideErrorMessages
+        then
             -- An info type that came as a red error while the option is on:
             -- switched off too, so its later errors hide and its yellow lines
             -- come through ShowLine.
@@ -4205,7 +5019,9 @@ do
         end
     end
     local function HideOpenTips()
-        if not (HelpTip and HelpTip.framePool and HelpTip.framePool.EnumerateActive) then return end
+        if not (HelpTip and HelpTip.framePool and HelpTip.framePool.EnumerateActive) then
+            return
+        end
         pcall(DoHideOpenTips)
     end
 
@@ -4223,11 +5039,19 @@ do
         ScanChildren(root:GetChildren())
     end
     function HideButtonsUnder(root)
-        if not root then return end
+        if not root then
+            return
+        end
         local fp = GetFingerprint()
-        if not fp then return end
-        if root.ShowTooltip == fp then HideButton(root) end
-        if root.GetChildren then pcall(ScanFrame, root) end
+        if not fp then
+            return
+        end
+        if root.ShowTooltip == fp then
+            HideButton(root)
+        end
+        if root.GetChildren then
+            pcall(ScanFrame, root)
+        end
     end
 
     local function RestoreButtons()
@@ -4241,11 +5065,15 @@ do
     -- Core hooks (HelpTip + ShowUIPanel) install once, only via ApplyHideTutorials; each body also gates on Enabled().
     local coreHooked = false
     local function InstallCoreHooks()
-        if coreHooked then return end
+        if coreHooked then
+            return
+        end
         coreHooked = true
         if HelpTip and HelpTip.Show then
             hooksecurefunc(HelpTip, "Show", function()
-                if Enabled() then HideOpenTips() end
+                if Enabled() then
+                    HideOpenTips()
+                end
             end)
         end
         if ShowUIPanel then
@@ -4260,16 +5088,22 @@ do
 
     local tooltipHooked = false
     local function InstallTooltipHook()
-        if tooltipHooked or not HelpPlateTooltip then return end
+        if tooltipHooked or not HelpPlateTooltip then
+            return
+        end
         tooltipHooked = true
         if HelpPlate and HelpPlate.ShowTutorialTooltip then
             hooksecurefunc(HelpPlate, "ShowTutorialTooltip", function()
-                if Enabled() and HelpPlateTooltip then HelpPlateTooltip:Hide() end
+                if Enabled() and HelpPlateTooltip then
+                    HelpPlateTooltip:Hide()
+                end
             end)
         end
         if HelpPlateTooltip.Init then
             hooksecurefunc(HelpPlateTooltip, "Init", function(self)
-                if Enabled() then self:Hide() end
+                if Enabled() then
+                    self:Hide()
+                end
             end)
         end
     end
@@ -4307,7 +5141,7 @@ do
             end
             return
         end
-        ApplyHideTutorials()  -- PLAYER_LOGIN
+        ApplyHideTutorials() -- PLAYER_LOGIN
     end)
 end
 
@@ -4322,15 +5156,16 @@ do
     local ticker
     local watcher
     local installed = false
-    local deadState = {}   -- [guid] = true while dead/ghost, false while alive
+    local deadState = {} -- [guid] = true while dead/ghost, false while alive
 
     local DEFAULT_TEXT_SIZE = 34
 
     -- Configured font size + saved position (default center-top).
     local function ApplyOverlaySettings()
-        if not alertOverlay then return end
-        local fontPath = (CludesUI.GetFontPath("extras"))
-            or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+        if not alertOverlay then
+            return
+        end
+        local fontPath = (CludesUI.GetFontPath("extras")) or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
         -- Always keep an outline so the alert stays readable over any background.
         local outline = (CludesUI.GetFontOutlineFlag("extras")) or ""
         if not outline:find("OUTLINE") then
@@ -4352,7 +5187,9 @@ do
     end
 
     local function CreateAlertOverlay()
-        if alertOverlay then return end
+        if alertOverlay then
+            return
+        end
 
         alertOverlay = CreateFrame("Frame", nil, UIParent)
         alertOverlay:SetSize(240, 50)
@@ -4369,20 +5206,35 @@ do
         -- Quick fade-in, brief hold, fade-out; hide when finished.
         local ag = alertOverlay:CreateAnimationGroup()
         local fadeIn = ag:CreateAnimation("Alpha")
-        fadeIn:SetFromAlpha(0); fadeIn:SetToAlpha(1); fadeIn:SetDuration(0.15); fadeIn:SetOrder(1)
+        fadeIn:SetFromAlpha(0)
+        fadeIn:SetToAlpha(1)
+        fadeIn:SetDuration(0.15)
+        fadeIn:SetOrder(1)
         local hold = ag:CreateAnimation("Alpha")
-        hold:SetFromAlpha(1); hold:SetToAlpha(1); hold:SetDuration(1.6); hold:SetOrder(2)
+        hold:SetFromAlpha(1)
+        hold:SetToAlpha(1)
+        hold:SetDuration(1.6)
+        hold:SetOrder(2)
         local fadeOut = ag:CreateAnimation("Alpha")
-        fadeOut:SetFromAlpha(1); fadeOut:SetToAlpha(0); fadeOut:SetDuration(0.6); fadeOut:SetOrder(3)
-        ag:SetScript("OnFinished", function() alertOverlay:Hide() end)
+        fadeOut:SetFromAlpha(1)
+        fadeOut:SetToAlpha(0)
+        fadeOut:SetDuration(0.6)
+        fadeOut:SetOrder(3)
+        ag:SetScript("OnFinished", function()
+            alertOverlay:Hide()
+        end)
         alertOverlay._ag = ag
 
-        alertOverlay:SetScript("OnHide", function() ag:Stop() end)
+        alertOverlay:SetScript("OnHide", function()
+            ag:Stop()
+        end)
         alertOverlay:Hide()
     end
 
     local function ShowAlert(name, classToken)
-        if not name then return end
+        if not name then
+            return
+        end
         CreateAlertOverlay()
         ApplyOverlaySettings()
 
@@ -4414,21 +5266,29 @@ do
 
     local function PlayDeathSound()
         local key = CludesUIDB and CludesUIDB.groupDeathSoundKey
-        if not key or key == "none" then return end
+        if not key or key == "none" then
+            return
+        end
         local path = GROUP_DEATH_SOUND_PATHS[key]
-        if path then PlaySoundFile(path, "Master") end
+        if path then
+            PlaySoundFile(path, "Master")
+        end
     end
 
     local function ForEachGroupUnit(fn)
         if IsInRaid() then
             for i = 1, GetNumGroupMembers() do
                 local u = "raid" .. i
-                if UnitExists(u) and not UnitIsUnit(u, "player") then fn(u) end
+                if UnitExists(u) and not UnitIsUnit(u, "player") then
+                    fn(u)
+                end
             end
         elseif IsInGroup() then
             for i = 1, 4 do
                 local u = "party" .. i
-                if UnitExists(u) then fn(u) end
+                if UnitExists(u) then
+                    fn(u)
+                end
             end
         end
     end
@@ -4443,21 +5303,29 @@ do
     local function TryPlayDeathSound()
         if GetNumGroupMembers() > COOLDOWN_MIN_GROUP then
             local now = GetTime()
-            if now - lastSoundTime < SOUND_COOLDOWN then return end
+            if now - lastSoundTime < SOUND_COOLDOWN then
+                return
+            end
             lastSoundTime = now
         end
         PlayDeathSound()
     end
 
     local function Poll()
-        if not (CludesUIDB and CludesUIDB.announceGroupDeaths) then return end
+        if not (CludesUIDB and CludesUIDB.announceGroupDeaths) then
+            return
+        end
         local seen = {}
         local newlyDeadName, newlyDeadClass, newlyDeadCount
         ForEachGroupUnit(function(u)
             local guid = UnitGUID(u)
-            if not guid then return end
+            if not guid then
+                return
+            end
             seen[guid] = true
-            if not UnitIsConnected(u) then return end
+            if not UnitIsConnected(u) then
+                return
+            end
             local dead = (UnitIsDeadOrGhost(u) and not UnitIsFeignDeath(u)) and true or false
             -- prev == false means we previously saw this unit alive; a nil prev
             -- (first sighting/rejoin) primes state silently so an already-dead member at start is never announced.
@@ -4470,7 +5338,9 @@ do
             deadState[guid] = dead
         end)
         for guid in pairs(deadState) do
-            if not seen[guid] then deadState[guid] = nil end
+            if not seen[guid] then
+                deadState[guid] = nil
+            end
         end
         -- One alert per poll (extra ShowAlert calls would just clobber each other) and at most one throttled sound.
         if newlyDeadCount then
@@ -4480,16 +5350,23 @@ do
     end
 
     local function StartTicker()
-        if ticker then return end
+        if ticker then
+            return
+        end
         wipe(deadState)
-        Poll()  -- prime alive/dead state without announcing
+        Poll() -- prime alive/dead state without announcing
         ticker = C_Timer.NewTicker(POLL_INTERVAL, Poll)
     end
 
     local function StopTicker()
-        if ticker then ticker:Cancel(); ticker = nil end
+        if ticker then
+            ticker:Cancel()
+            ticker = nil
+        end
         wipe(deadState)
-        if alertOverlay then alertOverlay:Hide() end
+        if alertOverlay then
+            alertOverlay:Hide()
+        end
     end
 
     local function UpdateActive()
@@ -4537,15 +5414,19 @@ do
 
     -- Register the alert with Unlock Mode so its position can be dragged.
     C_Timer.After(2, function()
-        if not (CludesUI and CludesUI.RegisterUnlockElements) then return end
+        if not (CludesUI and CludesUI.RegisterUnlockElements) then
+            return
+        end
         local MK = CludesUI.MakeUnlockElement
-        if not MK then return end
+        if not MK then
+            return
+        end
         CludesUI:RegisterUnlockElements({
             MK({
-                key      = "CUI_GroupDeathAlert",
-                label    = "Group Death Alert",
-                group    = "Utilities",
-                order    = 720,
+                key = "CUI_GroupDeathAlert",
+                label = "Group Death Alert",
+                group = "Utilities",
+                order = 720,
                 noResize = true,
                 isHidden = function()
                     return not (CludesUIDB and CludesUIDB.announceGroupDeaths)
@@ -4559,8 +5440,12 @@ do
                     return size * 7, size + 14
                 end,
                 savePos = function(_, point, relPoint, x, y)
-                    if not point then return end
-                    if not CludesUIDB then CludesUIDB = {} end
+                    if not point then
+                        return
+                    end
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
                     CludesUIDB.groupDeathAlertPos = { point = point, relPoint = relPoint, x = x, y = y }
                     if alertOverlay and not CludesUI._unlockActive then
                         ApplyOverlaySettings()
@@ -4568,12 +5453,18 @@ do
                 end,
                 loadPos = function()
                     local pos = CludesUIDB and CludesUIDB.groupDeathAlertPos
-                    if pos and pos.point then return pos end
+                    if pos and pos.point then
+                        return pos
+                    end
                     return { point = "CENTER", relPoint = "CENTER", x = 0, y = 180 }
                 end,
                 clearPos = function()
-                    if CludesUIDB then CludesUIDB.groupDeathAlertPos = nil end
-                    if alertOverlay then ApplyOverlaySettings() end
+                    if CludesUIDB then
+                        CludesUIDB.groupDeathAlertPos = nil
+                    end
+                    if alertOverlay then
+                        ApplyOverlaySettings()
+                    end
                 end,
                 applyPos = function()
                     CreateAlertOverlay()
@@ -4584,7 +5475,9 @@ do
     end)
 
     watcher = CreateFrame("Frame")
-    watcher:SetScript("OnEvent", function() UpdateActive() end)
+    watcher:SetScript("OnEvent", function()
+        UpdateActive()
+    end)
 
     local boot = CreateFrame("Frame")
     boot:RegisterEvent("PLAYER_LOGIN")
@@ -4594,7 +5487,10 @@ do
         -- timing as Chat's whisper-sound dropdown). Idempotent: skips keys
         -- already present; the tables are the same ones options and PlayDeathSound read.
         CludesUI.AppendSharedMediaSounds(
-            GROUP_DEATH_SOUND_PATHS, GROUP_DEATH_SOUND_NAMES, GROUP_DEATH_SOUND_ORDER)
+            GROUP_DEATH_SOUND_PATHS,
+            GROUP_DEATH_SOUND_NAMES,
+            GROUP_DEATH_SOUND_ORDER
+        )
         if CludesUIDB and CludesUIDB.announceGroupDeaths then
             ApplyAnnounceGroupDeaths()
         end
@@ -4613,8 +5509,8 @@ do
     local installed = false
 
     local DEFAULTS = {
-        enterText  = "+Combat",
-        leaveText  = "-Combat",
+        enterText = "+Combat",
+        leaveText = "-Combat",
         enterColor = { r = 1.00, g = 1.00, b = 1.00 },
         leaveColor = { r = 1.00, g = 1.00, b = 1.00 },
     }
@@ -4622,11 +5518,14 @@ do
     -- Effective color for a transition: player's class color when the class-color toggle is on, else the stored custom color.
     local function ResolveColor(which)
         local db = CludesUIDB
-        local useClass = db and db[which == "leave" and "combatAlertLeaveUseClassColor" or "combatAlertEnterUseClassColor"]
+        local useClass = db
+            and db[which == "leave" and "combatAlertLeaveUseClassColor" or "combatAlertEnterUseClassColor"]
         if useClass then
             local _, classToken = UnitClass("player")
             local c = classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]
-            if c then return c.r, c.g, c.b end
+            if c then
+                return c.r, c.g, c.b
+            end
         end
         local c = (db and db[which == "leave" and "combatAlertLeaveColor" or "combatAlertEnterColor"])
             or (which == "leave" and DEFAULTS.leaveColor or DEFAULTS.enterColor)
@@ -4648,12 +5547,18 @@ do
 
     local function OnCombatEvent(_, event)
         local db = CludesUIDB
-        if not (db and db.combatAlertEnabled) then return end
+        if not (db and db.combatAlertEnabled) then
+            return
+        end
         local mode = db.combatAlertMode or "both"
         if event == "PLAYER_REGEN_DISABLED" then
-            if mode ~= "leave" then ShowAlert("enter") end
+            if mode ~= "leave" then
+                ShowAlert("enter")
+            end
         elseif event == "PLAYER_REGEN_ENABLED" then
-            if mode ~= "enter" then ShowAlert("leave") end
+            if mode ~= "enter" then
+                ShowAlert("leave")
+            end
         end
     end
 
@@ -4673,10 +5578,14 @@ do
     CludesUI._applyCombatAlert = ApplyCombatAlert
 
     -- Fires a sample alert for the given transition so the look can be checked from the options cog without a real combat change.
-    CludesUI._combatAlertPreview = function(which) ShowAlert(which, true) end
+    CludesUI._combatAlertPreview = function(which)
+        ShowAlert(which, true)
+    end
 
     -- Re-apply size/position (called from the Text Size slider).
-    CludesUI._applyCombatAlertFrame = function() CludesUI.Alerts.Refresh() end
+    CludesUI._applyCombatAlertFrame = function()
+        CludesUI.Alerts.Refresh()
+    end
 
     watcher = CreateFrame("Frame")
     watcher:SetScript("OnEvent", OnCombatEvent)
@@ -4710,13 +5619,17 @@ do
 
     local function GetFormat()
         local f = CludesUIDB and CludesUIDB.targetDistanceFormat
-        if f == "plus" or f == "min" or f == "range" then return f end
+        if f == "plus" or f == "min" or f == "range" then
+            return f
+        end
         return DEFAULT_FORMAT
     end
 
     local function GetAlign()
         local a = CludesUIDB and CludesUIDB.targetDistanceAlign
-        if a == "LEFT" or a == "CENTER" or a == "RIGHT" then return a end
+        if a == "LEFT" or a == "CENTER" or a == "RIGHT" then
+            return a
+        end
         return DEFAULT_ALIGN
     end
 
@@ -4735,13 +5648,21 @@ do
 
     local function FormatDistance(fmt, minY, maxY)
         -- Ladder rungs carry the spell's raw range (a float for some spells); the text shows whole yards.
-        if minY then minY = math.floor(minY) end
-        if maxY then maxY = math.floor(maxY) end
+        if minY then
+            minY = math.floor(minY)
+        end
+        if maxY then
+            maxY = math.floor(maxY)
+        end
         if fmt == "plus" then
-            if not minY or minY <= 0 then return nil end
+            if not minY or minY <= 0 then
+                return nil
+            end
             return minY .. "+"
         elseif fmt == "min" then
-            if not minY or minY <= 0 then return nil end
+            if not minY or minY <= 0 then
+                return nil
+            end
             return tostring(minY)
         end
         -- range (default): "30-35", or "80+" beyond the last rung; inside the closest check shows "1-X" (familiar melee band) not "0-X".
@@ -4762,28 +5683,39 @@ do
         local fmt = GetFormat()
         if fmt == "plus" then
             local lower = CludesUI.Range_LowerBound(unit)
-            if not lower or lower <= 0 then return nil end
+            if not lower or lower <= 0 then
+                return nil
+            end
             return FormatDistance("plus", lower, nil), lower
         end
         local minY, maxY = CludesUI.Range_ItemBracket(unit)
-        if minY == nil then return nil end
+        if minY == nil then
+            return nil
+        end
         local text = FormatDistance(fmt, minY, maxY)
-        if not text then return nil end
+        if not text then
+            return nil
+        end
         local colorY = maxY or minY
         return text, colorY
     end
 
     local function SampleForFormat()
         local fmt = GetFormat()
-        if fmt == "plus" then return "30+", 30 end
-        if fmt == "min" then return "30", 30 end
+        if fmt == "plus" then
+            return "30+", 30
+        end
+        if fmt == "min" then
+            return "30", 30
+        end
         return "25-30", 25
     end
 
     local function ApplyFrameSettings()
-        if not distFrame then return end
-        local fontPath = (CludesUI.GetFontPath("extras"))
-            or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+        if not distFrame then
+            return
+        end
+        local fontPath = (CludesUI.GetFontPath("extras")) or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
         local outline = (CludesUI.GetFontOutlineFlag("extras")) or ""
         if not outline:find("OUTLINE") then
             outline = (outline == "") and "OUTLINE" or (outline .. ", OUTLINE")
@@ -4801,7 +5733,9 @@ do
         distFrame:SetSize(size * 5, size + 10)
 
         -- Unlock Mode owns anchors while dragging, or when Anchor-to is linked.
-        if CludesUI._unlockActive then return end
+        if CludesUI._unlockActive then
+            return
+        end
         if CludesUIDB and CludesUIDB.unlockAnchors and CludesUIDB.unlockAnchors.CUI_TargetDistance then
             return
         end
@@ -4811,12 +5745,20 @@ do
         if pos and pos.point then
             distFrame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
         else
-            distFrame:SetPoint(DEFAULT_POS.point, UIParent, DEFAULT_POS.relPoint, DEFAULT_POS.x, DEFAULT_POS.y)
+            distFrame:SetPoint(
+                DEFAULT_POS.point,
+                UIParent,
+                DEFAULT_POS.relPoint,
+                DEFAULT_POS.x,
+                DEFAULT_POS.y
+            )
         end
     end
 
     local function CreateDistFrame()
-        if distFrame then return end
+        if distFrame then
+            return
+        end
         distFrame = CreateFrame("Frame", nil, UIParent)
         distFrame:SetSize(100, 28)
         distFrame:SetFrameLevel(55)
@@ -4848,14 +5790,18 @@ do
 
     local function StopDriver()
         CludesUI.Range_SetActive("qolTargetDistance", false)
-        if evt then evt:UnregisterAllEvents() end
+        if evt then
+            evt:UnregisterAllEvents()
+        end
         if drv then
             drv:SetScript("OnUpdate", nil)
             drv:Hide()
         end
         installed = false
         acc = 0
-        if distFrame then distFrame:Hide() end
+        if distFrame then
+            distFrame:Hide()
+        end
     end
 
     local function StartDriver()
@@ -4866,14 +5812,20 @@ do
         if not evt then
             evt = CreateFrame("Frame")
             evt:SetScript("OnEvent", function()
-                if not IsEnabled() then return end
+                if not IsEnabled() then
+                    return
+                end
                 Tick()
             end)
         end
         drv:SetScript("OnUpdate", function(_, dt)
-            if not IsEnabled() then return end
+            if not IsEnabled() then
+                return
+            end
             acc = acc + dt
-            if acc < 0.2 then return end
+            if acc < 0.2 then
+                return
+            end
             acc = 0
             Tick()
         end)
@@ -4885,18 +5837,24 @@ do
     end
 
     Tick = function()
-        if not IsEnabled() then return end
+        if not IsEnabled() then
+            return
+        end
         if CludesUI._unlockActive then
             ShowSample()
             return
         end
         if not UnitExists("target") then
-            if distFrame then distFrame:Hide() end
+            if distFrame then
+                distFrame:Hide()
+            end
             return
         end
         local text, colorY = ResolveDisplay("target")
         if not text then
-            if distFrame then distFrame:Hide() end
+            if distFrame then
+                distFrame:Hide()
+            end
             return
         end
         CreateDistFrame()
@@ -4908,9 +5866,13 @@ do
 
     local function ApplyTargetDistance()
         if IsEnabled() then
-            if not installed then StartDriver() end
+            if not installed then
+                StartDriver()
+            end
             Tick()
-            if distFrame then ApplyFrameSettings() end
+            if distFrame then
+                ApplyFrameSettings()
+            end
         else
             StopDriver()
         end
@@ -4918,30 +5880,40 @@ do
     CludesUI._applyTargetDistance = ApplyTargetDistance
 
     CludesUI._applyTargetDistanceFrame = function()
-        if not IsEnabled() then return end
+        if not IsEnabled() then
+            return
+        end
         CreateDistFrame()
         ApplyFrameSettings()
         Tick()
     end
 
     C_Timer.After(2, function()
-        if not (CludesUI and CludesUI.RegisterUnlockElements) then return end
+        if not (CludesUI and CludesUI.RegisterUnlockElements) then
+            return
+        end
         local MK = CludesUI.MakeUnlockElement
-        if not MK then return end
+        if not MK then
+            return
+        end
         CludesUI:RegisterUnlockElements({
             MK({
-                key      = "CUI_TargetDistance",
-                label    = "Target Distance",
-                group    = "Utilities",
-                order    = 722,
+                key = "CUI_TargetDistance",
+                label = "Target Distance",
+                group = "Utilities",
+                order = 722,
                 noResize = true,
                 isHidden = function()
                     return not IsEnabled()
                 end,
                 getFrame = function()
-                    if not IsEnabled() then return nil end
+                    if not IsEnabled() then
+                        return nil
+                    end
                     CreateDistFrame()
-                    if CludesUI._unlockActive then ShowSample() end
+                    if CludesUI._unlockActive then
+                        ShowSample()
+                    end
                     return distFrame
                 end,
                 getSize = function()
@@ -4949,8 +5921,12 @@ do
                     return size * 5, size + 10
                 end,
                 savePos = function(_, point, relPoint, x, y)
-                    if not point then return end
-                    if not CludesUIDB then CludesUIDB = {} end
+                    if not point then
+                        return
+                    end
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
                     CludesUIDB.targetDistancePos = { point = point, relPoint = relPoint, x = x, y = y }
                     if distFrame and not CludesUI._unlockActive then
                         ApplyFrameSettings()
@@ -4958,18 +5934,33 @@ do
                 end,
                 loadPos = function()
                     local pos = CludesUIDB and CludesUIDB.targetDistancePos
-                    if pos and pos.point then return pos end
-                    return { point = DEFAULT_POS.point, relPoint = DEFAULT_POS.relPoint, x = DEFAULT_POS.x, y = DEFAULT_POS.y }
+                    if pos and pos.point then
+                        return pos
+                    end
+                    return {
+                        point = DEFAULT_POS.point,
+                        relPoint = DEFAULT_POS.relPoint,
+                        x = DEFAULT_POS.x,
+                        y = DEFAULT_POS.y,
+                    }
                 end,
                 clearPos = function()
-                    if CludesUIDB then CludesUIDB.targetDistancePos = nil end
-                    if distFrame then ApplyFrameSettings() end
+                    if CludesUIDB then
+                        CludesUIDB.targetDistancePos = nil
+                    end
+                    if distFrame then
+                        ApplyFrameSettings()
+                    end
                 end,
                 applyPos = function()
-                    if not IsEnabled() then return end
+                    if not IsEnabled() then
+                        return
+                    end
                     CreateDistFrame()
                     ApplyFrameSettings()
-                    if CludesUI._unlockActive then ShowSample() end
+                    if CludesUI._unlockActive then
+                        ShowSample()
+                    end
                 end,
             }),
         })
@@ -4981,7 +5972,9 @@ do
     boot:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         self:SetScript("OnEvent", nil)
-        if IsEnabled() then ApplyTargetDistance() end
+        if IsEnabled() then
+            ApplyTargetDistance()
+        end
     end)
 end
 
@@ -4996,51 +5989,106 @@ do
     local CATEGORY_ORDER = { "professions", "holiday", "toys", "items" }
     local CATEGORY_LABEL = {
         professions = "Profession Gear",
-        holiday     = "Holiday Costumes",
-        toys        = "Toys",
-        items       = "Consumables & Items",
+        holiday = "Holiday Costumes",
+        toys = "Toys",
+        items = "Consumables & Items",
     }
 
     -- Each entry: stable settings key, category, display label, aura spell IDs.
     -- Fishing lists no aura IDs -- the channel-stop watcher below owns it.
     local TRANSFORMS = {
         -- Profession gear
-        { key = "blacksmithing",  cat = "professions", label = "Blacksmithing",  ids = { 388658 } },
-        { key = "jewelcrafting",  cat = "professions", label = "Jewelcrafting",  ids = { 394015 } },
-        { key = "tailoring",      cat = "professions", label = "Tailoring",      ids = { 391312 } },
-        { key = "engineering",    cat = "professions", label = "Engineering",    ids = { 394007 } },
-        { key = "enchanting",     cat = "professions", label = "Enchanting",     ids = { 394008 } },
-        { key = "alchemy",        cat = "professions", label = "Alchemy",        ids = { 394003 } },
-        { key = "inscription",    cat = "professions", label = "Inscription",    ids = { 394016 } },
+        { key = "blacksmithing", cat = "professions", label = "Blacksmithing", ids = { 388658 } },
+        { key = "jewelcrafting", cat = "professions", label = "Jewelcrafting", ids = { 394015 } },
+        { key = "tailoring", cat = "professions", label = "Tailoring", ids = { 391312 } },
+        { key = "engineering", cat = "professions", label = "Engineering", ids = { 394007 } },
+        { key = "enchanting", cat = "professions", label = "Enchanting", ids = { 394008 } },
+        { key = "alchemy", cat = "professions", label = "Alchemy", ids = { 394003 } },
+        { key = "inscription", cat = "professions", label = "Inscription", ids = { 394016 } },
         { key = "leatherworking", cat = "professions", label = "Leatherworking", ids = { 394001 } },
-        { key = "herbalism",      cat = "professions", label = "Herbalism",      ids = { 394005 } },
-        { key = "mining",         cat = "professions", label = "Mining",         ids = { 394006 } },
-        { key = "skinning",       cat = "professions", label = "Skinning",       ids = { 394011 } },
-        { key = "cooking",        cat = "professions", label = "Cooking (Chef's Hat)", ids = { 391775 } },
-        { key = "fishing",        cat = "professions", label = "Fishing",        ids = {} },
+        { key = "herbalism", cat = "professions", label = "Herbalism", ids = { 394005 } },
+        { key = "mining", cat = "professions", label = "Mining", ids = { 394006 } },
+        { key = "skinning", cat = "professions", label = "Skinning", ids = { 394011 } },
+        { key = "cooking", cat = "professions", label = "Cooking (Chef's Hat)", ids = { 391775 } },
+        { key = "fishing", cat = "professions", label = "Fishing", ids = {} },
 
         -- Holiday costumes
-        { key = "lantern",    cat = "holiday", label = "Weighted Jack-o'-Lantern", ids = { 44212 } },
-        { key = "hallowed",   cat = "holiday", label = "Hallowed Wand", ids = {
-            172010, 218132, 191703, 24732, 191210, 172015, 24735, 24736, 191698, 191700,
-            172008, 24712, 24713, 191701, 191211, 24710, 24711, 191686, 191688, 24708,
-            24709, 173958, 173959, 191682, 191683, 24723, 191702, 172003, 172020, 191208, 24740,
-        } },
+        { key = "lantern", cat = "holiday", label = "Weighted Jack-o'-Lantern", ids = { 44212 } },
+        {
+            key = "hallowed",
+            cat = "holiday",
+            label = "Hallowed Wand",
+            ids = {
+                172010,
+                218132,
+                191703,
+                24732,
+                191210,
+                172015,
+                24735,
+                24736,
+                191698,
+                191700,
+                172008,
+                24712,
+                24713,
+                191701,
+                191211,
+                24710,
+                24711,
+                191686,
+                191688,
+                24708,
+                24709,
+                173958,
+                173959,
+                191682,
+                191683,
+                24723,
+                191702,
+                172003,
+                172020,
+                191208,
+                24740,
+            },
+        },
         { key = "noblebunny", cat = "holiday", label = "Noblegarden Bunny", ids = { 61734, 61716 } },
-        { key = "turkey",     cat = "holiday", label = "Pilgrim's Turkey", ids = { 61781 } },
+        { key = "turkey", cat = "holiday", label = "Pilgrim's Turkey", ids = { 61781 } },
 
         -- Toys
-        { key = "aqir",       cat = "toys", label = "Aqir Egg Cluster",          ids = { 318452 } },
-        { key = "atomic",     cat = "toys", label = "Atomically Recalibrator",   ids = { 399502 },  defaultOff = true },
-        { key = "atomgoblin", cat = "toys", label = "Atomically Regoblinator",   ids = { 1215363 }, defaultOff = true },
-        { key = "blight",     cat = "toys", label = "Detoxified Blight Grenade", ids = { 290224 } },
-        { key = "witch",      cat = "toys", label = "Lucille's Sewing Needle",   ids = { 279509 } },
-        { key = "spraybots",  cat = "toys", label = "Spraybots",                 ids = { 301892, 301893, 301894 } },
+        { key = "aqir", cat = "toys", label = "Aqir Egg Cluster", ids = { 318452 } },
+        {
+            key = "atomic",
+            cat = "toys",
+            label = "Atomically Recalibrator",
+            ids = { 399502 },
+            defaultOff = true,
+        },
+        {
+            key = "atomgoblin",
+            cat = "toys",
+            label = "Atomically Regoblinator",
+            ids = { 1215363 },
+            defaultOff = true,
+        },
+        { key = "blight", cat = "toys", label = "Detoxified Blight Grenade", ids = { 290224 } },
+        { key = "witch", cat = "toys", label = "Lucille's Sewing Needle", ids = { 279509 } },
+        {
+            key = "spraybots",
+            cat = "toys",
+            label = "Spraybots",
+            ids = { 301892, 301893, 301894 },
+        },
 
         -- Consumables & items
-        { key = "pickaxe",      cat = "items", label = "Cursed Pickaxe",      ids = { 454405 } },
-        { key = "noggenfogger", cat = "items", label = "Noggenfogger Elixir", ids = { 16593, 1223630, 16595, 1223629, 1223631 } },
-        { key = "prism",        cat = "items", label = "Reflecting Prism",    ids = { 163267 } },
+        { key = "pickaxe", cat = "items", label = "Cursed Pickaxe", ids = { 454405 } },
+        {
+            key = "noggenfogger",
+            cat = "items",
+            label = "Noggenfogger Elixir",
+            ids = { 16593, 1223630, 16595, 1223629, 1223631 },
+        },
+        { key = "prism", cat = "items", label = "Reflecting Prism", ids = { 163267 } },
     }
 
     -- Runtime lookup: [spellID] = true for every included transform.
@@ -5055,16 +6103,22 @@ do
     local function ItemEnabled(key)
         local t = CludesUIDB and CludesUIDB.hideTransformItems
         local v = t and t[key]
-        if v ~= nil then return v end
+        if v ~= nil then
+            return v
+        end
         return ITEM_DEFAULT[key] ~= false
     end
 
     local function RebuildList()
         wipe(cTable)
-        if not (CludesUIDB and CludesUIDB.hideTransforms) then return end
+        if not (CludesUIDB and CludesUIDB.hideTransforms) then
+            return
+        end
         for _, item in ipairs(TRANSFORMS) do
             if ItemEnabled(item.key) then
-                for _, id in ipairs(item.ids) do cTable[id] = true end
+                for _, id in ipairs(item.ids) do
+                    cTable[id] = true
+                end
             end
         end
     end
@@ -5075,15 +6129,23 @@ do
     -- out of combat); cosmetic transforms just skip there, re-running on the next event outside.
     local function AurasRestricted()
         local AK = CludesUI and CludesUI.AuraKit
-        if AK and AK.AurasRestricted then return AK.AurasRestricted() end
+        if AK and AK.AurasRestricted then
+            return AK.AurasRestricted()
+        end
         return false
     end
 
     -- Sweep current buffs, canceling any included transform. Descending so a cancel (shifts later indices down) can't skip a match.
     local function CancelMatching(force)
-        if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then return end
-        if not force and UnitAffectingCombat("player") then return end
-        if AurasRestricted() then return end
+        if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then
+            return
+        end
+        if not force and UnitAffectingCombat("player") then
+            return
+        end
+        if AurasRestricted() then
+            return
+        end
         for i = 40, 1, -1 do
             local data = C_UnitAuras.GetBuffDataByIndex("player", i)
             if data then
@@ -5103,10 +6165,16 @@ do
         end
         -- UNIT_AURA (player only, via RegisterUnitEvent). The payload (and its fields) can be secret in
         -- restricted content -- boolean use of a secret errors, so bail rather than error the sweep.
-        if not updateInfo then return end
-        if issecretvalue and issecretvalue(updateInfo) then return end
+        if not updateInfo then
+            return
+        end
+        if issecretvalue and issecretvalue(updateInfo) then
+            return
+        end
         local isFull = updateInfo.isFullUpdate
-        if isFull ~= nil and issecretvalue and issecretvalue(isFull) then return end
+        if isFull ~= nil and issecretvalue and issecretvalue(isFull) then
+            return
+        end
         if isFull then
             CancelMatching(false)
         elseif updateInfo.addedAuras then
@@ -5124,11 +6192,21 @@ do
     -- so it's cleared on channel-stop. Registered only while on and Fishing is included.
     local fishFrame = CreateFrame("Frame")
     fishFrame:SetScript("OnEvent", function(_, _, _, _, spellID)
-        if issecretvalue and issecretvalue(spellID) then return end
-        if spellID ~= 131476 then return end
-        if UnitAffectingCombat("player") then return end
-        if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then return end
-        if AurasRestricted() then return end
+        if issecretvalue and issecretvalue(spellID) then
+            return
+        end
+        if spellID ~= 131476 then
+            return
+        end
+        if UnitAffectingCombat("player") then
+            return
+        end
+        if not (C_UnitAuras and C_UnitAuras.GetBuffDataByIndex) then
+            return
+        end
+        if AurasRestricted() then
+            return
+        end
         for i = 40, 1, -1 do
             local data = C_UnitAuras.GetBuffDataByIndex("player", i)
             if data then
@@ -5149,7 +6227,7 @@ do
         if on and next(cTable) ~= nil then
             auraFrame:RegisterUnitEvent("UNIT_AURA", "player")
             auraFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-            CancelMatching(false)  -- immediate sweep of anything already active
+            CancelMatching(false) -- immediate sweep of anything already active
         else
             auraFrame:UnregisterEvent("UNIT_AURA")
             auraFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
@@ -5165,13 +6243,15 @@ do
 
     -- Shared with the options picker popup (CUI_QoL_Options.lua).
     CludesUI.HideTransformsData = {
-        order  = CATEGORY_ORDER,
+        order = CATEGORY_ORDER,
         labels = CATEGORY_LABEL,
-        items  = TRANSFORMS,
+        items = TRANSFORMS,
     }
     CludesUI.GetHideTransformItem = ItemEnabled
     CludesUI.SetHideTransformItem = function(key, enabled)
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         CludesUIDB.hideTransformItems = CludesUIDB.hideTransformItems or {}
         -- Store only values that differ from the per-key default, keeping the table sparse.
         enabled = enabled and true or false
@@ -5211,7 +6291,9 @@ do
             if ItemLocation then
                 local loc = ItemLocation:CreateFromBagAndSlot(bag, slot)
                 if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
-                    return C_Item.GetCurrentItemLevel(loc), C_Item.GetItemQuality(loc), C_Item.GetItemLink(loc)
+                    return C_Item.GetCurrentItemLevel(loc),
+                        C_Item.GetItemQuality(loc),
+                        C_Item.GetItemLink(loc)
                 end
             end
             local link = C_Container and C_Container.GetContainerItemLink(bag, slot)
@@ -5246,19 +6328,24 @@ do
         end
 
         local location = button.location
-        if not location or type(location) ~= "number" then return end
-        if EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION
-            and location >= EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION then
+        if not location or type(location) ~= "number" then
+            return
+        end
+        if EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION and location >= EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION then
             return
         end
 
         if EquipmentManager_GetLocationData then
             local ld = EquipmentManager_GetLocationData(location)
-            if not ld or ld.slot == nil then return end
+            if not ld or ld.slot == nil then
+                return
+            end
             return LevelFromSlot(ld.isBags, ld.bag, ld.slot)
         elseif EquipmentManager_UnpackLocation then
             local _, _, bags, voidStorage, slot, bag = EquipmentManager_UnpackLocation(location)
-            if voidStorage then return end
+            if voidStorage then
+                return
+            end
             return LevelFromSlot(bags, bag, slot)
         end
     end
@@ -5266,14 +6353,13 @@ do
     -- Item-level FontStrings live in an external weak-keyed table, NOT on the
     -- button: flyout buttons are Blizzard-owned (secure item-equipping path), so a
     -- custom key would taint execution. Creating the FontString as a child is fine; only the reference stays off the frame table.
-    local _flyoutFS = setmetatable({}, { __mode = "k" })  -- [button] = fontstring
+    local _flyoutFS = setmetatable({}, { __mode = "k" }) -- [button] = fontstring
 
     -- Lazily attach (and return) the item-level FontString for a flyout button.
     local function EnsureText(button)
         local fs = _flyoutFS[button]
         if not fs then
-            local font = CludesUI._font
-                or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            local font = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
             local flag = CludesUI.SlugFlag("OUTLINE, SLUG")
             fs = button:CreateFontString(nil, "OVERLAY", nil, 7)
             fs:SetFont(font, 12, flag)
@@ -5286,14 +6372,13 @@ do
 
     -- Stat letters ("MH", tertiaries smaller behind them: "L") centred along
     -- the button's bottom edge, kept off the button like the item level above.
-    local _flyoutStatFS = setmetatable({}, { __mode = "k" })  -- [button] = fontstring
-    local _flyoutTerFS  = setmetatable({}, { __mode = "k" })  -- [button] = fontstring
+    local _flyoutStatFS = setmetatable({}, { __mode = "k" }) -- [button] = fontstring
+    local _flyoutTerFS = setmetatable({}, { __mode = "k" }) -- [button] = fontstring
 
     local function EnsureStatText(button)
         local fs = _flyoutStatFS[button]
         if not fs then
-            local font = CludesUI._font
-                or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            local font = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
             local flag = CludesUI.SlugFlag("OUTLINE, SLUG")
             fs = button:CreateFontString(nil, "OVERLAY", nil, 7)
             fs:SetFont(font, 11, flag)
@@ -5314,10 +6399,14 @@ do
         local fs, ter = _flyoutStatFS[button], _flyoutTerFS[button]
         if link and not fs then
             local sec, tert, pending = CludesUI.GetItemStatLetters(link)
-            if sec == "" and (tert == "" or not withTertiary) then return pending end
+            if sec == "" and (tert == "" or not withTertiary) then
+                return pending
+            end
             fs, ter = EnsureStatText(button)
         end
-        if fs then return CludesUI.PaintStatLetters(fs, ter, link, withTertiary, button) end
+        if fs then
+            return CludesUI.PaintStatLetters(fs, ter, link, withTertiary, button)
+        end
     end
 
     -- The item link at a flyout button, read with no tables built: the
@@ -5333,9 +6422,10 @@ do
             end
         end
         local location = button.location
-        if type(location) ~= "number" or location < 0 then return end
-        if EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION
-            and location >= EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION then
+        if type(location) ~= "number" or location < 0 then
+            return
+        end
+        if EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION and location >= EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION then
             return
         end
         local slot = location
@@ -5349,7 +6439,9 @@ do
             slot = slot - ITEM_INVENTORY_LOCATION_BAGS
             local bag = rshift(slot, ITEM_INVENTORY_BAG_BIT_OFFSET)
             slot = slot - lshift(bag, ITEM_INVENTORY_BAG_BIT_OFFSET)
-            if isBank then bag = bag + ITEM_INVENTORY_BANK_BAG_OFFSET end
+            if isBank then
+                bag = bag + ITEM_INVENTORY_BANK_BAG_OFFSET
+            end
             return C_Container.GetContainerItemLink(bag, slot)
         end
         return GetInventoryItemLink("player", slot)
@@ -5360,29 +6452,40 @@ do
     -- again every frame while a slot's flyout is pinned open, so a button whose
     -- item and settings are unchanged keeps its paint; a paint still waiting on
     -- item data is redone.
-    local _flyoutPaint = setmetatable({}, { __mode = "k" })  -- [button] = state
+    local _flyoutPaint = setmetatable({}, { __mode = "k" }) -- [button] = state
 
     local function PaintButton(button, useItemLocation)
         local showIlvl = FlyoutEnabled() and true or false
         -- Stat letters are retail-only (their rows are not built on WoW Forever).
-        local showStats = not CludesUI.IS_FOREVER and CludesUIDB
-            and CludesUIDB.flyoutItemStats and true or false
+        local showStats = not CludesUI.IS_FOREVER and CludesUIDB and CludesUIDB.flyoutItemStats and true
+            or false
         local withTertiary = CludesUIDB and CludesUIDB.flyoutItemStatsTertiary == true or false
         local link
         if (showIlvl or showStats) and button:IsShown() then
             link = ButtonLink(button, useItemLocation)
         end
         local m = _flyoutPaint[button]
-        if m and not m.pending and m.link == link and m.ilvl == showIlvl
-            and m.stats == showStats and m.ter == withTertiary then
+        if
+            m
+            and not m.pending
+            and m.link == link
+            and m.ilvl == showIlvl
+            and m.stats == showStats
+            and m.ter == withTertiary
+        then
             return
         end
-        if not m then m = {}; _flyoutPaint[button] = m end
+        if not m then
+            m = {}
+            _flyoutPaint[button] = m
+        end
         m.link, m.ilvl, m.stats, m.ter, m.pending = link, showIlvl, showStats, withTertiary, false
 
         local fs = _flyoutFS[button]
         if not link then
-            if fs then fs:SetText("") end
+            if fs then
+                fs:SetText("")
+            end
             PaintStats(button, nil, withTertiary)
             return
         end
@@ -5390,7 +6493,9 @@ do
         local ilvl, quality = ButtonItemInfo(button, useItemLocation)
         m.pending = PaintStats(button, showStats and link or nil, withTertiary) and true or false
         if not showIlvl then
-            if fs then fs:SetText("") end
+            if fs then
+                fs:SetText("")
+            end
             return
         end
         fs = EnsureText(button)
@@ -5411,13 +6516,17 @@ do
         else
             fs:SetText("")
             -- No level yet while the item's data is still on the way.
-            if not C_Item.GetItemInfo(link) then m.pending = true end
+            if not C_Item.GetItemInfo(link) then
+                m.pending = true
+            end
         end
     end
 
     local function RefreshFlyoutItemLevels()
         local flyout = EquipmentFlyoutFrame
-        if not flyout or not flyout.buttons then return end
+        if not flyout or not flyout.buttons then
+            return
+        end
         local source = flyout.button
         local parent = source and source:GetParent()
         local settings = parent and parent.flyoutSettings
@@ -5428,7 +6537,9 @@ do
     end
 
     local function InstallHook()
-        if not EquipmentFlyout_UpdateItems then return end
+        if not EquipmentFlyout_UpdateItems then
+            return
+        end
         -- Item-upgrade flyouts use ItemLocation objects and bypass
         -- EquipmentFlyout_DisplayButton entirely. They also leave that ItemLocation
         -- on pooled buttons when an ordinary numeric-location flyout reuses them.
@@ -5444,4 +6555,3 @@ do
         InstallHook()
     end)
 end
-

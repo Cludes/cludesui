@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_TownMap.lua  (WoW Forever only)
 --  Town Map: service NPCs on the world map for your faction (your class's
@@ -13,9 +17,27 @@ if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local F = module.Feature("townMap", { enabled = false, capitalsOnly = true, size = 16,
-    spirit = true, class = true, profession = true, flight = true, inn = true, bank = true, stable = false,
-    repair = true, supplies = true, vendors = false, mail = true, minimapMail = true, minimapSpirit = true })
+local F = module.Feature(
+    "townMap",
+    {
+        enabled = false,
+        capitalsOnly = true,
+        size = 16,
+        spirit = true,
+        class = true,
+        profession = true,
+        flight = true,
+        inn = true,
+        bank = true,
+        stable = false,
+        repair = true,
+        supplies = true,
+        vendors = false,
+        mail = true,
+        minimapMail = true,
+        minimapSpirit = true,
+    }
+)
 local Get, Enabled = F.Get, F.Enabled
 
 local CLASS_ICON = "Interface\\Icons\\ClassIcon_"
@@ -28,41 +50,41 @@ local EMPTY = {}
 
 -- category = { setting, fallback icon, label }
 local CATEGORIES = {
-    spirit     = { "spirit", "Interface\\Icons\\Spell_Holy_GuardianSpirit", "Spirit Healer" },
-    class      = { "class", nil, "Class Trainer" },
+    spirit = { "spirit", "Interface\\Icons\\Spell_Holy_GuardianSpirit", "Spirit Healer" },
+    class = { "class", nil, "Class Trainer" },
     profession = { "profession", "Interface\\Icons\\INV_Misc_Book_09", "Trainer" },
-    flight     = { "flight", "Interface\\Icons\\Ability_Mount_Gryphon_01", "Flight Master" },
-    inn        = { "inn", "Interface\\Icons\\INV_Misc_Rune_01", "Innkeeper" },
-    bank       = { "bank", "Interface\\Icons\\INV_Misc_Bag_10", "Banker" },
-    auction    = { "bank", "Interface\\Icons\\INV_Misc_Coin_01", "Auctioneer" },
-    stable     = { "stable", "Interface\\Icons\\Ability_Hunter_BeastTaming", "Stable Master" },
-    repair     = { "repair", "Interface\\Icons\\Trade_BlackSmithing", "Repairs" },
-    reagents   = { "supplies", "Interface\\Icons\\INV_Misc_Dust_01", "Reagents" },
-    ammo       = { "supplies", "Interface\\Icons\\INV_Ammo_Arrow_01", "Ammunition" },
-    food       = { "supplies", "Interface\\Icons\\INV_Misc_Food_14", "Food & Drink" },
-    trade      = { "vendors", "Interface\\Icons\\INV_Fabric_Linen_01", "Trade Goods" },
-    vendor     = { "vendors", "Interface\\Icons\\INV_Misc_Bag_07", "Vendor" },
-    mail       = { "mail", "Interface\\Icons\\INV_Letter_15", "Mailbox" },
+    flight = { "flight", "Interface\\Icons\\Ability_Mount_Gryphon_01", "Flight Master" },
+    inn = { "inn", "Interface\\Icons\\INV_Misc_Rune_01", "Innkeeper" },
+    bank = { "bank", "Interface\\Icons\\INV_Misc_Bag_10", "Banker" },
+    auction = { "bank", "Interface\\Icons\\INV_Misc_Coin_01", "Auctioneer" },
+    stable = { "stable", "Interface\\Icons\\Ability_Hunter_BeastTaming", "Stable Master" },
+    repair = { "repair", "Interface\\Icons\\Trade_BlackSmithing", "Repairs" },
+    reagents = { "supplies", "Interface\\Icons\\INV_Misc_Dust_01", "Reagents" },
+    ammo = { "supplies", "Interface\\Icons\\INV_Ammo_Arrow_01", "Ammunition" },
+    food = { "supplies", "Interface\\Icons\\INV_Misc_Food_14", "Food & Drink" },
+    trade = { "vendors", "Interface\\Icons\\INV_Fabric_Linen_01", "Trade Goods" },
+    vendor = { "vendors", "Interface\\Icons\\INV_Misc_Bag_07", "Vendor" },
+    mail = { "mail", "Interface\\Icons\\INV_Letter_15", "Mailbox" },
 }
 local EVERYWHERE = { flight = true, inn = true, stable = true }
 
 -- Map art per category, first that exists wins (atlas names, or file paths).
 local MAP_ART = {
-    spirit     = { "poi-soulspiritghost" },
-    class      = { "Class", TRACKING .. "Class", GOSSIP .. "TrainerGossipIcon" },
+    spirit = { "poi-soulspiritghost" },
+    class = { "Class", TRACKING .. "Class", GOSSIP .. "TrainerGossipIcon" },
     profession = { "Profession", TRACKING .. "Profession", GOSSIP .. "TrainerGossipIcon" },
-    flight     = { "Taxi_Frame_Green", "TaxiNode_Neutral", "FlightMaster", TRACKING .. "FlightMaster" },
-    inn        = { "Innkeeper", TRACKING .. "Innkeeper" },
-    bank       = { "Banker", TRACKING .. "Banker" },
-    auction    = { "Auctioneer", TRACKING .. "Auctioneer" },
-    stable     = { "StableMaster", TRACKING .. "StableMaster" },
-    repair     = { "Repair", TRACKING .. "Repair" },
-    reagents   = { "Reagents", TRACKING .. "Reagents" },
-    ammo       = { "Ammunition", TRACKING .. "Ammunition" },
-    food       = { "Food", TRACKING .. "Food" },
-    trade      = { "Banker", GOSSIP .. "VendorGossipIcon" },
-    vendor     = { "Banker", GOSSIP .. "VendorGossipIcon" },
-    mail       = { "Mailbox", TRACKING .. "Mailbox" },
+    flight = { "Taxi_Frame_Green", "TaxiNode_Neutral", "FlightMaster", TRACKING .. "FlightMaster" },
+    inn = { "Innkeeper", TRACKING .. "Innkeeper" },
+    bank = { "Banker", TRACKING .. "Banker" },
+    auction = { "Auctioneer", TRACKING .. "Auctioneer" },
+    stable = { "StableMaster", TRACKING .. "StableMaster" },
+    repair = { "Repair", TRACKING .. "Repair" },
+    reagents = { "Reagents", TRACKING .. "Reagents" },
+    ammo = { "Ammunition", TRACKING .. "Ammunition" },
+    food = { "Food", TRACKING .. "Food" },
+    trade = { "Banker", GOSSIP .. "VendorGossipIcon" },
+    vendor = { "Banker", GOSSIP .. "VendorGossipIcon" },
+    mail = { "Mailbox", TRACKING .. "Mailbox" },
 }
 local ROUND_ART = { spirit = true }
 
@@ -76,19 +98,31 @@ local function Data()
 end
 
 --- The service NPCs by map, for other features (Professions' gathering trainers).
-function module.TownNPCList() return Data().npcs end
+function module.TownNPCList()
+    return Data().npcs
+end
 
-local function SameMap(map) return map and (Data().same[map] or map) end
-local function Faction() return UnitFactionGroup("player") == "Horde" and "H" or "A" end
+local function SameMap(map)
+    return map and (Data().same[map] or map)
+end
+local function Faction()
+    return UnitFactionGroup("player") == "Horde" and "H" or "A"
+end
 
 -------------------------------------------------------------------------------
 --  Pin art
 -------------------------------------------------------------------------------
-local function IsFile(art) return art:find("\\", 1, true) ~= nil end
+local function IsFile(art)
+    return art:find("\\", 1, true) ~= nil
+end
 
 local function TryArt(icon, art)
-    if IsFile(art) then return icon:SetTexture(art) end
-    if not C_Texture.GetAtlasInfo(art) then return false end
+    if IsFile(art) then
+        return icon:SetTexture(art)
+    end
+    if not C_Texture.GetAtlasInfo(art) then
+        return false
+    end
     icon:SetAtlas(art)
     return true
 end
@@ -99,8 +133,14 @@ local function SetRound(pin, round)
         pin.roundMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         pin.roundMask:SetAllPoints(pin.icon)
     end
-    if not pin.roundMask or (pin.isRound or false) == round then return end
-    if round then pin.icon:AddMaskTexture(pin.roundMask) else pin.icon:RemoveMaskTexture(pin.roundMask) end
+    if not pin.roundMask or (pin.isRound or false) == round then
+        return
+    end
+    if round then
+        pin.icon:AddMaskTexture(pin.roundMask)
+    else
+        pin.icon:RemoveMaskTexture(pin.roundMask)
+    end
     pin.isRound = round
 end
 
@@ -125,18 +165,24 @@ local function Paint(pin, npc)
         pin.border:Hide()
         return
     end
-    icon:SetTexture(CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark")
+    icon:SetTexture(
+        CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
+    )
     icon:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
     pin.border:Show()
 end
 
 local function ShowTip(pin)
     local npc = pin.npc
-    if not npc then return end
+    if not npc then
+        return
+    end
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
     local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then GameTooltip:AddLine(title, CludesUI.Kit.Accent()) end
+    if title ~= npc[4] then
+        GameTooltip:AddLine(title, CludesUI.Kit.Accent())
+    end
     GameTooltip:Show()
 end
 
@@ -151,7 +197,9 @@ local function NewPin(parent)
     pin.icon = pin:CreateTexture(nil, "ARTWORK")
     pin.icon:SetAllPoints()
     pin:SetScript("OnEnter", ShowTip)
-    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    pin:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     return pin
 end
 
@@ -171,13 +219,27 @@ end
 local function Wanted(npc, faction, class, shops)
     local kind = npc[3]
     local cat = CATEGORIES[kind]
-    if not cat or not Get(cat[1]) then return false end
-    if not (npc[7] or ""):find(faction, 1, true) then return false end
-    if kind == "mail" or kind == "spirit" then return true end
-    if not (shops or EVERYWHERE[kind]) then return false end
-    if kind == "class" and npc[6] ~= class then return false end
-    if kind == "stable" and class ~= "HUNTER" then return false end
-    if kind == "flight" and FlightsElsewhere() then return false end
+    if not cat or not Get(cat[1]) then
+        return false
+    end
+    if not (npc[7] or ""):find(faction, 1, true) then
+        return false
+    end
+    if kind == "mail" or kind == "spirit" then
+        return true
+    end
+    if not (shops or EVERYWHERE[kind]) then
+        return false
+    end
+    if kind == "class" and npc[6] ~= class then
+        return false
+    end
+    if kind == "stable" and class ~= "HUNTER" then
+        return false
+    end
+    if kind == "flight" and FlightsElsewhere() then
+        return false
+    end
     return true
 end
 
@@ -191,12 +253,17 @@ local function Anchor(p)
 end
 
 local function Clear()
-    for i = 1, used do pins[i]:Hide(); pins[i].npc = nil end
+    for i = 1, used do
+        pins[i]:Hide()
+        pins[i].npc = nil
+    end
     used = 0
 end
 
 local function Rescale()
-    for i = 1, used do Anchor(pins[i]) end
+    for i = 1, used do
+        Anchor(pins[i])
+    end
 end
 
 local function Place(npc)
@@ -216,16 +283,22 @@ end
 
 local function Draw()
     Clear()
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     local mapID = SameMap(WorldMapFrame:GetMapID())
-    if not mapID then return end
+    if not mapID then
+        return
+    end
     local d = Data()
     local faction = Faction()
     local _, class = UnitClass("player")
     local shops = not Get("capitalsOnly") or d.capitals[mapID]
     for _, list in ipairs({ d.npcs[mapID], d.mail[mapID], d.spirit[mapID] }) do
         for _, npc in ipairs(list or EMPTY) do
-            if Wanted(npc, faction, class, shops) then Place(npc) end
+            if Wanted(npc, faction, class, shops) then
+                Place(npc)
+            end
         end
     end
 end
@@ -233,19 +306,28 @@ end
 local function Build()
     layer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
     layer:SetAllPoints()
-    layer:SetFrameLevel(WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_AREA_POI"))
+    layer:SetFrameLevel(
+        WorldMapFrame:GetPinFrameLevelsManager():GetValidFrameLevel("PIN_FRAME_LEVEL_AREA_POI")
+    )
     provider = CreateFromMixins(MapCanvasDataProviderMixin)
     provider.OnMapChanged = Draw
     provider.RefreshAllData = Draw
     provider.RemoveAllData = Clear
     provider.OnCanvasScaleChanged = Rescale
-    provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
+    provider.OnGlobalAlphaChanged = function(self)
+        layer:SetAlpha(self:GetMap():GetGlobalAlpha())
+    end
 end
 
 local function MapApply()
     if not Enabled() then
-        if added then WorldMapFrame:RemoveDataProvider(provider); added = false end
-        if layer then Clear() end
+        if added then
+            WorldMapFrame:RemoveDataProvider(provider)
+            added = false
+        end
+        if layer then
+            Clear()
+        end
         return
     end
     if not provider then
@@ -253,7 +335,9 @@ local function MapApply()
             if not waiter then
                 waiter = CreateFrame("Frame")
                 waiter:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then return end
+                    if name ~= "Blizzard_WorldMap" then
+                        return
+                    end
                     self:UnregisterEvent("ADDON_LOADED")
                     MapApply()
                 end)
@@ -263,8 +347,13 @@ local function MapApply()
         end
         Build()
     end
-    if not added then WorldMapFrame:AddDataProvider(provider); added = true end
-    if WorldMapFrame:IsShown() then Draw() end
+    if not added then
+        WorldMapFrame:AddDataProvider(provider)
+        added = true
+    end
+    if WorldMapFrame:IsShown() then
+        Draw()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -289,20 +378,39 @@ end
 
 local function MiniRefresh()
     wipe(spots)
-    local map = Enabled() and (Get("minimapMail") or Get("minimapSpirit")) and C_Map.GetBestMapForUnit("player")
+    local map = Enabled()
+        and (Get("minimapMail") or Get("minimapSpirit"))
+        and C_Map.GetBestMapForUnit("player")
     if map then
         local d, faction = Data(), Faction()
         local same = SameMap(map)
         if Get("minimapMail") and Get("mail") then
-            for _, s in ipairs(d.mail[same] or EMPTY) do if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end end
+            for _, s in ipairs(d.mail[same] or EMPTY) do
+                if (s[7] or ""):find(faction, 1, true) then
+                    spots[#spots + 1] = s
+                end
+            end
         end
         if Get("minimapSpirit") and Get("spirit") then
-            for _, s in ipairs(d.spirit[same] or EMPTY) do if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end end
+            for _, s in ipairs(d.spirit[same] or EMPTY) do
+                if (s[7] or ""):find(faction, 1, true) then
+                    spots[#spots + 1] = s
+                end
+            end
         end
     end
-    if not mini and #spots == 0 then return end
-    mini = mini or module.MinimapLayer({ max = MINI_MAX, new = MiniNew, paint = MiniPaint,
-        xy = function(list, i) return list[i][1] / 100, list[i][2] / 100 end })
+    if not mini and #spots == 0 then
+        return
+    end
+    mini = mini
+        or module.MinimapLayer({
+            max = MINI_MAX,
+            new = MiniNew,
+            paint = MiniPaint,
+            xy = function(list, i)
+                return list[i][1] / 100, list[i][2] / 100
+            end,
+        })
     mini:Set(map, spots, #spots)
 end
 
@@ -312,11 +420,18 @@ miniEv:SetScript("OnEvent", MiniRefresh)
 local function MiniApply()
     miniEv:UnregisterAllEvents()
     if Enabled() and (Get("minimapMail") or Get("minimapSpirit")) then
-        for _, e in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "ZONE_CHANGED", "ZONE_CHANGED_INDOORS" }) do
+        for _, e in ipairs({
+            "PLAYER_ENTERING_WORLD",
+            "ZONE_CHANGED_NEW_AREA",
+            "ZONE_CHANGED",
+            "ZONE_CHANGED_INDOORS",
+        }) do
             miniEv:RegisterEvent(e)
         end
     end
-    if IsLoggedIn() then MiniRefresh() end
+    if IsLoggedIn() then
+        MiniRefresh()
+    end
 end
 
 local function Apply()

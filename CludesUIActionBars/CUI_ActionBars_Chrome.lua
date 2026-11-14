@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Chrome.lua
 --
@@ -39,12 +41,20 @@ ns.AB_FV_ART = {
     -- Divider slices { start edge, end edge, middle } and the edges' depth
     -- along the divider: between the columns of a horizontal bar, then
     -- between the rows of a vertical one.
-    divH = { "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeTop",
-             "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeBottom",
-             "!ui-hud-actionbar-frame-divider-ThreeSlice-Center", 14, 15 },
-    divV = { "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeLeft",
-             "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeRight",
-             "_ui-hud-actionbar-frame-divider-ThreeSlice-Center", 12, 12 },
+    divH = {
+        "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeTop",
+        "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeBottom",
+        "!ui-hud-actionbar-frame-divider-ThreeSlice-Center",
+        14,
+        15,
+    },
+    divV = {
+        "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeLeft",
+        "ui-hud-actionbar-frame-divider-ThreeSlice-EdgeRight",
+        "_ui-hud-actionbar-frame-divider-ThreeSlice-Center",
+        12,
+        12,
+    },
 }
 
 -- End caps per look: the art by faction (`art`, none while neutral) or the
@@ -57,10 +67,14 @@ ns.AB_CAPS = {
     -- WoW Forever: inner edge 30 inside the bar's ends, 5 above its middle;
     -- over the buttons.
     forever = {
-        unit = 45, w = 154, h = 95, lvl = 4, mid = true,
+        unit = 45,
+        w = 154,
+        h = 95,
+        lvl = 4,
+        mid = true,
         art = {
             Alliance = { "ui-hud-actionbar-gryphon-left", "ui-hud-actionbar-gryphon-right" },
-            Horde    = { "ui-hud-actionbar-wyvern-left",  "ui-hud-actionbar-wyvern-right" },
+            Horde = { "ui-hud-actionbar-wyvern-left", "ui-hud-actionbar-wyvern-right" },
         },
         near = { "RIGHT", "LEFT", 30, 5, "LEFT", "RIGHT", -30, 5 },
     },
@@ -68,17 +82,27 @@ ns.AB_CAPS = {
     -- glows and assisted highlight as retail's are. stock: drawn through
     -- CludesUI.StockAtlas (retail art where the Forever client swaps it).
     blizzard = {
-        unit = 45, w = 104.5, h = 98, lvl = 17, stock = true,
+        unit = 45,
+        w = 104.5,
+        h = 98,
+        lvl = 17,
+        stock = true,
         near = { "BOTTOMRIGHT", "BOTTOMLEFT", 9, -22, "BOTTOMLEFT", "BOTTOMRIGHT", -8, -22 },
     },
     -- Classic WoW UI: vanilla's compact end caps (a file, the right one
     -- mirrored), out at the bar's corners on a bar of several rows.
     classic = {
-        unit = 36, w = 128, h = 128, lvl = 17, file = true,
-        any = { "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf",
-                "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf" },
+        unit = 36,
+        w = 128,
+        h = 128,
+        lvl = 17,
+        file = true,
+        any = {
+            "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf",
+            "Interface\\MainMenuBar\\UI-MainMenuBar-EndCap-Dwarf",
+        },
         near = { "BOTTOMRIGHT", "BOTTOMLEFT", 28, -3, "BOTTOMLEFT", "BOTTOMRIGHT", -29, -3 },
-        far  = { "BOTTOMRIGHT", "BOTTOMLEFT", 0, -3, "BOTTOMLEFT", "BOTTOMRIGHT", -1, -3 },
+        far = { "BOTTOMRIGHT", "BOTTOMLEFT", 0, -3, "BOTTOMLEFT", "BOTTOMRIGHT", -1, -3 },
     },
 }
 ns.AB_CAPS.blizzard.art = ns.AB_CAPS.forever.art
@@ -109,7 +133,9 @@ end
 -- the pair matches.
 function ns.AB_CapsVal(key, k)
     local p = EAB.db and EAB.db.profile
-    if not p then return nil end
+    if not p then
+        return nil
+    end
     local s = p.bars and p.bars[key]
     local v = s and s[k]
     if v == nil then
@@ -127,8 +153,12 @@ end
 -- while showEndCaps; the CludesUI style while cuiEndCaps names art this
 -- client draws.
 function ns.AB_CapsMainDefault(p)
-    if ns.AB_Forever() then return p.foreverHideEndCaps ~= true end
-    if ns.AB_Style() == "cui" then return ns.AB_CapsArtOK(p.cuiEndCaps) end
+    if ns.AB_Forever() then
+        return p.foreverHideEndCaps ~= true
+    end
+    if ns.AB_Style() == "cui" then
+        return ns.AB_CapsArtOK(p.cuiEndCaps)
+    end
     return p.showEndCaps == true
 end
 
@@ -142,7 +172,9 @@ end
 function ns.AB_CapsSides(key)
     local p = EAB.db and EAB.db.profile
     local s = p and p.bars and p.bars[key]
-    if not s then return false, false end
+    if not s then
+        return false, false
+    end
     local l, r = s.endCapLeft, s.endCapRight
     if l == nil or r == nil then
         local sl, sr = p.endCapSpanLeft, p.endCapSpanRight
@@ -154,8 +186,12 @@ function ns.AB_CapsSides(key)
             local d = ns.AB_CapsMainDefault(p)
             dl, dr = d and sl == key, d and sr == key
         end
-        if l == nil then l = dl end
-        if r == nil then r = dr end
+        if l == nil then
+            l = dl
+        end
+        if r == nil then
+            r = dr
+        end
     end
     return l and true or false, r and true or false
 end
@@ -164,7 +200,9 @@ end
 -- pick; none, or art this client lacks, reads Modern.
 function ns.AB_CapsArt(key)
     local art = ns.AB_CapsVal(key, "endCapArt")
-    if ns.AB_CapsArtOK(art) then return art end
+    if ns.AB_CapsArtOK(art) then
+        return art
+    end
     return "blizzard"
 end
 
@@ -174,13 +212,17 @@ end
 -- the art the player picks.
 function ns.AB_CapsLook(key)
     local l, r = ns.AB_CapsSides(key)
-    if not (l or r) then return nil end
+    if not (l or r) then
+        return nil
+    end
     local look
     if ns.AB_Forever() then
         look = "forever"
     else
         look = ns.AB_Style()
-        if look == "cui" then look = ns.AB_CapsArt(key) end
+        if look == "cui" then
+            look = ns.AB_CapsArt(key)
+        end
     end
     return look, l, r
 end
@@ -199,10 +241,19 @@ end
 function ns.AB_ChromeStamp(key)
     local look, l, r = ns.AB_CapsLook(key)
     local fv = ns.AB_ForeverBg(key)
-    if not look then return fv and "fv" or "-" end
+    if not look then
+        return fv and "fv" or "-"
+    end
     local _, dx, dy, sc = ns.AB_CapsTweak(key)
-    return look .. (l and "L" or "") .. (r and "R" or "") .. (fv and ",fv," or ",")
-        .. sc .. "," .. dx .. "," .. dy
+    return look
+        .. (l and "L" or "")
+        .. (r and "R" or "")
+        .. (fv and ",fv," or ",")
+        .. sc
+        .. ","
+        .. dx
+        .. ","
+        .. dy
 end
 
 -- How far a bar's chrome reaches past a button grid gridH tall (top,
@@ -237,7 +288,11 @@ end
 function ns.AB_SetCapArt(tex, c, name, right)
     if c.file then
         tex:SetTexture(name)
-        if right then tex:SetTexCoord(1, 0, 0, 1) else tex:SetTexCoord(0, 1, 0, 1) end
+        if right then
+            tex:SetTexCoord(1, 0, 0, 1)
+        else
+            tex:SetTexCoord(0, 1, 0, 1)
+        end
     elseif c.stock then
         -- The art can switch live on the same textures (the CludesUI style's
         -- End Caps choice): clear a previous look's mirror or sheet coords first.
@@ -255,7 +310,9 @@ end
 -- faction (kept as st.capKnown).
 function ns.AB_CapsFaction(st)
     local capL, capR = st.capL, st.capR
-    if not capL then return true end
+    if not capL then
+        return true
+    end
     local c = st.capsOn and ns.AB_CAPS[st.capLook]
     local fac = c and c.art and UnitFactionGroup("player")
     local set = c and (c.any or (fac and c.art[fac])) or nil
@@ -283,7 +340,9 @@ function ns.AB_PaintCaps(st, owner, ox, oy, w, h, btnW, look, multi, pxK, key, s
     st.capSideL, st.capSideR = sideL and true or false, sideR and true or false
     local host = st.capHost
     if not st.capsOn then
-        if host then host:Hide() end
+        if host then
+            host:Hide()
+        end
         return
     end
     if not host then
@@ -297,7 +356,9 @@ function ns.AB_PaintCaps(st, owner, ox, oy, w, h, btnW, look, multi, pxK, key, s
     end
     local sc, dx, dy = ns.AB_CapsTweak(key)
     local kc = btnW / c.unit
-    if kc > 1 then kc = 1 end
+    if kc > 1 then
+        kc = 1
+    end
     kc = kc * sc
     -- The offsets in the host's (scaled) units.
     dx, dy = dx * (pxK or 1) / kc, dy * (pxK or 1) / kc
@@ -310,7 +371,9 @@ function ns.AB_PaintCaps(st, owner, ox, oy, w, h, btnW, look, multi, pxK, key, s
         capR:ClearAllPoints()
         capL:SetPoint(g[1], host, g[2], g[3] - dx, g[4] + dy)
         capR:SetPoint(g[5], host, g[6], g[7] + dx, g[8] + dy)
-        if st.capLook ~= look then st.capSet = nil end
+        if st.capLook ~= look then
+            st.capSet = nil
+        end
         st.capLook, st.capGeo, st.capDX, st.capDY = look, g, dx, dy
     end
     host:SetFrameLevel(owner:GetFrameLevel() + c.lvl)
@@ -322,8 +385,12 @@ function ns.AB_PaintCaps(st, owner, ox, oy, w, h, btnW, look, multi, pxK, key, s
 end
 
 function ns.AB_HideBarChrome(st)
-    if st.under then st.under:Hide() end
-    if st.capHost then st.capHost:Hide() end
+    if st.under then
+        st.under:Hide()
+    end
+    if st.capHost then
+        st.capHost:Hide()
+    end
     st.capsOn = false
 end
 
@@ -376,36 +443,48 @@ function ns.AB_PaintForeverChrome(st, owner, ox, oy, w, h, k, vertical, n, step,
     for i = 1, n - 1 do
         local d = divs[i]
         if not d then
-            d = { under:CreateTexture(nil, "BACKGROUND", nil, -2),
-                  under:CreateTexture(nil, "BACKGROUND", nil, -2),
-                  under:CreateTexture(nil, "BACKGROUND", nil, -2) }
+            d = {
+                under:CreateTexture(nil, "BACKGROUND", nil, -2),
+                under:CreateTexture(nil, "BACKGROUND", nil, -2),
+                under:CreateTexture(nil, "BACKGROUND", nil, -2),
+            }
             divs[i] = d
         end
         local a, b, c = d[1], d[2], d[3]
         if d.set ~= set then
-            a:SetAtlas(set[1]); b:SetAtlas(set[2]); c:SetAtlas(set[3])
+            a:SetAtlas(set[1])
+            b:SetAtlas(set[2])
+            c:SetAtlas(set[3])
             d.set = set
         end
         local at = (i * step + (i < extra and i or extra) * onePx) / k
-        a:ClearAllPoints(); b:ClearAllPoints(); c:ClearAllPoints()
+        a:ClearAllPoints()
+        b:ClearAllPoints()
+        c:ClearAllPoints()
         if vertical then
-            a:SetSize(set[4] * ik, 12 * ik); b:SetSize(set[5] * ik, 12 * ik)
+            a:SetSize(set[4] * ik, 12 * ik)
+            b:SetSize(set[5] * ik, 12 * ik)
             a:SetPoint("TOPLEFT", under, "TOPLEFT", 0, 7 * ik - at)
             b:SetPoint("TOPRIGHT", under, "TOPRIGHT", 0, 7 * ik - at)
             c:SetPoint("TOPLEFT", a, "TOPRIGHT")
             c:SetPoint("BOTTOMRIGHT", b, "BOTTOMLEFT")
         else
-            a:SetSize(12 * ik, set[4] * ik); b:SetSize(12 * ik, set[5] * ik)
+            a:SetSize(12 * ik, set[4] * ik)
+            b:SetSize(12 * ik, set[5] * ik)
             a:SetPoint("TOPLEFT", under, "TOPLEFT", at - 7 * ik, 0)
             b:SetPoint("BOTTOMLEFT", under, "BOTTOMLEFT", at - 7 * ik, 0)
             c:SetPoint("TOPLEFT", a, "BOTTOMLEFT")
             c:SetPoint("BOTTOMRIGHT", b, "TOPRIGHT")
         end
-        a:Show(); b:Show(); c:Show()
+        a:Show()
+        b:Show()
+        c:Show()
     end
     for i = (n > 1 and n or 1), #divs do
         local d = divs[i]
-        d[1]:Hide(); d[2]:Hide(); d[3]:Hide()
+        d[1]:Hide()
+        d[2]:Hide()
+        d[3]:Hide()
     end
 end
 
@@ -413,7 +492,27 @@ end
 -- Forever's frame and dividers when `forever`, then `look`'s end caps (nil =
 -- none) on the sideL / sideR ends. Arguments as AB_PaintForeverChrome and
 -- AB_PaintCaps. True once the caps' art no longer waits on the faction.
-function ns.AB_PaintBarChrome(st, owner, ox, oy, w, h, btnW, forever, look, multi, vertical, n, step, extra, onePx, pxK, key, sideL, sideR)
+function ns.AB_PaintBarChrome(
+    st,
+    owner,
+    ox,
+    oy,
+    w,
+    h,
+    btnW,
+    forever,
+    look,
+    multi,
+    vertical,
+    n,
+    step,
+    extra,
+    onePx,
+    pxK,
+    key,
+    sideL,
+    sideR
+)
     if forever then
         ns.AB_PaintForeverChrome(st, owner, ox, oy, w, h, btnW / 45, vertical, n, step, extra, onePx)
     elseif st.under then
@@ -435,13 +534,17 @@ function ns.AB_CapsEvSync()
             local c = st.capsOn and ns.AB_CAPS[st.capLook]
             if c and c.art then
                 need = true
-                if not st.capKnown then waiting = true end
+                if not st.capKnown then
+                    waiting = true
+                end
             end
         end
     end
     local ev = ns._abCapsEv
     if not need then
-        if ev then ev:UnregisterAllEvents() end
+        if ev then
+            ev:UnregisterAllEvents()
+        end
         return
     end
     if not ev then
@@ -449,7 +552,9 @@ function ns.AB_CapsEvSync()
         ev:SetScript("OnEvent", function(self, event)
             local known = true
             for _, cs in pairs(ns._abChrome) do
-                if not ns.AB_CapsFaction(cs) then known = false end
+                if not ns.AB_CapsFaction(cs) then
+                    known = false
+                end
             end
             if known and event == "PLAYER_ENTERING_WORLD" then
                 self:UnregisterEvent(event)
@@ -474,7 +579,9 @@ function ns.AB_ApplyBarChrome(key, frame, w, h, btnW, vertical, multi, n, step, 
     local st = all and all[key]
     local fv = ns.AB_ForeverBg(key)
     local look, sideL, sideR
-    if not vertical then look, sideL, sideR = ns.AB_CapsLook(key) end
+    if not vertical then
+        look, sideL, sideR = ns.AB_CapsLook(key)
+    end
     if not (fv or look) then
         if st then
             ns.AB_HideBarChrome(st)
@@ -482,9 +589,35 @@ function ns.AB_ApplyBarChrome(key, frame, w, h, btnW, vertical, multi, n, step, 
         end
         return
     end
-    if not all then all = {}; ns._abChrome = all end
-    if not st then st = {}; all[key] = st end
-    ns.AB_PaintBarChrome(st, frame, 0, 0, w, h, btnW, fv, look, multi, vertical, n, step, extra, onePx, nil, key, sideL, sideR)
+    if not all then
+        all = {}
+        ns._abChrome = all
+    end
+    if not st then
+        st = {}
+        all[key] = st
+    end
+    ns.AB_PaintBarChrome(
+        st,
+        frame,
+        0,
+        0,
+        w,
+        h,
+        btnW,
+        fv,
+        look,
+        multi,
+        vertical,
+        n,
+        step,
+        extra,
+        onePx,
+        nil,
+        key,
+        sideL,
+        sideR
+    )
     ns.AB_CapsEvSync()
 end
 
@@ -509,7 +642,9 @@ ns.AB_CAP_EXTRAS = { MicroBar = true, BagBar = true }
 
 -- The frame whose level the buttons ride on.
 function ns.AB_ExtraCapsBase(key)
-    if key == "MicroBar" then return _G.MicroMenu end
+    if key == "MicroBar" then
+        return _G.MicroMenu
+    end
     return _G.BagsBar
 end
 
@@ -522,7 +657,9 @@ end
 function ns.AB_ExtraCapsShown(key)
     local st = ns._abChrome and ns._abChrome[key]
     local host = st and st.capHost
-    if not host then return end
+    if not host then
+        return
+    end
     local bf = _G[BAR_LOOKUP[key].frameName]
     local on = st.capsOn and bf ~= nil and bf:IsShown()
     if on and key == "MicroBar" then
@@ -535,7 +672,9 @@ end
 
 -- After EAB itself hid or showed one of the two Blizzard frames.
 function ns.AB_ExtraCapsFor(frame)
-    if not ns._abCapHooked then return end
+    if not ns._abCapHooked then
+        return
+    end
     if frame == _G.MicroMenuContainer then
         ns.AB_ExtraCapsShown("MicroBar")
     elseif frame == _G.BagsBar then
@@ -548,11 +687,15 @@ end
 function ns.AB_ExtraCapsHooks(key)
     local done = ns._abCapHooked or {}
     ns._abCapHooked = done
-    if done[key] then return end
+    if done[key] then
+        return
+    end
     done[key] = true
     local m = _G.MicroMenu
     if key == "MicroBar" and m and m.OverrideMicroMenuPosition then
-        hooksecurefunc(m, "OverrideMicroMenuPosition", function() ns.AB_ExtraCapsShown("MicroBar") end)
+        hooksecurefunc(m, "OverrideMicroMenuPosition", function()
+            ns.AB_ExtraCapsShown("MicroBar")
+        end)
     end
 end
 
@@ -566,22 +709,31 @@ function ns.AB_ExtraCapsPadFlush()
     ns.AB_ExtraCapsShown("BagBar")
 end
 function ns.AB_ExtraCapsPad()
-    if not CludesUI.IS_FOREVER then return end
+    if not CludesUI.IS_FOREVER then
+        return
+    end
     local all = ns._abChrome
     local on = all and ((all.MicroBar and all.MicroBar.capsOn) or (all.BagBar and all.BagBar.capsOn))
     local ev = ns._abCapStyleEv
     if not on then
-        if ev then ev:UnregisterAllEvents() end
+        if ev then
+            ev:UnregisterAllEvents()
+        end
         return
     end
     if not ev then
-        if C_EventUtils and C_EventUtils.IsEventValid
-            and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION") then
+        if
+            C_EventUtils
+            and C_EventUtils.IsEventValid
+            and not C_EventUtils.IsEventValid("INPUT_DEVICE_INTERFACE_TRANSITION")
+        then
             return
         end
         ev = ns.TakeShell()
         ev:SetScript("OnEvent", function()
-            if ns._abCapStyleArmed then return end
+            if ns._abCapStyleArmed then
+                return
+            end
             ns._abCapStyleArmed = true
             C_Timer_After(0, ns.AB_ExtraCapsPadFlush)
         end)
@@ -600,22 +752,32 @@ function ns.AB_BagEdge(b, hs, hl, minL, maxR)
         if l and r then
             local k = b:GetEffectiveScale() / hs
             l, r = l * k - hl, r * k - hl
-            if not minL or l < minL then minL = l end
-            if not maxR or r > maxR then maxR = r end
+            if not minL or l < minL then
+                minL = l
+            end
+            if not maxR or r > maxR then
+                maxR = r
+            end
         end
     end
     return minL, maxR
 end
 function ns.AB_BagCapsExtent(holder)
     local bb, mgr = _G.BagsBar, _G.MainMenuBarBagManager
-    if not bb or bb.hideExpandToggle or not (mgr and mgr.EnumerateBagButtons) then return nil end
+    if not bb or bb.hideExpandToggle or not (mgr and mgr.EnumerateBagButtons) then
+        return nil
+    end
     local hs, hl = holder:GetEffectiveScale(), holder:GetLeft()
-    if not hl then return nil end
+    if not hl then
+        return nil
+    end
     local minL, maxR = ns.AB_BagEdge(_G.BagBarExpandToggle, hs, hl, nil, nil)
     for _, b in mgr:EnumerateBagButtons() do
         minL, maxR = ns.AB_BagEdge(b, hs, hl, minL, maxR)
     end
-    if not minL or maxR - minL < 1 then return nil end
+    if not minL or maxR - minL < 1 then
+        return nil
+    end
     return minL, maxR - minL
 end
 -- Collapsing or expanding the bag bar repaints its caps (one frame later,
@@ -625,17 +787,25 @@ function ns.AB_BagCapsExpandFlush()
     ns.AB_ExtraCaps("BagBar")
 end
 function ns.AB_BagCapsExpandChanged()
-    if ns._abBagArmed then return end
+    if ns._abBagArmed then
+        return
+    end
     ns._abBagArmed = true
     C_Timer_After(0, ns.AB_BagCapsExpandFlush)
 end
 function ns.AB_BagCapsWatch(on)
     local bb = _G.BagsBar
-    if not (bb and not bb.hideExpandToggle and EventRegistry) then return end
+    if not (bb and not bb.hideExpandToggle and EventRegistry) then
+        return
+    end
     if on then
         if not ns._abBagWatch then
             ns._abBagWatch = true
-            EventRegistry:RegisterCallback("MainMenuBarManager.OnExpandChanged", ns.AB_BagCapsExpandChanged, ns.AB_CAP_EXTRAS)
+            EventRegistry:RegisterCallback(
+                "MainMenuBarManager.OnExpandChanged",
+                ns.AB_BagCapsExpandChanged,
+                ns.AB_CAP_EXTRAS
+            )
         end
     elseif ns._abBagWatch then
         ns._abBagWatch = nil
@@ -648,23 +818,37 @@ end
 function ns.AB_ExtraCaps(key)
     local holder = extraBarHolders[key]
     local bf = holder and _G[BAR_LOOKUP[key].frameName]
-    if not bf then return end
+    if not bf then
+        return
+    end
     local all = ns._abChrome
     local st = all and all[key]
     local look, sL, sR
-    if not ns.AB_ExtraCapsVertical(key) then look, sL, sR = ns.AB_CapsLook(key) end
+    if not ns.AB_ExtraCapsVertical(key) then
+        look, sL, sR = ns.AB_CapsLook(key)
+    end
     if not look then
         if st and st.capsOn then
             ns.AB_HideBarChrome(st)
-            if ns._abFadeTwin then ns._abFadeTwin[bf] = nil end
+            if ns._abFadeTwin then
+                ns._abFadeTwin[bf] = nil
+            end
             ns.AB_CapsEvSync()
             ns.AB_ExtraCapsPad()
-            if key == "BagBar" then ns.AB_BagCapsWatch(false) end
+            if key == "BagBar" then
+                ns.AB_BagCapsWatch(false)
+            end
         end
         return
     end
-    if not all then all = {}; ns._abChrome = all end
-    if not st then st = {}; all[key] = st end
+    if not all then
+        all = {}
+        ns._abChrome = all
+    end
+    if not st then
+        st = {}
+        all[key] = st
+    end
     local base = ns.AB_ExtraCapsBase(key) or bf
     local lvl, strata = base:GetFrameLevel(), base:GetFrameStrata()
     local owner, ox = holder, 0
@@ -684,16 +868,34 @@ function ns.AB_ExtraCaps(key)
         w, h = m:GetWidth() * k, m:GetHeight() * k
     elseif key == "BagBar" then
         local l, bw = ns.AB_BagCapsExtent(holder)
-        if l then ox, w = l, bw end
+        if l then
+            ox, w = l, bw
+        end
     end
     local sc, dx, dy = ns.AB_CapsTweak(key)
-    if not st.capsOn or st.xLook ~= look or st.xL ~= sL or st.xR ~= sR or st.xW ~= w
-        or st.xH ~= h or st.xU ~= u or st.xS ~= sc or st.xDX ~= dx or st.xDY ~= dy
-        or st.xLvl ~= lvl or st.xStr ~= strata or st.xOX ~= ox then
-        if holder:GetFrameStrata() ~= strata then holder:SetFrameStrata(strata) end
+    if
+        not st.capsOn
+        or st.xLook ~= look
+        or st.xL ~= sL
+        or st.xR ~= sR
+        or st.xW ~= w
+        or st.xH ~= h
+        or st.xU ~= u
+        or st.xS ~= sc
+        or st.xDX ~= dx
+        or st.xDY ~= dy
+        or st.xLvl ~= lvl
+        or st.xStr ~= strata
+        or st.xOX ~= ox
+    then
+        if holder:GetFrameStrata() ~= strata then
+            holder:SetFrameStrata(strata)
+        end
         holder:SetFrameLevel(lvl)
         if owner ~= holder then
-            if owner:GetFrameStrata() ~= strata then owner:SetFrameStrata(strata) end
+            if owner:GetFrameStrata() ~= strata then
+                owner:SetFrameStrata(strata)
+            end
             owner:SetFrameLevel(lvl)
         end
         ns.AB_PaintCaps(st, owner, ox, 0, w, h, u, look, false, nil, key, sL, sR)
@@ -706,11 +908,17 @@ function ns.AB_ExtraCaps(key)
             ns._abFadeTwin = tw
         end
         tw[bf] = st.capsOn and st.capHost or nil
-        if st.capHost then st.capHost:SetAlpha(_fadeAlpha[bf] or 1) end
-        if st.capsOn then ns.AB_ExtraCapsHooks(key) end
+        if st.capHost then
+            st.capHost:SetAlpha(_fadeAlpha[bf] or 1)
+        end
+        if st.capsOn then
+            ns.AB_ExtraCapsHooks(key)
+        end
         ns.AB_CapsEvSync()
         ns.AB_ExtraCapsPad()
-        if key == "BagBar" then ns.AB_BagCapsWatch(st.capsOn) end
+        if key == "BagBar" then
+            ns.AB_BagCapsWatch(st.capsOn)
+        end
     end
     ns.AB_ExtraCapsShown(key)
 end
@@ -723,13 +931,18 @@ end
 -- Repaints the bars that carry Action Bar 1's caps (its cap settings reach them).
 function ns.AB_CapsSpanApply()
     local p = EAB.db and EAB.db.profile
-    if not p then return end
+    if not p then
+        return
+    end
     local l, r = p.endCapSpanLeft, p.endCapSpanRight
     for i = 1, 2 do
         local k = (i == 1) and l or r
         if k and not (i == 2 and k == l) then
-            if ns.AB_CAP_EXTRAS[k] then ns.AB_ExtraCaps(k) else EAB:ApplyPaddingForBar(k) end
+            if ns.AB_CAP_EXTRAS[k] then
+                ns.AB_ExtraCaps(k)
+            else
+                EAB:ApplyPaddingForBar(k)
+            end
         end
     end
 end
-

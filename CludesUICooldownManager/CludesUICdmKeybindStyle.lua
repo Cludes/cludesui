@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, ns = ...
 
 -- Shared by live icons and the options preview. No events, hooks or polling.
@@ -10,9 +12,15 @@ local PP = CludesUI.PP
 local POOL = CludesUI._Pool
 local badges
 local anchors = {
-    TOPLEFT = true, TOP = true, TOPRIGHT = true,
-    LEFT = true, CENTER = true, RIGHT = true,
-    BOTTOMLEFT = true, BOTTOM = true, BOTTOMRIGHT = true,
+    TOPLEFT = true,
+    TOP = true,
+    TOPRIGHT = true,
+    LEFT = true,
+    CENTER = true,
+    RIGHT = true,
+    BOTTOMLEFT = true,
+    BOTTOM = true,
+    BOTTOMRIGHT = true,
 }
 
 -- Style pass (settings edges): builds the badge on first need, then places
@@ -25,8 +33,12 @@ local function StyleBadge(text, bd, scale)
     local borderSize = bd and bd.keybindBorderSize or 1
     local on = bd and bd.showKeybind and (bgAlpha > 0 or (borderAlpha > 0 and borderSize > 0)) or false
     if not badge then
-        if not on then return nil end
-        if not badges then badges = setmetatable({}, { __mode = "k" }) end
+        if not on then
+            return nil
+        end
+        if not badges then
+            badges = setmetatable({}, { __mode = "k" })
+        end
         -- Pooled with the options preview's text overlay (an options page pool
         -- host); the plain CreateFrame on a live icon.
         local f = POOL.CreateFrame("Frame", nil, text:GetParent())
@@ -42,7 +54,9 @@ local function StyleBadge(text, bd, scale)
         return badge
     end
     local level = text:GetParent():GetFrameLevel() - 2
-    if level < 0 then level = 0 end
+    if level < 0 then
+        level = 0
+    end
     f:SetFrameLevel(level)
     badge.rim:SetFrameLevel(level + 1)
     scale = scale or badge.scale or 1
@@ -51,12 +65,22 @@ local function StyleBadge(text, bd, scale)
     f:ClearAllPoints()
     f:SetPoint("TOPLEFT", text, "TOPLEFT", -padding, padding)
     f:SetPoint("BOTTOMRIGHT", text, "BOTTOMRIGHT", padding, -padding)
-    badge.fill:SetColorTexture(bd.keybindBackgroundR or 0, bd.keybindBackgroundG or 0,
-        bd.keybindBackgroundB or 0, bgAlpha)
+    badge.fill:SetColorTexture(
+        bd.keybindBackgroundR or 0,
+        bd.keybindBackgroundG or 0,
+        bd.keybindBackgroundB or 0,
+        bgAlpha
+    )
     badge.fill:SetShown(bgAlpha > 0)
     if borderAlpha > 0 and borderSize > 0 then
-        PP.UpdateBorder(f, borderSize, bd.keybindBorderR or 1, bd.keybindBorderG or 1,
-            bd.keybindBorderB or 1, borderAlpha)
+        PP.UpdateBorder(
+            f,
+            borderSize,
+            bd.keybindBorderR or 1,
+            bd.keybindBorderG or 1,
+            bd.keybindBorderB or 1,
+            borderAlpha
+        )
         badge.rim:Show()
     else
         badge.rim:Hide()
@@ -78,14 +102,18 @@ end
 -- Style + visibility: settings edges and the options preview.
 local function RefreshBadge(text, bd, scale)
     local badge = StyleBadge(text, bd, scale)
-    if badge then ShowBadge(text, badge) end
+    if badge then
+        ShowBadge(text, badge)
+    end
 end
 ns.RefreshCDMKeybindBadge = RefreshBadge
 
 -- The options preview dresses a pooled label again for a new preview: its
 -- badge of the previous dress went with that dress, so it is built anew.
 function ns.CdmForgetKeybindBadge(text)
-    if badges then badges[text] = nil end
+    if badges then
+        badges[text] = nil
+    end
 end
 
 -- Visibility pass for the keybind apply paths (every CDM icon, the Rotation
@@ -94,9 +122,13 @@ end
 function ns.ShowCDMKeybindBadge(text, bd)
     local badge = badges and badges[text]
     if not badge then
-        if not (bd and bd.showKeybind and (bd.keybindBackgroundA or bd.keybindBorderA)) then return end
+        if not (bd and bd.showKeybind and (bd.keybindBackgroundA or bd.keybindBorderA)) then
+            return
+        end
         badge = StyleBadge(text, bd)
-        if not badge then return end
+        if not badge then
+            return
+        end
     elseif badge.bd ~= bd then
         StyleBadge(text, bd)
     end
@@ -107,12 +139,16 @@ function ns.StyleCDMKeybind(text, bd, anchor, scale, fontPath)
     if not bd.showKeybind then
         -- Existing badges can survive a bar/profile switch; no allocation.
         text:Hide()
-        if badges and badges[text] then RefreshBadge(text, bd) end
+        if badges and badges[text] then
+            RefreshBadge(text, bd)
+        end
         return
     end
     scale = scale or 1
     local font = bd.keybindFont
-    if font and font ~= "__global" then fontPath = CludesUI.ResolveFontName(font) end
+    if font and font ~= "__global" then
+        fontPath = CludesUI.ResolveFontName(font)
+    end
     local size = (bd.keybindSize or 10) * scale
     local outline = bd.keybindOutline
     if outline == "NONE" then
@@ -124,7 +160,9 @@ function ns.StyleCDMKeybind(text, bd, anchor, scale, fontPath)
         CludesUI.ApplyIconTextFont(text, fontPath, size, "cdm")
     end
     local point = bd.keybindAnchor
-    if not anchors[point] then point = bd.keybindAlign == "right" and "TOPRIGHT" or "TOPLEFT" end
+    if not anchors[point] then
+        point = bd.keybindAlign == "right" and "TOPRIGHT" or "TOPLEFT"
+    end
     local right = point:find("RIGHT", 1, true)
     text:SetJustifyH(right and "RIGHT" or (point:find("LEFT", 1, true) and "LEFT" or "CENTER"))
     local x = (bd.keybindOffsetX or 2) * scale

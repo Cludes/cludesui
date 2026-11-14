@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BreakTimer.lua -- Raid Lead: a shared break countdown.
 --
@@ -17,18 +19,26 @@ function ns.BreakSettings()
     local p = ns.RaidLeadDB()
     p.breakTimer = p.breakTimer or {}
     local s = p.breakTimer
-    if s.enabled == nil then s.enabled = true end
-    if s.sound == nil then s.sound = true end
+    if s.enabled == nil then
+        s.enabled = true
+    end
+    if s.sound == nil then
+        s.sound = true
+    end
     return s
 end
 
-local function Say(text) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text) end
+local function Say(text)
+    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. text)
+end
 
 local bar, label, ticker
-local current             -- { ends, total, from, warned }
+local current -- { ends, total, from, warned }
 
 local function Build()
-    if bar then return end
+    if bar then
+        return
+    end
     bar = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
     bar:SetSize(W, H)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -43,7 +53,9 @@ local function Build()
 end
 
 function ns.ApplyBreakPosition()
-    if not bar or InCombatLockdown() then return end
+    if not bar or InCombatLockdown() then
+        return
+    end
     local p = ns.BreakSettings().pos
     bar:ClearAllPoints()
     if p then
@@ -55,34 +67,54 @@ end
 
 local function Stop()
     current = nil
-    if ticker then ticker:Cancel(); ticker = nil end
-    if bar then bar:Hide() end
+    if ticker then
+        ticker:Cancel()
+        ticker = nil
+    end
+    if bar then
+        bar:Hide()
+    end
 end
 
 local function Update()
-    if not current then return end
+    if not current then
+        return
+    end
     local left = current.ends - GetTime()
     if left <= 0 then
         Stop()
         Say("the break is over.")
-        if ns.BreakSettings().sound then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
+        if ns.BreakSettings().sound then
+            PlaySound(SOUNDKIT.RAID_WARNING, "Master")
+        end
         return
     end
     if left <= 60 and not current.warned then
         current.warned = true
-        if current.total > 90 then Say("one minute of break left.") end
+        if current.total > 90 then
+            Say("one minute of break left.")
+        end
     end
     bar:SetValue(left)
-    label:SetText(("Break  %s%s"):format(ns.FormatDuration(left),
-        current.from and ("  |cff9aa6b2" .. current.from .. "|r") or ""))
+    label:SetText(
+        ("Break  %s%s"):format(
+            ns.FormatDuration(left),
+            current.from and ("  |cff9aa6b2" .. current.from .. "|r") or ""
+        )
+    )
 end
 
 --- Shows a break of `seconds` (0 ends it). `from` is who started it.
 function ns.ReceiveBreak(seconds, from)
-    if not ns.BreakSettings().enabled then return end
+    if not ns.BreakSettings().enabled then
+        return
+    end
     seconds = math.floor(tonumber(seconds) or 0)
     if seconds <= 0 then
-        if current then Stop(); Say("the break was ended" .. (from and (" by " .. from) or "") .. ".") end
+        if current then
+            Stop()
+            Say("the break was ended" .. (from and (" by " .. from) or "") .. ".")
+        end
         return
     end
     seconds = math.min(seconds, MAX_MINUTES * 60)
@@ -90,7 +122,9 @@ function ns.ReceiveBreak(seconds, from)
     current = { ends = GetTime() + seconds, total = seconds, from = from }
     bar:SetMinMaxValues(0, seconds)
     bar:Show()
-    if ticker then ticker:Cancel() end
+    if ticker then
+        ticker:Cancel()
+    end
     ticker = C_Timer.NewTicker(0.5, Update)
     Update()
 end
@@ -106,28 +140,46 @@ function ns.StartBreak(minutes)
     end
     local seconds = math.floor(minutes * 60 + 0.5)
     -- In a group the message comes back to us too, which starts our own bar.
-    if not (ns.SendBreak and ns.SendBreak(seconds)) then ns.ReceiveBreak(seconds, nil) end
+    if not (ns.SendBreak and ns.SendBreak(seconds)) then
+        ns.ReceiveBreak(seconds, nil)
+    end
 end
 
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
 ev:SetScript("OnEvent", function()
-    if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
+    if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
+        return
+    end
     Build()
     registered = true
     CludesUI:RegisterUnlockElements({
         CludesUI.MakeUnlockElement({
-            key = "RLEAD_Break", label = "Break Timer", group = "Raid Lead", order = 663,
-            noAnchorTarget = true, noResize = true,
-            isHidden = function() return not ns.BreakSettings().enabled end,
-            getFrame = function() return bar end,
-            getSize = function() return W, H end,
+            key = "RLEAD_Break",
+            label = "Break Timer",
+            group = "Raid Lead",
+            order = 663,
+            noAnchorTarget = true,
+            noResize = true,
+            isHidden = function()
+                return not ns.BreakSettings().enabled
+            end,
+            getFrame = function()
+                return bar
+            end,
+            getSize = function()
+                return W, H
+            end,
             savePos = function(_, point, relPoint, x, y)
                 ns.BreakSettings().pos = { point = point, relPoint = relPoint, x = x, y = y }
             end,
-            loadPos = function() return ns.BreakSettings().pos end,
-            clearPos = function() ns.BreakSettings().pos = nil end,
+            loadPos = function()
+                return ns.BreakSettings().pos
+            end,
+            clearPos = function()
+                ns.BreakSettings().pos = nil
+            end,
             applyPos = ns.ApplyBreakPosition,
         }),
     }, "CludesUIRaidLead")

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_JunkItems.lua  (WoW Forever only)
 --  Small window listing the cheapest junk stacks in your bags: every stack up
@@ -16,26 +20,26 @@ local _, module = ...
 local PP = CludesUI.PP
 
 local GetContainerNumFreeSlots = C_Container.GetContainerNumFreeSlots
-local GetContainerNumSlots     = C_Container.GetContainerNumSlots
-local GetContainerItemInfo     = C_Container.GetContainerItemInfo
-local GetItemInfo              = C_Item.GetItemInfo
-local GetItemInfoInstant       = C_Item.GetItemInfoInstant
+local GetContainerNumSlots = C_Container.GetContainerNumSlots
+local GetContainerItemInfo = C_Container.GetContainerItemInfo
+local GetItemInfo = C_Item.GetItemInfo
+local GetItemInfoInstant = C_Item.GetItemInfoInstant
 
 -- Settings live in CludesUIDB.junkList, beside the shared visibility keys
 -- (unset = Always); unset keys read these. Excluded items are account-wide
 -- too: CludesUIDB.junkListExcluded holds [itemID] = true.
 local DEFAULTS = {
-    enabled          = false,     -- opt-in: this window can delete items
-    itemCount        = 4,         -- 1..MAX_CELLS
-    iconSize         = 32,
-    iconSpacing      = 20,        -- gap between icons, px
-    priceSide        = "bottom",  -- bottom | top
-    auctionPrices    = false,     -- value stacks at Auctionator's price when it has one
-    showFreeSlots    = false,     -- title reads "Bag Slots - free/total"; off hides the title
-    onlyLowBagSpace  = false,     -- also hidden until fewer bag slots are free than the threshold
-    freeSlotThreshold = 5,        -- free regular bag slots, 1..100
-    maxQuality       = 0,         -- Enum.ItemQuality: stacks up to this quality list
-    oneClickQuality  = 0,         -- stacks up to this quality (Uncommon at most) delete without asking
+    enabled = false, -- opt-in: this window can delete items
+    itemCount = 4, -- 1..MAX_CELLS
+    iconSize = 32,
+    iconSpacing = 20, -- gap between icons, px
+    priceSide = "bottom", -- bottom | top
+    auctionPrices = false, -- value stacks at Auctionator's price when it has one
+    showFreeSlots = false, -- title reads "Bag Slots - free/total"; off hides the title
+    onlyLowBagSpace = false, -- also hidden until fewer bag slots are free than the threshold
+    freeSlotThreshold = 5, -- free regular bag slots, 1..100
+    maxQuality = 0, -- Enum.ItemQuality: stacks up to this quality list
+    oneClickQuality = 0, -- stacks up to this quality (Uncommon at most) delete without asking
 }
 -- The screen's centre until unlock mode moves it.
 local F = module.Feature("junkList", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = 0 })
@@ -43,11 +47,11 @@ local Get, Read, Enabled = F.Get, F.Read, F.Enabled
 
 -- Layout
 local MAX_CELLS = 6
-local PRICE_H   = 12
-local TITLE_H   = 24
+local PRICE_H = 12
+local TITLE_H = 24
 
 local RARE = Enum.ItemQuality.Rare
-local QUEST_CLASS     = Enum.ItemClass.Questitem
+local QUEST_CLASS = Enum.ItemClass.Questitem
 local BATTLEPET_CLASS = Enum.ItemClass.Battlepet
 
 local frame, titleFS, emptyFS, probeFS
@@ -61,17 +65,17 @@ local eventFrame = CreateFrame("Frame")
 -- not, any bag change can cross the threshold).
 local bagSpaceWatch = CreateFrame("Frame")
 local bagWatching = false
-local ctrlWatch  = CreateFrame("Frame")  -- MODIFIER_STATE_CHANGED while a cell is flagged
-local active = false         -- shown, with its events registered
-local visRegistered = false  -- on the shared visibility dispatcher
-local itemInfoOn = false     -- GET_ITEM_INFO_RECEIVED registered
-local confirmHandle          -- the open delete confirmation
-local armedCell              -- the cell whose stack the next Ctrl + Left Click deletes
-local swapCount = 0          -- cells holding a double-click guard
-local priceFitW = 0          -- widest price a cell shows in full (its icon plus the spacing, less 2 px)
-local lastFree, lastTotal    -- the title's counts as last drawn
-local auctionOn = false      -- Use Auctionator Prices, as the remembered values were priced
-local dbHooked = false       -- Auctionator's price-update callback registered
+local ctrlWatch = CreateFrame("Frame") -- MODIFIER_STATE_CHANGED while a cell is flagged
+local active = false -- shown, with its events registered
+local visRegistered = false -- on the shared visibility dispatcher
+local itemInfoOn = false -- GET_ITEM_INFO_RECEIVED registered
+local confirmHandle -- the open delete confirmation
+local armedCell -- the cell whose stack the next Ctrl + Left Click deletes
+local swapCount = 0 -- cells holding a double-click guard
+local priceFitW = 0 -- widest price a cell shows in full (its icon plus the spacing, less 2 px)
+local lastFree, lastTotal -- the title's counts as last drawn
+local auctionOn = false -- Use Auctionator Prices, as the remembered values were priced
+local dbHooked = false -- Auctionator's price-update callback registered
 
 -- Per-slot facts for the scanned bags. A pass re-reads only the bags marked
 -- dirty (by BAG_UPDATE, or all of them when the window comes back or a bag is
@@ -80,9 +84,9 @@ local dbHooked = false       -- Auctionator's price-update callback registered
 -- through CludesUI._JunkItems.Refresh). recs[bag][slot] lives for the
 -- session; scanSlots[bag] = how many slots the last read covered.
 local recs, scanSlots, dirty = {}, {}, {}
-local pending = {}          -- [itemID] = true: item data not cached yet
-local failed  = {}          -- [itemID] = true: the client said the data will not load
-local best, bestN = {}, 0   -- the cheapest listable records, in display order
+local pending = {} -- [itemID] = true: item data not cached yet
+local failed = {} -- [itemID] = true: the client said the data will not load
+local best, bestN = {}, 0 -- the cheapest listable records, in display order
 
 -- How many stacks the window lists.
 local function Limit()
@@ -92,7 +96,9 @@ end
 -------------------------------------------------------------------------------
 --  Fonts (the Forever Essentials module font)
 -------------------------------------------------------------------------------
-local function SetJunkFont(fs, size) CludesUI.ApplyModuleFont(fs, nil, size, "essentials") end
+local function SetJunkFont(fs, size)
+    CludesUI.ApplyModuleFont(fs, nil, size, "essentials")
+end
 
 local function NewText(parent, size, alpha)
     local fs = parent:CreateFontString(nil, "OVERLAY")
@@ -106,7 +112,7 @@ end
 --  shows while the value is under 1 gold ("15s 12c"). short: the largest coin
 --  alone ("1g", "15s"), for a price too wide for its icon's slot.
 -------------------------------------------------------------------------------
-local GOLD_ICON   = "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:1:0|t"
+local GOLD_ICON = "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:1:0|t"
 local SILVER_ICON = "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:1:0|t"
 local COPPER_ICON = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:1:0|t"
 
@@ -116,12 +122,16 @@ local function FormatValue(copper, short)
     local c = copper % 100
     if g > 0 then
         local out = BreakUpLargeNumbers(g) .. GOLD_ICON
-        if s > 0 and not short then out = out .. " " .. s .. SILVER_ICON end
+        if s > 0 and not short then
+            out = out .. " " .. s .. SILVER_ICON
+        end
         return out
     end
     if s > 0 then
         local out = s .. SILVER_ICON
-        if c > 0 and not short then out = out .. " " .. c .. COPPER_ICON end
+        if c > 0 and not short then
+            out = out .. " " .. c .. COPPER_ICON
+        end
         return out
     end
     return c .. COPPER_ICON
@@ -136,20 +146,32 @@ end
 local function Classify(info)
     local id = info.itemID
     local _, _, _, _, _, classID = GetItemInfoInstant(id)
-    if classID == QUEST_CLASS or classID == BATTLEPET_CLASS then return false end
+    if classID == QUEST_CLASS or classID == BATTLEPET_CLASS then
+        return false
+    end
     local link = info.hyperlink
-    if link and link:find("|Hbattlepet:", 1, true) then return false end
+    if link and link:find("|Hbattlepet:", 1, true) then
+        return false
+    end
     local _, _, itemQuality, _, _, _, _, _, _, _, sell = GetItemInfo(id)
-    if sell == nil then return nil end
+    if sell == nil then
+        return nil
+    end
     -- Fail closed: the higher of the slot's and the item's quality, and never an
     -- item that reports neither.
     local q = info.quality
-    if q == nil or (itemQuality and itemQuality > q) then q = itemQuality end
-    if q == nil then return false end
+    if q == nil or (itemQuality and itemQuality > q) then
+        q = itemQuality
+    end
+    if q == nil then
+        return false
+    end
     -- No vendor value still wastes a slot, so it lists (at the top), but not
     -- when soulbound: those are keepers (Hearthstone, Marks of Honor).
     local noValue = info.hasNoValue or sell == 0
-    if noValue and info.isBound then return false end
+    if noValue and info.isBound then
+        return false
+    end
     return q, noValue and 0 or sell * (info.stackCount or 1)
 end
 
@@ -167,7 +189,9 @@ end
 -- Marker: above Poor, IsJunk reports exactly the marks. cm is nil while Bags
 -- is not loaded, and then nothing counts as marked.
 local function Listable(q, id, maxQuality, cm)
-    if q <= maxQuality then return true end
+    if q <= maxQuality then
+        return true
+    end
     return cm ~= nil and cm:IsJunk(id, q) == true
 end
 
@@ -179,13 +203,15 @@ local function ReadSlot(r)
     local info = GetContainerItemInfo(r.bag, r.slot)
     local id = info and info.itemID
     r.id = id or false
-    if not id then return end
+    if not id then
+        return
+    end
     r.count, r.icon, r.link = info.stackCount or 1, info.iconFileID, info.hyperlink
     local q, total = Classify(info)
     if q then
         r.quality, r.vendor, r.bound = q, total, info.isBound
     elseif q == nil then
-        r.pending = true  -- its GET_ITEM_INFO_RECEIVED re-reads the bag
+        r.pending = true -- its GET_ITEM_INFO_RECEIVED re-reads the bag
     end
 end
 
@@ -213,7 +239,9 @@ local function ReadBag(bag)
 end
 
 local function DirtyAll()
-    for bag = 0, NUM_BAG_SLOTS do dirty[bag] = true end
+    for bag = 0, NUM_BAG_SLOTS do
+        dirty[bag] = true
+    end
 end
 
 -- An item finished loading: re-read the bags it sits in.
@@ -234,7 +262,9 @@ end
 local function Forget(key)
     for bag = 0, NUM_BAG_SLOTS do
         local list = recs[bag]
-        for slot = 1, scanSlots[bag] or 0 do list[slot][key] = nil end
+        for slot = 1, scanSlots[bag] or 0 do
+            list[slot][key] = nil
+        end
     end
 end
 
@@ -246,8 +276,12 @@ end
 
 -- Cheapest first; ties keep bag order.
 local function Better(a, b)
-    if a.total ~= b.total then return a.total < b.total end
-    if a.bag ~= b.bag then return a.bag < b.bag end
+    if a.total ~= b.total then
+        return a.total < b.total
+    end
+    if a.bag ~= b.bag then
+        return a.bag < b.bag
+    end
     return a.slot < b.slot
 end
 
@@ -282,20 +316,30 @@ local function Select(limit)
             local r = list[slot]
             local id, q = r.id, r.quality
             if r.pending then
-                if not failed[id] then pending[id] = true end
+                if not failed[id] then
+                    pending[id] = true
+                end
             elseif q and not (ex and ex[id]) and Listable(q, id, maxQuality, cm) then
-                if r.quest == nil then r.quest = IsQuestSlot(bag, slot) end
+                if r.quest == nil then
+                    r.quest = IsQuestSlot(bag, slot)
+                end
                 if not r.quest then
-                    if r.inSet == nil then r.inSet = InEquipmentSet(bag, slot) end
+                    if r.inSet == nil then
+                        r.inSet = InEquipmentSet(bag, slot)
+                    end
                     if not r.inSet then
-                        if r.total == nil then r.total = StackValue(r) end
+                        if r.total == nil then
+                            r.total = StackValue(r)
+                        end
                         n = Offer(r, n, limit)
                     end
                 end
             end
         end
     end
-    for i = n + 1, bestN do best[i] = nil end
+    for i = n + 1, bestN do
+        best[i] = nil
+    end
     bestN = n
 end
 
@@ -306,35 +350,49 @@ end
 --  click never deletes a stack the player has not seen.
 -------------------------------------------------------------------------------
 local function ClearSwapFlags()
-    if swapCount == 0 then return end
-    for i = 1, #cells do cells[i].swapped = nil end
+    if swapCount == 0 then
+        return
+    end
+    for i = 1, #cells do
+        cells[i].swapped = nil
+    end
     swapCount = 0
     ctrlWatch:UnregisterEvent("MODIFIER_STATE_CHANGED")
 end
 
 local function OnModifierChanged()
-    if not IsControlKeyDown() then ClearSwapFlags() end
+    if not IsControlKeyDown() then
+        ClearSwapFlags()
+    end
 end
 ctrlWatch:SetScript("OnEvent", OnModifierChanged)
 
 local function FlagSwap(cell)
-    if cell.swapped then return end
+    if cell.swapped then
+        return
+    end
     cell.swapped = true
     swapCount = swapCount + 1
-    if swapCount == 1 then ctrlWatch:RegisterEvent("MODIFIER_STATE_CHANGED") end
+    if swapCount == 1 then
+        ctrlWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+    end
 end
 
 local function UnflagSwap(cell)
-    if not cell.swapped then return end
+    if not cell.swapped then
+        return
+    end
     cell.swapped = nil
     swapCount = swapCount - 1
-    if swapCount == 0 then ctrlWatch:UnregisterEvent("MODIFIER_STATE_CHANGED") end
+    if swapCount == 0 then
+        ctrlWatch:UnregisterEvent("MODIFIER_STATE_CHANGED")
+    end
 end
 
 -------------------------------------------------------------------------------
 --  Passes
 -------------------------------------------------------------------------------
-local Refresh  -- forward
+local Refresh -- forward
 
 -- Every pass goes through here: any number of triggers in one frame (bag
 -- updates, item loads, settings, an exclude, a Junk Marker change) collapse
@@ -345,7 +403,9 @@ local function RunQueuedRefresh()
     Refresh()
 end
 local function RequestRefresh()
-    if refreshQueued or not active then return end
+    if refreshQueued or not active then
+        return
+    end
     refreshQueued = true
     C_Timer.After(0, RunQueuedRefresh)
 end
@@ -362,7 +422,9 @@ local function StillJunk(bag, slot, id, count, maxQuality)
         return false
     end
     local q = Classify(info)
-    if not q or q > maxQuality then return false end
+    if not q or q > maxQuality then
+        return false
+    end
     return not IsQuestSlot(bag, slot) and not InEquipmentSet(bag, slot)
 end
 
@@ -370,8 +432,12 @@ end
 -- confirmation popup's click: this runs only inside the stack's own Ctrl +
 -- Left Click. Never in combat or with anything already on the cursor.
 local function DeleteStack(bag, slot, id, count, maxQuality)
-    if InCombatLockdown() or GetCursorInfo() then return end
-    if not StillJunk(bag, slot, id, count, maxQuality) then return end
+    if InCombatLockdown() or GetCursorInfo() then
+        return
+    end
+    if not StillJunk(bag, slot, id, count, maxQuality) then
+        return
+    end
     C_Container.PickupContainerItem(bag, slot)
     local kind, cursorID = GetCursorInfo()
     if kind == "item" and cursorID == id then
@@ -381,13 +447,17 @@ local function DeleteStack(bag, slot, id, count, maxQuality)
     end
 end
 
-local ShowCellTooltip  -- forward (Cells)
+local ShowCellTooltip -- forward (Cells)
 
 local function CloseConfirm()
-    if not confirmHandle then return end
+    if not confirmHandle then
+        return
+    end
     CludesUI:CloseConfirmPopup(confirmHandle)
     confirmHandle = nil
-    if not armedCell then eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED") end
+    if not armedCell then
+        eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+    end
 end
 
 -- A stack that must be confirmed is armed first (white and green stacks above
@@ -399,12 +469,18 @@ local ARM_SECS = 6
 
 local function Disarm()
     local cell = armedCell
-    if not cell then return end
+    if not cell then
+        return
+    end
     armedCell = nil
     cell.armedUntil = nil
     cell._arm:Hide()
-    if not confirmHandle then eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED") end
-    if GameTooltip:IsOwned(cell) then ShowCellTooltip(cell) end
+    if not confirmHandle then
+        eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+    end
+    if GameTooltip:IsOwned(cell) then
+        ShowCellTooltip(cell)
+    end
 end
 
 local function Arm(cell)
@@ -414,9 +490,13 @@ local function Arm(cell)
     cell.armedUntil = untilT
     cell._arm:Show()
     eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    if GameTooltip:IsOwned(cell) then ShowCellTooltip(cell) end
+    if GameTooltip:IsOwned(cell) then
+        ShowCellTooltip(cell)
+    end
     C_Timer.After(ARM_SECS, function()
-        if armedCell == cell and cell.armedUntil == untilT then Disarm() end
+        if armedCell == cell and cell.armedUntil == untilT then
+            Disarm()
+        end
     end)
 end
 
@@ -428,21 +508,26 @@ local function AskDelete(cell)
     local label = count > 1 and (cell.link .. " x" .. count) or cell.link
     local handle
     handle = CludesUI:ShowConfirmPopup({
-        title         = CludesUI.L("Delete Junk Item"),
-        message       = DELETE_ITEM:format(label) .. "\n\n"
-                        .. CludesUI.L("Then Ctrl + Left Click the item again to delete it."),
-        confirmText   = DELETE,
-        cancelText    = CANCEL,
+        title = CludesUI.L("Delete Junk Item"),
+        message = DELETE_ITEM:format(label) .. "\n\n" .. CludesUI.L(
+            "Then Ctrl + Left Click the item again to delete it."
+        ),
+        confirmText = DELETE,
+        cancelText = CANCEL,
         typeToConfirm = DELETE_ITEM_CONFIRM_STRING,
         onConfirm = function()
-            if confirmHandle ~= handle then return end
+            if confirmHandle ~= handle then
+                return
+            end
             CloseConfirm()
             if cell.id == id and cell.bag == bag and cell.slot == slot and cell.count == count then
                 Arm(cell)
             end
         end,
         onCancel = function()
-            if confirmHandle == handle then CloseConfirm() end
+            if confirmHandle == handle then
+                CloseConfirm()
+            end
         end,
     })
     confirmHandle = handle
@@ -481,17 +566,25 @@ end
 
 local function OnCellClick(self, button)
     local id = self.id
-    if not id then return end
+    if not id then
+        return
+    end
     if button == "MiddleButton" then
         Exclude(id)
         return
     end
-    if button ~= "LeftButton" or not IsControlKeyDown() then return end
-    if self.swapped or InCombatLockdown() or GetCursorInfo() then return end
+    if button ~= "LeftButton" or not IsControlKeyDown() then
+        return
+    end
+    if self.swapped or InCombatLockdown() or GetCursorInfo() then
+        return
+    end
     local q = self.quality
     -- Rare and better always need the typed confirmation, whatever the setting says.
-    if (q < RARE and q <= Get("oneClickQuality"))
-       or (armedCell == self and GetTime() <= (self.armedUntil or 0)) then
+    if
+        (q < RARE and q <= Get("oneClickQuality"))
+        or (armedCell == self and GetTime() <= (self.armedUntil or 0))
+    then
         Disarm()
         DeleteStack(self.bag, self.slot, id, self.count, q)
     elseif q >= RARE then
@@ -503,16 +596,22 @@ end
 
 local function OnCellEnter(self)
     UnflagSwap(self)
-    if self.id then ShowCellTooltip(self) end
+    if self.id then
+        ShowCellTooltip(self)
+    end
 end
 
 local function OnCellLeave(self)
-    if GameTooltip:IsOwned(self) then GameTooltip:Hide() end
+    if GameTooltip:IsOwned(self) then
+        GameTooltip:Hide()
+    end
 end
 
 local function AcquireCell(i)
     local b = cells[i]
-    if b then return b end
+    if b then
+        return b
+    end
     b = CreateFrame("Button", nil, frame)
     b:RegisterForClicks("LeftButtonUp", "MiddleButtonUp")
     b:SetScript("OnClick", OnCellClick)
@@ -522,7 +621,7 @@ local function AcquireCell(i)
 
     b._icon = b:CreateTexture(nil, "ARTWORK")
     b._icon:SetAllPoints()
-    b._icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
+    b._icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
     -- Red wash while the stack is armed for its confirming click.
     b._arm = b:CreateTexture(nil, "OVERLAY", nil, 6)
     b._arm:SetAllPoints()
@@ -545,8 +644,12 @@ end
 local function PaintCell(cell, r)
     if not r then
         if cell.id then
-            if armedCell == cell then Disarm() end
-            if GameTooltip:IsOwned(cell) then GameTooltip:Hide() end
+            if armedCell == cell then
+                Disarm()
+            end
+            if GameTooltip:IsOwned(cell) then
+                GameTooltip:Hide()
+            end
             UnflagSwap(cell)
             cell.id = nil
             cell:Hide()
@@ -556,22 +659,36 @@ local function PaintCell(cell, r)
     local moved = r.id ~= cell.id or r.bag ~= cell.bag or r.slot ~= cell.slot
     local changed = moved or r.count ~= cell.count
     -- An armed stack that left the cell (or changed size) is not the one confirmed.
-    if changed and armedCell == cell then Disarm() end
-    if r.count ~= cell.count then cell._count:SetText(r.count > 1 and r.count or "") end
-    if r.icon ~= cell.icon then cell._icon:SetTexture(r.icon) end
+    if changed and armedCell == cell then
+        Disarm()
+    end
+    if r.count ~= cell.count then
+        cell._count:SetText(r.count > 1 and r.count or "")
+    end
+    if r.icon ~= cell.icon then
+        cell._icon:SetTexture(r.icon)
+    end
     -- A price wider than its slot shows its largest coin alone, so prices never collide.
     if r.total ~= cell.total or cell.fitW ~= priceFitW then
         local fs = cell._price
         fs:SetText(FormatValue(r.total))
-        if fs:GetStringWidth() > priceFitW then fs:SetText(FormatValue(r.total, true)) end
+        if fs:GetStringWidth() > priceFitW then
+            fs:SetText(FormatValue(r.total, true))
+        end
         cell.fitW = priceFitW
     end
     -- A different stack under the cursor while Ctrl is held: see the double-click guard.
-    if moved and cell.id and IsControlKeyDown() and cell:IsMouseOver() then FlagSwap(cell) end
+    if moved and cell.id and IsControlKeyDown() and cell:IsMouseOver() then
+        FlagSwap(cell)
+    end
     cell.id, cell.bag, cell.slot, cell.count = r.id, r.bag, r.slot, r.count
     cell.icon, cell.total, cell.quality, cell.link = r.icon, r.total, r.quality, r.link
-    if not cell:IsShown() then cell:Show() end
-    if changed and GameTooltip:IsOwned(cell) then ShowCellTooltip(cell) end
+    if not cell:IsShown() then
+        cell:Show()
+    end
+    if changed and GameTooltip:IsOwned(cell) then
+        ShowCellTooltip(cell)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -589,7 +706,9 @@ local function TitleWidth()
     if titleW == 0 then
         probeFS:SetFormattedText(CludesUI.L("Bag Slots - %d/%d"), 888, 888)
         local w = probeFS:GetStringWidth() or 0
-        if w >= 1 then titleW = math.ceil(w) end
+        if w >= 1 then
+            titleW = math.ceil(w)
+        end
     end
     return titleW
 end
@@ -605,15 +724,21 @@ local function WindowSize(limit)
     return PP.Snap(w), PP.Snap((titled and TITLE_H or 0) + iconSz + 3 + PRICE_H), rowW
 end
 
-local lay = {}  -- the geometry last applied
+local lay = {} -- the geometry last applied
 local function Layout(limit)
     local iconSz = Get("iconSize")
     local pitch = iconSz + Get("iconSpacing")
     local top = Get("priceSide") == "top"
     local titled = Get("showFreeSlots") and true or false
-    local mult = PP.mult  -- the pixel grid the size and the centre snap to (moves with the UI scale)
-    if iconSz == lay.icon and pitch == lay.pitch and top == lay.top
-        and limit == lay.limit and titled == lay.titled and mult == lay.mult then
+    local mult = PP.mult -- the pixel grid the size and the centre snap to (moves with the UI scale)
+    if
+        iconSz == lay.icon
+        and pitch == lay.pitch
+        and top == lay.top
+        and limit == lay.limit
+        and titled == lay.titled
+        and mult == lay.mult
+    then
         return
     end
     lay.icon, lay.pitch, lay.top, lay.limit, lay.titled, lay.mult = iconSz, pitch, top, limit, titled, mult
@@ -640,7 +765,9 @@ local function Layout(limit)
     emptyFS:ClearAllPoints()
     emptyFS:SetPoint("CENTER", frame, "CENTER", 0, -titleH / 2)
     -- The centre snap follows the size; Unlock Mode owns the spot while it is open.
-    if not CludesUI._unlockActive then ApplyPosition() end
+    if not CludesUI._unlockActive then
+        ApplyPosition()
+    end
 end
 
 local function CountBagSlots()
@@ -674,14 +801,18 @@ end
 -------------------------------------------------------------------------------
 local function OnEvent(_, event, arg1, arg2)
     if event == "BAG_UPDATE" then
-        if arg1 and arg1 >= 0 and arg1 <= NUM_BAG_SLOTS then dirty[arg1] = true end
-        return  -- BAG_UPDATE_DELAYED ends the burst
+        if arg1 and arg1 >= 0 and arg1 <= NUM_BAG_SLOTS then
+            dirty[arg1] = true
+        end
+        return -- BAG_UPDATE_DELAYED ends the burst
     elseif event == "PLAYER_REGEN_DISABLED" then
         CloseConfirm()
         Disarm()
         return
     elseif event == "GET_ITEM_INFO_RECEIVED" then
-        if not pending[arg1] then return end
+        if not pending[arg1] then
+            return
+        end
         pending[arg1] = nil
         if arg2 == false then
             failed[arg1] = true
@@ -689,7 +820,7 @@ local function OnEvent(_, event, arg1, arg2)
             DirtyHolders(arg1)
         end
     elseif event == "BAG_UPDATE_DELAYED" then
-        CloseConfirm()  -- the stack a confirmation names may have moved
+        CloseConfirm() -- the stack a confirmation names may have moved
     elseif event == "BAG_CONTAINER_UPDATE" then
         DirtyAll()
     elseif event == "EQUIPMENT_SETS_CHANGED" then
@@ -700,7 +831,9 @@ end
 eventFrame:SetScript("OnEvent", OnEvent)
 
 local function BuildFrame()
-    if frame then return end
+    if frame then
+        return
+    end
     frame = CreateFrame("Frame", "CludesUIJunkList", UIParent)
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
@@ -710,7 +843,9 @@ local function BuildFrame()
     -- takes the mouse, so the window is click-through; moving it is Unlock
     -- Mode's job.
     local hdrBg = CreateFrame("Frame", nil, frame)
-    hdrBg:SetPoint("TOPLEFT"); hdrBg:SetPoint("TOPRIGHT"); hdrBg:SetHeight(TITLE_H)
+    hdrBg:SetPoint("TOPLEFT")
+    hdrBg:SetPoint("TOPRIGHT")
+    hdrBg:SetHeight(TITLE_H)
 
     titleFS = NewText(frame, 11)
     titleFS:SetPoint("LEFT", hdrBg, "LEFT", 0, 0)
@@ -734,14 +869,18 @@ end
 --  has no unregister, so the callback is registered once and checks the option.
 -------------------------------------------------------------------------------
 local function OnPricesUpdated()
-    if not (auctionOn and active) then return end
+    if not (auctionOn and active) then
+        return
+    end
     Forget("total")
     RequestRefresh()
 end
 
 local function HookPriceUpdates()
     local api = module.AuctionAPI()
-    if not (api and api.RegisterForDBUpdate) then return end
+    if not (api and api.RegisterForDBUpdate) then
+        return
+    end
     dbHooked = true
     pcall(api.RegisterForDBUpdate, "CludesUI", OnPricesUpdated)
 end
@@ -750,20 +889,28 @@ end
 --  Refresh: re-read the dirty bags, pick the list, repaint what changed
 -------------------------------------------------------------------------------
 Refresh = function()
-    if not active then return end
+    if not active then
+        return
+    end
     local ah = Get("auctionPrices") == true
     if ah ~= auctionOn then
         auctionOn = ah
         Forget("total")
     end
-    if ah and not dbHooked then HookPriceUpdates() end
+    if ah and not dbHooked then
+        HookPriceUpdates()
+    end
     for bag = 0, NUM_BAG_SLOTS do
-        if dirty[bag] then ReadBag(bag) end
+        if dirty[bag] then
+            ReadBag(bag)
+        end
     end
     local limit = Limit()
     Select(limit)
     Layout(limit)
-    for i = 1, #cells do PaintCell(cells[i], best[i]) end
+    for i = 1, #cells do
+        PaintCell(cells[i], best[i])
+    end
     UpdateTitle()
     emptyFS:SetShown(bestN == 0)
     -- GET_ITEM_INFO_RECEIVED only while an item is still loading.
@@ -785,14 +932,16 @@ end
 -- Active = shown, with its events registered. While enabled but hidden by the
 -- visibility setting it costs only that setting's check.
 local function SetActive(on)
-    if on == active then return end
+    if on == active then
+        return
+    end
     active = on
     if on then
         eventFrame:RegisterEvent("BAG_UPDATE")
         eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
         eventFrame:RegisterEvent("BAG_CONTAINER_UPDATE")
         eventFrame:RegisterEvent("EQUIPMENT_SETS_CHANGED")
-        DirtyAll()  -- nothing was watched while inactive
+        DirtyAll() -- nothing was watched while inactive
         RequestRefresh()
         return
     end
@@ -802,7 +951,9 @@ local function SetActive(on)
     wipe(pending)
     ClearSwapFlags()
     for i = 1, #cells do
-        if GameTooltip:IsOwned(cells[i]) then GameTooltip:Hide() end
+        if GameTooltip:IsOwned(cells[i]) then
+            GameTooltip:Hide()
+        end
     end
     frame:Hide()
 end
@@ -821,7 +972,9 @@ local function UpdateVisibility()
             bagSpaceWatch:UnregisterAllEvents()
         end
     end
-    if watch then show = CountBagSlots() < Get("freeSlotThreshold") end
+    if watch then
+        show = CountBagSlots() < Get("freeSlotThreshold")
+    end
     SetActive(show)
 end
 bagSpaceWatch:SetScript("OnEvent", UpdateVisibility)
@@ -838,15 +991,19 @@ local function Apply()
         -- is measured again and every price fitted again.
         titleW = 0
         wipe(lay)
-        for i = 1, #cells do cells[i].fitW = nil end
+        for i = 1, #cells do
+            cells[i].fitW = nil
+        end
         Layout(Limit())
-        if not CludesUI._unlockActive then ApplyPosition() end
+        if not CludesUI._unlockActive then
+            ApplyPosition()
+        end
     elseif visRegistered then
         visRegistered = false
         CludesUI.UnregisterVisibilityUpdater(UpdateVisibility)
     end
     UpdateVisibility()
-    RequestRefresh()  -- settings may change what lists and how it looks
+    RequestRefresh() -- settings may change what lists and how it looks
 end
 
 -- Entry points for the options page and Bags.
@@ -866,15 +1023,23 @@ CludesUI._JunkItems = {
 }
 
 F.Start(Apply, {
-    key = "CUI_JunkList", label = "Junk Items", order = 729,
+    key = "CUI_JunkList",
+    label = "Junk Items",
+    order = 729,
     -- Apply builds and lays out the window whenever it is on.
-    frame = function() return frame end,
+    frame = function()
+        return frame
+    end,
     -- Follows Items Shown, the icon settings and Show Empty Bag Slots, so
     -- unlock mode moves the window but never resizes it.
     size = function()
-        if frame then return frame:GetWidth(), frame:GetHeight() end
+        if frame then
+            return frame:GetWidth(), frame:GetHeight()
+        end
         local iconSz, n = Get("iconSize"), Limit()
         return n * iconSz + (n - 1) * Get("iconSpacing"), iconSz + 3 + PRICE_H
     end,
-    snap = true, noAnchorTarget = true, noSizeMatchTarget = true,
+    snap = true,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

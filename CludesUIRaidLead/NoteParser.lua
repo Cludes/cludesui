@@ -25,7 +25,9 @@
 --  gives addons no phase or boss cast events, so those lines are skipped and
 --  counted, never guessed at.
 -------------------------------------------------------------------------------
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, ns = ...
 ns = ns or {}
 
@@ -33,13 +35,23 @@ local Parser = {}
 ns.NoteParser = Parser
 
 local MARKERS = {
-    star = 1, circle = 2, diamond = 3, triangle = 4, moon = 5, square = 6, cross = 7, x = 7, skull = 8,
+    star = 1,
+    circle = 2,
+    diamond = 3,
+    triangle = 4,
+    moon = 5,
+    square = 6,
+    cross = 7,
+    x = 7,
+    skull = 8,
 }
 
 --- Seconds from "{time:...}" contents, or nil. "1:30" -> 90, "95" -> 95.
 function Parser.Seconds(spec)
     local m, s = spec:match("^%s*(%d+):(%d+%.?%d*)%s*$")
-    if m then return tonumber(m) * 60 + tonumber(s) end
+    if m then
+        return tonumber(m) * 60 + tonumber(s)
+    end
     local only = spec:match("^%s*(%d+%.?%d*)%s*$")
     return only and tonumber(only) or nil
 end
@@ -55,7 +67,9 @@ local function Chunks(text)
         local pos = 1
         while true do
             local a = line:find("{time:", pos, true)
-            if not a then break end
+            if not a then
+                break
+            end
             starts[#starts + 1] = a
             pos = a + 6
         end
@@ -73,7 +87,9 @@ function Parser.Words(text)
     local words = {}
     for w in text:gmatch("[^%s%p%d]+[%-]?[^%s%p%d]*") do
         local name = w:match("^([^%-]+)") or w
-        if #name >= 2 then words[#words + 1] = name end
+        if #name >= 2 then
+            words[#words + 1] = name
+        end
     end
     return words
 end
@@ -98,12 +114,29 @@ function Parser.Parse(text, spellName)
                     -- Tags that pick who the line is for.
                     body = body:gsub("{(%a+)}", function(tag)
                         local t = tag:lower()
-                        if t == "everyone" then entry.everyone = true; return "" end
-                        if t == "tank" or t == "tanks" then entry.roles = entry.roles or {}; entry.roles.TANK = true; return "" end
-                        if t == "healer" or t == "healers" or t == "heal" then entry.roles = entry.roles or {}; entry.roles.HEALER = true; return "" end
-                        if t == "dps" or t == "damager" then entry.roles = entry.roles or {}; entry.roles.DAMAGER = true; return "" end
+                        if t == "everyone" then
+                            entry.everyone = true
+                            return ""
+                        end
+                        if t == "tank" or t == "tanks" then
+                            entry.roles = entry.roles or {}
+                            entry.roles.TANK = true
+                            return ""
+                        end
+                        if t == "healer" or t == "healers" or t == "heal" then
+                            entry.roles = entry.roles or {}
+                            entry.roles.HEALER = true
+                            return ""
+                        end
+                        if t == "dps" or t == "damager" then
+                            entry.roles = entry.roles or {}
+                            entry.roles.DAMAGER = true
+                            return ""
+                        end
                         local mark = MARKERS[t]
-                        if mark then return "{rt" .. mark .. "}" end
+                        if mark then
+                            return "{rt" .. mark .. "}"
+                        end
                         return "{" .. tag .. "}"
                     end)
                     -- Spells become their names.
@@ -120,12 +153,16 @@ function Parser.Parse(text, spellName)
                     end
                     entry.names = names
                     entry.text = body:gsub("^[%s%-:]+", ""):gsub("%s+$", ""):gsub("%s%s+", " ")
-                    if entry.text ~= "" then list[#list + 1] = entry end
+                    if entry.text ~= "" then
+                        list[#list + 1] = entry
+                    end
                 end
             end
         end
     end
-    table.sort(list, function(a, b) return a.at < b.at end)
+    table.sort(list, function(a, b)
+        return a.at < b.at
+    end)
     return list, skipped
 end
 
@@ -137,17 +174,25 @@ end
 --- members is for them only (other words on the line, like "soak", are not
 --- group members and so do not count).
 function Parser.IsFor(entry, me, role, roster)
-    if entry.everyone then return true end
-    if entry.roles and role and entry.roles[role] then return true end
+    if entry.everyone then
+        return true
+    end
+    if entry.roles and role and entry.roles[role] then
+        return true
+    end
     local mine = me and me:lower()
     local namedSomeone = false
     for _, n in ipairs(entry.names or {}) do
         if roster and roster[n] then
             namedSomeone = true
-            if n == mine then return true end
+            if n == mine then
+                return true
+            end
         end
     end
-    if entry.roles then return false end
+    if entry.roles then
+        return false
+    end
     return not namedSomeone
 end
 

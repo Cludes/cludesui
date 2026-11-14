@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_FriendsList.lua
 --  The custom friends list: rows of our own drawn over Blizzard's Social UI
@@ -96,8 +98,10 @@ local ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 local BTN_NORMAL, BTN_PUSHED = "common-button-tertiary-square-normal", "common-button-tertiary-square-pressed"
 local BTN_NATIVE, BTN_SHARE, BTN_MIN, BTN_FLAT, BTN_EXTRA = 34, 0.52, 16, 28, 2
 local STATUS_ATLAS = {
-    online = "friends-status-online", away = "friends-status-away",
-    busy = "friends-status-busy", offline = "friends-status-offline",
+    online = "friends-status-online",
+    away = "friends-status-away",
+    busy = "friends-status-busy",
+    offline = "friends-status-offline",
 }
 -- The status icon against the end of the text before it: its art keeps empty
 -- edges, so it sits a little into the text's box and above its middle
@@ -110,11 +114,11 @@ local PAD_TOP, PAD_BOTTOM = 6, 6
 -- A tile's inset from the sides of the scroll area: those of Blizzard's own
 -- list, so a tile is as wide as one of its cards
 local PAD_LEFT, PAD_RIGHT = 10, 7
-local TEXT_GAP = 4              -- between the icon square and the text
-local CHAR_GAP = 5              -- between the Battle.net name and the character after it
-local CHAR_LIFT = 1             -- the character text's bottom above the name's
-local EDGE_PAD = 4              -- between a row's right edge and what sits there
-local NOTE_MAX = 127            -- Blizzard's own limit on a friend note
+local TEXT_GAP = 4 -- between the icon square and the text
+local CHAR_GAP = 5 -- between the Battle.net name and the character after it
+local CHAR_LIFT = 1 -- the character text's bottom above the name's
+local EDGE_PAD = 4 -- between a row's right edge and what sits there
+local NOTE_MAX = 127 -- Blizzard's own limit on a friend note
 local GROUP_NAME_MAX = 32
 
 local FAV, UNGROUPED = "_favorites", "_ungrouped"
@@ -123,19 +127,19 @@ local KIND_HEADER, KIND_FRIEND = 0, 1
 -- The kit's host (settings, look, font): set once by FL.Start
 local host
 local driver, root, sf, content, bar, flusher, ev, filterX
-local active = false            -- live: shown, listening
-local covering = false          -- Blizzard's list is hidden under ours
+local active = false -- live: shown, listening
+local covering = false -- Blizzard's list is hidden under ours
 local viewH, rowW = 0, 0
 local tileH, tier = TILE_DEFAULT, 2
-local ring = 8                  -- pool slots: more than the items one view spans
+local ring = 8 -- pool slots: more than the items one view spans
 local styleGen, modelGen, visGen = 0, 0, 0
 local dirtyFull, dirtyInvites = false, false
 local searchActive = false
-local searchCollapsed = {}      -- sections folded during a search, for that search alone
+local searchCollapsed = {} -- sections folded during a search, for that search alone
 local hoverRow
-local selectedId                -- the selected friend's account id (a left click picks it)
-local rowPool, headerPool = {}, {}     -- by ring slot
-local rowList, headerList = {}, {}     -- every frame made, in order
+local selectedId -- the selected friend's account id (a left click picks it)
+local rowPool, headerPool = {}, {} -- by ring slot
+local rowList, headerList = {}, {} -- every frame made, in order
 local items, itemCount = {}, 0
 local records, recordCount = {}, 0
 local byId, byIndex = {}, {}
@@ -160,20 +164,35 @@ end
 --  Group store
 -------------------------------------------------------------------------------
 local function Store()
-    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
     local g = CludesUIDB.global
-    if type(g) ~= "table" then g = {}; CludesUIDB.global = g end
-    if type(g.friendGroups) ~= "table" then g.friendGroups = {} end
-    if type(g.friendGroupsByTag) ~= "table" then g.friendGroupsByTag = {} end
-    if type(g.friendGroupColors) ~= "table" then g.friendGroupColors = {} end
-    if type(g.friendGroupOrder) ~= "table" then g.friendGroupOrder = {} end
+    if type(g) ~= "table" then
+        g = {}
+        CludesUIDB.global = g
+    end
+    if type(g.friendGroups) ~= "table" then
+        g.friendGroups = {}
+    end
+    if type(g.friendGroupsByTag) ~= "table" then
+        g.friendGroupsByTag = {}
+    end
+    if type(g.friendGroupColors) ~= "table" then
+        g.friendGroupColors = {}
+    end
+    if type(g.friendGroupOrder) ~= "table" then
+        g.friendGroupOrder = {}
+    end
     return g
 end
 
 local function FindGroup(g, name)
     local list = g.friendGroups
     for i = 1, #list do
-        if list[i].name == name then return list[i], i end
+        if list[i].name == name then
+            return list[i], i
+        end
     end
 end
 
@@ -205,7 +224,10 @@ local function ValidOrder(g)
         if not orderSeen[name] then
             local at = n + 1
             for k = 1, n do
-                if orderBuf[k] == UNGROUPED then at = k; break end
+                if orderBuf[k] == UNGROUPED then
+                    at = k
+                    break
+                end
             end
             table.insert(orderBuf, at, name)
             orderSeen[name] = true
@@ -219,29 +241,44 @@ local function ValidOrder(g)
     local same = #saved == n
     if same then
         for i = 1, n do
-            if saved[i] ~= orderBuf[i] then same = false; break end
+            if saved[i] ~= orderBuf[i] then
+                same = false
+                break
+            end
         end
     end
     if not same then
         local fresh = {}
-        for i = 1, n do fresh[i] = orderBuf[i] end
+        for i = 1, n do
+            fresh[i] = orderBuf[i]
+        end
         g.friendGroupOrder = fresh
     end
     return orderBuf, n
 end
 
 local function IsCollapsed(g, key)
-    if key == FAV then return g.friendFavCollapsed == true end
-    if key == UNGROUPED then return g.friendUngroupedCollapsed == true end
+    if key == FAV then
+        return g.friendFavCollapsed == true
+    end
+    if key == UNGROUPED then
+        return g.friendUngroupedCollapsed == true
+    end
     local grp = FindGroup(g, key)
     return grp ~= nil and grp.collapsed == true
 end
 
 local function CleanGroupName(text)
-    if type(text) ~= "string" then return nil end
+    if type(text) ~= "string" then
+        return nil
+    end
     local name = strtrim(text)
-    if name == "" or name == FAV or name == UNGROUPED then return nil end
-    if #name > GROUP_NAME_MAX then name = name:sub(1, GROUP_NAME_MAX) end
+    if name == "" or name == FAV or name == UNGROUPED then
+        return nil
+    end
+    if #name > GROUP_NAME_MAX then
+        name = name:sub(1, GROUP_NAME_MAX)
+    end
     return name
 end
 
@@ -255,7 +292,9 @@ local keyById, sortById = {}, {}
 local function FriendKey(info)
     local id = info.bnetAccountID
     local key = keyById[id]
-    if key ~= nil then return key or nil end
+    if key ~= nil then
+        return key or nil
+    end
     local tag = info.battleTag
     if type(tag) == "string" and not IsSecret(tag) and tag ~= "" then
         key = tag
@@ -272,7 +311,9 @@ end
 local function SortName(info)
     local id = info.bnetAccountID
     local name = sortById[id]
-    if name then return name end
+    if name then
+        return name
+    end
     local tag = info.battleTag
     if type(tag) == "string" and not IsSecret(tag) and tag ~= "" then
         name = tag:lower()
@@ -291,7 +332,9 @@ local function Priority(gi)
         if cp == BNET_CLIENT_WOW then
             return (gi.wowProjectID == WOW_PROJECT_ID or gi.wowProjectID == nil) and 1 or 2
         end
-        if not cp or cp == "" or cp == "BSAp" or cp == "App" then return 4 end
+        if not cp or cp == "" or cp == "BSAp" or cp == "App" then
+            return 4
+        end
         return 3
     end
     return 5
@@ -307,8 +350,12 @@ local function IsFavorite(info)
     fav = not IsSecret(fav) and fav == true
     local id = info.bnetAccountID
     local asked = favAsked[id]
-    if asked == nil then return fav end
-    if asked == fav then favAsked[id] = nil end
+    if asked == nil then
+        return fav
+    end
+    if asked == fav then
+        favAsked[id] = nil
+    end
     return asked
 end
 
@@ -316,17 +363,25 @@ end
 -- favorite, else the ungrouped friends
 local function BucketOf(g, info, key)
     local name = key and g.friendGroupsByTag[key]
-    if name and FindGroup(g, name) then return name end
-    if IsFavorite(info) then return FAV end
+    if name and FindGroup(g, name) then
+        return name
+    end
+    if IsFavorite(info) then
+        return FAV
+    end
     return UNGROUPED
 end
 
 -- The group an old Friends build wrote into a friend note, read once so those
 -- groups come back. Nothing is written to the note.
 local function MigrateNoteTags(g)
-    if g.friendGroupsTagMigrated then return end
+    if g.friendGroupsTagMigrated then
+        return
+    end
     local total = BNGetNumFriends() or 0
-    if total == 0 then return end
+    if total == 0 then
+        return
+    end
     g.friendGroupsTagMigrated = true
     for i = 1, total do
         local info = C_BattleNet.GetFriendAccountInfo(i)
@@ -361,7 +416,9 @@ local function FiltersOn(view)
     local selected = view.selectedSearchFilterOptions
     if type(selected) == "table" then
         for _, on in pairs(selected) do
-            if on then return true end
+            if on then
+                return true
+            end
         end
     end
     return false
@@ -383,7 +440,9 @@ local function ReadBlizzardList(view, into)
         for k = 1, #nodes do
             local data = nodes[k]:GetData()
             local index = data and data.friendIndex
-            if index then into[index] = true end
+            if index then
+                into[index] = true
+            end
         end
     end
 end
@@ -391,9 +450,13 @@ end
 -- The friend indexes a search or filter lets through; nil with none active,
 -- and when Blizzard's list cannot be read (every friend shows then)
 local function SearchSet(view, filtered)
-    if not (filtered or SearchTextOn(view)) then return nil end
+    if not (filtered or SearchTextOn(view)) then
+        return nil
+    end
     wipe(allowedSet)
-    if not pcall(ReadBlizzardList, view, allowedSet) then return nil end
+    if not pcall(ReadBlizzardList, view, allowedSet) then
+        return nil
+    end
     return allowedSet
 end
 
@@ -403,8 +466,12 @@ end
 local buckets, onlineIn = {}, {}
 
 local function CompareRecords(a, b)
-    if a.priority ~= b.priority then return a.priority < b.priority end
-    if a.sortName ~= b.sortName then return a.sortName < b.sortName end
+    if a.priority ~= b.priority then
+        return a.priority < b.priority
+    end
+    if a.sortName ~= b.sortName then
+        return a.sortName < b.sortName
+    end
     return a.index < b.index
 end
 
@@ -426,13 +493,19 @@ local function Rebuild()
 
     local view = View()
     local filtered = FiltersOn(view)
-    if filterX then filterX:SetShown(filtered) end
+    if filterX then
+        filterX:SetShown(filtered)
+    end
     local allowed = SearchSet(view, filtered)
     -- The sections folded during a search open again as it ends
-    if searchActive and not allowed then wipe(searchCollapsed) end
+    if searchActive and not allowed then
+        wipe(searchCollapsed)
+    end
     searchActive = allowed ~= nil
 
-    for _, list in pairs(buckets) do wipe(list) end
+    for _, list in pairs(buckets) do
+        wipe(list)
+    end
     wipe(onlineIn)
     wipe(byId)
     wipe(byIndex)
@@ -465,11 +538,15 @@ local function Rebuild()
                     buckets[rec.bucket] = list
                 end
                 list[#list + 1] = rec
-                if rec.online then onlineIn[rec.bucket] = (onlineIn[rec.bucket] or 0) + 1 end
+                if rec.online then
+                    onlineIn[rec.bucket] = (onlineIn[rec.bucket] or 0) + 1
+                end
             end
         end
     end
-    for i = n + 1, recordCount do records[i].info = nil end
+    for i = n + 1, recordCount do
+        records[i].info = nil
+    end
     recordCount = n
 
     local order, orderCount = ValidOrder(g)
@@ -483,7 +560,9 @@ local function Rebuild()
             rendered[renderedCount] = key
         end
     end
-    for i = renderedCount + 1, #rendered do rendered[i] = nil end
+    for i = renderedCount + 1, #rendered do
+        rendered[i] = nil
+    end
 
     itemCount = 0
     local y = PAD_TOP
@@ -519,31 +598,41 @@ local function Rebuild()
         end
         y = y + GROUP_GAP
     end
-    for i = itemCount + 1, #items do items[i].rec = nil end
+    for i = itemCount + 1, #items do
+        items[i].rec = nil
+    end
     content:SetHeight(math.max(1, y + PAD_BOTTOM))
 end
 
 -------------------------------------------------------------------------------
 --  Group changes (each one redraws at once: it is the user's own click)
 -------------------------------------------------------------------------------
-local Refill   -- defined with the layout below
+local Refill -- defined with the layout below
 
 local function CreateGroup(text, assignKey)
     local name = CleanGroupName(text)
-    if not name then return end
+    if not name then
+        return
+    end
     local g = Store()
     if not FindGroup(g, name) then
         g.friendGroups[#g.friendGroups + 1] = { name = name, collapsed = false }
     end
-    if assignKey then g.friendGroupsByTag[assignKey] = name end
-    if active then Refill() end
+    if assignKey then
+        g.friendGroupsByTag[assignKey] = name
+    end
+    if active then
+        Refill()
+    end
 end
 
 local function RenameGroup(old, text)
     local name = CleanGroupName(text)
     local g = Store()
     local grp = FindGroup(g, old)
-    if not (name and grp) or name == old or FindGroup(g, name) then return end
+    if not (name and grp) or name == old or FindGroup(g, name) then
+        return
+    end
     grp.name = name
     if g.friendGroupColors[old] then
         g.friendGroupColors[name] = g.friendGroupColors[old]
@@ -551,31 +640,46 @@ local function RenameGroup(old, text)
     end
     local order = g.friendGroupOrder
     for i = 1, #order do
-        if order[i] == old then order[i] = name; break end
+        if order[i] == old then
+            order[i] = name
+            break
+        end
     end
     for key, grpName in pairs(g.friendGroupsByTag) do
-        if grpName == old then g.friendGroupsByTag[key] = name end
+        if grpName == old then
+            g.friendGroupsByTag[key] = name
+        end
     end
-    if active then Refill() end
+    if active then
+        Refill()
+    end
 end
 
 local function DeleteGroup(name)
     local g = Store()
     local _, at = FindGroup(g, name)
-    if not at then return end
+    if not at then
+        return
+    end
     table.remove(g.friendGroups, at)
     for key, grpName in pairs(g.friendGroupsByTag) do
-        if grpName == name then g.friendGroupsByTag[key] = nil end
+        if grpName == name then
+            g.friendGroupsByTag[key] = nil
+        end
     end
     g.friendGroupColors[name] = nil
-    if active then Refill() end
+    if active then
+        Refill()
+    end
 end
 
 -- Battle.net's favorite switch for a friend, sent only when the friend is not
 -- already that, or on its way to it
 local function AskFavorite(id, want)
     local info = C_BattleNet.GetAccountInfoByID(id)
-    if not info or IsFavorite(info) == want then return end
+    if not info or IsFavorite(info) == want then
+        return
+    end
     favAsked[id] = want
     BNSetFriendFavoriteFlag(id, want)
 end
@@ -586,14 +690,18 @@ end
 local function PlaceFriend(id, key, target)
     local byTag = Store().friendGroupsByTag
     if target == FAV or target == UNGROUPED then
-        if key then byTag[key] = nil end
+        if key then
+            byTag[key] = nil
+        end
         AskFavorite(id, target == FAV)
     elseif key then
         byTag[key] = target
     else
         return
     end
-    if active then Refill() end
+    if active then
+        Refill()
+    end
 end
 
 local function ToggleCollapsed(key)
@@ -604,51 +712,73 @@ local function ToggleCollapsed(key)
         g.friendUngroupedCollapsed = not g.friendUngroupedCollapsed
     else
         local grp = FindGroup(g, key)
-        if grp then grp.collapsed = not grp.collapsed end
+        if grp then
+            grp.collapsed = not grp.collapsed
+        end
     end
-    if active then Refill() end
+    if active then
+        Refill()
+    end
 end
 
 -- Swaps a section with the next one shown above (-1) or below (1) it
 local function MoveGroup(key, dir)
     local at
     for i = 1, renderedCount do
-        if rendered[i] == key then at = i; break end
+        if rendered[i] == key then
+            at = i
+            break
+        end
     end
     local other = at and rendered[at + dir]
-    if not other then return end
+    if not other then
+        return
+    end
     local g = Store()
     ValidOrder(g)
     local order = g.friendGroupOrder
     local a, b
     for i = 1, #order do
-        if order[i] == key then a = i elseif order[i] == other then b = i end
+        if order[i] == key then
+            a = i
+        elseif order[i] == other then
+            b = i
+        end
     end
     if a and b then
         order[a], order[b] = order[b], order[a]
-        if active then Refill() end
+        if active then
+            Refill()
+        end
     end
 end
 
 local function PromptNewGroup(assignKey)
     CludesUI:ShowInputPopup({
-        title       = "New Friend Group",
-        message     = "Enter a name for the new group:",
+        title = "New Friend Group",
+        message = "Enter a name for the new group:",
         placeholder = "Enter name...",
         confirmText = "Create",
-        cancelText  = "Cancel",
-        maxLetters  = GROUP_NAME_MAX,
-        onConfirm   = function(text) CreateGroup(text, assignKey) end,
+        cancelText = "Cancel",
+        maxLetters = GROUP_NAME_MAX,
+        onConfirm = function(text)
+            CreateGroup(text, assignKey)
+        end,
     })
 end
 
 local function PromptDeleteGroup(name)
     CludesUI:ShowConfirmPopup({
-        title       = "Delete Friend Group",
-        message     = CludesUI.Lf("Delete the group %1$s? Its friends go back to Favorites or the Friends section.", name),
+        title = "Delete Friend Group",
+        message = CludesUI.Lf(
+            "Delete the group %1$s? Its friends go back to Favorites or the Friends section.",
+            name
+        ),
         confirmText = "Delete",
-        cancelText  = "Cancel",
-        onConfirm   = function() DeleteGroup(name) end,
+        cancelText = "Cancel",
+        onConfirm = function()
+            DeleteGroup(name)
+        end,
     })
 end
 
@@ -713,10 +843,14 @@ end
 -- link covers the row, so both land here.
 local function RowEnter(hit)
     local f = hit:GetParent()
-    if hoverRow == f then return end
+    if hoverRow == f then
+        return
+    end
     local old = hoverRow
     hoverRow = f
-    if old then Light(old) end
+    if old then
+        Light(old)
+    end
     Light(f)
     if f.rec and f.rec.info then
         CludesUI.ShowWidgetTooltip(f, FriendTooltip(f.rec), TIP_OPTS)
@@ -725,7 +859,9 @@ end
 
 local function RowLeave(hit)
     local f = hit:GetParent()
-    if hoverRow ~= f then return end
+    if hoverRow ~= f then
+        return
+    end
     hoverRow = nil
     Light(f)
     CludesUI.HideWidgetTooltip()
@@ -745,7 +881,9 @@ local function ToggleSelected(f)
     selectedId = (selectedId ~= f.rec.id) and f.rec.id or nil
     for i = 1, #rowList do
         local row = rowList[i]
-        if row.item then SetSelected(row, row.rec.id == selectedId) end
+        if row.item then
+            SetSelected(row, row.rec.id == selectedId)
+        end
     end
 end
 
@@ -762,18 +900,28 @@ end
 --  combat gets its layer as combat ends and keeps the link's own left click
 --  (a whisper) until then.
 -------------------------------------------------------------------------------
-local unrouted = {}     -- rows made in combat: their click layer still to route
+local unrouted = {} -- rows made in combat: their click layer still to route
 
 local function SetLink(f)
     local info = f.rec.info
     -- SetFormattedText, so a name the game keeps secret still goes in
-    pcall(f.link.SetFormattedText, f.link, LINK_FORMAT, info.accountName, f.rec.id, info.accountName, LINK_FILLER)
+    pcall(
+        f.link.SetFormattedText,
+        f.link,
+        LINK_FORMAT,
+        info.accountName,
+        f.rec.id,
+        info.accountName,
+        LINK_FILLER
+    )
 end
 
 -- A release on the click layer: the left button selects
 local function CatchRelease(catch, button)
     local f = catch:GetParent()
-    if button == "LeftButton" and f.item and f.rec and catch:IsMouseOver() then ToggleSelected(f) end
+    if button == "LeftButton" and f.item and f.rec and catch:IsMouseOver() then
+        ToggleSelected(f)
+    end
 end
 
 -- The layer's routing (out of combat only), then the layer goes over the link
@@ -798,7 +946,9 @@ end
 -- renumbers friends as they come and go; a rebuild follows within a frame)
 local function LiveIndex(rec)
     local info = rec and C_BattleNet.GetFriendAccountInfo(rec.index)
-    if info and info.bnetAccountID == rec.id then return rec.index end
+    if info and info.bnetAccountID == rec.id then
+        return rec.index
+    end
 end
 
 -- What the button would do, and in red why it cannot (Blizzard's invite
@@ -806,7 +956,9 @@ end
 local function InviteEnter(btn)
     local index = LiveIndex(btn:GetParent().rec)
     local U = FriendsListUtil
-    if not (index and U and U.GetBattleNetFriendInviteInfo) then return end
+    if not (index and U and U.GetBattleNetFriendInviteInfo) then
+        return
+    end
     local text = U.GetBattleNetFriendInviteTypeLabel(U.GetBattleNetFriendInviteInfo(index).inviteType) or ""
     local why
     if not btn:IsEnabled() and btn.restriction and U.GetBattleNetFriendPartyInviteRestrictionText then
@@ -816,7 +968,9 @@ local function InviteEnter(btn)
         why = CludesUI.COLOR_CODES.BAD .. why .. "|r"
         text = text ~= "" and (text .. "\n" .. why) or why
     end
-    if text ~= "" then CludesUI.ShowWidgetTooltip(btn, text) end
+    if text ~= "" then
+        CludesUI.ShowWidgetTooltip(btn, text)
+    end
 end
 
 local function InviteLeave()
@@ -825,7 +979,9 @@ end
 
 -- The icon steps down and right while the button is held, as Blizzard's does
 local function InvitePress(btn)
-    if btn:IsEnabled() then btn.icon:SetPoint("CENTER", btn, "CENTER", 1, -1) end
+    if btn:IsEnabled() then
+        btn.icon:SetPoint("CENTER", btn, "CENTER", 1, -1)
+    end
 end
 
 local function InviteRelease(btn)
@@ -859,8 +1015,11 @@ local function ShowAccountMenu(btn, index)
             end
             local accountID = gi.gameAccountID
             menu[#menu + 1] = {
-                text = label, noLoc = true,
-                isDisabled = function() return not canInvite end,
+                text = label,
+                noLoc = true,
+                isDisabled = function()
+                    return not canInvite
+                end,
                 onClick = function()
                     local fresh = C_BattleNet.GetGameAccountInfoByID(accountID)
                     if fresh and fresh.playerGuid then
@@ -870,14 +1029,20 @@ local function ShowAccountMenu(btn, index)
             }
         end
     end
-    if #menu > 0 then CludesUI.ShowContextMenu(btn, menu) end
+    if #menu > 0 then
+        CludesUI.ShowContextMenu(btn, menu)
+    end
 end
 
 local function InviteClick(btn)
-    if not btn:IsEnabled() then return end
+    if not btn:IsEnabled() then
+        return
+    end
     local index = LiveIndex(btn:GetParent().rec)
     local U = FriendsListUtil
-    if not (index and U and U.InviteOrRequestToJoin) then return end
+    if not (index and U and U.InviteOrRequestToJoin) then
+        return
+    end
     local direct = U.GetBattleNetFriendGameAccountInfoIfExactlyOneDirectInviteTargetExists(index)
     if direct then
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -894,15 +1059,25 @@ end
 local function UpdateInvite(f, rec)
     local btn = f.PartyButton
     local U = FriendsListUtil
-    if not (f.playing and U and U.GetBattleNetFriendPartyInviteRestriction and BattleNetFriendPartyInviteRestrictionType) then
+    if
+        not (
+            f.playing
+            and U
+            and U.GetBattleNetFriendPartyInviteRestriction
+            and BattleNetFriendPartyInviteRestrictionType
+        )
+    then
         btn:Hide()
         return false
     end
     local restriction = U.GetBattleNetFriendPartyInviteRestriction(rec.index)
     local enabled = restriction == BattleNetFriendPartyInviteRestrictionType.None
     local guid = rec.info.gameAccountInfo.playerGuid
-    local inGroup = guid ~= nil and C_SocialQueue ~= nil and C_SocialQueue.IsSystemSupported ~= nil
-        and C_SocialQueue.IsSystemSupported() and C_SocialQueue.GetGroupForPlayer(guid) ~= nil
+    local inGroup = guid ~= nil
+        and C_SocialQueue ~= nil
+        and C_SocialQueue.IsSystemSupported ~= nil
+        and C_SocialQueue.IsSystemSupported()
+        and C_SocialQueue.GetGroupForPlayer(guid) ~= nil
     btn.restriction = restriction
     if btn.on ~= enabled then
         btn.on = enabled
@@ -1035,7 +1210,11 @@ local function StyleRow(f)
     f.PartyButton:SetSize(btnSize, btnSize)
 
     local nameSize, lineSize = 15, 12
-    if tier == 2 then nameSize = 14 elseif tier == 1 then nameSize, lineSize = 13, 11 end
+    if tier == 2 then
+        nameSize = 14
+    elseif tier == 1 then
+        nameSize, lineSize = 13, 11
+    end
     -- The kit's lines are font families (they show friends' names and notes)
     CludesUI.SetFontFamily(d.name, font, nameSize, "", true)
     CludesUI.SetFontFamily(d.charLine, font, lineSize, "", true)
@@ -1067,7 +1246,9 @@ local function LayoutText(f, hasChar, stop, reserve)
     else
         maxName = hasChar and avail * 0.6 or avail - statusW
     end
-    if maxName < 20 then maxName = 20 end
+    if maxName < 20 then
+        maxName = 20
+    end
     local nameW = 0
     local nw = name:GetUnboundedStringWidth()
     local known = not IsSecret(nw)
@@ -1086,12 +1267,16 @@ local function LayoutText(f, hasChar, stop, reserve)
         local charW = 0
         if known then
             local room = avail - nw - CHAR_GAP - statusW
-            if tier == 1 then room = math.min(room, avail * 0.3) end
+            if tier == 1 then
+                room = math.min(room, avail * 0.3)
+            end
             if room < 30 then
                 showChar = false
             else
                 local cw = char:GetUnboundedStringWidth()
-                if not IsSecret(cw) and cw > room then charW = room end
+                if not IsSecret(cw) and cw > room then
+                    charW = room
+                end
             end
         end
         if showChar and f.charW ~= charW then
@@ -1102,7 +1287,9 @@ local function LayoutText(f, hasChar, stop, reserve)
     char:SetShown(showChar)
 
     local key = showChar and 1 or 0
-    if f.layKey == key and f.layStop == stop then return end
+    if f.layKey == key and f.layStop == stop then
+        return
+    end
     f.layKey, f.layStop = key, stop
     local info, status = d.info, f.status
     name:ClearAllPoints()
@@ -1139,7 +1326,9 @@ end
 local bracketCache = setmetatable({}, { __mode = "k" })
 local function Bracketed(info, text)
     local color = T.LevelColor(info)
-    if not (color and color.WrapTextInColorCode) then return "(" .. text .. ")" end
+    if not (color and color.WrapTextInColorCode) then
+        return "(" .. text .. ")"
+    end
     local pair = bracketCache[color]
     if not pair then
         pair = { color:WrapTextInColorCode("("), color:WrapTextInColorCode(")") }
@@ -1152,11 +1341,17 @@ end
 -- values the game keeps secret: one that cannot be read counts as not set.
 local function Presence(info)
     local gi = info.gameAccountInfo
-    if not (gi and gi.isOnline) then return "offline" end
+    if not (gi and gi.isOnline) then
+        return "offline"
+    end
     local afk, gameAfk = info.isAFK, gi.isGameAFK
-    if (not IsSecret(afk) and afk) or (not IsSecret(gameAfk) and gameAfk) then return "away" end
+    if (not IsSecret(afk) and afk) or (not IsSecret(gameAfk) and gameAfk) then
+        return "away"
+    end
     local dnd, gameBusy = info.isDND, gi.isGameBusy
-    if (not IsSecret(dnd) and dnd) or (not IsSecret(gameBusy) and gameBusy) then return "busy" end
+    if (not IsSecret(dnd) and dnd) or (not IsSecret(gameBusy) and gameBusy) then
+        return "busy"
+    end
     return "online"
 end
 
@@ -1209,7 +1404,9 @@ local function PaintRow(f, it)
     local rec = it.rec
     local info = rec.info
     local d = f.d
-    if f.style ~= styleGen then StyleRow(f) end
+    if f.style ~= styleGen then
+        StyleRow(f)
+    end
     f.item, f.gen, f.rec = it, it.gen, rec
 
     SetLink(f)
@@ -1243,11 +1440,19 @@ local function PaintRow(f, it)
     local regionShown = region ~= nil and region:IsShown()
 
     d.name:SetText(T.Name(info))
-    if hasChar then d.charLine:SetText(Bracketed(info, charText)) end
+    if hasChar then
+        d.charLine:SetText(Bracketed(info, charText))
+    end
     d.info:SetText(T.Info(info))
-    LayoutText(f, hasChar, regionShown and region or (invite and f.PartyButton),
-        EDGE_PAD + (invite and f.btnSize or 0) + (regionShown and regionSize or 0)
-            + ((invite and regionShown) and 2 or 0))
+    LayoutText(
+        f,
+        hasChar,
+        regionShown and region or (invite and f.PartyButton),
+        EDGE_PAD
+            + (invite and f.btnSize or 0)
+            + (regionShown and regionSize or 0)
+            + ((invite and regionShown) and 2 or 0)
+    )
 
     local presence = Presence(info)
     if f.presence ~= presence then
@@ -1270,12 +1475,18 @@ local function PaintRow(f, it)
         end
         if f.cardAtlas ~= atlas then
             f.cardAtlas = atlas
-            if atlas then f.card:SetAtlas(atlas, false) end
+            if atlas then
+                f.card:SetAtlas(atlas, false)
+            end
             f.card:SetShown(atlas ~= nil)
-            if f.cardWhole then d.tileBg:SetShown(atlas == nil) end
+            if f.cardWhole then
+                d.tileBg:SetShown(atlas == nil)
+            end
         end
     end
-    if not f.cardWhole then d.onlineBg:SetShown(rec.online) end
+    if not f.cardWhole then
+        d.onlineBg:SetShown(rec.online)
+    end
     T.Faction(f, d, info)
     SetSelected(f, rec.id == selectedId)
 
@@ -1292,7 +1503,9 @@ local ICON_ALPHA, ICON_HOVER, ICON_OFF = 0.35, 0.7, 0.06
 
 local function AccentRGB()
     local r, g, b = CludesUI.GetAccentColor()
-    if r then return r, g, b end
+    if r then
+        return r, g, b
+    end
     local eg = CludesUI.CLUDES_GREEN
     return eg.r, eg.g, eg.b
 end
@@ -1306,7 +1519,9 @@ local function HeaderIconEnter(btn)
     end
     btn:SetAlpha(ICON_HOVER)
     local tip = btn.tip
-    if type(tip) == "function" then tip = tip(btn) end
+    if type(tip) == "function" then
+        tip = tip(btn)
+    end
     CludesUI.ShowWidgetTooltip(btn, tip)
 end
 
@@ -1339,7 +1554,9 @@ local function HeaderClick(h)
         return
     end
     searchCollapsed[h.key] = not searchCollapsed[h.key] or nil
-    if active then Refill() end
+    if active then
+        Refill()
+    end
 end
 
 local function HeaderEnter(h)
@@ -1351,11 +1568,15 @@ local function HeaderLeave(h)
 end
 
 local function HeaderUp(btn)
-    if not btn.off then MoveGroup(btn:GetParent().key, -1) end
+    if not btn.off then
+        MoveGroup(btn:GetParent().key, -1)
+    end
 end
 
 local function HeaderDown(btn)
-    if not btn.off then MoveGroup(btn:GetParent().key, 1) end
+    if not btn.off then
+        MoveGroup(btn:GetParent().key, 1)
+    end
 end
 
 local function HeaderDelete(btn)
@@ -1365,38 +1586,52 @@ end
 -- A section name's colour: the one picked for it, else the accent
 local function SectionRGB(key)
     local color = Store().friendGroupColors[key]
-    if color then return color.r, color.g, color.b end
+    if color then
+        return color.r, color.g, color.b
+    end
     return AccentRGB()
 end
 
-local RepaintHeaders   -- defined with the header painter below
+local RepaintHeaders -- defined with the header painter below
 
 -- The colour picker for a section's name (it lives in the options addon,
 -- which the game will not load in combat). Each pick repaints the section
 -- names in view, and a cancel puts the old colour back.
 local function PickSectionColor(key, anchor, onChange)
-    if not key or InCombatLockdown() then return end
+    if not key or InCombatLockdown() then
+        return
+    end
     CludesUI:EnsureLoaded()
-    if not CludesUI.ShowColorPicker then return end
+    if not CludesUI.ShowColorPicker then
+        return
+    end
     local colors = Store().friendGroupColors
     local was, picked = colors[key], nil
     local function Set(color)
         colors[key] = color
         RepaintHeaders()
-        if onChange then onChange() end
+        if onChange then
+            onChange()
+        end
     end
     local r, g, b = SectionRGB(key)
     CludesUI:ShowColorPicker({
-        r = r, g = g, b = b,
+        r = r,
+        g = g,
+        b = b,
         hasOpacity = false,
         swatchFunc = function()
             local popup = CludesUI._colorPickerPopup
-            if not popup then return end
+            if not popup then
+                return
+            end
             picked = picked or {}
             picked.r, picked.g, picked.b = popup:GetColorRGB()
             Set(picked)
         end,
-        cancelFunc = function() Set(was) end,
+        cancelFunc = function()
+            Set(was)
+        end,
     }, anchor)
 end
 
@@ -1405,19 +1640,25 @@ end
 -- (the popup's buttons are the name's alone).
 local function PromptEditGroup(name)
     CludesUI:ShowInputPopup({
-        title       = "Rename Friend Group",
-        message     = "Enter a new name for this group:",
+        title = "Rename Friend Group",
+        message = "Enter a new name for this group:",
         initialText = name,
         placeholder = "Enter name...",
         confirmText = "Rename",
-        cancelText  = "Cancel",
-        maxLetters  = GROUP_NAME_MAX,
-        swatch      = {
-            get     = function() return SectionRGB(name) end,
-            onClick = function(swatch, repaint) PickSectionColor(name, swatch, repaint) end,
+        cancelText = "Cancel",
+        maxLetters = GROUP_NAME_MAX,
+        swatch = {
+            get = function()
+                return SectionRGB(name)
+            end,
+            onClick = function(swatch, repaint)
+                PickSectionColor(name, swatch, repaint)
+            end,
             tooltip = "Color",
         },
-        onConfirm   = function(text) RenameGroup(name, text) end,
+        onConfirm = function(text)
+            RenameGroup(name, text)
+        end,
     })
 end
 
@@ -1507,15 +1748,23 @@ local function PaintHeader(h, it)
     end
     -- Painted again under the pointer (a click on an arrow moved the
     -- sections): the hovered icon's look and tooltip follow what it does now
-    if h.up:IsMouseMotionFocus() then HeaderIconEnter(h.up) end
-    if h.down:IsMouseMotionFocus() then HeaderIconEnter(h.down) end
-    if h.edit:IsMouseMotionFocus() then HeaderIconEnter(h.edit) end
+    if h.up:IsMouseMotionFocus() then
+        HeaderIconEnter(h.up)
+    end
+    if h.down:IsMouseMotionFocus() then
+        HeaderIconEnter(h.down)
+    end
+    if h.edit:IsMouseMotionFocus() then
+        HeaderIconEnter(h.edit)
+    end
 end
 
 RepaintHeaders = function()
     for i = 1, #headerList do
         local h = headerList[i]
-        if h.item and h:IsShown() then PaintHeader(h, h.item) end
+        if h.item and h:IsShown() then
+            PaintHeader(h, h.item)
+        end
     end
 end
 
@@ -1528,7 +1777,11 @@ local function FirstVisible(top)
     while lo < hi do
         local mid = math.floor((lo + hi) / 2)
         local it = items[mid]
-        if it.y + it.h < top then lo = mid + 1 else hi = mid end
+        if it.y + it.h < top then
+            lo = mid + 1
+        else
+            hi = mid
+        end
     end
     return lo
 end
@@ -1548,22 +1801,30 @@ local function HideUnseen(list)
 end
 
 local function LayoutVisible()
-    if not active then return end
+    if not active then
+        return
+    end
     visGen = visGen + 1
     if itemCount > 0 and viewH > 0 then
         local top = sf:GetVerticalScroll()
         local bottom = top + viewH
         for i = FirstVisible(top), itemCount do
             local it = items[i]
-            if it.y >= bottom then break end
+            if it.y >= bottom then
+                break
+            end
             local slot = (i - 1) % ring + 1
             local f
             if it.kind == KIND_FRIEND then
                 f = rowPool[slot] or MakeRow(slot)
-                if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then PaintRow(f, it) end
+                if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then
+                    PaintRow(f, it)
+                end
             else
                 f = headerPool[slot] or MakeHeader(slot)
-                if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then PaintHeader(f, it) end
+                if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then
+                    PaintHeader(f, it)
+                end
             end
             if f.posY ~= it.y then
                 f.posY = it.y
@@ -1586,7 +1847,7 @@ end
 --  scrolls the list. So does the wheel, over the list as over the bar: it is
 --  the bar's own wheel step, two tiles a tick, at once, as on Blizzard's list.
 -------------------------------------------------------------------------------
-local barBusy = false   -- the bar and the list are telling each other one spot
+local barBusy = false -- the bar and the list are telling each other one spot
 
 local function ScrollRange()
     return math.max(0, content:GetHeight() - sf:GetHeight())
@@ -1613,7 +1874,9 @@ end
 -- The list moved: the rows in view, and the bar unless the bar moved it
 local function OnListScroll()
     LayoutVisible()
-    if not barBusy then SyncBarSpot() end
+    if not barBusy then
+        SyncBarSpot()
+    end
 end
 
 -- The list to a spot inside its range, at once
@@ -1624,7 +1887,9 @@ end
 
 -- The bar moved by hand
 local function OnBarScroll(_, percentage)
-    if barBusy then return end
+    if barBusy then
+        return
+    end
     barBusy = true
     ScrollTo(percentage * ScrollRange())
     barBusy = false
@@ -1660,21 +1925,32 @@ local function ApplyMetrics()
     -- make one
     if viewH > 0 then
         for slot = 1, ring do
-            if not rowPool[slot] then MakeRow(slot) end
+            if not rowPool[slot] then
+                MakeRow(slot)
+            end
         end
     end
 end
 
 -- One friend changed and nothing that places it did: its row alone repaints
 local function TryRowDelta(index)
-    if searchActive then return false end
+    if searchActive then
+        return false
+    end
     local rec = byIndex[index]
-    if not rec then return false end
+    if not rec then
+        return false
+    end
     local info = C_BattleNet.GetFriendAccountInfo(index)
-    if not info or info.bnetAccountID ~= rec.id then return false end
+    if not info or info.bnetAccountID ~= rec.id then
+        return false
+    end
     local gi = info.gameAccountInfo
-    if (gi ~= nil and gi.isOnline == true) ~= rec.online or Priority(gi) ~= rec.priority
-        or BucketOf(Store(), info, rec.key) ~= rec.bucket then
+    if
+        (gi ~= nil and gi.isOnline == true) ~= rec.online
+        or Priority(gi) ~= rec.priority
+        or BucketOf(Store(), info, rec.key) ~= rec.bucket
+    then
         return false
     end
     rec.info = info
@@ -1691,7 +1967,9 @@ end
 local function RepaintInvites()
     for i = 1, #rowList do
         local f = rowList[i]
-        if f.item and f.rec and f.rec.info then UpdateInvite(f, f.rec) end
+        if f.item and f.rec and f.rec.info then
+            UpdateInvite(f, f.rec)
+        end
     end
 end
 
@@ -1704,8 +1982,12 @@ local function OnEvent(_, event, arg1)
             wipe(sortById)
         end
         -- A rebuild is on its way already, or one friend changed in place
-        if dirtyFull then return end
-        if event == "BN_FRIEND_INFO_CHANGED" and arg1 and TryRowDelta(arg1) then return end
+        if dirtyFull then
+            return
+        end
+        if event == "BN_FRIEND_INFO_CHANGED" and arg1 and TryRowDelta(arg1) then
+            return
+        end
         dirtyFull = true
     end
     flusher:Show()
@@ -1713,7 +1995,9 @@ end
 
 local function OnFlush(self)
     self:Hide()
-    if not active then return end
+    if not active then
+        return
+    end
     if dirtyFull then
         dirtyFull, dirtyInvites = false, false
         Refill()
@@ -1737,27 +2021,33 @@ end
 -------------------------------------------------------------------------------
 local function PromptNote(id)
     local info = C_BattleNet.GetAccountInfoByID(id)
-    if not info then return end
+    if not info then
+        return
+    end
     CludesUI:ShowInputPopup({
-        title       = "Set Note",
-        message     = "Enter a note for this friend:",
+        title = "Set Note",
+        message = "Enter a note for this friend:",
         initialText = CludesUI.StripFriendNoteTag(info.note) or "",
         placeholder = "Enter note...",
         confirmText = "Save",
-        cancelText  = "Cancel",
-        maxLetters  = NOTE_MAX,
-        allowEmpty  = true,     -- an empty note deletes it
-        onConfirm   = function(text) BNSetFriendNote(id, text or "") end,
+        cancelText = "Cancel",
+        maxLetters = NOTE_MAX,
+        allowEmpty = true, -- an empty note deletes it
+        onConfirm = function(text)
+            BNSetFriendNote(id, text or "")
+        end,
     })
 end
 
 local function PromptRemove(id)
     CludesUI:ShowConfirmPopup({
-        title       = "Remove Friend",
-        message     = "Remove this friend from your friends list?",
+        title = "Remove Friend",
+        message = "Remove this friend from your friends list?",
         confirmText = "Remove",
-        cancelText  = "Cancel",
-        onConfirm   = function() BNRemoveFriend(id) end,
+        cancelText = "Cancel",
+        onConfirm = function()
+            BNRemoveFriend(id)
+        end,
     })
 end
 
@@ -1767,17 +2057,25 @@ local function AddTagEntries(sub, id, info)
     local set = {}
     local have = info.friendTags
     if type(have) == "table" then
-        for i = 1, #have do set[have[i]] = true end
+        for i = 1, #have do
+            set[have[i]] = true
+        end
     end
-    local function IsOn(tag) return set[tag] == true end
+    local function IsOn(tag)
+        return set[tag] == true
+    end
     local function Toggle(tag)
         set[tag] = not set[tag] or nil
         local list = {}
-        for t in pairs(set) do list[#list + 1] = t end
+        for t in pairs(set) do
+            list[#list + 1] = t
+        end
         C_BattleNet.SetFriendTags(id, list)
     end
     local function Add(tags)
-        if type(tags) ~= "table" then return end
+        if type(tags) ~= "table" then
+            return
+        end
         for i = 1, #tags do
             sub:CreateCheckbox(SocialUIUtil.GetLabelForBattleNetFriendTag(tags[i]), IsOn, Toggle, tags[i])
         end
@@ -1788,11 +2086,17 @@ end
 
 local registering = false
 local function AddMenuEntries(_, menu, contextData)
-    if registering or not (active and root:IsMouseOver()) then return end
-    if type(contextData) ~= "table" or contextData.friendsList then return end
+    if registering or not (active and root:IsMouseOver()) then
+        return
+    end
+    if type(contextData) ~= "table" or contextData.friendsList then
+        return
+    end
     local rec = byId[tonumber(contextData.bnetIDAccount) or 0]
     local info = rec and rec.info
-    if not info then return end
+    if not info then
+        return
+    end
     local id, key = rec.id, rec.key
     local g = Store()
     local current = BucketOf(g, info, key)
@@ -1800,19 +2104,33 @@ local function AddMenuEntries(_, menu, contextData)
     -- The friend entries Blizzard's menu offers only from its own list. No
     -- divider before them: they join its last section, as there. The
     -- favorite line does what the Favorites entries further down do.
-    menu:CreateButton(SET_NOTE or CludesUI.L("Set Note"), function() PromptNote(id) end)
+    menu:CreateButton(SET_NOTE or CludesUI.L("Set Note"), function()
+        PromptNote(id)
+    end)
     if current == FAV then
-        menu:CreateButton(REMOVE_FAVORITE_STATUS or CludesUI.L("Remove Favorite"),
-            function() PlaceFriend(id, key, UNGROUPED) end)
+        menu:CreateButton(REMOVE_FAVORITE_STATUS or CludesUI.L("Remove Favorite"), function()
+            PlaceFriend(id, key, UNGROUPED)
+        end)
     else
-        menu:CreateButton(ADD_FAVORITE_STATUS or CludesUI.L("Add Favorite"),
-            function() PlaceFriend(id, key, FAV) end)
+        menu:CreateButton(ADD_FAVORITE_STATUS or CludesUI.L("Add Favorite"), function()
+            PlaceFriend(id, key, FAV)
+        end)
     end
-    if SocialUIUtil and C_BattleNet.AreFriendTagsEnabled and C_BattleNet.AreFriendTagsEnabled()
-        and C_BattleNet.SetFriendTags then
-        AddTagEntries(menu:CreateButton(SOCIAL_UI_BATTLE_NET_FRIEND_TAGS_LABEL or CludesUI.L("Tags")), id, info)
+    if
+        SocialUIUtil
+        and C_BattleNet.AreFriendTagsEnabled
+        and C_BattleNet.AreFriendTagsEnabled()
+        and C_BattleNet.SetFriendTags
+    then
+        AddTagEntries(
+            menu:CreateButton(SOCIAL_UI_BATTLE_NET_FRIEND_TAGS_LABEL or CludesUI.L("Tags")),
+            id,
+            info
+        )
     end
-    menu:CreateButton(REMOVE_FRIEND or CludesUI.L("Remove Friend"), function() PromptRemove(id) end)
+    menu:CreateButton(REMOVE_FRIEND or CludesUI.L("Remove Friend"), function()
+        PromptRemove(id)
+    end)
 
     -- Our own sections, after them: Favorites and the custom groups alike,
     -- less the one the friend sits in
@@ -1821,21 +2139,31 @@ local function AddMenuEntries(_, menu, contextData)
         menu:CreateTitle("CludesUI")
         local grouped = current ~= UNGROUPED
         local sub = menu:CreateButton(grouped and CludesUI.L("Move to Group") or CludesUI.L("Add to Group"))
-        sub:CreateButton(CludesUI.L("New Group..."), function() PromptNewGroup(key) end)
+        sub:CreateButton(CludesUI.L("New Group..."), function()
+            PromptNewGroup(key)
+        end)
         local list = g.friendGroups
-        if current ~= FAV or #list > 0 then sub:CreateDivider() end
+        if current ~= FAV or #list > 0 then
+            sub:CreateDivider()
+        end
         if current ~= FAV then
-            sub:CreateButton(FAVORITES or CludesUI.L("Favorites"), function() PlaceFriend(id, key, FAV) end)
+            sub:CreateButton(FAVORITES or CludesUI.L("Favorites"), function()
+                PlaceFriend(id, key, FAV)
+            end)
         end
         for i = 1, #list do
             local name = list[i].name
             if name ~= current then
-                sub:CreateButton(name, function() PlaceFriend(id, key, name) end)
+                sub:CreateButton(name, function()
+                    PlaceFriend(id, key, name)
+                end)
             end
         end
         if grouped then
             sub:CreateDivider()
-            sub:CreateButton(CludesUI.L("Remove from Group"), function() PlaceFriend(id, key, UNGROUPED) end)
+            sub:CreateButton(CludesUI.L("Remove from Group"), function()
+                PlaceFriend(id, key, UNGROUPED)
+            end)
         end
     end
 end
@@ -1868,9 +2196,13 @@ local function Build()
     -- The wheel over the list is the bar's own (the template's handler over
     -- the bar): two tiles a tick, at once
     sf:EnableMouseWheel(true)
-    sf:SetScript("OnMouseWheel", function(_, delta) bar:OnMouseWheel(delta) end)
+    sf:SetScript("OnMouseWheel", function(_, delta)
+        bar:OnMouseWheel(delta)
+    end)
     sf:SetScript("OnSizeChanged", function()
-        if not active then return end
+        if not active then
+            return
+        end
         ApplyMetrics()
         Refill()
     end)
@@ -1911,7 +2243,9 @@ local function Build()
     CludesUI.RegAccent({
         type = "callback",
         fn = function()
-            if not active then return end
+            if not active then
+                return
+            end
             styleGen = styleGen + 1
             LayoutVisible()
         end,
@@ -1920,10 +2254,17 @@ end
 
 local function WantActive()
     local p = Settings()
-    if not (p and p.enabled ~= false and p.customTiles ~= false) then return false end
-    if not FL.Available() or CludesUI.PadGamepadUI() then return false end
-    if C_SocialRestrictions and C_SocialRestrictions.IsFriendsDisabled
-        and C_SocialRestrictions.IsFriendsDisabled() then
+    if not (p and p.enabled ~= false and p.customTiles ~= false) then
+        return false
+    end
+    if not FL.Available() or CludesUI.PadGamepadUI() then
+        return false
+    end
+    if
+        C_SocialRestrictions
+        and C_SocialRestrictions.IsFriendsDisabled
+        and C_SocialRestrictions.IsFriendsDisabled()
+    then
         return false
     end
     return true
@@ -1932,7 +2273,9 @@ end
 -- The friends view hid: nothing of ours runs until it shows again. Blizzard's
 -- list stays covered, so its cards are not painted for nothing meanwhile.
 local function Park()
-    if not active then return end
+    if not active then
+        return
+    end
     active = false
     root:Hide()
     flusher:Hide()
@@ -1950,7 +2293,9 @@ end
 
 -- The list stands down: Blizzard's own list shows again
 local function Uncover()
-    if not covering then return end
+    if not covering then
+        return
+    end
     covering = false
     Kit._listShown = false
     local view = View()
@@ -1963,7 +2308,9 @@ local function Uncover()
 end
 
 local function Activate()
-    if not root then Build() end
+    if not root then
+        Build()
+    end
     if not covering then
         covering = true
         Kit._listShown = true
@@ -2027,10 +2374,14 @@ end
 
 -- A setting changed (the host's options call this), or the list starts
 function FL.Refresh()
-    if not host then return end
+    if not host then
+        return
+    end
     local p = Settings()
     if not (p and p.enabled ~= false and p.customTiles ~= false and FL.Available()) then
-        if driver then driver:Hide() end
+        if driver then
+            driver:Hide()
+        end
         Park()
         Uncover()
         return
@@ -2050,9 +2401,13 @@ end
 -- host's settings and font, and only under the CludesUI look (a stock
 -- look keeps Blizzard's list).
 function FL.Start()
-    if host then return end
+    if host then
+        return
+    end
     local h = T.Host()
-    if not h or h.style ~= "cui" then return end
+    if not h or h.style ~= "cui" then
+        return
+    end
     host = h
     FL.Refresh()
 end

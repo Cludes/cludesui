@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_Lite.lua
 --  Lightweight replacement for AceAddon-3.0, AceEvent-3.0, and AceDB-3.0
@@ -31,29 +33,35 @@ CludesUI.PANEL_SCALE_MIN, CludesUI.PANEL_SCALE_MAX = 0.75, 2.00
 -- Nearest 5% step to v, inside the range. Ties round up (harmless: the panel reads
 -- large rather than small, which is the direction this whole seed exists to fix).
 function CludesUI.SnapPanelScale(v)
-    if type(v) ~= "number" or v ~= v then return 1.00 end
+    if type(v) ~= "number" or v ~= v then
+        return 1.00
+    end
     v = math.floor(v * 20 + 0.5) / 20
     return math.max(CludesUI.PANEL_SCALE_MIN, math.min(CludesUI.PANEL_SCALE_MAX, v))
 end
 
 -- Lua APIs
 local pairs, type, next, rawset, rawget, setmetatable, wipe =
-      pairs, type, next, rawset, rawget, setmetatable, wipe
+    pairs, type, next, rawset, rawget, setmetatable, wipe
 local tinsert, tremove = table.insert, table.remove
 local xpcall, geterrorhandler = xpcall, geterrorhandler
 
-local function errorhandler(err) return geterrorhandler()(err) end
+local function errorhandler(err)
+    return geterrorhandler()(err)
+end
 local function safecall(func, ...)
-    if type(func) == "function" then return xpcall(func, errorhandler, ...) end
+    if type(func) == "function" then
+        return xpcall(func, errorhandler, ...)
+    end
 end
 
 --------------------------------------------------------------------------------
 --  Addon Registry + Lifecycle
 --------------------------------------------------------------------------------
-local addons = {}          -- name -> addon table
-local initQueue = {}       -- addons waiting for OnInitialize
-local enableQueue = {}     -- addons waiting for OnEnable
-local statuses = {}        -- name -> true if enabled
+local addons = {} -- name -> addon table
+local initQueue = {} -- addons waiting for OnInitialize
+local enableQueue = {} -- addons waiting for OnEnable
+local statuses = {} -- name -> true if enabled
 
 -- Per-addon event frame. Defined ABOVE NewAddon because NewAddon creates it EAGERLY,
 -- and that timing is load-bearing for CPU attribution: the engine bills an event
@@ -65,7 +73,9 @@ local statuses = {}        -- name -> true if enabled
 -- every mixin event frame in the suite was parent-stamped and the whole suite's event
 -- handling was billed to the parent addon.
 local function GetOrCreateEventFrame(addon)
-    if addon._eventFrame then return addon._eventFrame end
+    if addon._eventFrame then
+        return addon._eventFrame
+    end
     local f = CreateFrame("Frame")
     f._handlers = {}
     f:SetScript("OnEvent", function(self, event, ...)
@@ -92,7 +102,7 @@ function CUILite.NewAddon(name)
     GetOrCreateEventFrame(addon)
 
     -- Mix in event methods
-    addon.RegisterEvent   = CUILite._RegisterEvent
+    addon.RegisterEvent = CUILite._RegisterEvent
     addon.UnregisterEvent = CUILite._UnregisterEvent
 
     return addon
@@ -135,12 +145,16 @@ function CUILite._RegisterEvent(self, eventname, callback)
         handler = callback
     elseif type(callback) == "string" then
         handler = function(addon, event, ...)
-            if addon[callback] then addon[callback](addon, event, ...) end
+            if addon[callback] then
+                addon[callback](addon, event, ...)
+            end
         end
     else
         -- No callback: look for self:EVENT_NAME
         handler = function(addon, event, ...)
-            if addon[eventname] then addon[eventname](addon, event, ...) end
+            if addon[eventname] then
+                addon[eventname](addon, event, ...)
+            end
         end
     end
     f._handlers[eventname] = handler
@@ -150,7 +164,9 @@ end
 --- Unregister a Blizzard event.
 function CUILite._UnregisterEvent(self, eventname)
     local f = self._eventFrame
-    if not f then return end
+    if not f then
+        return
+    end
     f._handlers[eventname] = nil
     f:UnregisterEvent(eventname)
 end
@@ -201,13 +217,15 @@ local function StripDefaults(db, defaults)
 end
 
 local function DeepCopy(src)
-    if type(src) ~= "table" then return src end
+    if type(src) ~= "table" then
+        return src
+    end
     return CopyTable(src)
 end
 
 CUILite.DeepCopy = DeepCopy
 
-local dbRegistry = {}  -- all db objects, for logout cleanup
+local dbRegistry = {} -- all db objects, for logout cleanup
 
 -- Expose so the profile system can update db.profile in-place after injection
 CUILite._dbRegistry = dbRegistry
@@ -225,8 +243,8 @@ CUILite._dbRegistry = dbRegistry
 -- the gate makes that a hard guarantee instead of a convention. The folder-name test is
 -- rename-immune (the standalone build never renames "Standalone").
 local IS_STANDALONE = type(ADDON_NAME) == "string" and ADDON_NAME:find("Standalone") ~= nil
-local _svLoaded = false   -- true once ADDON_NAME's SavedVariables are live
-local _preSVDBs = {}      -- dbs created before that, awaiting re-root
+local _svLoaded = false -- true once ADDON_NAME's SavedVariables are live
+local _preSVDBs = {} -- dbs created before that, awaiting re-root
 --- True once db.profile can be trusted to be the real saved table.
 --
 -- A pre-SavedVariables db is built inside an orphan table and re-rooted in
@@ -258,13 +276,19 @@ function CUILite.NewDB(svName, defaults, defaultToCharKey)
     end
 
     -- Ensure the profile and addons tables exist in the central DB
-    if not CludesUIDB then CludesUIDB = {} end
-    if not CludesUIDB.profiles then CludesUIDB.profiles = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    if not CludesUIDB.profiles then
+        CludesUIDB.profiles = {}
+    end
     if type(CludesUIDB.profiles[profileName]) ~= "table" then
         CludesUIDB.profiles[profileName] = {}
     end
     local profileData = CludesUIDB.profiles[profileName]
-    if not profileData.addons then profileData.addons = {} end
+    if not profileData.addons then
+        profileData.addons = {}
+    end
     if type(profileData.addons[folder]) ~= "table" then
         profileData.addons[folder] = {}
     end
@@ -299,7 +323,11 @@ function CUILite.NewDB(svName, defaults, defaultToCharKey)
             if not CUILite._corruptionWarned then
                 CUILite._corruptionWarned = true
                 C_Timer.After(5, function()
-                    CludesUI.Print("|cffff6600CludesUI:|r Profile data for " .. folder .. " was corrupted and has been repaired. Your settings may have been reset to defaults.")
+                    CludesUI.Print(
+                        "|cffff6600CludesUI:|r Profile data for "
+                            .. folder
+                            .. " was corrupted and has been repaired. Your settings may have been reset to defaults."
+                    )
                 end)
             end
         end
@@ -405,8 +433,8 @@ end)
 -- ADDON_LOADEDs (Blizzard on-demand addons) and intentional table swaps
 -- (full reset + ReloadUI) are never touched. If the parent DB failed to
 -- load (nil), the guard stays unarmed and behavior is unchanged.
-local _parentDBRef           -- the table the parent's own SV file produced
-local _dbGuardArmed = true   -- true from load until PLAYER_LOGIN
+local _parentDBRef -- the table the parent's own SV file produced
+local _dbGuardArmed = true -- true from load until PLAYER_LOGIN
 
 -- Re-root dbs created before the owning addon's SavedVariables loaded (see _preSVDBs
 -- above): resolve the profile inside the REAL loaded central store, merge defaults, and
@@ -414,15 +442,23 @@ local _dbGuardArmed = true   -- true from load until PLAYER_LOGIN
 -- WoW will serialize at logout. The vestigial child SV global is re-wiped in place (its
 -- saved copy loaded after NewDB's file-scope wipe and would otherwise persist junk).
 local function RerootPreSVDBs()
-    if #_preSVDBs == 0 then return end
+    if #_preSVDBs == 0 then
+        return
+    end
     local profileName = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-    if not CludesUIDB then CludesUIDB = {} end
-    if type(CludesUIDB.profiles) ~= "table" then CludesUIDB.profiles = {} end
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    if type(CludesUIDB.profiles) ~= "table" then
+        CludesUIDB.profiles = {}
+    end
     if type(CludesUIDB.profiles[profileName]) ~= "table" then
         CludesUIDB.profiles[profileName] = {}
     end
     local profileData = CludesUIDB.profiles[profileName]
-    if not profileData.addons then profileData.addons = {} end
+    if not profileData.addons then
+        profileData.addons = {}
+    end
     for _, db in ipairs(_preSVDBs) do
         if type(profileData.addons[db.folder]) ~= "table" then
             profileData.addons[db.folder] = {}
@@ -494,7 +530,9 @@ lifecycleFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 == ADDON_NAME then
             _parentDBRef = CludesUIDB
-            for i = 1, #_svLoadedHooks do safecall(_svLoadedHooks[i]) end
+            for i = 1, #_svLoadedHooks do
+                safecall(_svLoadedHooks[i])
+            end
             wipe(_svLoadedHooks)
             if IS_STANDALONE then
                 _svLoaded = true

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQuickdraw.lua  --  hold-to-open action palette for CludesUI
 --
@@ -45,8 +47,11 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 local EQD = CludesUI.Lite.NewAddon(ADDON_NAME)
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
-CludesUI._ModuleNS[ADDON_NAME] = select(2, ...)  -- LOD options files read this module ns via the registry
+if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewInternals) then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring
+CludesUI._ModuleNS[ADDON_NAME] = select(2, ...) -- LOD options files read this module ns via the registry
 
 -- The live palette's frame. CreateLiveView fills it in, and this is the one
 -- part of it that is not made there.
@@ -170,7 +175,7 @@ local LIVE_STRATA = "DIALOG"
 --  CludesUIDB.profiles[<name>].addons.CludesUIQuickdraw (see
 --  CludesUI.Lite.NewDB). That placement is the whole profile integration:
 --  the data follows whichever profile the character resolves to, a profile
---  swap or import repoints db.profile and reaches _EQD_Apply through
+--  swap or import repoints db.profile and reaches _CUQD_Apply through
 --  RefreshAllAddons (CludesUI_Profiles.lua:1433), and profile export and
 --  import carry the table because the module is listed in ADDON_DB_MAP
 --  (CludesUI_Profiles.lua:83). A new setting only needs a default here to
@@ -188,7 +193,7 @@ local DB_DEFAULTS = {
         -- Off until the user asks for it: a palette needs a key bound to it
         -- before it can do anything, so shipping it on would only cost a
         -- session that never wanted it.
-        enabled     = false,
+        enabled = false,
 
         -- Placement. posX/posY are a UIParent-LOGICAL delta from UIParent's
         -- center, i.e. independent of the palette's own scale -- the same
@@ -196,26 +201,26 @@ local DB_DEFAULTS = {
         -- (CludesUIMythicTimer.lua:2651). PositionPalette divides by scale at
         -- apply time, because SetPoint offsets live in the frame's own scaled
         -- space; without that, changing Scale would also move the palette.
-        centerMode  = "CURSOR",      -- CURSOR | SCREEN
-        posX        = 0,
-        posY        = 0,
+        centerMode = "CURSOR", -- CURSOR | SCREEN
+        posX = 0,
+        posY = 0,
 
         -- Layout. ARC steers with the cursor's angle; FAN is a coverflow
         -- strip scrubbed with the mouse wheel, which keeps working while the
         -- right button is held to steer the camera and the cursor is therefore
         -- frozen. Orientation is a property of the strip, not a layout of its
         -- own: the two axes differ only in which way the entries run.
-        layout          = "ARC",  -- ARC | FAN | GRID
-        fanOrientation  = "HORIZONTAL",  -- HORIZONTAL | VERTICAL
-        gridAutoColumns = true,      -- near-square, sized to what the palette holds
-        gridColumns     = 4,         -- used only when gridAutoColumns is off
+        layout = "ARC", -- ARC | FAN | GRID
+        fanOrientation = "HORIZONTAL", -- HORIZONTAL | VERTICAL
+        gridAutoColumns = true, -- near-square, sized to what the palette holds
+        gridColumns = 4, -- used only when gridAutoColumns is off
 
         -- Arc. 360 is a full turn. Anything less fans the entries across a
         -- sector centred on arcRotation (0 = straight up, growing clockwise),
         -- which keeps a palette clear of a screen edge and gives a nested palette
         -- somewhere to open that does not cover its parent.
-        arcSpan     = 360,           -- degrees, 30..360
-        arcRotation = 0,             -- degrees, direction the arc is centred on
+        arcSpan = 360, -- degrees, 30..360
+        arcRotation = 0, -- degrees, direction the arc is centred on
 
         -- Nesting. A slot of kind "palette" opens another palette's entries one
         -- level further out, on ground reached through the parent entry itself
@@ -224,8 +229,8 @@ local DB_DEFAULTS = {
         -- centre-to-centre radius: measured centre to centre it has to cover
         -- both icons' halves before it separates anything at all, and at any
         -- ordinary icon size the two rings came out touching.
-        nestBand     = NEST_BAND_DEFAULT,
-        nestScale    = 0.8,      -- child icon size, against the palette's own
+        nestBand = NEST_BAND_DEFAULT,
+        nestScale = 0.8, -- child icon size, against the palette's own
         -- Which side of a block layout the nested entries hang off is FIXED
         -- at above/right (NestMetrics). Only the equidistant ties ever
         -- consulted it -- everywhere else the side NEAREST the parent cell
@@ -240,19 +245,19 @@ local DB_DEFAULTS = {
         --   HALO       the eight positions around the parent, block faded behind
         -- A retired POPOUT value -- the nested palette as a detached block --
         -- reads as PERIMETER; see NestMetrics.
-        gridNestStyle    = "PERIMETER",
+        gridNestStyle = "PERIMETER",
         -- How far along the arc a nest may spread. NONE stops at the midpoint
         -- with the next NEST either side, MIDPOINT spends the whole span cap
         -- whatever is out there; both may cross the plain entries in between.
-        arcChildOverflow = "NONE",   -- NONE | MIDPOINT
-        arcChildMaxSpan  = 90,       -- degrees, the widest a child arc may grow
+        arcChildOverflow = "NONE", -- NONE | MIDPOINT
+        arcChildMaxSpan = 90, -- degrees, the widest a child arc may grow
 
         -- Geometry. The dead zone -- the arc's central cancel circle -- is
         -- FIXED at 24 (PaletteView:Geom): it stopped being a setting, and a
         -- deadZone key left in a stored profile is simply never read.
-        radius      = 100,
-        iconSize    = 40,
-        scale       = 1.0,
+        radius = 100,
+        iconSize = 40,
+        scale = 1.0,
 
         -- Fan geometry. The proximity SELECTION EFFECTS are HARDCODED OFF
         -- (their settings were removed pending the user's own animation
@@ -265,13 +270,13 @@ local DB_DEFAULTS = {
         -- shows the whole strip instead -- the odd total, window * 2 + 1 --
         -- and converts both ways, so this stays the number every window,
         -- hover and snippet test is written in.
-        fanVisible    = 2,
-        fanGap        = 10,
+        fanVisible = 2,
+        fanGap = 10,
         -- The settle -- how long the strip takes to slide to a scrolled-to
         -- entry -- is FIXED at 0.1s in AdvanceFan (the Settle Time setting
         -- was removed); a fanAnimTime key left in stored profiles is never
         -- read.
-        fanInvert     = false,       -- flip which way a scroll tick travels
+        fanInvert = false, -- flip which way a scroll tick travels
 
         -- Steering is FIXED: a fan is always wheel-steered (the Steering
         -- setting was removed), with the hover channel below on top. The
@@ -321,7 +326,7 @@ local DB_DEFAULTS = {
         -- color below, and useClassColor -- the Class Color swatch --
         -- overrides both while it is on.
         selectColorCustom = false,
-        selectColor   = { 0.298, 0.788, 0.941 },  -- the custom swatch's start
+        selectColor = { 0.298, 0.788, 0.941 }, -- the custom swatch's start
         useClassColor = false,
 
         -- Toggle Menu Open, per palette. Off keeps the model the module was
@@ -371,7 +376,7 @@ local DB_DEFAULTS = {
         -- same reason as confirmKey.
         cancelKey = "",
 
-        paletteCount   = 1,
+        paletteCount = 1,
         -- palette.slots is a DENSE, ORDERED array: the palette auto-sizes to what the
         -- user has actually assigned, so three actions means three big entries
         -- rather than three icons and five dead gaps. Order is the entry order,
@@ -407,29 +412,40 @@ local function MigrateNames(p)
 
     -- RADIAL was what the arc was called while a full circle was the only thing
     -- it could draw. The layout is unchanged; only the word for it is.
-    if p.layout == "RADIAL" then p.layout = "ARC" end
+    if p.layout == "RADIAL" then
+        p.layout = "ARC"
+    end
 
     -- A set of actions was a "ring" for the same reason, and stopped being one
     -- the moment it could be drawn as a strip or a grid.
-    if p.rings then p.palettes, p.rings = p.rings, nil end
-    if p.ringCount then p.paletteCount, p.ringCount = p.ringCount, nil end
+    if p.rings then
+        p.palettes, p.rings = p.rings, nil
+    end
+    if p.ringCount then
+        p.paletteCount, p.ringCount = p.ringCount, nil
+    end
     -- Auto-generated names only. A palette the user has named keeps its name.
     for i, palette in pairs(p.palettes or {}) do
-        if palette.name == "Ring " .. i then palette.name = AutoPaletteName(i) end
-        if palette.name == "Palette " .. i then palette.name = AutoPaletteName(i) end
+        if palette.name == "Ring " .. i then
+            palette.name = AutoPaletteName(i)
+        end
+        if palette.name == "Palette " .. i then
+            palette.name = AutoPaletteName(i)
+        end
         -- A nested entry used to be handed a COPY of the palette's name when it
         -- was created, which then went stale the moment that palette was
         -- renamed. SlotDisplay reads the palette's own name whenever the entry
         -- carries none, so the copy is simply dropped.
         for _, slot in pairs(palette.slots or {}) do
-            if slot.kind == "palette" then slot.name = nil end
+            if slot.kind == "palette" then
+                slot.name = nil
+            end
             -- Toys dragged in from the Collections/Toy Box frame before
             -- SlotFromCursor reclassified them landed here as kind="item",
             -- which runs SlotUsability through C_Item.IsUsableItem -- always
             -- "unusable" for a toy -- instead of the toy path, which leaves
             -- them untinted. Same fix, applied to what was already saved.
-            if slot.kind == "item" and type(slot.id) == "number"
-               and PlayerHasToy(slot.id) then
+            if slot.kind == "item" and type(slot.id) == "number" and PlayerHasToy(slot.id) then
                 slot.kind = "toy"
             end
         end
@@ -468,10 +484,11 @@ ns.Profile = P
 -- always holds the whole defaults table and would never read as empty.
 local function HasPalettes(blob)
     local palettes = type(blob) == "table" and blob.palettes
-    if type(palettes) ~= "table" then return false end
+    if type(palettes) ~= "table" then
+        return false
+    end
     for _, palette in pairs(palettes) do
-        if type(palette) == "table" and type(palette.slots) == "table"
-            and next(palette.slots) ~= nil then
+        if type(palette) == "table" and type(palette.slots) == "table" and next(palette.slots) ~= nil then
             return true
         end
     end
@@ -493,14 +510,18 @@ local LEGACY_ADDON_KEYS = { "CludesUIActionPalette", "CludesUIRadialWheel" }
 
 local function MigrateLegacyProfile(prof, live)
     local addons = type(prof) == "table" and prof.addons
-    if type(addons) ~= "table" then return end
+    if type(addons) ~= "table" then
+        return
+    end
     for _, key in ipairs(LEGACY_ADDON_KEYS) do
         local legacy = addons[key]
         if type(legacy) == "table" then
             if live then
                 if HasPalettes(legacy) and not HasPalettes(live) then
                     wipe(live)
-                    for k, v in pairs(legacy) do live[k] = v end
+                    for k, v in pairs(legacy) do
+                        live[k] = v
+                    end
                     CludesUI.Lite.DeepMergeDefaults(live, DB_DEFAULTS.profile)
                     -- Converted by the next P(), like any switched-in profile:
                     -- what was just poured in may carry pre-rename field names.
@@ -521,7 +542,9 @@ end
 -- pre-rename build heals when it is applied rather than at the next login.
 local function MigrateActiveProfile()
     local live = db and db.profile
-    if not live then return end
+    if not live then
+        return
+    end
     local profiles = CludesUIDB and CludesUIDB.profiles
     local prof = profiles and db._profileName and profiles[db._profileName]
     MigrateLegacyProfile(prof, live)
@@ -536,14 +559,20 @@ local function EnsurePalette(index)
     -- its callers pass it straight through on their way to the question-mark
     -- fallback. Comparing it would take the paint of the whole containing
     -- palette down with it.
-    if not p or not index or index < 1 or index > MAX_PALETTES then return nil end
-    if not p.palettes then p.palettes = {} end
+    if not p or not index or index < 1 or index > MAX_PALETTES then
+        return nil
+    end
+    if not p.palettes then
+        p.palettes = {}
+    end
     local palette = p.palettes[index]
     if not palette then
         palette = { name = AutoPaletteName(index), slots = {} }
         p.palettes[index] = palette
     end
-    if type(palette.slots) ~= "table" then palette.slots = {} end
+    if type(palette.slots) ~= "table" then
+        palette.slots = {}
+    end
 
     -- Self-healing compaction. The array must have no holes for #slots to be
     -- meaningful, and a hole is exactly what a cleared slot used to leave
@@ -561,7 +590,7 @@ local function EnsurePalette(index)
         end
     end
     palette.slots = dense
-    palette.slotCount = nil   -- retired: the count is now derived from #slots
+    palette.slotCount = nil -- retired: the count is now derived from #slots
     return palette
 end
 ns.EnsurePalette = EnsurePalette
@@ -574,10 +603,16 @@ ns.EnsurePalette = EnsurePalette
 -- EnsurePalette, so what this reads is always compact by the time it exists.
 local function ReadPalette(index)
     local p = P()
-    if not p or not index or index < 1 or index > MAX_PALETTES then return nil end
+    if not p or not index or index < 1 or index > MAX_PALETTES then
+        return nil
+    end
     local palette = p.palettes and p.palettes[index]
-    if type(palette) ~= "table" then return nil end
-    if type(palette.slots) ~= "table" then return nil end
+    if type(palette) ~= "table" then
+        return nil
+    end
+    if type(palette.slots) ~= "table" then
+        return nil
+    end
     return palette
 end
 
@@ -602,18 +637,34 @@ end
 --  for the first profile key ever named "icon".
 -------------------------------------------------------------------------------
 local APPEARANCE_KEYS = {
-    layout = true, fanOrientation = true,
-    centerMode = true, posX = true, posY = true, scale = true,
-    gridAutoColumns = true, gridColumns = true,
-    arcSpan = true, arcRotation = true,
-    fanVisible = true, fanGap = true, fanInvert = true,
+    layout = true,
+    fanOrientation = true,
+    centerMode = true,
+    posX = true,
+    posY = true,
+    scale = true,
+    gridAutoColumns = true,
+    gridColumns = true,
+    arcSpan = true,
+    arcRotation = true,
+    fanVisible = true,
+    fanGap = true,
+    fanInvert = true,
     fanMouseSelect = true,
-    radius = true, iconSize = true,
-    nestBand = true, nestScale = true, gridNestStyle = true,
-    arcChildOverflow = true, arcChildMaxSpan = true,
-    showCooldowns = true, showUsability = true, showActionText = true,
+    radius = true,
+    iconSize = true,
+    nestBand = true,
+    nestScale = true,
+    gridNestStyle = true,
+    arcChildOverflow = true,
+    arcChildMaxSpan = true,
+    showCooldowns = true,
+    showUsability = true,
+    showActionText = true,
     hideUnusable = true,
-    selectColorCustom = true, selectColor = true, useClassColor = true,
+    selectColorCustom = true,
+    selectColor = true,
+    useClassColor = true,
     -- Per palette on purpose: a marker ring wants the flick it has always had,
     -- while a mount menu is worth latching open and pointing at. The Select key
     -- the latched one answers to is NOT here -- it is one profile key, so the
@@ -645,13 +696,17 @@ local appearanceViews = {}
 
 local function PA(paletteIndex)
     local p = P()
-    if not p then return nil end
+    if not p then
+        return nil
+    end
     -- Straight off p.palettes, NOT through EnsurePalette: this runs several
     -- times per frame on every steered layout, and EnsurePalette rebuilds the
     -- slot array to compact it. A palette that has never been ensured has no
     -- overrides to read anyway, so the profile is the whole answer.
     local palette = paletteIndex and p.palettes and p.palettes[paletteIndex]
-    if type(palette) ~= "table" then return p end
+    if type(palette) ~= "table" then
+        return p
+    end
 
     local view = appearanceViews[palette]
     if not view then
@@ -659,7 +714,9 @@ local function PA(paletteIndex)
             __index = function(_, key)
                 if APPEARANCE_KEYS[key] then
                     local v = palette.appearance and palette.appearance[key]
-                    if v ~= nil then return v end
+                    if v ~= nil then
+                        return v
+                    end
                 end
                 -- P() rather than a captured profile: a palette table outlives
                 -- nothing, but reading through the accessor keeps the migration
@@ -669,7 +726,9 @@ local function PA(paletteIndex)
             end,
             -- Nothing writes through this, and a write that slipped in would
             -- land on the view and be invisible to the saved variables.
-            __newindex = function() error("Action Wheel appearance view is read-only", 2) end,
+            __newindex = function()
+                error("Action Wheel appearance view is read-only", 2)
+            end,
         })
         appearanceViews[palette] = view
     end
@@ -680,14 +739,20 @@ ns.PaletteProfile = PA
 -- Ordered mutations. All three keep the array dense so #slots stays the
 -- authoritative entry count.
 function ns.AddSlot(palette, slot)
-    if not palette or not slot then return nil end
-    if #palette.slots >= MAX_SLOTS then return nil end
+    if not palette or not slot then
+        return nil
+    end
+    if #palette.slots >= MAX_SLOTS then
+        return nil
+    end
     palette.slots[#palette.slots + 1] = slot
     return #palette.slots
 end
 
 function ns.RemoveSlot(palette, index)
-    if not palette or not palette.slots[index] then return false end
+    if not palette or not palette.slots[index] then
+        return false
+    end
     tremove(palette.slots, index)
     return true
 end
@@ -695,9 +760,13 @@ end
 -- Move, not swap: dragging an icon between two others should insert it there
 -- and shuffle the rest along, which is what a reorder is.
 function ns.MoveSlot(palette, from, to)
-    if not palette then return false end
+    if not palette then
+        return false
+    end
     local n = #palette.slots
-    if from == to or from < 1 or from > n or to < 1 or to > n then return false end
+    if from == to or from < 1 or from > n or to < 1 or to > n then
+        return false
+    end
     tinsert(palette.slots, to, tremove(palette.slots, from))
     return true
 end
@@ -735,9 +804,13 @@ ns.PaletteCount = PaletteCount
 
 -- The palette a slot opens, or nil for a slot that fires an action.
 local function ChildIndex(slot)
-    if not slot or slot.kind ~= "palette" then return nil end
+    if not slot or slot.kind ~= "palette" then
+        return nil
+    end
     local idx = tonumber(slot.palette)
-    if not idx or idx < 1 or idx > MAX_PALETTES then return nil end
+    if not idx or idx < 1 or idx > MAX_PALETTES then
+        return nil
+    end
     return idx
 end
 ns.ChildIndex = ChildIndex
@@ -755,7 +828,9 @@ local UsableSlots
 -- every layout can manage. See NestChildCap.
 local function ChildSlots(paletteIndex, cap)
     local palette = paletteIndex and EnsurePalette(paletteIndex)
-    if not palette then return nil end
+    if not palette then
+        return nil
+    end
     local slots = UsableSlots(palette, PA(paletteIndex))
     local out = {}
     for i = 1, min(cap or MAX_CHILDREN, #slots) do
@@ -789,8 +864,12 @@ ns.NestChildCap = NestChildCap
 -- the slot is CREATED rather than when it is walked: a stored cycle would send
 -- every push and every draw of that palette round until the client gave out.
 function ns.CanNest(parentIndex, childIndex)
-    if not parentIndex or not childIndex then return false end
-    if parentIndex == childIndex then return false end
+    if not parentIndex or not childIndex then
+        return false
+    end
+    if parentIndex == childIndex then
+        return false
+    end
 
     -- Walk down from the candidate child. Reaching the parent means the parent
     -- already sits somewhere below it, so nesting it would close the loop. The
@@ -799,7 +878,9 @@ function ns.CanNest(parentIndex, childIndex)
     local seen, stack = { [childIndex] = true }, { childIndex }
     while #stack > 0 do
         local idx = tremove(stack)
-        if idx == parentIndex then return false end
+        if idx == parentIndex then
+            return false
+        end
         local palette = EnsurePalette(idx)
         for i = 1, (palette and #palette.slots or 0) do
             local c = ChildIndex(palette.slots[i])
@@ -831,15 +912,21 @@ function ns.PaletteSpecs(index)
     local p = P()
     local palette = p and index and p.palettes and p.palettes[index]
     local specs = type(palette) == "table" and palette.specs
-    if type(specs) ~= "table" or next(specs) == nil then return nil end
+    if type(specs) ~= "table" or next(specs) == nil then
+        return nil
+    end
     return specs
 end
 
 function ns.PaletteActive(index)
     local specs = ns.PaletteSpecs(index)
-    if not specs then return true end
+    if not specs then
+        return true
+    end
     for id in pairs(specs) do
-        if CludesUI.IsPlayerSpec(id) then return true end
+        if CludesUI.IsPlayerSpec(id) then
+            return true
+        end
     end
     return false
 end
@@ -849,20 +936,26 @@ end
 -- class in both (the player counts as every spec of the class there).
 function ns.PalettesExclusive(a, b)
     local sa, sb = ns.PaletteSpecs(a), ns.PaletteSpecs(b)
-    if not sa or not sb then return false end
+    if not sa or not sb then
+        return false
+    end
     if CludesUI.IS_FOREVER then
         for ida in pairs(sa) do
             local cls = CludesUI.SpecClassOf(ida)
             if cls then
                 for idb in pairs(sb) do
-                    if CludesUI.SpecClassOf(idb) == cls then return false end
+                    if CludesUI.SpecClassOf(idb) == cls then
+                        return false
+                    end
                 end
             end
         end
         return true
     end
     for id in pairs(sa) do
-        if sb[id] then return false end
+        if sb[id] then
+            return false
+        end
     end
     return true
 end
@@ -874,9 +967,13 @@ function ns.ShareOwner(index)
     local palettes = p and p.palettes
     local palette = palettes and palettes[index]
     local owner = type(palette) == "table" and tonumber(palette.keyShare)
-    if not owner or owner == index or owner < 1 or owner > PaletteCount() then return nil end
+    if not owner or owner == index or owner < 1 or owner > PaletteCount() then
+        return nil
+    end
     local held = palettes[owner]
-    if type(held) == "table" and held.keyShare ~= nil then return nil end
+    if type(held) == "table" and held.keyShare ~= nil then
+        return nil
+    end
     return owner
 end
 
@@ -886,7 +983,9 @@ local function SelectColor(p)
     p = p or P()
     if p and p.useClassColor then
         local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-        if c then return c.r, c.g, c.b end
+        if c then
+            return c.r, c.g, c.b
+        end
     end
     -- Accent unless a custom color has been chosen: the suite accent is the
     -- default, resolved live so theme and accent changes carry straight
@@ -895,7 +994,9 @@ local function SelectColor(p)
         return CludesUI.ResolveActiveAccent()
     end
     local sc = p and p.selectColor
-    if sc then return sc[1] or 1, sc[2] or 1, sc[3] or 1 end
+    if sc then
+        return sc[1] or 1, sc[2] or 1, sc[3] or 1
+    end
     return 0.298, 0.788, 0.941
 end
 ns.SelectColor = SelectColor
@@ -913,21 +1014,44 @@ ns.MAX_CHILDREN = MAX_CHILDREN
 -- broken: true while an CUI_Quickdraw_*.lua file loads; a file that fails
 -- leaves it set, and the files behind it return at their first lines.
 CludesUI.NewInternals(ns, "_qdInternals", {
-    BINDING_PREFIX = BINDING_PREFIX, ChildIndex = ChildIndex, ChildSlots = ChildSlots,
-    DB_DEFAULTS = DB_DEFAULTS, EnsurePalette = EnsurePalette, EQD = EQD,
-    LIVE_STRATA = LIVE_STRATA, liveFrame = liveFrame, MAX_CHILD_ROWS = MAX_CHILD_ROWS,
-    MAX_CHILDREN = MAX_CHILDREN, MAX_LATTICE = MAX_LATTICE, MAX_PALETTES = MAX_PALETTES,
-    MAX_SLOTS = MAX_SLOTS, MigrateActiveProfile = MigrateActiveProfile,
-    MigrateLegacyProfile = MigrateLegacyProfile, NEST_BAND_DEFAULT = NEST_BAND_DEFAULT, P = P,
-    PA = PA, PaletteCount = PaletteCount, QUESTION_MARK = QUESTION_MARK,
-    ReadPalette = ReadPalette, REGION_MAX = REGION_MAX, SelectColor = SelectColor,
+    BINDING_PREFIX = BINDING_PREFIX,
+    ChildIndex = ChildIndex,
+    ChildSlots = ChildSlots,
+    DB_DEFAULTS = DB_DEFAULTS,
+    EnsurePalette = EnsurePalette,
+    EQD = EQD,
+    LIVE_STRATA = LIVE_STRATA,
+    liveFrame = liveFrame,
+    MAX_CHILD_ROWS = MAX_CHILD_ROWS,
+    MAX_CHILDREN = MAX_CHILDREN,
+    MAX_LATTICE = MAX_LATTICE,
+    MAX_PALETTES = MAX_PALETTES,
+    MAX_SLOTS = MAX_SLOTS,
+    MigrateActiveProfile = MigrateActiveProfile,
+    MigrateLegacyProfile = MigrateLegacyProfile,
+    NEST_BAND_DEFAULT = NEST_BAND_DEFAULT,
+    P = P,
+    PA = PA,
+    PaletteCount = PaletteCount,
+    QUESTION_MARK = QUESTION_MARK,
+    ReadPalette = ReadPalette,
+    REGION_MAX = REGION_MAX,
+    SelectColor = SelectColor,
     TWO_PI = TWO_PI,
-    dbSetters = { function(v) db = v end },
+    dbSetters = {
+        function(v)
+            db = v
+        end,
+    },
     liveViewSetters = {},
     scrollCatcherSetters = {},
     cancelButtonSetters = {},
-    SetUsableSlots = function(f) UsableSlots = f end,
+    SetUsableSlots = function(f)
+        UsableSlots = f
+    end,
 }, {
-    SetDB = "dbSetters", SetLiveView = "liveViewSetters",
-    SetScrollCatcher = "scrollCatcherSetters", SetCancelButton = "cancelButtonSetters",
+    SetDB = "dbSetters",
+    SetLiveView = "liveViewSetters",
+    SetScrollCatcher = "scrollCatcherSetters",
+    SetCancelButton = "cancelButtonSetters",
 })

@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then return end -- no dungeon teleports on WoW Forever: no popup, no secure button, no events; the LFG Reminder options section is not built there and every reader of the _G._CUI_*TeleportPrompt hooks nil-guards
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then
+    return
+end -- no dungeon teleports on WoW Forever: no popup, no secure button, no events; the LFG Reminder options section is not built there and every reader of the _G._CUI_*TeleportPrompt hooks nil-guards
 -------------------------------------------------------------------------------
 --  CludesUIQoL_TeleportPrompt.lua
 --  When the player joins a Group Finder (LFGList) group for a dungeon that has
@@ -24,48 +28,52 @@ if CludesUI and CludesUI.IS_FOREVER then return end -- no dungeon teleports on W
 --     frame. All state lives on frames we create or in file-local upvalues.
 -------------------------------------------------------------------------------
 local CUI = CludesUI
-local PP  = CUI and CUI.PP
-local issecretvalue = issecretvalue or function() return false end
+local PP = CUI and CUI.PP
+local issecretvalue = issecretvalue or function()
+    return false
+end
 
 -- Settings live on the shared CludesUIDB (lazy-init, never re-init at scope).
 local function TeleCfg()
-    if not CludesUIDB then return {} end
+    if not CludesUIDB then
+        return {}
+    end
     CludesUIDB.teleportPrompt = CludesUIDB.teleportPrompt or {}
     return CludesUIDB.teleportPrompt
 end
 
 local function IsEnabled()
-    return TeleCfg().enabled ~= false  -- default ON
+    return TeleCfg().enabled ~= false -- default ON
 end
 
 -------------------------------------------------------------------------------
 --  Layout constants
 -------------------------------------------------------------------------------
-local POPUP_W   = 210
-local TITLE_H   = 27
-local PAD       = 10
-local NAME_TOP    = TITLE_H + 9       -- dungeon-name text top offset
-local NAME_H      = 24                 -- reserved height for the name line
-local BTN_TOP     = NAME_TOP + NAME_H
-local BTN_H       = 56
-local DISABLE_TOP = BTN_TOP + BTN_H + 8  -- "Disable Feature" text below the button
-local DISABLE_H   = 16
-local POPUP_H     = DISABLE_TOP + DISABLE_H + 10
+local POPUP_W = 210
+local TITLE_H = 27
+local PAD = 10
+local NAME_TOP = TITLE_H + 9 -- dungeon-name text top offset
+local NAME_H = 24 -- reserved height for the name line
+local BTN_TOP = NAME_TOP + NAME_H
+local BTN_H = 56
+local DISABLE_TOP = BTN_TOP + BTN_H + 8 -- "Disable Feature" text below the button
+local DISABLE_H = 16
+local POPUP_H = DISABLE_TOP + DISABLE_H + 10
 
 -------------------------------------------------------------------------------
 --  State (plain upvalues; never keyed by a possibly-secret resultID)
 -------------------------------------------------------------------------------
 local popup, secureBtn
-local pendingSpellID       -- resolved teleport spell (static integer) to use
-local pendingName          -- dungeon display name for the title (guaranteed clean)
-local pendingAttrSpellID   -- spell attr stashed to write when leaving combat
-local pendingShow          -- join landed in combat; show on PLAYER_REGEN_ENABLED
-local pendingHide          -- hide requested in combat; hide on PLAYER_REGEN_ENABLED
-local shownSpellID         -- teleport the prompt last surfaced for in this group
+local pendingSpellID -- resolved teleport spell (static integer) to use
+local pendingName -- dungeon display name for the title (guaranteed clean)
+local pendingAttrSpellID -- spell attr stashed to write when leaving combat
+local pendingShow -- join landed in combat; show on PLAYER_REGEN_ENABLED
+local pendingHide -- hide requested in combat; hide on PLAYER_REGEN_ENABLED
+local shownSpellID -- teleport the prompt last surfaced for in this group
 
 -- Forward declarations (closures reference each other)
 local BuildPopup, ShowPrompt, HidePrompt, ClearPending
-local ApplyTeleportPrompt  -- live enable/disable entry point (defined in the events section)
+local ApplyTeleportPrompt -- live enable/disable entry point (defined in the events section)
 local UpdateButtonVisuals, ResolveDungeon, ResolveActiveEntry, ResolveActivity
 local SavePosition, ApplySavedPosition, ApplyDisableVisibility
 
@@ -83,7 +91,9 @@ local function MakeLabel(parent, size, r, g, b, a)
     local flags = ResolveOutline()
     CUI.PrimeFontShadow(fs, flags == "")
     fs:SetFont(ResolveFont(), size, flags)
-    if r then fs:SetTextColor(r, g or 1, b or 1, a or 1) end
+    if r then
+        fs:SetTextColor(r, g or 1, b or 1, a or 1)
+    end
     return fs
 end
 
@@ -91,13 +101,19 @@ end
 --  Position persistence (per-feature DB key only)
 -------------------------------------------------------------------------------
 SavePosition = function()
-    if not popup then return end
+    if not popup then
+        return
+    end
     local p, _, rp, x, yo = popup:GetPoint()
-    if p then TeleCfg().pos = { p = p, rp = rp, x = x, y = yo } end
+    if p then
+        TeleCfg().pos = { p = p, rp = rp, x = x, y = yo }
+    end
 end
 
 ApplySavedPosition = function()
-    if not popup then return end
+    if not popup then
+        return
+    end
     popup:ClearAllPoints()
     local pos = TeleCfg().pos
     if pos and pos.p then
@@ -110,9 +126,13 @@ end
 -- Show/hide the "Disable Feature" text and trim the window height by 20px when
 -- it is hidden. Driven by CludesUIDB.teleportPrompt.showDisable (default ON).
 ApplyDisableVisibility = function()
-    if not popup then return end
+    if not popup then
+        return
+    end
     local show = TeleCfg().showDisable ~= false
-    if popup._disableBtn then popup._disableBtn:SetShown(show) end
+    if popup._disableBtn then
+        popup._disableBtn:SetShown(show)
+    end
     popup:SetHeight(show and POPUP_H or (POPUP_H - 20))
 end
 
@@ -120,7 +140,9 @@ end
 --  Build the popup + secure button (called once at login, out of combat)
 -------------------------------------------------------------------------------
 BuildPopup = function()
-    if popup then return popup end
+    if popup then
+        return popup
+    end
 
     popup = CreateFrame("Frame", "CUITeleportPopup", UIParent)
     popup:SetSize(POPUP_W, POPUP_H)
@@ -128,8 +150,13 @@ BuildPopup = function()
     popup:SetMovable(true)
     popup:EnableMouse(true)
     popup:RegisterForDrag("LeftButton")
-    popup:SetScript("OnDragStart", function(s) s:StartMoving() end)
-    popup:SetScript("OnDragStop", function(s) s:StopMovingOrSizing(); SavePosition() end)
+    popup:SetScript("OnDragStart", function(s)
+        s:StartMoving()
+    end)
+    popup:SetScript("OnDragStop", function(s)
+        s:StopMovingOrSizing()
+        SavePosition()
+    end)
 
     local bg = popup:CreateTexture(nil, "BACKGROUND", nil, 0)
     bg:SetAllPoints()
@@ -139,12 +166,16 @@ BuildPopup = function()
     overlay:SetAllPoints()
     overlay:SetColorTexture(0, 0, 0, 0.55)
 
-    if PP and PP.CreateBorder then PP.CreateBorder(popup, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7) end
+    if PP and PP.CreateBorder then
+        PP.CreateBorder(popup, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
+    end
 
     -- Header bar with the dungeon title
     local hdrBg = popup:CreateTexture(nil, "BORDER")
     hdrBg:SetColorTexture(0, 0, 0, 0.25)
-    hdrBg:SetPoint("TOPLEFT", 1, -1); hdrBg:SetPoint("TOPRIGHT", -1, 0); hdrBg:SetHeight(TITLE_H)
+    hdrBg:SetPoint("TOPLEFT", 1, -1)
+    hdrBg:SetPoint("TOPRIGHT", -1, 0)
+    hdrBg:SetHeight(TITLE_H)
 
     local title = MakeLabel(popup, 11, 1, 1, 1, 1)
     title:SetPoint("TOPLEFT", PAD, -8)
@@ -171,9 +202,15 @@ BuildPopup = function()
     xTex:SetAllPoints()
     xTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
     xTex:SetAlpha(ICON_ALPHA)
-    xBtn:SetScript("OnEnter", function() xTex:SetAlpha(1) end)
-    xBtn:SetScript("OnLeave", function() xTex:SetAlpha(ICON_ALPHA) end)
-    xBtn:SetScript("OnClick", function() HidePrompt() end)
+    xBtn:SetScript("OnEnter", function()
+        xTex:SetAlpha(1)
+    end)
+    xBtn:SetScript("OnLeave", function()
+        xTex:SetAlpha(ICON_ALPHA)
+    end)
+    xBtn:SetScript("OnClick", function()
+        HidePrompt()
+    end)
 
     -- Secure teleport button (created out of combat, once). type + clicks are
     -- set here and NEVER touched again; only "spell" is rewritten (out of combat).
@@ -188,12 +225,14 @@ BuildPopup = function()
     local btnBg = secureBtn:CreateTexture(nil, "BACKGROUND")
     btnBg:SetAllPoints()
     btnBg:SetColorTexture(0.044, 0.034, 0.026, 0.9)
-    if PP and PP.CreateBorder then PP.CreateBorder(secureBtn, 0, 0, 0, 1, 1, "OVERLAY", 7) end
+    if PP and PP.CreateBorder then
+        PP.CreateBorder(secureBtn, 0, 0, 0, 1, 1, "OVERLAY", 7)
+    end
 
     local icon = secureBtn:CreateTexture(nil, "ARTWORK")
     icon:SetSize(40, 40)
     icon:SetPoint("LEFT", 8, 0)
-    icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
+    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
     secureBtn._icon = icon
 
     local btnLabel = MakeLabel(secureBtn, 12, 1, 1, 1, 1)
@@ -214,12 +253,16 @@ BuildPopup = function()
     cd:SetPoint("LEFT", secureBtn, "LEFT", 8, 0)
     cd:SetSize(40, 40)
     cd:SetHideCountdownNumbers(true)
-    cd:SetDrawSwipe(true); cd:SetDrawBling(false); cd:SetDrawEdge(false)
+    cd:SetDrawSwipe(true)
+    cd:SetDrawBling(false)
+    cd:SetDrawEdge(false)
     secureBtn._cd = cd
 
     secureBtn:SetScript("OnEnter", function(self)
         local sid = pendingSpellID
-        if not sid then return end
+        if not sid then
+            return
+        end
         if not IsPlayerSpell(sid) then
             CUI.ShowWidgetTooltip(self, "You have not learned this dungeon teleport yet.")
             return
@@ -244,8 +287,12 @@ BuildPopup = function()
     disableLbl:SetAllPoints()
     disableLbl:SetJustifyH("CENTER")
     disableLbl:SetText("Disable Feature")
-    disableBtn:SetScript("OnEnter", function() disableLbl:SetTextColor(1, 0.3, 0.3, 1) end)
-    disableBtn:SetScript("OnLeave", function() disableLbl:SetTextColor(0.6, 0.6, 0.6, 1) end)
+    disableBtn:SetScript("OnEnter", function()
+        disableLbl:SetTextColor(1, 0.3, 0.3, 1)
+    end)
+    disableBtn:SetScript("OnLeave", function()
+        disableLbl:SetTextColor(0.6, 0.6, 0.6, 1)
+    end)
     disableBtn:SetScript("OnClick", function()
         TeleCfg().enabled = false
         ApplyTeleportPrompt()
@@ -266,10 +313,14 @@ end
 --  Visuals (all use the clean static integer, so compares are safe)
 -------------------------------------------------------------------------------
 UpdateButtonVisuals = function()
-    if not secureBtn or not pendingSpellID then return end
+    if not secureBtn or not pendingSpellID then
+        return
+    end
     local sid = pendingSpellID
     local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(sid)
-    if info and info.iconID then secureBtn._icon:SetTexture(info.iconID) end
+    if info and info.iconID then
+        secureBtn._icon:SetTexture(info.iconID)
+    end
     local known = IsPlayerSpell(sid)
     secureBtn._icon:SetDesaturated(not known)
     secureBtn._icon:SetAlpha(known and 1 or 0.4)
@@ -291,13 +342,22 @@ end
 --  Resolve a known LFG activity -> teleport spell via a CLEAN string chain.
 -------------------------------------------------------------------------------
 ResolveActivity = function(activityID)
-    if not (C_LFGList and C_LFGList.GetActivityInfoTable)
-        or issecretvalue(activityID) or type(activityID) ~= "number" then return end
+    if
+        not (C_LFGList and C_LFGList.GetActivityInfoTable)
+        or issecretvalue(activityID)
+        or type(activityID) ~= "number"
+    then
+        return
+    end
     pcall(function()
         local act = C_LFGList.GetActivityInfoTable(activityID)
-        if type(act) ~= "table" then return end
+        if type(act) ~= "table" then
+            return
+        end
         local fullName = act.fullName
-        if type(fullName) ~= "string" or issecretvalue(fullName) then return end
+        if type(fullName) ~= "string" or issecretvalue(fullName) then
+            return
+        end
         local spellID = CUI and CUI.ResolveTeleportSpellByName and CUI.ResolveTeleportSpellByName(fullName)
         if spellID then
             pendingSpellID = spellID
@@ -311,10 +371,14 @@ end
 -- Search results are readable when accepting an invite. Capture immediately:
 -- they can expire shortly after joining.
 ResolveDungeon = function(resultID)
-    if not (C_LFGList and C_LFGList.GetSearchResultInfo) then return end
+    if not (C_LFGList and C_LFGList.GetSearchResultInfo) then
+        return
+    end
     pcall(function()
         local info = C_LFGList.GetSearchResultInfo(resultID)
-        if type(info) ~= "table" then return end
+        if type(info) ~= "table" then
+            return
+        end
         local activityID = info.activityID
         if activityID == nil and info.activityIDs and not issecretvalue(info.activityIDs) then
             activityID = info.activityIDs[1]
@@ -326,10 +390,14 @@ end
 -- A leader creates or updates an active listing without receiving
 -- LFG_LIST_JOINED_GROUP. Its activityIDs are documented NeverSecret.
 ResolveActiveEntry = function()
-    if not (C_LFGList and C_LFGList.GetActiveEntryInfo) then return end
+    if not (C_LFGList and C_LFGList.GetActiveEntryInfo) then
+        return
+    end
     pcall(function()
         local entry = C_LFGList.GetActiveEntryInfo()
-        if type(entry) ~= "table" or issecretvalue(entry.activityIDs) then return end
+        if type(entry) ~= "table" or issecretvalue(entry.activityIDs) then
+            return
+        end
         ResolveActivity(entry.activityIDs[1])
     end)
 end
@@ -338,19 +406,21 @@ end
 --  Show / Hide / Clear
 -------------------------------------------------------------------------------
 ShowPrompt = function()
-    if not IsEnabled() or not pendingSpellID then return end
+    if not IsEnabled() or not pendingSpellID then
+        return
+    end
     BuildPopup()
-    popup._name:SetText(pendingName or "")  -- SetText accepts secret strings natively
+    popup._name:SetText(pendingName or "") -- SetText accepts secret strings natively
     if InCombatLockdown() then
         -- Cannot write the secure attribute or surface the protected teleport
         -- button in combat (and teleports cannot be cast in combat anyway).
         -- Defer the whole show to PLAYER_REGEN_ENABLED.
         pendingAttrSpellID = pendingSpellID
         pendingShow = true
-        pendingHide = nil   -- a deferred show supersedes any deferred hide
+        pendingHide = nil -- a deferred show supersedes any deferred hide
         return
     end
-    secureBtn:SetAttribute("spell", pendingSpellID)  -- always a static integer
+    secureBtn:SetAttribute("spell", pendingSpellID) -- always a static integer
     pendingAttrSpellID = nil
     pendingHide = nil
     UpdateButtonVisuals()
@@ -364,21 +434,29 @@ HidePrompt = function()
     -- the blocked call entirely -- the common case when leaving an instance in
     -- combat). If it's genuinely shown during combat, defer the hide to
     -- PLAYER_REGEN_ENABLED instead of calling the protected method now.
-    if not (popup and popup:IsShown()) then pendingHide = nil; return end
-    if InCombatLockdown() then pendingHide = true; return end
+    if not (popup and popup:IsShown()) then
+        pendingHide = nil
+        return
+    end
+    if InCombatLockdown() then
+        pendingHide = true
+        return
+    end
     pendingHide = nil
     popup:Hide()
 end
 
 ClearPending = function()
     pendingSpellID = nil
-    pendingName    = nil
-    pendingShow    = nil
+    pendingName = nil
+    pendingShow = nil
 end
 
 -- Live update hook for the options slider/toggles (scale + disable-text row).
 _G._CUI_RefreshTeleportPrompt = function()
-    if not popup then return end
+    if not popup then
+        return
+    end
     popup:SetScale(TeleCfg().scale or 1.05)
     ApplyDisableVisibility()
 end
@@ -464,7 +542,9 @@ ev:SetScript("OnEvent", function(self, event, arg1, arg2)
         -- Finish a mid-combat enable: safe to build the secure button now.
         if pendingBuild then
             pendingBuild = nil
-            if IsEnabled() then BuildPopup() end
+            if IsEnabled() then
+                BuildPopup()
+            end
         end
         -- Flush a secure attribute write that was blocked during combat.
         if pendingAttrSpellID and secureBtn then
@@ -475,25 +555,31 @@ ev:SetScript("OnEvent", function(self, event, arg1, arg2)
         if pendingShow and pendingSpellID and IsEnabled() then
             pendingShow = nil
             UpdateButtonVisuals()
-            if popup then popup:Show() end
+            if popup then
+                popup:Show()
+            end
         end
         -- Flush a hide that was blocked during combat (protected popup:Hide()).
         if pendingHide then
             pendingHide = nil
-            if popup and popup:IsShown() then popup:Hide() end
+            if popup and popup:IsShown() then
+                popup:Hide()
+            end
         end
         -- Drop any event that only stayed registered for the flushes above.
         SyncEvents()
         return
     elseif event == "PLAYER_REGEN_DISABLED" then
-        HidePrompt()  -- combat-start guard (teleports cannot be cast in combat)
+        HidePrompt() -- combat-start guard (teleports cannot be cast in combat)
         return
     end
 
     -- Defense in depth: feature events unregister on disable, but bail if one
     -- lands mid-transition.
     if not IsEnabled() then
-        ClearPending(); HidePrompt(); return
+        ClearPending()
+        HidePrompt()
+        return
     end
 
     if event == "LFG_LIST_JOINED_GROUP" then
@@ -521,18 +607,25 @@ ev:SetScript("OnEvent", function(self, event, arg1, arg2)
         end
     elseif event == "GROUP_ROSTER_UPDATE" then
         if not IsInGroup() then
-            ClearPending(); HidePrompt()
+            ClearPending()
+            HidePrompt()
             shownSpellID = nil
         end
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
         local inInstance, instanceType = IsInInstance()
         if inInstance and instanceType == "party" then
-            ClearPending(); HidePrompt()
+            ClearPending()
+            HidePrompt()
             -- The dungeon you stand in counts as shown: re-listing it from inside
             -- (a replacement search) must not offer a teleport to it.
             local instName = GetInstanceInfo()
-            shownSpellID = (type(instName) == "string" and not issecretvalue(instName)
-                and CUI and CUI.ResolveTeleportSpellByName and CUI.ResolveTeleportSpellByName(instName)) or nil
+            shownSpellID = (
+                type(instName) == "string"
+                and not issecretvalue(instName)
+                and CUI
+                and CUI.ResolveTeleportSpellByName
+                and CUI.ResolveTeleportSpellByName(instName)
+            ) or nil
         end
     end
 end)

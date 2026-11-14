@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_RoundedCorners.lua
 --
@@ -70,7 +72,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  slider's track, fill and thumb) and CludesUI.MakeRoundedBorder
 --  (MakeBorder's API: dropdowns and their lists, value boxes, cog boxes).
 -------------------------------------------------------------------------------
-if not CludesUI then return end
+if not CludesUI then
+    return
+end
 
 local MEDIA = "Interface\\AddOns\\CludesUI\\media\\rounded\\"
 local GLOW_EDGE = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border"
@@ -89,21 +93,25 @@ local pairs, select, pcall = pairs, select, pcall
 
 -- Media paths by number, built on first use.
 local function Paths(fmt)
-    return setmetatable({}, { __index = function(t, n)
-        local v = MEDIA .. fmt:format(n)
-        t[n] = v
-        return v
-    end })
+    return setmetatable({}, {
+        __index = function(t, n)
+            local v = MEDIA .. fmt:format(n)
+            t[n] = v
+            return v
+        end,
+    })
 end
 -- Masks by radius * 16 + round corners, built on first use.
 local function MaskPaths(prefix)
-    return setmetatable({}, { __index = function(t, k)
-        local n, c = floor(k / 16), k % 16
-        local v = c == ALL_CORNERS and ("%s%s-%d.tga"):format(MEDIA, prefix, n)
-            or ("%s%s-%d-%d.tga"):format(MEDIA, prefix, n, c)
-        t[k] = v
-        return v
-    end })
+    return setmetatable({}, {
+        __index = function(t, k)
+            local n, c = floor(k / 16), k % 16
+            local v = c == ALL_CORNERS and ("%s%s-%d.tga"):format(MEDIA, prefix, n)
+                or ("%s%s-%d-%d.tga"):format(MEDIA, prefix, n, c)
+            t[k] = v
+            return v
+        end,
+    })
 end
 local ROUNDED = MaskPaths("rounded")
 local ROUNDED_INV = MaskPaths("rounded-inv")
@@ -112,10 +120,10 @@ local GLOW_TIGHT = Paths("glow-tight-%d.tga")
 
 -- dx, dy: the inward direction from each corner.
 local CORNERS = {
-    { p = "TOPLEFT",     tc = { 0, 1, 0, 1 }, dx = 1,  dy = -1, bit = 1 },
-    { p = "TOPRIGHT",    tc = { 1, 0, 0, 1 }, dx = -1, dy = -1, bit = 2 },
-    { p = "BOTTOMLEFT",  tc = { 0, 1, 1, 0 }, dx = 1,  dy = 1,  bit = 4 },
-    { p = "BOTTOMRIGHT", tc = { 1, 0, 1, 0 }, dx = -1, dy = 1,  bit = 8 },
+    { p = "TOPLEFT", tc = { 0, 1, 0, 1 }, dx = 1, dy = -1, bit = 1 },
+    { p = "TOPRIGHT", tc = { 1, 0, 0, 1 }, dx = -1, dy = -1, bit = 2 },
+    { p = "BOTTOMLEFT", tc = { 0, 1, 1, 0 }, dx = 1, dy = 1, bit = 4 },
+    { p = "BOTTOMRIGHT", tc = { 1, 0, 1, 0 }, dx = -1, dy = 1, bit = 8 },
 }
 local STRIPS = { "_top", "_bottom", "_left", "_right" }
 local STYLE_OK = { solid = true, glow = true, shadow = true }
@@ -125,14 +133,14 @@ local EMPTY = {}
 -- public slot.
 local POOL = CludesUI._Pool
 
-local state = setmetatable({}, { __mode = "k" })       -- owner -> rounding state
+local state = setmetatable({}, { __mode = "k" }) -- owner -> rounding state
 -- border container -> its Solid parts: a container outlives an owner's state
 -- (an options page pool owner dressed again starts a new state, while its PP
 -- border container stays on the same frame), so its parts are found again,
 -- never made twice.
 local solidsByCont = setmetatable({}, { __mode = "k" })
-local byBorder = setmetatable({}, { __mode = "k" })    -- border frame -> state
-local ownTex = setmetatable({}, { __mode = "k" })      -- our pieces, never masked
+local byBorder = setmetatable({}, { __mode = "k" }) -- border frame -> state
+local ownTex = setmetatable({}, { __mode = "k" }) -- our pieces, never masked
 local hooked = false
 
 CludesUI.ROUNDED_MAX_RADIUS = MAX_RADIUS
@@ -146,12 +154,17 @@ local CORNER_LABELS = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" }
 function CludesUI.RoundedCornerRows(rows, get, set)
     for i = 1, 4 do
         local b = CORNERS[i].bit
-        rows[#rows + 1] = { type = "toggle", label = CORNER_LABELS[i],
-            get = function() return bit.band(get() or ALL_CORNERS, b) ~= 0 end,
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = CORNER_LABELS[i],
+            get = function()
+                return bit.band(get() or ALL_CORNERS, b) ~= 0
+            end,
             set = function(v)
                 local m = get() or ALL_CORNERS
                 set(v and bit.bor(m, b) or bit.band(m, ALL_CORNERS - b))
-            end }
+            end,
+        }
     end
     return rows
 end
@@ -160,10 +173,19 @@ end
 -- partner (a detached power bar, a nameplate cast bar). applies() returns
 -- true while the toggle applies; nil = always.
 function CludesUI.RoundedJoinRow(rows, label, tooltip, get, set, applies, need)
-    rows[#rows + 1] = { type = "toggle", label = label, tooltip = tooltip,
-        get = function() return get() == true end, set = set,
-        disabled = applies and function() return not applies() end or nil,
-        disabledTooltip = need }
+    rows[#rows + 1] = {
+        type = "toggle",
+        label = label,
+        tooltip = tooltip,
+        get = function()
+            return get() == true
+        end,
+        set = set,
+        disabled = applies and function()
+            return not applies()
+        end or nil,
+        disabledTooltip = need,
+    }
     return rows
 end
 
@@ -192,9 +214,13 @@ end
 -- Half a region's short side, or nil while it is unsized or secret.
 local function HalfSide(region)
     local w, h = region:GetSize()
-    if issecretvalue(w) or issecretvalue(h) then return nil end
+    if issecretvalue(w) or issecretvalue(h) then
+        return nil
+    end
     local half = min(w, h) / 2
-    if half > 0 then return half end
+    if half > 0 then
+        return half
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -217,17 +243,23 @@ end
 local function SeatRegions(...)
     for i = 1, select("#", ...) do
         local r = select(i, ...)
-        if r:GetObjectType() == "Texture" and not ownTex[r] then Seat(r) end
+        if r:GetObjectType() == "Texture" and not ownTex[r] then
+            Seat(r)
+        end
     end
 end
 
 local Walk
 local function WalkChildren(...)
-    for i = 1, select("#", ...) do Walk((select(i, ...))) end
+    for i = 1, select("#", ...) do
+        Walk((select(i, ...)))
+    end
 end
 -- wSkip: the border frame (handled apart).
 Walk = function(root)
-    if root == wSkip then return end
+    if root == wSkip then
+        return
+    end
     SeatRegions(root:GetRegions())
     WalkChildren(root:GetChildren())
 end
@@ -251,10 +283,14 @@ end
 -- (st.missed).
 local function ReseatMask(st, radius, cont)
     local c = cont or false
-    if st.kRadius == radius and st.kCont == c and st.kCorners == st.corners then return end
+    if st.kRadius == radius and st.kCont == c and st.kCorners == st.corners then
+        return
+    end
     st.kRadius, st.kCont, st.kCorners = radius, c, st.corners
     local m, masked = st.mask, st.masked
-    for tex in pairs(masked) do RemoveMask(tex, m) end
+    for tex in pairs(masked) do
+        RemoveMask(tex, m)
+    end
     ShapeMask(st, m, radius, cont)
     for tex in pairs(masked) do
         if not AddMask(tex, m) then
@@ -278,11 +314,15 @@ local function MaskBody(st, roots, singles, radius, cont, skip)
     wMasked, wMask, wGen, wSkip, wMissed = masked, m, gen, skip, false
     for i = 1, 6 do -- fixed slots: roots may hold nils
         local root = roots[i]
-        if root then Walk(root) end
+        if root then
+            Walk(root)
+        end
     end
     for i = 1, 9 do
         local tex = singles[i]
-        if tex then Seat(tex) end
+        if tex then
+            Seat(tex)
+        end
     end
     st.missed = wMissed
     wMasked, wMask, wSkip = nil, nil, nil
@@ -300,15 +340,21 @@ end
 -------------------------------------------------------------------------------
 local function SolidOff(st)
     local sd = st.solid
-    if not sd or not sd.on then return end
-    for i = 1, 4 do RemoveMask(sd.cont[STRIPS[i]], sd.hide) end
+    if not sd or not sd.on then
+        return
+    end
+    for i = 1, 4 do
+        RemoveMask(sd.cont[STRIPS[i]], sd.hide)
+    end
     sd.fill:Hide()
     sd.on = nil
 end
 
 local function SolidParts(st, cont)
     local sd = solidsByCont[cont]
-    if sd then return sd end
+    if sd then
+        return sd
+    end
     sd = { cont = cont }
     -- The fill and its hole draw their slice corners in their frame's units,
     -- as the body mask does in the owner's. A scale-decoupled container
@@ -325,7 +371,9 @@ local function SolidParts(st, cont)
         -- rides that frame as the container does (CludesUI_PixelPerfect.lua),
         -- hidden at its reset and never handed out; SolidOn shows it again.
         local attach = POOL.Attach
-        if attach then attach(parent, host) end
+        if attach then
+            attach(parent, host)
+        end
         sd.layer = host
     end
     local fill = host:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -366,7 +414,9 @@ local function SolidOn(st, cont, radius, inner)
     local corners = st.corners
     local innerKey = inner * 16 + corners
     if sd.inner ~= innerKey then
-        if sd.inner then RemoveMask(sd.fill, sd.hole) end
+        if sd.inner then
+            RemoveMask(sd.fill, sd.hole)
+        end
         sd.hole:SetTexture(ROUNDED_INV[innerKey], "CLAMPTOWHITE", "CLAMPTOWHITE")
         sd.hole:SetTextureSliceMargins(inner, inner, inner, inner)
         sd.hole:SetTextureSliceMode(STRETCHED)
@@ -374,7 +424,9 @@ local function SolidOn(st, cont, radius, inner)
         sd.inner = innerKey
     end
     if not sd.on then
-        for i = 1, 4 do AddMask(cont[STRIPS[i]], sd.hide) end
+        for i = 1, 4 do
+            AddMask(cont[STRIPS[i]], sd.hide)
+        end
         sd.on = true
     end
     if sd.radius ~= radius or sd.corners ~= corners then
@@ -384,9 +436,13 @@ local function SolidOn(st, cont, radius, inner)
     -- The layer draws where the container does.
     local layer = sd.layer
     if layer then
-        if not layer:IsShown() then layer:Show() end
+        if not layer:IsShown() then
+            layer:Show()
+        end
         local lvl = cont:GetFrameLevel()
-        if layer:GetFrameLevel() ~= lvl then layer:SetFrameLevel(lvl) end
+        if layer:GetFrameLevel() ~= lvl then
+            layer:SetFrameLevel(lvl)
+        end
     end
     sd.fill:SetVertexColor(cont._top:GetVertexColor())
     sd.fill:Show()
@@ -397,7 +453,9 @@ end
 -------------------------------------------------------------------------------
 local function GlowOff(st)
     local gl = st.glow
-    if not gl or not gl.on then return end
+    if not gl or not gl.on then
+        return
+    end
     gl.bd:SetAlpha(1)
     gl.frame:Hide()
     gl.on = nil
@@ -405,7 +463,9 @@ end
 
 local function GlowParts(st, border)
     local gl = st.glow
-    if gl then return gl end
+    if gl then
+        return gl
+    end
     -- On a frame of the options page pool the glow frame is pooled with it:
     -- the state that holds it is dropped once that frame is dressed again.
     local f = POOL.CreateFrame("Frame", nil, border)
@@ -427,10 +487,10 @@ local function GlowParts(st, border)
         gl.edge[i] = t
     end
     local e = gl.edge
-    e[1]:SetTexCoord(0, 0, 0.125, 0, 0, 1, 0.125, 1)     -- top
-    e[2]:SetTexCoord(0.125, 0, 0, 0, 0.125, 1, 0, 1)     -- bottom
-    e[3]:SetTexCoord(0, 0.125, 0, 1)                     -- left
-    e[4]:SetTexCoord(0.125, 0, 0, 1)                     -- right
+    e[1]:SetTexCoord(0, 0, 0.125, 0, 0, 1, 0.125, 1) -- top
+    e[2]:SetTexCoord(0.125, 0, 0, 0, 0.125, 1, 0, 1) -- bottom
+    e[3]:SetTexCoord(0, 0.125, 0, 1) -- left
+    e[4]:SetTexCoord(0.125, 0, 0, 1) -- right
     st.glow = gl
     return gl
 end
@@ -455,19 +515,23 @@ local function GlowPiece(S, E, half)
     -- half the short side, the art cut to match), its straight parts on the
     -- sides' own line, and the sides start past it.
     local size = (half and half < E) and half or E
-    return GLOW_TIGHT[Clamp(floor((S / E - 0.5) * 2 * GLOW_NB) + 1, 1, GLOW_NB)],
-        size, 0, size / E, size, E
+    return GLOW_TIGHT[Clamp(floor((S / E - 0.5) * 2 * GLOW_NB) + 1, 1, GLOW_NB)], size, 0, size / E, size, E
 end
 
 local function GlowOn(st, border, bd, radius)
     -- The edge size from the backdrop's own info (GetBackdrop copies it).
     local E = bd.backdropInfo and bd:GetEdgeSize()
-    if not E or E <= 0 then GlowOff(st); return end
+    if not E or E <= 0 then
+        GlowOff(st)
+        return
+    end
     local gl = GlowParts(st, border)
     local f = gl.frame
     -- A new border or backdrop: the old one gets its alpha back.
     if gl.bd ~= bd then
-        if gl.bd then gl.bd:SetAlpha(1) end
+        if gl.bd then
+            gl.bd:SetAlpha(1)
+        end
         gl.bd = bd
         gl.S = nil
     end
@@ -479,7 +543,9 @@ local function GlowOn(st, border, bd, radius)
     -- glow's short side. A square corner takes radius 0.
     local half = HalfSide(bd)
     local S = E / 2 + radius
-    if half and S > half then S = half end
+    if half and S > half then
+        S = half
+    end
     local corners = st.corners
     local lvl = bd:GetFrameLevel()
     if gl.S ~= S or gl.E ~= E or gl.half ~= half or gl.lvl ~= lvl or gl.corners ~= corners then
@@ -491,11 +557,16 @@ local function GlowOn(st, border, bd, radius)
         local sPath, sSize, sInset, sCrop, sRun
         if corners ~= ALL_CORNERS then
             local sS = E / 2
-            if half and sS > half then sS = half end
+            if half and sS > half then
+                sS = half
+            end
             sPath, sSize, sInset, sCrop, sRun = GlowPiece(sS, E, half)
         end
         local runs = gl.runs
-        if not runs then runs = {}; gl.runs = runs end
+        if not runs then
+            runs = {}
+            gl.runs = runs
+        end
         for i = 1, 4 do
             local c, t = CORNERS[i], gl.corner[i]
             local p, sz, ins, cr = path, size, inset, crop
@@ -550,23 +621,34 @@ local Refit
 -- Everything this owner added comes off; the state stays for the next time.
 local function Clear(st)
     local m, masked = st.mask, st.masked
-    for tex in pairs(masked) do RemoveMask(tex, m) end
+    for tex in pairs(masked) do
+        RemoveMask(tex, m)
+    end
     wipe(masked)
     st.kRadius = nil
     SolidOff(st)
     GlowOff(st)
-    if st.border then byBorder[st.border] = nil end
-    if st.clip then st.clip:SetClipsChildren(true); st.clip = nil end
+    if st.border then
+        byBorder[st.border] = nil
+    end
+    if st.clip then
+        st.clip:SetClipsChildren(true)
+        st.clip = nil
+    end
     st.on = nil
     CludesUI.RegisterPxReapply(st.owner, nil)
 end
 
 local function OnBorderColor(borderFrame, r, g, b, a)
     local st = byBorder[borderFrame]
-    if not st then return end
+    if not st then
+        return
+    end
     a = a or 1
     local sd = st.solid
-    if sd and sd.on then sd.fill:SetVertexColor(r, g, b, a) end
+    if sd and sd.on then
+        sd.fill:SetVertexColor(r, g, b, a)
+    end
     local gl = st.glow
     if gl and gl.on then
         for i = 1, 4 do
@@ -589,26 +671,30 @@ local function Fit(st)
     local half = HalfSide(rect)
     if half and half >= 1 then
         local cap = max(1, floor(half - 0.5))
-        if radius > cap then radius = cap end
+        if radius > cap then
+            radius = cap
+        end
     end
     -- A border frame that is the owner itself hides along with the body, so
     -- its own shown flag says nothing (a nameplate cast bar between casts).
-    local cont = border and (border == st.owner or border:IsShown())
-        and CludesUI.PP.GetBorders(border)
-    local edge = cont and cont._top and cont:IsShown()
-        and cont._top:IsShown() and cont._snapEdge or 0
+    local cont = border and (border == st.owner or border:IsShown()) and CludesUI.PP.GetBorders(border)
+    local edge = cont and cont._top and cont:IsShown() and cont._top:IsShown() and cont._snapEdge or 0
     local inner = radius
     if edge > 0 then
         -- Strip width in shape units (the container may run its own scale).
         local cs, rs = cont:GetEffectiveScale(), rect:GetEffectiveScale()
-        if rs > 0 then edge = edge * cs / rs end
+        if rs > 0 then
+            edge = edge * cs / rs
+        end
         inner = max(1, floor(radius - edge + 0.5))
         -- The inner rect holds the hole's and the body's masks the same way:
         -- past it their corners shrink or overlap and square their ends off,
         -- so a thin bar's body would poke out past the ring.
         if half then
             local cap = floor(half - edge - 0.5)
-            if cap >= 1 and inner > cap then inner = cap end
+            if cap >= 1 and inner > cap then
+                inner = cap
+            end
         end
         return radius, inner, cont, nil
     end
@@ -618,8 +704,16 @@ local function Fit(st)
 end
 
 local function Paint(st, radius, inner, cont, glow)
-    if cont then SolidOn(st, cont, radius, inner) else SolidOff(st) end
-    if glow then GlowOn(st, st.border, glow, radius) else GlowOff(st) end
+    if cont then
+        SolidOn(st, cont, radius, inner)
+    else
+        SolidOff(st)
+    end
+    if glow then
+        GlowOn(st, st.border, glow, radius)
+    else
+        GlowOff(st)
+    end
 end
 
 -- The owner's options page pool dress (CludesUI_FramePool.lua; nil for a
@@ -635,17 +729,25 @@ end
 -- container, a glow backdrop or bar clip the pool does not manage, the recolor
 -- entry and the pixel-grid registration), then the state goes.
 local function DropStale(owner, st)
-    if not st or st.poolGen == PoolDress(owner) then return st end
+    if not st or st.poolGen == PoolDress(owner) then
+        return st
+    end
     if st.on then
         SolidOff(st)
         local managed = POOL.Managed
         local gl = st.glow
-        if gl and gl.on and gl.bd and not (managed and managed(gl.bd)) then gl.bd:SetAlpha(1) end
+        if gl and gl.on and gl.bd and not (managed and managed(gl.bd)) then
+            gl.bd:SetAlpha(1)
+        end
         local clip = st.clip
-        if clip and not (managed and managed(clip)) then clip:SetClipsChildren(true) end
+        if clip and not (managed and managed(clip)) then
+            clip:SetClipsChildren(true)
+        end
         CludesUI.RegisterPxReapply(owner, nil)
     end
-    if st.border and byBorder[st.border] == st then byBorder[st.border] = nil end
+    if st.border and byBorder[st.border] == st then
+        byBorder[st.border] = nil
+    end
     state[owner] = nil
     return nil
 end
@@ -654,23 +756,33 @@ end
 -- body textures stay the same.
 Refit = function(owner)
     local st = DropStale(owner, state[owner])
-    if not (st and st.on) then return end
+    if not (st and st.on) then
+        return
+    end
     local radius, inner, cont, glow = Fit(st)
     ReseatMask(st, inner, cont)
     Paint(st, radius, inner, cont, glow)
 end
 
 function CludesUI.RoundCorners(owner, radius, opts)
-    if not owner then return end
+    if not owner then
+        return
+    end
     local st = DropStale(owner, state[owner])
     radius = min(floor(tonumber(radius) or 0), MAX_RADIUS)
     opts = opts or EMPTY
     local style = opts.style or "solid"
-    if radius > 0 and not STYLE_OK[style] then radius = 0 end
+    if radius > 0 and not STYLE_OK[style] then
+        radius = 0
+    end
     local corners = opts.corners and floor(tonumber(opts.corners) or ALL_CORNERS) % 16 or ALL_CORNERS
-    if corners == 0 then radius = 0 end
+    if corners == 0 then
+        radius = 0
+    end
     if radius <= 0 then
-        if st and st.on then Clear(st) end
+        if st and st.on then
+            Clear(st)
+        end
         return
     end
     if not st then
@@ -690,15 +802,23 @@ function CludesUI.RoundCorners(owner, radius, opts)
     end
     local border = opts.border
     if st.border ~= border then
-        if st.border then byBorder[st.border] = nil end
+        if st.border then
+            byBorder[st.border] = nil
+        end
         st.border = border
         st.kRadius = nil
     end
-    if border then byBorder[border] = st end
+    if border then
+        byBorder[border] = st
+    end
     local clip = opts.clip
     if st.clip ~= clip then
-        if st.clip then st.clip:SetClipsChildren(true) end
-        if clip then clip:SetClipsChildren(false) end
+        if st.clip then
+            st.clip:SetClipsChildren(true)
+        end
+        if clip then
+            clip:SetClipsChildren(false)
+        end
         st.clip = clip
     end
     local roots = opts.roots
@@ -723,11 +843,17 @@ end
 -- A body texture left without the mask needs the walk's retry: full pass.
 function CludesUI.RoundedSetCorners(owner, corners)
     local st = owner and DropStale(owner, state[owner])
-    if not (st and st.on) or st.missed then return false end
+    if not (st and st.on) or st.missed then
+        return false
+    end
     corners = corners and floor(tonumber(corners) or ALL_CORNERS) % 16 or ALL_CORNERS
-    if corners == 0 then return false end
+    if corners == 0 then
+        return false
+    end
     st.corners = corners
-    if st.border then byBorder[st.border] = st end
+    if st.border then
+        byBorder[st.border] = st
+    end
     Refit(owner)
     return true
 end
@@ -752,13 +878,17 @@ end
 -- across, unsliced, so on any frame where the region is d px square. White:
 -- the colour is the texture's vertex colour.
 local WEAK_K = { __mode = "k" }
-local layers = setmetatable({}, WEAK_K)   -- layer frame -> layer object
+local layers = setmetatable({}, WEAK_K) -- layer frame -> layer object
 local PILL = Paths("pill-%d.tga")
 local CIRCLE = Paths("circle-%d.tga")
 local ART_MIN, ART_MAX = 2, 48
 
 function CludesUI.SetPillArt(tex, h)
-    if h < ART_MIN then h = ART_MIN elseif h > ART_MAX then h = ART_MAX end
+    if h < ART_MIN then
+        h = ART_MIN
+    elseif h > ART_MAX then
+        h = ART_MAX
+    end
     local m = floor(h / 2)
     tex:SetTexture(PILL[h])
     tex:SetTextureSliceMargins(m, 0, m, 0)
@@ -766,7 +896,11 @@ function CludesUI.SetPillArt(tex, h)
 end
 
 function CludesUI.SetCircleArt(tex, d)
-    if d < ART_MIN then d = ART_MIN elseif d > ART_MAX then d = ART_MAX end
+    if d < ART_MIN then
+        d = ART_MIN
+    elseif d > ART_MAX then
+        d = ART_MAX
+    end
     tex:SetTexture(CIRCLE[d])
 end
 
@@ -776,11 +910,20 @@ end
 local function SeatLayer(L, layer, k)
     local p = L.parent
     local l, t, r, b = p:GetLeft(), p:GetTop(), p:GetRight(), p:GetBottom()
-    if not (l and t and r and b) or issecretvalue(l) or issecretvalue(t)
-        or issecretvalue(r) or issecretvalue(b) then return end
+    if
+        not (l and t and r and b)
+        or issecretvalue(l)
+        or issecretvalue(t)
+        or issecretvalue(r)
+        or issecretvalue(b)
+    then
+        return
+    end
     l, t, r, b = l * k, t * k, r * k, b * k
     l, t, r, b = floor(l + 0.5) - l, floor(t + 0.5) - t, floor(r + 0.5) - r, floor(b + 0.5) - b
-    if L.sl == l and L.st == t and L.sr == r and L.sb == b then return end
+    if L.sl == l and L.st == t and L.sr == r and L.sb == b then
+        return
+    end
     L.sl, L.st, L.sr, L.sb = l, t, r, b
     layer:ClearAllPoints()
     layer:SetPoint("TOPLEFT", p, "TOPLEFT", l, t)
@@ -807,9 +950,13 @@ end
 
 local function LayerOnShow(self)
     local L = layers[self]
-    if not L then return end
+    if not L then
+        return
+    end
     FitLayer(L)
-    if L.onShow and layers[self] then L.onShow(L) end
+    if L.onShow and layers[self] then
+        L.onShow(L)
+    end
 end
 
 -- A layer made under a shown parent gets no OnShow, and its caller anchors
@@ -821,7 +968,9 @@ local function FitNewLayers()
     for i = 1, #newLayers do
         local L = newLayers[i]
         newLayers[i] = nil
-        if layers[L._frame] == L and L._frame:IsVisible() then FitLayer(L) end
+        if layers[L._frame] == L and L._frame:IsVisible() then
+            FitLayer(L)
+        end
     end
 end
 
@@ -845,10 +994,14 @@ end
 -- A Window Scale change: the shown layers re-fit once the panel settles.
 local function RefitLayers()
     for layer, L in pairs(layers) do
-        if layer:IsVisible() then FitLayer(L) end
+        if layer:IsVisible() then
+            FitLayer(L)
+        end
     end
 end
-if not CludesUI._onScaleChanged then CludesUI._onScaleChanged = {} end
+if not CludesUI._onScaleChanged then
+    CludesUI._onScaleChanged = {}
+end
 CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = RefitLayers
 
 -- CludesUI.MakeRoundedBorder(parent, r, g, b, a, body, radius, clip, width) is the
@@ -889,7 +1042,9 @@ local function OutlineSetCover(self, r, g, b)
         cover = self._frame:CreateTexture(nil, "BORDER", nil, 6)
         cover:SetAllPoints(self._frame)
         self.cover = cover
-        if self.r then AddMask(cover, self.hole) end
+        if self.r then
+            AddMask(cover, self.hole)
+        end
     end
     cover:SetColorTexture(r, g, b, 1)
 end
@@ -901,21 +1056,31 @@ local function FitOutline(o, k)
     local half = HalfSide(parent)
     -- No radius named: the house corner for this size, read at each fit (the
     -- parent may not have been laid out when the outline was made).
-    if o.autoRadius then o.radius = HouseRadius(half) end
+    if o.autoRadius then
+        o.radius = HouseRadius(half)
+    end
     local r = floor(o.radius * k + 0.5)
     if half then
         local cap = floor(half * k - 0.5)
-        if r > cap then r = cap end
+        if r > cap then
+            r = cap
+        end
     end
     local w = o.width
-    if r > MAX_RADIUS then r = MAX_RADIUS elseif r < w + 1 then r = w + 1 end
+    if r > MAX_RADIUS then
+        r = MAX_RADIUS
+    elseif r < w + 1 then
+        r = w + 1
+    end
     if o.r ~= r then
         -- The hole is reshaped detached (a mask carries its texture before
         -- it is added).
         local fill, hole, cover = o._fill, o.hole, o.cover
         if o.r then
             RemoveMask(fill, hole)
-            if cover then RemoveMask(cover, hole) end
+            if cover then
+                RemoveMask(cover, hole)
+            end
         end
         o.r = r
         SetRounded(fill, r, ALL_CORNERS)
@@ -924,18 +1089,26 @@ local function FitOutline(o, k)
         hole:SetTextureSliceMargins(inner, inner, inner, inner)
         hole:SetTextureSliceMode(STRETCHED)
         AddMask(fill, hole)
-        if cover then AddMask(cover, hole) end
+        if cover then
+            AddMask(cover, hole)
+        end
     end
     local bm = o.bodyMask
     if bm then
         local br = o.radius
         if half then
             local cap = floor(half - 0.5)
-            if br > cap then br = cap end
+            if br > cap then
+                br = cap
+            end
         end
-        if br < 1 then br = 1 end
+        if br < 1 then
+            br = 1
+        end
         if o.br ~= br then
-            if o.br then RemoveMask(o.body, bm) end
+            if o.br then
+                RemoveMask(o.body, bm)
+            end
             o.br = br
             SetRounded(bm, br, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
             AddMask(o.body, bm)
@@ -963,7 +1136,9 @@ local function ClipRegions(...)
                     RemoveMask(reg, cMask)
                     cSet[reg] = nil
                 end
-                if not artWaiting then artWaiting = setmetatable({}, WEAK_K) end
+                if not artWaiting then
+                    artWaiting = setmetatable({}, WEAK_K)
+                end
                 artWaiting[reg] = cOwner
             elseif cSet[reg] ~= g and AddMask(reg, cMask) then
                 cSet[reg] = g
@@ -972,10 +1147,14 @@ local function ClipRegions(...)
     end
 end
 local function ClipChildren(...)
-    for i = 1, select("#", ...) do ClipFrame((select(i, ...))) end
+    for i = 1, select("#", ...) do
+        ClipFrame((select(i, ...)))
+    end
 end
 ClipFrame = function(f)
-    if f:GetObjectType() == "EditBox" then return end
+    if f:GetObjectType() == "EditBox" then
+        return
+    end
     ClipRegions(f:GetRegions())
     ClipChildren(f:GetChildren())
 end
@@ -984,7 +1163,9 @@ local function ClipScrolls(...)
         local f = select(i, ...)
         if f:GetObjectType() == "ScrollFrame" then
             local content = f:GetScrollChild()
-            if content then ClipFrame(content) end
+            if content then
+                ClipFrame(content)
+            end
         end
     end
 end
@@ -993,7 +1174,9 @@ local function ClipContent(o)
     cMask, cSet, cOwner = o.innerMask, o.clipped, o
     ClipScrolls(o.parent:GetChildren())
     cMask, cSet, cOwner = nil, nil, nil
-    if artWaiting and next(artWaiting) then StartWait() end
+    if artWaiting and next(artWaiting) then
+        StartWait()
+    end
 end
 
 -- The client loads texture files in the background, and a rounded mask's art
@@ -1019,14 +1202,18 @@ local function ClipWaitTick(self)
             -- Still this layer's outline and on screen: a list closed
             -- meanwhile is walked by its next show.
             local layer = o._frame
-            if layers[layer] == o and layer:IsVisible() then ClipContent(o) end
+            if layers[layer] == o and layer:IsVisible() then
+                ClipContent(o)
+            end
         end
     end
     for tex, w in pairs(maskWaiting) do
         if w.m:IsObjectLoaded() then
             maskWaiting[tex] = nil
             -- Not a texture the options page pool handed to another build since.
-            if PoolDress(tex) == w.gen then AddMask(tex, w.m) end
+            if PoolDress(tex) == w.gen then
+                AddMask(tex, w.m)
+            end
         end
     end
     for tex, o in pairs(artWaiting) do
@@ -1036,15 +1223,21 @@ local function ClipWaitTick(self)
         elseif tex:IsObjectLoaded() then
             artWaiting[tex] = nil
             local g = PoolDress(tex) or 0
-            if o.clipped[tex] ~= g and AddMask(tex, o.innerMask) then o.clipped[tex] = g end
+            if o.clipped[tex] ~= g and AddMask(tex, o.innerMask) then
+                o.clipped[tex] = g
+            end
         end
     end
-    if not next(clipWaiting) and not next(maskWaiting) and not next(artWaiting) then self:Hide() end
+    if not next(clipWaiting) and not next(maskWaiting) and not next(artWaiting) then
+        self:Hide()
+    end
 end
 function StartWait()
     if not clipWait then
         clipWaiting, maskWaiting = setmetatable({}, WEAK_K), setmetatable({}, WEAK_K)
-        if not artWaiting then artWaiting = setmetatable({}, WEAK_K) end
+        if not artWaiting then
+            artWaiting = setmetatable({}, WEAK_K)
+        end
         clipWait = CreateFrame("Frame")
         clipWait:Hide()
         clipWait:SetScript("OnUpdate", ClipWaitTick)
@@ -1053,16 +1246,24 @@ function StartWait()
 end
 local function ClipWhenLoaded(o)
     local m = o.innerMask
-    if not m.IsObjectLoaded or m:IsObjectLoaded() then return ClipContent(o) end
+    if not m.IsObjectLoaded or m:IsObjectLoaded() then
+        return ClipContent(o)
+    end
     StartWait()
     clipWaiting[o] = true
 end
 -- tex takes m now if its art has loaded, else once it has.
 local function MaskWhenLoaded(tex, m)
-    if not m.IsObjectLoaded or m:IsObjectLoaded() then return AddMask(tex, m) end
+    if not m.IsObjectLoaded or m:IsObjectLoaded() then
+        return AddMask(tex, m)
+    end
     StartWait()
     local w = maskWaiting[tex]
-    if w then w.m, w.gen = m, PoolDress(tex) else maskWaiting[tex] = { m = m, gen = PoolDress(tex) } end
+    if w then
+        w.m, w.gen = m, PoolDress(tex)
+    else
+        maskWaiting[tex] = { m = m, gen = PoolDress(tex) }
+    end
 end
 
 -- The outline's inner shape in the parent's units, made once: 1 unit in
@@ -1122,9 +1323,13 @@ function CludesUI.RoundBody(parent, body, radius)
     radius = radius or HouseRadius(half)
     if half and half > 1 then
         local cap = floor(half - 0.5)
-        if radius > cap then radius = cap end
+        if radius > cap then
+            radius = cap
+        end
     end
-    if radius < 1 then return end
+    if radius < 1 then
+        return
+    end
     local m = parent:CreateMaskTexture()
     m:SetAllPoints(body)
     SetRounded(m, radius, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
@@ -1145,7 +1350,9 @@ local function FitCard(o, k)
     FitOutline(o, k)
     local accent, am = o.accent, o.accentMask
     if o.r and o.ar ~= o.r then
-        if o.ar then RemoveMask(accent, am) end
+        if o.ar then
+            RemoveMask(accent, am)
+        end
         o.ar = o.r
         SetRounded(am, o.r - 1, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
         MaskWhenLoaded(accent, am)
@@ -1179,7 +1386,6 @@ function CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b)
     return o
 end
 
-
 -------------------------------------------------------------------------------
 --  House button and sidebar styles (the options panel's card look), for the
 --  manager pages and popups that draw their own.
@@ -1208,7 +1414,9 @@ function CludesUI.OutlineButton(btn, bg, primary)
     local brd = CludesUI.MakeRoundedBorder(btn, r, g, b, rest, bg, 2)
     local function Label()
         for _, region in ipairs({ btn:GetRegions() }) do
-            if region:GetObjectType() == "FontString" then return region end
+            if region:GetObjectType() == "FontString" then
+                return region
+            end
         end
     end
     local function Paint(hover)
@@ -1216,10 +1424,16 @@ function CludesUI.OutlineButton(btn, bg, primary)
         bg:SetColorTexture(cr, cg, cb, hover and 0.14 or 0.06)
         brd:SetColor(cr, cg, cb, hover and lit or rest)
         local lbl = Label()
-        if lbl then lbl:SetTextColor(cr, cg, cb, primary and 1 or 0.8) end
+        if lbl then
+            lbl:SetTextColor(cr, cg, cb, primary and 1 or 0.8)
+        end
     end
-    btn:SetScript("OnEnter", function() Paint(true) end)
-    btn:SetScript("OnLeave", function() Paint(false) end)
+    btn:SetScript("OnEnter", function()
+        Paint(true)
+    end)
+    btn:SetScript("OnLeave", function()
+        Paint(false)
+    end)
     Paint(false)
     return brd
 end

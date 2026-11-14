@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUIQoL_SelfCombatText.lua
 -- Self combat text (damage taken, heals received, avoids, combat enter/leave)
@@ -22,42 +24,62 @@ local CludesUI = _G.CludesUI
 -- WoW Forever: no number under 10,000 abbreviates (CludesUI_NumberFormat.lua)
 local AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 
-local POOL_SIZE  = 12
-local FADE_FRAC  = 0.3   -- fade over the last 30% of the scroll
+local POOL_SIZE = 12
+local FADE_FRAC = 0.3 -- fade over the last 30% of the scroll
 local UNLOCK_KEY = "CUI_SelfCombatText"
 local BOX_W, BOX_H = 200, 30
-local LINE_H   = 1.15    -- a message's line height per point of font size
-local LINE_GAP = 2       -- px kept between staggered messages
+local LINE_H = 1.15 -- a message's line height per point of font size
+local LINE_GAP = 2 -- px kept between staggered messages
 
 local DEFAULTS = {
     enabled = false,
-    size = 16, critScale = 1.5, rise = 80, duration = 1.9,
+    size = 16,
+    critScale = 1.5,
+    rise = 80,
+    duration = 1.9,
     stagger = true,
-    anim = "straight",     -- straight | fountain | static
-    direction = "up",      -- up | down
-    font = "__combat",     -- __combat (CombatTextFont), __global (QoL font) or a font key
-    outline = "OUTLINE",   -- NONE | OUTLINE | THICKOUTLINE
+    anim = "straight", -- straight | fountain | static
+    direction = "up", -- up | down
+    font = "__combat", -- __combat (CombatTextFont), __global (QoL font) or a font key
+    outline = "OUTLINE", -- NONE | OUTLINE | THICKOUTLINE
     shadow = false,
     abbreviate = false,
-    damage = true, heal = true, avoid = true, combat = true,
-    damageColor = { r = 1,   g = 0.1, b = 0.1 },
-    healColor   = { r = 0.1, g = 1,   b = 0.1 },
-    avoidColor  = { r = 1,   g = 1,   b = 1   },
-    combatColor = { r = 1,   g = 0.1, b = 0.1 },
+    damage = true,
+    heal = true,
+    avoid = true,
+    combat = true,
+    damageColor = { r = 1, g = 0.1, b = 0.1 },
+    healColor = { r = 0.1, g = 1, b = 0.1 },
+    avoidColor = { r = 1, g = 1, b = 1 },
+    combatColor = { r = 1, g = 0.1, b = 0.1 },
 }
 
 -- type -> isCrit
 local DAMAGE = {
-    DAMAGE = false, SPELL_DAMAGE = false, DAMAGE_SHIELD = false,
-    DAMAGE_CRIT = true, SPELL_DAMAGE_CRIT = true,
+    DAMAGE = false,
+    SPELL_DAMAGE = false,
+    DAMAGE_SHIELD = false,
+    DAMAGE_CRIT = true,
+    SPELL_DAMAGE_CRIT = true,
 }
 local HEAL = {
-    HEAL = false, PERIODIC_HEAL = false,
-    HEAL_CRIT = true, PERIODIC_HEAL_CRIT = true,
+    HEAL = false,
+    PERIODIC_HEAL = false,
+    HEAL_CRIT = true,
+    PERIODIC_HEAL_CRIT = true,
 }
 -- Avoid types; Build fills avoidLabel with their COMBAT_TEXT_* strings.
 local AVOID = {
-    "MISS", "DODGE", "PARRY", "EVADE", "IMMUNE", "DEFLECT", "REFLECT", "RESIST", "BLOCK", "ABSORB",
+    "MISS",
+    "DODGE",
+    "PARRY",
+    "EVADE",
+    "IMMUNE",
+    "DEFLECT",
+    "REFLECT",
+    "RESIST",
+    "BLOCK",
+    "ABSORB",
 }
 local avoidLabel = {}
 
@@ -76,21 +98,28 @@ local S = { fontVer = 0 }
 -- The QoL profile (the shared CludesUIQoLDB; no defaults are merged in:
 -- Get falls back to DEFAULTS).
 local function Profile()
-    if not db then db = CludesUI.Lite.NewDB("CludesUIQoLDB") end
+    if not db then
+        db = CludesUI.Lite.NewDB("CludesUIQoLDB")
+    end
     return db.profile
 end
 
 local function Get(k)
     local t = Profile().selfCombatText
     local v = t and t[k]
-    if v == nil then return DEFAULTS[k] end
+    if v == nil then
+        return DEFAULTS[k]
+    end
     return v
 end
 
 local function Settings()
     local p = Profile()
     local t = p.selfCombatText
-    if not t then t = {}; p.selfCombatText = t end
+    if not t then
+        t = {}
+        p.selfCombatText = t
+    end
     return t
 end
 
@@ -112,7 +141,8 @@ local function ReadSettings()
     end
     local outline = Get("outline")
     S.flags = (outline == "OUTLINE" and CludesUI.SlugFlag("OUTLINE, SLUG"))
-        or (outline == "THICKOUTLINE" and CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or ""
+        or (outline == "THICKOUTLINE" and CludesUI.SlugFlag("THICKOUTLINE, SLUG"))
+        or ""
     S.shadow = Get("shadow") == true
     S.size = Get("size")
     S.critSize = S.size * Get("critScale")
@@ -129,7 +159,9 @@ end
 --  Position (unlock mode owns it once saved)
 -------------------------------------------------------------------------------
 local function ApplyPos()
-    if not anchor then return end
+    if not anchor then
+        return
+    end
     local pos = Get("pos")
     anchor:ClearAllPoints()
     if pos then
@@ -145,29 +177,51 @@ local function ApplyPos()
 end
 
 local function RegisterMover()
-    CludesUI:RegisterUnlockElements({ CludesUI.MakeUnlockElement({
-        key = UNLOCK_KEY, label = "Self Combat Text", group = "Utilities", order = 730,
-        noResize = true,
-        isHidden = function() return not Enabled() end,
-        getFrame = function() return enabled and anchor or nil end,
-        getSize  = function() return BOX_W, BOX_H end,
-        savePos = function(_, point, relPoint, x, y)
-            if not point then return end
-            Settings().pos = { point = point, relPoint = relPoint or point, x = x, y = y }
-            if not CludesUI._unlockActive then ApplyPos() end
-        end,
-        loadPos = function()
-            local pos = Get("pos")
-            if not pos then return nil end
-            return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
-        end,
-        clearPos = function()
-            local t = Profile().selfCombatText
-            if t then t.pos = nil end
-            ApplyPos()
-        end,
-        applyPos = ApplyPos,
-    }) }, "CludesUIQoL")
+    CludesUI:RegisterUnlockElements(
+        {
+            CludesUI.MakeUnlockElement({
+                key = UNLOCK_KEY,
+                label = "Self Combat Text",
+                group = "Utilities",
+                order = 730,
+                noResize = true,
+                isHidden = function()
+                    return not Enabled()
+                end,
+                getFrame = function()
+                    return enabled and anchor or nil
+                end,
+                getSize = function()
+                    return BOX_W, BOX_H
+                end,
+                savePos = function(_, point, relPoint, x, y)
+                    if not point then
+                        return
+                    end
+                    Settings().pos = { point = point, relPoint = relPoint or point, x = x, y = y }
+                    if not CludesUI._unlockActive then
+                        ApplyPos()
+                    end
+                end,
+                loadPos = function()
+                    local pos = Get("pos")
+                    if not pos then
+                        return nil
+                    end
+                    return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+                end,
+                clearPos = function()
+                    local t = Profile().selfCombatText
+                    if t then
+                        t.pos = nil
+                    end
+                    ApplyPos()
+                end,
+                applyPos = ApplyPos,
+            }),
+        },
+        "CludesUIQoL"
+    )
 end
 
 -------------------------------------------------------------------------------
@@ -181,7 +235,9 @@ local function ApplyAnim()
         fs.mv:SetDuration(dur)
         fs.path:SetDuration(dur)
         if mode ~= "fountain" then
-            for j = 1, #ARC do fs.cps[j]:SetOffset(0, 0) end
+            for j = 1, #ARC do
+                fs.cps[j]:SetOffset(0, 0)
+            end
         end
         fs.fade:SetStartDelay(dur * (1 - FADE_FRAC))
         fs.fade:SetDuration(dur * FADE_FRAC)
@@ -206,7 +262,10 @@ local function Build()
         fs.fade = ag:CreateAnimation("Alpha")
         fs.fade:SetFromAlpha(1)
         fs.fade:SetToAlpha(0)
-        ag:SetScript("OnFinished", function() fs:Hide(); fs.live = nil end)
+        ag:SetScript("OnFinished", function()
+            fs:Hide()
+            fs.live = nil
+        end)
         fs.ag = ag
         pool[i] = fs
     end
@@ -226,13 +285,21 @@ end
 -- points are evenly spaced in time), none for Static.
 local function Travel(m, now)
     local mode = S.anim
-    if mode == "static" then return 0 end
+    if mode == "static" then
+        return 0
+    end
     local f = (now - m.t0) / S.duration
-    if f > 1 then f = 1 end
-    if mode ~= "fountain" then return f end
+    if f > 1 then
+        f = 1
+    end
+    if mode ~= "fountain" then
+        return f
+    end
     local seg = f * #ARC
     local i = math.floor(seg)
-    if i >= #ARC then return ARC[#ARC][2] end
+    if i >= #ARC then
+        return ARC[#ARC][2]
+    end
     local from = i > 0 and ARC[i][2] or 0
     return from + (ARC[i + 1][2] - from) * (seg - i)
 end
@@ -250,14 +317,20 @@ local function ClearLane(lane, h)
         local m = pool[i]
         if m.live and m.lane == lane and now - m.t0 < dur then
             local d = s * (m.y0 + dy * Travel(m, now))
-            if not nearD or d < nearD then near, nearD = m, d end
+            if not nearD or d < nearD then
+                near, nearD = m, d
+            end
         end
     end
-    if not near then return end
+    if not near then
+        return
+    end
     -- Scrolling up, the new message's top must clear the nearest one's bottom;
     -- scrolling down, the nearest one's top must clear the anchor.
     local need = (s > 0 and h or near.h) + LINE_GAP - nearD
-    if need <= 0 then return end
+    if need <= 0 then
+        return
+    end
     local shift = s * need
     for i = 1, POOL_SIZE do
         local m = pool[i]
@@ -285,7 +358,9 @@ local function Emit(fmt, value, c, crit)
         end
     end
     local h = (crit and S.critSize or S.size) * LINE_H
-    if S.stagger then ClearLane(lane, h) end
+    if S.stagger then
+        ClearLane(lane, h)
+    end
     fs.t0, fs.y0, fs.h, fs.lane, fs.live = GetTime(), 0, h, lane, true
     fs:ClearAllPoints()
     fs:SetPoint("BOTTOM", anchor, "BOTTOM", 0, 0)
@@ -306,7 +381,9 @@ end
 
 -- Both formatters are C-side and accept secret numbers
 local function FormatAmount(n)
-    if S.abbreviate then return AbbreviateNumbers(n) end
+    if S.abbreviate then
+        return AbbreviateNumbers(n)
+    end
     return BreakUpLargeNumbers(n)
 end
 
@@ -319,20 +396,26 @@ local function OnEvent(_, event, arg1, arg2)
         -- data = amount (damage) or source name (heals); arg3 = heal amount
         local crit = DAMAGE[arg1]
         if crit ~= nil then
-            if not S.damage then return end
+            if not S.damage then
+                return
+            end
             local data = C_CombatText.GetCurrentEventInfo()
             Emit("-%s", FormatAmount(data), S.damageColor, crit)
             return
         end
         crit = HEAL[arg1]
         if crit ~= nil then
-            if not S.heal then return end
+            if not S.heal then
+                return
+            end
             local _, arg3 = C_CombatText.GetCurrentEventInfo()
             Emit("+%s", FormatAmount(arg3), S.healColor, crit)
             return
         end
         local label = S.avoid and avoidLabel[arg1]
-        if label then Emit("%s", label, S.avoidColor, false) end
+        if label then
+            Emit("%s", label, S.avoidColor, false)
+        end
     elseif event == "PLAYER_REGEN_DISABLED" then
         Emit("%s", _G.ENTERING_COMBAT or "+Combat", S.combatColor, false)
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -381,7 +464,9 @@ local function Refresh()
     end
     enabled = want
     if want then
-        if not anchor then Build() end
+        if not anchor then
+            Build()
+        end
         ReadSettings()
         ApplyAnim()
         anchor:Show()
@@ -396,13 +481,15 @@ local function Refresh()
     else
         ev:UnregisterAllEvents()
         anchor:Hide()
-        if _G.CombatText then _G.CombatText:Show() end
+        if _G.CombatText then
+            _G.CombatText:Show()
+        end
     end
 end
 
 ns.SCT_Refresh = Refresh
 ns.SCT_Get = Get
-CludesUI._applySelfCombatText = Refresh  -- RefreshAllAddons (profile swaps)
+CludesUI._applySelfCombatText = Refresh -- RefreshAllAddons (profile swaps)
 
 function ns.SCT_Set(k, v)
     Settings()[k] = v
@@ -412,7 +499,9 @@ end
 -- QoL page reset: every setting back to its default, the anchor link dropped.
 function ns.SCT_Reset()
     Profile().selfCombatText = nil
-    if CludesUIDB.unlockAnchors then CludesUIDB.unlockAnchors[UNLOCK_KEY] = nil end
+    if CludesUIDB.unlockAnchors then
+        CludesUIDB.unlockAnchors[UNLOCK_KEY] = nil
+    end
     Refresh()
     ApplyPos()
 end

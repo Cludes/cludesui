@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_TooltipVisibility.lua
 --
@@ -10,7 +12,9 @@ local _, ns = ...
 local I = ns._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not I or I.last ~= "TooltipAnchor" then return end
+if not I or I.last ~= "TooltipAnchor" then
+    return
+end
 
 local FFD = I.FFD
 
@@ -36,9 +40,15 @@ local FFD = I.FFD
 do
     local function ShowModifierHeld()
         local mod = (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none"
-        if mod == "none" then return false end
-        if mod == "control" then return IsControlKeyDown() end
-        if mod == "alt" then return IsAltKeyDown() end
+        if mod == "none" then
+            return false
+        end
+        if mod == "control" then
+            return IsControlKeyDown()
+        end
+        if mod == "alt" then
+            return IsAltKeyDown()
+        end
         return IsShiftKeyDown()
     end
 
@@ -53,21 +63,26 @@ do
     local _comparisonStateWatcherRegistered = false
 
     local function ComparisonSuppressionModeEnabled()
-        if CludesUIDB and CludesUIDB.customTooltips == false then return false end
+        if CludesUIDB and CludesUIDB.customTooltips == false then
+            return false
+        end
         return ((CludesUIDB and CludesUIDB.tooltipShowMode) or "always") ~= "always"
     end
 
     local function ComparisonStateWatcherNeeded()
         local mode = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        return ComparisonSuppressionModeEnabled()
-            and (mode == "outOfCombat" or mode == "outOfBossCombat")
+        return ComparisonSuppressionModeEnabled() and (mode == "outOfCombat" or mode == "outOfBossCombat")
     end
 
     -- Shared decision: should GameTooltip be suppressed right now given the user's "Show
     -- Tooltips" mode + combat state? Exposed on CludesUI so the cursor-anchor hook can honor it too (else cursor re-anchor would re-show a tooltip this hook just hid).
     function CludesUI._tooltipSuppressedByMode(tooltip)
-        if tooltip ~= GameTooltip then return false end
-        if tooltip.IsForbidden and tooltip:IsForbidden() then return false end
+        if tooltip ~= GameTooltip then
+            return false
+        end
+        if tooltip.IsForbidden and tooltip:IsForbidden() then
+            return false
+        end
         -- Gated by the "Reskin Tooltip" master (matches the grayed-out "Show Tooltips" option), so disabling the reskin never leaves tooltips stuck suppressed at, e.g., "Never".
         if CludesUIDB and CludesUIDB.customTooltips == false then
             if UpdateStateWatcher and (_comparisonSupportActive or _comparisonStateWatcherRegistered) then
@@ -82,9 +97,15 @@ do
             end
             return false
         end
-        if EnsureComparisonSupport then EnsureComparisonSupport() end
-        if UpdateStateWatcher then UpdateStateWatcher() end
-        if ShowModifierHeld() then return false end
+        if EnsureComparisonSupport then
+            EnsureComparisonSupport()
+        end
+        if UpdateStateWatcher then
+            UpdateStateWatcher()
+        end
+        if ShowModifierHeld() then
+            return false
+        end
         if mode == "never" then
             return true
         elseif mode == "outOfCombat" then
@@ -135,7 +156,9 @@ do
     end
 
     local function ForgetComparisonSuppression(tooltip)
-        if not _comparisonFlagOwned or tooltip ~= GameTooltip then return end
+        if not _comparisonFlagOwned or tooltip ~= GameTooltip then
+            return
+        end
         local state = GetComparisonState(tooltip, false)
         if state then
             state.comparisonFlagPrevious = nil
@@ -145,23 +168,31 @@ do
     end
 
     local function ReleaseComparisonSuppression(tooltip)
-        if not _comparisonFlagOwned or tooltip ~= GameTooltip then return end
+        if not _comparisonFlagOwned or tooltip ~= GameTooltip then
+            return
+        end
         local state = GetComparisonState(tooltip, false)
         if not state or not state.comparisonFlagOwned then
             _comparisonFlagOwned = false
             return
         end
-        if not pcall(WriteComparisonSuppressionFlag, tooltip, state.comparisonFlagPrevious) then return end
+        if not pcall(WriteComparisonSuppressionFlag, tooltip, state.comparisonFlagPrevious) then
+            return
+        end
         ForgetComparisonSuppression(tooltip)
     end
 
     local function ArmComparisonSuppression(tooltip)
-        if tooltip ~= GameTooltip then return end
+        if tooltip ~= GameTooltip then
+            return
+        end
         local state = GetComparisonState(tooltip, true)
         local owned = _comparisonFlagOwned and state.comparisonFlagOwned
         if not owned then
             local readOK, previous = pcall(ReadComparisonSuppressionFlag, tooltip)
-            if not readOK then return end
+            if not readOK then
+                return
+            end
             state.comparisonFlagPrevious = previous
             state.comparisonFlagOwned = true
             _comparisonFlagOwned = true
@@ -177,7 +208,9 @@ do
     local function OnItemTooltipPreCall(tooltip)
         -- Parking is the authoritative scope. Re-arm after item setters reset the
         -- Blizzard field so every parked item path stays comparison-suppressed.
-        if tooltip ~= GameTooltip or not _parked then return end
+        if tooltip ~= GameTooltip or not _parked then
+            return
+        end
         ArmComparisonSuppression(tooltip)
     end
 
@@ -187,7 +220,9 @@ do
 
     local _comparisonPreCallAttempted = false
     local function InstallComparisonPreCall()
-        if _comparisonPreCallAttempted then return end
+        if _comparisonPreCallAttempted then
+            return
+        end
         _comparisonPreCallAttempted = true
         -- Midnight provides this processor before addon code loads. Keep the
         -- registration protected so a missing API falls back to after-show cleanup.
@@ -198,7 +233,9 @@ do
         -- Only clear comparisons while this controller is actually parking the
         -- global tooltip. Unparked shows (mode off, or a transient rebuild)
         -- keep their legitimate comparisons untouched.
-        if not _parked or not CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+        if not _parked or not CludesUI._tooltipSuppressedByMode(GameTooltip) then
+            return
+        end
 
         -- Clear the manager's state and its owned shopping frames through the
         -- same public method Blizzard calls from GameTooltip_OnHide.  Fall back
@@ -206,9 +243,11 @@ do
         -- own GameTooltip, or errors; avoid a third direct Hide pass over global
         -- shopping frames that may belong to another tooltip path.
         local managerCleared = false
-        if TooltipComparisonManager
+        if
+            TooltipComparisonManager
             and TooltipComparisonManager.tooltip == GameTooltip
-            and type(TooltipComparisonManager.Clear) == "function" then
+            and type(TooltipComparisonManager.Clear) == "function"
+        then
             managerCleared = pcall(TooltipComparisonManager.Clear, TooltipComparisonManager, GameTooltip)
         end
         if not managerCleared and GameTooltip_HideShoppingTooltips then
@@ -221,13 +260,20 @@ do
         ClearSuppressedComparisons()
     end
     local function QueueSuppressedComparisonClear()
-        if not _comparisonSupportActive then return end
+        if not _comparisonSupportActive then
+            return
+        end
         -- Queue only while parked: an unparked build's comparisons are
         -- legitimate and must not be cleared after their owner refreshes.
-        if not _parked then return end
-        if not ComparisonSuppressionModeEnabled()
-            or not CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
-        if _comparisonClearPending then return end
+        if not _parked then
+            return
+        end
+        if not ComparisonSuppressionModeEnabled() or not CludesUI._tooltipSuppressedByMode(GameTooltip) then
+            return
+        end
+        if _comparisonClearPending then
+            return
+        end
         _comparisonClearPending = true
         -- This hook can run from Blizzard's protected tooltip/owner path.
         -- Defer all Hide/Clear calls out of that stack, matching the existing CUI
@@ -245,7 +291,9 @@ do
             GameTooltip:HookScript("OnHide", function(tt)
                 -- Item setters can fire OnHide while rebuilding content, so do not latch
                 -- owner eligibility here. Active state is derived from IsShown instead.
-                if not (_comparisonSupportActive or _comparisonStateWatcherRegistered) then return end
+                if not (_comparisonSupportActive or _comparisonStateWatcherRegistered) then
+                    return
+                end
                 if CludesUI._tooltipSuppressedByMode(tt) then
                     QueueSuppressedComparisonClear()
                 end
@@ -260,7 +308,9 @@ do
             for _, comparisonTooltip in ipairs(GetComparisonTooltips()) do
                 if comparisonTooltip and comparisonTooltip.HookScript then
                     comparisonTooltip:HookScript("OnShow", function()
-                        if not _comparisonSupportActive then return end
+                        if not _comparisonSupportActive then
+                            return
+                        end
                         if CludesUI._tooltipSuppressedByMode(GameTooltip) then
                             QueueSuppressedComparisonClear()
                         end
@@ -270,16 +320,20 @@ do
             _comparisonTooltipHooksInstalled = true
         end
 
-        if not _comparisonManagerHookInstalled
+        if
+            not _comparisonManagerHookInstalled
             and TooltipComparisonManager
-            and type(TooltipComparisonManager.AnchorShoppingTooltips) == "function" then
+            and type(TooltipComparisonManager.AnchorShoppingTooltips) == "function"
+        then
             hooksecurefunc(TooltipComparisonManager, "AnchorShoppingTooltips", QueueSuppressedComparisonClear)
             _comparisonManagerHookInstalled = true
         end
     end
 
     EnsureComparisonSupport = function()
-        if not ComparisonSuppressionModeEnabled() then return false end
+        if not ComparisonSuppressionModeEnabled() then
+            return false
+        end
         _comparisonSupportActive = true
         InstallComparisonHooks()
         return true
@@ -302,14 +356,20 @@ do
     _suppressHost:Hide()
     local _origParent
     local function ParkTooltip(tt)
-        if _parked then return end
+        if _parked then
+            return
+        end
         _parked = true
         _origParent = tt:GetParent()
-        if _origParent == _suppressHost then _origParent = nil end
+        if _origParent == _suppressHost then
+            _origParent = nil
+        end
         tt:SetParent(_suppressHost)
     end
     local function UnparkTooltip(tt)
-        if not _parked then return end
+        if not _parked then
+            return
+        end
         _parked = false
         tt:SetParent(_origParent or UIParent)
         -- SetParent can demote strata; the tooltip must stay topmost.
@@ -329,7 +389,9 @@ do
     end
     local _modeShowHookInstalled = false
     local function EnsureModeShowHook()
-        if _modeShowHookInstalled then return end
+        if _modeShowHookInstalled then
+            return
+        end
         _modeShowHookInstalled = true
         -- Item data can hide and re-show the tooltip without another SetOwner,
         -- including after asynchronous data arrives. Re-apply before it renders.
@@ -338,7 +400,9 @@ do
         end)
     end
     local function SuppressTooltipByMode(tooltip)
-        if tooltip ~= GameTooltip then return end
+        if tooltip ~= GameTooltip then
+            return
+        end
         ApplySuppression(tooltip)
     end
     if GameTooltip_SetDefaultAnchor then
@@ -364,7 +428,9 @@ do
     -- transition handling; "Never" is handled by the tooltip hooks alone.
     local stateWatcher
     local function UnregisterStateWatcher()
-        if not _comparisonStateWatcherRegistered then return end
+        if not _comparisonStateWatcherRegistered then
+            return
+        end
         stateWatcher:UnregisterAllEvents()
         _comparisonStateWatcherRegistered = false
     end
@@ -377,7 +443,9 @@ do
         -- combat/encounter end: the cursor may have left the owner while the
         -- parked tooltip remained logically shown, and unpark would resurrect
         -- stale content.  The next SetOwner path restores it normally.
-        if not CludesUI._tooltipSuppressedByMode(GameTooltip) then return end
+        if not CludesUI._tooltipSuppressedByMode(GameTooltip) then
+            return
+        end
         if GameTooltip:IsShown() then
             ApplySuppression(GameTooltip)
         end
@@ -421,9 +489,9 @@ do
     -- while held reveals each in turn through the normal hover path -- suppression is lifted while held (globally via
     -- _tooltipSuppressedByMode, and per-module via _tooltipPeekHeld, honored by raid/party frames in their own OnEnter).
     local function KeyMatchesModifier(key, mod)
-        return (mod == "shift"   and (key == "LSHIFT" or key == "RSHIFT"))
-            or (mod == "control" and (key == "LCTRL"  or key == "RCTRL"))
-            or (mod == "alt"     and (key == "LALT"   or key == "RALT"))
+        return (mod == "shift" and (key == "LSHIFT" or key == "RSHIFT"))
+            or (mod == "control" and (key == "LCTRL" or key == "RCTRL"))
+            or (mod == "alt" and (key == "LALT" or key == "RALT"))
     end
     -- Reveal the tooltip for whatever the cursor is over. First re-run the
     -- hovered frame's OnEnter (buttons, icons, unit frames build their own tip)
@@ -445,7 +513,9 @@ do
     local function FireHoveredOnEnter()
         local foci = GetMouseFoci()
         local anchorFrame = foci and foci[1]
-        if IsFrameForbidden(anchorFrame) then anchorFrame = nil end
+        if IsFrameForbidden(anchorFrame) then
+            anchorFrame = nil
+        end
         if foci then
             for _, focus in ipairs(foci) do
                 local frame = focus
@@ -457,14 +527,20 @@ do
                         local ok, onEnter = pcall(frame.GetScript, frame, "OnEnter")
                         if ok and onEnter then
                             pcall(onEnter, frame)
-                            if GameTooltip:IsShown() then return end
+                            if GameTooltip:IsShown() then
+                                return
+                            end
                             anchorFrame = frame
                             break
                         end
                     end
-                    if not frame.GetParent then break end
+                    if not frame.GetParent then
+                        break
+                    end
                     local okParent, parent = pcall(frame.GetParent, frame)
-                    if not okParent or IsFrameForbidden(parent) then break end
+                    if not okParent or IsFrameForbidden(parent) then
+                        break
+                    end
                     frame = parent
                 end
             end
@@ -481,9 +557,13 @@ do
     local modWatcher = CreateFrame("Frame")
     modWatcher:RegisterEvent("MODIFIER_STATE_CHANGED")
     modWatcher:SetScript("OnEvent", function(_, _event, key, down)
-        if CludesUIDB and CludesUIDB.customTooltips == false then return end
+        if CludesUIDB and CludesUIDB.customTooltips == false then
+            return
+        end
         local mod = (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none"
-        if mod == "none" or not KeyMatchesModifier(key, mod) then return end
+        if mod == "none" or not KeyMatchesModifier(key, mod) then
+            return
+        end
         if down == 1 then
             if _parked and GameTooltip:IsShown() then
                 -- The parked tip is alive and current under the cursor (built by the secure hover path): just reveal it, never rebuild from here (see the parking note above).
@@ -518,8 +598,12 @@ do
 
     -- Live apply for the options toggle (immediate hide/restore) and login seed.
     CludesUI._applyTooltipHealthStrip = function()
-        if CludesUI._repaintTooltipPreview then CludesUI._repaintTooltipPreview() end
-        if not GameTooltipStatusBar then return end
+        if CludesUI._repaintTooltipPreview then
+            CludesUI._repaintTooltipPreview()
+        end
+        if not GameTooltipStatusBar then
+            return
+        end
         GameTooltipStatusBar:SetAlpha(_healthStripHidden() and 0 or 1)
     end
 
@@ -529,15 +613,23 @@ do
     -- header's sample strip, styled whether or not the live one is yet.
     local styled, texLookup
     CludesUI._applyTooltipHealthStripStyle = function(init, sample)
-        if init then styled = true end
-        if not sample and CludesUI._repaintTooltipPreview then CludesUI._repaintTooltipPreview() end
+        if init then
+            styled = true
+        end
+        if not sample and CludesUI._repaintTooltipPreview then
+            CludesUI._repaintTooltipPreview()
+        end
         local bar = sample or GameTooltipStatusBar
-        if not bar or not (styled or sample) then return end
+        if not bar or not (styled or sample) then
+            return
+        end
         local db = CludesUIDB
         local key = db and db.tooltipHealthStripTexture
         local path = "Interface\\TargetingFrame\\UI-StatusBar"
         if key and key ~= "blizzard" then
-            if not texLookup then texLookup = CludesUI.BuildBarTextureTables() end
+            if not texLookup then
+                texLookup = CludesUI.BuildBarTextureTables()
+            end
             path = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
         end
         bar:SetStatusBarTexture(path)
@@ -547,7 +639,9 @@ do
     if GameTooltipStatusBar then
         -- Re-assert alpha 0 each time Blizzard shows the bar so it can never flash back into view (SetAlpha doesn't call Show, so no recursion).
         hooksecurefunc(GameTooltipStatusBar, "Show", function(bar)
-            if _healthStripHidden() then bar:SetAlpha(0) end
+            if _healthStripHidden() then
+                bar:SetAlpha(0)
+            end
         end)
         CludesUI._applyTooltipHealthStrip()
     end

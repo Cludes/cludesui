@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Indicators.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local EBS, GetFFD, GetCustomTooltipScale = I.EBS, I.GetFFD, I.GetCustomTooltipScale
@@ -18,23 +22,25 @@ local GetInteractableBtnSize, SetPortalFlyout = I.GetInteractableBtnSize, I.SetP
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local MO_Evaluate
-I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v) MO_Evaluate = v end
+I.moEvaluateSetters[#I.moEvaluateSetters + 1] = function(v)
+    MO_Evaluate = v
+end
 
 -------------------------------------------------------------------------------
 --  Minimap Indicator Buttons (custom replacements for Blizzard's reparented frames)
 --  Our own Button with black bg, icon and click handler: no Blizzard frame
 --  reparenting = no taint, no layout fights.
 -------------------------------------------------------------------------------
-local _customIndicators = {}  -- { tracking, calendar, mail, crafting }
+local _customIndicators = {} -- { tracking, calendar, mail, crafting }
 
 -- Native atlas aspect ratios (width / height) and per-icon scale multipliers
 local INDICATOR_ATLAS_RATIO = {
-    ["UI-HUD-Minimap-Tracking-Up"]           = 15 / 14,
-    ["UI-HUD-Minimap-Tracking-Mouseover"]    = 15 / 14,
-    ["UI-HUD-Minimap-Tracking-Down"]         = 16 / 15,
-    ["UI-HUD-Minimap-Mail-Up"]               = 19.5 / 15,
-    ["UI-HUD-Minimap-Mail-Mouseover"]        = 19.5 / 15,
-    ["UI-HUD-Minimap-CraftingOrder-Up-2x"]   = 17 / 16,
+    ["UI-HUD-Minimap-Tracking-Up"] = 15 / 14,
+    ["UI-HUD-Minimap-Tracking-Mouseover"] = 15 / 14,
+    ["UI-HUD-Minimap-Tracking-Down"] = 16 / 15,
+    ["UI-HUD-Minimap-Mail-Up"] = 19.5 / 15,
+    ["UI-HUD-Minimap-Mail-Mouseover"] = 19.5 / 15,
+    ["UI-HUD-Minimap-CraftingOrder-Up-2x"] = 17 / 16,
     ["UI-HUD-Minimap-CraftingOrder-Over-2x"] = 17 / 16,
     ["UI-HUD-Minimap-CraftingOrder-Down-2x"] = 17 / 16,
 }
@@ -42,17 +48,17 @@ local INDICATOR_ATLAS_SCALE = {}
 -- Calendar atlases: all 31 days share the same ratio/scale
 for day = 1, 31 do
     local prefix = "UI-HUD-Calendar-" .. day
-    INDICATOR_ATLAS_RATIO[prefix .. "-Up"]        = 21 / 19
+    INDICATOR_ATLAS_RATIO[prefix .. "-Up"] = 21 / 19
     INDICATOR_ATLAS_RATIO[prefix .. "-Mouseover"] = 21 / 19
-    INDICATOR_ATLAS_RATIO[prefix .. "-Down"]      = 21 / 19
-    INDICATOR_ATLAS_SCALE[prefix .. "-Up"]        = 1.25
+    INDICATOR_ATLAS_RATIO[prefix .. "-Down"] = 21 / 19
+    INDICATOR_ATLAS_SCALE[prefix .. "-Up"] = 1.25
     INDICATOR_ATLAS_SCALE[prefix .. "-Mouseover"] = 1.25
-    INDICATOR_ATLAS_SCALE[prefix .. "-Down"]      = 1.25
+    INDICATOR_ATLAS_SCALE[prefix .. "-Down"] = 1.25
 end
 -- Per-icon pixel offset from center { x, y }
 local INDICATOR_ATLAS_OFFSET = {
     _gameTime = { 2, -2 },
-    _mail     = { 1, -1 },
+    _mail = { 1, -1 },
 }
 
 local function CreateIndicatorBtn(name, parent, upAtlas, overAtlas, downAtlas, onClick)
@@ -91,7 +97,9 @@ local function CreateIndicatorBtn(name, parent, upAtlas, overAtlas, downAtlas, o
         icon:SetPoint("TOPLEFT", btn, "TOPLEFT", inset, -inset)
         icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
     end
-    if upAtlas then icon:SetAtlas(upAtlas) end
+    if upAtlas then
+        icon:SetAtlas(upAtlas)
+    end
     btn._icon = icon
     btn._upAtlas = upAtlas
     btn._overAtlas = overAtlas
@@ -99,23 +107,33 @@ local function CreateIndicatorBtn(name, parent, upAtlas, overAtlas, downAtlas, o
     btn._indicatorKey = name
 
     btn:SetScript("OnEnter", function(self)
-        if self._overAtlas and self._icon then self._icon:SetAtlas(self._overAtlas) end
+        if self._overAtlas and self._icon then
+            self._icon:SetAtlas(self._overAtlas)
+        end
     end)
     btn:SetScript("OnLeave", function(self)
-        if self._upAtlas and self._icon then self._icon:SetAtlas(self._upAtlas) end
+        if self._upAtlas and self._icon then
+            self._icon:SetAtlas(self._upAtlas)
+        end
     end)
     btn:SetScript("OnMouseDown", function(self)
-        if self._downAtlas and self._icon then self._icon:SetAtlas(self._downAtlas) end
+        if self._downAtlas and self._icon then
+            self._icon:SetAtlas(self._downAtlas)
+        end
     end)
     btn:SetScript("OnMouseUp", function(self)
         local over = self:IsMouseOver()
         local atlas = over and self._overAtlas or self._upAtlas
-        if atlas and self._icon then self._icon:SetAtlas(atlas) end
+        if atlas and self._icon then
+            self._icon:SetAtlas(atlas)
+        end
     end)
 
     if onClick then
         btn:SetScript("OnClick", function(self)
-            if GetFFD(self).freeMoveJustDragged then return end
+            if GetFFD(self).freeMoveJustDragged then
+                return
+            end
             onClick(self)
         end)
     end
@@ -127,7 +145,9 @@ end
 local GREAT_VAULT_WHOLE_ATLAS = "greatVault-whole-normal"
 
 local function GetOrderedWeeklyActivities(activityType)
-    if not C_WeeklyRewards or not C_WeeklyRewards.GetActivities then return nil end
+    if not C_WeeklyRewards or not C_WeeklyRewards.GetActivities then
+        return nil
+    end
 
     local activities = C_WeeklyRewards.GetActivities(activityType)
     if type(activities) ~= "table" or #activities == 0 then
@@ -184,7 +204,10 @@ local function BuildVaultRowData(label, activityType, isRaid)
                     tokens[i] = { text = ("%d/%d"):format(progress, threshold), state = "done" }
                 end
             else
-                tokens[i] = { text = ("%d/%d"):format(progress, threshold), state = progress > 0 and "partial" or "empty" }
+                tokens[i] = {
+                    text = ("%d/%d"):format(progress, threshold),
+                    state = progress > 0 and "partial" or "empty",
+                }
             end
         end
     end
@@ -193,16 +216,21 @@ end
 
 -- Custom multi-column vault tooltip (pixel-aligned columns via FontStrings)
 local _vaultTT
-local _vaultTTRows = {}  -- [row][col] = FontString
+local _vaultTTRows = {} -- [row][col] = FontString
 local VAULT_COL_GAP = 8
 local VAULT_ROW_H = 14
 local VAULT_PAD = 6
 
 local function GetVaultTooltip()
-    if _vaultTT then return _vaultTT end
+    if _vaultTT then
+        return _vaultTT
+    end
     local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-        edgeFile = "Interface\\ChatFrame\\ChatFrameBackground", edgeSize = 1 })
+    f:SetBackdrop({
+        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeSize = 1,
+    })
     f:SetBackdropColor(0.06, 0.06, 0.06, 0.90)
     f:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
     f:SetFrameStrata("TOOLTIP")
@@ -212,19 +240,28 @@ local function GetVaultTooltip()
     -- Fade animations (matches ShowWidgetTooltip/HideWidgetTooltip)
     local fadeInAG = f:CreateAnimationGroup()
     local fadeIn = fadeInAG:CreateAnimation("Alpha")
-    fadeIn:SetDuration(0.25); fadeIn:SetSmoothing("OUT")
-    fadeInAG:SetScript("OnFinished", function() f:SetAlpha(1) end)
-    f._fadeInAG = fadeInAG; f._fadeIn = fadeIn
+    fadeIn:SetDuration(0.25)
+    fadeIn:SetSmoothing("OUT")
+    fadeInAG:SetScript("OnFinished", function()
+        f:SetAlpha(1)
+    end)
+    f._fadeInAG = fadeInAG
+    f._fadeIn = fadeIn
 
     local fadeOutAG = f:CreateAnimationGroup()
     local fadeOut = fadeOutAG:CreateAnimation("Alpha")
-    fadeOut:SetDuration(0.25); fadeOut:SetSmoothing("IN")
-    fadeOutAG:SetScript("OnFinished", function() f:SetAlpha(0); f:Hide() end)
-    f._fadeOutAG = fadeOutAG; f._fadeOut = fadeOut
+    fadeOut:SetDuration(0.25)
+    fadeOut:SetSmoothing("IN")
+    fadeOutAG:SetScript("OnFinished", function()
+        f:SetAlpha(0)
+        f:Hide()
+    end)
+    f._fadeOutAG = fadeOutAG
+    f._fadeOut = fadeOut
 
     -- Title row (font set at show-time)
     local title = f:CreateFontString(nil, "OVERLAY")
-    title:SetFont("Fonts\\FRIZQT__.TTF", 11, "")  -- placeholder, updated on show
+    title:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
     title:SetTextColor(0.80, 0.80, 0.80, 1)
     title:SetPoint("TOP", f, "TOP", 0, -VAULT_PAD)
     title:SetText(CludesUI.L("Great Vault"))
@@ -235,7 +272,7 @@ local function GetVaultTooltip()
         _vaultTTRows[row] = {}
         for col = 0, 3 do
             local fs = f:CreateFontString(nil, "OVERLAY")
-            fs:SetFont("Fonts\\FRIZQT__.TTF", 11, "")  -- placeholder, updated on show
+            fs:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
             fs:SetJustifyH("LEFT")
             _vaultTTRows[row][col] = fs
         end
@@ -246,9 +283,21 @@ local function GetVaultTooltip()
 end
 
 local function ShowVaultTooltip(anchor)
-    local raidType = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Raid) or 3
-    local dungeonType = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.Activities) or 1
-    local worldType = (Enum and Enum.WeeklyRewardChestThresholdType and Enum.WeeklyRewardChestThresholdType.World) or 6
+    local raidType = (
+        Enum
+        and Enum.WeeklyRewardChestThresholdType
+        and Enum.WeeklyRewardChestThresholdType.Raid
+    ) or 3
+    local dungeonType = (
+        Enum
+        and Enum.WeeklyRewardChestThresholdType
+        and Enum.WeeklyRewardChestThresholdType.Activities
+    ) or 1
+    local worldType = (
+        Enum
+        and Enum.WeeklyRewardChestThresholdType
+        and Enum.WeeklyRewardChestThresholdType.World
+    ) or 6
 
     local rows = {
         BuildVaultRowData(CludesUI.L("Raids"), raidType, true),
@@ -277,7 +326,9 @@ local function ShowVaultTooltip(anchor)
         labelFS:SetText(rd.label)
         labelFS:SetTextColor(0.812, 0.592, 0.212, 1)
         local w = labelFS:GetStringWidth() or 0
-        if w > colWidths[1] then colWidths[1] = w end
+        if w > colWidths[1] then
+            colWidths[1] = w
+        end
 
         for c = 1, 3 do
             local tk = rd.tokens[c]
@@ -286,7 +337,9 @@ local function ShowVaultTooltip(anchor)
             local tr, tg, tb = GetVaultTokenColor(tk.state)
             fs:SetTextColor(tr, tg, tb, 1)
             local tw = fs:GetStringWidth() or 0
-            if tw > colWidths[c + 1] then colWidths[c + 1] = tw end
+            if tw > colWidths[c + 1] then
+                colWidths[c + 1] = tw
+            end
         end
     end
 
@@ -321,7 +374,9 @@ local function ShowVaultTooltip(anchor)
 end
 
 local function HideVaultTooltip()
-    if not _vaultTT or not _vaultTT:IsShown() then return end
+    if not _vaultTT or not _vaultTT:IsShown() then
+        return
+    end
     _vaultTT._fadeInAG:Stop()
     _vaultTT._fadeOutAG:Stop()
     _vaultTT._fadeOut:SetFromAlpha(_vaultTT:GetAlpha())
@@ -332,7 +387,9 @@ end
 local function SizeGreatVaultBtn(btn, showBg)
     local btnSz = GetInteractableBtnSize()
     btn:SetSize(btnSz, btnSz)
-    if btn._bg then btn._bg:SetShown(showBg ~= false) end
+    if btn._bg then
+        btn._bg:SetShown(showBg ~= false)
+    end
     local inset = 3
     local avail = btnSz - inset * 2
     -- Whole is 105x108: height is the limiting dimension. Fit by height.
@@ -380,7 +437,9 @@ local function CreateGreatVaultBtn(parent)
         self._whole:SetVertexColor(v, v, v, 1)
     end)
     btn:SetScript("OnClick", function(self)
-        if GetFFD(self).freeMoveJustDragged then return end
+        if GetFFD(self).freeMoveJustDragged then
+            return
+        end
         CludesUI.ToggleGreatVault()
     end)
 
@@ -396,19 +455,34 @@ end
 -- M+ Portal button. Identical flyout as Chat sidebar but anchored to minimap.
 -------------------------------------------------------------------------------
 local _portalFlyout
-I.portalFlyoutSetters[#I.portalFlyoutSetters + 1] = function(v) _portalFlyout = v end
+I.portalFlyoutSetters[#I.portalFlyoutSetters + 1] = function(v)
+    _portalFlyout = v
+end
 
 local function ToggleMinimapPortalFlyout(anchorBtn)
-    if InCombatLockdown() then return end
+    if InCombatLockdown() then
+        return
+    end
     if not _portalFlyout then
         SetPortalFlyout(CludesUI.CreatePortalFlyout({
-            name = "CUIMinimap", bg = { 0.04, 0.04, 0.06 }, clamp = true, unitEvents = true,
+            name = "CUIMinimap",
+            bg = { 0.04, 0.04, 0.06 },
+            clamp = true,
+            unitEvents = true,
             labelFont = (CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF",
             labelFlags = "OUTLINE",
         }))
         -- Keep the mouseover stack shown while open; re-evaluate on close so it can hide.
-        _portalFlyout:HookScript("OnShow", function() if MO_Evaluate then MO_Evaluate() end end)
-        _portalFlyout:HookScript("OnHide", function() if MO_Evaluate then MO_Evaluate() end end)
+        _portalFlyout:HookScript("OnShow", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
+        _portalFlyout:HookScript("OnHide", function()
+            if MO_Evaluate then
+                MO_Evaluate()
+            end
+        end)
     end
     local flyout = _portalFlyout
     -- Scale to the user's M+ Portals Scale (safe with secure children: combat
@@ -423,10 +497,10 @@ local function ToggleMinimapPortalFlyout(anchorBtn)
         -- button. 4px gap on the facing edge; the other axis keeps its top/left edge.
         local bs = anchorBtn:GetEffectiveScale()
         local fs = flyout:GetEffectiveScale()
-        local bTop    = anchorBtn:GetTop()    * bs
+        local bTop = anchorBtn:GetTop() * bs
         local bBottom = anchorBtn:GetBottom() * bs
-        local bLeft   = anchorBtn:GetLeft()   * bs
-        local bRight  = anchorBtn:GetRight()  * bs
+        local bLeft = anchorBtn:GetLeft() * bs
+        local bRight = anchorBtn:GetRight() * bs
         local dir = EBS._Grow.Dir()
         flyout:ClearAllPoints()
         if dir == "right" then
@@ -446,7 +520,9 @@ end
 local function SizePortalBtn(btn, showBg)
     local btnSz = GetInteractableBtnSize()
     btn:SetSize(btnSz, btnSz)
-    if btn._bg then btn._bg:SetShown(showBg ~= false) end
+    if btn._bg then
+        btn._bg:SetShown(showBg ~= false)
+    end
     local inset = 4
     local avail = btnSz - inset * 2
     btn._icon:SetSize(avail, avail)
@@ -469,15 +545,21 @@ local function CreatePortalBtn(parent)
 
     local icon = btn:CreateTexture(nil, "ARTWORK")
     icon:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
-    icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
+    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
     btn._icon = icon
 
     SizePortalBtn(btn)
 
     btn:SetScript("OnEnter", function(self)
         self._icon:SetVertexColor(1, 1, 1, 1)
-        if _portalFlyout and _portalFlyout:IsShown() then return end
-        CludesUI.ShowWidgetTooltip(self, "M+ Portals", { anchor = EBS._Grow.TT(), scale = GetCustomTooltipScale() })
+        if _portalFlyout and _portalFlyout:IsShown() then
+            return
+        end
+        CludesUI.ShowWidgetTooltip(
+            self,
+            "M+ Portals",
+            { anchor = EBS._Grow.TT(), scale = GetCustomTooltipScale() }
+        )
     end)
     btn:SetScript("OnLeave", function(self)
         self._icon:SetVertexColor(0.85, 0.85, 0.85, 1)
@@ -492,7 +574,9 @@ local function CreatePortalBtn(parent)
         self._icon:SetVertexColor(v, v, v, 1)
     end)
     btn:SetScript("OnClick", function(self)
-        if GetFFD(self).freeMoveJustDragged then return end
+        if GetFFD(self).freeMoveJustDragged then
+            return
+        end
         CludesUI.HideWidgetTooltip(true)
         ToggleMinimapPortalFlyout(self)
     end)

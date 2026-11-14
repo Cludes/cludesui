@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_WarriorCharges.lua
 -- ERB adapter for the engine-fed Warrior charge fills. The generic multi-host
 -- core lives in the PARENT addon (CludesUI_WarriorCharges.lua, exported as
@@ -17,8 +19,7 @@ local function FillTexPath()
     local ERB = ns.ERB
     local p = ERB and ERB.db and ERB.db.profile
     local key = (p and p.general and p.general.barTexture) or "none"
-    return CludesUI.ResolveTexturePath(_G._ERB_BarTextures, key,
-        "Interface\\Buttons\\WHITE8x8")
+    return CludesUI.ResolveTexturePath(_G._CURB_BarTextures, key, "Interface\\Buttons\\WHITE8x8")
 end
 
 -- Belt only (the painter's stashed color is the primary source): mirrors the
@@ -35,16 +36,22 @@ local function FillColor(sp, powerKey)
     if sp.resourceColored then
         if ERB and ERB.ResolveSecondaryResourceColor then
             local r, g, b = ERB.ResolveSecondaryResourceColor(powerKey)
-            if r then return r, g, b, 1 end
+            if r then
+                return r, g, b, 1
+            end
         end
     elseif sp.classColored == false then
         return sp.fillR or 1, sp.fillG or 1, sp.fillB or 1, 1
     else
         local pc = CludesUI.GetPowerColor(powerKey)
-        if pc then return pc.r, pc.g, pc.b, 1 end
+        if pc then
+            return pc.r, pc.g, pc.b, 1
+        end
     end
     local cc = CludesUI.GetClassColor(PLAYER_CLASS)
-    if cc then return cc.r, cc.g, cc.b, 1 end
+    if cc then
+        return cc.r, cc.g, cc.b, 1
+    end
     return 1, 1, 1, 1
 end
 
@@ -55,17 +62,17 @@ end
 
 function ns.WC_Recolor(powerKey, r, g, b, a)
     local ewc = _G._EWC
-    if ewc then ewc.Recolor("erb", powerKey, r, g, b, a) end
+    if ewc then
+        ewc.Recolor("erb", powerKey, r, g, b, a)
+    end
 end
 
 -- Threshold/band inputs, handed raw each paint pass; the core change-gates
 -- with alloc-free compares and renders them as engine-masked range strips.
-function ns.WC_Thresholds(powerKey, mode, count, r, g, b, a,
-                          bandOn, bands, bandReverse, reverse)
+function ns.WC_Thresholds(powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
     local ewc = _G._EWC
     if ewc and ewc.Thresholds then
-        ewc.Thresholds("erb", powerKey, mode, count, r, g, b, a,
-            bandOn, bands, bandReverse, reverse)
+        ewc.Thresholds("erb", powerKey, mode, count, r, g, b, a, bandOn, bands, bandReverse, reverse)
     end
 end
 
@@ -74,9 +81,10 @@ end
 -- type other than the two warrior charge buffs parks the overlay.
 function ns.WC_Sync(frame, sp, powerKey, gen)
     local ewc = _G._EWC
-    if not ewc or PLAYER_CLASS ~= "WARRIOR" then return end
-    if not ((powerKey == "WHIRLWIND_STACKS" or powerKey == "SWEEPING_STRIKES")
-            and frame and sp) then
+    if not ewc or PLAYER_CLASS ~= "WARRIOR" then
+        return
+    end
+    if not ((powerKey == "WHIRLWIND_STACKS" or powerKey == "SWEEPING_STRIKES") and frame and sp) then
         ewc.Gate("erb")
         return
     end
@@ -93,26 +101,44 @@ function ns.WC_Sync(frame, sp, powerKey, gen)
         ebR, ebG, ebB, ebA = ERB2.PipBgColor(sp, ns.ERB_PipBgOn(sp, false))
     end
     local wantText = sp.showText and true or false
-    if wantText and _G._ERB_TextHiddenByForm and ns.ERB and ns.ERB.db
-       and _G._ERB_TextHiddenByForm(ns.ERB.db.profile.secondary) then
+    if
+        wantText
+        and _G._CURB_TextHiddenByForm
+        and ns.ERB
+        and ns.ERB.db
+        and _G._CURB_TextHiddenByForm(ns.ERB.db.profile.secondary)
+    then
         wantText = false
     end
     ewc.Sync("erb", frame, powerKey, {
         texPath = FillTexPath(),
-        r = fr, g = fg, b = fb, a = fa,
+        r = fr,
+        g = fg,
+        b = fb,
+        a = fa,
         fillAlpha = ((sp.fillOpacity or 100) < 100) and ((sp.fillOpacity or 100) / 100) or 1,
         ori = sp.pipOrientation or "HORIZONTAL",
         pipOrientation = sp.pipOrientation,
         pipSpacing = sp.pipSpacing,
         gapColorEnabled = sp.gapColorEnabled,
-        gapR = sp.gapR, gapG = sp.gapG, gapB = sp.gapB, gapA = sp.gapA,
+        gapR = sp.gapR,
+        gapG = sp.gapG,
+        gapB = sp.gapB,
+        gapA = sp.gapA,
         darkTheme = sp.darkTheme,
         sep = { empty = { r = ebR, g = ebG, b = ebB, a = ebA } },
-        barBgR = sp.barBgR, barBgG = sp.barBgG, barBgB = sp.barBgB, barBgA = sp.barBgA,
+        barBgR = sp.barBgR,
+        barBgG = sp.barBgG,
+        barBgB = sp.barBgB,
+        barBgA = sp.barBgA,
         text = {
             fontFrom = frame._countText,
-            r = sp.textR, g = sp.textG, b = sp.textB,
-            anchor = sp.textAnchor, x = sp.textXOffset, y = sp.textYOffset,
+            r = sp.textR,
+            g = sp.textG,
+            b = sp.textB,
+            anchor = sp.textAnchor,
+            x = sp.textXOffset,
+            y = sp.textYOffset,
             shown = wantText,
         },
     })

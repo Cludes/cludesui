@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Buttons.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local _addonVisible, cachedAddonButtons, EBS = I._addonVisible, I.cachedAddonButtons, I.EBS
@@ -19,13 +23,19 @@ local InvalidateFlyout, IsUngrouped = I.InvalidateFlyout, I.IsUngrouped
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local flyoutToggle
-I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v) flyoutToggle = v end
+I.flyoutToggleSetters[#I.flyoutToggleSetters + 1] = function(v)
+    flyoutToggle = v
+end
 local flyoutPanel
-I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v) flyoutPanel = v end
+I.flyoutPanelSetters[#I.flyoutPanelSetters + 1] = function(v)
+    flyoutPanel = v
+end
 -- Assigned when CUI_Minimap_Apply.lua loads (see SetApplyMinimap); the free
 -- move release in EnableFreeMove runs it.
 local ApplyMinimap
-I.applyMinimapSetters[#I.applyMinimapSetters + 1] = function(v) ApplyMinimap = v end
+I.applyMinimapSetters[#I.applyMinimapSetters + 1] = function(v)
+    ApplyMinimap = v
+end
 
 -------------------------------------------------------------------------------
 --  Free Move Button System
@@ -34,36 +44,54 @@ I.applyMinimapSetters[#I.applyMinimapSetters + 1] = function(v) ApplyMinimap = v
 -------------------------------------------------------------------------------
 local function GetBtnPosKey(frame)
     -- Custom indicator buttons store their key directly
-    if frame._indicatorKey then return frame._indicatorKey end
+    if frame._indicatorKey then
+        return frame._indicatorKey
+    end
     local name = frame:GetName()
-    if name then return name end
-    if frame == flyoutToggle then return "_flyoutToggle" end
+    if name then
+        return name
+    end
+    if frame == flyoutToggle then
+        return "_flyoutToggle"
+    end
     return nil
 end
 
 local function GetBtnOffset(key)
     local mp = EBS.db and EBS.db.profile.minimap
-    if not mp or not mp.freeMoveBtns or not mp.btnPositions then return 0, 0 end
+    if not mp or not mp.freeMoveBtns or not mp.btnPositions then
+        return 0, 0
+    end
     local pos = mp.btnPositions[key]
-    if not pos then return 0, 0 end
+    if not pos then
+        return 0, 0
+    end
     return pos.x or 0, pos.y or 0
 end
 
 local function SaveBtnOffset(key, x, y)
     local mp = EBS.db and EBS.db.profile.minimap
-    if not mp then return end
-    if not mp.btnPositions then mp.btnPositions = {} end
+    if not mp then
+        return
+    end
+    if not mp.btnPositions then
+        mp.btnPositions = {}
+    end
     mp.btnPositions[key] = { x = x, y = y }
 end
 
-local _freeMoveHooked = {}  -- [frame] = true, one-time hook guard
+local _freeMoveHooked = {} -- [frame] = true, one-time hook guard
 
 local function EnableFreeMove(frame)
-    if not frame or _freeMoveHooked[frame] then return end
+    if not frame or _freeMoveHooked[frame] then
+        return
+    end
     _freeMoveHooked[frame] = true
 
     local key = GetBtnPosKey(frame)
-    if not key then return end
+    if not key then
+        return
+    end
 
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
@@ -73,7 +101,9 @@ local function EnableFreeMove(frame)
         local origClick = frame:GetScript("OnClick")
         if origClick then
             frame:SetScript("OnClick", function(self, ...)
-                if GetFFD(self).freeMoveJustDragged then return end
+                if GetFFD(self).freeMoveJustDragged then
+                    return
+                end
                 origClick(self, ...)
             end)
         end
@@ -89,13 +119,17 @@ local function EnableFreeMove(frame)
             isDragging = false
             self:SetScript("OnUpdate", nil)
             -- Clear the drag flag on the next frame (set in OnMouseDown)
-            C_Timer.After(0, function() GetFFD(self).freeMoveJustDragged = nil end)
+            C_Timer.After(0, function()
+                GetFFD(self).freeMoveJustDragged = nil
+            end)
             local es = self:GetEffectiveScale()
             local cx, cy = GetCursorPosition()
             cx, cy = cx / es, cy / es
             local dx, dy = cx - startX, cy - startY
             SaveBtnOffset(key, origOffX + dx, origOffY + dy)
-            if ApplyMinimap then ApplyMinimap() end
+            if ApplyMinimap then
+                ApplyMinimap()
+            end
             return
         end
         -- Move the button directly during drag (no full relayout)
@@ -110,10 +144,16 @@ local function EnableFreeMove(frame)
     end
 
     frame:HookScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" then return end
-        if not IsShiftKeyDown() then return end
+        if button ~= "LeftButton" then
+            return
+        end
+        if not IsShiftKeyDown() then
+            return
+        end
         local mp = EBS.db and EBS.db.profile.minimap
-        if not mp or not mp.freeMoveBtns then return end
+        if not mp or not mp.freeMoveBtns then
+            return
+        end
         isDragging = true
         -- Block clicks immediately so OnClick can never fire mid-drag whatever the event ordering; cleared on the frame after release.
         GetFFD(self).freeMoveJustDragged = true
@@ -129,7 +169,9 @@ local function EnableFreeMove(frame)
     end)
 
     frame:HookScript("OnMouseUp", function(self, button)
-        if button ~= "LeftButton" or not isDragging then return end
+        if button ~= "LeftButton" or not isDragging then
+            return
+        end
         isDragging = false
         self:SetScript("OnUpdate", nil)
         local es = self:GetEffectiveScale()
@@ -137,19 +179,28 @@ local function EnableFreeMove(frame)
         cx, cy = cx / es, cy / es
         local dx, dy = cx - startX, cy - startY
         SaveBtnOffset(key, origOffX + dx, origOffY + dy)
-        C_Timer.After(0, function() GetFFD(frame).freeMoveJustDragged = nil end)
-        if ApplyMinimap then ApplyMinimap() end
+        C_Timer.After(0, function()
+            GetFFD(frame).freeMoveJustDragged = nil
+        end)
+        if ApplyMinimap then
+            ApplyMinimap()
+        end
     end)
-
 end
 
 -- Apply saved offset to a button (called during layout)
 local function ApplyBtnOffset(frame)
-    if not frame then return end
+    if not frame then
+        return
+    end
     local key = GetBtnPosKey(frame)
-    if not key then return end
+    if not key then
+        return
+    end
     local ox, oy = GetBtnOffset(key)
-    if ox == 0 and oy == 0 then return end
+    if ox == 0 and oy == 0 then
+        return
+    end
     local p1, rel, p2, x, y = frame:GetPoint(1)
     if p1 then
         frame:SetPoint(p1, rel, p2, (x or 0) + ox, (y or 0) + oy)
@@ -158,7 +209,9 @@ end
 
 local function SaveZoomLevel()
     local p = EBS.db and EBS.db.profile.minimap
-    if not p then return end
+    if not p then
+        return
+    end
     p.savedZoom = Minimap:GetZoom()
 end
 
@@ -171,7 +224,9 @@ local function RestartZoomResetTimer()
     end
     local p = EBS.db and EBS.db.profile.minimap
     local secs = p and p.zoomResetSeconds or 0
-    if not secs or secs <= 0 then return end
+    if not secs or secs <= 0 then
+        return
+    end
     zoomResetTimer = C_Timer.NewTimer(secs, function()
         zoomResetTimer = nil
         if Minimap:GetZoom() ~= 0 then
@@ -189,10 +244,10 @@ local FOLIO_REPLACEMENT_BUTTONS = {
 
 -- Blizzard structural frames that should NOT go into the flyout
 local flyoutBlacklist = {
-    MinimapZoomIn    = true,
-    MinimapZoomOut   = true,
-    MinimapBackdrop  = true,
-    GameTimeFrame    = true,
+    MinimapZoomIn = true,
+    MinimapZoomOut = true,
+    MinimapBackdrop = true,
+    GameTimeFrame = true,
     -- Core Blizzard feature button; keep on the map surface, not in the flyout.
     ExpansionLandingPageMinimapButton = true,
     -- Same for the addon compartment: it is parented to the Minimap so it can
@@ -238,11 +293,17 @@ local function HideMinimapChild(btn)
                     InvalidateFlyout()
                 end
             end
-            if InCombatLockdown() then return end
+            if InCombatLockdown() then
+                return
+            end
             -- Never zero alpha while the flyout is open: periodic addon Show() calls
             -- would blank buttons that are visible in the grid.
-            if flyoutPanel and flyoutPanel:IsShown() then return end
-            if IsUngrouped(self) then return end
+            if flyoutPanel and flyoutPanel:IsShown() then
+                return
+            end
+            if IsUngrouped(self) then
+                return
+            end
             local mp = EBS.db and EBS.db.profile.minimap
             if mp and mp.enabled and not flyoutOwnedFrames[self] then
                 self:SetAlpha(0)
@@ -276,9 +337,13 @@ local flyoutPinPatterns = {
 }
 
 local function IsPinFrame(name)
-    if not name then return false end
+    if not name then
+        return false
+    end
     for _, pat in ipairs(flyoutPinPatterns) do
-        if name:match(pat) then return true end
+        if name:match(pat) then
+            return true
+        end
     end
     return false
 end
@@ -297,7 +362,9 @@ do
         end
     end
     function EBS._HookAddonBtnTT(btn)
-        if hooked[btn] then return end
+        if hooked[btn] then
+            return
+        end
         hooked[btn] = true
         btn:HookScript("OnEnter", function(self)
             repoint(_G.GameTooltip, self)
@@ -309,10 +376,14 @@ end
 -- Gather all minimap buttons (Blizzard + addon) into cachedAddonButtons
 local function GatherMinimapButtons()
     wipe(cachedAddonButtons)
-    if not Minimap then return end
+    if not Minimap then
+        return
+    end
     -- Also scan flyout panel children (buttons we already reparented)
     local sources = { Minimap }
-    if flyoutPanel then sources[2] = flyoutPanel end
+    if flyoutPanel then
+        sources[2] = flyoutPanel
+    end
     for _, source in ipairs(sources) do
         for _, child in ipairs({ source:GetChildren() }) do
             if not flyoutOwnedFrames[child] then
@@ -321,8 +392,7 @@ local function GatherMinimapButtons()
                     -- skip
                 elseif IsPinFrame(name) then
                     -- skip pin/POI frames
-                elseif child:IsObjectType("Button") and name
-                    and not name:match("%d+$") then
+                elseif child:IsObjectType("Button") and name and not name:match("%d+$") then
                     local w = child:GetWidth() or 0
                     -- Width gate applies to first discovery only; once tracked in
                     -- _addonVisible a button is always re-collected, so our own SetSize (slider < 20) can't permanently drop it.
@@ -359,8 +429,8 @@ local function GatherMinimapButtons()
 end
 
 -- Expose for options UI
-_G._EBS_CachedAddonButtons = cachedAddonButtons
-_G._EBS_AddonVisible = _addonVisible
+_G._CUBS_CachedAddonButtons = cachedAddonButtons
+_G._CUBS_AddonVisible = _addonVisible
 
 -- Hide all collected minimap buttons from the map surface. Ungrouped buttons are left
 -- alone (positioned by LayoutIndicatorFrames); buttons inside the open flyout are

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Options.lua
 --  Registers the Forever Essentials sidebar addon (WoW Forever only) with its
@@ -11,13 +13,15 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 -- Page names are DEEP-LINK IDENTIFIERS: every NavigateToElementSettings tuple
 -- and What's New nav carries them as strings and fails SILENTLY on a mismatch.
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end  -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
+    return
+end -- module disabled: no options page
 
 local PAGE_GENERAL = "General"
-local PAGE_TRAVEL  = "Travel"
-local PAGE_THREAT  = "Threat"
-local PAGE_LOOT    = "Loot"
-local PAGE_MACROS  = "Macros"
+local PAGE_TRAVEL = "Travel"
+local PAGE_THREAT = "Threat"
+local PAGE_LOOT = "Loot"
+local PAGE_MACROS = "Macros"
 local PAGE_TRAINING = "Training"
 local PAGE_PVP = "PvP"
 
@@ -47,11 +51,53 @@ initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
     CludesUI:RegisterModule("CludesUIForeverEssentials", {
-        title       = "Forever Tools",
+        title = "Forever Tools",
         description = "Essential tools for WoW Forever.",
-        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
-        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "loot", "loot feed", "training", "trainer", "pvp", "spy", "kill on sight", "enemy players", "spells to train", "reputation", "currency", "uprank", "spell rank", "junk", "junk items", "macro", "macros", "macro manager", "simplified stats", "item stats", "stat colors", "tooltip stats", "world map", "map", "reveal", "unexplored", "fog of war", "fishing skill", "quest reward", "quest rewards", "sell value", "boat", "zeppelin", "zone exit", "dungeon entrance", "instance" },
-        buildPage   = function(pageName, parent, yOffset)
+        pages = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT, PAGE_MACROS, PAGE_TRAINING, PAGE_PVP },
+        searchTerms = {
+            "flight timer",
+            "flight path",
+            "threat",
+            "threat meter",
+            "aggro",
+            "loot",
+            "loot feed",
+            "training",
+            "trainer",
+            "pvp",
+            "spy",
+            "kill on sight",
+            "enemy players",
+            "spells to train",
+            "reputation",
+            "currency",
+            "uprank",
+            "spell rank",
+            "junk",
+            "junk items",
+            "macro",
+            "macros",
+            "macro manager",
+            "simplified stats",
+            "item stats",
+            "stat colors",
+            "tooltip stats",
+            "world map",
+            "map",
+            "reveal",
+            "unexplored",
+            "fog of war",
+            "fishing skill",
+            "quest reward",
+            "quest rewards",
+            "sell value",
+            "boat",
+            "zeppelin",
+            "zone exit",
+            "dungeon entrance",
+            "instance",
+        },
+        buildPage = function(pageName, parent, yOffset)
             if pageName == PAGE_GENERAL and _G._CUI_BuildForeverGeneralPage then
                 return _G._CUI_BuildForeverGeneralPage(pageName, parent, yOffset)
             end
@@ -77,10 +123,18 @@ initFrame:SetScript("OnEvent", function(self)
         -- The Travel, Threat, Loot and Macros headers live in the content header; declaring a
         -- page's builder makes a cached page whose header was dropped rebuild with it.
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_TRAVEL then return _G._CUI_TravelHeaderBuilder end
-            if pageName == PAGE_THREAT then return _G._CUI_ThreatHeaderBuilder end
-            if pageName == PAGE_LOOT then return _G._CUI_LootHeaderBuilder end
-            if pageName == PAGE_MACROS and CludesUI._MacroManager.Enabled() then return _G._CUI_MacrosHeaderBuilder end
+            if pageName == PAGE_TRAVEL then
+                return _G._CUI_TravelHeaderBuilder
+            end
+            if pageName == PAGE_THREAT then
+                return _G._CUI_ThreatHeaderBuilder
+            end
+            if pageName == PAGE_LOOT then
+                return _G._CUI_LootHeaderBuilder
+            end
+            if pageName == PAGE_MACROS and CludesUI._MacroManager.Enabled() then
+                return _G._CUI_MacrosHeaderBuilder
+            end
         end,
         resetScope = "account",
         onReset = function()
@@ -101,14 +155,17 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUIDB.questRewards = nil
                 CludesUIDB.zoneLevels = nil
                 -- The per-character favorites are the player's picks: only the switch resets.
-                if CludesUIDB.petSummon then CludesUIDB.petSummon.enabled = nil end
+                if CludesUIDB.petSummon then
+                    CludesUIDB.petSummon.enabled = nil
+                end
                 -- The CVars a session holds stay recorded, so Apply can give them back.
                 local fi = CludesUIDB.fishing
                 CludesUIDB.fishing = fi and fi.held and { held = fi.held } or nil
                 CludesUIDB.mapTravel = nil
                 -- The game's mapFade from before stays, so Apply can give it back.
                 local mf = CludesUIDB.worldMapFade
-                CludesUIDB.worldMapFade = mf and mf.mapFadeWas ~= nil and { mapFadeWas = mf.mapFadeWas } or nil
+                CludesUIDB.worldMapFade = mf and mf.mapFadeWas ~= nil and { mapFadeWas = mf.mapFadeWas }
+                    or nil
                 CludesUIDB.gatherSkill = nil
                 if CludesUIDB.unlockAnchors then
                     CludesUIDB.unlockAnchors.CUI_FlightTimer = nil
@@ -136,21 +193,47 @@ initFrame:SetScript("OnEvent", function(self)
                 LF.ApplyStyle()
                 LF.ApplyPosition()
             end
-            if CludesUI._SpellUprank then CludesUI._SpellUprank.Apply() end
-            if CludesUI._JunkItems then CludesUI._JunkItems.Apply() end
-            if CludesUI._ActiveForm then CludesUI._ActiveForm.Apply() end
-            if CludesUI._ClassicSpellbook then CludesUI._ClassicSpellbook.Apply() end
-            if CludesUI._ClassicTalents then CludesUI._ClassicTalents.Apply() end
-            if CludesUI._QuestRewards then CludesUI._QuestRewards.Apply() end
-            if CludesUI._ZoneLevels then CludesUI._ZoneLevels.Apply() end
-            if CludesUI._PetSummon then CludesUI._PetSummon.Apply() end
-            if CludesUI._Fishing then CludesUI._Fishing.Apply() end
-            if CludesUI._MapTravel then CludesUI._MapTravel.Apply() end
-            if CludesUI._MapFade then CludesUI._MapFade.Apply() end
-            if CludesUI._GatherSkill then CludesUI._GatherSkill.Apply() end
+            if CludesUI._SpellUprank then
+                CludesUI._SpellUprank.Apply()
+            end
+            if CludesUI._JunkItems then
+                CludesUI._JunkItems.Apply()
+            end
+            if CludesUI._ActiveForm then
+                CludesUI._ActiveForm.Apply()
+            end
+            if CludesUI._ClassicSpellbook then
+                CludesUI._ClassicSpellbook.Apply()
+            end
+            if CludesUI._ClassicTalents then
+                CludesUI._ClassicTalents.Apply()
+            end
+            if CludesUI._QuestRewards then
+                CludesUI._QuestRewards.Apply()
+            end
+            if CludesUI._ZoneLevels then
+                CludesUI._ZoneLevels.Apply()
+            end
+            if CludesUI._PetSummon then
+                CludesUI._PetSummon.Apply()
+            end
+            if CludesUI._Fishing then
+                CludesUI._Fishing.Apply()
+            end
+            if CludesUI._MapTravel then
+                CludesUI._MapTravel.Apply()
+            end
+            if CludesUI._MapFade then
+                CludesUI._MapFade.Apply()
+            end
+            if CludesUI._GatherSkill then
+                CludesUI._GatherSkill.Apply()
+            end
             CludesUI:InvalidatePageCache()
         end,
     })
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then initFrame:GetScript("OnEvent")(initFrame) end
+if IsLoggedIn() then
+    initFrame:GetScript("OnEvent")(initFrame)
+end

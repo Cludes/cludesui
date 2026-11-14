@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Popups.lua
 --  Popup scale helper, announcement shell and buttons, reload helpers, and
@@ -6,19 +8,19 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local CludesUI = _G.CludesUI
 
-local PanelPP         = CludesUI.PanelPP
-local MakeFont        = CludesUI.MakeFont
-local MakeBorder      = CludesUI.MakeBorder
-local SolidTex        = CludesUI.SolidTex
-local lerp            = CludesUI.lerp
+local PanelPP = CludesUI.PanelPP
+local MakeFont = CludesUI.MakeFont
+local MakeBorder = CludesUI.MakeBorder
+local SolidTex = CludesUI.SolidTex
+local lerp = CludesUI.lerp
 local CLUDES_GREEN = CludesUI.CLUDES_GREEN
-local BORDER_COLOR    = CludesUI.BORDER_COLOR
-local TEXT_DIM        = CludesUI.TEXT_DIM
+local BORDER_COLOR = CludesUI.BORDER_COLOR
+local TEXT_DIM = CludesUI.TEXT_DIM
 
 -------------------------------------------------------------------------------
 --  Popup Scale Helper -- pixel-perfect base scale * user panel scale, so popups grow/shrink with the main panel when the scale slider moves.
 -------------------------------------------------------------------------------
-local _popupFrames = {}   -- { popup, dimmer } pairs to update on scale change
+local _popupFrames = {} -- { popup, dimmer } pairs to update on scale change
 CludesUI._popupFrames = _popupFrames
 
 local function GetPopupScale()
@@ -68,13 +70,21 @@ end
 -- game menu. Measured, not derived: GetEffectiveScale reports what the frame really renders at,
 -- including every stacked parent scale, so this holds whatever the upstream scale math does (only ever shrinks).
 function CludesUI.ClampPopupToScreen(popup, w, h)
-    if not popup or not w or not h or w <= 0 or h <= 0 then return end
+    if not popup or not w or not h or w <= 0 or h <= 0 then
+        return
+    end
     local es = popup:GetEffectiveScale()
-    if type(es) ~= "number" or es <= 0 then return end
+    if type(es) ~= "number" or es <= 0 then
+        return
+    end
     local pw, ph = GetPhysicalScreenSize()
-    if type(pw) ~= "number" or type(ph) ~= "number" or pw <= 0 or ph <= 0 then return end
+    if type(pw) ~= "number" or type(ph) ~= "number" or pw <= 0 or ph <= 0 then
+        return
+    end
     local fit = math.min((pw * 0.92) / (w * es), (ph * 0.92) / (h * es))
-    if fit >= 1 then return end
+    if fit >= 1 then
+        return
+    end
     popup:SetScale(popup:GetScale() * fit)
 end
 
@@ -91,18 +101,26 @@ function CludesUI.BuildPopupShell(name, opts)
     dimmer:EnableMouse(true)
     dimmer:EnableMouseWheel(true)
     dimmer:SetScript("OnMouseWheel", function() end)
-    if opts.onDimmerDown then dimmer:SetScript("OnMouseDown", opts.onDimmerDown) end
-    if opts.bump then dimmer:SetScale(GetPopupScale()) end
+    if opts.onDimmerDown then
+        dimmer:SetScript("OnMouseDown", opts.onDimmerDown)
+    end
+    if opts.bump then
+        dimmer:SetScale(GetPopupScale())
+    end
     local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
     dimTex:SetAllPoints()
     dimTex:SetColorTexture(0, 0, 0, opts.dimAlpha or 0.35)
 
     local popup = CreateFrame("Frame", name .. "Popup", dimmer)
-    if opts.bump then popup:SetScale(CludesUI.PopupBump(opts.bump)) end
+    if opts.bump then
+        popup:SetScale(CludesUI.PopupBump(opts.bump))
+    end
     popup:SetFrameStrata(strata)
     popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
     PanelPP.Size(popup, opts.w, opts.h)
-    if opts.clamp then CludesUI.ClampPopupToScreen(popup, opts.w, opts.h) end
+    if opts.clamp then
+        CludesUI.ClampPopupToScreen(popup, opts.w, opts.h)
+    end
     popup:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     popup:EnableMouse(true)
 
@@ -124,20 +142,28 @@ function CludesUI.BuildPopupShell(name, opts)
         popup:SetPropagateKeyboardInput(true)
     end
     popup:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" and onEscape then onEscape() end
+        if key == "ESCAPE" and onEscape then
+            onEscape()
+        end
     end)
     -- Controller Back takes the Escape route (swallowed when there is none). It
     -- counts only when a controller is in use at the show, so the keyboard path
     -- never changes. The dimmer is born shown: with a controller it is hidden
     -- first so the caller's Show() is a real show edge.
     if CludesUI.RegisterEscapeClose then
-        if CludesUI.PadInUse() then dimmer:Hide() end
+        if CludesUI.PadInUse() then
+            dimmer:Hide()
+        end
         CludesUI.RegisterEscapeClose(dimmer, {
             padOnly = true,
             modal = not onEscape,
-            onEscape = onEscape and function() onEscape() end or nil,
+            onEscape = onEscape and function()
+                onEscape()
+            end or nil,
         })
     end
     -- Controller cursor: the panel is a blocker, not a stop.
@@ -191,7 +217,31 @@ end
 -- default to the hover colours over 0.1s. Exposes btn._lbl, btn._resetAnim and
 -- btn._setColors (new colours, same argument order as the defaults below).
 -- square (optional): the square outline, for a window that is square by design.
-function CludesUI.MakePopupButton(parent, anchorPoint, anchorTo, anchorRef, xOff, yOff, defR, defG, defB, defA, hovR, hovG, hovB, hovA, bDefR, bDefG, bDefB, bDefA, bHovR, bHovG, bHovB, bHovA, square)
+function CludesUI.MakePopupButton(
+    parent,
+    anchorPoint,
+    anchorTo,
+    anchorRef,
+    xOff,
+    yOff,
+    defR,
+    defG,
+    defB,
+    defA,
+    hovR,
+    hovG,
+    hovB,
+    hovA,
+    bDefR,
+    bDefG,
+    bDefB,
+    bDefA,
+    bHovR,
+    bHovG,
+    bHovB,
+    bHovA,
+    square
+)
     local FADE_DUR = 0.1
     local btn = CreateFrame("Button", nil, parent)
     btn:SetSize(125, 27)
@@ -214,7 +264,12 @@ function CludesUI.MakePopupButton(parent, anchorPoint, anchorTo, anchorRef, xOff
     local progress, target = 0, 0
     local function Apply(t)
         lbl:SetTextColor(lerp(defR, hovR, t), lerp(defG, hovG, t), lerp(defB, hovB, t), lerp(defA, hovA, t))
-        brd:SetColor(lerp(bDefR, bHovR, t), lerp(bDefG, bHovG, t), lerp(bDefB, bHovB, t), lerp(bDefA, bHovA, t))
+        brd:SetColor(
+            lerp(bDefR, bHovR, t),
+            lerp(bDefG, bHovG, t),
+            lerp(bDefB, bHovB, t),
+            lerp(bDefA, bHovA, t)
+        )
     end
 
     local function OnUpdate(self, elapsed)
@@ -227,15 +282,26 @@ function CludesUI.MakePopupButton(parent, anchorPoint, anchorTo, anchorRef, xOff
         Apply(progress)
     end
 
-    btn:SetScript("OnEnter", function(self) target = 1; self:SetScript("OnUpdate", OnUpdate) end)
-    btn:SetScript("OnLeave", function(self) target = 0; self:SetScript("OnUpdate", OnUpdate) end)
+    btn:SetScript("OnEnter", function(self)
+        target = 1
+        self:SetScript("OnUpdate", OnUpdate)
+    end)
+    btn:SetScript("OnLeave", function(self)
+        target = 0
+        self:SetScript("OnUpdate", OnUpdate)
+    end)
 
     btn._lbl = lbl
-    btn._resetAnim = function() progress = 0; target = 0; Apply(0); btn:SetScript("OnUpdate", nil) end
+    btn._resetAnim = function()
+        progress = 0
+        target = 0
+        Apply(0)
+        btn:SetScript("OnUpdate", nil)
+    end
     -- Replaces the default and hover colours and repaints at the current hover progress.
     btn._setColors = function(...)
-        defR, defG, defB, defA, hovR, hovG, hovB, hovA,
-            bDefR, bDefG, bDefB, bDefA, bHovR, bHovG, bHovB, bHovA = ...
+        defR, defG, defB, defA, hovR, hovG, hovB, hovA, bDefR, bDefG, bDefB, bDefA, bHovR, bHovG, bHovB, bHovA =
+            ...
         lbl:SetAlpha(defA)
         Apply(progress)
     end
@@ -257,7 +323,9 @@ local function RefreshPopupScales()
 end
 
 -- Register so popups rescale when the user adjusts the panel scale slider
-if not CludesUI._onScaleChanged then CludesUI._onScaleChanged = {} end
+if not CludesUI._onScaleChanged then
+    CludesUI._onScaleChanged = {}
+end
 CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = RefreshPopupScales
 
 -------------------------------------------------------------------------------
@@ -277,14 +345,18 @@ local confirmPopup
 -- (an Escape that closed it left propagation off).
 function CludesUI.PopupTakeKeys(frame, host)
     local function Take()
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         frame:EnableKeyboard(true)
         frame:SetPropagateKeyboardInput(true)
     end
     if host then
         host:HookScript("OnShow", Take)
         host:HookScript("OnHide", function()
-            if not InCombatLockdown() then frame:EnableKeyboard(false) end
+            if not InCombatLockdown() then
+                frame:EnableKeyboard(false)
+            end
         end)
     end
     Take()
@@ -296,12 +368,18 @@ local function WirePopupEscape(popup, dimmer)
     -- keys on by default, and in combat it stands aside (keys reach the
     -- game, Escape does not close it, its buttons still answer).
     local function TakeKeys(on)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         popup:EnableKeyboard(on)
-        if on then popup:SetPropagateKeyboardInput(true) end
+        if on then
+            popup:SetPropagateKeyboardInput(true)
+        end
     end
     popup:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then return end
+        if InCombatLockdown() then
+            return
+        end
         if key == "ESCAPE" then
             if popup._modal then
                 -- Modal popups swallow Escape: the user must click a button.
@@ -310,25 +388,37 @@ local function WirePopupEscape(popup, dimmer)
             end
             self:SetPropagateKeyboardInput(false)
             dimmer:Hide()
-            if popup._onCancel then popup._onCancel() end
+            if popup._onCancel then
+                popup._onCancel()
+            end
         else
             self:SetPropagateKeyboardInput(true)
         end
     end)
     -- Release keyboard capture when the popup is dismissed
-    dimmer:HookScript("OnHide", function() TakeKeys(false) end)
-    dimmer:HookScript("OnShow", function() TakeKeys(true) end)
-    if dimmer:IsShown() then TakeKeys(true) end
+    dimmer:HookScript("OnHide", function()
+        TakeKeys(false)
+    end)
+    dimmer:HookScript("OnShow", function()
+        TakeKeys(true)
+    end)
+    if dimmer:IsShown() then
+        TakeKeys(true)
+    end
     -- Controller Back takes the same route as Escape (modal popups swallow it).
     -- It counts only when a controller is in use at the show, so the keyboard
     -- path never changes.
     if CludesUI.RegisterEscapeClose then
         CludesUI.RegisterEscapeClose(dimmer, {
             padOnly = true,
-            modal = function() return popup._modal end,
+            modal = function()
+                return popup._modal
+            end,
             onEscape = function()
                 dimmer:Hide()
-                if popup._onCancel then popup._onCancel() end
+                if popup._onCancel then
+                    popup._onCancel()
+                end
             end,
         })
     end
@@ -364,7 +454,11 @@ local function MakePopupCheckbox(popup, width)
     popup._cbChecked = false
     cbRow:SetScript("OnClick", function()
         popup._cbChecked = not popup._cbChecked
-        if popup._cbChecked then cbCheck:Show() else cbCheck:Hide() end
+        if popup._cbChecked then
+            cbCheck:Show()
+        else
+            cbCheck:Hide()
+        end
     end)
     cbRow:Hide()
     popup._cbRow = cbRow
@@ -398,15 +492,25 @@ local function DressDialog(popup)
         return tx
     end
     local head = Tex("BACKGROUND", 2, 0.035)
-    head:SetPoint("TOPLEFT"); head:SetPoint("TOPRIGHT"); head:SetHeight(DIALOG_HEAD)
+    head:SetPoint("TOPLEFT")
+    head:SetPoint("TOPRIGHT")
+    head:SetHeight(DIALOG_HEAD)
     local hl = Tex("ARTWORK", 0, 0.08)
-    hl:SetPoint("TOPLEFT", head, "BOTTOMLEFT"); hl:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT"); hl:SetHeight(1)
+    hl:SetPoint("TOPLEFT", head, "BOTTOMLEFT")
+    hl:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT")
+    hl:SetHeight(1)
     local foot = Tex("BACKGROUND", 2, 0.025)
-    foot:SetPoint("BOTTOMLEFT"); foot:SetPoint("BOTTOMRIGHT"); foot:SetHeight(DIALOG_FOOT)
+    foot:SetPoint("BOTTOMLEFT")
+    foot:SetPoint("BOTTOMRIGHT")
+    foot:SetHeight(DIALOG_FOOT)
     local fl = Tex("ARTWORK", 0, 0.08)
-    fl:SetPoint("BOTTOMLEFT", foot, "TOPLEFT"); fl:SetPoint("BOTTOMRIGHT", foot, "TOPRIGHT"); fl:SetHeight(1)
+    fl:SetPoint("BOTTOMLEFT", foot, "TOPLEFT")
+    fl:SetPoint("BOTTOMRIGHT", foot, "TOPRIGHT")
+    fl:SetHeight(1)
     local cap = popup:CreateTexture(nil, "ARTWORK", nil, 1)
-    cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+    cap:SetPoint("TOPLEFT")
+    cap:SetPoint("TOPRIGHT")
+    cap:SetHeight(2)
     local function Paint()
         local c = CLUDES_GREEN
         cap:SetColorTexture(c.r, c.g, c.b, 0.9)
@@ -425,14 +529,16 @@ local function PlaceDialogTitle(popup, title, w)
 end
 
 local function CreateConfirmPopup()
-    if confirmPopup then return confirmPopup end
+    if confirmPopup then
+        return confirmPopup
+    end
 
     local POPUP_W, POPUP_H = 400, 186
 
     -- Full-screen dimming overlay
     local dimmer = CreateFrame("Frame", "CUIConfirmDimmer", UIParent)
     dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-    dimmer:SetFrameLevel(100)  -- above unlock mode movers (level ~21)
+    dimmer:SetFrameLevel(100) -- above unlock mode movers (level ~21)
     dimmer:SetAllPoints(UIParent)
     dimmer:EnableMouse(true)
     dimmer:EnableMouseWheel(true)
@@ -467,7 +573,8 @@ local function CreateConfirmPopup()
     popup._popBgAtlas = popBgAtlas
     popup._popBgOverlay = popBgOverlay
 
-    popup._brd = CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
+    popup._brd =
+        CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
     CludesUI.RoundBody(popup, popBgAtlas)
     CludesUI.RoundBody(popup, popBgOverlay)
     DressDialog(popup)
@@ -514,24 +621,58 @@ local function CreateConfirmPopup()
 
     -- Cancel button -- dim white style
     local EG = CLUDES_GREEN
-    local cancelBtn = CludesUI.MakePopupButton(popup,
-        "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -(14 + BTN_W + BTN_GAP), BTN_Y,
-        1, 1, 1, 0.7,                                         -- default text
-        1, 1, 1, 0.9,                                         -- hovered text
-        1, 1, 1, 0.5,                                         -- default border
-        1, 1, 1, 0.6                                           -- hovered border
+    local cancelBtn = CludesUI.MakePopupButton(
+        popup,
+        "BOTTOMRIGHT",
+        popup,
+        "BOTTOMRIGHT",
+        -(14 + BTN_W + BTN_GAP),
+        BTN_Y,
+        1,
+        1,
+        1,
+        0.7, -- default text
+        1,
+        1,
+        1,
+        0.9, -- hovered text
+        1,
+        1,
+        1,
+        0.5, -- default border
+        1,
+        1,
+        1,
+        0.6 -- hovered border
     )
 
     -- Confirm button -- accent style
-    local confirmBtn = CludesUI.MakePopupButton(popup,
-        "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, BTN_Y,
-        EG.r, EG.g, EG.b, 0.9,        -- default text
-        EG.r, EG.g, EG.b, 1,           -- hovered text
-        EG.r, EG.g, EG.b, 0.9,         -- default border
-        EG.r, EG.g, EG.b, 1            -- hovered border
+    local confirmBtn = CludesUI.MakePopupButton(
+        popup,
+        "BOTTOMRIGHT",
+        popup,
+        "BOTTOMRIGHT",
+        -14,
+        BTN_Y,
+        EG.r,
+        EG.g,
+        EG.b,
+        0.9, -- default text
+        EG.r,
+        EG.g,
+        EG.b,
+        1, -- hovered text
+        EG.r,
+        EG.g,
+        EG.b,
+        0.9, -- default border
+        EG.r,
+        EG.g,
+        EG.b,
+        1 -- hovered border
     )
 
-    popup._cancelBtn  = cancelBtn
+    popup._cancelBtn = cancelBtn
     popup._confirmBtn = confirmBtn
 
     -- Optional checkbox (above buttons, centered)
@@ -540,10 +681,14 @@ local function CreateConfirmPopup()
     -- Close on dimmer click outside the popup; modal popups ignore dimmer clicks.
     popup:EnableMouse(true)
     dimmer:SetScript("OnMouseDown", function()
-        if popup._modal then return end
+        if popup._modal then
+            return
+        end
         if not popup:IsMouseOver() then
             dimmer:Hide()
-            if popup._onCancel then popup._onCancel() end
+            if popup._onCancel then
+                popup._onCancel()
+            end
         end
     end)
 
@@ -559,11 +704,28 @@ end
 -- tick) with the current accent; the popup itself is built once and reused.
 local function InvalidateConfirmPopup()
     local popup = confirmPopup
-    if not popup then return end
+    if not popup then
+        return
+    end
     local EG = CLUDES_GREEN
     popup._confirmBtn._setColors(
-        EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1,
-        EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1)
+        EG.r,
+        EG.g,
+        EG.b,
+        0.9,
+        EG.r,
+        EG.g,
+        EG.b,
+        1,
+        EG.r,
+        EG.g,
+        EG.b,
+        0.9,
+        EG.r,
+        EG.g,
+        EG.b,
+        1
+    )
     popup._cbCheck:SetColorTexture(EG.r, EG.g, EG.b, 1)
 end
 CludesUI._InvalidateConfirmPopup = InvalidateConfirmPopup
@@ -581,7 +743,9 @@ CludesUI._InvalidateConfirmPopup = InvalidateConfirmPopup
 -- for its callers; nothing shows them.
 function CludesUI.RequestReload(title, message, work)
     ReloadUI()
-    if work then work() end
+    if work then
+        work()
+    end
 end
 
 function CludesUI:ShowConfirmPopup(opts)
@@ -590,16 +754,22 @@ function CludesUI:ShowConfirmPopup(opts)
     -- asked for as its pre-reload work. The caller's table is left as is.
     if opts.reload then
         local o = {}
-        for k, v in pairs(opts) do o[k] = v end
+        for k, v in pairs(opts) do
+            o[k] = v
+        end
         o.reload = nil
         local work = opts.onConfirm
         o.onConfirm = function(checked)
-            CludesUI.RequestReload(nil, nil, work and function() work(checked) end)
+            CludesUI.RequestReload(nil, nil, work and function()
+                work(checked)
+            end)
         end
         opts = o
     end
     -- Force-close any widget tooltip so it doesn't linger behind the popup
-    if CludesUI.HideWidgetTooltip then CludesUI.HideWidgetTooltip() end
+    if CludesUI.HideWidgetTooltip then
+        CludesUI.HideWidgetTooltip()
+    end
     local popup = CreateConfirmPopup()
     popup._dimmer:SetFrameLevel(opts.frameLevel or 100)
 
@@ -649,10 +819,14 @@ function CludesUI:ShowConfirmPopup(opts)
     -- the buttons. A secret metric (tainted M+ execution) counts as no overflow.
     local isv = issecretvalue
     local textH = popup._msg:GetStringHeight() or 0
-    if isv and isv(textH) then textH = 0 end
+    if isv and isv(textH) then
+        textH = 0
+    end
     if opts.disclaimer then
         local discH = popup._disclaimer:GetStringHeight() or 0
-        if isv and isv(discH) then discH = 0 end
+        if isv and isv(discH) then
+            discH = 0
+        end
         textH = textH + discH + 8
     end
     local overflowH = math.max(0, textH - 44)
@@ -681,9 +855,13 @@ function CludesUI:ShowConfirmPopup(opts)
             box:SetMaxLetters(24)
             SolidTex(box, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
             CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12)
-            box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+            box:SetScript("OnEscapePressed", function(self)
+                self:ClearFocus()
+            end)
             box:SetScript("OnTextChanged", function(self)
-                if not popup._typeGateOn then return end
+                if not popup._typeGateOn then
+                    return
+                end
                 local ok = strlower(strtrim(self:GetText() or "")) == popup._typeWant
                 popup._typeGateOk = ok
                 popup._confirmBtn:SetAlpha(ok and 1 or 0.3)
@@ -693,7 +871,9 @@ function CludesUI:ShowConfirmPopup(opts)
                 -- would (a reload it asks for comes first), then the focus clears.
                 if popup._typeGateOk then
                     local click = popup._confirmBtn:GetScript("OnClick")
-                    if click then click(popup._confirmBtn) end
+                    if click then
+                        click(popup._confirmBtn)
+                    end
                 end
                 self:ClearFocus()
             end)
@@ -778,14 +958,21 @@ function CludesUI:ShowConfirmPopup(opts)
 
     popup._cancelBtn:SetScript("OnClick", function()
         popup._dimmer:Hide()
-        if opts.onCancel then opts.onCancel() end
+        if opts.onCancel then
+            opts.onCancel()
+        end
     end)
 
     -- Macro overlay: a protected action (/logout) needs a hardware event routed
     -- through InsecureActionButtonTemplate.
     if opts.confirmMacro then
         if not popup._macroOverlay then
-            local ov = CreateFrame("Button", "CUIConfirmMacroOverlay", popup._confirmBtn, "InsecureActionButtonTemplate")
+            local ov = CreateFrame(
+                "Button",
+                "CUIConfirmMacroOverlay",
+                popup._confirmBtn,
+                "InsecureActionButtonTemplate"
+            )
             ov:SetAllPoints(popup._confirmBtn)
             ov:SetFrameLevel(popup._confirmBtn:GetFrameLevel() + 5)
             -- Mouse-up clicks only, and the attribute says so: left unset, the
@@ -794,12 +981,18 @@ function CludesUI:ShowConfirmPopup(opts)
             ov:RegisterForClicks("AnyUp")
             ov:SetAttribute("useOnKeyDown", false)
             -- Forward hover visuals to the real button underneath
-            ov:SetScript("OnEnter", function() popup._confirmBtn:GetScript("OnEnter")(popup._confirmBtn) end)
-            ov:SetScript("OnLeave", function() popup._confirmBtn:GetScript("OnLeave")(popup._confirmBtn) end)
+            ov:SetScript("OnEnter", function()
+                popup._confirmBtn:GetScript("OnEnter")(popup._confirmBtn)
+            end)
+            ov:SetScript("OnLeave", function()
+                popup._confirmBtn:GetScript("OnLeave")(popup._confirmBtn)
+            end)
             -- Stored callback, not a new hook per ShowConfirmPopup call (they accumulate).
             ov:HookScript("OnClick", function()
                 popup._dimmer:Hide()
-                if ov._postAction then ov._postAction() end
+                if ov._postAction then
+                    ov._postAction()
+                end
             end)
             popup._macroOverlay = ov
         end
@@ -815,7 +1008,9 @@ function CludesUI:ShowConfirmPopup(opts)
             popup._macroOverlay:Hide()
         end
         popup._confirmBtn:SetScript("OnClick", function()
-            if opts.confirmDisabled then return end
+            if opts.confirmDisabled then
+                return
+            end
             if popup._typeGateOn and not popup._typeGateOk then
                 -- Controller gate: the first press arms, the second confirms.
                 if popup._padGate then
@@ -827,19 +1022,24 @@ function CludesUI:ShowConfirmPopup(opts)
                 return
             end
             -- Controller gate: a double tap or a bounced press is not a second press.
-            if popup._padGate and GetTime() - (popup._padArmT or 0) < 0.5 then return end
+            if popup._padGate and GetTime() - (popup._padArmT or 0) < 0.5 then
+                return
+            end
             -- The callback runs before the popup closes, as Blizzard's own
             -- popups do, so a reload it asks for comes first in the click
             -- (RequestReload). The popup then closes only while it still
             -- shows this request: the callback may have opened the next one.
-            if opts.onConfirm then opts.onConfirm(popup._cbChecked) end
-            if popup._handle == handle then popup._dimmer:Hide() end
+            if opts.onConfirm then
+                opts.onConfirm(popup._cbChecked)
+            end
+            if popup._handle == handle then
+                popup._dimmer:Hide()
+            end
         end)
     end
 
     -- Counter-scale the popup to the options panel (same formula as its root frame, which may not exist yet); the dimmer stays at 1 so it still covers the full screen.
     popup:SetScale(GetPopupScale())
-
 
     popup._dimmer:Show()
     -- Controller cursor: move it into the popup (the safe button is its first stop).
@@ -852,7 +1052,9 @@ end
 -- dialog), without running any of its callbacks.
 function CludesUI:CloseConfirmPopup(handle)
     local popup = confirmPopup
-    if handle and popup and popup._handle == handle then popup._dimmer:Hide() end
+    if handle and popup and popup._handle == handle then
+        popup._dimmer:Hide()
+    end
 end
 
 -- There is no beta-reset welcome popup or wipe gate (CludesUI:ShowWelcomePopup does not exist); manual reset lives in Global Settings > Reset.
@@ -865,7 +1067,9 @@ end
 local infoPopup
 
 local function CreateInfoPopup()
-    if infoPopup then return infoPopup end
+    if infoPopup then
+        return infoPopup
+    end
 
     local POPUP_W, POPUP_H = 400, 310
 
@@ -929,21 +1133,28 @@ local function CreateInfoPopup()
     closeBtn:SetSize(100, 26)
     closeBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, 10)
     closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-    CludesUI.MakeStyledButton(closeBtn, "Close", 11,
-        CludesUI.RB_COLOURS, function() dimmer:Hide() end)
+    CludesUI.MakeStyledButton(closeBtn, "Close", 11, CludesUI.RB_COLOURS, function()
+        dimmer:Hide()
+    end)
     -- Controller cursor: its cancel press closes through this button.
-    if CludesUI.PadCP() then popup.CloseButton = closeBtn end
+    if CludesUI.PadCP() then
+        popup.CloseButton = closeBtn
+    end
 
     -- Click dimmer to close
     dimmer:SetScript("OnMouseDown", function()
-        if not popup:IsMouseOver() then dimmer:Hide() end
+        if not popup:IsMouseOver() then
+            dimmer:Hide()
+        end
     end)
 
     -- Escape to close
     WirePopupEscape(popup, dimmer)
 
     -- Reset scroll on hide
-    dimmer:HookScript("OnHide", function() scrollTo(0) end)
+    dimmer:HookScript("OnHide", function()
+        scrollTo(0)
+    end)
 
     popup._dimmer = dimmer
     popup._scrollFrame = sf
@@ -953,7 +1164,9 @@ local function CreateInfoPopup()
 end
 
 function CludesUI:ShowInfoPopup(opts)
-    if CludesUI.HideWidgetTooltip then CludesUI.HideWidgetTooltip() end
+    if CludesUI.HideWidgetTooltip then
+        CludesUI.HideWidgetTooltip()
+    end
     local popup = CreateInfoPopup()
 
     popup._title:SetText(CludesUI.L(opts.title or "Information"))
@@ -998,7 +1211,9 @@ local MONEY_ICONS = {
 -- opts.money: three number boxes with coin icons in the input frame (built on
 -- first use). tab / shift-tab jumps between them.
 local function BuildMoneyRow(popup)
-    if popup._moneyRow then return end
+    if popup._moneyRow then
+        return
+    end
     local row = CreateFrame("Frame", nil, popup._inputFrame)
     row:SetAllPoints()
     row:SetFrameLevel(popup._inputFrame:GetFrameLevel() + 1)
@@ -1020,11 +1235,17 @@ local function BuildMoneyRow(popup)
         zero:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a * 0.5)
         zero:SetPoint("RIGHT")
         zero:SetText("0")
-        eb:SetScript("OnTextChanged", function(self) zero:SetShown((self:GetText() or "") == "") end)
-        eb:SetScript("OnEnterPressed", function() popup._tryConfirm() end)
+        eb:SetScript("OnTextChanged", function(self)
+            zero:SetShown((self:GetText() or "") == "")
+        end)
+        eb:SetScript("OnEnterPressed", function()
+            popup._tryConfirm()
+        end)
         eb:SetScript("OnEscapePressed", function()
             popup._dimmer:Hide()
-            if popup._onCancel then popup._onCancel() end
+            if popup._onCancel then
+                popup._onCancel()
+            end
         end)
         eb:SetScript("OnTabPressed", function()
             boxes[(i - 1 + (IsShiftKeyDown() and 2 or 1)) % 3 + 1]:SetFocus()
@@ -1039,7 +1260,9 @@ local function BuildMoneyRow(popup)
     popup._moneyRow, popup._moneyBoxes = row, boxes
     -- silver and copper past 99 count as 99
     popup._moneyValue = function()
-        local function N(eb) return tonumber(eb:GetText()) or 0 end
+        local function N(eb)
+            return tonumber(eb:GetText()) or 0
+        end
         return N(boxes[1]) * 10000 + math.min(N(boxes[2]), 99) * 100 + math.min(N(boxes[3]), 99)
     end
 end
@@ -1080,7 +1303,8 @@ function CludesUI:ShowInputPopup(opts)
         popup._popBgAtlas = popBgAtlas
         popup._popBgOverlay = popBgOverlay
 
-        popup._brd = CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
+        popup._brd =
+            CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBgFlat)
         CludesUI.RoundBody(popup, popBgAtlas)
         CludesUI.RoundBody(popup, popBgOverlay)
         DressDialog(popup)
@@ -1182,7 +1406,11 @@ function CludesUI:ShowInputPopup(opts)
 
         editBox:SetScript("OnTextChanged", function(self)
             local text = self:GetText() or ""
-            if text == "" then placeholder:Show() else placeholder:Hide() end
+            if text == "" then
+                placeholder:Show()
+            else
+                placeholder:Hide()
+            end
             if popup._statusShown then
                 popup._statusShown = nil
                 popup._statusLabel:SetText("")
@@ -1191,17 +1419,29 @@ function CludesUI:ShowInputPopup(opts)
                 local count = strlenutf8 and strlenutf8(text) or #text
                 popup._countLabel:SetText(count .. "/" .. popup._maxCount)
             end
-            if popup._preview then popup._updatePreview(text) end
-            if popup._complete then popup._updateSuggest(text) end
+            if popup._preview then
+                popup._updatePreview(text)
+            end
+            if popup._complete then
+                popup._updateSuggest(text)
+            end
         end)
         -- Suggestion list keys (opts.complete): Up/Down move the selection, Tab
         -- inserts it. Same arrow handling as the panel's global search box.
         editBox:SetScript("OnTabPressed", function()
-            if popup._suggest then popup._acceptSuggest() end
+            if popup._suggest then
+                popup._acceptSuggest()
+            end
         end)
         editBox:SetScript("OnArrowPressed", function(_, key)
-            if not popup._suggest then return end
-            if key == "UP" then popup._stepSuggest(-1) elseif key == "DOWN" then popup._stepSuggest(1) end
+            if not popup._suggest then
+                return
+            end
+            if key == "UP" then
+                popup._stepSuggest(-1)
+            elseif key == "DOWN" then
+                popup._stepSuggest(1)
+            end
         end)
         popup._editBox = editBox
 
@@ -1214,7 +1454,7 @@ function CludesUI:ShowInputPopup(opts)
         warnLabel:SetSpacing(2)
         warnLabel:Hide()
         popup._warnLabel = warnLabel
-        popup._inputFrame = inputFrame  -- store so reuse block can anchor against it
+        popup._inputFrame = inputFrame -- store so reuse block can anchor against it
         PanelPP.Point(info, "RIGHT", inputFrame, "LEFT", -8, 0)
 
         -- A message from opts.validate, right under the input (each show anchors
@@ -1259,13 +1499,25 @@ function CludesUI:ShowInputPopup(opts)
                 local dir = (target == 1) and 1 or -1
                 progress = progress + dir * (elapsed / FADE_DUR)
                 if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
-                    progress = target; self:SetScript("OnUpdate", nil)
+                    progress = target
+                    self:SetScript("OnUpdate", nil)
                 end
                 Apply(progress)
             end
-            extraBtn:SetScript("OnEnter", function(self) target = 1; self:SetScript("OnUpdate", OnUpdate) end)
-            extraBtn:SetScript("OnLeave", function(self) target = 0; self:SetScript("OnUpdate", OnUpdate) end)
-            extraBtn._resetAnim = function() progress = 0; target = 0; Apply(0); extraBtn:SetScript("OnUpdate", nil) end
+            extraBtn:SetScript("OnEnter", function(self)
+                target = 1
+                self:SetScript("OnUpdate", OnUpdate)
+            end)
+            extraBtn:SetScript("OnLeave", function(self)
+                target = 0
+                self:SetScript("OnUpdate", OnUpdate)
+            end)
+            extraBtn._resetAnim = function()
+                progress = 0
+                target = 0
+                Apply(0)
+                extraBtn:SetScript("OnUpdate", nil)
+            end
         end
         extraBtn:Hide()
         popup._extraBtn = extraBtn
@@ -1275,18 +1527,56 @@ function CludesUI:ShowInputPopup(opts)
         local BTN_Y = 10
 
         local EG = CLUDES_GREEN
-        local cancelBtn = CludesUI.MakePopupButton(popup,
-            "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -(14 + 125 + BTN_GAP), BTN_Y,
-            1, 1, 1, 0.7,   1, 1, 1, 0.9,
-            1, 1, 1, 0.5,   1, 1, 1, 0.6
+        local cancelBtn = CludesUI.MakePopupButton(
+            popup,
+            "BOTTOMRIGHT",
+            popup,
+            "BOTTOMRIGHT",
+            -(14 + 125 + BTN_GAP),
+            BTN_Y,
+            1,
+            1,
+            1,
+            0.7,
+            1,
+            1,
+            1,
+            0.9,
+            1,
+            1,
+            1,
+            0.5,
+            1,
+            1,
+            1,
+            0.6
         )
-        local confirmBtn = CludesUI.MakePopupButton(popup,
-            "BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, BTN_Y,
-            EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1,
-            EG.r, EG.g, EG.b, 0.9,   EG.r, EG.g, EG.b, 1
+        local confirmBtn = CludesUI.MakePopupButton(
+            popup,
+            "BOTTOMRIGHT",
+            popup,
+            "BOTTOMRIGHT",
+            -14,
+            BTN_Y,
+            EG.r,
+            EG.g,
+            EG.b,
+            0.9,
+            EG.r,
+            EG.g,
+            EG.b,
+            1,
+            EG.r,
+            EG.g,
+            EG.b,
+            0.9,
+            EG.r,
+            EG.g,
+            EG.b,
+            1
         )
 
-        popup._cancelBtn  = cancelBtn
+        popup._cancelBtn = cancelBtn
         popup._confirmBtn = confirmBtn
         popup._btnGap, popup._btnY = BTN_GAP, BTN_Y
 
@@ -1294,7 +1584,9 @@ function CludesUI:ShowInputPopup(opts)
         dimmer:SetScript("OnMouseDown", function()
             if not popup:IsMouseOver() then
                 dimmer:Hide()
-                if popup._onCancel then popup._onCancel() end
+                if popup._onCancel then
+                    popup._onCancel()
+                end
             end
         end)
 
@@ -1309,10 +1601,17 @@ function CludesUI:ShowInputPopup(opts)
             -- money boxes: total in copper, has to be more than zero
             if popup._money then
                 local copper = popup._moneyValue()
-                if copper <= 0 then popup._flashEmpty(); return end
+                if copper <= 0 then
+                    popup._flashEmpty()
+                    return
+                end
                 local shown, cb = popup._handle, popup._onConfirmCb
-                if cb then cb(copper) end
-                if popup._handle == shown then dimmer:Hide() end
+                if cb then
+                    cb(copper)
+                end
+                if popup._handle == shown then
+                    dimmer:Hide()
+                end
                 return
             end
             local txt = editBox:GetText()
@@ -1327,26 +1626,44 @@ function CludesUI:ShowInputPopup(opts)
                 popup._flashEmpty()
                 return
             end
-            if popup._closePicker then popup._closePicker() end
+            if popup._closePicker then
+                popup._closePicker()
+            end
             local shown, cb = popup._handle, popup._onConfirmCb
             if cb then
-                if popup._cbRow:IsShown() then cb(txt, popup._cbChecked) else cb(txt) end
+                if popup._cbRow:IsShown() then
+                    cb(txt, popup._cbChecked)
+                else
+                    cb(txt)
+                end
             end
-            if popup._handle == shown then dimmer:Hide() end
+            if popup._handle == shown then
+                dimmer:Hide()
+            end
         end
         confirmBtn:SetScript("OnClick", popup._tryConfirm)
 
         editBox:SetScript("OnEnterPressed", function()
-            if popup._multiline then return end
+            if popup._multiline then
+                return
+            end
             -- An open suggestion list takes Enter like Tab.
-            if popup._suggest then popup._acceptSuggest(); return end
+            if popup._suggest then
+                popup._acceptSuggest()
+                return
+            end
             popup._tryConfirm()
         end)
         editBox:SetScript("OnEscapePressed", function()
             -- An open suggestion list closes first.
-            if popup._suggest then popup._closeSuggest(); return end
+            if popup._suggest then
+                popup._closeSuggest()
+                return
+            end
             dimmer:Hide()
-            if popup._onCancel then popup._onCancel() end
+            if popup._onCancel then
+                popup._onCancel()
+            end
         end)
 
         popup._focusInput = function()
@@ -1393,17 +1710,23 @@ function CludesUI:ShowInputPopup(opts)
         CludesUI.MakeRoundedBorder(swatch, 1, 1, 1, 0.9, fill)
         popup._paintSwatch = function()
             local o = popup._swatchOpts
-            if not o then return end
+            if not o then
+                return
+            end
             local r, g, b = o.get()
             fill:SetColorTexture(r or 1, g or 1, b or 1, 1)
         end
         popup._closePicker = function()
             local picker = popup._swatchOpts and CludesUI._colorPickerPopup
-            if picker and picker:IsShown() then picker:Hide() end
+            if picker and picker:IsShown() then
+                picker:Hide()
+            end
         end
         swatch:SetScript("OnClick", function(self)
             local o = popup._swatchOpts
-            if o and o.onClick then o.onClick(self, popup._paintSwatch) end
+            if o and o.onClick then
+                o.onClick(self, popup._paintSwatch)
+            end
         end)
         swatch:SetScript("OnEnter", function(self)
             local o = popup._swatchOpts
@@ -1426,7 +1749,9 @@ function CludesUI:ShowInputPopup(opts)
     popup._swatchOpts = sw
     if popup._swatch then
         popup._swatch:SetShown(sw ~= nil)
-        if sw then popup._paintSwatch() end
+        if sw then
+            popup._paintSwatch()
+        end
         -- The info badge steps left of a shown swatch
         popup._info:ClearAllPoints()
         PanelPP.Point(popup._info, "RIGHT", sw and popup._swatch or popup._inputFrame, "LEFT", -8, 0)
@@ -1454,9 +1779,13 @@ function CludesUI:ShowInputPopup(opts)
     popup._money = opts.money == true
     if popup._money then
         BuildMoneyRow(popup)
-        for _, eb in ipairs(popup._moneyBoxes) do eb:SetText("") end
+        for _, eb in ipairs(popup._moneyBoxes) do
+            eb:SetText("")
+        end
     end
-    if popup._moneyRow then popup._moneyRow:SetShown(popup._money) end
+    if popup._moneyRow then
+        popup._moneyRow:SetShown(popup._money)
+    end
     popup._editBox:SetShown(not popup._money)
     popup._statusShown = nil
     popup._statusLabel:SetText("")
@@ -1480,7 +1809,8 @@ function CludesUI:ShowInputPopup(opts)
         popup._placeholder:SetPoint("LEFT", popup._editBox, "LEFT", 0, 0)
     end
     if opts.showCount and not popup._countLabel then
-        popup._countLabel = MakeFont(popup._inputFrame, 9, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        popup._countLabel =
+            MakeFont(popup._inputFrame, 9, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
     end
     popup._maxCount = opts.showCount and (opts.maxLetters or 0) or nil
     if popup._countLabel then
@@ -1517,7 +1847,8 @@ function CludesUI:ShowInputPopup(opts)
         hint:SetWidth(popup:GetWidth() - 40)
         hint:SetJustifyH("CENTER")
         hint:SetWordWrap(false)
-        popup._previewDiv, popup._previewLabelFS, popup._previewValue, popup._hintLabel = div, label, value, hint
+        popup._previewDiv, popup._previewLabelFS, popup._previewValue, popup._hintLabel =
+            div, label, value, hint
         popup._updatePreview = function(text)
             local line, note = popup._preview(text)
             value:SetText(line or "")
@@ -1552,7 +1883,8 @@ function CludesUI:ShowInputPopup(opts)
             row._sel:AddMaskTexture(dd._brd.bodyMask)
             row._bar = SolidTex(row, "ARTWORK", 1, 1, 1, 1)
             row._bar:AddMaskTexture(dd._brd.bodyMask)
-            row._bar:SetPoint("TOPLEFT"); row._bar:SetPoint("BOTTOMLEFT")
+            row._bar:SetPoint("TOPLEFT")
+            row._bar:SetPoint("BOTTOMLEFT")
             PanelPP.Width(row._bar, 2)
             row._key = MakeFont(row, 11, nil, 1, 1, 1, 0.9)
             row._key:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -1565,7 +1897,10 @@ function CludesUI:ShowInputPopup(opts)
             row._desc:SetWordWrap(false)
             row:SetScript("OnClick", function(self)
                 local sg = popup._suggest
-                if sg then sg.sel = sg.offset + self._index; popup._acceptSuggest() end
+                if sg then
+                    sg.sel = sg.offset + self._index
+                    popup._acceptSuggest()
+                end
             end)
             rows[i] = row
         end
@@ -1617,8 +1952,13 @@ function CludesUI:ShowInputPopup(opts)
                 local thumbH = math.max(12, trackH * ROWS / total)
                 thumb:SetHeight(thumbH)
                 thumb:ClearAllPoints()
-                thumb:SetPoint("TOPRIGHT", track, "TOPRIGHT", 0,
-                    -math.floor((trackH - thumbH) * sg.offset / (total - ROWS) + 0.5))
+                thumb:SetPoint(
+                    "TOPRIGHT",
+                    track,
+                    "TOPRIGHT",
+                    0,
+                    -math.floor((trackH - thumbH) * sg.offset / (total - ROWS) + 0.5)
+                )
             end
             legendDiv:ClearAllPoints()
             legendDiv:SetPoint("TOPLEFT", dd, "TOPLEFT", 1, -1 - n * ROW_H)
@@ -1633,18 +1973,29 @@ function CludesUI:ShowInputPopup(opts)
         -- listened to only while the list is shown.
         local clickOff = CreateFrame("Frame")
         clickOff:SetScript("OnEvent", function()
-            if not dd:IsMouseOver() and not popup._editBox:IsMouseOver() then popup._closeSuggest() end
+            if not dd:IsMouseOver() and not popup._editBox:IsMouseOver() then
+                popup._closeSuggest()
+            end
         end)
-        dd:SetScript("OnShow", function() clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
-        dd:SetScript("OnHide", function() clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
+        dd:SetScript("OnShow", function()
+            clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN")
+        end)
+        dd:SetScript("OnHide", function()
+            clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN")
+        end)
         -- The wheel moves the window only; the selection stays and the arrow
         -- keys bring it back into view.
         dd:EnableMouseWheel(true)
         dd:SetScript("OnMouseWheel", function(_, delta)
             local sg = popup._suggest
-            if not sg then return end
+            if not sg then
+                return
+            end
             local off = math.max(0, math.min(#sg.items - ROWS, sg.offset - delta))
-            if off ~= sg.offset then sg.offset = off; Render() end
+            if off ~= sg.offset then
+                sg.offset = off
+                Render()
+            end
         end)
 
         popup._closeSuggest = function()
@@ -1655,8 +2006,11 @@ function CludesUI:ShowInputPopup(opts)
             local sg = popup._suggest
             local n = #sg.items
             sg.sel = (sg.sel - 1 + d) % n + 1
-            if sg.sel <= sg.offset then sg.offset = sg.sel - 1
-            elseif sg.sel > sg.offset + ROWS then sg.offset = sg.sel - ROWS end
+            if sg.sel <= sg.offset then
+                sg.offset = sg.sel - 1
+            elseif sg.sel > sg.offset + ROWS then
+                sg.offset = sg.sel - ROWS
+            end
             Render()
         end
         popup._acceptSuggest = function()
@@ -1672,7 +2026,10 @@ function CludesUI:ShowInputPopup(opts)
         end
         popup._updateSuggest = function(text)
             local items, from, to = popup._complete(text, popup._editBox:GetCursorPosition())
-            if not items then popup._closeSuggest(); return end
+            if not items then
+                popup._closeSuggest()
+                return
+            end
             popup._suggest = { items = items, from = from, to = to, sel = 1, offset = 0 }
             Render()
         end
@@ -1693,12 +2050,18 @@ function CludesUI:ShowInputPopup(opts)
     end
     local initText = opts.initialText or ""
     popup._editBox:SetText(initText)
-    if opts.preview then popup._updatePreview(initText) end
+    if opts.preview then
+        popup._updatePreview(initText)
+    end
     if popup._maxCount then
         local count = strlenutf8 and strlenutf8(initText) or #initText
         popup._countLabel:SetText(count .. "/" .. popup._maxCount)
     end
-    if initText == "" then popup._placeholder:Show() else popup._placeholder:Hide() end
+    if initText == "" then
+        popup._placeholder:Show()
+    else
+        popup._placeholder:Hide()
+    end
 
     popup._cancelBtn._resetAnim()
     popup._confirmBtn._resetAnim()
@@ -1716,7 +2079,9 @@ function CludesUI:ShowInputPopup(opts)
         popup._extraLbl:SetText(opts.extraButton.text or "Extra")
         popup._extraBtn._resetAnim()
         popup._extraBtn:SetScript("OnClick", function()
-            if opts.extraButton.onClick then opts.extraButton.onClick(popup._editBox) end
+            if opts.extraButton.onClick then
+                opts.extraButton.onClick(popup._editBox)
+            end
         end)
         -- Below the preview block when there is one.
         popup._extraBtn:ClearAllPoints()
@@ -1768,12 +2133,16 @@ function CludesUI:ShowInputPopup(opts)
         popup._scaleWarnLabel:Hide()
     end
 
-    popup:SetHeight(194 + math.max(0, (opts.inputHeight or 28) - 28) + extraH + warnH + scaleWarnH + belowH + cbH)
+    popup:SetHeight(
+        194 + math.max(0, (opts.inputHeight or 28) - 28) + extraH + warnH + scaleWarnH + belowH + cbH
+    )
     popup._brd:Fit()
 
     popup._cancelBtn:SetScript("OnClick", function()
         popup._dimmer:Hide()
-        if opts.onCancel then opts.onCancel() end
+        if opts.onCancel then
+            opts.onCancel()
+        end
     end)
     -- Controller cursor: its cancel press backs out through Cancel only when
     -- Cancel shows and is what Escape does (onDismiss differs from it).
@@ -1784,7 +2153,9 @@ function CludesUI:ShowInputPopup(opts)
     popup._dimmer:Show()
     C_Timer.After(0.05, function()
         local box = popup._focusInput()
-        if popup._selectText then box:HighlightText() end
+        if popup._selectText then
+            box:HighlightText()
+        end
     end)
 end
 
@@ -1824,21 +2195,31 @@ function CludesUI.CreateQuantityDialog(opts)
 
     local close = CreateFrame("Button", nil, d)
     skin.close(close)
-    close:SetScript("OnClick", function() d:Hide() end)
+    close:SetScript("OnClick", function()
+        d:Hide()
+    end)
     -- Controller cursor: Cancel finds the window's close button.
-    if CludesUI.PadCP() then d.CloseButton = close end
+    if CludesUI.PadCP() then
+        d.CloseButton = close
+    end
 
     local eb = CreateFrame("EditBox", nil, d)
     local function Clamped(n)
-        if d._max < d._step then return 0 end
+        if d._max < d._step then
+            return 0
+        end
         return Clamp(math.floor(n / d._step) * d._step, d._step, d._max)
     end
-    function d:Current() return Clamped(eb:GetNumber() or 0) end
+    function d:Current()
+        return Clamped(eb:GetNumber() or 0)
+    end
     function d:SetValue(n)
         n = Clamped(n)
         eb:SetText(tostring(n))
         eb:SetCursorPosition(#eb:GetText())
-        if opts.onChange then opts.onChange(n) end
+        if opts.onChange then
+            opts.onChange(n)
+        end
     end
     function d:SetRange(step, top, shiftStep)
         d._step, d._max, d._shiftStep = math.max(step or 1, 1), top, shiftStep
@@ -1850,7 +2231,9 @@ function CludesUI.CreateQuantityDialog(opts)
 
     local minus = skin.button(d, 22, 22, "-")
     minus:SetPoint("TOPLEFT", d, "TOPLEFT", 10, -30)
-    minus:SetScript("OnClick", function() Nudge(-1) end)
+    minus:SetScript("OnClick", function()
+        Nudge(-1)
+    end)
 
     eb:SetSize(opts.editWidth or 56, 22)
     eb:SetPoint("LEFT", minus, "RIGHT", 4, 0)
@@ -1862,7 +2245,9 @@ function CludesUI.CreateQuantityDialog(opts)
     eb:SetTextInsets(4, 4, 0, 0)
     skin.editBox(eb)
     eb:SetScript("OnTextChanged", function(self, userInput)
-        if not userInput then return end
+        if not userInput then
+            return
+        end
         if self:GetNumber() > d._max then
             d:SetValue(d._max)
         elseif opts.onChange then
@@ -1870,10 +2255,18 @@ function CludesUI.CreateQuantityDialog(opts)
         end
     end)
     eb:SetScript("OnEditFocusLost", function()
-        if d:IsShown() then d:SetValue(d:Current()) end
+        if d:IsShown() then
+            d:SetValue(d:Current())
+        end
     end)
-    eb:SetScript("OnEnterPressed", function() if opts.onEnter then opts.onEnter() end end)
-    eb:SetScript("OnEscapePressed", function() d:Hide() end)
+    eb:SetScript("OnEnterPressed", function()
+        if opts.onEnter then
+            opts.onEnter()
+        end
+    end)
+    eb:SetScript("OnEscapePressed", function()
+        d:Hide()
+    end)
     -- Controller cursor: the -/+ buttons cover the amount, so no on-screen
     -- keyboard for this box.
     CludesUI.PadHint(eb, "hidekeyboard")
@@ -1881,7 +2274,9 @@ function CludesUI.CreateQuantityDialog(opts)
 
     local plus = skin.button(d, 22, 22, "+")
     plus:SetPoint("LEFT", eb, "RIGHT", 4, 0)
-    plus:SetScript("OnClick", function() Nudge(1) end)
+    plus:SetScript("OnClick", function()
+        Nudge(1)
+    end)
 
     local maxLbl = d:CreateFontString(nil, "OVERLAY")
     skin.font(maxLbl, 12)
@@ -1907,18 +2302,32 @@ function CludesUI.CreateQuantityDialog(opts)
         b:SetPoint(p, d, p, (p == "BOTTOMLEFT" and 10) or (p == "BOTTOMRIGHT" and -10) or 0, 10)
         b:SetScript("OnClick", spec.onClick)
         if spec.tooltip then
-            b:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(b, spec.tooltip, spec.tooltipOpts) end)
-            b:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            b:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(b, spec.tooltip, spec.tooltipOpts)
+            end)
+            b:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
         end
         d._buttons[spec.key] = b
-        if spec.primary then d._primary = b end
+        if spec.primary then
+            d._primary = b
+        end
     end
 
-    d:SetScript("OnMouseWheel", function(_, delta) Nudge(delta > 0 and 1 or -1) end)
-    d:SetScript("OnShow", function() if opts.onShow then opts.onShow() end end)
+    d:SetScript("OnMouseWheel", function(_, delta)
+        Nudge(delta > 0 and 1 or -1)
+    end)
+    d:SetScript("OnShow", function()
+        if opts.onShow then
+            opts.onShow()
+        end
+    end)
     d:SetScript("OnHide", function()
         eb:ClearFocus()
-        if opts.onHide then opts.onHide() end
+        if opts.onHide then
+            opts.onHide()
+        end
     end)
     CludesUI.RegisterEscapeClose(d)
 
@@ -1947,9 +2356,15 @@ end
 -- navigation).
 function CludesUI.StackSplitFor(owner)
     local ssf = StackSplitFrame
-    if not ssf or not ssf:IsShown() or ssf.owner ~= owner then return nil end
-    if ssf.down and next(ssf.down) then return nil end
-    if CludesUI.PadGamepadUI() then return nil end
+    if not ssf or not ssf:IsShown() or ssf.owner ~= owner then
+        return nil
+    end
+    if ssf.down and next(ssf.down) then
+        return nil
+    end
+    if CludesUI.PadGamepadUI() then
+        return nil
+    end
     return ssf.maxStack or 0
 end
 

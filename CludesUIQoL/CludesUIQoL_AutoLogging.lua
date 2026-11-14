@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_AutoLogging.lua
 --  Toggles combat logging on zone transitions based on instance type/difficulty.
@@ -6,20 +8,20 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 -- Retail content thresholds -- maps below these are excluded unless in LEGACY_DUNGEON_IDS.
-local RETAIL_RAID_THRESHOLD    = 2657
+local RETAIL_RAID_THRESHOLD = 2657
 local RETAIL_DUNGEON_THRESHOLD = 959
 
 -- SEASON UPDATE: older dungeons still used as M+ maps (a returning dungeon
 -- whose instance ID is below RETAIL_DUNGEON_THRESHOLD goes here).
 local LEGACY_DUNGEON_IDS = {
-    [1594] = true,  -- MOTHERLODE!!
-    [1208] = true,  -- Grimrail Depot
-    [1195] = true,  -- Iron Docks
-    [1651] = true,  -- Return to Karazhan
-    [657]  = true,  -- The Vortex Pinnacle
-    [643]  = true,  -- Throne of the Tides
-    [670]  = true,  -- Grim Batol
-    [658]  = true,  -- Pit of Saron
+    [1594] = true, -- MOTHERLODE!!
+    [1208] = true, -- Grimrail Depot
+    [1195] = true, -- Iron Docks
+    [1651] = true, -- Return to Karazhan
+    [657] = true, -- The Vortex Pinnacle
+    [643] = true, -- Throne of the Tides
+    [670] = true, -- Grim Batol
+    [658] = true, -- Pit of Saron
 }
 
 -- SEASON UPDATE: current-tier raids whose instance ID falls BELOW the retail threshold.
@@ -27,7 +29,7 @@ local LEGACY_DUNGEON_IDS = {
 -- (e.g. Sporefall is 1592, lower than legacy raids), so the threshold alone
 -- would wrongly exclude them. Whitelist those explicitly.
 local CURRENT_RAID_IDS = {
-    [1592] = true,  -- Sporefall
+    [1592] = true, -- Sporefall
 }
 
 -- LFR difficulty IDs (regular + timewalking).
@@ -36,34 +38,38 @@ local LFR_DIFFICULTIES = { [7] = true, [17] = true }
 -- Raid difficulty -> trigger key. 233 = Mythic (Flexible Raiding), the newer
 -- flexible Mythic difficulty used by current raids alongside the fixed-20 id 16.
 local RAID_DIFF_KEYS = {
-    [16]  = "logMythic",
+    [16] = "logMythic",
     [233] = "logMythic",
-    [15]  = "logHeroic",
-    [14]  = "logNormal",
+    [15] = "logHeroic",
+    [14] = "logNormal",
 }
 
 -- Defaults: everything on except Scenarios and the rated battleground rows.
 local TRIGGER_DEFAULTS = {
-    logMythic   = true,
-    logHeroic   = true,
-    logNormal   = true,
-    logLFR      = true,
-    log5pp      = true,
-    logArena    = true,
+    logMythic = true,
+    logHeroic = true,
+    logNormal = true,
+    logLFR = true,
+    log5pp = true,
+    logArena = true,
     logScenario = false,
-    logRBG      = false,
-    logBlitz    = false,
-    delaystop   = true,
+    logRBG = false,
+    logBlitz = false,
+    delaystop = true,
 }
 
 local function GetTrigger(c, key)
     local v = c[key]
-    if v == nil then return TRIGGER_DEFAULTS[key] end
+    if v == nil then
+        return TRIGGER_DEFAULTS[key]
+    end
     return v
 end
 
 local function Cfg()
-    if not CludesUIDB then return {} end
+    if not CludesUIDB then
+        return {}
+    end
     CludesUIDB.autoLogging = CludesUIDB.autoLogging or {}
     return CludesUIDB.autoLogging
 end
@@ -77,7 +83,9 @@ end
 
 local function ZoneShouldBeLogged()
     local c = Cfg()
-    if not c.enabled then return false end
+    if not c.enabled then
+        return false
+    end
 
     local _, zoneType, rawDiff, _, playerCap, _, _, rawMapID = GetInstanceInfo()
 
@@ -87,8 +95,12 @@ local function ZoneShouldBeLogged()
     -- map thresholds, difficulties, Mythic+, arenas and scenarios do not
     -- apply there.
     if CludesUI.IS_FOREVER then
-        if zoneType == "raid" then return GetTrigger(c, "logNormal") end
-        if zoneType == "party" then return c.logDungeon == true end
+        if zoneType == "raid" then
+            return GetTrigger(c, "logNormal")
+        end
+        if zoneType == "party" then
+            return c.logDungeon == true
+        end
         return false
     end
 
@@ -104,9 +116,11 @@ local function ZoneShouldBeLogged()
         return false
     end
 
-    local diff  = tonumber(rawDiff)
+    local diff = tonumber(rawDiff)
     local mapID = tonumber(rawMapID)
-    if not diff or not mapID then return false end
+    if not diff or not mapID then
+        return false
+    end
 
     if LFR_DIFFICULTIES[diff] then
         return GetTrigger(c, "logLFR")
@@ -114,19 +128,26 @@ local function ZoneShouldBeLogged()
 
     if zoneType == "raid" and (mapID >= RETAIL_RAID_THRESHOLD or CURRENT_RAID_IDS[mapID]) then
         local key = RAID_DIFF_KEYS[diff]
-        if key then return GetTrigger(c, key) end
-        return true  -- timewalking and other unrecognised raid difficulties
+        if key then
+            return GetTrigger(c, key)
+        end
+        return true -- timewalking and other unrecognised raid difficulties
     end
 
     if GetTrigger(c, "log5pp") then
-        local isMythicDungeon = (diff == 23 or diff == 8)  -- 23=Keystone, 8=Mythic
+        local isMythicDungeon = (diff == 23 or diff == 8) -- 23=Keystone, 8=Mythic
         local isRetailDungeon = mapID >= RETAIL_DUNGEON_THRESHOLD or LEGACY_DUNGEON_IDS[mapID]
-        if isMythicDungeon and isRetailDungeon then return true end
+        if isMythicDungeon and isRetailDungeon then
+            return true
+        end
     end
 
-    if GetTrigger(c, "logScenario") and zoneType == "scenario"
-       and (tonumber(playerCap) or 0) > 1
-       and mapID >= RETAIL_DUNGEON_THRESHOLD then
+    if
+        GetTrigger(c, "logScenario")
+        and zoneType == "scenario"
+        and (tonumber(playerCap) or 0) > 1
+        and mapID >= RETAIL_DUNGEON_THRESHOLD
+    then
         return true
     end
 
@@ -140,15 +161,20 @@ end
 local STOP_DELAY_SECONDS = 30
 
 local wasLogging = false
-local _stopTimer  = nil
+local _stopTimer = nil
 
 local function CancelStopTimer()
-    if _stopTimer then _stopTimer:Cancel(); _stopTimer = nil end
+    if _stopTimer then
+        _stopTimer:Cancel()
+        _stopTimer = nil
+    end
 end
 
 -- Optional chat line when auto logging starts or stops (off by default).
 local function Notify(started)
-    if Cfg().notify ~= true then return end
+    if Cfg().notify ~= true then
+        return
+    end
     local msg = started and CludesUI.L("AutoLog Started") or CludesUI.L("AutoLog Stopped")
     CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
 end
@@ -160,14 +186,19 @@ local function ApplyLoggingState()
         EnsureAdvancedLogging()
         local already = LoggingCombat()
         LoggingCombat(true)
-        if not already then Notify(true) end
+        if not already then
+            Notify(true)
+        end
     elseif wasLogging and LoggingCombat() then
         local c = Cfg()
         local delay = GetTrigger(c, "delaystop")
         if delay and not _stopTimer then
             _stopTimer = C_Timer.NewTimer(STOP_DELAY_SECONDS, function()
                 _stopTimer = nil
-                if LoggingCombat() then LoggingCombat(false); Notify(false) end
+                if LoggingCombat() then
+                    LoggingCombat(false)
+                    Notify(false)
+                end
             end)
         elseif not delay then
             LoggingCombat(false)
@@ -178,13 +209,19 @@ local function ApplyLoggingState()
 end
 
 local events = {
-    ZONE_CHANGED_NEW_AREA = function() C_Timer.After(2, ApplyLoggingState) end,
-    CHALLENGE_MODE_START   = function() C_Timer.After(1, ApplyLoggingState) end,
+    ZONE_CHANGED_NEW_AREA = function()
+        C_Timer.After(2, ApplyLoggingState)
+    end,
+    CHALLENGE_MODE_START = function()
+        C_Timer.After(1, ApplyLoggingState)
+    end,
 }
 -- Retail: re-check when a battleground match goes live, in case the rated /
 -- Blitz flags were not yet set when the zone-in check ran.
 if not CludesUI.IS_FOREVER then
-    events.PVP_MATCH_ACTIVE = function() ApplyLoggingState() end
+    events.PVP_MATCH_ACTIVE = function()
+        ApplyLoggingState()
+    end
 end
 
 -- Zone events are registered only while the feature is enabled, so a disabled
@@ -195,10 +232,16 @@ local logFrame = CreateFrame("Frame")
 local _eventsRegistered = false
 local function SyncEventRegistration()
     local want = Cfg().enabled and true or false
-    if want == _eventsRegistered then return end
+    if want == _eventsRegistered then
+        return
+    end
     _eventsRegistered = want
     for ev in pairs(events) do
-        if want then logFrame:RegisterEvent(ev) else logFrame:UnregisterEvent(ev) end
+        if want then
+            logFrame:RegisterEvent(ev)
+        else
+            logFrame:UnregisterEvent(ev)
+        end
     end
 end
 

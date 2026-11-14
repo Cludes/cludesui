@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickBars.lua
 --  Kick Tracker (Mythic+ Tools), the bars: one movable group with a row per
@@ -38,9 +40,11 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local ADDON_NAME, ns = ...
 
 local MTWhere, KE, KD = ns.MTWhere, ns.KickEngine, CludesUI.KickData
-if not (MTWhere and KE and KD) then return end
+if not (MTWhere and KE and KD) then
+    return
+end
 
-local db  -- Lite DB handle, handed over by ns.KTB_OnEnable
+local db -- Lite DB handle, handed over by ns.KTB_OnEnable
 
 local function Cfg()
     local p = db and db.profile
@@ -58,31 +62,33 @@ local PP = CludesUI.PP
 -- per-text sizes are settings. A row names a group member, so its texts take a
 -- font family (Cyrillic, Korean and Chinese names draw); no plain SetFont may
 -- reach them after it.
-local function SetFSFont(fs, size) CludesUI.ApplyModuleFontFamily(fs, nil, size, "mythicTimer") end
+local function SetFSFont(fs, size)
+    CludesUI.ApplyModuleFontFamily(fs, nil, size, "mythicTimer")
+end
 
 local IMMEDIATE = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.Immediate or 0
 local ELAPSED = Enum.StatusBarTimerDirection and Enum.StatusBarTimerDirection.ElapsedTime or 0
 local REMAINING = Enum.StatusBarTimerDirection and Enum.StatusBarTimerDirection.RemainingTime or 1
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 
-local WHERE_KEY  = "kickbars"
+local WHERE_KEY = "kickbars"
 local WHERE_KEYS = MTWhere.NewKeySet(KE.WHERE_LIST)
 
 local DEFAULT_X, DEFAULT_Y = -340, -120
-local TICK = 0.1            -- seconds text repaint while a row is on cooldown
-local TENTHS_BELOW = 10     -- seconds left shown with a tenth under this
-local BG_CLASS_DARK = 0.3   -- the class colour's share in the Dark Class Color background
+local TICK = 0.1 -- seconds text repaint while a row is on cooldown
+local TENTHS_BELOW = 10 -- seconds left shown with a tenth under this
+local BG_CLASS_DARK = 0.3 -- the class colour's share in the Dark Class Color background
 local BG_CLASS_ALPHA = 0.9
-local MARKER_GAP = 3        -- the interrupted mob's raid marker sits this far outside the row
-local MARKER_MAX = 24       -- the marker's largest size
+local MARKER_GAP = 3 -- the interrupted mob's raid marker sits this far outside the row
+local MARKER_MAX = 24 -- the marker's largest size
 local MODE_OFF, MODE_LIVE, MODE_PREVIEW = 0, 1, 2
 -- A layer's gate: GATE_SPAN content widths (each GATE_PAD wider) long, so a
 -- count that rose by one opens the clip over the whole row up to GATE_SPAN
 -- interrupts in a fight; its right end sits GATE_EDGE past the content's.
 local GATE_SPAN, GATE_PAD, GATE_EDGE = 100, 4, 2
-local GATE_TALL = 24        -- the gate (and so the clip) this much taller than the row, centred
-local LAYER_STEP = 3        -- frame levels a layer takes: holder, its bar and icon, its text
-local LAYER_DEPTH = 29      -- the deepest layer stack a row draws in order
+local GATE_TALL = 24 -- the gate (and so the clip) this much taller than the row, centred
+local LAYER_STEP = 3 -- frame levels a layer takes: holder, its bar and icon, its text
+local LAYER_DEPTH = 29 -- the deepest layer stack a row draws in order
 
 -- Preview rows: class token, interrupt, name, seconds left on a sample
 -- cooldown (0 = ready), the raid marker of the mob kicked.
@@ -102,29 +108,31 @@ end
 --------------------------------------------------------------------------------
 --  State
 --------------------------------------------------------------------------------
-local container             -- anchor frame the unlock mover drags; built lazily
-local rows = {}             -- holder pool, by slot
-local shown = 0             -- rows in use
-local sampleRows = {}       -- the options header's sample rows, by slot: built once, never in rows
-local SAMPLE_ROWS = 3       -- sample rows painted by default (the first PREVIEW entries)
-local rowOf = {}            -- unit -> holder while its row is shown
-local markerOf = {}         -- unit -> raid marker index of the mob the member interrupted last (nil = none)
-local markerGuid = {}       -- unit -> the member's GUID at that kick: a new occupant of the slot shows no old marker
+local container -- anchor frame the unlock mover drags; built lazily
+local rows = {} -- holder pool, by slot
+local shown = 0 -- rows in use
+local sampleRows = {} -- the options header's sample rows, by slot: built once, never in rows
+local SAMPLE_ROWS = 3 -- sample rows painted by default (the first PREVIEW entries)
+local rowOf = {} -- unit -> holder while its row is shown
+local markerOf = {} -- unit -> raid marker index of the mob the member interrupted last (nil = none)
+local markerGuid = {} -- unit -> the member's GUID at that kick: a new occupant of the slot shows no old marker
 local curMode = MODE_OFF
 local previewOn = false
-local styleGen = 0          -- bumped by every settings write; a row restyles when its stamp differs
-local ticker                -- the seconds text ticker, nil while idle
+local styleGen = 0 -- bumped by every settings write; a row restyles when its stamp differs
+local ticker -- the seconds text ticker, nil while idle
 local unlockDone = false
-local layersOf = {}         -- unit -> its live layers, oldest first (one list per unit, kept)
-local freeLayers = {}       -- released layers, ready for reuse
-local movedLayers = {}      -- RelayLayers' scratch: layers following their member to a new token
+local layersOf = {} -- unit -> its live layers, oldest first (one list per unit, kept)
+local freeLayers = {} -- released layers, ready for reuse
+local movedLayers = {} -- RelayLayers' scratch: layers following their member to a new token
 
 --------------------------------------------------------------------------------
 --  Container + position (unlock interchange = raw UIParent-logical center
 --  delta, the Cast Bars contract).
 --------------------------------------------------------------------------------
 local function ApplyContainerPosition()
-    if not container then return end
+    if not container then
+        return
+    end
     local cfg = Cfg()
     local pos = cfg and cfg.barPos
     container:ClearAllPoints()
@@ -136,7 +144,9 @@ local function ApplyContainerPosition()
 end
 
 local function EnsureContainer()
-    if container then return container end
+    if container then
+        return container
+    end
     container = CreateFrame("Frame", nil, UIParent)
     container:SetSize(200, 22)
     container:Hide()
@@ -241,7 +251,9 @@ local function StyleRow(holder, cfg)
     -- Solid black border on the holder; size 0 removes it. The slider stores
     -- coordinate units, PP borders take physical pixels.
     local bsz = cfg.barBorderSize
-    if bsz == nil then bsz = 0 end
+    if bsz == nil then
+        bsz = 0
+    end
     bsz = PP.ToPixels(bsz)
     if bsz > 0 then
         if not holder.border then
@@ -262,7 +274,9 @@ local function StyleRow(holder, cfg)
     holder.name:ClearAllPoints()
     holder.name:SetPoint("LEFT", holder.sb, "LEFT", 4, 0)
     local nameWidth = (showIcon and (w - h) or w) - 8 - timerReserve
-    if nameWidth < 1 then nameWidth = 1 end
+    if nameWidth < 1 then
+        nameWidth = 1
+    end
     holder.name:SetWidth(nameWidth)
     holder.timer:ClearAllPoints()
     holder.timer:SetPoint("RIGHT", holder.sb, "RIGHT", -3, 0)
@@ -271,7 +285,11 @@ local function StyleRow(holder, cfg)
 
     -- The raid marker beside the row, at the end away from the icon.
     local msz = h - 4
-    if msz < 8 then msz = 8 elseif msz > MARKER_MAX then msz = MARKER_MAX end
+    if msz < 8 then
+        msz = 8
+    elseif msz > MARKER_MAX then
+        msz = MARKER_MAX
+    end
     holder.marker:SetSize(msz, msz)
     holder.marker:ClearAllPoints()
     if iconOnRight then
@@ -307,22 +325,33 @@ end
 -- layer's row also has its backing: the background's colour made opaque.
 local function PaintMember(holder, cfg, cls, kick, name)
     local tex = kick and C_Spell.GetSpellTexture(kick)
-    if tex then holder.icon:SetTexture(tex) else holder.icon:SetTexture(WHITE) end
+    if tex then
+        holder.icon:SetTexture(tex)
+    else
+        holder.icon:SetTexture(WHITE)
+    end
     holder.name:SetText(name or "")
     local c = cls and C_ClassColor.GetClassColor(cls)
     local r, g, b = 0.6, 0.6, 0.6
-    if c then r, g, b = c:GetRGB() end
+    if c then
+        r, g, b = c:GetRGB()
+    end
     holder.sb:SetStatusBarColor(r, g, b)
     local br, bgr, bb, ba
     if cfg.barBgMode == "custom" then
         local bg = cfg.barBgColor
-        if bg then br, bgr, bb, ba = bg.r, bg.g, bg.b, bg.a or 0.45
-        else br, bgr, bb, ba = 0, 0, 0, 0.45 end
+        if bg then
+            br, bgr, bb, ba = bg.r, bg.g, bg.b, bg.a or 0.45
+        else
+            br, bgr, bb, ba = 0, 0, 0, 0.45
+        end
     else
         br, bgr, bb, ba = r * BG_CLASS_DARK, g * BG_CLASS_DARK, b * BG_CLASS_DARK, BG_CLASS_ALPHA
     end
     holder.bg:SetColorTexture(br, bgr, bb, ba)
-    if holder.cover then holder.cover:SetColorTexture(br, bgr, bb, 1) end
+    if holder.cover then
+        holder.cover:SetColorTexture(br, bgr, bb, 1)
+    end
 end
 
 local ArmTicker
@@ -361,7 +390,9 @@ local function PaintCd(holder, start, dur)
         holder.timeShown = nil
         -- The kick's marker ends with its cooldown.
         holder.markerIdx = nil
-        if holder.unit then markerOf[holder.unit] = nil end
+        if holder.unit then
+            markerOf[holder.unit] = nil
+        end
     end
     PaintMarker(holder)
 end
@@ -448,12 +479,16 @@ local function LayerLevels(L, base)
     row:SetFrameLevel(base)
     row.iconFrame:SetFrameLevel(base + 1)
     row.sb:SetFrameLevel(base + 1)
-    if type(row.border) == "table" then row.border:SetFrameLevel(base + 1) end
+    if type(row.border) == "table" then
+        row.border:SetFrameLevel(base + 1)
+    end
     row.textFrame:SetFrameLevel(base + 2)
 end
 
 local function LayerBase(R, depth)
-    if depth > LAYER_DEPTH then depth = LAYER_DEPTH end
+    if depth > LAYER_DEPTH then
+        depth = LAYER_DEPTH
+    end
     return R:GetFrameLevel() + LAYER_STEP + LAYER_STEP * depth
 end
 
@@ -465,7 +500,9 @@ end
 -- over all of it; one that did not leaves the fill whole and the clip empty.
 local function PlaceLayer(L, R, cfg, depth)
     local row = L.row
-    if row.styleGen ~= styleGen then StyleRow(row, cfg) end
+    if row.styleGen ~= styleGen then
+        StyleRow(row, cfg)
+    end
     local w = cfg.barWidth or 200
     local h = cfg.barHeight or 22
     L:ClearAllPoints()
@@ -494,15 +531,21 @@ end
 -- some of them left it).
 local function RelevelUnit(unit)
     local list, R = layersOf[unit], rowOf[unit]
-    if not (list and R) then return end
-    for i = 1, #list do LayerLevels(list[i], LayerBase(R, i - 1)) end
+    if not (list and R) then
+        return
+    end
+    for i = 1, #list do
+        LayerLevels(list[i], LayerBase(R, i - 1))
+    end
 end
 
 -- Releases the member's layers that started at or before `upto` (all of
 -- them with nil).
 local function ReleaseUnit(unit, upto)
     local list = layersOf[unit]
-    if not list or #list == 0 then return end
+    if not list or #list == 0 then
+        return
+    end
     local removed = false
     for i = #list, 1, -1 do
         local L = list[i]
@@ -512,7 +555,9 @@ local function ReleaseUnit(unit, upto)
             removed = true
         end
     end
-    if removed then RelevelUnit(unit) end
+    if removed then
+        RelevelUnit(unit)
+    end
 end
 
 local function ReleaseAllLayers()
@@ -540,11 +585,15 @@ local function TickLayers(now)
                 removed = true
             else
                 any = true
-                if L.feed then FeedLayer(L) end
+                if L.feed then
+                    FeedLayer(L)
+                end
                 PaintTime(L.row, readyAt - now)
             end
         end
-        if removed then RelevelUnit(unit) end
+        if removed then
+            RelevelUnit(unit)
+        end
     end
     return any
 end
@@ -565,7 +614,9 @@ local function PaintTicks()
             end
         end
     end
-    if TickLayers(now) then any = true end
+    if TickLayers(now) then
+        any = true
+    end
     if not any and ticker then
         ticker:Cancel()
         ticker = nil
@@ -573,7 +624,9 @@ local function PaintTicks()
 end
 
 ArmTicker = function()
-    if ticker then return end
+    if ticker then
+        return
+    end
     ticker = C_Timer.NewTicker(TICK, PaintTicks)
     PaintTicks()
 end
@@ -591,7 +644,9 @@ end
 --------------------------------------------------------------------------------
 local function UseRow(i, cfg, cls, kick, name, start, dur, unit, marker)
     local holder = Row(i)
-    if holder.styleGen ~= styleGen then StyleRow(holder, cfg) end
+    if holder.styleGen ~= styleGen then
+        StyleRow(holder, cfg)
+    end
     PositionRow(holder, i, cfg)
     holder.unit, holder.markerIdx = unit, marker
     PaintMember(holder, cfg, cls, kick, name)
@@ -606,7 +661,9 @@ local function UnitWithRow(guid)
     for i = 1, #units do
         local u = units[i]
         local m = rowOf[u] and KE.Member(u)
-        if m and m.guid == guid then return u end
+        if m and m.guid == guid then
+            return u
+        end
     end
     return nil
 end
@@ -649,7 +706,9 @@ local function RelayLayers(cfg)
             layersOf[L.unit] = list
         end
         local at = #list + 1
-        while at > 1 and list[at - 1].t > L.t do at = at - 1 end
+        while at > 1 and list[at - 1].t > L.t do
+            at = at - 1
+        end
         tinsert(list, at, L)
     end
     for unit, list in pairs(layersOf) do
@@ -680,10 +739,14 @@ end
 
 local function Layout()
     local cfg = Cfg()
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     EnsureContainer()
     local n = 0
-    for u in pairs(rowOf) do rowOf[u] = nil end
+    for u in pairs(rowOf) do
+        rowOf[u] = nil
+    end
     if curMode == MODE_PREVIEW then
         local now = GetTime()
         for i = 1, #PREVIEW do
@@ -730,14 +793,20 @@ end
 -- A cooldown with a start is a sure kick of the member: it supersedes their
 -- layers up to it. A cleared one ends all of them.
 local function OnCooldown(unit, start, dur)
-    if curMode ~= MODE_LIVE then return end
+    if curMode ~= MODE_LIVE then
+        return
+    end
     ReleaseUnit(unit, start and (start + 0.01) or nil)
     local holder = rowOf[unit]
-    if holder then PaintCd(holder, start, dur) end
+    if holder then
+        PaintCd(holder, start, dur)
+    end
 end
 
 local function OnRoster()
-    if curMode == MODE_LIVE then Layout() end
+    if curMode == MODE_LIVE then
+        Layout()
+    end
 end
 
 -- A placed kick: the mob's raid marker rides the kicker's row while that
@@ -746,9 +815,13 @@ end
 -- the index is hidden (type() still says number): it is kept as it is and
 -- only ever handed to the engine, never compared.
 local function OnKick(plateUnit, kicker)
-    if curMode ~= MODE_LIVE or not kicker then return end
+    if curMode ~= MODE_LIVE or not kicker then
+        return
+    end
     local idx = plateUnit and GetRaidTargetIndex(plateUnit)
-    if type(idx) ~= "number" then idx = nil end
+    if type(idx) ~= "number" then
+        idx = nil
+    end
     local m = KE.Member(kicker)
     markerOf[kicker] = idx
     markerGuid[kicker] = m and m.guid or nil
@@ -767,12 +840,18 @@ end
 -- `platesOnly` adds it to the layers already made for t. The engine's
 -- tables are read here and never kept.
 local function OnGate(t, units, before, after, plates, platesOnly)
-    if curMode ~= MODE_LIVE then return end
+    if curMode ~= MODE_LIVE then
+        return
+    end
     local plate = plates and plates[1]
     local idx = plate and GetRaidTargetIndex(plate)
-    if type(idx) ~= "number" then idx = nil end
+    if type(idx) ~= "number" then
+        idx = nil
+    end
     if platesOnly then
-        if type(idx) ~= "number" then return end
+        if type(idx) ~= "number" then
+            return
+        end
         for _, list in pairs(layersOf) do
             for i = 1, #list do
                 local L = list[i]
@@ -785,7 +864,9 @@ local function OnGate(t, units, before, after, plates, platesOnly)
         return
     end
     local cfg = Cfg()
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     local now = GetTime()
     for i = 1, #units do
         local u = units[i]
@@ -820,13 +901,23 @@ local HANDLERS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, gate
 --  Modes
 --------------------------------------------------------------------------------
 local function SetMode(mode)
-    if mode == curMode then return end
-    if curMode == MODE_LIVE then KE.Unsubscribe(WHERE_KEY) end
+    if mode == curMode then
+        return
+    end
+    if curMode == MODE_LIVE then
+        KE.Unsubscribe(WHERE_KEY)
+    end
     curMode = mode
     ReleaseAllLayers()
-    for u in pairs(rowOf) do rowOf[u] = nil end
-    for u in pairs(markerOf) do markerOf[u] = nil end
-    for u in pairs(markerGuid) do markerGuid[u] = nil end
+    for u in pairs(rowOf) do
+        rowOf[u] = nil
+    end
+    for u in pairs(markerOf) do
+        markerOf[u] = nil
+    end
+    for u in pairs(markerGuid) do
+        markerGuid[u] = nil
+    end
     if mode == MODE_OFF then
         StopTicker()
         for i = 1, #rows do
@@ -834,10 +925,14 @@ local function SetMode(mode)
             rows[i].readyAt = nil
         end
         shown = 0
-        if container then container:Hide() end
+        if container then
+            container:Hide()
+        end
         return
     end
-    if mode == MODE_LIVE then KE.Subscribe(WHERE_KEY, HANDLERS) end
+    if mode == MODE_LIVE then
+        KE.Subscribe(WHERE_KEY, HANDLERS)
+    end
     Layout()
 end
 
@@ -881,12 +976,14 @@ end
 --  hidden while the bars are off.
 --------------------------------------------------------------------------------
 local function RegisterUnlock()
-    if unlockDone then return end
+    if unlockDone then
+        return
+    end
     unlockDone = true
     local MK = CludesUI.MakeUnlockElement
     CludesUI:RegisterUnlockElements({
         MK({
-            key   = "EMT_KickBars",
+            key = "EMT_KickBars",
             label = "Kick Tracker Bars",
             group = "Mythic+",
             order = 522,
@@ -905,18 +1002,24 @@ local function RegisterUnlock()
             end,
             setWidth = function(_, w)
                 local cfg = Cfg()
-                if not cfg then return end
+                if not cfg then
+                    return
+                end
                 cfg.barWidth = floor(w + 0.5)
                 ns.KTB_Refresh()
             end,
             setHeight = function(_, h)
                 local cfg = Cfg()
-                if not cfg then return end
+                if not cfg then
+                    return
+                end
                 -- The group's height: a row's share of it.
                 local n = #PREVIEW
                 local sp = cfg.barSpacing or 2
                 cfg.barHeight = floor((h - (n - 1) * sp) / n + 0.5)
-                if cfg.barHeight < 6 then cfg.barHeight = 6 end
+                if cfg.barHeight < 6 then
+                    cfg.barHeight = 6
+                end
                 ns.KTB_Refresh()
             end,
             savePos = function(_, _, _, x, y)
@@ -924,19 +1027,27 @@ local function RegisterUnlock()
                 -- frame still sits at the dragged spot, so never read the
                 -- live position.
                 local cfg = Cfg()
-                if not (cfg and x and y) then return end
+                if not (cfg and x and y) then
+                    return
+                end
                 cfg.barPos = { centerX = x, centerY = y }
-                if not CludesUI._unlockActive then ApplyContainerPosition() end
+                if not CludesUI._unlockActive then
+                    ApplyContainerPosition()
+                end
             end,
             loadPos = function()
                 local cfg = Cfg()
                 local pos = cfg and cfg.barPos
-                if not (pos and pos.centerX and pos.centerY) then return nil end
+                if not (pos and pos.centerX and pos.centerY) then
+                    return nil
+                end
                 return { point = "CENTER", relPoint = "CENTER", x = pos.centerX, y = pos.centerY }
             end,
             clearPos = function()
                 local cfg = Cfg()
-                if cfg then cfg.barPos = nil end
+                if cfg then
+                    cfg.barPos = nil
+                end
             end,
             applyPos = function()
                 ApplyContainerPosition()
@@ -945,10 +1056,14 @@ local function RegisterUnlock()
     }, "CludesUIMythicTimer")
 
     CludesUI:RegisterUnlockModeListener("EMT_KickBars", function(unlockActive)
-        if not Enabled(Cfg()) then return end
+        if not Enabled(Cfg()) then
+            return
+        end
         -- Sample rows while placing; back to live content on exit.
         ns.KTB_SetPreview(unlockActive == true)
-        if not CludesUI.IsUnlockAnchored("EMT_KickBars") then ApplyContainerPosition() end
+        if not CludesUI.IsUnlockAnchored("EMT_KickBars") then
+            ApplyContainerPosition()
+        end
     end)
 end
 
@@ -969,7 +1084,9 @@ function ns.KTB_Refresh()
     MTWhere.Subscribe(WHERE_KEY, OnWhere)
     ApplyContainerPosition()
     SyncState()
-    if curMode ~= MODE_OFF then Layout() end
+    if curMode ~= MODE_OFF then
+        Layout()
+    end
 end
 
 -- Unlock mode's sample rows. Works only while the bars are enabled.
@@ -992,9 +1109,13 @@ end
 -- the modes never see them.
 function ns.KTB_PaintSample(host, n)
     local cfg = Cfg()
-    if not cfg then return nil end
+    if not cfg then
+        return nil
+    end
     n = n or SAMPLE_ROWS
-    if n > #PREVIEW then n = #PREVIEW end
+    if n > #PREVIEW then
+        n = #PREVIEW
+    end
     local now = GetTime()
     for i = 1, n do
         local holder = sampleRows[i]
@@ -1039,7 +1160,9 @@ end
 -- Called from ns.KT_OnEnable with the Lite DB.
 function ns.KTB_OnEnable(database)
     db = database
-    if not db then return end
+    if not db then
+        return
+    end
     RegisterUnlock()
     ns.KTB_Refresh()
 end

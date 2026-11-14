@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_FriendsKit.lua
 --  The friends list pieces two modules share, so neither keeps a copy: the
@@ -23,20 +25,20 @@ local MEDIA = "Interface\\AddOns\\CludesUI\\media\\friends\\"
 --  Full regions: NA (namerica+samerica+australia), EU (europe+russia), KR, TW, CN
 -------------------------------------------------------------------------------
 local MINI_TO_FULL = {
-    namerica  = "NA",
-    samerica  = "NA",
-    australia  = "NA",
-    europe    = "EU",
-    russia    = "EU",
-    korea     = "KR",
-    taiwan    = "TW",
-    china     = "CN",
+    namerica = "NA",
+    samerica = "NA",
+    australia = "NA",
+    europe = "EU",
+    russia = "EU",
+    korea = "KR",
+    taiwan = "TW",
+    china = "CN",
 }
 
 local REGION_ID_TO_FULL = {
-    [1] = "NA",  -- Americas + Oceania
+    [1] = "NA", -- Americas + Oceania
     [2] = "KR",
-    [3] = "EU",  -- Europe + Russia
+    [3] = "EU", -- Europe + Russia
     [4] = "TW",
     [5] = "CN",
 }
@@ -45,628 +47,632 @@ local REGION_ID_TO_FULL = {
 -- them, and only while a friends window is painted)
 local REALMS_NA, REALMS_EU, REALMS_ASIA
 local function LoadRealms()
--- Region 1: Americas & Oceania
-REALMS_NA = {
-["Azralon"] = "samerica",
-["Gallywix"] = "samerica",
-["Goldrinn"] = "samerica",
-["Nemesis"] = "samerica",
-["TolBarad"] = "samerica",
-["Drakkari"] = "samerica",
-["Quel'Thalas"] = "samerica",
-["Ragnaros"] = "samerica",
-["Loatheb"] = "samerica",
-["Aman'Thul"] = "australia",
-["Barthilas"] = "australia",
-["Caelestrasz"] = "australia",
-["Dath'Remar"] = "australia",
-["Dreadmaul"] = "australia",
-["Frostmourne"] = "australia",
-["Gundrak"] = "australia",
-["Jubei'Thos"] = "australia",
-["Khaz'goroth"] = "australia",
-["Nagrand"] = "australia",
-["Saurfang"] = "australia",
-["Thaurissan"] = "australia",
-["Arugal"] = "australia",
-["Yojamba"] = "australia",
-["Remulos"] = "australia",
-["Felstriker"] = "australia",
-["Shadowstrike"] = "australia",
-["Penance"] = "australia",
-["Aegwynn"] = "namerica",
-["AeriePeak"] = "namerica",
-["Agamaggan"] = "namerica",
-["Aggramar"] = "namerica",
-["Akama"] = "namerica",
-["Alexstrasza"] = "namerica",
-["Alleria"] = "namerica",
-["AltarofStorms"] = "namerica",
-["AlteracMountains"] = "namerica",
-["Andorhal"] = "namerica",
-["Anetheron"] = "namerica",
-["Antonidas"] = "namerica",
-["Anub'arak"] = "namerica",
-["Anvilmar"] = "namerica",
-["Arathor"] = "namerica",
-["Archimonde"] = "namerica",
-["Area52"] = "namerica",
-["ArgentDawn"] = "namerica",
-["Arthas"] = "namerica",
-["Arygos"] = "namerica",
-["Auchindoun"] = "namerica",
-["Azgalor"] = "namerica",
-["AzjolNerub"] = "namerica",
-["Azshara"] = "namerica",
-["Azuremyst"] = "namerica",
-["Baelgun"] = "namerica",
-["Balnazzar"] = "namerica",
-["BlackDragonflight"] = "namerica",
-["Blackhand"] = "namerica",
-["Blackrock"] = "namerica",
-["BlackwaterRaiders"] = "namerica",
-["BlackwingLair"] = "namerica",
-["Blade'sEdge"] = "namerica",
-["Bladefist"] = "namerica",
-["BleedingHollow"] = "namerica",
-["BloodFurnace"] = "namerica",
-["Bloodhoof"] = "namerica",
-["Bloodscalp"] = "namerica",
-["Bonechewer"] = "namerica",
-["BoreanTundra"] = "namerica",
-["Boulderfist"] = "namerica",
-["Bronzebeard"] = "namerica",
-["BurningBlade"] = "namerica",
-["BurningLegion"] = "namerica",
-["Cairne"] = "namerica",
-["CenarionCircle"] = "namerica",
-["Cenarius"] = "namerica",
-["Cho'gall"] = "namerica",
-["Chromaggus"] = "namerica",
-["Coilfang"] = "namerica",
-["Crushridge"] = "namerica",
-["Daggerspine"] = "namerica",
-["Dalaran"] = "namerica",
-["Dalvengyr"] = "namerica",
-["DarkIron"] = "namerica",
-["Darkspear"] = "namerica",
-["Darrowmere"] = "namerica",
-["Dawnbringer"] = "namerica",
-["Deathwing"] = "namerica",
-["DemonSoul"] = "namerica",
-["Dentarg"] = "namerica",
-["Destromath"] = "namerica",
-["Dethecus"] = "namerica",
-["Detheroc"] = "namerica",
-["Doomhammer"] = "namerica",
-["Draenor"] = "namerica",
-["Dragonblight"] = "namerica",
-["Dragonmaw"] = "namerica",
-["Drenden"] = "namerica",
-["Dunemaul"] = "namerica",
-["Durotan"] = "namerica",
-["Duskwood"] = "namerica",
-["EarthenRing"] = "namerica",
-["EchoIsles"] = "namerica",
-["Eitrigg"] = "namerica",
-["Eldre'Thalas"] = "namerica",
-["Elune"] = "namerica",
-["EmeraldDream"] = "namerica",
-["Eonar"] = "namerica",
-["Eredar"] = "namerica",
-["Executus"] = "namerica",
-["Exodar"] = "namerica",
-["Farstriders"] = "namerica",
-["Feathermoon"] = "namerica",
-["Fenris"] = "namerica",
-["Firetree"] = "namerica",
-["Fizzcrank"] = "namerica",
-["Frostmane"] = "namerica",
-["Frostwolf"] = "namerica",
-["Galakrond"] = "namerica",
-["Garithos"] = "namerica",
-["Garona"] = "namerica",
-["Garrosh"] = "namerica",
-["Ghostlands"] = "namerica",
-["Gilneas"] = "namerica",
-["Gnomeregan"] = "namerica",
-["Gorefiend"] = "namerica",
-["Gorgonnash"] = "namerica",
-["Greymane"] = "namerica",
-["GrizzlyHills"] = "namerica",
-["Gul'dan"] = "namerica",
-["Gurubashi"] = "namerica",
-["Hakkar"] = "namerica",
-["Haomarush"] = "namerica",
-["Hellscream"] = "namerica",
-["Hydraxis"] = "namerica",
-["Hyjal"] = "namerica",
-["Icecrown"] = "namerica",
-["Illidan"] = "namerica",
-["Jaedenar"] = "namerica",
-["Kael'thas"] = "namerica",
-["Kalecgos"] = "namerica",
-["Kargath"] = "namerica",
-["Kel'Thuzad"] = "namerica",
-["Khadgar"] = "namerica",
-["KhazModan"] = "namerica",
-["Kil'jaeden"] = "namerica",
-["Kilrogg"] = "namerica",
-["KirinTor"] = "namerica",
-["Korgath"] = "namerica",
-["Korialstrasz"] = "namerica",
-["KulTiras"] = "namerica",
-["LaughingSkull"] = "namerica",
-["Lethon"] = "namerica",
-["Lightbringer"] = "namerica",
-["Lightning'sBlade"] = "namerica",
-["Lightninghoof"] = "namerica",
-["Llane"] = "namerica",
-["Lothar"] = "namerica",
-["Madoran"] = "namerica",
-["Maelstrom"] = "namerica",
-["Magtheridon"] = "namerica",
-["Maiev"] = "namerica",
-["Mal'Ganis"] = "namerica",
-["Malfurion"] = "namerica",
-["Malorne"] = "namerica",
-["Malygos"] = "namerica",
-["Mannoroth"] = "namerica",
-["Medivh"] = "namerica",
-["Misha"] = "namerica",
-["Mok'Nathal"] = "namerica",
-["MoonGuard"] = "namerica",
-["Moonrunner"] = "namerica",
-["Mug'thol"] = "namerica",
-["Muradin"] = "namerica",
-["Nathrezim"] = "namerica",
-["Nazgrel"] = "namerica",
-["Nazjatar"] = "namerica",
-["Ner'zhul"] = "namerica",
-["Nesingwary"] = "namerica",
-["Nordrassil"] = "namerica",
-["Norgannon"] = "namerica",
-["Onyxia"] = "namerica",
-["Perenolde"] = "namerica",
-["Proudmoore"] = "namerica",
-["Quel'dorei"] = "namerica",
-["Ravencrest"] = "namerica",
-["Ravenholdt"] = "namerica",
-["Rexxar"] = "namerica",
-["Rivendare"] = "namerica",
-["Runetotem"] = "namerica",
-["Sargeras"] = "namerica",
-["ScarletCrusade"] = "namerica",
-["Scilla"] = "namerica",
-["Sen'jin"] = "namerica",
-["Sentinels"] = "namerica",
-["ShadowCouncil"] = "namerica",
-["Shadowmoon"] = "namerica",
-["Shadowsong"] = "namerica",
-["Shandris"] = "namerica",
-["ShatteredHalls"] = "namerica",
-["ShatteredHand"] = "namerica",
-["Shu'halo"] = "namerica",
-["SilverHand"] = "namerica",
-["Silvermoon"] = "namerica",
-["SistersofElune"] = "namerica",
-["Skullcrusher"] = "namerica",
-["Skywall"] = "namerica",
-["Smolderthorn"] = "namerica",
-["Spinebreaker"] = "namerica",
-["Spirestone"] = "namerica",
-["Staghelm"] = "namerica",
-["SteamwheedleCartel"] = "namerica",
-["Stonemaul"] = "namerica",
-["Stormrage"] = "namerica",
-["Stormreaver"] = "namerica",
-["Stormscale"] = "namerica",
-["Suramar"] = "namerica",
-["Tanaris"] = "namerica",
-["Terenas"] = "namerica",
-["Terokkar"] = "namerica",
-["TheForgottenCoast"] = "namerica",
-["TheScryers"] = "namerica",
-["TheUnderbog"] = "namerica",
-["TheVentureCo"] = "namerica",
-["ThoriumBrotherhood"] = "namerica",
-["Thrall"] = "namerica",
-["Thunderhorn"] = "namerica",
-["Thunderlord"] = "namerica",
-["Tichondrius"] = "namerica",
-["Tortheldrin"] = "namerica",
-["Trollbane"] = "namerica",
-["Turalyon"] = "namerica",
-["TwistingNether"] = "namerica",
-["Uldaman"] = "namerica",
-["Uldum"] = "namerica",
-["Undermine"] = "namerica",
-["Ursin"] = "namerica",
-["Uther"] = "namerica",
-["Vashj"] = "namerica",
-["Vek'nilash"] = "namerica",
-["Velen"] = "namerica",
-["Warsong"] = "namerica",
-["Whisperwind"] = "namerica",
-["Wildhammer"] = "namerica",
-["Windrunner"] = "namerica",
-["Winterhoof"] = "namerica",
-["WyrmrestAccord"] = "namerica",
-["Ysera"] = "namerica",
-["Ysondre"] = "namerica",
-["Zangarmarsh"] = "namerica",
-["Zul'jin"] = "namerica",
-["Zuluhed"] = "namerica",
-["Ashkandi"] = "namerica",
-["Atiesh"] = "namerica",
-["Benediction"] = "namerica",
-["BloodsailBuccaneers"] = "namerica",
-["Faerlina"] = "namerica",
-["Grobbulus"] = "namerica",
-["Mankrik"] = "namerica",
-["OldBlanchy"] = "namerica",
-["Westfall"] = "namerica",
-["Whitemane"] = "namerica",
-["ChaosBolt"] = "namerica",
-["CrusaderStrike"] = "namerica",
-["DefiasPillager"] = "namerica",
-["Doomhowl"] = "namerica",
-["Dreamscythe"] = "namerica",
-["LavaLash"] = "namerica",
-["LivingFlame"] = "namerica",
-["LoneWolf"] = "namerica",
-["Nightslayer"] = "namerica",
-["Pagle"] = "namerica",
-["SkullRock"] = "namerica",
-["WildGrowth"] = "namerica",
-["Maladath"] = "australia",
-}
+    -- Region 1: Americas & Oceania
+    REALMS_NA = {
+        ["Azralon"] = "samerica",
+        ["Gallywix"] = "samerica",
+        ["Goldrinn"] = "samerica",
+        ["Nemesis"] = "samerica",
+        ["TolBarad"] = "samerica",
+        ["Drakkari"] = "samerica",
+        ["Quel'Thalas"] = "samerica",
+        ["Ragnaros"] = "samerica",
+        ["Loatheb"] = "samerica",
+        ["Aman'Thul"] = "australia",
+        ["Barthilas"] = "australia",
+        ["Caelestrasz"] = "australia",
+        ["Dath'Remar"] = "australia",
+        ["Dreadmaul"] = "australia",
+        ["Frostmourne"] = "australia",
+        ["Gundrak"] = "australia",
+        ["Jubei'Thos"] = "australia",
+        ["Khaz'goroth"] = "australia",
+        ["Nagrand"] = "australia",
+        ["Saurfang"] = "australia",
+        ["Thaurissan"] = "australia",
+        ["Arugal"] = "australia",
+        ["Yojamba"] = "australia",
+        ["Remulos"] = "australia",
+        ["Felstriker"] = "australia",
+        ["Shadowstrike"] = "australia",
+        ["Penance"] = "australia",
+        ["Aegwynn"] = "namerica",
+        ["AeriePeak"] = "namerica",
+        ["Agamaggan"] = "namerica",
+        ["Aggramar"] = "namerica",
+        ["Akama"] = "namerica",
+        ["Alexstrasza"] = "namerica",
+        ["Alleria"] = "namerica",
+        ["AltarofStorms"] = "namerica",
+        ["AlteracMountains"] = "namerica",
+        ["Andorhal"] = "namerica",
+        ["Anetheron"] = "namerica",
+        ["Antonidas"] = "namerica",
+        ["Anub'arak"] = "namerica",
+        ["Anvilmar"] = "namerica",
+        ["Arathor"] = "namerica",
+        ["Archimonde"] = "namerica",
+        ["Area52"] = "namerica",
+        ["ArgentDawn"] = "namerica",
+        ["Arthas"] = "namerica",
+        ["Arygos"] = "namerica",
+        ["Auchindoun"] = "namerica",
+        ["Azgalor"] = "namerica",
+        ["AzjolNerub"] = "namerica",
+        ["Azshara"] = "namerica",
+        ["Azuremyst"] = "namerica",
+        ["Baelgun"] = "namerica",
+        ["Balnazzar"] = "namerica",
+        ["BlackDragonflight"] = "namerica",
+        ["Blackhand"] = "namerica",
+        ["Blackrock"] = "namerica",
+        ["BlackwaterRaiders"] = "namerica",
+        ["BlackwingLair"] = "namerica",
+        ["Blade'sEdge"] = "namerica",
+        ["Bladefist"] = "namerica",
+        ["BleedingHollow"] = "namerica",
+        ["BloodFurnace"] = "namerica",
+        ["Bloodhoof"] = "namerica",
+        ["Bloodscalp"] = "namerica",
+        ["Bonechewer"] = "namerica",
+        ["BoreanTundra"] = "namerica",
+        ["Boulderfist"] = "namerica",
+        ["Bronzebeard"] = "namerica",
+        ["BurningBlade"] = "namerica",
+        ["BurningLegion"] = "namerica",
+        ["Cairne"] = "namerica",
+        ["CenarionCircle"] = "namerica",
+        ["Cenarius"] = "namerica",
+        ["Cho'gall"] = "namerica",
+        ["Chromaggus"] = "namerica",
+        ["Coilfang"] = "namerica",
+        ["Crushridge"] = "namerica",
+        ["Daggerspine"] = "namerica",
+        ["Dalaran"] = "namerica",
+        ["Dalvengyr"] = "namerica",
+        ["DarkIron"] = "namerica",
+        ["Darkspear"] = "namerica",
+        ["Darrowmere"] = "namerica",
+        ["Dawnbringer"] = "namerica",
+        ["Deathwing"] = "namerica",
+        ["DemonSoul"] = "namerica",
+        ["Dentarg"] = "namerica",
+        ["Destromath"] = "namerica",
+        ["Dethecus"] = "namerica",
+        ["Detheroc"] = "namerica",
+        ["Doomhammer"] = "namerica",
+        ["Draenor"] = "namerica",
+        ["Dragonblight"] = "namerica",
+        ["Dragonmaw"] = "namerica",
+        ["Drenden"] = "namerica",
+        ["Dunemaul"] = "namerica",
+        ["Durotan"] = "namerica",
+        ["Duskwood"] = "namerica",
+        ["EarthenRing"] = "namerica",
+        ["EchoIsles"] = "namerica",
+        ["Eitrigg"] = "namerica",
+        ["Eldre'Thalas"] = "namerica",
+        ["Elune"] = "namerica",
+        ["EmeraldDream"] = "namerica",
+        ["Eonar"] = "namerica",
+        ["Eredar"] = "namerica",
+        ["Executus"] = "namerica",
+        ["Exodar"] = "namerica",
+        ["Farstriders"] = "namerica",
+        ["Feathermoon"] = "namerica",
+        ["Fenris"] = "namerica",
+        ["Firetree"] = "namerica",
+        ["Fizzcrank"] = "namerica",
+        ["Frostmane"] = "namerica",
+        ["Frostwolf"] = "namerica",
+        ["Galakrond"] = "namerica",
+        ["Garithos"] = "namerica",
+        ["Garona"] = "namerica",
+        ["Garrosh"] = "namerica",
+        ["Ghostlands"] = "namerica",
+        ["Gilneas"] = "namerica",
+        ["Gnomeregan"] = "namerica",
+        ["Gorefiend"] = "namerica",
+        ["Gorgonnash"] = "namerica",
+        ["Greymane"] = "namerica",
+        ["GrizzlyHills"] = "namerica",
+        ["Gul'dan"] = "namerica",
+        ["Gurubashi"] = "namerica",
+        ["Hakkar"] = "namerica",
+        ["Haomarush"] = "namerica",
+        ["Hellscream"] = "namerica",
+        ["Hydraxis"] = "namerica",
+        ["Hyjal"] = "namerica",
+        ["Icecrown"] = "namerica",
+        ["Illidan"] = "namerica",
+        ["Jaedenar"] = "namerica",
+        ["Kael'thas"] = "namerica",
+        ["Kalecgos"] = "namerica",
+        ["Kargath"] = "namerica",
+        ["Kel'Thuzad"] = "namerica",
+        ["Khadgar"] = "namerica",
+        ["KhazModan"] = "namerica",
+        ["Kil'jaeden"] = "namerica",
+        ["Kilrogg"] = "namerica",
+        ["KirinTor"] = "namerica",
+        ["Korgath"] = "namerica",
+        ["Korialstrasz"] = "namerica",
+        ["KulTiras"] = "namerica",
+        ["LaughingSkull"] = "namerica",
+        ["Lethon"] = "namerica",
+        ["Lightbringer"] = "namerica",
+        ["Lightning'sBlade"] = "namerica",
+        ["Lightninghoof"] = "namerica",
+        ["Llane"] = "namerica",
+        ["Lothar"] = "namerica",
+        ["Madoran"] = "namerica",
+        ["Maelstrom"] = "namerica",
+        ["Magtheridon"] = "namerica",
+        ["Maiev"] = "namerica",
+        ["Mal'Ganis"] = "namerica",
+        ["Malfurion"] = "namerica",
+        ["Malorne"] = "namerica",
+        ["Malygos"] = "namerica",
+        ["Mannoroth"] = "namerica",
+        ["Medivh"] = "namerica",
+        ["Misha"] = "namerica",
+        ["Mok'Nathal"] = "namerica",
+        ["MoonGuard"] = "namerica",
+        ["Moonrunner"] = "namerica",
+        ["Mug'thol"] = "namerica",
+        ["Muradin"] = "namerica",
+        ["Nathrezim"] = "namerica",
+        ["Nazgrel"] = "namerica",
+        ["Nazjatar"] = "namerica",
+        ["Ner'zhul"] = "namerica",
+        ["Nesingwary"] = "namerica",
+        ["Nordrassil"] = "namerica",
+        ["Norgannon"] = "namerica",
+        ["Onyxia"] = "namerica",
+        ["Perenolde"] = "namerica",
+        ["Proudmoore"] = "namerica",
+        ["Quel'dorei"] = "namerica",
+        ["Ravencrest"] = "namerica",
+        ["Ravenholdt"] = "namerica",
+        ["Rexxar"] = "namerica",
+        ["Rivendare"] = "namerica",
+        ["Runetotem"] = "namerica",
+        ["Sargeras"] = "namerica",
+        ["ScarletCrusade"] = "namerica",
+        ["Scilla"] = "namerica",
+        ["Sen'jin"] = "namerica",
+        ["Sentinels"] = "namerica",
+        ["ShadowCouncil"] = "namerica",
+        ["Shadowmoon"] = "namerica",
+        ["Shadowsong"] = "namerica",
+        ["Shandris"] = "namerica",
+        ["ShatteredHalls"] = "namerica",
+        ["ShatteredHand"] = "namerica",
+        ["Shu'halo"] = "namerica",
+        ["SilverHand"] = "namerica",
+        ["Silvermoon"] = "namerica",
+        ["SistersofElune"] = "namerica",
+        ["Skullcrusher"] = "namerica",
+        ["Skywall"] = "namerica",
+        ["Smolderthorn"] = "namerica",
+        ["Spinebreaker"] = "namerica",
+        ["Spirestone"] = "namerica",
+        ["Staghelm"] = "namerica",
+        ["SteamwheedleCartel"] = "namerica",
+        ["Stonemaul"] = "namerica",
+        ["Stormrage"] = "namerica",
+        ["Stormreaver"] = "namerica",
+        ["Stormscale"] = "namerica",
+        ["Suramar"] = "namerica",
+        ["Tanaris"] = "namerica",
+        ["Terenas"] = "namerica",
+        ["Terokkar"] = "namerica",
+        ["TheForgottenCoast"] = "namerica",
+        ["TheScryers"] = "namerica",
+        ["TheUnderbog"] = "namerica",
+        ["TheVentureCo"] = "namerica",
+        ["ThoriumBrotherhood"] = "namerica",
+        ["Thrall"] = "namerica",
+        ["Thunderhorn"] = "namerica",
+        ["Thunderlord"] = "namerica",
+        ["Tichondrius"] = "namerica",
+        ["Tortheldrin"] = "namerica",
+        ["Trollbane"] = "namerica",
+        ["Turalyon"] = "namerica",
+        ["TwistingNether"] = "namerica",
+        ["Uldaman"] = "namerica",
+        ["Uldum"] = "namerica",
+        ["Undermine"] = "namerica",
+        ["Ursin"] = "namerica",
+        ["Uther"] = "namerica",
+        ["Vashj"] = "namerica",
+        ["Vek'nilash"] = "namerica",
+        ["Velen"] = "namerica",
+        ["Warsong"] = "namerica",
+        ["Whisperwind"] = "namerica",
+        ["Wildhammer"] = "namerica",
+        ["Windrunner"] = "namerica",
+        ["Winterhoof"] = "namerica",
+        ["WyrmrestAccord"] = "namerica",
+        ["Ysera"] = "namerica",
+        ["Ysondre"] = "namerica",
+        ["Zangarmarsh"] = "namerica",
+        ["Zul'jin"] = "namerica",
+        ["Zuluhed"] = "namerica",
+        ["Ashkandi"] = "namerica",
+        ["Atiesh"] = "namerica",
+        ["Benediction"] = "namerica",
+        ["BloodsailBuccaneers"] = "namerica",
+        ["Faerlina"] = "namerica",
+        ["Grobbulus"] = "namerica",
+        ["Mankrik"] = "namerica",
+        ["OldBlanchy"] = "namerica",
+        ["Westfall"] = "namerica",
+        ["Whitemane"] = "namerica",
+        ["ChaosBolt"] = "namerica",
+        ["CrusaderStrike"] = "namerica",
+        ["DefiasPillager"] = "namerica",
+        ["Doomhowl"] = "namerica",
+        ["Dreamscythe"] = "namerica",
+        ["LavaLash"] = "namerica",
+        ["LivingFlame"] = "namerica",
+        ["LoneWolf"] = "namerica",
+        ["Nightslayer"] = "namerica",
+        ["Pagle"] = "namerica",
+        ["SkullRock"] = "namerica",
+        ["WildGrowth"] = "namerica",
+        ["Maladath"] = "australia",
+    }
 
--- Region 3: Europe & Russia
-REALMS_EU = {
-["Aegwynn"] = "europe",
-["Alexstrasza"] = "europe",
-["Alleria"] = "europe",
-["Ambossar"] = "europe",
-["Aman'Thul"] = "europe",
-["Antonidas"] = "europe",
-["Anub'arak"] = "europe",
-["Area52"] = "europe",
-["Arthas"] = "europe",
-["Arygos"] = "europe",
-["Azshara"] = "europe",
-["Baelgun"] = "europe",
-["Blackhand"] = "europe",
-["Blackmoore"] = "europe",
-["Blackrock"] = "europe",
-["Blutkessel"] = "europe",
-["Dalvengyr"] = "europe",
-["DasKonsortium"] = "europe",
-["DasSyndikat"] = "europe",
-["DerMithrilorden"] = "europe",
-["DerRatvonDalaran"] = "europe",
-["Destromath"] = "europe",
-["Dethecus"] = "europe",
-["DieAldor"] = "europe",
-["DieArguswacht"] = "europe",
-["DieewigeWacht"] = "europe",
-["DieNachtwache"] = "europe",
-["DieSilberneHand"] = "europe",
-["DieTodeskrallen"] = "europe",
-["DunMorogh"] = "europe",
-["Echsenkessel"] = "europe",
-["Eredar"] = "europe",
-["Everlook"] = "europe",
-["FestungderSt\195\188rme"] = "europe",
-["Forscherliga"] = "europe",
-["Frostmourne"] = "europe",
-["Frostwolf"] = "europe",
-["Garrosh"] = "europe",
-["Gilneas"] = "europe",
-["Gorgonnash"] = "europe",
-["Gul'dan"] = "europe",
-["Kargath"] = "europe",
-["Kel'Thuzad"] = "europe",
-["Khaz'goroth"] = "europe",
-["Kil'jaeden"] = "europe",
-["Krag'jin"] = "europe",
-["Lothar"] = "europe",
-["Madmortem"] = "europe",
-["Mal'Ganis"] = "europe",
-["Malfurion"] = "europe",
-["Malorne"] = "europe",
-["Malygos"] = "europe",
-["Mannoroth"] = "europe",
-["Mug'thol"] = "europe",
-["Nathrezim"] = "europe",
-["Nazjatar"] = "europe",
-["Nera'thor"] = "europe",
-["Nethersturm"] = "europe",
-["Norgannon"] = "europe",
-["Nozdormu"] = "europe",
-["Onyxia"] = "europe",
-["Perenolde"] = "europe",
-["Proudmoore"] = "europe",
-["Rajaxx"] = "europe",
-["Rexxar"] = "europe",
-["Sen'jin"] = "europe",
-["Shattrath"] = "europe",
-["Shen'dralar"] = "europe",
-["SteamwheedleCartel"] = "europe",
-["Taerar"] = "europe",
-["Teldrassil"] = "europe",
-["Terrordar"] = "europe",
-["Theradras"] = "europe",
-["Thrall"] = "europe",
-["Tichondrius"] = "europe",
-["Tirion"] = "europe",
-["Todeswache"] = "europe",
-["Ulduar"] = "europe",
-["Un'Goro"] = "europe",
-["Vek'lor"] = "europe",
-["Venoxis"] = "europe",
-["Wrathbringer"] = "europe",
-["Ysera"] = "europe",
-["ZirkeldesCenarius"] = "europe",
-["Zuluhed"] = "europe",
-["Arak-arahm"] = "europe",
-["Arathi"] = "europe",
-["Archimonde"] = "europe",
-["Auberdine"] = "europe",
-["Chants\195\169ternels"] = "europe",
-["Cho'gall"] = "europe",
-["Chromaggus"] = "europe",
-["Confr\195\169rieduThorium"] = "europe",
-["ConseildesOmbres"] = "europe",
-["CulteDeLaRiveNoire"] = "europe",
-["Dalaran"] = "europe",
-["Drek'Thar"] = "europe",
-["Eitrigg"] = "europe",
-["Eldre'Thalas"] = "europe",
-["Elune"] = "europe",
-["Garona"] = "europe",
-["Hyjal"] = "europe",
-["Illidan"] = "europe",
-["Kael'thas"] = "europe",
-["KhazModan"] = "europe",
-["KirinTor"] = "europe",
-["Krasus"] = "europe",
-["LaCroisade\195\169carlate"] = "europe",
-["LesClairvoyants"] = "europe",
-["LesSentinelles"] = "europe",
-["Mar\195\169cagedeZangar"] = "europe",
-["Medivh"] = "europe",
-["Naxxramas"] = "europe",
-["Ner'zhul"] = "europe",
-["Rashgarroth"] = "europe",
-["Sargeras"] = "europe",
-["Sinstralis"] = "europe",
-["Suramar"] = "europe",
-["Templenoir"] = "europe",
-["Throk'Feroth"] = "europe",
-["Uldaman"] = "europe",
-["Varimathras"] = "europe",
-["Vol'jin"] = "europe",
-["Ysondre"] = "europe",
-["C'Thun"] = "europe",
-["ColinasPardas"] = "europe",
-["DunModr"] = "europe",
-["Exodar"] = "europe",
-["LosErrantes"] = "europe",
-["Mandokir"] = "europe",
-["Minahonda"] = "europe",
-["Sanguino"] = "europe",
-["Shen'dralar"] = "europe",
-["Tyrande"] = "europe",
-["Uldum"] = "europe",
-["Zul'jin"] = "europe",
-["Nemesis"] = "europe",
-["Pozzodell'Eternit\195\160"] = "europe",
-["Aggra"] = "europe",
-["GrimBatol"] = "europe",
-["Ashenvale"] = "russia",
-["Azuregos"] = "russia",
-["Blackscar"] = "russia",
-["BootyBay"] = "russia",
-["BoreanTundra"] = "russia",
-["Chromie"] = "russia",
-["Deathguard"] = "russia",
-["Deepholm"] = "russia",
-["Eversong"] = "russia",
-["Flamegor"] = "russia",
-["Fordragon"] = "russia",
-["Galakrond"] = "russia",
-["Goldrinn"] = "russia",
-["Gordunni"] = "russia",
-["Grommash"] = "russia",
-["HowlingFjord"] = "russia",
-["LichKing"] = "russia",
-["MoltenCore"] = "russia",
-["Razuvious"] = "russia",
-["Soulflayer"] = "russia",
-["Theradras"] = "russia",
-["Thermaplugg"] = "russia",
-["Wyrmthalak"] = "russia",
-["Agamaggan"] = "europe",
-["Aggramar"] = "europe",
-["Ahn'Qiraj"] = "europe",
-["Al'Akir"] = "europe",
-["Alonsus"] = "europe",
-["Anachronos"] = "europe",
-["Arathor"] = "europe",
-["ArgentDawn"] = "europe",
-["Aszune"] = "europe",
-["Auchindoun"] = "europe",
-["AzjolNerub"] = "europe",
-["Azuremyst"] = "europe",
-["Balnazzar"] = "europe",
-["Blade'sEdge"] = "europe",
-["Bladefist"] = "europe",
-["Bloodfeather"] = "europe",
-["Bloodhoof"] = "europe",
-["Bloodscalp"] = "europe",
-["Boulderfist"] = "europe",
-["Bronzebeard"] = "europe",
-["BronzeDragonflight"] = "europe",
-["BurningBlade"] = "europe",
-["BurningLegion"] = "europe",
-["BurningSteppes"] = "europe",
-["ChamberofAspects"] = "europe",
-["Chromaggus"] = "europe",
-["Crushridge"] = "europe",
-["Daggerspine"] = "europe",
-["DarkmoonFaire"] = "europe",
-["Darksorrow"] = "europe",
-["Darkspear"] = "europe",
-["Deathwing"] = "europe",
-["DefiasBrotherhood"] = "europe",
-["Dentarg"] = "europe",
-["Doomhammer"] = "europe",
-["Draenor"] = "europe",
-["Dragonblight"] = "europe",
-["Dragonmaw"] = "europe",
-["Drak'thul"] = "europe",
-["Dunemaul"] = "europe",
-["EarthenRing"] = "europe",
-["EmeraldDream"] = "europe",
-["Emeriss"] = "europe",
-["Eonar"] = "europe",
-["Executus"] = "europe",
-["Frostmane"] = "europe",
-["Frostwhisper"] = "europe",
-["Genjuros"] = "europe",
-["Ghostlands"] = "europe",
-["GrimBatol"] = "europe",
-["Hakkar"] = "europe",
-["Haomarush"] = "europe",
-["Hellfire"] = "europe",
-["Hellscream"] = "europe",
-["Jaedenar"] = "europe",
-["Karazhan"] = "europe",
-["Kazzak"] = "europe",
-["Khadgar"] = "europe",
-["Kilrogg"] = "europe",
-["Kor'gall"] = "europe",
-["KulTiras"] = "europe",
-["LaughingSkull"] = "europe",
-["Lightbringer"] = "europe",
-["Lightning'sBlade"] = "europe",
-["Magtheridon"] = "europe",
-["Mazrigos"] = "europe",
-["Moonglade"] = "europe",
-["Nagrand"] = "europe",
-["Neptulon"] = "europe",
-["Nordrassil"] = "europe",
-["Outland"] = "europe",
-["Quel'Thalas"] = "europe",
-["Ragnaros"] = "europe",
-["Ravencrest"] = "europe",
-["Ravenholdt"] = "europe",
-["Runetotem"] = "europe",
-["Saurfang"] = "europe",
-["ScarshieldLegion"] = "europe",
-["Shadowsong"] = "europe",
-["ShatteredHalls"] = "europe",
-["ShatteredHand"] = "europe",
-["Silvermoon"] = "europe",
-["Skullcrusher"] = "europe",
-["Spinebreaker"] = "europe",
-["Sporeggar"] = "europe",
-["Stormrage"] = "europe",
-["Stormreaver"] = "europe",
-["Stormscale"] = "europe",
-["Sunstrider"] = "europe",
-["Sylvanas"] = "europe",
-["Talnivarr"] = "europe",
-["TarrenMill"] = "europe",
-["Terenas"] = "europe",
-["Terokkar"] = "europe",
-["TheMaelstrom"] = "europe",
-["TheSha'tar"] = "europe",
-["TheVentureCo"] = "europe",
-["Thunderhorn"] = "europe",
-["Trollbane"] = "europe",
-["Turalyon"] = "europe",
-["Twilight'sHammer"] = "europe",
-["TwistingNether"] = "europe",
-["Vashj"] = "europe",
-["Vek'nilash"] = "europe",
-["Wildhammer"] = "europe",
-["Xavius"] = "europe",
-["Zenedar"] = "europe",
-["Firemaw"] = "europe",
-["Gehennas"] = "europe",
-["Golemagg"] = "europe",
-["MirageRaceway"] = "europe",
-["Mograine"] = "europe",
-["Nek'Rosh"] = "europe",
-["PyrewoodVillage"] = "europe",
-["Soulseeker"] = "europe",
-["Spineshatter"] = "europe",
-["Stitches"] = "europe",
-["Thunderstrike"] = "europe",
-["WildGrowth"] = "europe",
-["ZandalarTribe"] = "europe",
-}
+    -- Region 3: Europe & Russia
+    REALMS_EU = {
+        ["Aegwynn"] = "europe",
+        ["Alexstrasza"] = "europe",
+        ["Alleria"] = "europe",
+        ["Ambossar"] = "europe",
+        ["Aman'Thul"] = "europe",
+        ["Antonidas"] = "europe",
+        ["Anub'arak"] = "europe",
+        ["Area52"] = "europe",
+        ["Arthas"] = "europe",
+        ["Arygos"] = "europe",
+        ["Azshara"] = "europe",
+        ["Baelgun"] = "europe",
+        ["Blackhand"] = "europe",
+        ["Blackmoore"] = "europe",
+        ["Blackrock"] = "europe",
+        ["Blutkessel"] = "europe",
+        ["Dalvengyr"] = "europe",
+        ["DasKonsortium"] = "europe",
+        ["DasSyndikat"] = "europe",
+        ["DerMithrilorden"] = "europe",
+        ["DerRatvonDalaran"] = "europe",
+        ["Destromath"] = "europe",
+        ["Dethecus"] = "europe",
+        ["DieAldor"] = "europe",
+        ["DieArguswacht"] = "europe",
+        ["DieewigeWacht"] = "europe",
+        ["DieNachtwache"] = "europe",
+        ["DieSilberneHand"] = "europe",
+        ["DieTodeskrallen"] = "europe",
+        ["DunMorogh"] = "europe",
+        ["Echsenkessel"] = "europe",
+        ["Eredar"] = "europe",
+        ["Everlook"] = "europe",
+        ["FestungderSt\195\188rme"] = "europe",
+        ["Forscherliga"] = "europe",
+        ["Frostmourne"] = "europe",
+        ["Frostwolf"] = "europe",
+        ["Garrosh"] = "europe",
+        ["Gilneas"] = "europe",
+        ["Gorgonnash"] = "europe",
+        ["Gul'dan"] = "europe",
+        ["Kargath"] = "europe",
+        ["Kel'Thuzad"] = "europe",
+        ["Khaz'goroth"] = "europe",
+        ["Kil'jaeden"] = "europe",
+        ["Krag'jin"] = "europe",
+        ["Lothar"] = "europe",
+        ["Madmortem"] = "europe",
+        ["Mal'Ganis"] = "europe",
+        ["Malfurion"] = "europe",
+        ["Malorne"] = "europe",
+        ["Malygos"] = "europe",
+        ["Mannoroth"] = "europe",
+        ["Mug'thol"] = "europe",
+        ["Nathrezim"] = "europe",
+        ["Nazjatar"] = "europe",
+        ["Nera'thor"] = "europe",
+        ["Nethersturm"] = "europe",
+        ["Norgannon"] = "europe",
+        ["Nozdormu"] = "europe",
+        ["Onyxia"] = "europe",
+        ["Perenolde"] = "europe",
+        ["Proudmoore"] = "europe",
+        ["Rajaxx"] = "europe",
+        ["Rexxar"] = "europe",
+        ["Sen'jin"] = "europe",
+        ["Shattrath"] = "europe",
+        ["Shen'dralar"] = "europe",
+        ["SteamwheedleCartel"] = "europe",
+        ["Taerar"] = "europe",
+        ["Teldrassil"] = "europe",
+        ["Terrordar"] = "europe",
+        ["Theradras"] = "europe",
+        ["Thrall"] = "europe",
+        ["Tichondrius"] = "europe",
+        ["Tirion"] = "europe",
+        ["Todeswache"] = "europe",
+        ["Ulduar"] = "europe",
+        ["Un'Goro"] = "europe",
+        ["Vek'lor"] = "europe",
+        ["Venoxis"] = "europe",
+        ["Wrathbringer"] = "europe",
+        ["Ysera"] = "europe",
+        ["ZirkeldesCenarius"] = "europe",
+        ["Zuluhed"] = "europe",
+        ["Arak-arahm"] = "europe",
+        ["Arathi"] = "europe",
+        ["Archimonde"] = "europe",
+        ["Auberdine"] = "europe",
+        ["Chants\195\169ternels"] = "europe",
+        ["Cho'gall"] = "europe",
+        ["Chromaggus"] = "europe",
+        ["Confr\195\169rieduThorium"] = "europe",
+        ["ConseildesOmbres"] = "europe",
+        ["CulteDeLaRiveNoire"] = "europe",
+        ["Dalaran"] = "europe",
+        ["Drek'Thar"] = "europe",
+        ["Eitrigg"] = "europe",
+        ["Eldre'Thalas"] = "europe",
+        ["Elune"] = "europe",
+        ["Garona"] = "europe",
+        ["Hyjal"] = "europe",
+        ["Illidan"] = "europe",
+        ["Kael'thas"] = "europe",
+        ["KhazModan"] = "europe",
+        ["KirinTor"] = "europe",
+        ["Krasus"] = "europe",
+        ["LaCroisade\195\169carlate"] = "europe",
+        ["LesClairvoyants"] = "europe",
+        ["LesSentinelles"] = "europe",
+        ["Mar\195\169cagedeZangar"] = "europe",
+        ["Medivh"] = "europe",
+        ["Naxxramas"] = "europe",
+        ["Ner'zhul"] = "europe",
+        ["Rashgarroth"] = "europe",
+        ["Sargeras"] = "europe",
+        ["Sinstralis"] = "europe",
+        ["Suramar"] = "europe",
+        ["Templenoir"] = "europe",
+        ["Throk'Feroth"] = "europe",
+        ["Uldaman"] = "europe",
+        ["Varimathras"] = "europe",
+        ["Vol'jin"] = "europe",
+        ["Ysondre"] = "europe",
+        ["C'Thun"] = "europe",
+        ["ColinasPardas"] = "europe",
+        ["DunModr"] = "europe",
+        ["Exodar"] = "europe",
+        ["LosErrantes"] = "europe",
+        ["Mandokir"] = "europe",
+        ["Minahonda"] = "europe",
+        ["Sanguino"] = "europe",
+        ["Shen'dralar"] = "europe",
+        ["Tyrande"] = "europe",
+        ["Uldum"] = "europe",
+        ["Zul'jin"] = "europe",
+        ["Nemesis"] = "europe",
+        ["Pozzodell'Eternit\195\160"] = "europe",
+        ["Aggra"] = "europe",
+        ["GrimBatol"] = "europe",
+        ["Ashenvale"] = "russia",
+        ["Azuregos"] = "russia",
+        ["Blackscar"] = "russia",
+        ["BootyBay"] = "russia",
+        ["BoreanTundra"] = "russia",
+        ["Chromie"] = "russia",
+        ["Deathguard"] = "russia",
+        ["Deepholm"] = "russia",
+        ["Eversong"] = "russia",
+        ["Flamegor"] = "russia",
+        ["Fordragon"] = "russia",
+        ["Galakrond"] = "russia",
+        ["Goldrinn"] = "russia",
+        ["Gordunni"] = "russia",
+        ["Grommash"] = "russia",
+        ["HowlingFjord"] = "russia",
+        ["LichKing"] = "russia",
+        ["MoltenCore"] = "russia",
+        ["Razuvious"] = "russia",
+        ["Soulflayer"] = "russia",
+        ["Theradras"] = "russia",
+        ["Thermaplugg"] = "russia",
+        ["Wyrmthalak"] = "russia",
+        ["Agamaggan"] = "europe",
+        ["Aggramar"] = "europe",
+        ["Ahn'Qiraj"] = "europe",
+        ["Al'Akir"] = "europe",
+        ["Alonsus"] = "europe",
+        ["Anachronos"] = "europe",
+        ["Arathor"] = "europe",
+        ["ArgentDawn"] = "europe",
+        ["Aszune"] = "europe",
+        ["Auchindoun"] = "europe",
+        ["AzjolNerub"] = "europe",
+        ["Azuremyst"] = "europe",
+        ["Balnazzar"] = "europe",
+        ["Blade'sEdge"] = "europe",
+        ["Bladefist"] = "europe",
+        ["Bloodfeather"] = "europe",
+        ["Bloodhoof"] = "europe",
+        ["Bloodscalp"] = "europe",
+        ["Boulderfist"] = "europe",
+        ["Bronzebeard"] = "europe",
+        ["BronzeDragonflight"] = "europe",
+        ["BurningBlade"] = "europe",
+        ["BurningLegion"] = "europe",
+        ["BurningSteppes"] = "europe",
+        ["ChamberofAspects"] = "europe",
+        ["Chromaggus"] = "europe",
+        ["Crushridge"] = "europe",
+        ["Daggerspine"] = "europe",
+        ["DarkmoonFaire"] = "europe",
+        ["Darksorrow"] = "europe",
+        ["Darkspear"] = "europe",
+        ["Deathwing"] = "europe",
+        ["DefiasBrotherhood"] = "europe",
+        ["Dentarg"] = "europe",
+        ["Doomhammer"] = "europe",
+        ["Draenor"] = "europe",
+        ["Dragonblight"] = "europe",
+        ["Dragonmaw"] = "europe",
+        ["Drak'thul"] = "europe",
+        ["Dunemaul"] = "europe",
+        ["EarthenRing"] = "europe",
+        ["EmeraldDream"] = "europe",
+        ["Emeriss"] = "europe",
+        ["Eonar"] = "europe",
+        ["Executus"] = "europe",
+        ["Frostmane"] = "europe",
+        ["Frostwhisper"] = "europe",
+        ["Genjuros"] = "europe",
+        ["Ghostlands"] = "europe",
+        ["GrimBatol"] = "europe",
+        ["Hakkar"] = "europe",
+        ["Haomarush"] = "europe",
+        ["Hellfire"] = "europe",
+        ["Hellscream"] = "europe",
+        ["Jaedenar"] = "europe",
+        ["Karazhan"] = "europe",
+        ["Kazzak"] = "europe",
+        ["Khadgar"] = "europe",
+        ["Kilrogg"] = "europe",
+        ["Kor'gall"] = "europe",
+        ["KulTiras"] = "europe",
+        ["LaughingSkull"] = "europe",
+        ["Lightbringer"] = "europe",
+        ["Lightning'sBlade"] = "europe",
+        ["Magtheridon"] = "europe",
+        ["Mazrigos"] = "europe",
+        ["Moonglade"] = "europe",
+        ["Nagrand"] = "europe",
+        ["Neptulon"] = "europe",
+        ["Nordrassil"] = "europe",
+        ["Outland"] = "europe",
+        ["Quel'Thalas"] = "europe",
+        ["Ragnaros"] = "europe",
+        ["Ravencrest"] = "europe",
+        ["Ravenholdt"] = "europe",
+        ["Runetotem"] = "europe",
+        ["Saurfang"] = "europe",
+        ["ScarshieldLegion"] = "europe",
+        ["Shadowsong"] = "europe",
+        ["ShatteredHalls"] = "europe",
+        ["ShatteredHand"] = "europe",
+        ["Silvermoon"] = "europe",
+        ["Skullcrusher"] = "europe",
+        ["Spinebreaker"] = "europe",
+        ["Sporeggar"] = "europe",
+        ["Stormrage"] = "europe",
+        ["Stormreaver"] = "europe",
+        ["Stormscale"] = "europe",
+        ["Sunstrider"] = "europe",
+        ["Sylvanas"] = "europe",
+        ["Talnivarr"] = "europe",
+        ["TarrenMill"] = "europe",
+        ["Terenas"] = "europe",
+        ["Terokkar"] = "europe",
+        ["TheMaelstrom"] = "europe",
+        ["TheSha'tar"] = "europe",
+        ["TheVentureCo"] = "europe",
+        ["Thunderhorn"] = "europe",
+        ["Trollbane"] = "europe",
+        ["Turalyon"] = "europe",
+        ["Twilight'sHammer"] = "europe",
+        ["TwistingNether"] = "europe",
+        ["Vashj"] = "europe",
+        ["Vek'nilash"] = "europe",
+        ["Wildhammer"] = "europe",
+        ["Xavius"] = "europe",
+        ["Zenedar"] = "europe",
+        ["Firemaw"] = "europe",
+        ["Gehennas"] = "europe",
+        ["Golemagg"] = "europe",
+        ["MirageRaceway"] = "europe",
+        ["Mograine"] = "europe",
+        ["Nek'Rosh"] = "europe",
+        ["PyrewoodVillage"] = "europe",
+        ["Soulseeker"] = "europe",
+        ["Spineshatter"] = "europe",
+        ["Stitches"] = "europe",
+        ["Thunderstrike"] = "europe",
+        ["WildGrowth"] = "europe",
+        ["ZandalarTribe"] = "europe",
+    }
 
--- Regions 2, 4, 5: Korea, Taiwan, China
-REALMS_ASIA = {
-["AbyssalMaw"] = "china",
-["AeriePeakCN"] = "china",
-["Akil'zon"] = "china",
-["Algalon"] = "china",
-["Chronos"] = "china",
-["Goldshire"] = "china",
-["LichKing"] = "china",
-["Onyxia"] = "china",
-["SilverHand"] = "china",
-["SilvermoonCN"] = "china",
-["TitanReforged"] = "china",
-["Azshara"] = "korea",
-["BurningLegion"] = "korea",
-["Cenarius"] = "korea",
-["Deathwing"] = "korea",
-["Durotan"] = "korea",
-["Frostmourne"] = "korea",
-["Hellscream"] = "korea",
-["Hyjal"] = "korea",
-["Ragnaros"] = "korea",
-["Windrunner"] = "korea",
-["Zul'jin"] = "korea",
-["Arthas"] = "taiwan",
-["Arygos"] = "taiwan",
-["BleedingHollow"] = "taiwan",
-["ChillwindPoint"] = "taiwan",
-["CrystalpineStinger"] = "taiwan",
-["DemonFallCanyon"] = "taiwan",
-["Dragonmaw"] = "taiwan",
-["Frostmane"] = "taiwan",
-["Global"] = "taiwan",
-["Icecrown"] = "taiwan",
-["KrolBlade"] = "taiwan",
-["Light'sHope"] = "taiwan",
-["Menethil"] = "taiwan",
-["Nightsong"] = "taiwan",
-["OldBlanchy"] = "taiwan",
-["OrderoftheCloudSerpent"] = "taiwan",
-["Quel'dorei"] = "taiwan",
-["Shadowmoon"] = "taiwan",
-["Skywall"] = "taiwan",
-["Spirestone"] = "taiwan",
-["Stormscale"] = "taiwan",
-["WorldTree"] = "taiwan",
-["Whisperwind"] = "taiwan",
-["Wrathbringer"] = "taiwan",
-["ZealotBlade"] = "taiwan",
-}
+    -- Regions 2, 4, 5: Korea, Taiwan, China
+    REALMS_ASIA = {
+        ["AbyssalMaw"] = "china",
+        ["AeriePeakCN"] = "china",
+        ["Akil'zon"] = "china",
+        ["Algalon"] = "china",
+        ["Chronos"] = "china",
+        ["Goldshire"] = "china",
+        ["LichKing"] = "china",
+        ["Onyxia"] = "china",
+        ["SilverHand"] = "china",
+        ["SilvermoonCN"] = "china",
+        ["TitanReforged"] = "china",
+        ["Azshara"] = "korea",
+        ["BurningLegion"] = "korea",
+        ["Cenarius"] = "korea",
+        ["Deathwing"] = "korea",
+        ["Durotan"] = "korea",
+        ["Frostmourne"] = "korea",
+        ["Hellscream"] = "korea",
+        ["Hyjal"] = "korea",
+        ["Ragnaros"] = "korea",
+        ["Windrunner"] = "korea",
+        ["Zul'jin"] = "korea",
+        ["Arthas"] = "taiwan",
+        ["Arygos"] = "taiwan",
+        ["BleedingHollow"] = "taiwan",
+        ["ChillwindPoint"] = "taiwan",
+        ["CrystalpineStinger"] = "taiwan",
+        ["DemonFallCanyon"] = "taiwan",
+        ["Dragonmaw"] = "taiwan",
+        ["Frostmane"] = "taiwan",
+        ["Global"] = "taiwan",
+        ["Icecrown"] = "taiwan",
+        ["KrolBlade"] = "taiwan",
+        ["Light'sHope"] = "taiwan",
+        ["Menethil"] = "taiwan",
+        ["Nightsong"] = "taiwan",
+        ["OldBlanchy"] = "taiwan",
+        ["OrderoftheCloudSerpent"] = "taiwan",
+        ["Quel'dorei"] = "taiwan",
+        ["Shadowmoon"] = "taiwan",
+        ["Skywall"] = "taiwan",
+        ["Spirestone"] = "taiwan",
+        ["Stormscale"] = "taiwan",
+        ["WorldTree"] = "taiwan",
+        ["Whisperwind"] = "taiwan",
+        ["Wrathbringer"] = "taiwan",
+        ["ZealotBlade"] = "taiwan",
+    }
 end
 
 local REGION_ICON_PATH = MEDIA .. "regions\\"
 
 -- Lookup a realm name -> mini region realmName should have spaces removed
 local function GetRealmMiniRegion(realmName)
-    if not realmName or realmName == "" then return nil end
-    if not REALMS_NA then LoadRealms() end
+    if not realmName or realmName == "" then
+        return nil
+    end
+    if not REALMS_NA then
+        LoadRealms()
+    end
     local clean = realmName:gsub("%s+", "")
     -- Check player's own region table first (handles overlapping realm names)
     local myRegion = GetCurrentRegion()
@@ -683,12 +689,16 @@ end
 
 -- Get the mini region for a BNet friend's game account
 local function GetFriendMiniRegion(gameAccountInfo)
-    if not gameAccountInfo then return nil end
+    if not gameAccountInfo then
+        return nil
+    end
     -- Try realmName first
     local realm = gameAccountInfo.realmName
     if realm and realm ~= "" then
         local result = GetRealmMiniRegion(realm)
-        if result then return result end
+        if result then
+            return result
+        end
     end
     -- Fallback: parse richPresence ("Zone - Realm" format)
     -- If realmName was empty, the friend is likely cross-region, so check OTHER tables first
@@ -696,7 +706,9 @@ local function GetFriendMiniRegion(gameAccountInfo)
     if rich and rich ~= "" then
         local realmFromRich = rich:match("%s%-%s(.+)$")
         if realmFromRich and realmFromRich ~= "" then
-            if not REALMS_NA then LoadRealms() end
+            if not REALMS_NA then
+                LoadRealms()
+            end
             local clean = realmFromRich:gsub("%s+", "")
             local myRegion = GetCurrentRegion()
             -- Check the opposite region first since empty realmName = cross-region friend
@@ -724,7 +736,9 @@ end
 
 -- Get the icon path for a mini region
 local function GetRegionIcon(miniRegion)
-    if not miniRegion then return nil end
+    if not miniRegion then
+        return nil
+    end
     return REGION_ICON_PATH .. miniRegion .. ".png"
 end
 
@@ -742,9 +756,13 @@ CludesUI.MINI_TO_FULL = MINI_TO_FULL
 local classColorCodes = {}
 function Kit.ClassColorCode(classFile)
     local code = classColorCodes[classFile]
-    if code then return code end
+    if code then
+        return code
+    end
     local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-    if not cc then return nil end
+    if not cc then
+        return nil
+    end
     code = CludesUI.HexColor(cc.r, cc.g, cc.b)
     classColorCodes[classFile] = code
     return code
@@ -753,18 +771,25 @@ end
 -- Class Icon Theme: the choices both settings pages list
 Kit.ICON_STYLE_VALUES = {
     blizzard = "Blizzard",
-    modern   = "Modern",
-    pixel    = "Pixel",
+    modern = "Modern",
+    pixel = "Pixel",
     pixelsComic = "Comic",
-    glyph    = "Glyph",
-    arcade   = "Arcade",
-    legend   = "Legend",
+    glyph = "Glyph",
+    arcade = "Arcade",
+    legend = "Legend",
     midnight = "Midnight",
-    runic    = "Runic",
+    runic = "Runic",
 }
 Kit.ICON_STYLE_ORDER = {
-    "blizzard", "modern", "pixel", "pixelsComic", "glyph",
-    "arcade", "legend", "midnight", "runic",
+    "blizzard",
+    "modern",
+    "pixel",
+    "pixelsComic",
+    "glyph",
+    "arcade",
+    "legend",
+    "midnight",
+    "runic",
 }
 
 -------------------------------------------------------------------------------
@@ -833,7 +858,7 @@ local FFD, GetFFD = CludesUI.NewFrameData()
 -- never a change to Blizzard's cards.
 --
 -- The tile's icon square: the name starts past it.
-local TILE_TARGET_H     = 46
+local TILE_TARGET_H = 46
 
 -- Kill switch for all tile decoration. Proven taint-free, so this is only a
 -- convenience for future bisects -- leave it true.
@@ -842,12 +867,12 @@ local TILE_PAINT = true
 -- Left inset of the text block, derived rather than fixed: the class icon is a
 -- square that spans the row height, so the text starts at rowHeight + a gutter.
 -- Resolved per paint from the row's live height.
-local TILE_TEXT_GAP  = 4
+local TILE_TEXT_GAP = 4
 -- Three lines, each its own size: Battle.net name / character name + level / location.
 local TILE_NAME_SIZE = 15
 local TILE_CHAR_SIZE = 12
 local TILE_INFO_SIZE = 12
-local TILE_LINE_GAP  = -5
+local TILE_LINE_GAP = -5
 -- The row height is Blizzard's now (GetActiveBaseHeight = 70, or 85 in the
 -- expanded text-size layout), and we cannot change it without touching their
 -- view's extent calculator -- which is provider-adjacent, and provider contact
@@ -857,21 +882,21 @@ local TILE_LINE_GAP  = -5
 -- line count varies), so there is no fixed vertical offset any more.
 
 local MODERN_BLIZZ_TEX = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
-local TEX_BASE         = "Interface\\AddOns\\CludesUI\\media\\textures\\"
+local TEX_BASE = "Interface\\AddOns\\CludesUI\\media\\textures\\"
 local MB_L, MB_R, MB_T, MB_B = 0.25, 1, 0, 0.75
 
 local TILE_ONLINE_MASK_TEX = TEX_BASE .. "gradient-lr.tga"
 local TILE_ONLINE_BG_ALPHA = 0.25
-local TILE_HOVER_MASK_TEX  = TEX_BASE .. "fade-right.tga"
-local TILE_HOVER_ALPHA     = 0.2
+local TILE_HOVER_MASK_TEX = TEX_BASE .. "fade-right.tga"
+local TILE_HOVER_ALPHA = 0.2
 -- Selection reuses the hover treatment and draws on its own layer ABOVE it, so
 -- a selected row that is also hovered shows both and reads brighter.
-local TILE_SEL_ALPHA       = 0.4
+local TILE_SEL_ALPHA = 0.4
 
-local OFFLINE_ICON         = MEDIA .. "offline.png"
+local OFFLINE_ICON = MEDIA .. "offline.png"
 local FACTION_TEX_ALLIANCE = MEDIA .. "alliance.png"
-local FACTION_TEX_HORDE    = MEDIA .. "horde.png"
-local FACTION_TEX_NEUTRAL  = MEDIA .. "neutral.png"
+local FACTION_TEX_HORDE = MEDIA .. "horde.png"
+local FACTION_TEX_NEUTRAL = MEDIA .. "neutral.png"
 
 local CLASS_ICON_SPRITE_BASE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\"
 local CLASS_ICON_SPRITE_TEX = {}
@@ -887,10 +912,14 @@ function Kit.ClassIconSprite(style)
 end
 
 local MINI_DISPLAY = {
-    namerica = "North America", samerica = "South America",
-    australia = "Australia", europe = "Europe",
-    russia = "Russia", korea = "Korea",
-    taiwan = "Taiwan", china = "China",
+    namerica = "North America",
+    samerica = "South America",
+    australia = "Australia",
+    europe = "Europe",
+    russia = "Russia",
+    korea = "Korea",
+    taiwan = "Taiwan",
+    china = "China",
 }
 
 -- The status orb's atlas art, looked up at the first orb painted
@@ -910,7 +939,9 @@ end
 -- Paints the status orb's art (the atlas' first of 6 columns, top of 2 rows)
 -- on tex (the tiles and the Friends module's legacy rows)
 function Kit.StatusOrbArt(tex)
-    if not _orbLooked then LookUpOrb() end
+    if not _orbLooked then
+        LookUpOrb()
+    end
     if _orbFile then
         tex:SetTexture(_orbFile)
         tex:SetTexCoord(_orbL, _orbR, _orbT, _orbB)
@@ -943,10 +974,14 @@ end
 
 local function GetClassFile(accountInfo)
     local gi = accountInfo and accountInfo.gameAccountInfo
-    if not gi then return nil end
+    if not gi then
+        return nil
+    end
     if gi.classID and gi.classID > 0 then
         local _, classFile = GetClassInfo(gi.classID)
-        if classFile then return classFile end
+        if classFile then
+            return classFile
+        end
     end
     if gi.className then
         return CludesUI.ClassTokenFromLocalized(gi.className)
@@ -955,14 +990,20 @@ local function GetClassFile(accountInfo)
 end
 
 local function IsSameProjectOnline(gi)
-    if not (gi and gi.isOnline) then return false end
-    if gi.clientProgram ~= BNET_CLIENT_WOW then return false end
+    if not (gi and gi.isOnline) then
+        return false
+    end
+    if gi.clientProgram ~= BNET_CLIENT_WOW then
+        return false
+    end
     return gi.wowProjectID == WOW_PROJECT_ID or gi.wowProjectID == nil
 end
 
 local function TileState(accountInfo)
     local gi = accountInfo and accountInfo.gameAccountInfo
-    if not (gi and gi.isOnline) then return "offline" end
+    if not (gi and gi.isOnline) then
+        return "offline"
+    end
     return IsSameProjectOnline(gi) and "retail" or "other_game"
 end
 
@@ -971,7 +1012,9 @@ end
 -------------------------------------------------------------------------------
 local function SkinStructure(card)
     local d = GetFFD(card)
-    if d.skinned then return d end
+    if d.skinned then
+        return d
+    end
     d.skinned = true
 
     d.tileBg = card:CreateTexture(nil, "BACKGROUND", nil, 2)
@@ -1008,8 +1051,14 @@ local function SkinStructure(card)
     d.hoverFill:SetBlendMode("ADD")
     d.hoverFill:Hide()
 
-    card:HookScript("OnEnter", function() d.hoverBar:Show(); d.hoverFill:Show() end)
-    card:HookScript("OnLeave", function() d.hoverBar:Hide(); d.hoverFill:Hide() end)
+    card:HookScript("OnEnter", function()
+        d.hoverBar:Show()
+        d.hoverFill:Show()
+    end)
+    card:HookScript("OnLeave", function()
+        d.hoverBar:Hide()
+        d.hoverFill:Hide()
+    end)
 
     -- Selection: same look as hover, own sublevels (-5/-6) so it sits above the
     -- hover pair (-7/-8) rather than replacing it. Its own mask texture, since
@@ -1067,16 +1116,33 @@ end
 -- Blizzard repopulates its card art on every recycle, so this runs per paint.
 local CARD_TEXT_KEYS = { "FriendName", "Name", "Level", "Class", "Location" }
 local function SuppressBlizzardArt(card)
-    if card.Background then card.Background:Hide(); card.Background:SetAlpha(0) end
+    if card.Background then
+        card.Background:Hide()
+        card.Background:SetAlpha(0)
+    end
     local hl = card.GetHighlightTexture and card:GetHighlightTexture()
-    if hl then hl:SetAlpha(0); hl:SetVertexColor(0, 0, 0, 0) end
+    if hl then
+        hl:SetAlpha(0)
+        hl:SetVertexColor(0, 0, 0, 0)
+    end
     for i = 1, #CARD_TEXT_KEYS do
         local fs = card[CARD_TEXT_KEYS[i]]
-        if fs then fs:Hide(); fs:SetAlpha(0) end
+        if fs then
+            fs:Hide()
+            fs:SetAlpha(0)
+        end
     end
-    if card.PresenceHolder then card.PresenceHolder:Hide(); card.PresenceHolder:SetAlpha(0) end
-    if card.StateDisplay then card.StateDisplay:Hide(); card.StateDisplay:SetAlpha(0) end
-    if card.GameIconHolder then card.GameIconHolder:Hide() end
+    if card.PresenceHolder then
+        card.PresenceHolder:Hide()
+        card.PresenceHolder:SetAlpha(0)
+    end
+    if card.StateDisplay then
+        card.StateDisplay:Hide()
+        card.StateDisplay:SetAlpha(0)
+    end
+    if card.GameIconHolder then
+        card.GameIconHolder:Hide()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -1097,7 +1163,9 @@ end
 local function LocationColor(accountInfo)
     local gi = accountInfo.gameAccountInfo
     local online = gi ~= nil and gi.isOnline
-    if online then return FRIENDS_GRAY_COLOR or NORMAL_FONT_COLOR end
+    if online then
+        return FRIENDS_GRAY_COLOR or NORMAL_FONT_COLOR
+    end
     return DARKGRAY_COLOR or GRAY_FONT_COLOR
 end
 
@@ -1107,13 +1175,17 @@ end
 local function BuildCharLine(accountInfo)
     local gi = accountInfo.gameAccountInfo
     local charName = gi and gi.characterName
-    if not (IsSameProjectOnline(gi) and charName and charName ~= "") then return "" end
+    if not (IsSameProjectOnline(gi) and charName and charName ~= "") then
+        return ""
+    end
 
     local shown = charName
     local p = Settings()
     if p and p.classColorNames then
         local code = ClassColorCode(GetClassFile(accountInfo) or "")
-        if code then shown = code .. charName .. "|r" end
+        if code then
+            shown = code .. charName .. "|r"
+        end
     end
 
     local lvl = gi.characterLevel
@@ -1142,19 +1214,31 @@ local WOW_PROJECT_FOREVER = 18
 -- realmName suffix ("CAMWOWUS2Realm10RPPvP") -> ruleset, for a richPresence
 -- that names none: our own names, worded as the rich presence words them.
 local function RealmRuleset(suffix)
-    if suffix == "PvE" then return CludesUI.L("Normal") end
-    if suffix == "PvP" then return CludesUI.L("PvP") end
-    if suffix == "RP" then return CludesUI.L("Roleplay") end
-    if suffix == "RPPvP" then return CludesUI.L("Roleplay PvP") end
+    if suffix == "PvE" then
+        return CludesUI.L("Normal")
+    end
+    if suffix == "PvP" then
+        return CludesUI.L("PvP")
+    end
+    if suffix == "RP" then
+        return CludesUI.L("Roleplay")
+    end
+    if suffix == "RPPvP" then
+        return CludesUI.L("Roleplay PvP")
+    end
 end
 local function ForeverRuleset(accountInfo)
     local gi = accountInfo and accountInfo.gameAccountInfo
-    if not (gi and gi.isOnline and gi.wowProjectID == WOW_PROJECT_FOREVER) then return nil end
+    if not (gi and gi.isOnline and gi.wowProjectID == WOW_PROJECT_FOREVER) then
+        return nil
+    end
     local ruleset = gi.richPresence and gi.richPresence:match("^.- %- (.-) %- ")
     if not ruleset or ruleset == "" then
         ruleset = RealmRuleset(gi.realmName and gi.realmName:match("Realm%d+(%a+)$"))
     end
-    if not ruleset then return nil end
+    if not ruleset then
+        return nil
+    end
     if gi.isInCurrentRegion == false and FriendsListUtil and FriendsListUtil.GetRegionName then
         ruleset = ruleset .. " (" .. FriendsListUtil.GetRegionName(accountInfo) .. ")"
     end
@@ -1174,8 +1258,10 @@ local function BuildInfo(accountInfo)
     if gi and gi.areaName and IsSameProjectOnline(gi) then
         local ruleset = ForeverRuleset(accountInfo)
         if ruleset then
-            text = text .. LocationColor(accountInfo):WrapTextInColorCode(
-                (gi.areaName ~= "" and " - " or "") .. ruleset)
+            text = text
+                .. LocationColor(accountInfo):WrapTextInColorCode(
+                    (gi.areaName ~= "" and " - " or "") .. ruleset
+                )
         end
     end
     if text == "" then
@@ -1203,7 +1289,9 @@ local function SetClassIconTex(icon, style, classFile)
     if style == "blizzard" then
         icon:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
-        if coords then icon:SetTexCoord(unpack(coords)) end
+        if coords then
+            icon:SetTexCoord(unpack(coords))
+        end
     else
         local coords = CLASS_SPRITE_COORDS[classFile]
         if coords then
@@ -1215,10 +1303,16 @@ end
 
 local function UpdateClassIcon(card, d, accountInfo)
     local p = Settings()
-    if not (p and p.showClassIcons ~= false) then d.classIcon:Hide(); return end
+    if not (p and p.showClassIcons ~= false) then
+        d.classIcon:Hide()
+        return
+    end
 
     local h = (card:GetHeight() or 0) - 4
-    if h <= 0 then d.classIcon:Hide(); return end
+    if h <= 0 then
+        d.classIcon:Hide()
+        return
+    end
 
     local icon, state = d.classIcon, TileState(accountInfo)
     icon:ClearAllPoints()
@@ -1229,10 +1323,15 @@ local function UpdateClassIcon(card, d, accountInfo)
         icon:SetPoint("TOP", card, "TOP", 0, -(2 + inset))
         icon:SetPoint("BOTTOM", card, "BOTTOM", 0, 2 + inset)
         local iconH = h - inset * 2
-        if iconH > 0 then icon:SetWidth(iconH) end
+        if iconH > 0 then
+            icon:SetWidth(iconH)
+        end
 
         local classFile = GetClassFile(accountInfo)
-        if not classFile then icon:Hide(); return end
+        if not classFile then
+            icon:Hide()
+            return
+        end
 
         SetClassIconTex(icon, p.iconStyle or "modern", classFile)
         icon:SetDesaturated(false)
@@ -1244,7 +1343,10 @@ local function UpdateClassIcon(card, d, accountInfo)
         if state == "other_game" then
             local src = card.GameIconHolder and card.GameIconHolder.Icon
             local tex = src and src:GetTexture()
-            if tex then icon:SetTexture(tex); icon:SetTexCoord(0, 1, 0, 1) end
+            if tex then
+                icon:SetTexture(tex)
+                icon:SetTexCoord(0, 1, 0, 1)
+            end
             icon:SetAlpha(1)
         else
             icon:SetTexture(OFFLINE_ICON)
@@ -1294,9 +1396,13 @@ local function UpdateOrb(d, accountInfo)
     orb:SetPoint("TOPLEFT", d.name, "TOPLEFT", (d.name:GetStringWidth() or 0) - 1, 2)
 
     if isOnline then
-        if isDND then orb:SetVertexColor(1, 0.2, 0.2, 1)
-        elseif isAFK then orb:SetVertexColor(1, 0.8, 0, 1)
-        else orb:SetVertexColor(0.2, 1, 0.2, 1) end
+        if isDND then
+            orb:SetVertexColor(1, 0.2, 0.2, 1)
+        elseif isAFK then
+            orb:SetVertexColor(1, 0.8, 0, 1)
+        else
+            orb:SetVertexColor(0.2, 1, 0.2, 1)
+        end
     else
         orb:SetVertexColor(0.4, 0.4, 0.4, 0.6)
     end
@@ -1314,14 +1420,18 @@ local function UpdateStockRegion(card, d, accountInfo)
     local gi = accountInfo and accountInfo.gameAccountInfo
     -- Same-region friends never carry a mark: skip the realm lookup for them.
     if (p and p.showRegionIcons == false) or not gi or gi.isInCurrentRegion == true then
-        if d.regionMark then d.regionMark:Hide() end
+        if d.regionMark then
+            d.regionMark:Hide()
+        end
         return
     end
     local myFull = GetMyFullRegion()
     local mini = GetFriendMiniRegion(gi)
     local full = mini and GetFullRegion(mini)
     if not (mini and full and full ~= myFull) then
-        if d.regionMark then d.regionMark:Hide() end
+        if d.regionMark then
+            d.regionMark:Hide()
+        end
         return
     end
     local mark = d.regionMark
@@ -1358,11 +1468,15 @@ local function RegionOnLeave()
 end
 function Kit.UpdateRegionButton(frame, d, gameAccountInfo, anchor, show)
     -- Same-region friends never carry a mark.
-    local mini = show and gameAccountInfo and gameAccountInfo.isInCurrentRegion ~= true
+    local mini = show
+        and gameAccountInfo
+        and gameAccountInfo.isInCurrentRegion ~= true
         and GetFriendMiniRegion(gameAccountInfo)
     local full = mini and GetFullRegion(mini)
     if not (mini and full and full ~= GetMyFullRegion()) then
-        if d.regionBtn then d.regionBtn:Hide() end
+        if d.regionBtn then
+            d.regionBtn:Hide()
+        end
         return
     end
 
@@ -1396,30 +1510,44 @@ end
 
 local function UpdateRegion(card, d, accountInfo)
     local p = Settings()
-    Kit.UpdateRegionButton(card, d, accountInfo.gameAccountInfo, card.PartyButton,
-        not (p and p.showRegionIcons == false))
+    Kit.UpdateRegionButton(
+        card,
+        d,
+        accountInfo.gameAccountInfo,
+        card.PartyButton,
+        not (p and p.showRegionIcons == false)
+    )
 end
 
 -------------------------------------------------------------------------------
 --  Paint
 -------------------------------------------------------------------------------
 local function PaintCard(card)
-    if not TILE_PAINT then return end
-    if not Enabled() then return end
+    if not TILE_PAINT then
+        return
+    end
+    if not Enabled() then
+        return
+    end
     -- The custom friends list (CludesUI_FriendsList.lua) covers Blizzard's
     -- cards while it shows: they stay unpainted, on file for the catch-up
     -- when it stands down (Kit.RedecorateTiles).
-    if Kit._listShown then GetFFD(card); return end
+    if Kit._listShown then
+        GetFFD(card)
+        return
+    end
 
     local ed = card.elementData
     local accountInfo = ed and ed.accountInfo
-    if not accountInfo then return end
+    if not accountInfo then
+        return
+    end
 
     local d = SkinStructure(card)
     SuppressBlizzardArt(card)
 
     local charText = BuildCharLine(accountInfo)
-    local hasChar  = charText ~= ""
+    local hasChar = charText ~= ""
 
     d.name:SetText(BuildName(accountInfo))
     d.charLine:SetText(charText)
@@ -1442,17 +1570,17 @@ local function PaintCard(card)
     -- far shorter, and a fixed offset would sit wrong on two-line rows.
     local rowH = card:GetHeight()
     if rowH and rowH > 0 then
-        local gap   = -TILE_LINE_GAP
+        local gap = -TILE_LINE_GAP
         local block = TILE_NAME_SIZE + gap + TILE_INFO_SIZE
-        if hasChar then block = block + TILE_CHAR_SIZE + gap end
+        if hasChar then
+            block = block + TILE_CHAR_SIZE + gap
+        end
         d.name:ClearAllPoints()
-        d.name:SetPoint("TOPLEFT", card, "TOPLEFT",
-                        rowH + TILE_TEXT_GAP, -math.max(0, (rowH - block) / 2))
+        d.name:SetPoint("TOPLEFT", card, "TOPLEFT", rowH + TILE_TEXT_GAP, -math.max(0, (rowH - block) / 2))
     end
 
     UpdateClassIcon(card, d, accountInfo)
-    d.onlineBg:SetShown(accountInfo.gameAccountInfo ~= nil
-                        and accountInfo.gameAccountInfo.isOnline == true)
+    d.onlineBg:SetShown(accountInfo.gameAccountInfo ~= nil and accountInfo.gameAccountInfo.isOnline == true)
     UpdateFaction(card, d, accountInfo)
     UpdateOrb(d, accountInfo)
     UpdateRegion(card, d, accountInfo)
@@ -1474,20 +1602,22 @@ end
 -- included); its state is the kit's frame data for that frame. LevelColor is
 -- the colour the character line's level takes.
 Kit._tile = {
-    Host         = function() return host end,
-    FontPath     = FontPath,
-    Skin         = SkinStructure,
-    Name         = BuildName,
-    CharLine     = BuildCharLine,
-    LevelColor   = LocationColor,
-    Info         = BuildInfo,
-    Ruleset      = ForeverRuleset,
-    State        = TileState,
-    ClassFile    = GetClassFile,
+    Host = function()
+        return host
+    end,
+    FontPath = FontPath,
+    Skin = SkinStructure,
+    Name = BuildName,
+    CharLine = BuildCharLine,
+    LevelColor = LocationColor,
+    Info = BuildInfo,
+    Ruleset = ForeverRuleset,
+    State = TileState,
+    ClassFile = GetClassFile,
     ClassIconTex = SetClassIconTex,
-    Faction      = UpdateFaction,
-    Orb          = UpdateOrb,
-    Region       = UpdateRegion,
+    Faction = UpdateFaction,
+    Orb = UpdateOrb,
+    Region = UpdateRegion,
     OFFLINE_ICON = OFFLINE_ICON,
 }
 
@@ -1502,10 +1632,14 @@ Kit._tile = {
 --    region mark -> the free corner above the party button (Show Region Icons)
 -------------------------------------------------------------------------------
 local function DecorateStockCard(card)
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     local ed = card.elementData
     local accountInfo = ed and ed.accountInfo
-    if not accountInfo then return end
+    if not accountInfo then
+        return
+    end
 
     local d = GetFFD(card)
     local p = Settings()
@@ -1525,9 +1659,12 @@ local function DecorateStockCard(card)
         -- Only a class the icon theme has art for takes the slot; any other
         -- token (a special game-mode class) keeps Blizzard's own logo.
         local style = (p and p.iconStyle) or "modern"
-        local hasArt = classFile and not (p and p.showClassIcons == false)
-            and ((style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
-                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[classFile]))
+        local hasArt = classFile
+            and not (p and p.showClassIcons == false)
+            and (
+                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
+                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[classFile])
+            )
         if hasArt then
             if not icon then
                 icon = holder:CreateTexture(nil, "OVERLAY")
@@ -1539,12 +1676,19 @@ local function DecorateStockCard(card)
                 SetClassIconTex(icon, style, classFile)
             end
             icon:Show()
-            if holder.Icon then holder.Icon:SetAlpha(0); d.stockLogoOff = true end
+            if holder.Icon then
+                holder.Icon:SetAlpha(0)
+                d.stockLogoOff = true
+            end
         else
-            if icon then icon:Hide() end
+            if icon then
+                icon:Hide()
+            end
             -- A pooled card whose last friend wore our icon gets the logo back
             -- (Blizzard restores it only when it re-shows the holder).
-            if d.stockLogoOff and holder.Icon then holder.Icon:SetAlpha(1) end
+            if d.stockLogoOff and holder.Icon then
+                holder.Icon:SetAlpha(1)
+            end
             d.stockLogoOff = nil
         end
     end
@@ -1560,21 +1704,32 @@ local function DecorateStockCard(card)
             if not ov then
                 ov = card:CreateFontString(nil, "OVERLAY")
                 local fo = name:GetFontObject()
-                if fo then ov:SetFontObject(fo) else ov:SetFont(name:GetFont()) end
+                if fo then
+                    ov:SetFontObject(fo)
+                else
+                    ov:SetFont(name:GetFont())
+                end
                 ov:SetAllPoints(name)
                 ov:SetJustifyH("LEFT")
                 ov:SetJustifyV("MIDDLE")
                 ov:SetWordWrap(false)
                 d.stockName = ov
             end
-            local charName = (FriendsListUtil and FriendsListUtil.GetFormattedCharacterName
-                and FriendsListUtil.GetFormattedCharacterName(accountInfo)) or gi.characterName or ""
+            local charName = (
+                FriendsListUtil
+                and FriendsListUtil.GetFormattedCharacterName
+                and FriendsListUtil.GetFormattedCharacterName(accountInfo)
+            )
+                or gi.characterName
+                or ""
             ov:SetText(code .. charName .. "|r")
             ov:Show()
             name:SetAlpha(0)
             d.stockNameHidden = true
         else
-            if ov then ov:Hide() end
+            if ov then
+                ov:Hide()
+            end
             if d.stockNameHidden then
                 name:SetAlpha(1)
                 d.stockNameHidden = nil
@@ -1604,25 +1759,42 @@ end
 local function DecorateStockRow(button, restore)
     local bt = button.buttonType
     local isBNet = bt ~= nil and bt == FRIENDS_BUTTON_TYPE_BNET
-    local isWoW  = bt ~= nil and bt == FRIENDS_BUTTON_TYPE_WOW
-    if not (isBNet or isWoW) or not button.id then return end
+    local isWoW = bt ~= nil and bt == FRIENDS_BUTTON_TYPE_WOW
+    if not (isBNet or isWoW) or not button.id then
+        return
+    end
     local d = GetFFD(button)
     d.legacy = true
-    if not button:IsVisible() then d.stale = true; return end
+    if not button:IsVisible() then
+        d.stale = true
+        return
+    end
     d.stale = nil
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
 
     -- Every decoration off: stand down whatever is still painted and read no
     -- friend data at all.
     local p = Settings()
     if p and p.showClassIcons == false and not p.classColorNames and p.showRegionIcons == false then
-        if d.stockClassIcon then d.stockClassIcon:Hide() end
-        if d.stockLogoOff and restore and button.gameIcon then button.gameIcon:SetAlpha(1) end
+        if d.stockClassIcon then
+            d.stockClassIcon:Hide()
+        end
+        if d.stockLogoOff and restore and button.gameIcon then
+            button.gameIcon:SetAlpha(1)
+        end
         d.stockLogoOff = nil
-        if d.stockName then d.stockName:Hide() end
-        if d.stockNameHidden and button.name then button.name:SetAlpha(1) end
+        if d.stockName then
+            d.stockName:Hide()
+        end
+        if d.stockNameHidden and button.name then
+            button.name:SetAlpha(1)
+        end
         d.stockNameHidden = nil
-        if d.regionMark then d.regionMark:Hide() end
+        if d.regionMark then
+            d.regionMark:Hide()
+        end
         return
     end
 
@@ -1648,10 +1820,13 @@ local function DecorateStockRow(button, restore)
     if logo then
         local icon = d.stockClassIcon
         local style = (p and p.iconStyle) or "modern"
-        local hasArt = (isWoW or logo:IsShown()) and classFile
+        local hasArt = (isWoW or logo:IsShown())
+            and classFile
             and not (p and p.showClassIcons == false)
-            and ((style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
-                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[classFile]))
+            and (
+                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
+                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[classFile])
+            )
         if hasArt then
             if not icon then
                 icon = button:CreateTexture(nil, "OVERLAY")
@@ -1663,10 +1838,17 @@ local function DecorateStockRow(button, restore)
                 SetClassIconTex(icon, style, classFile)
             end
             icon:Show()
-            if isBNet then logo:SetAlpha(0); d.stockLogoOff = true end
+            if isBNet then
+                logo:SetAlpha(0)
+                d.stockLogoOff = true
+            end
         else
-            if icon then icon:Hide() end
-            if d.stockLogoOff and restore then logo:SetAlpha(1) end
+            if icon then
+                icon:Hide()
+            end
+            if d.stockLogoOff and restore then
+                logo:SetAlpha(1)
+            end
             d.stockLogoOff = nil
         end
     end
@@ -1679,8 +1861,12 @@ local function DecorateStockRow(button, restore)
     local name = button.name
     if name then
         local code = classFile and p and p.classColorNames and ClassColorCode(classFile)
-        if code and isBNet and CanCooperateWithGameAccount
-            and not CanCooperateWithGameAccount(accountInfo) then
+        if
+            code
+            and isBNet
+            and CanCooperateWithGameAccount
+            and not CanCooperateWithGameAccount(accountInfo)
+        then
             code = nil
         end
         local text
@@ -1689,7 +1875,12 @@ local function DecorateStockRow(button, restore)
                 and FriendsFrame_GetBNetAccountNameAndStatus(accountInfo, true)
             local char = gi.characterName
             if char and char ~= "" and FriendsFrame_GetFormattedCharacterName then
-                char = FriendsFrame_GetFormattedCharacterName(char, nil, gi.clientProgram, gi.timerunningSeasonID)
+                char = FriendsFrame_GetFormattedCharacterName(
+                    char,
+                    nil,
+                    gi.clientProgram,
+                    gi.timerunningSeasonID
+                )
             end
             if acct and char and char ~= "" then
                 text = acct .. " " .. code .. "(" .. char .. ")|r"
@@ -1702,7 +1893,11 @@ local function DecorateStockRow(button, restore)
             if not ov then
                 ov = button:CreateFontString(nil, "OVERLAY")
                 local fo = name:GetFontObject()
-                if fo then ov:SetFontObject(fo) else ov:SetFont(name:GetFont()) end
+                if fo then
+                    ov:SetFontObject(fo)
+                else
+                    ov:SetFont(name:GetFont())
+                end
                 ov:SetAllPoints(name)
                 ov:SetJustifyH(name:GetJustifyH())
                 ov:SetJustifyV(name:GetJustifyV())
@@ -1720,7 +1915,9 @@ local function DecorateStockRow(button, restore)
             name:SetAlpha(0)
             d.stockNameHidden = true
         else
-            if ov then ov:Hide() end
+            if ov then
+                ov:Hide()
+            end
             if d.stockNameHidden then
                 name:SetAlpha(1)
                 d.stockNameHidden = nil
@@ -1769,9 +1966,13 @@ local activeDecorator
 -- these pieces), with no hook on Blizzard's cards, which stay Blizzard's own.
 -- Such a host may start later in the session: it waits for no card.
 function Kit.StartTiles(h)
-    if host then return end
+    if host then
+        return
+    end
     host = h
-    if h.cards == false then return end
+    if h.cards == false then
+        return
+    end
     if h.style ~= "cui" then
         -- Stock styles decorate whichever window Blizzard shows (the switch
         -- is server-side and can flip mid-session). Blizzard keeps its own
@@ -1786,7 +1987,9 @@ function Kit.StartTiles(h)
             hooksecurefunc("FriendsFrame_UpdateFriendButton", function(button)
                 -- Blizzard has just re-set its logo alpha itself.
                 local d = FFD[button]
-                if d then d.staleRestore = nil end
+                if d then
+                    d.staleRestore = nil
+                end
                 DecorateStockRow(button)
             end)
             if FriendsListFrame then
@@ -1795,7 +1998,9 @@ function Kit.StartTiles(h)
         end
         return
     end
-    if not FriendsListSocialCardMixin then return end
+    if not FriendsListSocialCardMixin then
+        return
+    end
     activeDecorator = PaintCard
     hooksecurefunc(FriendsListSocialCardMixin, "Initialize", function(card)
         PaintCard(card)
@@ -1821,7 +2026,9 @@ end
 -- above.)
 function Kit.RedecorateTiles()
     local fn = activeDecorator
-    if not fn then return end
+    if not fn then
+        return
+    end
     for frame, d in pairs(FFD) do
         if d.legacy then
             -- A row kept shown under a hidden list (another Friends sub-tab)
@@ -1851,8 +2058,12 @@ local autoAcceptHidePopup = false
 local function AutoAcceptOnEvent(self, event, _, _, _, _, _, _, inviterGUID)
     if event == "PARTY_INVITE_REQUEST" then
         local fp = autoAcceptSettings and autoAcceptSettings()
-        if not fp or fp.enabled == false or not fp.autoAcceptFriendInvites then return end
-        if not inviterGUID or inviterGUID == "" or IsInGroup() then return end
+        if not fp or fp.enabled == false or not fp.autoAcceptFriendInvites then
+            return
+        end
+        if not inviterGUID or inviterGUID == "" or IsInGroup() then
+            return
+        end
         local isFriend = false
         if C_BattleNet and C_BattleNet.GetGameAccountInfoByGUID then
             isFriend = C_BattleNet.GetGameAccountInfoByGUID(inviterGUID) ~= nil
@@ -1890,7 +2101,9 @@ function Kit.SyncAutoAccept(settings)
         autoAcceptFrame = CreateFrame("Frame")
         autoAcceptFrame:SetScript("OnEvent", AutoAcceptOnEvent)
     end
-    if not autoAcceptFrame then return end
+    if not autoAcceptFrame then
+        return
+    end
     if on then
         autoAcceptFrame:RegisterEvent("PARTY_INVITE_REQUEST")
     else

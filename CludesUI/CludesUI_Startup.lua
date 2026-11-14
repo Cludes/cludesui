@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Startup.lua
 --  Runs as early as possible (first file after the Lite framework).
@@ -20,7 +22,7 @@ local ADDON_NAME = ...
 do
     local GetPhysicalScreenSize = GetPhysicalScreenSize
     local dbReady = false
-    local scaleKnown = false   -- true when ppUIScale was already saved
+    local scaleKnown = false -- true when ppUIScale was already saved
 
     local function ApplyScaleSafe(scale)
         if InCombatLockdown() then
@@ -39,8 +41,12 @@ do
 
     local function SyncMultOnly()
         if CludesUI and CludesUI.PP then
-            if CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
-            if CludesUI.PP.ResnapAllBorders then CludesUI.PP.ResnapAllBorders() end
+            if CludesUI.PP.UpdateMult then
+                CludesUI.PP.UpdateMult()
+            end
+            if CludesUI.PP.ResnapAllBorders then
+                CludesUI.PP.ResnapAllBorders()
+            end
         end
     end
 
@@ -50,11 +56,15 @@ do
     scaleFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     scaleFrame:SetScript("OnEvent", function(self, event, addonName)
         if event == "ADDON_LOADED" then
-            if addonName ~= ADDON_NAME then return end
+            if addonName ~= ADDON_NAME then
+                return
+            end
             self:UnregisterEvent("ADDON_LOADED")
             dbReady = true
 
-            if not CludesUIDB then CludesUIDB = {} end
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
 
             local _, physH = GetPhysicalScreenSize()
             local perfect = 768 / physH
@@ -92,7 +102,6 @@ do
                 -- before Blizzard's CVar apply. The chat fix is below.
                 ApplyScaleSafe(CludesUIDB.ppUIScale)
             end
-
         elseif event == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
 
@@ -111,7 +120,6 @@ do
             if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then
                 CludesUI.PP.UpdateMult()
             end
-
         elseif event == "UI_SCALE_CHANGED" then
             local saved = CludesUIDB and CludesUIDB.ppUIScale
             if saved then
@@ -119,16 +127,21 @@ do
                 SyncMultOnly()
             end
             return
-
         elseif event == "PLAYER_ENTERING_WORLD" then
             self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
-            if not dbReady then return end
-            if not CludesUIDB then CludesUIDB = {} end
+            if not dbReady then
+                return
+            end
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
 
             -- Returning user: scale was applied once at PLAYER_LOGIN,
             -- nothing else needed.
-            if scaleKnown then return end
+            if scaleKnown then
+                return
+            end
 
             -- First install or reset: snapshot the user's Blizzard scale
             if CludesUIDB.ppUIScale == nil then
@@ -162,14 +175,15 @@ do
                     local _, physH = GetPhysicalScreenSize()
                     if type(physH) == "number" and physH > 0 then
                         local seeded = max(1, min(physH / 1440, 2))
-                        CludesUIDB.panelScale =
-                            (CludesUI.SnapPanelScale(seeded)) or seeded
+                        CludesUIDB.panelScale = (CludesUI.SnapPanelScale(seeded)) or seeded
                     end
                 end
             end
 
             local scale = CludesUIDB.ppUIScale
-            if not scale then return end
+            if not scale then
+                return
+            end
 
             -- First-time install: apply scale with safety net.
             -- Apply scale multiple times to guarantee it sticks even on
@@ -179,14 +193,18 @@ do
             end
             ApplyScaleSafe(scale)
             C_Timer.After(2, function()
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
                 if CludesUIDB and CludesUIDB.ppUIScale then
                     ApplyScaleSafe(CludesUIDB.ppUIScale)
                 end
                 SyncMultOnly()
             end)
             C_Timer.After(5, function()
-                if InCombatLockdown() then return end
+                if InCombatLockdown() then
+                    return
+                end
                 if CludesUIDB and CludesUIDB.ppUIScale then
                     ApplyScaleSafe(CludesUIDB.ppUIScale)
                 end
@@ -226,7 +244,9 @@ end
 -- else = it could, and we say nothing about the rest.
 local probeFS
 local function ProbeFont(path)
-    if type(path) ~= "string" or path == "" then return false end
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
     probeFS = probeFS or UIParent:CreateFontString()
     return (pcall(probeFS.SetFont, probeFS, path, 12, ""))
 end
@@ -234,7 +254,9 @@ end
 local function ApplyUnitNameFont()
     local fonts = CludesUIDB and CludesUIDB.fonts
     local name = fonts and fonts.unitNameFont
-    if not name or name == "" then return end
+    if not name or name == "" then
+        return
+    end
     local path = fonts.unitNameFontPath
     if not ProbeFont(path) and CludesUI and CludesUI.ResolveFontName then
         -- Advisory probe (see ApplyCombatTextFont): a live resolve of the saved
@@ -242,7 +264,9 @@ local function ApplyUnitNameFont()
         -- and Linux, so prefer it over dropping the setting back to Blizzard's
         -- default.
         local resolved = CludesUI.ResolveFontName(name)
-        if resolved and resolved ~= "" then path = resolved end
+        if resolved and resolved ~= "" then
+            path = resolved
+        end
     end
     if path and path ~= "" then
         _G.UNIT_NAME_FONT = path
@@ -288,9 +312,13 @@ end
 -------------------------------------------------------------------------------
 do
     local function ReassertUndockedPositions()
-        if not GetChatWindowSavedPosition then return end
+        if not GetChatWindowSavedPosition then
+            return
+        end
         local W, H = GetScreenWidth(), GetScreenHeight()
-        if not (W and H) then return end
+        if not (W and H) then
+            return
+        end
         for i = 2, NUM_CHAT_WINDOWS or 10 do
             local cf = _G["ChatFrame" .. i]
             if cf and cf:IsShown() and not cf.isDocked and not cf.isTemporary then
@@ -308,10 +336,14 @@ do
     local fixFrame = CreateFrame("Frame")
     fixFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     fixFrame:SetScript("OnEvent", function(self, _, initialLogin, reloadingUi)
-        if not (initialLogin or reloadingUi) then return end
+        if not (initialLogin or reloadingUi) then
+            return
+        end
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         -- Obsolete v2 migration flag; the rebase it gated was a no-op.
-        if CludesUIDB then CludesUIDB.chatPosRebased = nil end
+        if CludesUIDB then
+            CludesUIDB.chatPosRebased = nil
+        end
         C_Timer.After(0, ReassertUndockedPositions)
         -- Belt for slow loads, still inside the login window.
         C_Timer.After(2, ReassertUndockedPositions)
@@ -349,15 +381,21 @@ do
     -- error would abort the rest of the file, hence the pcall.
     local function TryRealFont(path)
         local f = _G.CombatTextFont
-        if not f then return nil end
+        if not f then
+            return nil
+        end
         return (pcall(f.SetFont, f, path, 120, ""))
     end
 
     local function ApplyCombatTextFont()
         local db = CludesUIDB
         local saved = db and db.fctFont
-        if not saved or type(saved) ~= "string" or saved == "" then return end
-        if not CludesUI.CombatTextFontCoversLocale(saved) then return end
+        if not saved or type(saved) ~= "string" or saved == "" then
+            return
+        end
+        if not CludesUI.CombatTextFontCoversLocale(saved) then
+            return
+        end
         local fontPath = saved
         local smName = saved:match("^smf:(.+)")
         if smName then
@@ -378,10 +416,10 @@ do
             -- consulted when nothing resolves, which is the uninstalled-pack
             -- case the probe was added for, and there the probe still guards
             -- against pointing the engine at a missing file.
-            fontPath = (ProbeFont(fetched) and fetched)
-                or (ProbeFont(cached) and cached)
-                or fetched
-            if not fontPath then return end
+            fontPath = (ProbeFont(fetched) and fetched) or (ProbeFont(cached) and cached) or fetched
+            if not fontPath then
+                return
+            end
         end
 
         -- Validate against the real object when it exists. A rejection here is
@@ -429,9 +467,11 @@ do
             self:UnregisterEvent("PLAYER_LOGIN")
         elseif event == "PLAYER_ENTERING_WORLD" then
             self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        elseif addonName == "Blizzard_CombatText"
+        elseif
+            addonName == "Blizzard_CombatText"
             or not (CludesUIDB and CludesUIDB.fctFont)
-            or (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_CombatText")) then
+            or (C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_CombatText"))
+        then
             -- The watch exists to restyle the load-on-demand CombatTextFont
             -- object at its actual load (our own addon always fires first, so
             -- retiring on the first match missed it). Retire it once that has
@@ -465,16 +505,29 @@ end
 -------------------------------------------------------------------------------
 do
     local BAG_ADDONS = {
-        "AdiBags", "ArkInventory", "Baganator", "Bagnon", "BetterBags", "Sorted",
+        "AdiBags",
+        "ArkInventory",
+        "Baganator",
+        "Bagnon",
+        "BetterBags",
+        "Sorted",
     }
     local f = CreateFrame("Frame")
     f:RegisterEvent("ADDON_LOADED")
     f:SetScript("OnEvent", function(self, event, addonName)
-        if addonName ~= ADDON_NAME then return end
+        if addonName ~= ADDON_NAME then
+            return
+        end
         self:UnregisterAllEvents()
-        if not CludesUIDB then CludesUIDB = {} end
-        if CludesUIDB.bagsUserChosen then return end
-        if not C_AddOns or not C_AddOns.GetAddOnEnableState then return end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
+        if CludesUIDB.bagsUserChosen then
+            return
+        end
+        if not C_AddOns or not C_AddOns.GetAddOnEnableState then
+            return
+        end
         -- If we previously auto-disabled bags but the user re-enabled it
         -- (via Blizzard addon list or any other means), respect their choice.
         local bagsEnabled = C_AddOns.GetAddOnEnableState("CludesUIBags") > 0
@@ -504,8 +557,13 @@ end
 -- installed (inert -- its one file is comments only). Disable it so it drops off
 -- the AddOn List; DisableAddOn is deferred by design, so it takes effect next
 -- session. Zero cost once the folder is gone (DoesAddOnExist is false).
-if C_AddOns and C_AddOns.DoesAddOnExist and C_AddOns.DoesAddOnExist("CludesUIBasics")
-   and C_AddOns.GetAddOnEnableState and C_AddOns.GetAddOnEnableState("CludesUIBasics") > 0 then
+if
+    C_AddOns
+    and C_AddOns.DoesAddOnExist
+    and C_AddOns.DoesAddOnExist("CludesUIBasics")
+    and C_AddOns.GetAddOnEnableState
+    and C_AddOns.GetAddOnEnableState("CludesUIBasics") > 0
+then
     C_AddOns.DisableAddOn("CludesUIBasics")
 end
 
@@ -514,9 +572,13 @@ end
 -- build keeps its stale plain TOC and shows as an out-of-date, incompatible row;
 -- disable it there (next session) so the login warning stops. Never on Forever,
 -- where the module is live. Zero cost once the stale TOC is gone.
-if CUI_CLIENT_FOREVER ~= true and C_AddOns and C_AddOns.DoesAddOnExist
-   and C_AddOns.DoesAddOnExist("CludesUIForeverEssentials")
-   and C_AddOns.GetAddOnEnableState("CludesUIForeverEssentials") > 0 then
+if
+    CUI_CLIENT_FOREVER ~= true
+    and C_AddOns
+    and C_AddOns.DoesAddOnExist
+    and C_AddOns.DoesAddOnExist("CludesUIForeverEssentials")
+    and C_AddOns.GetAddOnEnableState("CludesUIForeverEssentials") > 0
+then
     C_AddOns.DisableAddOn("CludesUIForeverEssentials")
 end
 

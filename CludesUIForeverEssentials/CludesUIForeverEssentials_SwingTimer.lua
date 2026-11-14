@@ -1,7 +1,13 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -- Forever's swing API (Blizzard_APIDocumentationGenerated/SwingTimerDocumentation.lua).
-if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then return end
+if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_SwingTimer.lua  (WoW Forever only)
 --  Swing Timer: one bar per weapon that swings (Main Hand, Off Hand, Ranged).
@@ -13,8 +19,12 @@ if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then return end
 local _, module = ...
 
 local DEFAULTS = {
-    enabled = false, width = 220, height = 12,
-    offHand = true, ranged = true, hideIdle = true,
+    enabled = false,
+    width = 220,
+    height = 12,
+    offHand = true,
+    ranged = true,
+    hideIdle = true,
 }
 local F = module.Feature("swingTimer", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = -170 })
 local Get, Enabled = F.Get, F.Enabled
@@ -23,27 +33,35 @@ local SWING = Enum.PlayerSwingType
 local ORDER = { SWING.MainHand, SWING.OffHand, SWING.Ranged }
 local LABEL = { [SWING.MainHand] = "MH", [SWING.OffHand] = "OH", [SWING.Ranged] = "R" }
 local COLOR = {
-    [SWING.MainHand] = {},  -- the theme accent, read when the bar is made
-    [SWING.OffHand]  = { 0.55, 0.65, 0.95 },
-    [SWING.Ranged]   = { 0.45, 0.85, 0.50 },
+    [SWING.MainHand] = {}, -- the theme accent, read when the bar is made
+    [SWING.OffHand] = { 0.55, 0.65, 0.95 },
+    [SWING.Ranged] = { 0.45, 0.85, 0.50 },
 }
 local GAP = 3
-local IDLE_AFTER = 0.4     -- seconds past a swing's end before its bar counts as idle
+local IDLE_AFTER = 0.4 -- seconds past a swing's end before its bar counts as idle
 
 local holder
-local bars = {}            -- [swingType] = StatusBar with .started, .duration
+local bars = {} -- [swingType] = StatusBar with .started, .duration
 
-local function Font() return CludesUI.GetFontPath("essentials") end
+local function Font()
+    return CludesUI.GetFontPath("essentials")
+end
 
 -- Whether the player has a weapon for this swing type right now.
 local function HasWeapon(t)
-    if t == SWING.MainHand then return true end
+    if t == SWING.MainHand then
+        return true
+    end
     if t == SWING.OffHand then
-        if not Get("offHand") then return false end
+        if not Get("offHand") then
+            return false
+        end
         local _, oh = UnitAttackSpeed("player")
         return type(oh) == "number" and not (issecretvalue and issecretvalue(oh)) and oh > 0
     end
-    if not Get("ranged") then return false end
+    if not Get("ranged") then
+        return false
+    end
     local speed = UnitRangedDamage("player")
     return type(speed) == "number" and not (issecretvalue and issecretvalue(speed)) and speed > 0
 end
@@ -66,10 +84,14 @@ end
 
 local function Bar(t)
     local b = bars[t]
-    if b then return b end
+    if b then
+        return b
+    end
     b = CreateFrame("StatusBar", nil, holder)
     b:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    if t == SWING.MainHand then CludesUI.Kit.SyncAccent(COLOR[t]) end
+    if t == SWING.MainHand then
+        CludesUI.Kit.SyncAccent(COLOR[t])
+    end
     b:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
     CludesUI.Kit.Panel(b, 0.85)
     b:SetMinMaxValues(0, 1)
@@ -86,17 +108,23 @@ local function Bar(t)
 end
 
 local function Build()
-    if holder then return holder end
+    if holder then
+        return holder
+    end
     holder = CreateFrame("Frame", "CludesUISwingTimer", UIParent)
     holder:SetSize(Get("width"), Get("height"))
-    for _, t in ipairs(ORDER) do Bar(t) end
+    for _, t in ipairs(ORDER) do
+        Bar(t)
+    end
     return holder
 end
 
 --- Stacks the bars in use: a bar shows while it is swinging, or always when
 --- Hide When Idle is off (and the weapon is there), or while Layout Mode is up.
 function module.SwingLayout()
-    if not holder then return end
+    if not holder then
+        return
+    end
     local w, h = Get("width"), Get("height")
     local preview = CludesUI._unlockActive
     local y, shown = 0, 0
@@ -121,15 +149,24 @@ local ev = CreateFrame("Frame")
 ev:SetScript("OnEvent", function(_, event, duration, swingType)
     if event == "PLAYER_SWING" then
         local b = bars[swingType]
-        if not b or type(duration) ~= "number" or (issecretvalue and issecretvalue(duration)) or duration <= 0 then return end
+        if
+            not b
+            or type(duration) ~= "number"
+            or (issecretvalue and issecretvalue(duration))
+            or duration <= 0
+        then
+            return
+        end
         local wasIdle = not b.started
         b.started, b.duration = GetTime(), duration
         b:SetMinMaxValues(0, duration)
         b:SetValue(0)
         b:SetScript("OnUpdate", OnUpdate)
-        if wasIdle then module.SwingLayout() end
+        if wasIdle then
+            module.SwingLayout()
+        end
     else
-        module.SwingLayout()    -- a weapon swap or login can add or drop a bar
+        module.SwingLayout() -- a weapon swap or login can add or drop a bar
     end
 end)
 
@@ -139,10 +176,15 @@ local function Apply()
         ev:RegisterEvent("PLAYER_SWING")
         ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not CludesUI._unlockActive then F.Place(holder) end
+        if not CludesUI._unlockActive then
+            F.Place(holder)
+        end
     else
         ev:UnregisterAllEvents()
-        for _, b in pairs(bars) do b.started = nil; b:SetScript("OnUpdate", nil) end
+        for _, b in pairs(bars) do
+            b.started = nil
+            b:SetScript("OnUpdate", nil)
+        end
     end
     module.SwingLayout()
 end
@@ -150,8 +192,19 @@ end
 CludesUI._SwingTimer = { Get = Get, Read = F.Read, Cfg = F.Cfg, Apply = Apply }
 
 F.Start(Apply, {
-    key = "CUI_SwingTimer", label = "Swing Timer", order = 736,
-    frame = function(build) if build then Build(); module.SwingLayout() end; return holder end,
-    size = function() return Get("width"), Get("height") * 3 + GAP * 2 end,
-    noAnchorTarget = true, noSizeMatchTarget = true,
+    key = "CUI_SwingTimer",
+    label = "Swing Timer",
+    order = 736,
+    frame = function(build)
+        if build then
+            Build()
+            module.SwingLayout()
+        end
+        return holder
+    end,
+    size = function()
+        return Get("width"), Get("height") * 3 + GAP * 2
+    end,
+    noAnchorTarget = true,
+    noSizeMatchTarget = true,
 })

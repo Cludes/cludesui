@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then
+    return
+end
 -------------------------------------------------------------------------------
 -- CludesUIQuestTracker_Details.lua  (WoW Forever only)
 --
@@ -11,20 +15,20 @@ if not CludesUI.IS_FOREVER then return end
 local _, ns = ...
 local EQT = ns.EQT
 
-local W, H     = 360, 480
-local PAD      = 14
-local HEADER_H = 52   -- title, meta line, divider
-local FOOTER_H = 50   -- divider, button row
-local BTN_H    = 24
-local TILE     = 34
-local GAP      = 6
-local WHEEL    = 40
-local CHECK    = "Interface\\RaidFrame\\ReadyCheck-Ready"
-local CLOSE    = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
+local W, H = 360, 480
+local PAD = 14
+local HEADER_H = 52 -- title, meta line, divider
+local FOOTER_H = 50 -- divider, button row
+local BTN_H = 24
+local TILE = 34
+local GAP = 6
+local WHEEL = 40
+local CHECK = "Interface\\RaidFrame\\ReadyCheck-Ready"
+local CLOSE = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
 
 -- CludesUI panel look (see CludesUI_Popups.lua).
-local BG       = { 0.062, 0.070, 0.082, 0.97 }
-local TILE_BG  = { 0.11, 0.10, 0.09, 1 }
+local BG = { 0.062, 0.070, 0.082, 0.97 }
+local TILE_BG = { 0.11, 0.10, 0.09, 1 }
 
 -------------------------------------------------------------------------------
 -- Rewards: XP, money, then one entry per currency, item and choice.
@@ -32,24 +36,53 @@ local TILE_BG  = { 0.11, 0.10, 0.09, 1 }
 -- index (for the quest log tooltip calls), currency. Nil when none.
 -------------------------------------------------------------------------------
 function EQT.QuestRewards(questID)
-    if not C_QuestLog.ShouldShowQuestRewards(questID) then return end
-    local r = { xp = GetQuestLogRewardXP(questID), money = GetQuestLogRewardMoney(questID),
-                rewards = {}, choices = {} }
+    if not C_QuestLog.ShouldShowQuestRewards(questID) then
+        return
+    end
+    local r = {
+        xp = GetQuestLogRewardXP(questID),
+        money = GetQuestLogRewardMoney(questID),
+        rewards = {},
+        choices = {},
+    }
     for i, cur in ipairs(C_QuestLog.GetQuestRewardCurrencies(questID)) do
-        r.rewards[#r.rewards + 1] = { name = cur.name, texture = cur.texture, count = cur.totalRewardAmount,
-            quality = cur.quality, type = "reward", index = i, currency = true }
+        r.rewards[#r.rewards + 1] = {
+            name = cur.name,
+            texture = cur.texture,
+            count = cur.totalRewardAmount,
+            quality = cur.quality,
+            type = "reward",
+            index = i,
+            currency = true,
+        }
     end
     for i = 1, GetNumQuestLogRewards(questID) do
         local name, texture, count, quality, _, itemID = GetQuestLogRewardInfo(i, questID)
-        r.rewards[#r.rewards + 1] = { name = name, texture = texture, count = count, quality = quality,
-            itemID = itemID, type = "reward", index = i }
+        r.rewards[#r.rewards + 1] = {
+            name = name,
+            texture = texture,
+            count = count,
+            quality = quality,
+            itemID = itemID,
+            type = "reward",
+            index = i,
+        }
     end
     for i = 1, GetNumQuestLogChoices(questID) do
         local name, texture, count, quality, _, itemID = GetQuestLogChoiceInfo(i, questID)
-        r.choices[#r.choices + 1] = { name = name, texture = texture, count = count, quality = quality,
-            itemID = itemID, type = "choice", index = i }
+        r.choices[#r.choices + 1] = {
+            name = name,
+            texture = texture,
+            count = count,
+            quality = quality,
+            itemID = itemID,
+            type = "choice",
+            index = i,
+        }
     end
-    if r.xp <= 0 and r.money <= 0 and #r.rewards == 0 and #r.choices == 0 then return end
+    if r.xp <= 0 and r.money <= 0 and #r.rewards == 0 and #r.choices == 0 then
+        return
+    end
     return r
 end
 
@@ -68,7 +101,7 @@ local win, scroll, child, title, meta
 local texts, tiles, marks = {}, {}, {}
 local usedTexts, usedTiles, usedMarks = 0, 0, 0
 local questID
-local moved = false   -- dragged by the player: stop following the tracker
+local moved = false -- dragged by the player: stop following the tracker
 
 local function Accent()
     local g = CludesUI.CLUDES_GREEN
@@ -87,7 +120,9 @@ local function StyleText(fs, size)
     end
 end
 
-local function ContentWidth() return W - PAD * 2 end
+local function ContentWidth()
+    return W - PAD * 2
+end
 
 -- Wrapped text at (x, y); returns its height.
 local function AddText(text, x, y, size, r, g, b, a)
@@ -194,12 +229,20 @@ local function AddTile(e, x, y, w)
     t:ClearAllPoints()
     t:SetPoint("TOPLEFT", child, "TOPLEFT", x, -y)
     local c = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
-    if c then t.quality:SetColor(c.r, c.g, c.b, 1) else t.quality:SetColor(0, 0, 0, 1) end
+    if c then
+        t.quality:SetColor(c.r, c.g, c.b, 1)
+    else
+        t.quality:SetColor(0, 0, 0, 1)
+    end
     t.icon:SetTexture(e.texture)
     t.count:SetText((e.count and e.count > 1) and e.count or "")
     StyleText(t.name, 11)
     t.name:SetText(e.name or RETRIEVING_DATA)
-    if c then t.name:SetTextColor(c.r, c.g, c.b) else t.name:SetTextColor(1, 1, 1) end
+    if c then
+        t.name:SetTextColor(c.r, c.g, c.b)
+    else
+        t.name:SetTextColor(1, 1, 1)
+    end
     TileRest(t)
     t:Show()
 end
@@ -224,8 +267,12 @@ local function MetaText()
         parts[1] = CreateColor(c.r, c.g, c.b):WrapTextInColorCode(LEVEL .. " " .. level)
     end
     local tag = C_QuestLog.GetQuestTagInfo(questID)
-    if tag and tag.tagName then parts[#parts + 1] = tag.tagName end
-    if C_QuestLog.IsComplete(questID) then parts[#parts + 1] = COMPLETE end
+    if tag and tag.tagName then
+        parts[#parts + 1] = tag.tagName
+    end
+    if C_QuestLog.IsComplete(questID) then
+        parts[#parts + 1] = COMPLETE
+    end
     return table.concat(parts, "   ")
 end
 
@@ -244,9 +291,14 @@ local function UpdateButtons()
 end
 
 function Refresh()
-    if not (win and win:IsShown() and questID) then return end
+    if not (win and win:IsShown() and questID) then
+        return
+    end
     local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-    if not logIndex then win:Hide(); return end
+    if not logIndex then
+        win:Hide()
+        return
+    end
     usedTexts, usedTiles, usedMarks = 0, 0, 0
     local dr, dg, db, da = Dim()
     title:SetText(C_QuestLog.GetTitleForQuestID(questID) or "")
@@ -284,8 +336,12 @@ function Refresh()
         if r.xp > 0 then
             y = y + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(r.xp), 0, y, 12, 1, 1, 1) + 4
         end
-        if r.money > 0 then y = y + AddText(GetMoneyString(r.money), 0, y, 12, 1, 1, 1) + 4 end
-        if #r.rewards > 0 then y = y + 4 + AddTiles(r.rewards, y + 4) + 4 end
+        if r.money > 0 then
+            y = y + AddText(GetMoneyString(r.money), 0, y, 12, 1, 1, 1) + 4
+        end
+        if #r.rewards > 0 then
+            y = y + 4 + AddTiles(r.rewards, y + 4) + 4
+        end
         if #r.choices > 0 then
             y = y + 8
             y = y + AddText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
@@ -296,15 +352,25 @@ function Refresh()
         for _, list in ipairs({ r.rewards, r.choices }) do
             for _, e in ipairs(list) do
                 if not e.name then
-                    EQT.OnRewardLoad(e, function() if questID == shown then Refresh() end end)
+                    EQT.OnRewardLoad(e, function()
+                        if questID == shown then
+                            Refresh()
+                        end
+                    end)
                 end
             end
         end
     end
 
-    for i = usedTexts + 1, #texts do texts[i]:Hide() end
-    for i = usedTiles + 1, #tiles do tiles[i]:Hide() end
-    for i = usedMarks + 1, #marks do marks[i]:Hide() end
+    for i = usedTexts + 1, #texts do
+        texts[i]:Hide()
+    end
+    for i = usedTiles + 1, #tiles do
+        tiles[i]:Hide()
+    end
+    for i = usedMarks + 1, #marks do
+        marks[i]:Hide()
+    end
     child:SetSize(ContentWidth(), math.max(1, y))
     local maxScroll = math.max(0, y - scroll:GetHeight())
     scroll:SetVerticalScroll(math.min(scroll:GetVerticalScroll(), maxScroll))
@@ -313,11 +379,16 @@ end
 
 -- Beside the tracker, on the side facing the screen centre.
 local function Place()
-    if moved then return end
+    if moved then
+        return
+    end
     local tracker = _G.CUI_CustomQuestTracker
     win:ClearAllPoints()
     local cx = tracker and tracker:GetCenter()
-    if not cx then win:SetPoint("CENTER", UIParent, "CENTER", 0, 50); return end
+    if not cx then
+        win:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
+        return
+    end
     if cx * tracker:GetEffectiveScale() > UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2 then
         win:SetPoint("TOPRIGHT", tracker, "TOPLEFT", -8, 0)
     else
@@ -354,8 +425,13 @@ local function Build()
     win:EnableMouse(true)
     win:SetMovable(true)
     win:RegisterForDrag("LeftButton")
-    win:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    win:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); moved = true end)
+    win:SetScript("OnDragStart", function(self)
+        self:StartMoving()
+    end)
+    win:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        moved = true
+    end)
     win:Hide()
 
     local bg = win:CreateTexture(nil, "BACKGROUND")
@@ -389,9 +465,15 @@ local function Build()
     close.icon:SetAllPoints()
     close.icon:SetTexture(CLOSE)
     close.icon:SetAlpha(0.7)
-    close:SetScript("OnEnter", function() close.icon:SetAlpha(1) end)
-    close:SetScript("OnLeave", function() close.icon:SetAlpha(0.7) end)
-    close:SetScript("OnClick", function() win:Hide() end)
+    close:SetScript("OnEnter", function()
+        close.icon:SetAlpha(1)
+    end)
+    close:SetScript("OnLeave", function()
+        close.icon:SetAlpha(0.7)
+    end)
+    close:SetScript("OnClick", function()
+        win:Hide()
+    end)
 
     scroll = CreateFrame("ScrollFrame", nil, win)
     scroll:SetPoint("TOPLEFT", PAD, -HEADER_H - 12)
@@ -409,20 +491,28 @@ local function Build()
     -- Footer: one row of buttons.
     Divider(FOOTER_H, true)
     local a = EQT.CustomQuestActions
-    win.focus = Button(SUPER_TRACK_QUEST, function() a.Focus(questID) end)
+    win.focus = Button(SUPER_TRACK_QUEST, function()
+        a.Focus(questID)
+    end)
     win.focus:SetPoint("BOTTOMLEFT", PAD, PAD)
-    win.untrack = Button(UNTRACK_QUEST_ABBREV, function() a.Untrack(questID) end)
+    win.untrack = Button(UNTRACK_QUEST_ABBREV, function()
+        a.Untrack(questID)
+    end)
     win.untrack:SetPoint("LEFT", win.focus, "RIGHT", GAP, 0)
     win.share = Button(SHARE_QUEST_ABBREV, function()
         QuestLogPushQuest(C_QuestLog.GetLogIndexForQuestID(questID))
     end)
     win.share:SetPoint("LEFT", win.untrack, "RIGHT", GAP, 0)
-    win.abandon = Button(ABANDON_QUEST_ABBREV, function() a.Abandon(questID) end)
+    win.abandon = Button(ABANDON_QUEST_ABBREV, function()
+        a.Abandon(questID)
+    end)
     win.abandon:SetPoint("LEFT", win.share, "RIGHT", GAP, 0)
 
     win:SetScript("OnEvent", function(_, event, id)
         if event == "QUEST_REMOVED" then
-            if id == questID then win:Hide() end
+            if id == questID then
+                win:Hide()
+            end
         elseif event == "SUPER_TRACKING_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
             UpdateButtons()
         else
@@ -444,8 +534,13 @@ end
 
 -- Toggles the window for a quest; a second click on the same quest closes it.
 function EQT.ShowQuestDetails(id)
-    if not win then Build() end
-    if win:IsShown() and questID == id then win:Hide(); return end
+    if not win then
+        Build()
+    end
+    if win:IsShown() and questID == id then
+        win:Hide()
+        return
+    end
     questID = id
     scroll:SetVerticalScroll(0)
     Place()

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUI_SpellCostPrediction.lua
 -- WoW FOREVER ONLY: Spell Cost Prediction on mana power bars.
@@ -34,21 +36,27 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 
 local MANA = Enum.PowerType.Mana
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP",
-    "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED" }
+local EVENTS = {
+    "UNIT_SPELLCAST_START",
+    "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_INTERRUPTED",
+}
 
-local hosts = {}   -- key -> host record while attached
-local built = {}   -- bar -> host record (kept across detach)
-local ev           -- the event frame, built on the first Attach
+local hosts = {} -- key -> host record while attached
+local built = {} -- bar -> host record (kept across detach)
+local ev -- the event frame, built on the first Attach
 local listening = false
-local castGUID, castSpell  -- the cast-time cast in flight
-local castSeq = 0          -- bumped on every cast start; a draw stamps it
-local castCost             -- its mana cost (may be secret)
-local costRead = false     -- castCost holds this cast's read
+local castGUID, castSpell -- the cast-time cast in flight
+local castSeq = 0 -- bumped on every cast start; a draw stamps it
+local castCost -- its mana cost (may be secret)
+local costRead = false -- castCost holds this cast's read
 
 local SCP = {}
 CludesUI.SpellCostPrediction = SCP
@@ -56,9 +64,13 @@ CludesUI.SpellCostPrediction = SCP
 -- Custom color, else Blizzard's mana prediction color, else a light blue.
 function SCP.Color(s)
     local c = s and s.powerCostColor
-    if c then return c.r, c.g, c.b end
+    if c then
+        return c.r, c.g, c.b
+    end
     local b = POWERBAR_PREDICTION_COLOR_MANA
-    if b and b.GetRGB then return b:GetRGB() end
+    if b and b.GetRGB then
+        return b:GetRGB()
+    end
     return 0.40, 0.70, 1
 end
 
@@ -92,7 +104,9 @@ local function Show(h)
     local ptype = cb.PowerType(power)
     local cost = pfill and not issecretvalue(ptype) and ptype == MANA and CastCost()
     if not cost then
-        if seg then seg:Hide() end
+        if seg then
+            seg:Hide()
+        end
         return
     end
     if not seg then
@@ -111,15 +125,21 @@ local function Show(h)
         h.texPath = path
         seg:SetStatusBarTexture(path)
         local fill = seg:GetStatusBarTexture()
-        if fill then CludesUI.PP.DisablePixelSnap(fill) end
+        if fill then
+            CludesUI.PP.DisablePixelSnap(fill)
+        end
     end
     local fill = seg:GetStatusBarTexture()
     local mask = cb.Mask and cb.Mask(power) or nil
     if fill then
         -- AddMaskTexture is additive: the mask the last draw seated comes
         -- off first (a no-op on a new fill object), then the current one.
-        if h.mask then pcall(fill.RemoveMaskTexture, fill, h.mask) end
-        if mask then pcall(fill.AddMaskTexture, fill, mask) end
+        if h.mask then
+            pcall(fill.RemoveMaskTexture, fill, h.mask)
+        end
+        if mask then
+            pcall(fill.AddMaskTexture, fill, mask)
+        end
     end
     h.mask = mask
     -- Two points on the fill's leading edge span the bar's thickness; the
@@ -165,15 +185,20 @@ end
 -- one drawn, or an input of that draw moved (the bar's fill object or
 -- texture, its direction or level, the color, the mask).
 local function Stale(h)
-    if h.drawn ~= castSeq or not h.seg:IsShown() then return true end
+    if h.drawn ~= castSeq or not h.seg:IsShown() then
+        return true
+    end
     local bar, cb = h.bar, h.cb
     local pfill = bar:GetStatusBarTexture()
-    if pfill ~= h.pfill or (pfill:GetTexture() or WHITE) ~= h.texPath
-       or (bar:GetReverseFill() and true or false) ~= h.rev
-       or (bar:GetOrientation() == "VERTICAL") ~= h.vert
-       or (bar:GetRotatesTexture() and true or false) ~= h.rot
-       or bar:GetFrameLevel() + 1 ~= h.seg:GetFrameLevel()
-       or (cb.Mask and cb.Mask(bar) or nil) ~= h.mask then
+    if
+        pfill ~= h.pfill
+        or (pfill:GetTexture() or WHITE) ~= h.texPath
+        or (bar:GetReverseFill() and true or false) ~= h.rev
+        or (bar:GetOrientation() == "VERTICAL") ~= h.vert
+        or (bar:GetRotatesTexture() and true or false) ~= h.rot
+        or bar:GetFrameLevel() + 1 ~= h.seg:GetFrameLevel()
+        or (cb.Mask and cb.Mask(bar) or nil) ~= h.mask
+    then
         return true
     end
     local r, g, b, a = cb.Color(bar)
@@ -182,7 +207,9 @@ end
 
 local function HideAll()
     for _, h in pairs(hosts) do
-        if h.seg then h.seg:Hide() end
+        if h.seg then
+            h.seg:Hide()
+        end
     end
 end
 
@@ -191,12 +218,16 @@ local function OnEvent(_, event, _, guid, spellID)
         castGUID, castSpell, costRead = guid, spellID, false
         castSeq = castSeq + 1
         for _, h in pairs(hosts) do
-            if h.bar:IsVisible() then Show(h) end
+            if h.bar:IsVisible() then
+                Show(h)
+            end
         end
         return
     end
     local cur = castGUID
-    if cur == nil then return end
+    if cur == nil then
+        return
+    end
     -- Player cast GUIDs are never secret; if one is, end on any stop.
     if not (issecretvalue(guid) or issecretvalue(cur)) and guid ~= cur then
         return
@@ -210,12 +241,19 @@ end
 local function Listen()
     local on = false
     for _, h in pairs(hosts) do
-        if h.bar:IsVisible() then on = true; break end
+        if h.bar:IsVisible() then
+            on = true
+            break
+        end
     end
-    if on == listening then return end
+    if on == listening then
+        return
+    end
     listening = on
     if on then
-        for i = 1, #EVENTS do ev:RegisterUnitEvent(EVENTS[i], "player") end
+        for i = 1, #EVENTS do
+            ev:RegisterUnitEvent(EVENTS[i], "player")
+        end
     else
         ev:UnregisterAllEvents()
         castGUID, castSpell, castCost = nil, nil, nil
@@ -229,13 +267,17 @@ local function OnHostShow(bar)
     local h = built[bar]
     if hosts[h.key] == h then
         Listen()
-        if castGUID then Show(h) end
+        if castGUID then
+            Show(h)
+        end
     end
 end
 
 local function OnHostHide(bar)
     local h = built[bar]
-    if hosts[h.key] == h then Listen() end
+    if hosts[h.key] == h then
+        Listen()
+    end
 end
 
 -- A resize during a cast (a style pass, a scale change) keeps the segment's
@@ -244,7 +286,11 @@ local function OnHostSize(bar, w, hgt)
     local h = built[bar]
     local seg = h.seg
     if seg and hosts[h.key] == h and seg:IsShown() then
-        if h.vert then seg:SetHeight(hgt) else seg:SetWidth(w) end
+        if h.vert then
+            seg:SetHeight(hgt)
+        else
+            seg:SetWidth(w)
+        end
     end
 end
 
@@ -267,20 +313,28 @@ function SCP.Attach(key, bar, cb)
     local old = hosts[key]
     local fresh = old ~= h or h.cb ~= cb
     if fresh then
-        if old and old ~= h and old.seg then old.seg:Hide() end
+        if old and old ~= h and old.seg then
+            old.seg:Hide()
+        end
         h.cb, h.key = cb, key
         hosts[key] = h
         Listen()
     end
     -- A cast already in flight is laid out again when this attach is new or
     -- the rebuild behind it moved an input of the last draw.
-    if castGUID and bar:IsVisible() and (fresh or Stale(h)) then Show(h) end
+    if castGUID and bar:IsVisible() and (fresh or Stale(h)) then
+        Show(h)
+    end
 end
 
 function SCP.Detach(key)
     local h = hosts[key]
-    if not h then return end
+    if not h then
+        return
+    end
     hosts[key] = nil
-    if h.seg then h.seg:Hide() end
+    if h.seg then
+        h.seg:Hide()
+    end
     Listen()
 end

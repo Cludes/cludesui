@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\XPRep.lua
 -- XP / reputation bar block factory.
 
@@ -7,25 +9,25 @@ local L = ns.L
 local K = ns.BlockKit
 
 -- Upvalues
-local _G               = _G
-local CreateFrame      = CreateFrame
+local _G = _G
+local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local type             = type
-local rawget           = rawget
-local floor            = math.floor
-local max              = math.max
-local min              = math.min
+local type = type
+local rawget = rawget
+local floor = math.floor
+local max = math.max
+local min = math.min
 
-local CONTENT_BASE         = K.CONTENT_BASE
-local InstKey              = K.InstKey
-local MakeEventFrame       = K.MakeEventFrame
-local RegisterInstEvents   = K.RegisterInstEvents
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
 local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget              = K.HBudget
-local VSlotW               = K.VSlotW
-local MaybeRelayout        = K.MaybeRelayout
-local AttachTextOffset     = K.AttachTextOffset
-local BlockColorOf         = K.BlockColorOf
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  XPREP (XP / Reputation bar)
@@ -43,45 +45,71 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     local _dbFitBuf = { "" }
     local mode = "rep"
 
-    local function D() return blockCfg.settings or {} end
-    local function BC() return barCtx.cfg end
+    local function D()
+        return blockCfg.settings or {}
+    end
+    local function BC()
+        return barCtx.cfg
+    end
 
     local XPAtMaxLevel = K.AtMaxLevel
 
     local function UpdateMode()
         local d = D()
-        if d.mode == "xp"  then mode = "xp";  return end
-        if d.mode == "rep" then mode = "rep"; return end
+        if d.mode == "xp" then
+            mode = "xp"
+            return
+        end
+        if d.mode == "rep" then
+            mode = "rep"
+            return
+        end
         local atMax = XPAtMaxLevel()
         local xpOff = IsXPUserDisabled and IsXPUserDisabled()
         mode = "rep"
-        if not atMax and not xpOff then mode = "xp" end
+        if not atMax and not xpOff then
+            mode = "xp"
+        end
     end
 
     -- Compat: legacy GetWatchedFactionInfo vs C_Reputation.GetWatchedFactionData.
     local LegacyGetWatchedFactionInfo = rawget(_G, "GetWatchedFactionInfo")
     local C_Rep = C_Reputation
     local function GetWatchedFactionInfoCompat()
-        if LegacyGetWatchedFactionInfo then return LegacyGetWatchedFactionInfo() end
+        if LegacyGetWatchedFactionInfo then
+            return LegacyGetWatchedFactionInfo()
+        end
         if C_Rep and C_Rep.GetWatchedFactionData then
             local d = C_Rep.GetWatchedFactionData()
             if d then
-                return d.name, d.reaction, d.currentReactionThreshold,
-                       d.nextReactionThreshold, d.currentStanding, d.factionID
+                return d.name,
+                    d.reaction,
+                    d.currentReactionThreshold,
+                    d.nextReactionThreshold,
+                    d.currentStanding,
+                    d.factionID
             end
         end
         return nil
     end
 
     local function GetProgressValues(cur, minV, maxV)
-        if type(minV) ~= "number" then minV = 0 end
-        if type(maxV) ~= "number" then maxV = minV + 1 end
-        if type(cur)  ~= "number" then cur = minV end
+        if type(minV) ~= "number" then
+            minV = 0
+        end
+        if type(maxV) ~= "number" then
+            maxV = minV + 1
+        end
+        if type(cur) ~= "number" then
+            cur = minV
+        end
         local pCur = cur - minV
         local pMax = maxV - minV
         if pMax <= 0 then
             local n = 1
-            if pCur > 0 then n = pCur end
+            if pCur > 0 then
+                n = pCur
+            end
             return n, n, 100
         end
         return pCur, pMax, max(0, min(100, floor((pCur / pMax) * 100)))
@@ -91,7 +119,9 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     local function ProgressLabel(cur, total)
         local d = D()
         local display = ns.GetXPRepTextDisplay(d)
-        if display == "off" then return "", false end
+        if display == "off" then
+            return "", false
+        end
         local context = d.textFormat ~= "plain"
         if display == "values" then
             local bl = BreakUpLargeNumbers
@@ -107,7 +137,11 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     barButton:SetScript("OnClick", function(_, btn)
         if btn == "RightButton" and not InCombatLockdown() then
             local d = D()
-            if mode == "xp" then d.mode = "rep" else d.mode = "xp" end
+            if mode == "xp" then
+                d.mode = "rep"
+            else
+                d.mode = "xp"
+            end
             inst:Refresh()
         end
     end)
@@ -135,20 +169,30 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             local atMax = XPAtMaxLevel()
             local xpOff = IsXPUserDisabled and IsXPUserDisabled()
             if atMax or xpOff then
-                if D().mode ~= "xp" then return nil end
+                if D().mode ~= "xp" then
+                    return nil
+                end
                 return {
-                    label = xpOff and "XP Off (Right-Click: Rep)"
-                                   or "Max Level (Right-Click: Rep)",
-                    minV = 0, maxV = 1, curV = 0,
-                    r = 0.5, g = 0.5, b = 0.5, rested = 0,
+                    label = xpOff and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)",
+                    minV = 0,
+                    maxV = 1,
+                    curV = 0,
+                    r = 0.5,
+                    g = 0.5,
+                    b = 0.5,
+                    rested = 0,
                 }
             end
             local curXP = UnitXP("player") or 0
             local maxXP = UnitXPMax("player") or 1
-            if maxXP <= 0 then maxXP = 1 end
+            if maxXP <= 0 then
+                maxXP = 1
+            end
             curXP = max(0, min(maxXP, curXP))
             local level = 0
-            if UnitLevel then level = UnitLevel("player") end
+            if UnitLevel then
+                level = UnitLevel("player")
+            end
             local label, context, values = ProgressLabel(curXP, maxXP)
             if context then
                 label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
@@ -156,9 +200,16 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             local ar, ag, ab = ns.GetAccent()
             local rested = GetXPExhaustion() or 0
             return {
-                label = label, tooltipLabel = "Level " .. level .. " XP",
-                minV = 0, maxV = maxXP, curV = curXP,
-                r = ar, g = ag, b = ab, rested = rested, isXP = true,
+                label = label,
+                tooltipLabel = "Level " .. level .. " XP",
+                minV = 0,
+                maxV = maxXP,
+                curV = curXP,
+                r = ar,
+                g = ag,
+                b = ab,
+                rested = rested,
+                isXP = true,
             }
         end
         local name, reaction, minV, maxV, curV, factionID = GetWatchedFactionInfoCompat()
@@ -167,11 +218,18 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             -- reported repro is exactly this arm -- right-click on the XP bar
             -- forces d.mode="rep" with no watched faction, and the collapsed
             -- block ate every later click.
-            if D().mode ~= "rep" then return nil end
+            if D().mode ~= "rep" then
+                return nil
+            end
             return {
                 label = "No Rep Tracked",
-                minV = 0, maxV = 1, curV = 0,
-                r = 0.5, g = 0.5, b = 0.5, rested = 0,
+                minV = 0,
+                maxV = 1,
+                curV = 0,
+                r = 0.5,
+                g = 0.5,
+                b = 0.5,
+                rested = 0,
             }
         end
         -- Friendship factions (Captain Tokka, Cursed Angler ranks, etc.): the
@@ -199,31 +257,59 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if not isFriendship and factionID and C_MajorFactions and C_MajorFactions.GetMajorFactionData then
             local mfd = C_MajorFactions.GetMajorFactionData(factionID)
             if mfd and type(mfd.renownLevelThreshold) == "number" and mfd.renownLevelThreshold > 0 then
-                minV = 0; maxV = mfd.renownLevelThreshold; curV = mfd.renownReputationEarned or 0
+                minV = 0
+                maxV = mfd.renownLevelThreshold
+                curV = mfd.renownReputationEarned or 0
             end
         end
         if type(minV) == "number" and type(maxV) == "number" and type(curV) == "number" then
             local nMax = maxV - minV
             local nCur = curV - minV
-            if nMax > 0 then minV = 0; maxV = nMax; curV = nCur end
+            if nMax > 0 then
+                minV = 0
+                maxV = nMax
+                curV = nCur
+            end
         end
-        if type(minV) ~= "number" then minV = 0 end
-        if type(maxV) ~= "number" then maxV = 1 end
-        if type(curV) ~= "number" then curV = 0 end
-        if maxV <= minV then maxV = minV + 1 end
+        if type(minV) ~= "number" then
+            minV = 0
+        end
+        if type(maxV) ~= "number" then
+            maxV = 1
+        end
+        if type(curV) ~= "number" then
+            curV = 0
+        end
+        if maxV <= minV then
+            maxV = minV + 1
+        end
         curV = max(minV, min(maxV, curV))
         local progress, total = GetProgressValues(curV, minV, maxV)
         local dname = name
-        if #name > 20 then dname = name:sub(1, 20) .. "..." end
+        if #name > 20 then
+            dname = name:sub(1, 20) .. "..."
+        end
         local label, context = ProgressLabel(progress, total)
-        if context then label = dname .. " " .. label end
+        if context then
+            label = dname .. " " .. label
+        end
         local cr, cg, cb
         local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
-        if color then cr, cg, cb = color.r, color.g, color.b
-        else cr, cg, cb = ns.GetAccent() end
+        if color then
+            cr, cg, cb = color.r, color.g, color.b
+        else
+            cr, cg, cb = ns.GetAccent()
+        end
         return {
-            label = label, tooltipLabel = name, minV = minV, maxV = maxV, curV = curV,
-            r = cr, g = cg, b = cb, rested = 0,
+            label = label,
+            tooltipLabel = name,
+            minV = minV,
+            maxV = maxV,
+            curV = curV,
+            r = cr,
+            g = cg,
+            b = cb,
+            rested = 0,
         }
     end
 
@@ -236,28 +322,54 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     -- the name would compile as a nil global inside the closure.
     barButton:SetScript("OnEnter", function()
         local state = ComputeState()
-        if not state then return end
+        if not state then
+            return
+        end
         local ar, ag, ab = ns.GetAccent()
         ns.Tip_Begin(barButton)
         -- Text Display Off leaves no label; name the bar instead.
         local tipLabel = state.label
-        if tipLabel == "" then tipLabel = state.tooltipLabel end
+        if tipLabel == "" then
+            tipLabel = state.tooltipLabel
+        end
         ns.Tip_AddLine(tipLabel, 1, 1, 1)
         if state.maxV and state.maxV > 1 then
             local bl = BreakUpLargeNumbers
-            ns.Tip_AddDouble(L["PROGRESS"],
+            ns.Tip_AddDouble(
+                L["PROGRESS"],
                 (bl and bl(state.curV) or state.curV) .. " / " .. (bl and bl(state.maxV) or state.maxV),
-                0.6, 0.6, 0.6, 1, 1, 1)
+                0.6,
+                0.6,
+                0.6,
+                1,
+                1,
+                1
+            )
         end
         if state.rested and state.rested > 0 then
             local bl = BreakUpLargeNumbers
-            ns.Tip_AddDouble(L["RESTED"], (bl and bl(state.rested) or state.rested),
-                0.6, 0.6, 0.6, 0.3, 0.3, 1)
+            ns.Tip_AddDouble(
+                L["RESTED"],
+                (bl and bl(state.rested) or state.rested),
+                0.6,
+                0.6,
+                0.6,
+                0.3,
+                0.3,
+                1
+            )
         end
         ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(L["RIGHT_CLICK"],
+        ns.Tip_AddDouble(
+            L["RIGHT_CLICK"],
             mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"],
-            1, 1, 1, ar, ag, ab)
+            1,
+            1,
+            1,
+            ar,
+            ag,
+            ab
+        )
         ns.Tip_Show()
     end)
     barButton:SetScript("OnLeave", function()
@@ -312,7 +424,8 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             barTrack:SetColorTexture(1, 1, 1, 0.1)
             bar:ClearAllPoints()
             bar:SetAllPoints(barTrack)
-            restBar:ClearAllPoints(); restBar:SetAllPoints(bar)
+            restBar:ClearAllPoints()
+            restBar:SetAllPoints(bar)
         elseif isSide then
             -- Vertical branch: stacked label above the bar.
             local slotW = VSlotW(inst)
@@ -333,7 +446,8 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             bar:ClearAllPoints()
             bar:SetSize(innerW, bH)
             bar:SetPoint("TOP", content, "TOP", 0, -(3 + textH + 3))
-            restBar:ClearAllPoints(); restBar:SetAllPoints(bar)
+            restBar:ClearAllPoints()
+            restBar:SetAllPoints(bar)
             content:SetSize(slotW, max(3 + textH + 3 + bH + 3, 40))
         else
             local slotW = HBudget(inst, 300)
@@ -358,12 +472,18 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
                 textW = maxTextW
                 nameText:SetWidth(textW)
             end
-            if textW < 20 then textW = 20 end
-            if ns.SnapToPixelGrid then textW = ns.SnapToPixelGrid(textW) end
+            if textW < 20 then
+                textW = 20
+            end
+            if ns.SnapToPixelGrid then
+                textW = ns.SnapToPixelGrid(textW)
+            end
 
             -- XP mode only: the bar runs 40px past the text's right edge (rep and professions keep bar width = text width).
             local barW = textW
-            if state.isXP then barW = min(textW + 40, maxTextW) end
+            if state.isXP then
+                barW = min(textW + 40, maxTextW)
+            end
 
             local textH = ns.SnapToPixelGrid(nameText:GetStringHeight() or textHeight)
             local stackH = textH + 2 + bH
@@ -375,9 +495,11 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             barTrack:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(pad + textH + 2))
             barTrack:SetSize(barW, bH)
             barTrack:SetColorTexture(1, 1, 1, 0.1)
-            bar:ClearAllPoints(); bar:SetSize(barW, bH)
+            bar:ClearAllPoints()
+            bar:SetSize(barW, bH)
             bar:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(pad + textH + 2))
-            restBar:ClearAllPoints(); restBar:SetAllPoints(bar)
+            restBar:ClearAllPoints()
+            restBar:SetAllPoints(bar)
         end
         MaybeRelayout(inst)
     end
@@ -399,14 +521,18 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     function inst:GetAutoLength()
         -- Nothing to render (rep with no watched faction, or below-max with no XP source):
         -- claim no length so the solver reserves no dead gap; the changed-extent relayout gate restores the width when content returns.
-        if not content:IsShown() then return 0 end
+        if not content:IsShown() then
+            return 0
+        end
         local barH = barCtx.GetThickness()
         if barCtx.IsVertical() then
             return max(content:GetHeight() or 40, 40)
         end
         -- Auto size tracks the live text width (the bar matches it, plus the XP-only 40px extension). No icon term: text + bar only.
         local tw = nameText:GetStringWidth() or 0
-        if tw < 20 then tw = 120 end
+        if tw < 20 then
+            tw = 120
+        end
         return tw + (self._xpExtend or 0)
     end
 

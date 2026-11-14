@@ -1,5 +1,9 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then
+    return
+end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_FlightTimer.lua  (WoW Forever only)
 --  Route display with an ETA for flight-master flights: a thin track between
@@ -44,30 +48,54 @@ local PREVIEW_ROUTES = {
 local DEFAULTS = {
     enabled = true,
     -- trackHeight: its own key; the retired bar style's `height` stays unread.
-    width = 300, trackHeight = TRACK_HEIGHT, showEndCaps = true,
-    texture = "none", bgTexture = "none",
-    fillOpacity = 100, classColored = false,
-    showSpark = false, sparkR = 1, sparkG = 1, sparkB = 1,
-    bgR = 0.1, bgG = 0.1, bgB = 0.1, bgA = 0.8,
-    borderSize = 1, borderR = 0, borderG = 0, borderB = 0,
-    borderTexture = "solid", borderBehind = false,
+    width = 300,
+    trackHeight = TRACK_HEIGHT,
+    showEndCaps = true,
+    texture = "none",
+    bgTexture = "none",
+    fillOpacity = 100,
+    classColored = false,
+    showSpark = false,
+    sparkR = 1,
+    sparkG = 1,
+    sparkB = 1,
+    bgR = 0.1,
+    bgG = 0.1,
+    bgB = 0.1,
+    bgA = 0.8,
+    borderSize = 1,
+    borderR = 0,
+    borderG = 0,
+    borderB = 0,
+    borderTexture = "solid",
+    borderBehind = false,
     exitBorderCustom = false,
     -- Visibility controls retain the plain button border and white route marker.
     exitBorder = true,
-    showSeparator = true, separatorHeight = PIN_SIZE + 4, customSeparator = false,
+    showSeparator = true,
+    separatorHeight = PIN_SIZE + 4,
+    customSeparator = false,
     -- destText / timeText: "none" hides; any other value (older saves hold a
     -- side from the retired bar style) shows.
-    destText = "show", destSize = 12, destX = 0, destY = 0,
-    timeText = "show", timeSize = 12, timeX = 0, timeY = 0,
-    showTotal = false, earlyExit = true, fade = false,
+    destText = "show",
+    destSize = 12,
+    destX = 0,
+    destY = 0,
+    timeText = "show",
+    timeSize = 12,
+    timeX = 0,
+    timeY = 0,
+    showTotal = false,
+    earlyExit = true,
+    fade = false,
 }
 
 local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
 
 local routes = CludesUI._FlightTimerRoutes
 local bar, events, ticker, hooked
-local pending   -- destination picked on the flight map, waiting for takeoff
-local flight    -- the flight in progress
+local pending -- destination picked on the flight map, waiting for takeoff
+local flight -- the flight in progress
 
 local F = module.Feature("flightTimer", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = 250 })
 local Get, Cfg, Read, Enabled = F.Get, F.Cfg, F.Read, F.Enabled
@@ -115,10 +143,14 @@ local function FillColor()
     if Get("classColored") then
         local _, classFile = UnitClass("player")
         local cc = classFile and CludesUI.GetClassColor(classFile)
-        if cc then return cc.r, cc.g, cc.b end
+        if cc then
+            return cc.r, cc.g, cc.b
+        end
     end
     local c = Read()
-    if c.fillR then return c.fillR, c.fillG, c.fillB end
+    if c.fillR then
+        return c.fillR, c.fillG, c.fillB
+    end
     local EG = CludesUI.CLUDES_GREEN
     return EG.r, EG.g, EG.b
 end
@@ -129,7 +161,9 @@ end
 -- to reach it (nil once a hop is missing).
 local function RouteInfo(slot)
     local hops = GetNumRoutes(slot)
-    if hops < 1 then return nil end
+    if hops < 1 then
+        return nil
+    end
     -- The taxi UI can open without a map id; no id means no route lookup.
     local mapID = GetTaxiMapID and GetTaxiMapID()
     local nodes = mapID and C_TaxiMap and C_TaxiMap.GetAllTaxiNodes(mapID)
@@ -178,7 +212,9 @@ end
 
 -- ShowMark's text for a mark shown only when show; with names off, icon only.
 local function MarkText(show, name, names)
-    if not show then return false end
+    if not show then
+        return false
+    end
     return names and (name or "") or nil
 end
 
@@ -193,7 +229,9 @@ end
 local SLIDE = 1.25
 local function ScrollStrip(b, fl, elapsed)
     local clip = b.clip
-    if not clip:IsShown() then return end
+    if not clip:IsShown() then
+        return
+    end
     local g = clip.glide
     g:Stop()
     clip.strip:ClearAllPoints()
@@ -230,7 +268,9 @@ local function LayoutRoute(b, fl)
     for i = 1, 2 do
         local m, side = b.ends[i], i == 1 and "LEFT" or "RIGHT"
         ShowMark(m, MarkText(n > 0, n > 0 and points[i == 1 and 1 or n].name, names))
-        if not caps then m.icon:Hide() end
+        if not caps then
+            m.icon:Hide()
+        end
         m.icon:SetVertexColor(FillColor())
         m.label:ClearAllPoints()
         m.label:SetPoint("BOTTOM" .. side, m.icon, "TOP" .. side, dx, 4 + dy + Rise(PIN_SIZE / 2))
@@ -251,7 +291,13 @@ local function LayoutRoute(b, fl)
         -- Inside the two end dots, tall enough for a stop's icon and the name
         -- under it.
         clip:ClearAllPoints()
-        clip:SetPoint("BOTTOMLEFT", b, "LEFT", PIN_SIZE / 2, -PIN_SIZE / 2 - Get("destSize") - 8 - Rise(PIN_SIZE))
+        clip:SetPoint(
+            "BOTTOMLEFT",
+            b,
+            "LEFT",
+            PIN_SIZE / 2,
+            -PIN_SIZE / 2 - Get("destSize") - 8 - Rise(PIN_SIZE)
+        )
         clip:SetPoint("TOPRIGHT", b, "RIGHT", -PIN_SIZE / 2, PIN_SIZE / 2 + 2)
         -- px per second of flight: a stop comes in LOOKAHEAD seconds out
         -- (scaled down with the clock for a fast-forward preview).
@@ -276,7 +322,9 @@ local function LayoutRoute(b, fl)
             end
         end
     end
-    if scroll then ScrollStrip(b, fl, math.max(0, math.min(GetTime() - fl.start, fl.eta))) end
+    if scroll then
+        ScrollStrip(b, fl, math.max(0, math.min(GetTime() - fl.start, fl.eta)))
+    end
 
     -- "You are here": a white post at the centre, where each stop is reached;
     -- a direct flight has no stops to reach, so none.
@@ -284,8 +332,13 @@ local function LayoutRoute(b, fl)
     local icon = b.you.icon
     local height = Get("separatorHeight")
     local tex, size = Get("borderTexture"), Get("borderSize")
-    if scroll and Get("showSeparator") and Get("customSeparator") and size > 0
-            and CludesUI.GetBorderCompanion(tex, "sepV") then
+    if
+        scroll
+        and Get("showSeparator")
+        and Get("customSeparator")
+        and size > 0
+        and CludesUI.GetBorderCompanion(tex, "sepV")
+    then
         if not b.separatorAnchor then
             b.separatorAnchor = CreateFrame("Frame", nil, b.over)
         end
@@ -293,8 +346,16 @@ local function LayoutRoute(b, fl)
         anchor:ClearAllPoints()
         anchor:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
         anchor:SetSize(1, height)
-        CludesUI.PlaceBorderDividerV(icon, anchor, false, false, tex, size,
-            CludesUI.BorderPx(Get("borderSizePx"), size, tex), b.over:GetEffectiveScale())
+        CludesUI.PlaceBorderDividerV(
+            icon,
+            anchor,
+            false,
+            false,
+            tex,
+            size,
+            CludesUI.BorderPx(Get("borderSizePx"), size, tex),
+            b.over:GetEffectiveScale()
+        )
         icon:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
     else
         icon:SetTexture(WHITE)
@@ -317,7 +378,10 @@ local function StyleBorder(owner, isExit)
     local host = owner.travelBorder
     if isExit and not Get("exitBorder") then
         PP.HideBorder(owner)
-        if host then CludesUI.HideBorderStyle(host); host:Hide() end
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
+        end
         return
     end
     -- A saved style (including Solid) opts into exact sizing; old sizes stay capped.
@@ -328,7 +392,10 @@ local function StyleBorder(owner, isExit)
         custom = Read().borderTexture ~= nil or Get("borderSizePx")
     end
     if not custom then
-        if host then CludesUI.HideBorderStyle(host); host:Hide() end
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
+        end
         local size, r, g, b = 1, 0, 0, 0
         if not isExit then
             local cap = math.floor((Get("trackHeight") / (PP.mult or 1) - 1) / 2)
@@ -340,7 +407,11 @@ local function StyleBorder(owner, isExit)
         else
             PP.CreateBorder(owner, r, g, b, 1, size, "OVERLAY", 2)
         end
-        if size > 0 then PP.ShowBorder(owner) else PP.HideBorder(owner) end
+        if size > 0 then
+            PP.ShowBorder(owner)
+        else
+            PP.HideBorder(owner)
+        end
         return
     end
     PP.HideBorder(owner)
@@ -349,12 +420,28 @@ local function StyleBorder(owner, isExit)
         host:SetAllPoints(owner)
         owner.travelBorder = host
     end
-    host:SetFrameLevel(Get("borderBehind") and math.max(0, owner:GetFrameLevel() - 1) or owner:GetFrameLevel() + 1)
+    host:SetFrameLevel(
+        Get("borderBehind") and math.max(0, owner:GetFrameLevel() - 1) or owner:GetFrameLevel() + 1
+    )
     local size, tex = Get("borderSize"), Get("borderTexture")
     local prefix = isExit and "exitBorder" or "borderTexture"
-    CludesUI.ApplyBorderStyle(host, size, Get("borderR"), Get("borderG"), Get("borderB"), 1, tex,
-        Get(prefix .. "Offset"), Get(prefix .. "OffsetY"), Get("borderTextureShiftX"), Get("borderTextureShiftY"),
-        nil, nil, nil, CludesUI.BorderPx(Get("borderSizePx"), size, tex))
+    CludesUI.ApplyBorderStyle(
+        host,
+        size,
+        Get("borderR"),
+        Get("borderG"),
+        Get("borderB"),
+        1,
+        tex,
+        Get(prefix .. "Offset"),
+        Get(prefix .. "OffsetY"),
+        Get("borderTextureShiftX"),
+        Get("borderTextureShiftY"),
+        nil,
+        nil,
+        nil,
+        CludesUI.BorderPx(Get("borderSizePx"), size, tex)
+    )
 end
 
 -- Early exit button right of the bar, built on first enable. Greyed out once a
@@ -362,7 +449,9 @@ end
 local function StyleExit(b, fl)
     local btn = b.exit
     if not Get("earlyExit") then
-        if btn then btn:Hide() end
+        if btn then
+            btn:Hide()
+        end
         return
     end
     if not btn then
@@ -372,11 +461,15 @@ local function StyleExit(b, fl)
         btn:SetNormalTexture(EXIT_ICON)
         btn:GetNormalTexture():SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon frame
         btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-        btn:SetScript("OnClick", function() RequestLanding(b) end)
+        btn:SetScript("OnClick", function()
+            RequestLanding(b)
+        end)
         btn:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(self, CludesUI.L("Land at the next flight point"))
         end)
-        btn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        btn:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         b.exit = btn
     end
     StyleBorder(btn, true)
@@ -463,7 +556,9 @@ local function BuildBar(parent)
 end
 
 local function CreateBar()
-    if bar then return end
+    if bar then
+        return
+    end
     bar = BuildBar(UIParent)
     bar:Hide()
     StyleBar(bar, flight)
@@ -473,7 +568,9 @@ end
 local RefreshPreview -- the options preview's restyle; defined with it below
 
 local function ApplyStyle()
-    if bar then StyleBar(bar, flight) end
+    if bar then
+        StyleBar(bar, flight)
+    end
     RefreshPreview()
 end
 
@@ -482,20 +579,26 @@ end
 local FADE_TIME = 0.25
 local function ShowBar(show)
     local g = bar.fade
-    if g then g:Stop() end
+    if g then
+        g:Stop()
+    end
     if not Get("fade") then
         bar:SetAlpha(1)
         bar:SetShown(show)
         return
     end
-    if not show and not bar:IsShown() then return end
+    if not show and not bar:IsShown() then
+        return
+    end
     if not g then
         g = bar:CreateAnimationGroup()
         g.alpha = g:CreateAnimation("Alpha")
         g.alpha:SetDuration(FADE_TIME)
         g:SetScript("OnFinished", function(self)
             bar:SetAlpha(self.to)
-            if self.to == 0 then bar:Hide() end
+            if self.to == 0 then
+                bar:Hide()
+            end
         end)
         bar.fade = g
     end
@@ -512,8 +615,13 @@ end
 
 local function EndFlight()
     flight = nil
-    if ticker then ticker:Cancel(); ticker = nil end
-    if bar then ShowBar(false) end
+    if ticker then
+        ticker:Cancel()
+        ticker = nil
+    end
+    if bar then
+        ShowBar(false)
+    end
 end
 
 local Land
@@ -534,10 +642,16 @@ local function UpdateText()
 end
 
 local function ArmTimer(b, fl)
-    if not fl.eta then return end
+    if not fl.eta then
+        return
+    end
     local dur = C_DurationUtil.CreateDuration()
     dur:SetTimeFromStart(fl.start, fl.eta)
-    b.track:SetTimerDuration(dur,Enum.StatusBarInterpolation.Immediate, Enum.StatusBarTimerDirection.ElapsedTime)
+    b.track:SetTimerDuration(
+        dur,
+        Enum.StatusBarInterpolation.Immediate,
+        Enum.StatusBarTimerDirection.ElapsedTime
+    )
 end
 
 -- points: every node on the way, start first (see RouteInfo).
@@ -552,7 +666,9 @@ local function StartFlight(yards, points)
     ShowBar(true)
     StyleBar(bar, flight)
     UpdateText()
-    if not ticker then ticker = C_Timer.NewTicker(1, UpdateText) end
+    if not ticker then
+        ticker = C_Timer.NewTicker(1, UpdateText)
+    end
 end
 
 -- An early landing stops at the next node on the way: the timer and the
@@ -566,7 +682,9 @@ local function Retarget(b, fl)
         local flown = (GetTime() - fl.start) / fl.eta * fl.yards
         for i, p in ipairs(points) do
             if p.yards and p.yards > flown then
-                for j = #points, i + 1, -1 do points[j] = nil end
+                for j = #points, i + 1, -1 do
+                    points[j] = nil
+                end
                 fl.eta = fl.eta * p.yards / fl.yards
                 fl.yards = p.yards
                 ArmTimer(b, fl)
@@ -603,12 +721,16 @@ local function OnEvent(_, event)
         end
         pending = nil
     elseif event == "PLAYER_CONTROL_GAINED" then
-        if flight and not UnitOnTaxi("player") then Land() end
+        if flight and not UnitOnTaxi("player") then
+            Land()
+        end
     end
 end
 
 local function OnTakeTaxiNode(slot)
-    if not Enabled() then return end
+    if not Enabled() then
+        return
+    end
     local yards, points = RouteInfo(slot)
     pending = { yards = yards, points = points, clicked = GetTime() }
 end
@@ -632,9 +754,13 @@ local function Apply()
         events:RegisterEvent("PLAYER_CONTROL_LOST")
         events:RegisterEvent("PLAYER_CONTROL_GAINED")
     else
-        if events then events:UnregisterAllEvents() end
+        if events then
+            events:UnregisterAllEvents()
+        end
         pending = nil
-        if flight then EndFlight() end
+        if flight then
+            EndFlight()
+        end
     end
 end
 
@@ -651,7 +777,9 @@ local function PreviewTick()
     local v, fl = preview, preview.flight
     local elapsed = GetTime() - fl.start
     -- The finished flight holds a moment, then the next one starts.
-    if elapsed >= fl.eta + PREVIEW_HOLD then return StartPreviewFlight() end
+    if elapsed >= fl.eta + PREVIEW_HOLD then
+        return StartPreviewFlight()
+    end
     elapsed = math.min(elapsed, fl.eta)
     v.bar.time:SetText(TimeLeft(fl, elapsed))
     ScrollStrip(v.bar, fl, elapsed)
@@ -661,8 +789,12 @@ StartPreviewFlight = function()
     local v = preview
     local fl, points = v.flight, v.points
     -- An early landing cuts the route short: refill it from the full one.
-    for i, p in ipairs(v.route) do points[i] = p end
-    for i = #v.route + 1, #points do points[i] = nil end
+    for i, p in ipairs(v.route) do
+        points[i] = p
+    end
+    for i = #v.route + 1, #points do
+        points[i] = nil
+    end
     fl.points, fl.yards, fl.start, fl.early = points, v.yards, GetTime(), nil
     fl.eta = PREVIEW_SECONDS
     fl.lookahead = LOOKAHEAD * PREVIEW_SECONDS / (v.yards / Speed())
@@ -674,7 +806,9 @@ end
 local RefreshPreviewNow -- RefreshPreview's body, defined below
 
 local function PreviewShow()
-    if preview.ticker then return end
+    if preview.ticker then
+        return
+    end
     StartPreviewFlight()
     -- Settings may have changed while the page was away.
     RefreshPreviewNow()
@@ -692,7 +826,9 @@ end
 -- The preview's early exit button lands the sample flight at its next stop.
 local function PreviewLanding()
     local fl = preview.flight
-    if fl.early then return end
+    if fl.early then
+        return
+    end
     Retarget(preview.bar, fl)
     PreviewTick()
 end
@@ -700,7 +836,9 @@ end
 RequestLanding = function(b)
     if b == bar then
         -- The hook on TaxiRequestEarlyLanding retargets the bar.
-        if flight and not flight.early then TaxiRequestEarlyLanding() end
+        if flight and not flight.early then
+            TaxiRequestEarlyLanding()
+        end
     else
         PreviewLanding()
     end
@@ -709,7 +847,9 @@ end
 -- force: draw while the header is still being built (not shown yet).
 RefreshPreview = function(force)
     local v = preview
-    if not (v and (force or v.view:IsVisible())) then return end
+    if not (v and (force or v.view:IsVisible())) then
+        return
+    end
     RefreshPreviewNow()
 end
 
@@ -725,7 +865,9 @@ RefreshPreviewNow = function()
     StyleBar(v.bar, v.flight)
     v.previewHeight = BoxHeight() * scale + 30
     v.view:SetHeight(v.previewHeight)
-    if v.onHeightChanged then v.onHeightChanged(v.previewHeight) end
+    if v.onHeightChanged then
+        v.onHeightChanged(v.previewHeight)
+    end
 end
 
 -- parent -> the dress its size hook was made for: the options page pool
@@ -739,7 +881,9 @@ local function CreateSettingsPreview(parent, availableWidth, onHeightChanged)
         local route = PREVIEW_ROUTES[UnitFactionGroup("player")] or PREVIEW_ROUTES.Alliance
         v = { route = {}, points = {}, flight = {}, yards = 0 }
         for i = 1, #route, 2 do
-            if i > 1 then v.yards = v.yards + routes[route[i - 2] * 10000 + route[i]] end
+            if i > 1 then
+                v.yards = v.yards + routes[route[i - 2] * 10000 + route[i]]
+            end
             v.route[#v.route + 1] = { name = route[i + 1], yards = v.yards }
         end
         v.view = CreateFrame("Frame", nil, parent)
@@ -761,15 +905,21 @@ local function CreateSettingsPreview(parent, availableWidth, onHeightChanged)
         hookedParents[parent] = dress
         local lastWidth
         parent:HookScript("OnSizeChanged", function(_, width)
-            if width == lastWidth then return end
+            if width == lastWidth then
+                return
+            end
             lastWidth = width
-            if v.view:GetParent() == parent then RefreshPreview() end
+            if v.view:GetParent() == parent then
+                RefreshPreview()
+            end
         end)
     end
     v.view:Show()
     RefreshPreview(true)
     -- A new frame starts shown, so no OnShow fires for the first open.
-    if v.view:IsVisible() then PreviewShow() end
+    if v.view:IsVisible() then
+        PreviewShow()
+    end
     return v
 end
 
@@ -779,15 +929,22 @@ CludesUI._FlightTimer = {
     Cfg = Cfg,
     Apply = Apply,
     ApplyStyle = ApplyStyle,
-    ApplyPosition = function() F.Place(bar) end,
+    ApplyPosition = function()
+        F.Place(bar)
+    end,
     textures = { lookup = BAR_TEXTURES, names = BAR_TEXTURE_NAMES, order = BAR_TEXTURE_ORDER },
     CreateSettingsPreview = CreateSettingsPreview,
 }
 
 F.Start(Apply, {
-    key = "CUI_FlightTimer", label = "Flight Timer", order = 730, minWidth = 50,
+    key = "CUI_FlightTimer",
+    label = "Flight Timer",
+    order = 730,
+    minWidth = 50,
     frame = function(build)
-        if build then CreateBar() end
+        if build then
+            CreateBar()
+        end
         return bar
     end,
     -- Follows the text around the track.

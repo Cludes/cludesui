@@ -1,15 +1,19 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_Options.lua
 -------------------------------------------------------------------------------
-local ns = CludesUI._ModuleNS["CludesUIBlizzardSkin"]  -- module namespace (published by the module at its load)
-if not ns then return end  -- module disabled: no options page
-local PAGE_WINDOWSKINS   = "Blizzard Window Skins"
-local PAGE_TOOLTIPS      = "Tooltips, Menus & Popups"
-local PAGE_DRAGONRIDING  = "Dragon Riding"
-local PAGE_CHATBUBBLES   = "Chat Bubbles"
+local ns = CludesUI._ModuleNS["CludesUIBlizzardSkin"] -- module namespace (published by the module at its load)
+if not ns then
+    return
+end -- module disabled: no options page
+local PAGE_WINDOWSKINS = "Blizzard Window Skins"
+local PAGE_TOOLTIPS = "Tooltips, Menus & Popups"
+local PAGE_DRAGONRIDING = "Dragon Riding"
+local PAGE_CHATBUBBLES = "Chat Bubbles"
 -- A link tab: opens Quality of Life's Shifter (see pageLinks below).
-local PAGE_WINDOWMOVER   = "Window Mover"
+local PAGE_WINDOWMOVER = "Window Mover"
 -- Display-only tab labels: the page names above stay the pages' identities
 -- (nav links, Unlock Mode, saved state).
 CludesUI.TAB_LABEL_OVERRIDES[PAGE_WINDOWSKINS] = "Window Skins"
@@ -21,7 +25,9 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
-    if not CludesUI or not CludesUI.RegisterModule then return end
+    if not CludesUI or not CludesUI.RegisterModule then
+        return
+    end
     -- Page reuse (CludesUI_FramePool.lua): a frame made under a page pool
     -- host comes from the pool and is dressed again by every later build; under
     -- any other parent it is a plain new frame.
@@ -32,52 +38,93 @@ initFrame:SetScript("OnEvent", function(self)
     -- The step the skin renders with: the stored label (an unknown one = thin); unset = the
     -- legacy numeric tooltipBorderSize for the tooltip, 1 otherwise.
     local function BorderStep(prefix)
-        local key = CludesUIDB[prefix.."BorderThickness"]
-        if key then return CludesUI.BORDER_STEP_OF_LABEL[key] or 1 end
-        if prefix == "tooltip" then return CludesUIDB.tooltipBorderSize or 1 end
+        local key = CludesUIDB[prefix .. "BorderThickness"]
+        if key then
+            return CludesUI.BORDER_STEP_OF_LABEL[key] or 1
+        end
+        if prefix == "tooltip" then
+            return CludesUIDB.tooltipBorderSize or 1
+        end
         return 1
     end
     -- Border Size in pixels over <prefix>BorderThickness (still a label) and its <prefix>BorderThicknessPx companion.
     -- The short track leaves room for the color swatches beside it.
     local function BorderSizeSlider(prefix, text, disabledFn, apply, disabledTooltip)
-        return CludesUI.BorderPxSliderCfg{
-            text = text, disabled = disabledFn, disabledTooltip = disabledTooltip, trackWidth = 120,
-            getStep = function() return BorderStep(prefix) end,
-            setStep = function(step) CludesUIDB[prefix.."BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin" end,
-            getTex = function() return CludesUIDB[prefix.."BorderTexture"] or "solid" end,
-            getPx = function() return CludesUIDB[prefix.."BorderThicknessPx"] end,
-            setPx = function(v) CludesUIDB[prefix.."BorderThicknessPx"] = v end,
+        return CludesUI.BorderPxSliderCfg({
+            text = text,
+            disabled = disabledFn,
+            disabledTooltip = disabledTooltip,
+            trackWidth = 120,
+            getStep = function()
+                return BorderStep(prefix)
+            end,
+            setStep = function(step)
+                CludesUIDB[prefix .. "BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin"
+            end,
+            getTex = function()
+                return CludesUIDB[prefix .. "BorderTexture"] or "solid"
+            end,
+            getPx = function()
+                return CludesUIDB[prefix .. "BorderThicknessPx"]
+            end,
+            setPx = function(v)
+                CludesUIDB[prefix .. "BorderThicknessPx"] = v
+            end,
             apply = apply,
-        }
+        })
     end
     -- The registry sizeKey the skin passes beside the addonKey "blizzardSkin" (registered
     -- nowhere, so an UNSET offset resolves to 0/0, never to the global per-texture defaults).
     local function BorderSizeKey(prefix)
-        return CludesUIDB[prefix.."BorderThickness"] or CludesUI.BORDER_LABEL_OF_STEP[BorderStep(prefix)] or "thin"
+        return CludesUIDB[prefix .. "BorderThickness"]
+            or CludesUI.BORDER_LABEL_OF_STEP[BorderStep(prefix)]
+            or "thin"
     end
     -- The Width Offset | Height Offset cfgs for a textured style; nil for a solid one (no offsets).
     local function BorderOffsetCfgs(prefix, disabledFn, apply, disabledTooltip)
-        local tex = CludesUIDB[prefix.."BorderTexture"] or "solid"
-        if tex == "" or tex == "solid" then return end
-        return CludesUI.BorderOffsetRowCfgs{
-            addonKey = "blizzardSkin", disabled = disabledFn, disabledTooltip = disabledTooltip,
-            getTex = function() return CludesUIDB[prefix.."BorderTexture"] or "solid" end,
-            getStep = function() return BorderStep(prefix) end,
-            getSizeKey = function() return BorderSizeKey(prefix) end,
-            getPx = function() return CludesUIDB[prefix.."BorderThicknessPx"] end,
-            getX = function() return CludesUIDB[prefix.."BorderOffsetX"] end,
-            setX = function(v) CludesUIDB[prefix.."BorderOffsetX"] = v end,
-            getY = function() return CludesUIDB[prefix.."BorderOffsetY"] end,
-            setY = function(v) CludesUIDB[prefix.."BorderOffsetY"] = v end,
+        local tex = CludesUIDB[prefix .. "BorderTexture"] or "solid"
+        if tex == "" or tex == "solid" then
+            return
+        end
+        return CludesUI.BorderOffsetRowCfgs({
+            addonKey = "blizzardSkin",
+            disabled = disabledFn,
+            disabledTooltip = disabledTooltip,
+            getTex = function()
+                return CludesUIDB[prefix .. "BorderTexture"] or "solid"
+            end,
+            getStep = function()
+                return BorderStep(prefix)
+            end,
+            getSizeKey = function()
+                return BorderSizeKey(prefix)
+            end,
+            getPx = function()
+                return CludesUIDB[prefix .. "BorderThicknessPx"]
+            end,
+            getX = function()
+                return CludesUIDB[prefix .. "BorderOffsetX"]
+            end,
+            setX = function(v)
+                CludesUIDB[prefix .. "BorderOffsetX"] = v
+            end,
+            getY = function()
+                return CludesUIDB[prefix .. "BorderOffsetY"]
+            end,
+            setY = function(v)
+                CludesUIDB[prefix .. "BorderOffsetY"] = v
+            end,
             apply = apply,
-        }
+        })
     end
     -- A border row's inline controls: the Accent | Class | Custom color mode swatches left of
     -- its Border Size, and the Show Behind cog (allowBehind) left of its style. opts: apply =
     -- run after a pick (the Loot Window card's live refresh); quality = { key, tip } adds a
     -- Quality swatch whose own color is saved at key.
     local function AttachBorderControls(row, prefix, disabledFn, allowBehind, opts)
-        if CludesUI._prebuilding then return end
+        if CludesUI._prebuilding then
+            return
+        end
         local PP = CludesUI.PanelPP
         local apply = opts and opts.apply
         local left, right = row._leftRegion, row._rightRegion
@@ -85,12 +132,23 @@ initFrame:SetScript("OnEvent", function(self)
         -- keeps only Show Behind, so a surface without that option gets no cog at all.
         if allowBehind then
             local popupRows = {
-                { type="toggle", label="Show Behind",
-                  get=function() return CludesUIDB[prefix.."BorderBehind"] or false end,
-                  set=function(v) CludesUIDB[prefix.."BorderBehind"]=v; if apply then apply() end end },
+                {
+                    type = "toggle",
+                    label = "Show Behind",
+                    get = function()
+                        return CludesUIDB[prefix .. "BorderBehind"] or false
+                    end,
+                    set = function(v)
+                        CludesUIDB[prefix .. "BorderBehind"] = v
+                        if apply then
+                            apply()
+                        end
+                    end,
+                },
             }
             CludesUI.BuildInlineCog(left, {
-                title = "Border Options", rows = popupRows,
+                title = "Border Options",
+                rows = popupRows,
                 anchorTo = left._control,
                 disabled = disabledFn,
                 disabledTooltip = prefix == "tooltip" and "Reskin Tooltip" or "Reskin Popups and Menus",
@@ -100,44 +158,74 @@ initFrame:SetScript("OnEvent", function(self)
         -- A pickable swatch (Custom, Quality) opens its color picker on a click while its mode
         -- is the active one; colorKey is where it saves (default the Custom color).
         local function AddModeSwatch(anchor, mode, tip, getColor, pickable, colorKey)
-            local sw, refresh=CludesUI.BuildColorSwatch(right,right:GetFrameLevel()+5,getColor,
-                function(r,g,b,a)
-                    CludesUIDB[colorKey or (prefix.."BorderColor")]={r=r,g=g,b=b}
-                    CludesUIDB[prefix.."BorderOpacity"]=a
-                    CludesUIDB[prefix.."BorderColorMode"]=mode
-                    if apply then apply() end
+            local sw, refresh = CludesUI.BuildColorSwatch(
+                right,
+                right:GetFrameLevel() + 5,
+                getColor,
+                function(r, g, b, a)
+                    CludesUIDB[colorKey or (prefix .. "BorderColor")] = { r = r, g = g, b = b }
+                    CludesUIDB[prefix .. "BorderOpacity"] = a
+                    CludesUIDB[prefix .. "BorderColorMode"] = mode
+                    if apply then
+                        apply()
+                    end
                 end,
-                pickable,20)
-            PP.Point(sw,"RIGHT",anchor,"LEFT",-8,0)
-            local orig=sw:GetScript("OnClick")
-            sw:SetScript("OnClick",function(self)
-                if not pickable or (CludesUIDB[prefix.."BorderColorMode"] or "custom")~=mode then
-                    CludesUIDB[prefix.."BorderColorMode"]=mode
-                    if apply then apply() end
-                    CludesUI:RefreshPage(); return
+                pickable,
+                20
+            )
+            PP.Point(sw, "RIGHT", anchor, "LEFT", -8, 0)
+            local orig = sw:GetScript("OnClick")
+            sw:SetScript("OnClick", function(self)
+                if not pickable or (CludesUIDB[prefix .. "BorderColorMode"] or "custom") ~= mode then
+                    CludesUIDB[prefix .. "BorderColorMode"] = mode
+                    if apply then
+                        apply()
+                    end
+                    CludesUI:RefreshPage()
+                    return
                 end
                 orig(self)
             end)
-            sw:HookScript("OnEnter",function(self) CludesUI.ShowWidgetTooltip(self,tip) end)
-            sw:HookScript("OnLeave",function() CludesUI.HideWidgetTooltip() end)
+            sw:HookScript("OnEnter", function(self)
+                CludesUI.ShowWidgetTooltip(self, tip)
+            end)
+            sw:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             -- Applied once at build time too -- widget refresh only fires
             -- on later changes, so without this every swatch opened lit.
             local function UpdSwatchState()
-                local off=disabledFn and disabledFn(); local active=(CludesUIDB[prefix.."BorderColorMode"] or "custom")==mode
-                sw:SetAlpha(off and .15 or (active and 1 or .3)); sw:EnableMouse(not off); refresh()
+                local off = disabledFn and disabledFn()
+                local active = (CludesUIDB[prefix .. "BorderColorMode"] or "custom") == mode
+                sw:SetAlpha(off and 0.15 or (active and 1 or 0.3))
+                sw:EnableMouse(not off)
+                refresh()
             end
             CludesUI.RegisterWidgetRefresh(UpdSwatchState)
             UpdSwatchState()
             return sw
         end
-        local accent=AddModeSwatch(right._control,"accent","Accent Color",function() local c=CludesUI.CLUDES_GREEN; return c.r,c.g,c.b,1 end,false)
-        local class=AddModeSwatch(accent,"class","Class Color",function() local _,k=UnitClass("player"); local c=RAID_CLASS_COLORS[k]; return c.r,c.g,c.b,1 end,false)
-        local last=AddModeSwatch(class,"custom","Custom Color",function() local c=CludesUIDB[prefix.."BorderColor"] or {r=1,g=1,b=1}; return c.r,c.g,c.b,CludesUIDB[prefix.."BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA end,true)
+        local accent = AddModeSwatch(right._control, "accent", "Accent Color", function()
+            local c = CludesUI.CLUDES_GREEN
+            return c.r, c.g, c.b, 1
+        end, false)
+        local class = AddModeSwatch(accent, "class", "Class Color", function()
+            local _, k = UnitClass("player")
+            local c = RAID_CLASS_COLORS[k]
+            return c.r, c.g, c.b, 1
+        end, false)
+        local last = AddModeSwatch(class, "custom", "Custom Color", function()
+            local c = CludesUIDB[prefix .. "BorderColor"] or { r = 1, g = 1, b = 1 }
+            return c.r, c.g, c.b, CludesUIDB[prefix .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
+        end, true)
         local q = opts and opts.quality
         if q then
-            last=AddModeSwatch(last,"quality",q.tip,function() local c=CludesUIDB[q.key] or {r=1,g=1,b=1}; return c.r,c.g,c.b,CludesUIDB[prefix.."BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA end,true,q.key)
+            last = AddModeSwatch(last, "quality", q.tip, function()
+                local c = CludesUIDB[q.key] or { r = 1, g = 1, b = 1 }
+                return c.r, c.g, c.b, CludesUIDB[prefix .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
+            end, true, q.key)
         end
-        right._lastInline=last
+        right._lastInline = last
     end
 
     -- Header builder for runtime-painted samples at their on-screen size: the panel's scale
@@ -181,9 +269,17 @@ initFrame:SetScript("OnEvent", function(self)
                             -- Offsets in the sample's own units, snapped to its physical pixels.
                             local hs = root:GetScale()
                             local onePx = CludesUI.PP.perfect / root:GetEffectiveScale()
-                            local function Snap(v) return math.floor(v / onePx + 0.5) * onePx end
+                            local function Snap(v)
+                                return math.floor(v / onePx + 0.5) * onePx
+                            end
                             local cx = (-(n - 1) / 2 + (i - 1)) * colW
-                            root:SetPoint("TOP", header, "CENTER", Snap(cx / hs), Snap((blockH / 2 - titleH) / hs))
+                            root:SetPoint(
+                                "TOP",
+                                header,
+                                "CENTER",
+                                Snap(cx / hs),
+                                Snap((blockH / 2 - titleH) / hs)
+                            )
                             c.fs:ClearAllPoints()
                             c.fs:SetPoint("BOTTOMLEFT", root, "TOPLEFT", 0, 3)
                             c.fs:Show()
@@ -198,7 +294,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
             for i = 1, n do
-                local c = { }
+                local c = {}
                 st[i] = c
                 if titled then
                     c.fs = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
@@ -221,22 +317,38 @@ initFrame:SetScript("OnEvent", function(self)
     end
     -- Popups first, as the page's sections run.
     local TooltipHeaderBuilder = SampleHeaderBuilder({
-        { title = CludesUI.L("Popups"), show = function(header, place)
-            if CludesUI.ShowPopupPreview then CludesUI.ShowPopupPreview(header, place) end
-        end },
-        { title = CludesUI.L("Tooltip"), show = function(header, place)
-            if CludesUI.ShowTooltipPreview then CludesUI.ShowTooltipPreview(header, place) end
-        end },
+        {
+            title = CludesUI.L("Popups"),
+            show = function(header, place)
+                if CludesUI.ShowPopupPreview then
+                    CludesUI.ShowPopupPreview(header, place)
+                end
+            end,
+        },
+        {
+            title = CludesUI.L("Tooltip"),
+            show = function(header, place)
+                if CludesUI.ShowTooltipPreview then
+                    CludesUI.ShowTooltipPreview(header, place)
+                end
+            end,
+        },
     })
     local function TooltipPreviewRepaint()
-        if CludesUI._repaintTooltipPreview then CludesUI._repaintTooltipPreview() end
+        if CludesUI._repaintTooltipPreview then
+            CludesUI._repaintTooltipPreview()
+        end
     end
     local function PopupPreviewRepaint()
-        if CludesUI._repaintPopupPreview then CludesUI._repaintPopupPreview() end
+        if CludesUI._repaintPopupPreview then
+            CludesUI._repaintPopupPreview()
+        end
     end
 
     local function BuildTooltipsPage(pageName, parent, yOffset)
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local W = CludesUI.Widgets
         local y = yOffset
         local _, h
@@ -246,7 +358,10 @@ initFrame:SetScript("OnEvent", function(self)
         -- textured (a solid border has no offsets). Built in every pass so the y advance never differs.
         local function BorderOffsetRow(prefix, disabledFn, apply)
             local ocfgL, ocfgR = BorderOffsetCfgs(prefix, disabledFn, apply)
-            if ocfgL then _, h = W:DualRow(parent, y, ocfgL, ocfgR); y = y - h end
+            if ocfgL then
+                _, h = W:DualRow(parent, y, ocfgL, ocfgR)
+                y = y - h
+            end
         end
 
         -- The sample tooltip and popup head the page.
@@ -257,110 +372,285 @@ initFrame:SetScript("OnEvent", function(self)
         end
         parent._showRowDivider = true
 
-        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
 
-        _, h = W:SectionHeader(parent, "BLIZZARD POPUPS & GAME MENU", y);  y = y - h
+        _, h = W:SectionHeader(parent, "BLIZZARD POPUPS & GAME MENU", y)
+        y = y - h
 
-        local function popupOff() return CludesUIDB.reskinPopupsMenus == false end
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Reskin Popups and Menus",
-              tooltip="Reskins Blizzard's right-click context menus and pop-ups.",
-              getValue=function()
-                  -- Seeded from the old master by the blizzskin_reskin_master_split_v1
-                  -- migration; independent thereafter. Default on.
-                  return not CludesUIDB or CludesUIDB.reskinPopupsMenus ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.reskinPopupsMenus = v
-                  -- Resurrect Accept Glow runs only under the reskin: sync a shown popup now
-                  if CludesUI._EnsureResurrectGlow then CludesUI._EnsureResurrectGlow() end
-                  CludesUI:RefreshPage()  -- update the border cog, swatch and glow disabled states
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Reload Required",
-                      message     = "Reskin setting requires a UI reload to fully apply.",
-                      confirmText = "Reload Now",
-                      cancelText  = "Later",
-                      reload      = true,
-                  })
-              end },
-            { type="toggle", text="Resurrect Accept Glow",
-              tooltip="Adds a glowing border around the Accept button of resurrection popups.",
-              disabled=popupOff, disabledTooltip="Reskin Popups and Menus",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.resurrectAcceptGlow or false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.resurrectAcceptGlow = v
-                  if CludesUI._EnsureResurrectGlow then CludesUI._EnsureResurrectGlow() end
-              end }
-        );  y = y - h
+        local function popupOff()
+            return CludesUIDB.reskinPopupsMenus == false
+        end
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Reskin Popups and Menus",
+            tooltip = "Reskins Blizzard's right-click context menus and pop-ups.",
+            getValue = function()
+                -- Seeded from the old master by the blizzskin_reskin_master_split_v1
+                -- migration; independent thereafter. Default on.
+                return not CludesUIDB or CludesUIDB.reskinPopupsMenus ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.reskinPopupsMenus = v
+                -- Resurrect Accept Glow runs only under the reskin: sync a shown popup now
+                if CludesUI._EnsureResurrectGlow then
+                    CludesUI._EnsureResurrectGlow()
+                end
+                CludesUI:RefreshPage() -- update the border cog, swatch and glow disabled states
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Reskin setting requires a UI reload to fully apply.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+            end,
+        }, {
+            type = "toggle",
+            text = "Resurrect Accept Glow",
+            tooltip = "Adds a glowing border around the Accept button of resurrection popups.",
+            disabled = popupOff,
+            disabledTooltip = "Reskin Popups and Menus",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.resurrectAcceptGlow or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.resurrectAcceptGlow = v
+                if CludesUI._EnsureResurrectGlow then
+                    CludesUI._EnsureResurrectGlow()
+                end
+            end,
+        })
+        y = y - h
 
         do
-            local texValues,texOrder=CludesUI.GetBorderTextureDropdown()
+            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local outer
-            outer,h=W:DualRow(parent,y,
-                {type="dropdown",text="Border Style",disabled=popupOff,values=texValues,order=texOrder,getValue=function() return CludesUIDB.popupMenuBorderTexture or "solid" end,setValue=function(v) local c,b=CludesUI.GetBorderStyleSelectDefaults(v); CludesUIDB.popupMenuBorderTexture=v; CludesUIDB.popupMenuBorderOffsetX=nil; CludesUIDB.popupMenuBorderOffsetY=nil; CludesUIDB.popupMenuBorderBehind=b; CludesUIDB.popupMenuBorderColor=c; if CludesUIDB.popupMenuBorderThicknessPx then CludesUIDB.popupMenuBorderThicknessPx=false end; CludesUI:RefreshPage(true) end},
-                BorderSizeSlider("popupMenu","Border Size",popupOff,PopupPreviewRepaint)); y=y-h
-            AttachBorderControls(outer,"popupMenu",popupOff,true,{ apply = PopupPreviewRepaint })
-            BorderOffsetRow("popupMenu",popupOff,PopupPreviewRepaint)
+            outer, h = W:DualRow(parent, y, {
+                type = "dropdown",
+                text = "Border Style",
+                disabled = popupOff,
+                values = texValues,
+                order = texOrder,
+                getValue = function()
+                    return CludesUIDB.popupMenuBorderTexture or "solid"
+                end,
+                setValue = function(v)
+                    local c, b = CludesUI.GetBorderStyleSelectDefaults(v)
+                    CludesUIDB.popupMenuBorderTexture = v
+                    CludesUIDB.popupMenuBorderOffsetX = nil
+                    CludesUIDB.popupMenuBorderOffsetY = nil
+                    CludesUIDB.popupMenuBorderBehind = b
+                    CludesUIDB.popupMenuBorderColor = c
+                    if CludesUIDB.popupMenuBorderThicknessPx then
+                        CludesUIDB.popupMenuBorderThicknessPx = false
+                    end
+                    CludesUI:RefreshPage(true)
+                end,
+            }, BorderSizeSlider("popupMenu", "Border Size", popupOff, PopupPreviewRepaint))
+            y = y - h
+            AttachBorderControls(outer, "popupMenu", popupOff, true, { apply = PopupPreviewRepaint })
+            BorderOffsetRow("popupMenu", popupOff, PopupPreviewRepaint)
             local buttons
-            buttons,h=W:DualRow(parent,y,
-                {type="dropdown",text="Button Border Style",disabled=popupOff,values=texValues,order=texOrder,getValue=function() return CludesUIDB.popupMenuButtonBorderTexture or "solid" end,setValue=function(v) CludesUIDB.popupMenuButtonBorderTexture=v; local sc=CludesUI.GetBorderSelectColor(v); if sc then CludesUIDB.popupMenuButtonBorderColor=sc end; CludesUIDB.popupMenuButtonBorderOffsetX=nil; CludesUIDB.popupMenuButtonBorderOffsetY=nil; if CludesUIDB.popupMenuButtonBorderThicknessPx then CludesUIDB.popupMenuButtonBorderThicknessPx=false end; CludesUI:RefreshPage(true) end},
-                BorderSizeSlider("popupMenuButton","Button Border Size",popupOff,PopupPreviewRepaint)); y=y-h
-            AttachBorderControls(buttons,"popupMenuButton",popupOff,nil,{ apply = PopupPreviewRepaint })
-            BorderOffsetRow("popupMenuButton",popupOff,PopupPreviewRepaint)
+            buttons, h = W:DualRow(parent, y, {
+                type = "dropdown",
+                text = "Button Border Style",
+                disabled = popupOff,
+                values = texValues,
+                order = texOrder,
+                getValue = function()
+                    return CludesUIDB.popupMenuButtonBorderTexture or "solid"
+                end,
+                setValue = function(v)
+                    CludesUIDB.popupMenuButtonBorderTexture = v
+                    local sc = CludesUI.GetBorderSelectColor(v)
+                    if sc then
+                        CludesUIDB.popupMenuButtonBorderColor = sc
+                    end
+                    CludesUIDB.popupMenuButtonBorderOffsetX = nil
+                    CludesUIDB.popupMenuButtonBorderOffsetY = nil
+                    if CludesUIDB.popupMenuButtonBorderThicknessPx then
+                        CludesUIDB.popupMenuButtonBorderThicknessPx = false
+                    end
+                    CludesUI:RefreshPage(true)
+                end,
+            }, BorderSizeSlider(
+                "popupMenuButton",
+                "Button Border Size",
+                popupOff,
+                PopupPreviewRepaint
+            ))
+            y = y - h
+            AttachBorderControls(buttons, "popupMenuButton", popupOff, nil, { apply = PopupPreviewRepaint })
+            BorderOffsetRow("popupMenuButton", popupOff, PopupPreviewRepaint)
         end
 
-        _,h=W:DualRow(parent,y,
-            {type="colorpicker",text="Button Background",hasAlpha=true,disabled=popupOff,getValue=function() local c=CludesUIDB.popupMenuButtonBackgroundColor or {r=.1,g=.1,b=.1,a=.8}; return c.r,c.g,c.b,c.a end,setValue=function(r,g,b,a) CludesUIDB.popupMenuButtonBackgroundColor={r=r,g=g,b=b,a=a}; PopupPreviewRepaint() end},
-            {type="multiSwatch",text="Element & Text Color",disabled=popupOff,swatches={
+        _, h = W:DualRow(parent, y, {
+            type = "colorpicker",
+            text = "Button Background",
+            hasAlpha = true,
+            disabled = popupOff,
+            getValue = function()
+                local c = CludesUIDB.popupMenuButtonBackgroundColor or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
+                return c.r, c.g, c.b, c.a
+            end,
+            setValue = function(r, g, b, a)
+                CludesUIDB.popupMenuButtonBackgroundColor = { r = r, g = g, b = b, a = a }
+                PopupPreviewRepaint()
+            end,
+        }, {
+            type = "multiSwatch",
+            text = "Element & Text Color",
+            disabled = popupOff,
+            swatches = {
                 -- Effective mode comes from the skin file's resolver: unset =
                 -- native unless the legacy Accent Colored Elements opt-in is present.
                 -- All four highlights read it so the default state is shown truthfully.
-                {tooltip="Native Colors",hasAlpha=false,getValue=function() return 1,1,1 end,setValue=function() end,onClick=function() CludesUIDB.popupMenuButtonTextColorMode="native"; PopupPreviewRepaint(); CludesUI:RefreshPage() end,refreshAlpha=function() local m=CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode() or "native"; return m=="native" and 1 or .3 end},
-                {tooltip="Accent Color",hasAlpha=false,getValue=function() local c=CludesUI.CLUDES_GREEN; return c.r,c.g,c.b end,setValue=function() end,onClick=function() CludesUIDB.popupMenuButtonTextColorMode="accent"; PopupPreviewRepaint(); CludesUI:RefreshPage() end,refreshAlpha=function() local m=CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode() or "native"; return m=="accent" and 1 or .3 end},
-                {tooltip="Custom Color",hasAlpha=false,getValue=function() local c=CludesUIDB.popupMenuButtonTextColor or {r=1,g=1,b=1}; return c.r,c.g,c.b end,setValue=function(r,g,b) CludesUIDB.popupMenuButtonTextColorMode="custom"; CludesUIDB.popupMenuButtonTextColor={r=r,g=g,b=b}; PopupPreviewRepaint() end,onClick=function(self) local m=CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode() or "native"; if m~="custom" then CludesUIDB.popupMenuButtonTextColorMode="custom"; PopupPreviewRepaint(); CludesUI:RefreshPage(); return end self._eabOrigClick(self) end,refreshAlpha=function() local m=CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode() or "native"; return m=="custom" and 1 or .3 end},
-                {tooltip="Class Color",hasAlpha=false,getValue=function() local _,k=UnitClass("player"); local c=RAID_CLASS_COLORS[k]; return c.r,c.g,c.b end,setValue=function() end,onClick=function() CludesUIDB.popupMenuButtonTextColorMode="class"; PopupPreviewRepaint(); CludesUI:RefreshPage() end,refreshAlpha=function() local m=CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode() or "native"; return m=="class" and 1 or .3 end},
-            }}); y=y-h
+                {
+                    tooltip = "Native Colors",
+                    hasAlpha = false,
+                    getValue = function()
+                        return 1, 1, 1
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        CludesUIDB.popupMenuButtonTextColorMode = "native"
+                        PopupPreviewRepaint()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                            or "native"
+                        return m == "native" and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Accent Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = CludesUI.CLUDES_GREEN
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        CludesUIDB.popupMenuButtonTextColorMode = "accent"
+                        PopupPreviewRepaint()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                            or "native"
+                        return m == "accent" and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Custom Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = CludesUIDB.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function(r, g, b)
+                        CludesUIDB.popupMenuButtonTextColorMode = "custom"
+                        CludesUIDB.popupMenuButtonTextColor = { r = r, g = g, b = b }
+                        PopupPreviewRepaint()
+                    end,
+                    onClick = function(self)
+                        local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                            or "native"
+                        if m ~= "custom" then
+                            CludesUIDB.popupMenuButtonTextColorMode = "custom"
+                            PopupPreviewRepaint()
+                            CludesUI:RefreshPage()
+                            return
+                        end
+                        self._eabOrigClick(self)
+                    end,
+                    refreshAlpha = function()
+                        local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                            or "native"
+                        return m == "custom" and 1 or 0.3
+                    end,
+                },
+                {
+                    tooltip = "Class Color",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, k = UnitClass("player")
+                        local c = RAID_CLASS_COLORS[k]
+                        return c.r, c.g, c.b
+                    end,
+                    setValue = function() end,
+                    onClick = function()
+                        CludesUIDB.popupMenuButtonTextColorMode = "class"
+                        PopupPreviewRepaint()
+                        CludesUI:RefreshPage()
+                    end,
+                    refreshAlpha = function()
+                        local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
+                            or "native"
+                        return m == "class" and 1 or 0.3
+                    end,
+                },
+            },
+        })
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Font Size Scale",
-              tooltip="Scales the font size of reskinned Blizzard tooltips, menus, and popups.",
-              min=0.7, max=1.5, step=0.05, format="%.0f%%",
-              displayMul=100,
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.tooltipFontScale or 1.0
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipFontScale = v
-                  TooltipPreviewRepaint()
-              end },
-            { type="toggle", text="Enable Blizzard Pause Menu",
-              tooltip="Reskins the Escape / Game Menu.",
-              getValue=function()
-                  -- Independent, default on (not tied to any master reskin toggle).
-                  return not CludesUIDB or CludesUIDB.reskinGameMenu ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.reskinGameMenu = v
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Reload Required",
-                      message     = "Changing the pause menu reskin requires a UI reload.",
-                      confirmText = "Reload Now",
-                      cancelText  = "Later",
-                      reload      = true,
-                  })
-              end }
-        );  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Font Size Scale",
+            tooltip = "Scales the font size of reskinned Blizzard tooltips, menus, and popups.",
+            min = 0.7,
+            max = 1.5,
+            step = 0.05,
+            format = "%.0f%%",
+            displayMul = 100,
+            getValue = function()
+                return CludesUIDB and CludesUIDB.tooltipFontScale or 1.0
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.tooltipFontScale = v
+                TooltipPreviewRepaint()
+            end,
+        }, {
+            type = "toggle",
+            text = "Enable Blizzard Pause Menu",
+            tooltip = "Reskins the Escape / Game Menu.",
+            getValue = function()
+                -- Independent, default on (not tied to any master reskin toggle).
+                return not CludesUIDB or CludesUIDB.reskinGameMenu ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.reskinGameMenu = v
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Changing the pause menu reskin requires a UI reload.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+            end,
+        })
+        y = y - h
 
-        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
 
         local hdr
-        hdr, h = W:SectionHeader(parent, "BLIZZARD TOOLTIP", y);  y = y - h
+        hdr, h = W:SectionHeader(parent, "BLIZZARD TOOLTIP", y)
+        y = y - h
 
         -- "Reskin Tooltip" (customTooltips) is the master for this section: its
         -- reskin-driven sub-settings gray out (and stop applying) when it is off.
@@ -381,9 +671,12 @@ initFrame:SetScript("OnEvent", function(self)
                 return ttReskinOff() or (CludesUIDB and CludesUIDB.tooltipAnchorCursor and true or false)
             end,
             disabledTooltip = function()
-                if ttReskinOff() then return "Reskin Tooltip" end
+                if ttReskinOff() then
+                    return "Reskin Tooltip"
+                end
                 return "This option does not apply while Anchor to Cursor is enabled"
-            end })
+            end,
+        })
 
         -- Show Health Strip works without the reskin as well; its cog restyles
         -- the reskinned bar, so the cog locks with the reskin off.
@@ -393,35 +686,53 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Reskin Tooltip | Show Tooltips
         local ttShowRow
-        ttShowRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Reskin Tooltip",
-              getValue=function()
-                  return not CludesUIDB or CludesUIDB.customTooltips ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.customTooltips = v
-                  if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end
-                  CludesUI:RefreshPage()  -- gray/ungray the rest of the section now
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Reload Required",
-                      message     = "Reskin setting requires a UI reload to fully apply.",
-                      confirmText = "Reload Now",
-                      cancelText  = "Later",
-                      reload      = true,
-                  })
-              end },
-            { type="dropdown", text="Show Tooltips",
-              disabled=ttReskinOff, disabledTooltip="Reskin Tooltip",
-              values={ always="Always", outOfCombat="Out of Combat", outOfBossCombat="Out of Boss Combat", never="Never" },
-              order={ "always", "outOfCombat", "outOfBossCombat", "never" },
-              getValue=function() return (CludesUIDB and CludesUIDB.tooltipShowMode) or "always" end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipShowMode = v
-                  CludesUI:RefreshPage()  -- update the Use Modifier cog disabled state
-              end }
-        );  y = y - h
+        ttShowRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Reskin Tooltip",
+            getValue = function()
+                return not CludesUIDB or CludesUIDB.customTooltips ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.customTooltips = v
+                if CludesUI.SyncAuraTooltipSkin then
+                    CludesUI.SyncAuraTooltipSkin()
+                end
+                CludesUI:RefreshPage() -- gray/ungray the rest of the section now
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Reskin setting requires a UI reload to fully apply.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+            end,
+        }, {
+            type = "dropdown",
+            text = "Show Tooltips",
+            disabled = ttReskinOff,
+            disabledTooltip = "Reskin Tooltip",
+            values = {
+                always = "Always",
+                outOfCombat = "Out of Combat",
+                outOfBossCombat = "Out of Boss Combat",
+                never = "Never",
+            },
+            order = { "always", "outOfCombat", "outOfBossCombat", "never" },
+            getValue = function()
+                return (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.tooltipShowMode = v
+                CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
+            end,
+        })
+        y = y - h
 
         -- "Use Modifier" cog on Show Tooltips (right region): while the chosen
         -- modifier is held, suppression is lifted so a hidden tooltip can be
@@ -430,69 +741,99 @@ initFrame:SetScript("OnEvent", function(self)
         if not CludesUI._prebuilding then
             local rightRgn = ttShowRow._rightRegion
             local function showModOff()
-                if ttReskinOff() then return true end
+                if ttReskinOff() then
+                    return true
+                end
                 return ((CludesUIDB and CludesUIDB.tooltipShowMode) or "always") == "always"
             end
             CludesUI.BuildInlineCog(rightRgn, {
                 gap = 9,
                 disabled = showModOff,
                 disabledTooltip = function()
-                    return ttReskinOff() and "Reskin Tooltip" or "This option requires Show Tooltips to be set to hide tooltips"
+                    return ttReskinOff() and "Reskin Tooltip"
+                        or "This option requires Show Tooltips to be set to hide tooltips"
                 end,
                 title = "Show Tooltips",
                 rows = {
-                    { type="dropdown", label="Peek Modifier",
-                      values={ none="None", shift="Shift", control="Control", alt="Alt" },
-                      order={ "none", "shift", "control", "alt" },
-                      get=function() return (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none" end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipShowModifier = v
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Peek Modifier",
+                        values = { none = "None", shift = "Shift", control = "Control", alt = "Alt" },
+                        order = { "none", "shift", "control", "alt" },
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipShowModifier = v
+                        end,
+                    },
                 },
             })
         end
 
         -- Anchor to Cursor | Growth Direction
         local ttAnchorRow
-        ttAnchorRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Anchor to Cursor",
-              disabled=ttReskinOff, disabledTooltip="Reskin Tooltip",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.tooltipAnchorCursor or false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipAnchorCursor = v
-                  if CludesUI._applyTooltipCursorAnchor then CludesUI._applyTooltipCursorAnchor() end
-                  -- Re-park the fixed anchor (and seed it if this profile never
-                  -- has) so turning the cursor mode off resumes cleanly.
-                  if CludesUI._applyTooltipFixedAnchor then CludesUI._applyTooltipFixedAnchor() end
-                  CludesUI:RefreshPage()  -- update the position cog + Growth Direction disabled states
-              end },
+        ttAnchorRow, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "toggle",
+                text = "Anchor to Cursor",
+                disabled = ttReskinOff,
+                disabledTooltip = "Reskin Tooltip",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.tooltipAnchorCursor or false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.tooltipAnchorCursor = v
+                    if CludesUI._applyTooltipCursorAnchor then
+                        CludesUI._applyTooltipCursorAnchor()
+                    end
+                    -- Re-park the fixed anchor (and seed it if this profile never
+                    -- has) so turning the cursor mode off resumes cleanly.
+                    if CludesUI._applyTooltipFixedAnchor then
+                        CludesUI._applyTooltipFixedAnchor()
+                    end
+                    CludesUI:RefreshPage() -- update the position cog + Growth Direction disabled states
+                end,
+            },
             -- Default screen-anchored tooltip only (see ApplyGrowthDirection in
             -- CUI_BlizzardSkin_TooltipAnchor.lua): Blizzard picks the anchored corner
             -- dynamically from the tooltip's screen position; "Expand Up"/"Expand Down"
             -- force the vertical component of that corner. The cursor anchor re-points
             -- the tooltip itself, so this grays out while Anchor to Cursor is on.
-            { type="dropdown", text="Growth Direction",
-              disabled=function()
-                  return ttReskinOff() or (CludesUIDB and CludesUIDB.tooltipAnchorCursor and true or false)
-              end,
-              disabledTooltip=function()
-                  if ttReskinOff() then return "Reskin Tooltip" end
-                  return "This option does not apply while Anchor to Cursor is enabled"
-              end,
-              values={ default="Default", up="Expand Up", down="Expand Down" },
-              order={ "default", "up", "down" },
-              getValue=function()
-                  return (CludesUIDB and CludesUIDB.tooltipGrowthDirection) or "default"
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipGrowthDirection = v
-              end }
-        );  y = y - h
+            {
+                type = "dropdown",
+                text = "Growth Direction",
+                disabled = function()
+                    return ttReskinOff() or (CludesUIDB and CludesUIDB.tooltipAnchorCursor and true or false)
+                end,
+                disabledTooltip = function()
+                    if ttReskinOff() then
+                        return "Reskin Tooltip"
+                    end
+                    return "This option does not apply while Anchor to Cursor is enabled"
+                end,
+                values = { default = "Default", up = "Expand Up", down = "Expand Down" },
+                order = { "default", "up", "down" },
+                getValue = function()
+                    return (CludesUIDB and CludesUIDB.tooltipGrowthDirection) or "default"
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.tooltipGrowthDirection = v
+                end,
+            }
+        )
+        y = y - h
 
         -- Position control on Anchor to Cursor (left region): position + X/Y offset
         if not CludesUI._prebuilding then
@@ -506,30 +847,73 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Anchor to Cursor",
                 title = "Cursor Tooltip Position",
                 rows = {
-                    { type="dropdown", label="Position",
-                      values={ bottomright="Bottom Right", bottomleft="Bottom Left",
-                               topright="Top Right", topleft="Top Left",
-                               right="Right", left="Left", top="Top", bottom="Bottom",
-                               center="Center" },
-                      order={ "bottomright", "bottomleft", "topright", "topleft",
-                              "right", "left", "top", "bottom", "center" },
-                      get=function() return CludesUIDB and CludesUIDB.tooltipCursorPosition or "top" end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipCursorPosition = v
-                      end },
-                    { type="slider", label="Offset X", min=-100, max=100, step=1,
-                      get=function() return (CludesUIDB and CludesUIDB.tooltipCursorOffsetX) or 0 end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipCursorOffsetX = v
-                      end },
-                    { type="slider", label="Offset Y", min=-100, max=100, step=1,
-                      get=function() return (CludesUIDB and CludesUIDB.tooltipCursorOffsetY) or 0 end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipCursorOffsetY = v
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Position",
+                        values = {
+                            bottomright = "Bottom Right",
+                            bottomleft = "Bottom Left",
+                            topright = "Top Right",
+                            topleft = "Top Left",
+                            right = "Right",
+                            left = "Left",
+                            top = "Top",
+                            bottom = "Bottom",
+                            center = "Center",
+                        },
+                        order = {
+                            "bottomright",
+                            "bottomleft",
+                            "topright",
+                            "topleft",
+                            "right",
+                            "left",
+                            "top",
+                            "bottom",
+                            "center",
+                        },
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipCursorPosition or "top"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipCursorPosition = v
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.tooltipCursorOffsetX) or 0
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipCursorOffsetX = v
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.tooltipCursorOffsetY) or 0
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipCursorOffsetY = v
+                        end,
+                    },
                 },
             })
         end
@@ -540,70 +924,165 @@ initFrame:SetScript("OnEvent", function(self)
         -- reskin off because Detailed Tooltips (the UberTooltips CVar) works with
         -- the default Blizzard tooltip too; the reskin-driven entries lock instead.
         local ttExtrasRow
-        ttExtrasRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Tooltip Extras",
-              values={ __placeholder = "..." }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end, setValue=function() end },
+        ttExtrasRow, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "dropdown",
+                text = "Tooltip Extras",
+                values = { __placeholder = "..." },
+                order = { "__placeholder" },
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            },
             -- Front-end duplicate of the toggle in Global Settings > Developer;
             -- same CludesUIDB.showSpellID key read by the tooltip logic in
             -- CludesUI.lua (no separate backend). Independent of the reskin.
-            { type="toggle", text="Spell ID on Tooltip",
-              getValue=function()
-                  return CludesUI.SpellIDOn()
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showSpellID = v
-                  if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
-                  CludesUI:RefreshPage()  -- update the Use Modifier cog disabled state
-              end }
-        );  y = y - h
+            {
+                type = "toggle",
+                text = "Spell ID on Tooltip",
+                getValue = function()
+                    return CludesUI.SpellIDOn()
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.showSpellID = v
+                    if CludesUI.SyncAuraSpellIDCVar then
+                        CludesUI.SyncAuraSpellIDCVar()
+                    end
+                    CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
+                end,
+            }
+        )
+        y = y - h
 
         if not CludesUI._prebuilding then
             local PP = CludesUI.PanelPP
             local lrgn = ttExtrasRow._leftRegion
-            if lrgn._control then lrgn._control:Hide() end
+            if lrgn._control then
+                lrgn._control:Hide()
+            end
             -- Unset value of each reskin-driven key ("uber" is the CVar entry).
             local EXTRA_DEFAULTS = {
-                tooltipPlayerTitles = false, tooltipItemLevel = true, tooltipMythicScore = true,
-                tooltipShowMount = false, tooltipShowGuildRank = false, tooltipShowTarget = false,
-                tooltipLevelColor = false, tooltipClassLineColor = false, tooltipFactionColor = false,
-                tooltipGuildmateColor = false, tooltipCompactLevel = false, tooltipAFKTag = false,
+                tooltipPlayerTitles = false,
+                tooltipItemLevel = true,
+                tooltipMythicScore = true,
+                tooltipShowMount = false,
+                tooltipShowGuildRank = false,
+                tooltipShowTarget = false,
+                tooltipLevelColor = false,
+                tooltipClassLineColor = false,
+                tooltipFactionColor = false,
+                tooltipGuildmateColor = false,
+                tooltipCompactLevel = false,
+                tooltipAFKTag = false,
             }
             local lockTip = CludesUI.DisabledTooltip("Reskin Tooltip")
             local extrasDD, extrasRefresh = CludesUI.BuildVisOptsCBDropdown(
-                lrgn, 170, lrgn:GetFrameLevel() + 2,
+                lrgn,
+                170,
+                lrgn:GetFrameLevel() + 2,
                 {
-                    { key="tooltipPlayerTitles", label="Player Titles", lockedFn=ttReskinOff, lockedTooltip=lockTip },
-                    { key="tooltipItemLevel", label="Item Level", lockedFn=ttReskinOff, lockedTooltip=lockTip },
-                    { key="tooltipMythicScore", label="M+ Score", lockedFn=ttReskinOff, lockedTooltip=lockTip },
-                    { key="tooltipShowMount", label="Mount", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Adds the mount a player is riding to their tooltip, with a green check if you own it or a red X if you don't." },
-                    { key="tooltipShowGuildRank", label="Guild Rank", lockedFn=ttReskinOff, lockedTooltip=lockTip },
-                    { key="tooltipShowTarget", label="Unit Target", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Adds a Targeting line showing who the hovered player or NPC is targeting, in green when it's you." },
-                    { key="tooltipLevelColor", label="Level Difficulty Color", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Colors the level number from gray (trivial) to red (much higher than you)." },
-                    { key="tooltipClassLineColor", label="Class Colored Spec", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Colors a player's spec and class line in their class color." },
-                    { key="tooltipFactionColor", label="Faction Color", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Colors the Alliance and Horde line in blue and red." },
-                    { key="tooltipGuildmateColor", label="Highlight Guildmates", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Colors the guild name (and rank, if shown) of members of your own guild in your guild chat color." },
-                    { key="tooltipCompactLevel", label="Compact Level Line", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Shortens the level line to the level and race, or level, rank and type for NPCs (\"90 Tauren\", \"90 Elite Humanoid\")." },
-                    { key="tooltipAFKTag", label="Away Tag", lockedFn=ttReskinOff, lockedTooltip=lockTip,
-                      tooltip="Adds <Away> or <Busy> after the name of players who are away or busy." },
-                    { key="uber", label="Detailed Tooltips" },
+                    {
+                        key = "tooltipPlayerTitles",
+                        label = "Player Titles",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                    },
+                    {
+                        key = "tooltipItemLevel",
+                        label = "Item Level",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                    },
+                    {
+                        key = "tooltipMythicScore",
+                        label = "M+ Score",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                    },
+                    {
+                        key = "tooltipShowMount",
+                        label = "Mount",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Adds the mount a player is riding to their tooltip, with a green check if you own it or a red X if you don't.",
+                    },
+                    {
+                        key = "tooltipShowGuildRank",
+                        label = "Guild Rank",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                    },
+                    {
+                        key = "tooltipShowTarget",
+                        label = "Unit Target",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Adds a Targeting line showing who the hovered player or NPC is targeting, in green when it's you.",
+                    },
+                    {
+                        key = "tooltipLevelColor",
+                        label = "Level Difficulty Color",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Colors the level number from gray (trivial) to red (much higher than you).",
+                    },
+                    {
+                        key = "tooltipClassLineColor",
+                        label = "Class Colored Spec",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Colors a player's spec and class line in their class color.",
+                    },
+                    {
+                        key = "tooltipFactionColor",
+                        label = "Faction Color",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Colors the Alliance and Horde line in blue and red.",
+                    },
+                    {
+                        key = "tooltipGuildmateColor",
+                        label = "Highlight Guildmates",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Colors the guild name (and rank, if shown) of members of your own guild in your guild chat color.",
+                    },
+                    {
+                        key = "tooltipCompactLevel",
+                        label = "Compact Level Line",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = 'Shortens the level line to the level and race, or level, rank and type for NPCs ("90 Tauren", "90 Elite Humanoid").',
+                    },
+                    {
+                        key = "tooltipAFKTag",
+                        label = "Away Tag",
+                        lockedFn = ttReskinOff,
+                        lockedTooltip = lockTip,
+                        tooltip = "Adds <Away> or <Busy> after the name of players who are away or busy.",
+                    },
+                    { key = "uber", label = "Detailed Tooltips" },
                 },
                 function(k)
-                    if k == "uber" then return GetCVar("UberTooltips") == "1" end
+                    if k == "uber" then
+                        return GetCVar("UberTooltips") == "1"
+                    end
                     local v = CludesUIDB and CludesUIDB[k]
-                    if v == nil then return EXTRA_DEFAULTS[k] end
+                    if v == nil then
+                        return EXTRA_DEFAULTS[k]
+                    end
                     return v and true or false
                 end,
                 function(k, v)
-                    if not CludesUIDB then CludesUIDB = {} end
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
                     if k == "uber" then
                         -- Only enforced on login after the user has toggled it once.
                         CludesUIDB.uberTooltipsManual = true
@@ -613,7 +1092,8 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUIDB[k] = v
                         TooltipPreviewRepaint()
                     end
-                end)
+                end
+            )
             PP.Point(extrasDD, "RIGHT", lrgn, "RIGHT", -20, 0)
             lrgn._control = extrasDD
             lrgn._lastInline = nil
@@ -634,60 +1114,99 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Spell ID on Tooltip",
                 title = "Spell ID",
                 rows = {
-                    { type="dropdown", label="Use Modifier",
-                      values={ none="None", shift="Shift", control="Control", alt="Alt" },
-                      order={ "none", "shift", "control", "alt" },
-                      get=function() return (CludesUIDB and CludesUIDB.spellIDModifier) or "none" end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.spellIDModifier = v
-                          -- Modifier choice gates the engine-side combat
-                          -- aura-ID CVar (12.1; no-op on retail).
-                          if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
-                      end },
-                    { type="toggle", label="Show Icon ID",
-                      get=function() return not CludesUIDB or CludesUIDB.showIconID ~= false end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.showIconID = v
-                      end },
-                    { type="toggle", label="Show Item ID",
-                      get=function() return not CludesUIDB or CludesUIDB.showItemID ~= false end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.showItemID = v
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Use Modifier",
+                        values = { none = "None", shift = "Shift", control = "Control", alt = "Alt" },
+                        order = { "none", "shift", "control", "alt" },
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.spellIDModifier) or "none"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.spellIDModifier = v
+                            -- Modifier choice gates the engine-side combat
+                            -- aura-ID CVar (12.1; no-op on retail).
+                            if CludesUI.SyncAuraSpellIDCVar then
+                                CludesUI.SyncAuraSpellIDCVar()
+                            end
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Show Icon ID",
+                        get = function()
+                            return not CludesUIDB or CludesUIDB.showIconID ~= false
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.showIconID = v
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Show Item ID",
+                        get = function()
+                            return not CludesUIDB or CludesUIDB.showItemID ~= false
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.showItemID = v
+                        end,
+                    },
                 },
             })
         end
 
         -- Show Max Stack for Items | Show Player Buffs
         local ttStackRow
-        ttStackRow, h = W:DualRow(parent, y,
+        ttStackRow, h = W:DualRow(
+            parent,
+            y,
             -- Independent of the reskin, so it is NOT gated by "Reskin
             -- Tooltip" -- like Spell ID on Tooltip.
-            { type="toggle", text="Show Max Stack for Items",
-              tooltip="Appends an item's max stack count on tooltip.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.showItemMaxStacks or false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showItemMaxStacks = v
-                  CludesUI:RefreshPage()  -- update the Use Modifier cog disabled state
-              end },
-            { type="toggle", text="Show Player Buffs",
-              disabled=ttReskinOff, disabledTooltip="Reskin Tooltip",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.tooltipShowBuffs or false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipShowBuffs = v
-                  if CludesUI._applyTooltipBuffs then CludesUI._applyTooltipBuffs() end
-                  CludesUI:RefreshPage()  -- update the position cog disabled state
-              end }
-        );  y = y - h
+            {
+                type = "toggle",
+                text = "Show Max Stack for Items",
+                tooltip = "Appends an item's max stack count on tooltip.",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.showItemMaxStacks or false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.showItemMaxStacks = v
+                    CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
+                end,
+            },
+            {
+                type = "toggle",
+                text = "Show Player Buffs",
+                disabled = ttReskinOff,
+                disabledTooltip = "Reskin Tooltip",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.tooltipShowBuffs or false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.tooltipShowBuffs = v
+                    if CludesUI._applyTooltipBuffs then
+                        CludesUI._applyTooltipBuffs()
+                    end
+                    CludesUI:RefreshPage() -- update the position cog disabled state
+                end,
+            }
+        )
+        y = y - h
 
         -- "Use Modifier" cog on Show Max Stack for Items (left region): the Max
         -- Stack line only shows while the chosen modifier is held. Disabled
@@ -703,14 +1222,21 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Show Max Stack for Items",
                 title = "Item Stacks",
                 rows = {
-                    { type="dropdown", label="Use Modifier",
-                      values={ none="None", shift="Shift", control="Control", alt="Alt" },
-                      order={ "none", "shift", "control", "alt" },
-                      get=function() return (CludesUIDB and CludesUIDB.itemStackModifier) or "none" end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.itemStackModifier = v
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Use Modifier",
+                        values = { none = "None", shift = "Shift", control = "Control", alt = "Alt" },
+                        order = { "none", "shift", "control", "alt" },
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.itemStackModifier) or "none"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.itemStackModifier = v
+                        end,
+                    },
                 },
             })
         end
@@ -721,9 +1247,13 @@ initFrame:SetScript("OnEvent", function(self)
                 return ttReskinOff() or not (CludesUIDB and CludesUIDB.tooltipShowBuffs)
             end
             local function setBuffs(key, v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB[key] = v
-                if CludesUI._applyTooltipBuffs then CludesUI._applyTooltipBuffs() end
+                if CludesUI._applyTooltipBuffs then
+                    CludesUI._applyTooltipBuffs()
+                end
             end
             CludesUI.BuildInlineCog(ttStackRow._rightRegion, {
                 gap = 9,
@@ -733,23 +1263,70 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 title = "Tooltip Buffs",
                 rows = {
-                    { type="dropdown", label="Position",
-                      values={ bottom="Bottom", top="Top", left="Left", right="Right" },
-                      order={ "bottom", "top", "left", "right" },
-                      get=function() return CludesUIDB and CludesUIDB.tooltipBuffPosition or "bottom" end,
-                      set=function(v) setBuffs("tooltipBuffPosition", v) end },
-                    { type="slider", label="Icon Size", min=12, max=40, step=1,
-                      get=function() return CludesUIDB and CludesUIDB.tooltipBuffSize or 20 end,
-                      set=function(v) setBuffs("tooltipBuffSize", v) end },
-                    { type="slider", label="Icons Per Row", min=1, max=16, step=1,
-                      get=function() return CludesUIDB and CludesUIDB.tooltipBuffsPerRow or 8 end,
-                      set=function(v) setBuffs("tooltipBuffsPerRow", v) end },
-                    { type="slider", label="Offset X", min=-100, max=100, step=1,
-                      get=function() return CludesUIDB and CludesUIDB.tooltipBuffOffsetX or 0 end,
-                      set=function(v) setBuffs("tooltipBuffOffsetX", v) end },
-                    { type="slider", label="Offset Y", min=-100, max=100, step=1,
-                      get=function() return CludesUIDB and CludesUIDB.tooltipBuffOffsetY or 0 end,
-                      set=function(v) setBuffs("tooltipBuffOffsetY", v) end },
+                    {
+                        type = "dropdown",
+                        label = "Position",
+                        values = { bottom = "Bottom", top = "Top", left = "Left", right = "Right" },
+                        order = { "bottom", "top", "left", "right" },
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipBuffPosition or "bottom"
+                        end,
+                        set = function(v)
+                            setBuffs("tooltipBuffPosition", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Icon Size",
+                        min = 12,
+                        max = 40,
+                        step = 1,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipBuffSize or 20
+                        end,
+                        set = function(v)
+                            setBuffs("tooltipBuffSize", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Icons Per Row",
+                        min = 1,
+                        max = 16,
+                        step = 1,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipBuffsPerRow or 8
+                        end,
+                        set = function(v)
+                            setBuffs("tooltipBuffsPerRow", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset X",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipBuffOffsetX or 0
+                        end,
+                        set = function(v)
+                            setBuffs("tooltipBuffOffsetX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Offset Y",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipBuffOffsetY or 0
+                        end,
+                        set = function(v)
+                            setBuffs("tooltipBuffOffsetY", v)
+                        end,
+                    },
                 },
             })
         end
@@ -762,30 +1339,49 @@ initFrame:SetScript("OnEvent", function(self)
         -- setting, like Global Settings > Colors' Dark Mode Background: the opacity
         -- slider with its color as an inline swatch.
         local ttStripRow
-        ttStripRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Health Strip",
-              tooltip="Shows the health bar on the bottom of unit tooltips.",
-              getValue=function() return not stripHidden() end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipHideHealthStrip = not v
-                  if CludesUI._applyTooltipHealthStrip then CludesUI._applyTooltipHealthStrip() end
-                  CludesUI:RefreshPage()  -- update the strip cog disabled state
-              end },
-            { type="slider", text="Background", min=0, max=100, step=1,
-              tooltip="Color and opacity of the tooltip background.",
-              tooltipOnControl="Background Opacity", trackWidth=120,
-              disabled=ttReskinOff, disabledTooltip="Reskin Tooltip",
-              getValue=function()
-                  local a = (CludesUIDB and CludesUIDB.tooltipBgOpacity) or CludesUI.RESKIN.TT_ALPHA
-                  return math.floor(a * 100 + 0.5)
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.tooltipBgOpacity = v / 100
-                  if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end
-              end }
-        );  y = y - h
+        ttStripRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Health Strip",
+            tooltip = "Shows the health bar on the bottom of unit tooltips.",
+            getValue = function()
+                return not stripHidden()
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.tooltipHideHealthStrip = not v
+                if CludesUI._applyTooltipHealthStrip then
+                    CludesUI._applyTooltipHealthStrip()
+                end
+                CludesUI:RefreshPage() -- update the strip cog disabled state
+            end,
+        }, {
+            type = "slider",
+            text = "Background",
+            min = 0,
+            max = 100,
+            step = 1,
+            tooltip = "Color and opacity of the tooltip background.",
+            tooltipOnControl = "Background Opacity",
+            trackWidth = 120,
+            disabled = ttReskinOff,
+            disabledTooltip = "Reskin Tooltip",
+            getValue = function()
+                local a = (CludesUIDB and CludesUIDB.tooltipBgOpacity) or CludesUI.RESKIN.TT_ALPHA
+                return math.floor(a * 100 + 0.5)
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.tooltipBgOpacity = v / 100
+                if CludesUI.SyncAuraTooltipSkin then
+                    CludesUI.SyncAuraTooltipSkin()
+                end
+            end,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
             local leftRgn = ttStripRow._leftRegion
@@ -809,72 +1405,136 @@ initFrame:SetScript("OnEvent", function(self)
             stripTexValues._menuOpts = {
                 itemHeight = 28,
                 background = function(key)
-                    if key == "blizzard" then return "Interface\\TargetingFrame\\UI-StatusBar" end
+                    if key == "blizzard" then
+                        return "Interface\\TargetingFrame\\UI-StatusBar"
+                    end
                     return CludesUI.ResolveTexturePath(st.tex, key, nil)
                 end,
             }
             local function applyStripStyle()
-                if CludesUI._applyTooltipHealthStripStyle then CludesUI._applyTooltipHealthStripStyle() end
+                if CludesUI._applyTooltipHealthStripStyle then
+                    CludesUI._applyTooltipHealthStripStyle()
+                end
             end
             CludesUI.BuildInlineCog(leftRgn, {
                 gap = 9,
-                disabled = function() return ttReskinOff() or stripHidden() end,
+                disabled = function()
+                    return ttReskinOff() or stripHidden()
+                end,
                 disabledTooltip = function()
                     return ttReskinOff() and "Reskin Tooltip" or "Show Health Strip"
                 end,
                 title = "Health Strip",
                 rows = {
-                    { type="dropdown", label="Texture",
-                      values=stripTexValues, order=stripTexOrder,
-                      get=function()
-                          return CludesUIDB and CludesUIDB.tooltipHealthStripTexture or "blizzard"
-                      end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipHealthStripTexture = (v ~= "blizzard") and v or nil
-                          applyStripStyle()
-                      end },
-                    { type="slider", label="Height", min=1, max=8, step=1,
-                      get=function()
-                          return CludesUIDB and CludesUIDB.tooltipHealthStripHeight or 3
-                      end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.tooltipHealthStripHeight = (v ~= 3) and v or nil
-                          applyStripStyle()
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Texture",
+                        values = stripTexValues,
+                        order = stripTexOrder,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipHealthStripTexture or "blizzard"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipHealthStripTexture = (v ~= "blizzard") and v or nil
+                            applyStripStyle()
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Height",
+                        min = 1,
+                        max = 8,
+                        step = 1,
+                        get = function()
+                            return CludesUIDB and CludesUIDB.tooltipHealthStripHeight or 3
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.tooltipHealthStripHeight = (v ~= 3) and v or nil
+                            applyStripStyle()
+                        end,
+                    },
                 },
             })
 
             CludesUI.BuildInlineSwatches(ttStripRow._rightRegion, {
-                { tooltip = "Background Color",
-                  getValue = function()
-                      local c = CludesUIDB and CludesUIDB.tooltipBgColor
-                      if c then return c.r, c.g, c.b, 1 end
-                      local R = CludesUI.RESKIN
-                      return R.BG_R, R.BG_G, R.BG_B, 1
-                  end,
-                  setValue = function(r, g, b)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.tooltipBgColor = { r = r, g = g, b = b }
-                      if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end
-                  end },
+                {
+                    tooltip = "Background Color",
+                    getValue = function()
+                        local c = CludesUIDB and CludesUIDB.tooltipBgColor
+                        if c then
+                            return c.r, c.g, c.b, 1
+                        end
+                        local R = CludesUI.RESKIN
+                        return R.BG_R, R.BG_G, R.BG_B, 1
+                    end,
+                    setValue = function(r, g, b)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB.tooltipBgColor = { r = r, g = g, b = b }
+                        if CludesUI.SyncAuraTooltipSkin then
+                            CludesUI.SyncAuraTooltipSkin()
+                        end
+                    end,
+                },
             }, { size = 20, disabled = ttReskinOff, disabledTooltip = "Reskin Tooltip" })
         end
 
         -- Border Style | Border Size
         do
-            local texValues,texOrder=CludesUI.GetBorderTextureDropdown()
+            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local tooltipBorder
-            tooltipBorder,h=W:DualRow(parent,y,
-                {type="dropdown",text="Border Style",disabled=ttReskinOff,values=texValues,order=texOrder,getValue=function() return CludesUIDB.tooltipBorderTexture or "solid" end,setValue=function(v) local c,b=CludesUI.GetBorderStyleSelectDefaults(v); CludesUIDB.tooltipBorderTexture=v; CludesUIDB.tooltipBorderOffsetX=nil; CludesUIDB.tooltipBorderOffsetY=nil; CludesUIDB.tooltipBorderBehind=b; CludesUIDB.tooltipBorderColor=c; if CludesUIDB.tooltipBorderThicknessPx then CludesUIDB.tooltipBorderThicknessPx=false end; if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end; CludesUI:RefreshPage(true) end},
-                BorderSizeSlider("tooltip","Border Size",ttReskinOff,function() if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end end)); y=y-h
+            tooltipBorder, h = W:DualRow(
+                parent,
+                y,
+                {
+                    type = "dropdown",
+                    text = "Border Style",
+                    disabled = ttReskinOff,
+                    values = texValues,
+                    order = texOrder,
+                    getValue = function()
+                        return CludesUIDB.tooltipBorderTexture or "solid"
+                    end,
+                    setValue = function(v)
+                        local c, b = CludesUI.GetBorderStyleSelectDefaults(v)
+                        CludesUIDB.tooltipBorderTexture = v
+                        CludesUIDB.tooltipBorderOffsetX = nil
+                        CludesUIDB.tooltipBorderOffsetY = nil
+                        CludesUIDB.tooltipBorderBehind = b
+                        CludesUIDB.tooltipBorderColor = c
+                        if CludesUIDB.tooltipBorderThicknessPx then
+                            CludesUIDB.tooltipBorderThicknessPx = false
+                        end
+                        if CludesUI.SyncAuraTooltipSkin then
+                            CludesUI.SyncAuraTooltipSkin()
+                        end
+                        CludesUI:RefreshPage(true)
+                    end,
+                },
+                BorderSizeSlider("tooltip", "Border Size", ttReskinOff, function()
+                    if CludesUI.SyncAuraTooltipSkin then
+                        CludesUI.SyncAuraTooltipSkin()
+                    end
+                end)
+            )
+            y = y - h
             -- The engine aura tooltip follows the border only when synced (the sync repaints the preview too)
             local function TooltipBorderApply()
-                if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() else TooltipPreviewRepaint() end
+                if CludesUI.SyncAuraTooltipSkin then
+                    CludesUI.SyncAuraTooltipSkin()
+                else
+                    TooltipPreviewRepaint()
+                end
             end
-            AttachBorderControls(tooltipBorder,"tooltip",ttReskinOff,true,{ apply = TooltipBorderApply })
-            BorderOffsetRow("tooltip",ttReskinOff,TooltipBorderApply)
+            AttachBorderControls(tooltipBorder, "tooltip", ttReskinOff, true, { apply = TooltipBorderApply })
+            BorderOffsetRow("tooltip", ttReskinOff, TooltipBorderApply)
         end
 
         -----------------------------------------------------------------------
@@ -886,84 +1546,107 @@ initFrame:SetScript("OnEvent", function(self)
         --  a right and SILENTLY DROPS a third -- a row shipped with three once
         --  rendered only two toggles and nothing errored.
         -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "BLIZZARD BARS, POPUPS & BUTTONS", y);  y = y - h
+        _, h = W:SectionHeader(parent, "BLIZZARD BARS, POPUPS & BUTTONS", y)
+        y = y - h
 
         -- The slot configs, laid out per client below: WoW Forever has no
         -- extra action button, so its toggle is not built there and the
         -- queue pair moves up a slot.
-        local widgetCfg =
-            { type="toggle", text="Reskin Widget Bars",
-              tooltip="Restyles Blizzard's on-screen progress bars (event objectives, nameplate counters)",
-              getValue=function()
-                  return not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.reskinWidgetBars = v and true or false
-                  -- Reload-bound, like the window packs: turned OFF, the skin
-                  -- registers no events at all rather than running and
-                  -- returning early, so the decision is taken once at login.
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Reload Required",
-                      message     = "Widget bar reskin requires a UI reload to apply.",
-                      confirmText = "Reload Now",
-                      cancelText  = "Later",
-                      reload      = true,
-                  })
-              end }
-        local extraCfg = not CludesUI.IS_FOREVER and
-            { type="toggle", text="Reskin Extra Action Buttons",
-              getValue=function()
-                  -- DEFAULT OFF: opt-in, so nil reads as unchecked.
-                  return CludesUIDB and CludesUIDB.reskinExtraActionButton == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.reskinExtraActionButton = v and true or false
-              end } or nil
-        local queueCfg =
-            { type="toggle", text="Reskin Queue Popup",
-              tooltip="Reskins the dungeon and battleground queue accept popups and adds an accept countdown timer bar to the dungeon one.",
-              getValue=function()
-                  -- Independent, default on (not tied to any master reskin toggle).
-                  return not CludesUIDB or CludesUIDB.reskinQueuePopup ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.reskinQueuePopup = v
-                  if not v and CludesUI.ShowConfirmPopup then
-                      CludesUI:ShowConfirmPopup({
-                          title       = "Reload Required",
-                          message     = "Disabling queue popup reskin requires a UI reload to restore Blizzard's default style.",
-                          confirmText = "Reload Now",
-                          cancelText  = "Later",
-                          reload      = true,
-                      })
-                  end
-              end }
-        local timerCfg =
-            { type="toggle", text="Show Queue Timer",
-              getValue=function()
-                  return not CludesUIDB or CludesUIDB.showQueueTimer ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showQueueTimer = v
-                  CludesUI:RefreshPage()  -- update the style cog + swatch disabled states
-              end }
+        local widgetCfg = {
+            type = "toggle",
+            text = "Reskin Widget Bars",
+            tooltip = "Restyles Blizzard's on-screen progress bars (event objectives, nameplate counters)",
+            getValue = function()
+                return not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.reskinWidgetBars = v and true or false
+                -- Reload-bound, like the window packs: turned OFF, the skin
+                -- registers no events at all rather than running and
+                -- returning early, so the decision is taken once at login.
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Widget bar reskin requires a UI reload to apply.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+            end,
+        }
+        local extraCfg = not CludesUI.IS_FOREVER
+                and {
+                    type = "toggle",
+                    text = "Reskin Extra Action Buttons",
+                    getValue = function()
+                        -- DEFAULT OFF: opt-in, so nil reads as unchecked.
+                        return CludesUIDB and CludesUIDB.reskinExtraActionButton == true
+                    end,
+                    setValue = function(v)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB.reskinExtraActionButton = v and true or false
+                    end,
+                }
+            or nil
+        local queueCfg = {
+            type = "toggle",
+            text = "Reskin Queue Popup",
+            tooltip = "Reskins the dungeon and battleground queue accept popups and adds an accept countdown timer bar to the dungeon one.",
+            getValue = function()
+                -- Independent, default on (not tied to any master reskin toggle).
+                return not CludesUIDB or CludesUIDB.reskinQueuePopup ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.reskinQueuePopup = v
+                if not v and CludesUI.ShowConfirmPopup then
+                    CludesUI:ShowConfirmPopup({
+                        title = "Reload Required",
+                        message = "Disabling queue popup reskin requires a UI reload to restore Blizzard's default style.",
+                        confirmText = "Reload Now",
+                        cancelText = "Later",
+                        reload = true,
+                    })
+                end
+            end,
+        }
+        local timerCfg = {
+            type = "toggle",
+            text = "Show Queue Timer",
+            getValue = function()
+                return not CludesUIDB or CludesUIDB.showQueueTimer ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.showQueueTimer = v
+                CludesUI:RefreshPage() -- update the style cog + swatch disabled states
+            end,
+        }
 
         -- The regions the inline controls below sit on, whichever slot their
         -- toggle took.
         local hudRow, queueRow, widgetRgn, queueRgn, timerRgn
         if extraCfg then
-            hudRow, h = W:DualRow(parent, y, widgetCfg, extraCfg);  y = y - h
-            queueRow, h = W:DualRow(parent, y, queueCfg, timerCfg);  y = y - h
+            hudRow, h = W:DualRow(parent, y, widgetCfg, extraCfg)
+            y = y - h
+            queueRow, h = W:DualRow(parent, y, queueCfg, timerCfg)
+            y = y - h
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = queueRow and queueRow._leftRegion
             timerRgn = queueRow and queueRow._rightRegion
         else
-            hudRow, h = W:DualRow(parent, y, widgetCfg, queueCfg);  y = y - h
-            queueRow, h = W:DualRow(parent, y, timerCfg, CludesUI.BlankRowCfg());  y = y - h
+            hudRow, h = W:DualRow(parent, y, widgetCfg, queueCfg)
+            y = y - h
+            queueRow, h = W:DualRow(parent, y, timerCfg, CludesUI.BlankRowCfg())
+            y = y - h
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = hudRow and hudRow._rightRegion
             timerRgn = queueRow and queueRow._leftRegion
@@ -973,36 +1656,47 @@ initFrame:SetScript("OnEvent", function(self)
         -- Bars": the floor below which a shrunken nameplate's bar scales itself
         -- up. 0 = off (default, mirror Blizzard's rect exactly).
         if widgetRgn and not CludesUI._prebuilding then
-            local lrgn  = widgetRgn
+            local lrgn = widgetRgn
             local function CogOff()
                 -- Same default-on test the toggle itself uses: nil means on.
                 return not (not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false)
             end
             CludesUI.BuildInlineCog(lrgn, {
                 anchorTo = lrgn._control,
-                disabled = CogOff, disabledTooltip = "Reskin Widget Bars",
-                tip = "Smallest on-screen size a reskinned bar is drawn at.\n\n" ..
-                    "Widget bars on a nameplate inherit that nameplate's scale, so " ..
-                    "they come out tiny on small units. Below this size the bar is " ..
-                    "scaled up instead, text and all.\n\nSet to 0 to mirror " ..
-                    "Blizzard's size exactly.",
+                disabled = CogOff,
+                disabledTooltip = "Reskin Widget Bars",
+                tip = "Smallest on-screen size a reskinned bar is drawn at.\n\n"
+                    .. "Widget bars on a nameplate inherit that nameplate's scale, so "
+                    .. "they come out tiny on small units. Below this size the bar is "
+                    .. "scaled up instead, text and all.\n\nSet to 0 to mirror "
+                    .. "Blizzard's size exactly.",
                 title = "Widget Bar Size",
-                rows  = {
-                    { type="slider", label="Minimum", min=0, max=24, step=1,
-                      get=function()
-                          local v = CludesUIDB and CludesUIDB.widgetBarMinSize
-                          if type(v) == "number" then return v end
-                          return 0
-                      end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.widgetBarMinSize = v
-                          -- Live: the seam re-reads and books one refresh; nil
-                          -- only while the reskin is off (cog greyed then).
-                          if CludesUI._HUDWidgetSetMinSize then
-                              CludesUI._HUDWidgetSetMinSize()
-                          end
-                      end },
+                rows = {
+                    {
+                        type = "slider",
+                        label = "Minimum",
+                        min = 0,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            local v = CludesUIDB and CludesUIDB.widgetBarMinSize
+                            if type(v) == "number" then
+                                return v
+                            end
+                            return 0
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.widgetBarMinSize = v
+                            -- Live: the seam re-reads and books one refresh; nil
+                            -- only while the reskin is off (cog greyed then).
+                            if CludesUI._HUDWidgetSetMinSize then
+                                CludesUI._HUDWidgetSetMinSize()
+                            end
+                        end,
+                    },
                 },
             })
         end
@@ -1025,9 +1719,14 @@ initFrame:SetScript("OnEvent", function(self)
                 warnFS:SetText("!")
                 warnFS:SetPoint("CENTER")
                 warnBtn:SetScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, "Enhance QoL's Mover may conflict with this reskin. The reskin is auto-disabled when its mover is active.")
+                    CludesUI.ShowWidgetTooltip(
+                        self,
+                        "Enhance QoL's Mover may conflict with this reskin. The reskin is auto-disabled when its mover is active."
+                    )
                 end)
-                warnBtn:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                warnBtn:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
             end
         end
 
@@ -1042,9 +1741,13 @@ initFrame:SetScript("OnEvent", function(self)
                 return (CludesUIDB and CludesUIDB[key]) or default
             end
             local function Set(key, v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB[key] = v
-                if CludesUI.RefreshQueueTimerStyle then CludesUI.RefreshQueueTimerStyle() end
+                if CludesUI.RefreshQueueTimerStyle then
+                    CludesUI.RefreshQueueTimerStyle()
+                end
             end
 
             CludesUI.BuildInlineCog(timerRgn, {
@@ -1052,38 +1755,76 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Show Queue Timer",
                 title = "Queue Timer Style",
                 rows = {
-                    { type="slider", label="Text Size", min=6, max=24, step=1,
-                      get=function() return Get("queueTimerTextSize", QT.TEXT_SIZE) end,
-                      set=function(v) Set("queueTimerTextSize", v) end },
-                    { type="slider", label="Bar Height", min=4, max=24, step=1,
-                      get=function() return Get("queueTimerBarHeight", QT.BAR_HEIGHT) end,
-                      set=function(v) Set("queueTimerBarHeight", v) end },
-                    { type="slider", label="Text Offset Y", min=-20, max=20, step=1,
-                      tooltip="Moves the countdown number up or down relative to the bar.",
-                      get=function() return Get("queueTimerTextOffsetY", QT.TEXT_OFFSET_Y) end,
-                      set=function(v) Set("queueTimerTextOffsetY", v) end },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            return Get("queueTimerTextSize", QT.TEXT_SIZE)
+                        end,
+                        set = function(v)
+                            Set("queueTimerTextSize", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Bar Height",
+                        min = 4,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            return Get("queueTimerBarHeight", QT.BAR_HEIGHT)
+                        end,
+                        set = function(v)
+                            Set("queueTimerBarHeight", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Text Offset Y",
+                        min = -20,
+                        max = 20,
+                        step = 1,
+                        tooltip = "Moves the countdown number up or down relative to the bar.",
+                        get = function()
+                            return Get("queueTimerTextOffsetY", QT.TEXT_OFFSET_Y)
+                        end,
+                        set = function(v)
+                            Set("queueTimerTextOffsetY", v)
+                        end,
+                    },
                 },
             })
 
-            local qtSwatch, qtSwatchRefresh = CludesUI.BuildColorSwatch(timerRgn,
+            local qtSwatch, qtSwatchRefresh = CludesUI.BuildColorSwatch(
+                timerRgn,
                 timerRgn:GetFrameLevel() + 5,
                 function()
                     local c = CludesUIDB and CludesUIDB.queueTimerTextColor
                     return (c and c.r) or QT.TEXT_R, (c and c.g) or QT.TEXT_G, (c and c.b) or QT.TEXT_B
                 end,
-                function(r, g, b) Set("queueTimerTextColor", { r = r, g = g, b = b }) end,
-                false, 20)
+                function(r, g, b)
+                    Set("queueTimerTextColor", { r = r, g = g, b = b })
+                end,
+                false,
+                20
+            )
             PP.Point(qtSwatch, "RIGHT", timerRgn._lastInline or timerRgn._control, "LEFT", -8, 0)
             timerRgn._lastInline = qtSwatch
             qtSwatch:HookScript("OnEnter", function(self)
                 CludesUI.ShowWidgetTooltip(self, "Countdown Text Color")
             end)
-            qtSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            qtSwatch:HookScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             -- Called at build time too: the refresh list only runs on page show.
             local function UpdQueueTimerState()
                 local off = timerOff()
-                qtSwatch:SetAlpha(off and 0.15 or 1); qtSwatch:EnableMouse(not off)
+                qtSwatch:SetAlpha(off and 0.15 or 1)
+                qtSwatch:EnableMouse(not off)
                 qtSwatchRefresh()
             end
             CludesUI.RegisterWidgetRefresh(UpdQueueTimerState)
@@ -1141,12 +1882,20 @@ initFrame:SetScript("OnEvent", function(self)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Character Sheet"))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function refresh()
-                if themedOff() then block:Show(); target:SetAlpha(0.3)
-                else block:Hide(); target:SetAlpha(1) end
+                if themedOff() then
+                    block:Show()
+                    target:SetAlpha(0.3)
+                else
+                    block:Hide()
+                    target:SetAlpha(1)
+                end
             end
-            CludesUI.RegisterWidgetRefresh(refresh); refresh()
+            CludesUI.RegisterWidgetRefresh(refresh)
+            refresh()
         end
 
         -- Blizz Default keeps Blizzard's own character sheet with our stats
@@ -1155,11 +1904,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- list and Icon Zoom greys out there.
         local function csGate(cfg)
             if stock then
-                cfg.disabled        = function() return true end
+                cfg.disabled = function()
+                    return true
+                end
                 cfg.disabledTooltip = "Character Sheet: Blizz Default"
-                cfg.requireState    = "disabled"
-                cfg.rawTooltip      = nil
-                cfg._blizzGated     = true
+                cfg.requireState = "disabled"
+                cfg.rawTooltip = nil
+                cfg._blizzGated = true
             end
             return cfg
         end
@@ -1167,18 +1918,31 @@ initFrame:SetScript("OnEvent", function(self)
         ---------------------------------------------------------------------------
         --  CORE OPTIONS
         ---------------------------------------------------------------------------
-        _, h = WSCardSection(parent, "CORE OPTIONS", y);  y = y - h
+        _, h = WSCardSection(parent, "CORE OPTIONS", y)
+        y = y - h
 
         -- Blizzard's own slot icons under Blizz Default (the inspect sheet
         -- keeps its stored zoom).
-        local iconZoomCfg = csGate({ type="slider", text="Icon Zoom", min=0, max=0.20, step=0.01,
-              tooltip="Crops the border of the equipment-slot item icons on the character and inspect sheets. 0 shows the full icon. Only affects the themed character sheet.",
-              getValue=function() return (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07 end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.charSheetIconZoom = v
-                  if CludesUI._refreshCharSheetIconZoom then CludesUI._refreshCharSheetIconZoom() end
-              end })
+        local iconZoomCfg = csGate({
+            type = "slider",
+            text = "Icon Zoom",
+            min = 0,
+            max = 0.20,
+            step = 0.01,
+            tooltip = "Crops the border of the equipment-slot item icons on the character and inspect sheets. 0 shows the full icon. Only affects the themed character sheet.",
+            getValue = function()
+                return (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.charSheetIconZoom = v
+                if CludesUI._refreshCharSheetIconZoom then
+                    CludesUI._refreshCharSheetIconZoom()
+                end
+            end,
+        })
 
         if not CludesUI.IS_FOREVER then
             -- Mythic+ Rating | Item Details: a checkbox dropdown, a view over
@@ -1190,28 +1954,52 @@ initFrame:SetScript("OnEvent", function(self)
                 return not (CludesUIDB and CludesUIDB.charSheetItemStats == true)
             end
             local ITEM_DETAILS = {
-                { key="showItemLevel",    label="Item Level",    refresh="_refreshItemLevelVisibility" },
-                { key="showUpgradeTrack", label="Upgrade Track", refresh="_refreshUpgradeTrackVisibility" },
-                { key="charSheetItemStats", label="Stat Letters", refresh="_refreshCharSheetSlotLabels", optIn=true },
-                { key="charSheetItemStatsTertiary", label="Tertiary Stats", refresh="_refreshCharSheetSlotLabels", optIn=true,
-                  lockedFn=statLettersOff, excludeFromSummaryFn=statLettersOff,
-                  lockedTooltip=CludesUI.DisabledTooltip("Stat Letters") },
+                { key = "showItemLevel", label = "Item Level", refresh = "_refreshItemLevelVisibility" },
+                { key = "showUpgradeTrack", label = "Upgrade Track", refresh = "_refreshUpgradeTrackVisibility" },
+                {
+                    key = "charSheetItemStats",
+                    label = "Stat Letters",
+                    refresh = "_refreshCharSheetSlotLabels",
+                    optIn = true,
+                },
+                {
+                    key = "charSheetItemStatsTertiary",
+                    label = "Tertiary Stats",
+                    refresh = "_refreshCharSheetSlotLabels",
+                    optIn = true,
+                    lockedFn = statLettersOff,
+                    excludeFromSummaryFn = statLettersOff,
+                    lockedTooltip = CludesUI.DisabledTooltip("Stat Letters"),
+                },
             }
             if not stock then
-                ITEM_DETAILS[#ITEM_DETAILS + 1] = { key="showGems", label="Gems", refresh="_refreshGemsVisibility" }
+                ITEM_DETAILS[#ITEM_DETAILS + 1] =
+                    { key = "showGems", label = "Gems", refresh = "_refreshGemsVisibility" }
             end
             local coreRow1
-            coreRow1, h = W:DualRow(parent, y,
-                { type="toggle", text="Mythic+ Rating",
-                  tooltip="Display your Mythic+ rating above the item level on the character sheet.",
-                  getValue=function() return CludesUIDB and CludesUIDB.showMythicRating or false end,
-                  setValue=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.showMythicRating = v
-                      if CludesUI._updateMythicRatingDisplay then CludesUI._updateMythicRatingDisplay() end
-                  end },
-                { type="label", text="Item Details", tooltip="Choose what shows on each equipped item." }
-            );  y = y - h
+            coreRow1, h = W:DualRow(
+                parent,
+                y,
+                {
+                    type = "toggle",
+                    text = "Mythic+ Rating",
+                    tooltip = "Display your Mythic+ rating above the item level on the character sheet.",
+                    getValue = function()
+                        return CludesUIDB and CludesUIDB.showMythicRating or false
+                    end,
+                    setValue = function(v)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB.showMythicRating = v
+                        if CludesUI._updateMythicRatingDisplay then
+                            CludesUI._updateMythicRatingDisplay()
+                        end
+                    end,
+                },
+                { type = "label", text = "Item Details", tooltip = "Choose what shows on each equipped item." }
+            )
+            y = y - h
             if not CludesUI._prebuilding then
                 local rgn = coreRow1._rightRegion
                 -- Keys are on unless false; an optIn key is off unless true.
@@ -1221,17 +2009,27 @@ initFrame:SetScript("OnEvent", function(self)
                     optIn[item.key] = item.optIn
                 end
                 local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    rgn, 210, rgn:GetFrameLevel() + 2, ITEM_DETAILS,
+                    rgn,
+                    210,
+                    rgn:GetFrameLevel() + 2,
+                    ITEM_DETAILS,
                     function(key)
-                        if optIn[key] then return CludesUIDB and CludesUIDB[key] == true or false end
+                        if optIn[key] then
+                            return CludesUIDB and CludesUIDB[key] == true or false
+                        end
                         return not (CludesUIDB and CludesUIDB[key] == false)
                     end,
                     function(key, v)
-                        if not CludesUIDB then CludesUIDB = {} end
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
                         CludesUIDB[key] = v
                         local refresh = CludesUI[refreshOf[key]]
-                        if refresh then refresh() end
-                    end)
+                        if refresh then
+                            refresh()
+                        end
+                    end
+                )
                 PP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
                 rgn._control = cbDD
                 rgn._lastInline = nil
@@ -1244,35 +2042,54 @@ initFrame:SetScript("OnEvent", function(self)
             -- Blizzard's sheet in its tab art
             -- (CludesUIBlizzardSkin_SocketPanel.lua).
             local socketRow
-            socketRow, h = W:DualRow(parent, y,
-                { type="toggle", text="Socket Panel",
-                  tooltip="Show a panel of equipped-gear sockets on the character sheet; click a socket to gem it.",
-                  getValue=function() return CludesUIDB and CludesUIDB.charSheetSocketPanel ~= false end,
-                  setValue=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.charSheetSocketPanel = v
-                      if CludesUI._refreshCharSheetSocketPanel then CludesUI._refreshCharSheetSocketPanel() end
-                      CludesUI:RefreshPage()
-                  end },
-                iconZoomCfg);  y = y - h
+            socketRow, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Socket Panel",
+                tooltip = "Show a panel of equipped-gear sockets on the character sheet; click a socket to gem it.",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.charSheetSocketPanel ~= false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.charSheetSocketPanel = v
+                    if CludesUI._refreshCharSheetSocketPanel then
+                        CludesUI._refreshCharSheetSocketPanel()
+                    end
+                    CludesUI:RefreshPage()
+                end,
+            }, iconZoomCfg)
+            y = y - h
             AttachDisabledOverlay(socketRow)
 
             -- Inline cog on Socket Panel: stat letters on the gem icons (off
             -- unless turned on).
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(socketRow._leftRegion, {
-                    disabled = function() return CludesUIDB and CludesUIDB.charSheetSocketPanel == false end,
+                    disabled = function()
+                        return CludesUIDB and CludesUIDB.charSheetSocketPanel == false
+                    end,
                     disabledTooltip = "Socket Panel",
                     title = "Socket Panel Settings",
                     rows = {
-                        { type="toggle", label="Stat Letters",
-                          tooltip="Shows each socketed gem's secondary stats as letters on its icon, largest first (C Crit, H Haste, M Mastery, V Versatility).",
-                          get=function() return CludesUIDB and CludesUIDB.charSheetSocketPanelStats == true or false end,
-                          set=function(v)
-                              if not CludesUIDB then CludesUIDB = {} end
-                              CludesUIDB.charSheetSocketPanelStats = v
-                              if CludesUI._refreshCharSheetSocketPanel then CludesUI._refreshCharSheetSocketPanel() end
-                          end },
+                        {
+                            type = "toggle",
+                            label = "Stat Letters",
+                            tooltip = "Shows each socketed gem's secondary stats as letters on its icon, largest first (C Crit, H Haste, M Mastery, V Versatility).",
+                            get = function()
+                                return CludesUIDB and CludesUIDB.charSheetSocketPanelStats == true or false
+                            end,
+                            set = function(v)
+                                if not CludesUIDB then
+                                    CludesUIDB = {}
+                                end
+                                CludesUIDB.charSheetSocketPanelStats = v
+                                if CludesUI._refreshCharSheetSocketPanel then
+                                    CludesUI._refreshCharSheetSocketPanel()
+                                end
+                            end,
+                        },
                     },
                 })
             end
@@ -1282,16 +2099,24 @@ initFrame:SetScript("OnEvent", function(self)
             -- (or its armor when it has none) and each weapon's damage per
             -- second there. Icon Zoom greys out under Blizz Default.
             local statsRow
-            statsRow, h = W:DualRow(parent, y,
-                { type="toggle", text="Show Item Stats",
-                  tooltip="Show each item's main and secondary stat (or its armor) and each weapon's damage per second beside its slot.",
-                  getValue=function() return CludesUIDB and CludesUIDB.showUpgradeTrack ~= false end,
-                  setValue=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.showUpgradeTrack = v
-                      if CludesUI._refreshUpgradeTrackVisibility then CludesUI._refreshUpgradeTrackVisibility() end
-                  end },
-                iconZoomCfg);  y = y - h
+            statsRow, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Show Item Stats",
+                tooltip = "Show each item's main and secondary stat (or its armor) and each weapon's damage per second beside its slot.",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.showUpgradeTrack ~= false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.showUpgradeTrack = v
+                    if CludesUI._refreshUpgradeTrackVisibility then
+                        CludesUI._refreshUpgradeTrackVisibility()
+                    end
+                end,
+            }, iconZoomCfg)
+            y = y - h
             AttachDisabledOverlay(statsRow)
         end
 
@@ -1302,19 +2127,27 @@ initFrame:SetScript("OnEvent", function(self)
         -- The Text Size cog shows only while the enchants show as text.
         local function EnchantValues()
             if CludesUI.IS_FOREVER then
-                return { none="None", icons="Text", text="Colored Text" }
+                return { none = "None", icons = "Text", text = "Colored Text" }
             end
-            return { none="None", icons="Icons + Hover", text="Text" }
+            return { none = "None", icons = "Icons + Hover", text = "Text" }
         end
         local function EnchantMode(showKey, namesKey)
-            if CludesUIDB and CludesUIDB[showKey] == false then return "none" end
-            if CludesUIDB and CludesUIDB[namesKey] then return "text" end
+            if CludesUIDB and CludesUIDB[showKey] == false then
+                return "none"
+            end
+            if CludesUIDB and CludesUIDB[namesKey] then
+                return "text"
+            end
             return "icons"
         end
         local function SetEnchantMode(showKey, namesKey, v)
-            if not CludesUIDB then CludesUIDB = {} end
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
             CludesUIDB[showKey] = v ~= "none"
-            if v ~= "none" then CludesUIDB[namesKey] = v == "text" end
+            if v ~= "none" then
+                CludesUIDB[namesKey] = v == "text"
+            end
         end
         local function EnchantTextShown(showKey, namesKey)
             local mode = EnchantMode(showKey, namesKey)
@@ -1322,40 +2155,69 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local enchGemRow
-        enchGemRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Enchants",
-              tooltip="How enchants show beside each item.",
-              values=EnchantValues(), order={ "none", "icons", "text" },
-              getValue=function() return EnchantMode("showEnchants", "charSheetEnchantNames") end,
-              setValue=function(v)
-                  SetEnchantMode("showEnchants", "charSheetEnchantNames", v)
-                  if CludesUI._refreshEnchantsVisibility then CludesUI._refreshEnchantsVisibility() end
-                  if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
-                  -- Shows or hides the Text Size cog
-                  CludesUI:RefreshPage()
-              end },
-            { type="toggle", text="Show PvP Item Level",
-              tooltip="Display your PvP item level above the Mythic+ rating on the character sheet.",
-              getValue=function() return CludesUIDB and CludesUIDB.showPvpItemLevel or false end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showPvpItemLevel = v
-                  if CludesUI._updatePvpIlvlDisplay then CludesUI._updatePvpIlvlDisplay() end
-              end }
-        );  y = y - h
+        enchGemRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Enchants",
+            tooltip = "How enchants show beside each item.",
+            values = EnchantValues(),
+            order = { "none", "icons", "text" },
+            getValue = function()
+                return EnchantMode("showEnchants", "charSheetEnchantNames")
+            end,
+            setValue = function(v)
+                SetEnchantMode("showEnchants", "charSheetEnchantNames", v)
+                if CludesUI._refreshEnchantsVisibility then
+                    CludesUI._refreshEnchantsVisibility()
+                end
+                if CludesUI._refreshCharSheetSlotLabels then
+                    CludesUI._refreshCharSheetSlotLabels()
+                end
+                -- Shows or hides the Text Size cog
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "toggle",
+            text = "Show PvP Item Level",
+            tooltip = "Display your PvP item level above the Mythic+ rating on the character sheet.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.showPvpItemLevel or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.showPvpItemLevel = v
+                if CludesUI._updatePvpIlvlDisplay then
+                    CludesUI._updatePvpIlvlDisplay()
+                end
+            end,
+        })
+        y = y - h
         AttachDisabledOverlay(enchGemRow)
 
         if not CludesUI._prebuilding then
             local cogBtn = CludesUI.BuildInlineCog(enchGemRow._leftRegion, {
                 title = "Enchant Text",
                 rows = {
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function() return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9 end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.charSheetEnchantSize = v
-                          if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
-                      end },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.charSheetEnchantSize = v
+                            if CludesUI._refreshCharSheetSlotLabels then
+                                CludesUI._refreshCharSheetSlotLabels()
+                            end
+                        end,
+                    },
                 },
             })
             local function UpdateCogVis()
@@ -1369,90 +2231,143 @@ initFrame:SetScript("OnEvent", function(self)
         -- durability stays live either way. The panel is retail only.
         local seasonCfg
         if not CludesUI.IS_FOREVER then
-            seasonCfg = { type="toggle", text="Season Panel",
-              tooltip="Show an Omnium Folio shortcut to the right of the socket panel during Midnight seasons. The cog adds a Great Vault shortcut.",
-              disabled=themedOff, disabledTooltip="Character Sheet",
-              getValue=function() return not (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false) end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.charSheetSeasonPanel = v
-                  if CludesUI._refreshCharSheetSocketPanel then CludesUI._refreshCharSheetSocketPanel() end
-                  CludesUI:RefreshPage()
-              end }
+            seasonCfg = {
+                type = "toggle",
+                text = "Season Panel",
+                tooltip = "Show an Omnium Folio shortcut to the right of the socket panel during Midnight seasons. The cog adds a Great Vault shortcut.",
+                disabled = themedOff,
+                disabledTooltip = "Character Sheet",
+                getValue = function()
+                    return not (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.charSheetSeasonPanel = v
+                    if CludesUI._refreshCharSheetSocketPanel then
+                        CludesUI._refreshCharSheetSocketPanel()
+                    end
+                    CludesUI:RefreshPage()
+                end,
+            }
         end
         local durSeasonRow
-        durSeasonRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Item Durability",
-              tooltip="Show total equipped durability above the character model, colored from green to red.",
-              getValue=function() return CludesUIDB and CludesUIDB.showCharSheetDurability or false end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showCharSheetDurability = v
-                  if v then
-                      if CludesUIDB.charSheetDurabilityLocation == nil then
-                          CludesUIDB.charSheetDurabilityLocation = "model"
-                      end
-                      if CludesUIDB.charSheetDurabilityShowLabel == nil then
-                          CludesUIDB.charSheetDurabilityShowLabel = true
-                      end
-                  end
-                  if CludesUI._updateCharSheetDurability then CludesUI._updateCharSheetDurability() end
-                  if CludesUI._updateScrollHeaderOffset then CludesUI._updateScrollHeaderOffset() end
-                  CludesUI:RefreshPage()
-              end },
-            seasonCfg or CludesUI.BlankRowCfg()
-        );  y = y - h
+        durSeasonRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Item Durability",
+            tooltip = "Show total equipped durability above the character model, colored from green to red.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.showCharSheetDurability or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.showCharSheetDurability = v
+                if v then
+                    if CludesUIDB.charSheetDurabilityLocation == nil then
+                        CludesUIDB.charSheetDurabilityLocation = "model"
+                    end
+                    if CludesUIDB.charSheetDurabilityShowLabel == nil then
+                        CludesUIDB.charSheetDurabilityShowLabel = true
+                    end
+                end
+                if CludesUI._updateCharSheetDurability then
+                    CludesUI._updateCharSheetDurability()
+                end
+                if CludesUI._updateScrollHeaderOffset then
+                    CludesUI._updateScrollHeaderOffset()
+                end
+                CludesUI:RefreshPage()
+            end,
+        }, seasonCfg or CludesUI.BlankRowCfg())
+        y = y - h
 
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(durSeasonRow._leftRegion, {
-                disabled = function() return not (CludesUIDB and CludesUIDB.showCharSheetDurability) end,
+                disabled = function()
+                    return not (CludesUIDB and CludesUIDB.showCharSheetDurability)
+                end,
                 disabledTooltip = "Show Item Durability",
                 title = "Durability Settings",
                 rows = {
-                    { type="dropdown", label="Location",
-                      values={ model="Above Model", header="Stats Header", footer="Frame Footer" },
-                      order={ "model", "header", "footer" },
-                      get=function()
-                          return CludesUIDB and CludesUIDB.charSheetDurabilityLocation or "model"
-                      end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.charSheetDurabilityLocation = v
-                          if CludesUI._updateCharSheetDurability then CludesUI._updateCharSheetDurability() end
-                          if CludesUI._updateScrollHeaderOffset then CludesUI._updateScrollHeaderOffset() end
-                      end },
-                    { type="toggle", label="Show Label",
-                      tooltip="Prefix the durability percent with \"Durability:\".",
-                      get=function() return not CludesUIDB or CludesUIDB.charSheetDurabilityShowLabel ~= false end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.charSheetDurabilityShowLabel = v
-                          if CludesUI._updateCharSheetDurability then CludesUI._updateCharSheetDurability() end
-                      end },
+                    {
+                        type = "dropdown",
+                        label = "Location",
+                        values = { model = "Above Model", header = "Stats Header", footer = "Frame Footer" },
+                        order = { "model", "header", "footer" },
+                        get = function()
+                            return CludesUIDB and CludesUIDB.charSheetDurabilityLocation or "model"
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.charSheetDurabilityLocation = v
+                            if CludesUI._updateCharSheetDurability then
+                                CludesUI._updateCharSheetDurability()
+                            end
+                            if CludesUI._updateScrollHeaderOffset then
+                                CludesUI._updateScrollHeaderOffset()
+                            end
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Show Label",
+                        tooltip = 'Prefix the durability percent with "Durability:".',
+                        get = function()
+                            return not CludesUIDB or CludesUIDB.charSheetDurabilityShowLabel ~= false
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.charSheetDurabilityShowLabel = v
+                            if CludesUI._updateCharSheetDurability then
+                                CludesUI._updateCharSheetDurability()
+                            end
+                        end,
+                    },
                 },
             })
 
             -- Inline cog on Season Panel: the Great Vault shortcut is its own opt-in.
             if seasonCfg then
                 CludesUI.BuildInlineCog(durSeasonRow._rightRegion, {
-                    disabled = function() return themedOff() or (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false) end,
-                    disabledTooltip = function() return themedOff() and "Character Sheet" or "Season Panel" end,
+                    disabled = function()
+                        return themedOff() or (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
+                    end,
+                    disabledTooltip = function()
+                        return themedOff() and "Character Sheet" or "Season Panel"
+                    end,
                     title = "Season Panel Settings",
                     rows = {
-                        { type="toggle", label="Great Vault Shortcut",
-                          tooltip="Add a Great Vault button to the Season Panel.",
-                          get=function() return CludesUIDB and CludesUIDB.charSheetSeasonVault == true or false end,
-                          set=function(v)
-                              if not CludesUIDB then CludesUIDB = {} end
-                              CludesUIDB.charSheetSeasonVault = v
-                              if CludesUI._refreshCharSheetSocketPanel then CludesUI._refreshCharSheetSocketPanel() end
-                          end },
+                        {
+                            type = "toggle",
+                            label = "Great Vault Shortcut",
+                            tooltip = "Add a Great Vault button to the Season Panel.",
+                            get = function()
+                                return CludesUIDB and CludesUIDB.charSheetSeasonVault == true or false
+                            end,
+                            set = function(v)
+                                if not CludesUIDB then
+                                    CludesUIDB = {}
+                                end
+                                CludesUIDB.charSheetSeasonVault = v
+                                if CludesUI._refreshCharSheetSocketPanel then
+                                    CludesUI._refreshCharSheetSocketPanel()
+                                end
+                            end,
+                        },
                     },
                 })
             end
         end
 
-        _, h = W:Spacer(parent, y, 10);  y = y - h
+        _, h = W:Spacer(parent, y, 10)
+        y = y - h
 
         ---------------------------------------------------------------------------
         --  GEAR FLYOUT
@@ -1462,59 +2377,91 @@ initFrame:SetScript("OnEvent", function(self)
         -- sheet off; the slot arrows belong to the sheet and grey out with it.
         -- The sheet's own slot letters live under Item Details (Stat Letters,
         -- Tertiary Stats). All off unless turned on.
-        _, h = WSCardSection(parent, "GEAR FLYOUT", y);  y = y - h
+        _, h = WSCardSection(parent, "GEAR FLYOUT", y)
+        y = y - h
 
         local flyoutStatsCfg
         if not CludesUI.IS_FOREVER then
-            flyoutStatsCfg = { type="toggle", text="Show Item Stats",
-              tooltip="Shows each item's secondary stats as letters in the gear flyout, largest first (C Crit, H Haste, M Mastery, V Versatility), so items with the same icon are told apart.",
-              getValue=function() return CludesUIDB and CludesUIDB.flyoutItemStats or false end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.flyoutItemStats = v
-                  CludesUI:RefreshPage()
-              end }
+            flyoutStatsCfg = {
+                type = "toggle",
+                text = "Show Item Stats",
+                tooltip = "Shows each item's secondary stats as letters in the gear flyout, largest first (C Crit, H Haste, M Mastery, V Versatility), so items with the same icon are told apart.",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.flyoutItemStats or false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.flyoutItemStats = v
+                    CludesUI:RefreshPage()
+                end,
+            }
         end
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Item Levels",
-              tooltip="Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), coloured by quality.",
-              getValue=function() return CludesUIDB and CludesUIDB.flyoutItemLevels or false end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.flyoutItemLevels = v
-              end },
-            flyoutStatsCfg or CludesUI.BlankRowCfg()
-        );  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Item Levels",
+            tooltip = "Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), coloured by quality.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.flyoutItemLevels or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.flyoutItemLevels = v
+            end,
+        }, flyoutStatsCfg or CludesUI.BlankRowCfg())
+        y = y - h
 
         if not CludesUI.IS_FOREVER then
-            _, h = W:DualRow(parent, y,
-                { type="toggle", text="Tertiary Stat Letters",
-                  tooltip="Adds Leech, Avoidance and Speed (L, A, S) in smaller letters behind the secondary stats in the gear flyout.",
-                  disabled=function() return not (CludesUIDB and CludesUIDB.flyoutItemStats) end,
-                  disabledTooltip="Show Item Stats",
-                  getValue=function() return CludesUIDB and CludesUIDB.flyoutItemStatsTertiary == true or false end,
-                  setValue=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.flyoutItemStatsTertiary = v
-                  end },
-                { type="toggle", text="Hide Slot Flyout Arrows",
-                  tooltip="Hide the arrows beside equipment slots on the Equipment tab. The slot flyouts remain usable.",
-                  disabled=themedOff, disabledTooltip="Character Sheet",
-                  getValue=function() return CludesUIDB and CludesUIDB.charSheetHideSlotFlyoutArrows == true end,
-                  setValue=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.charSheetHideSlotFlyoutArrows = v
-                      if CludesUI._refreshCharSheetSlotFlyoutArrows then CludesUI._refreshCharSheetSlotFlyoutArrows() end
-                  end }
-            );  y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Tertiary Stat Letters",
+                tooltip = "Adds Leech, Avoidance and Speed (L, A, S) in smaller letters behind the secondary stats in the gear flyout.",
+                disabled = function()
+                    return not (CludesUIDB and CludesUIDB.flyoutItemStats)
+                end,
+                disabledTooltip = "Show Item Stats",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.flyoutItemStatsTertiary == true or false
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.flyoutItemStatsTertiary = v
+                end,
+            }, {
+                type = "toggle",
+                text = "Hide Slot Flyout Arrows",
+                tooltip = "Hide the arrows beside equipment slots on the Equipment tab. The slot flyouts remain usable.",
+                disabled = themedOff,
+                disabledTooltip = "Character Sheet",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.charSheetHideSlotFlyoutArrows == true
+                end,
+                setValue = function(v)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.charSheetHideSlotFlyoutArrows = v
+                    if CludesUI._refreshCharSheetSlotFlyoutArrows then
+                        CludesUI._refreshCharSheetSlotFlyoutArrows()
+                    end
+                end,
+            })
+            y = y - h
         end
 
-        _, h = W:Spacer(parent, y, 10);  y = y - h
+        _, h = W:Spacer(parent, y, 10)
+        y = y - h
 
         ---------------------------------------------------------------------------
         --  STAT DISPLAY
         ---------------------------------------------------------------------------
-        _, h = WSCardSection(parent, "STAT DISPLAY", y);  y = y - h
+        _, h = WSCardSection(parent, "STAT DISPLAY", y)
+        y = y - h
 
         -- Every control here is a view over the keys the sheet already reads
         -- (showStatCategory_*, the Secondary/Tertiary Raw and Both pairs, the
@@ -1522,13 +2469,48 @@ initFrame:SetScript("OnEvent", function(self)
         -- nothing new is stored and nothing is written until a control changes.
         -- key = the showStatCategory_ suffix, color = the statCategoryColors key.
         local STAT_SECTIONS = {
-            { key = "Attributes",     label = "Attributes",      color = "Attributes",      def = { r = 0.298, g = 0.788, b = 0.941 } },
-            { key = "SecondaryStats", label = "Secondary Stats", color = "Secondary Stats", def = { r = 0.471, g = 0.255, b = 0.784 } },
-            { key = "Tertiary",       label = "Tertiary Stats",  color = "Tertiary Stats",  def = { r = 0.859, g = 0.325, b = 0.855 } },
-            { key = "Attack",         label = "Attack",          color = "Attack",          def = { r = 1,     g = 0.353, b = 0.122 } },
-            { key = "Defense",        label = "Defense",         color = "Defense",         def = { r = 0.247, g = 0.655, b = 1 } },
-            { key = "Crests",         label = "Crests",          color = "Crests",          def = { r = 1,     g = 0.784, b = 0.341 } },
-            { key = "PvP",            label = "PvP",             color = "PvP",             def = { r = 0.671, g = 0.431, b = 0.349 } },
+            {
+                key = "Attributes",
+                label = "Attributes",
+                color = "Attributes",
+                def = { r = 0.298, g = 0.788, b = 0.941 },
+            },
+            {
+                key = "SecondaryStats",
+                label = "Secondary Stats",
+                color = "Secondary Stats",
+                def = { r = 0.471, g = 0.255, b = 0.784 },
+            },
+            {
+                key = "Tertiary",
+                label = "Tertiary Stats",
+                color = "Tertiary Stats",
+                def = { r = 0.859, g = 0.325, b = 0.855 },
+            },
+            {
+                key = "Attack",
+                label = "Attack",
+                color = "Attack",
+                def = { r = 1, g = 0.353, b = 0.122 },
+            },
+            {
+                key = "Defense",
+                label = "Defense",
+                color = "Defense",
+                def = { r = 0.247, g = 0.655, b = 1 },
+            },
+            {
+                key = "Crests",
+                label = "Crests",
+                color = "Crests",
+                def = { r = 1, g = 0.784, b = 0.341 },
+            },
+            {
+                key = "PvP",
+                label = "PvP",
+                color = "PvP",
+                def = { r = 0.671, g = 0.431, b = 0.349 },
+            },
         }
         -- Same test as the sheet's own UpdateStatCategoryVisibility
         local function SectionShown(key)
@@ -1540,16 +2522,21 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Stat Sections (checkbox dropdown + cog) | Show Diminishing Returns
         local sectionsRow
-        sectionsRow, h = W:DualRow(parent, y,
-            { type="label", text="Stat Sections" },
-            { type="toggle", text="Show Diminishing Returns",
-              tooltip="Adds diminishing returns info to Secondary and Tertiary stat tooltips.",
-              getValue=function() return CludesUIDB and CludesUIDB.showAdjustedStats or false end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.showAdjustedStats = v
-              end }
-        );  y = y - h
+        sectionsRow, h = W:DualRow(parent, y, { type = "label", text = "Stat Sections" }, {
+            type = "toggle",
+            text = "Show Diminishing Returns",
+            tooltip = "Adds diminishing returns info to Secondary and Tertiary stat tooltips.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.showAdjustedStats or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.showAdjustedStats = v
+            end,
+        })
+        y = y - h
         if not CludesUI._prebuilding then
             local leftRgn = sectionsRow._leftRegion
             -- Each section's colour swatch sits on its row of the dropdown; dimmed while
@@ -1557,45 +2544,72 @@ initFrame:SetScript("OnEvent", function(self)
             local items = {}
             for i, sec in ipairs(STAT_SECTIONS) do
                 local key, label, colorKey, def = sec.key, sec.label, sec.color, sec.def
-                items[i] = { key = key, label = label, swatch = {
-                    get = function()
-                        local c = CludesUIDB and CludesUIDB.statCategoryColors and CludesUIDB.statCategoryColors[colorKey]
-                        if c then return c.r, c.g, c.b, 1 end
-                        return def.r, def.g, def.b, 1
-                    end,
-                    set = function(r, g, b)
-                        if not CludesUIDB then CludesUIDB = {} end
-                        if not CludesUIDB.statCategoryColors then CludesUIDB.statCategoryColors = {} end
-                        if not CludesUIDB.statCategoryUseColor then CludesUIDB.statCategoryUseColor = {} end
-                        CludesUIDB.statCategoryColors[colorKey] = { r = r, g = g, b = b }
-                        CludesUIDB.statCategoryUseColor[colorKey] = true
-                        if CludesUI._refreshCharacterSheetColors then CludesUI._refreshCharacterSheetColors() end
-                    end,
-                    disabled = function() return blizzColorsOn() or not SectionShown(key) end,
-                    -- Two requirements with opposite wording: pre-wrapped, so raw.
-                    disabledTooltip = function()
-                        if blizzColorsOn() then
-                            return not CludesUI.IS_FOREVER
-                                and CludesUI.DisabledTooltip("Blizzard UI Color", "disabled") or nil
-                        end
-                        return CludesUI.DisabledTooltip(label)
-                    end,
-                    rawTooltip = true,
-                } }
+                items[i] = {
+                    key = key,
+                    label = label,
+                    swatch = {
+                        get = function()
+                            local c = CludesUIDB
+                                and CludesUIDB.statCategoryColors
+                                and CludesUIDB.statCategoryColors[colorKey]
+                            if c then
+                                return c.r, c.g, c.b, 1
+                            end
+                            return def.r, def.g, def.b, 1
+                        end,
+                        set = function(r, g, b)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            if not CludesUIDB.statCategoryColors then
+                                CludesUIDB.statCategoryColors = {}
+                            end
+                            if not CludesUIDB.statCategoryUseColor then
+                                CludesUIDB.statCategoryUseColor = {}
+                            end
+                            CludesUIDB.statCategoryColors[colorKey] = { r = r, g = g, b = b }
+                            CludesUIDB.statCategoryUseColor[colorKey] = true
+                            if CludesUI._refreshCharacterSheetColors then
+                                CludesUI._refreshCharacterSheetColors()
+                            end
+                        end,
+                        disabled = function()
+                            return blizzColorsOn() or not SectionShown(key)
+                        end,
+                        -- Two requirements with opposite wording: pre-wrapped, so raw.
+                        disabledTooltip = function()
+                            if blizzColorsOn() then
+                                return not CludesUI.IS_FOREVER
+                                        and CludesUI.DisabledTooltip("Blizzard UI Color", "disabled")
+                                    or nil
+                            end
+                            return CludesUI.DisabledTooltip(label)
+                        end,
+                        rawTooltip = true,
+                    },
+                }
             end
             local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                leftRgn, 210, leftRgn:GetFrameLevel() + 2, items,
+                leftRgn,
+                210,
+                leftRgn:GetFrameLevel() + 2,
+                items,
                 SectionShown,
                 function(key, v)
-                    if not CludesUIDB then CludesUIDB = {} end
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
                     CludesUIDB["showStatCategory_" .. key] = v
                     if CludesUI._updateStatCategoryVisibility then
                         CludesUI._updateStatCategoryVisibility()
                     end
                     local sf = CharacterFrame and CludesUI._GetFFD(CharacterFrame).scrollFrame
-                    if sf then sf:SetVerticalScroll(0) end
+                    if sf then
+                        sf:SetVerticalScroll(0)
+                    end
                     CludesUI:RefreshPage()
-                end)
+                end
+            )
             PP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
             leftRgn._control = cbDD
             leftRgn._lastInline = nil
@@ -1603,49 +2617,83 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Cog: the per-section extras the old per-section rows held
             local rows = {
-                { type="toggle", label="Show Mana",
-                  tooltip="Adds Mana to the Attributes section.",
-                  disabled=function() return not SectionShown("Attributes") end,
-                  disabledTooltip="Attributes",
-                  get=function() return CludesUIDB and CludesUIDB.showManaStat == true end,
-                  set=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.showManaStat = v
-                      if CludesUI._refreshStatsVisibility then CludesUI._refreshStatsVisibility() end
-                  end },
-                { type="reordercheck", label="Crests", ddWidth=150,
-                  disabled=function() return not SectionShown("Crests") end,
-                  disabledTooltip="Crests",
-                  items={
-                      { key="Myth",       label="Myth",       fixed=true },
-                      { key="Hero",       label="Hero",       fixed=true },
-                      { key="Champion",   label="Champion",   fixed=true },
-                      { key="Veteran",    label="Veteran",    fixed=true },
-                      { key="Adventurer", label="Adventurer", fixed=true },
-                  },
-                  get=function(key) return not (CludesUIDB and CludesUIDB["showCrest_" .. key] == false) end,
-                  set=function(key, v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB["showCrest_" .. key] = v
-                      if CludesUI._refreshStatsVisibility then CludesUI._refreshStatsVisibility() end
-                  end },
+                {
+                    type = "toggle",
+                    label = "Show Mana",
+                    tooltip = "Adds Mana to the Attributes section.",
+                    disabled = function()
+                        return not SectionShown("Attributes")
+                    end,
+                    disabledTooltip = "Attributes",
+                    get = function()
+                        return CludesUIDB and CludesUIDB.showManaStat == true
+                    end,
+                    set = function(v)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB.showManaStat = v
+                        if CludesUI._refreshStatsVisibility then
+                            CludesUI._refreshStatsVisibility()
+                        end
+                    end,
+                },
+                {
+                    type = "reordercheck",
+                    label = "Crests",
+                    ddWidth = 150,
+                    disabled = function()
+                        return not SectionShown("Crests")
+                    end,
+                    disabledTooltip = "Crests",
+                    items = {
+                        { key = "Myth", label = "Myth", fixed = true },
+                        { key = "Hero", label = "Hero", fixed = true },
+                        { key = "Champion", label = "Champion", fixed = true },
+                        { key = "Veteran", label = "Veteran", fixed = true },
+                        { key = "Adventurer", label = "Adventurer", fixed = true },
+                    },
+                    get = function(key)
+                        return not (CludesUIDB and CludesUIDB["showCrest_" .. key] == false)
+                    end,
+                    set = function(key, v)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB["showCrest_" .. key] = v
+                        if CludesUI._refreshStatsVisibility then
+                            CludesUI._refreshStatsVisibility()
+                        end
+                    end,
+                },
             }
             -- Blizz Default only (not WoW Forever, whose sheet has no
             -- CludesUI stats section): on unless turned off.
             if stock and not CludesUI.IS_FOREVER then
-                rows[#rows + 1] = { type="toggle", label="Blizzard UI Color",
-                  tooltip="Shows the item level and stat titles in Blizzard's yellow.",
-                  get=function() return not (CludesUIDB and CludesUIDB.charSheetBlizzColors == false) end,
-                  set=function(v)
-                      if not CludesUIDB then CludesUIDB = {} end
-                      CludesUIDB.charSheetBlizzColors = v
-                      if CludesUI._refreshCharacterSheetColors then CludesUI._refreshCharacterSheetColors() end
-                      CludesUI:RefreshPage()
-                  end }
+                rows[#rows + 1] = {
+                    type = "toggle",
+                    label = "Blizzard UI Color",
+                    tooltip = "Shows the item level and stat titles in Blizzard's yellow.",
+                    get = function()
+                        return not (CludesUIDB and CludesUIDB.charSheetBlizzColors == false)
+                    end,
+                    set = function(v)
+                        if not CludesUIDB then
+                            CludesUIDB = {}
+                        end
+                        CludesUIDB.charSheetBlizzColors = v
+                        if CludesUI._refreshCharacterSheetColors then
+                            CludesUI._refreshCharacterSheetColors()
+                        end
+                        CludesUI:RefreshPage()
+                    end,
+                }
             end
             CludesUI.BuildInlineCog(leftRgn, {
-                title = "Stat Section Settings", rows = rows,
-                disabled = themedOff, disabledTooltip = "Character Sheet",
+                title = "Stat Section Settings",
+                rows = rows,
+                disabled = themedOff,
+                disabledTooltip = "Character Sheet",
             })
         end
         AttachDisabledOverlay(sectionsRow)
@@ -1653,97 +2701,145 @@ initFrame:SetScript("OnEvent", function(self)
         -- Secondary/Tertiary Text | Secondary/Tertiary Highlights (both write
         -- the Secondary and the Tertiary keys; the Secondary pair is shown)
         local stRow
-        stRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Secondary/Tertiary Text",
-              tooltip="How Secondary and Tertiary stat values are shown.",
-              values={ pct="Percent", value="Value", both="Value (Percent)" },
-              order={ "pct", "value", "both" },
-              disabled=function() return not SecOrTerShown() end,
-              disabledTooltip="Secondary Stats or Tertiary Stats",
-              getValue=function()
-                  -- Both wins over Raw, as on the sheet
-                  if CludesUIDB and CludesUIDB.showSecondaryBoth then return "both" end
-                  if CludesUIDB and CludesUIDB.showSecondaryRaw then return "value" end
-                  return "pct"
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  local raw, both = v == "value", v == "both"
-                  CludesUIDB.showSecondaryRaw, CludesUIDB.showSecondaryBoth = raw, both
-                  CludesUIDB.showTertiaryRaw, CludesUIDB.showTertiaryBoth = raw, both
-                  if CludesUI._refreshStatFormats then CludesUI._refreshStatFormats() end
-              end },
-            { type="toggle", text="Secondary/Tertiary Highlights",
-              tooltip="Hovering a Secondary or Tertiary stat highlights the gear that has it.",
-              disabled=function() return not SecOrTerShown() end,
-              disabledTooltip="Secondary Stats or Tertiary Stats",
-              getValue=function()
-                  return CludesUIDB and (CludesUIDB.highlightSecondaryItems == true
-                      or CludesUIDB.highlightTertiaryItems == true) or false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.highlightSecondaryItems = v
-                  CludesUIDB.highlightTertiaryItems = v
-              end }
-        );  y = y - h
+        stRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Secondary/Tertiary Text",
+            tooltip = "How Secondary and Tertiary stat values are shown.",
+            values = { pct = "Percent", value = "Value", both = "Value (Percent)" },
+            order = { "pct", "value", "both" },
+            disabled = function()
+                return not SecOrTerShown()
+            end,
+            disabledTooltip = "Secondary Stats or Tertiary Stats",
+            getValue = function()
+                -- Both wins over Raw, as on the sheet
+                if CludesUIDB and CludesUIDB.showSecondaryBoth then
+                    return "both"
+                end
+                if CludesUIDB and CludesUIDB.showSecondaryRaw then
+                    return "value"
+                end
+                return "pct"
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                local raw, both = v == "value", v == "both"
+                CludesUIDB.showSecondaryRaw, CludesUIDB.showSecondaryBoth = raw, both
+                CludesUIDB.showTertiaryRaw, CludesUIDB.showTertiaryBoth = raw, both
+                if CludesUI._refreshStatFormats then
+                    CludesUI._refreshStatFormats()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Secondary/Tertiary Highlights",
+            tooltip = "Hovering a Secondary or Tertiary stat highlights the gear that has it.",
+            disabled = function()
+                return not SecOrTerShown()
+            end,
+            disabledTooltip = "Secondary Stats or Tertiary Stats",
+            getValue = function()
+                return CludesUIDB
+                        and (CludesUIDB.highlightSecondaryItems == true or CludesUIDB.highlightTertiaryItems == true)
+                    or false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.highlightSecondaryItems = v
+                CludesUIDB.highlightTertiaryItems = v
+            end,
+        })
+        y = y - h
         AttachDisabledOverlay(stRow)
 
         ---------------------------------------------------------------------------
         --  INSPECT SHEET
         ---------------------------------------------------------------------------
-        _, h = WSCardSection(parent, "INSPECT SHEET", y);  y = y - h
+        _, h = WSCardSection(parent, "INSPECT SHEET", y)
+        y = y - h
 
         local themedInspectSheetRow
-        themedInspectSheetRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Enable Inspect Sheet",
-              tooltip="Applies CludesUI theme styling to the inspect sheet window.",
-              getValue=function()
-                  return not CludesUIDB or CludesUIDB.themedInspectSheet ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.themedInspectSheet = v
-                  CludesUI:ShowConfirmPopup({
-                      title       = "Reload Required",
-                      message     = "Inspect Sheet theme setting requires a UI reload to fully apply.",
-                      confirmText = "Reload Now",
-                      cancelText  = "Later",
-                      reload      = true,
-                  })
-                  CludesUI:RefreshPage()
-              end },
-            { type="dropdown", text="Enchants",
-              tooltip="How enchants show beside each item.",
-              values=EnchantValues(), order={ "none", "icons", "text" },
-              disabled=function() return CludesUIDB and CludesUIDB.themedInspectSheet == false end,
-              disabledTooltip="Inspect Sheet",
-              getValue=function() return EnchantMode("inspectShowEnchants", "inspectEnchantNames") end,
-              setValue=function(v)
-                  SetEnchantMode("inspectShowEnchants", "inspectEnchantNames", v)
-                  if CludesUI._refreshInspectSlotLabels then CludesUI._refreshInspectSlotLabels() end
-                  -- Shows or hides the Text Size cog
-                  CludesUI:RefreshPage()
-              end }
-        );  y = y - h
+        themedInspectSheetRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Inspect Sheet",
+            tooltip = "Applies CludesUI theme styling to the inspect sheet window.",
+            getValue = function()
+                return not CludesUIDB or CludesUIDB.themedInspectSheet ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.themedInspectSheet = v
+                CludesUI:ShowConfirmPopup({
+                    title = "Reload Required",
+                    message = "Inspect Sheet theme setting requires a UI reload to fully apply.",
+                    confirmText = "Reload Now",
+                    cancelText = "Later",
+                    reload = true,
+                })
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Enchants",
+            tooltip = "How enchants show beside each item.",
+            values = EnchantValues(),
+            order = { "none", "icons", "text" },
+            disabled = function()
+                return CludesUIDB and CludesUIDB.themedInspectSheet == false
+            end,
+            disabledTooltip = "Inspect Sheet",
+            getValue = function()
+                return EnchantMode("inspectShowEnchants", "inspectEnchantNames")
+            end,
+            setValue = function(v)
+                SetEnchantMode("inspectShowEnchants", "inspectEnchantNames", v)
+                if CludesUI._refreshInspectSlotLabels then
+                    CludesUI._refreshInspectSlotLabels()
+                end
+                -- Shows or hides the Text Size cog
+                CludesUI:RefreshPage()
+            end,
+        })
+        y = y - h
 
         -- Text Size (unset follows the character sheet's), shown only while
         -- the enchants show as text.
         if not CludesUI._prebuilding then
             local cogBtn = CludesUI.BuildInlineCog(themedInspectSheetRow._rightRegion, {
                 title = "Enchant Text",
-                disabled = function() return CludesUIDB and CludesUIDB.themedInspectSheet == false end,
+                disabled = function()
+                    return CludesUIDB and CludesUIDB.themedInspectSheet == false
+                end,
                 disabledTooltip = "Inspect Sheet",
                 rows = {
-                    { type="slider", label="Text Size", min=6, max=20, step=1,
-                      get=function()
-                          return (CludesUIDB and (CludesUIDB.inspectEnchantSize or CludesUIDB.charSheetEnchantSize)) or 9
-                      end,
-                      set=function(v)
-                          if not CludesUIDB then CludesUIDB = {} end
-                          CludesUIDB.inspectEnchantSize = v
-                          if CludesUI._refreshInspectSlotLabels then CludesUI._refreshInspectSlotLabels() end
-                      end },
+                    {
+                        type = "slider",
+                        label = "Text Size",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return (
+                                CludesUIDB
+                                and (CludesUIDB.inspectEnchantSize or CludesUIDB.charSheetEnchantSize)
+                            ) or 9
+                        end,
+                        set = function(v)
+                            if not CludesUIDB then
+                                CludesUIDB = {}
+                            end
+                            CludesUIDB.inspectEnchantSize = v
+                            if CludesUI._refreshInspectSlotLabels then
+                                CludesUI._refreshInspectSlotLabels()
+                            end
+                        end,
+                    },
                 },
             })
             local function UpdateCogVis()
@@ -1754,32 +2850,40 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local itemLevelInspectRow
-        itemLevelInspectRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Item Level",
-              tooltip="Toggle visibility of item level text on the inspect sheet.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.inspectShowItemLevel ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.inspectShowItemLevel = v
-                  if CludesUI._refreshInspectItemLevelVisibility then
-                      CludesUI._refreshInspectItemLevelVisibility()
-                  end
-              end },
-            { type="toggle", text="Upgrade Track",
-              tooltip="Toggle visibility of upgrade track text on the inspect sheet.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.inspectShowUpgradeTrack ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.inspectShowUpgradeTrack = v
-                  if CludesUI._refreshInspectUpgradeTrackVisibility then
-                      CludesUI._refreshInspectUpgradeTrackVisibility()
-                  end
-              end }
-        );  y = y - h
+        itemLevelInspectRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Item Level",
+            tooltip = "Toggle visibility of item level text on the inspect sheet.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.inspectShowItemLevel ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.inspectShowItemLevel = v
+                if CludesUI._refreshInspectItemLevelVisibility then
+                    CludesUI._refreshInspectItemLevelVisibility()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Upgrade Track",
+            tooltip = "Toggle visibility of upgrade track text on the inspect sheet.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.inspectShowUpgradeTrack ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.inspectShowUpgradeTrack = v
+                if CludesUI._refreshInspectUpgradeTrackVisibility then
+                    CludesUI._refreshInspectUpgradeTrackVisibility()
+                end
+            end,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
             local function themedOff()
@@ -1795,7 +2899,9 @@ initFrame:SetScript("OnEvent", function(self)
             itemLevelInspectBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(itemLevelInspectBlock, CludesUI.DisabledTooltip("Inspect Sheet"))
             end)
-            itemLevelInspectBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            itemLevelInspectBlock:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
 
             CludesUI.RegisterWidgetRefresh(function()
                 if themedOff() then
@@ -1806,7 +2912,13 @@ initFrame:SetScript("OnEvent", function(self)
                     itemLevelInspectRow:SetAlpha(1)
                 end
             end)
-            if themedOff() then itemLevelInspectBlock:Show() itemLevelInspectRow:SetAlpha(0.3) else itemLevelInspectBlock:Hide() itemLevelInspectRow:SetAlpha(1) end
+            if themedOff() then
+                itemLevelInspectBlock:Show()
+                itemLevelInspectRow:SetAlpha(0.3)
+            else
+                itemLevelInspectBlock:Hide()
+                itemLevelInspectRow:SetAlpha(1)
+            end
         end
 
         return y
@@ -1819,21 +2931,27 @@ initFrame:SetScript("OnEvent", function(self)
         local W = CludesUI.Widgets
         local _, h
 
-        _, h = WSCardSection(parent, "QUALITY OF LIFE", y);  y = y - h
+        _, h = WSCardSection(parent, "QUALITY OF LIFE", y)
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Remember Sign-Up Roles",
-              tooltip="Remembers the Tank/Healer/DPS roles you last applied with and restores them the next time you sign up to a premade group (limited to roles your current spec can fill). Works with or without the reskin.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.lfgRememberRoles == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.lfgRememberRoles = v
-                  if CludesUI._GroupFinder_RefreshQoL then CludesUI._GroupFinder_RefreshQoL() end
-              end },
-            { type="label", text="" }
-        );  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Remember Sign-Up Roles",
+            tooltip = "Remembers the Tank/Healer/DPS roles you last applied with and restores them the next time you sign up to a premade group (limited to roles your current spec can fill). Works with or without the reskin.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.lfgRememberRoles == true
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.lfgRememberRoles = v
+                if CludesUI._GroupFinder_RefreshQoL then
+                    CludesUI._GroupFinder_RefreshQoL()
+                end
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
 
         return y
     end
@@ -1869,53 +2987,93 @@ initFrame:SetScript("OnEvent", function(self)
             return cfg
         end
 
-        _, h = WSCardSection(parent, "DISPLAY", y);  y = y - h
+        _, h = WSCardSection(parent, "DISPLAY", y)
+        y = y - h
 
         -- Custom Friends List Tiles | Tile Height: the custom friends list
         -- (CludesUI_FriendsList.lua) and its own height
         local tileMin, tileMax = CludesUI.FriendsList.TileRange()
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text=CUSTOM,
-              tooltip="CludesUI's own friends list, with a tile height you choose and friend groups. Right click a friend to set its group.",
-              getValue=function() return not customOff() end,
-              setValue=function(v)
-                  ns.FriendsCardSet("customTiles", v and true or false)
-                  CludesUI:RefreshPage()  -- the tile settings' disabled state
-              end },
-            tileGate({ type="slider", text="Tile Height", min=tileMin, max=tileMax, step=1,
-              tooltip="The height of each friend in the custom friends list. Shorter tiles show fewer lines.",
-              getValue=function() return ns.FriendsCardGet("tileHeight") end,
-              setValue=function(v) ns.FriendsCardSet("tileHeight", v) end }, customOff)
-        );  y = y - h
+        row, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "toggle",
+                text = CUSTOM,
+                tooltip = "CludesUI's own friends list, with a tile height you choose and friend groups. Right click a friend to set its group.",
+                getValue = function()
+                    return not customOff()
+                end,
+                setValue = function(v)
+                    ns.FriendsCardSet("customTiles", v and true or false)
+                    CludesUI:RefreshPage() -- the tile settings' disabled state
+                end,
+            },
+            tileGate({
+                type = "slider",
+                text = "Tile Height",
+                min = tileMin,
+                max = tileMax,
+                step = 1,
+                tooltip = "The height of each friend in the custom friends list. Shorter tiles show fewer lines.",
+                getValue = function()
+                    return ns.FriendsCardGet("tileHeight")
+                end,
+                setValue = function(v)
+                    ns.FriendsCardSet("tileHeight", v)
+                end,
+            }, customOff)
+        )
+        y = y - h
 
         -- Tile Features | Class Icon Theme
-        row, h = W:DualRow(parent, y,
-            tileGate({ type="dropdown", text="Tile Features",
-              values={ __placeholder="..." }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end, setValue=function() end }),
-            tileGate({ type="dropdown", text="Class Icon Theme",
-              values = Kit.ICON_STYLE_VALUES,
-              order  = Kit.ICON_STYLE_ORDER,
-              getValue=function() return ns.FriendsCardGet("iconStyle") end,
-              setValue=function(v) ns.FriendsCardSet("iconStyle", v) end })
-        );  y = y - h
+        row, h = W:DualRow(
+            parent,
+            y,
+            tileGate({
+                type = "dropdown",
+                text = "Tile Features",
+                values = { __placeholder = "..." },
+                order = { "__placeholder" },
+                getValue = function()
+                    return "__placeholder"
+                end,
+                setValue = function() end,
+            }),
+            tileGate({
+                type = "dropdown",
+                text = "Class Icon Theme",
+                values = Kit.ICON_STYLE_VALUES,
+                order = Kit.ICON_STYLE_ORDER,
+                getValue = function()
+                    return ns.FriendsCardGet("iconStyle")
+                end,
+                setValue = function(v)
+                    ns.FriendsCardSet("iconStyle", v)
+                end,
+            })
+        )
+        y = y - h
 
         -- Tile Features: one checkbox dropdown over the three tile switches,
         -- each still its own key, in place of the row's placeholder.
         if not CludesUI._prebuilding then
             local rgn = row._leftRegion
-            if rgn._control then rgn._control:Hide() end
-            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(rgn, 220, rgn:GetFrameLevel() + 2,
+            if rgn._control then
+                rgn._control:Hide()
+            end
+            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(rgn, 220, rgn:GetFrameLevel() + 2, {
+                { key = "factionBanners", label = "Faction Banners" },
                 {
-                    { key="factionBanners", label="Faction Banners" },
-                    { key="showRegionIcons", label="Region Icons",
-                      tooltip="Shows a map icon of the friend's region if they are not playing within your region" },
-                    { key="classColorNames", label="Class Colored Names" },
+                    key = "showRegionIcons",
+                    label = "Region Icons",
+                    tooltip = "Shows a map icon of the friend's region if they are not playing within your region",
                 },
-                function(key) return ns.FriendsCardGet(key) == true end,
-                function(key, v) ns.FriendsCardSet(key, v and true or false) end,
-                nil, nil, nil, nil, nil,
-                { disabled = tilesOff, disabledTooltip = CUSTOM })
+                { key = "classColorNames", label = "Class Colored Names" },
+            }, function(key)
+                return ns.FriendsCardGet(key) == true
+            end, function(key, v)
+                ns.FriendsCardSet(key, v and true or false)
+            end, nil, nil, nil, nil, nil, { disabled = tilesOff, disabledTooltip = CUSTOM })
             CludesUI.PanelPP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = dd
             rgn._lastInline = nil
@@ -1923,16 +3081,19 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Auto-Accept Friend Invites
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Auto-Accept Friend Invites",
-              tooltip="Auto-accepts all group invites from people on your friends list",
-              getValue=function() return ns.FriendsCardGet("autoAcceptFriendInvites") == true end,
-              setValue=function(v)
-                  ns.FriendsCardSet("autoAcceptFriendInvites", v)
-                  CludesUI:RefreshPage()  -- the guildmate cog's disabled state
-              end },
-            CludesUI.BlankRowCfg()
-        );  y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Auto-Accept Friend Invites",
+            tooltip = "Auto-accepts all group invites from people on your friends list",
+            getValue = function()
+                return ns.FriendsCardGet("autoAcceptFriendInvites") == true
+            end,
+            setValue = function(v)
+                ns.FriendsCardSet("autoAcceptFriendInvites", v)
+                CludesUI:RefreshPage() -- the guildmate cog's disabled state
+            end,
+        }, CludesUI.BlankRowCfg())
+        y = y - h
 
         -- Guildmates in a cog on Auto-Accept Friend Invites: it only extends
         -- that feature, so the cog blocks while the toggle is off.
@@ -1940,11 +3101,20 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI.BuildInlineCog(row._leftRegion, {
                 title = "Auto Accept Settings",
                 rows = {
-                    { type="toggle", label="Accept Invites from Guildmates",
-                      get=function() return ns.FriendsCardGet("autoAcceptGuildInvites") == true end,
-                      set=function(v) ns.FriendsCardSet("autoAcceptGuildInvites", v) end },
+                    {
+                        type = "toggle",
+                        label = "Accept Invites from Guildmates",
+                        get = function()
+                            return ns.FriendsCardGet("autoAcceptGuildInvites") == true
+                        end,
+                        set = function(v)
+                            ns.FriendsCardSet("autoAcceptGuildInvites", v)
+                        end,
+                    },
                 },
-                disabled = function() return ns.FriendsCardGet("autoAcceptFriendInvites") ~= true end,
+                disabled = function()
+                    return ns.FriendsCardGet("autoAcceptFriendInvites") ~= true
+                end,
                 disabledTooltip = "Auto-Accept Friend Invites",
             })
         end
@@ -1970,80 +3140,119 @@ initFrame:SetScript("OnEvent", function(self)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Merchant"))
             end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
             local function refresh()
-                if themedOff() then block:Show(); target:SetAlpha(0.3)
-                else block:Hide(); target:SetAlpha(1) end
+                if themedOff() then
+                    block:Show()
+                    target:SetAlpha(0.3)
+                else
+                    block:Hide()
+                    target:SetAlpha(1)
+                end
             end
-            CludesUI.RegisterWidgetRefresh(refresh); refresh()
+            CludesUI.RegisterWidgetRefresh(refresh)
+            refresh()
         end
 
-        _, h = WSCardSection(parent, "MERCHANT OPTIONS", y);  y = y - h
+        _, h = WSCardSection(parent, "MERCHANT OPTIONS", y)
+        y = y - h
 
         local function merchantShowAsListOff()
             return CludesUIDB and CludesUIDB.merchantShowAsList == false
         end
 
         local row
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show As List",
-              tooltip="Shows the items as a list instead of pages.",
-              getValue=function()
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show As List",
+            tooltip = "Shows the items as a list instead of pages.",
+            getValue = function()
                 return CludesUIDB and CludesUIDB.merchantShowAsList == true
-              end,
-              setValue=function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 local previousValue = CludesUIDB.merchantShowAsList
                 CludesUIDB.merchantShowAsList = v
 
                 -- Enabling the setting breaks the UI immediately, a reload is required
                 CludesUI:ShowConfirmPopup({
-                    title       = "Reload Required",
-                    message     = "Merchant Show As List setting requires a UI reload to fully apply.",
+                    title = "Reload Required",
+                    message = "Merchant Show As List setting requires a UI reload to fully apply.",
                     confirmText = "Reload Now",
-                    cancelText  = "Cancel",
-                    reload      = true,
-                    onCancel    = function()
-                        CludesUIDB.merchantShowAsList = previousValue;
+                    cancelText = "Cancel",
+                    reload = true,
+                    onCancel = function()
+                        CludesUIDB.merchantShowAsList = previousValue
                         CludesUI:RefreshPage()
                     end,
                 })
-              end },
-            { type="slider", text="Row Height", min=24, max=40, step=1,
-              disabled=merchantShowAsListOff, disabledTooltip="Show As List",
-              getValue=function() return (CludesUIDB and CludesUIDB.merchantListRowHeight) or 32 end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.merchantListRowHeight = v
-                  if CludesUI._Merchant_RefreshRowHeight then CludesUI._Merchant_RefreshRowHeight() end
-              end }
-        ); y = y - h
+            end,
+        }, {
+            type = "slider",
+            text = "Row Height",
+            min = 24,
+            max = 40,
+            step = 1,
+            disabled = merchantShowAsListOff,
+            disabledTooltip = "Show As List",
+            getValue = function()
+                return (CludesUIDB and CludesUIDB.merchantListRowHeight) or 32
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.merchantListRowHeight = v
+                if CludesUI._Merchant_RefreshRowHeight then
+                    CludesUI._Merchant_RefreshRowHeight()
+                end
+            end,
+        })
+        y = y - h
         AttachDisabledOverlay(row)
 
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Item Level",
-              tooltip="Shows the item level on weapons and armor a vendor sells.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.merchantShowItemLevel == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.merchantShowItemLevel = v
-                  if CludesUI._Merchant_RefreshItemLevels then CludesUI._Merchant_RefreshItemLevels() end
-              end },
-            { type="toggle", text="Bulk Buy",
-              tooltip="Shift-click a vendor item to buy more than one stack at a time.",
-              disabled=function() return CludesUI.PadGamepadUI() end,
-              disabledTooltip="This option does not work with the Gamepad interface style.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.merchantBulkBuy == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.merchantBulkBuy = v
-                  if CludesUI._Merchant_RefreshBulkBuy then CludesUI._Merchant_RefreshBulkBuy() end
-              end }
-        ); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Item Level",
+            tooltip = "Shows the item level on weapons and armor a vendor sells.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.merchantShowItemLevel == true
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.merchantShowItemLevel = v
+                if CludesUI._Merchant_RefreshItemLevels then
+                    CludesUI._Merchant_RefreshItemLevels()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Bulk Buy",
+            tooltip = "Shift-click a vendor item to buy more than one stack at a time.",
+            disabled = function()
+                return CludesUI.PadGamepadUI()
+            end,
+            disabledTooltip = "This option does not work with the Gamepad interface style.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.merchantBulkBuy == true
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.merchantBulkBuy = v
+                if CludesUI._Merchant_RefreshBulkBuy then
+                    CludesUI._Merchant_RefreshBulkBuy()
+                end
+            end,
+        })
+        y = y - h
 
         -- Expand Vendor UI: a bigger grid in the vendor window. The cog sets its
         -- size; 2 x 5 is Blizzard's own layout. Needs the Merchant skin (the
@@ -2052,48 +3261,82 @@ initFrame:SetScript("OnEvent", function(self)
             return CludesUIDB and CludesUIDB.merchantShowAsList == true
         end
         local function BuildExpandCog(rgn)
-            if CludesUI._prebuilding then return end
+            if CludesUI._prebuilding then
+                return
+            end
             local function setSize(key, v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB[key] = v
-                if CludesUI._Merchant_RefreshExpand then CludesUI._Merchant_RefreshExpand() end
+                if CludesUI._Merchant_RefreshExpand then
+                    CludesUI._Merchant_RefreshExpand()
+                end
             end
             CludesUI.BuildInlineCog(rgn, {
                 title = "Expand Vendor UI Settings",
                 rows = {
-                    { type="slider", label="Vendor Columns", min=2, max=6, step=1,
-                      get=function() return (CludesUIDB and CludesUIDB.merchantCols) or 2 end,
-                      set=function(v) setSize("merchantCols", v) end },
-                    { type="slider", label="Vendor Rows", min=5, max=10, step=1,
-                      get=function() return (CludesUIDB and CludesUIDB.merchantRows) or 5 end,
-                      set=function(v) setSize("merchantRows", v) end },
+                    {
+                        type = "slider",
+                        label = "Vendor Columns",
+                        min = 2,
+                        max = 6,
+                        step = 1,
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.merchantCols) or 2
+                        end,
+                        set = function(v)
+                            setSize("merchantCols", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Vendor Rows",
+                        min = 5,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            return (CludesUIDB and CludesUIDB.merchantRows) or 5
+                        end,
+                        set = function(v)
+                            setSize("merchantRows", v)
+                        end,
+                    },
                 },
                 gap = 9,
                 disabled = function()
                     return merchantShowAsListOn() or not (CludesUIDB and CludesUIDB.merchantExpand)
                 end,
                 disabledTooltip = function()
-                    if merchantShowAsListOn() then return "This option does not work with Show As List." end
+                    if merchantShowAsListOn() then
+                        return "This option does not work with Show As List."
+                    end
                     return "Expand Vendor UI"
                 end,
             })
         end
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Expand Vendor UI",
-              tooltip="Shows more vendor items at once, in the columns and rows set in the cog.",
-              disabled=merchantShowAsListOn, disabledTooltip="This option does not work with Show As List.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.merchantExpand == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.merchantExpand = v
-                  if CludesUI._Merchant_RefreshExpand then CludesUI._Merchant_RefreshExpand() end
-                  CludesUI:RefreshPage()
-              end },
-            CludesUI.BlankRowCfg()
-        ); y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Expand Vendor UI",
+            tooltip = "Shows more vendor items at once, in the columns and rows set in the cog.",
+            disabled = merchantShowAsListOn,
+            disabledTooltip = "This option does not work with Show As List.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.merchantExpand == true
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.merchantExpand = v
+                if CludesUI._Merchant_RefreshExpand then
+                    CludesUI._Merchant_RefreshExpand()
+                end
+                CludesUI:RefreshPage()
+            end,
+        }, CludesUI.BlankRowCfg())
+        y = y - h
         BuildExpandCog(row._leftRegion)
         AttachDisabledOverlay(row)
 
@@ -2108,7 +3351,9 @@ initFrame:SetScript("OnEvent", function(self)
     --  under the "lootWindow" and "lootIcon" prefixes), plus a Quality color mode.
     ---------------------------------------------------------------------------
     local function BuildLootContent(parent, y)
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local W = CludesUI.Widgets
         local _, h
         local prefix = "lootWindow"
@@ -2121,95 +3366,137 @@ initFrame:SetScript("OnEvent", function(self)
             return lootOff() or not CludesUIDB.lootIconBorder
         end
         local function refresh()
-            if CludesUI._Loot_RefreshBorder then CludesUI._Loot_RefreshBorder() end
+            if CludesUI._Loot_RefreshBorder then
+                CludesUI._Loot_RefreshBorder()
+            end
         end
 
-        _, h = WSCardSection(parent, "BORDER", y);  y = y - h
+        _, h = WSCardSection(parent, "BORDER", y)
+        y = y - h
 
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         texValues.default = "Default"
         table.insert(texOrder, 1, "default")
 
         local row
-        row, h = W:DualRow(parent, y,
-            { type="dropdown", text="Border Style",
-              tooltip="Replaces the loot window's border. Default keeps the standard window border.",
-              disabled=lootOff, disabledTooltip="Loot Window",
-              values=texValues, order=texOrder,
-              getValue=function()
-                  return CludesUIDB and CludesUIDB[prefix.."BorderTexture"] or "default"
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  local db = CludesUIDB
-                  if v == "default" then
-                      db[prefix.."BorderTexture"] = nil
-                  else
-                      local c, b = CludesUI.GetBorderStyleSelectDefaults(v)
-                      db[prefix.."BorderTexture"] = v
-                      db[prefix.."BorderBehind"] = b
-                      db[prefix.."BorderColor"] = c
-                      -- Full opacity and the style's own size: the 18% default leaves textured art faded
-                      db[prefix.."BorderOpacity"] = 1
-                      local size = CludesUI.GetBorderDefaultSize(nil, v)
-                      if size then db[prefix.."BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[size] end
-                  end
-                  db[prefix.."BorderOffsetX"] = nil
-                  db[prefix.."BorderOffsetY"] = nil
-                  if db[prefix.."BorderThicknessPx"] then db[prefix.."BorderThicknessPx"] = false end
-                  refresh()
-                  CludesUI:RefreshPage(true)
-              end },
-            BorderSizeSlider(prefix, "Border Size", lootOff, refresh, "Loot Window")
-        ); y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Border Style",
+            tooltip = "Replaces the loot window's border. Default keeps the standard window border.",
+            disabled = lootOff,
+            disabledTooltip = "Loot Window",
+            values = texValues,
+            order = texOrder,
+            getValue = function()
+                return CludesUIDB and CludesUIDB[prefix .. "BorderTexture"] or "default"
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                local db = CludesUIDB
+                if v == "default" then
+                    db[prefix .. "BorderTexture"] = nil
+                else
+                    local c, b = CludesUI.GetBorderStyleSelectDefaults(v)
+                    db[prefix .. "BorderTexture"] = v
+                    db[prefix .. "BorderBehind"] = b
+                    db[prefix .. "BorderColor"] = c
+                    -- Full opacity and the style's own size: the 18% default leaves textured art faded
+                    db[prefix .. "BorderOpacity"] = 1
+                    local size = CludesUI.GetBorderDefaultSize(nil, v)
+                    if size then
+                        db[prefix .. "BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[size]
+                    end
+                end
+                db[prefix .. "BorderOffsetX"] = nil
+                db[prefix .. "BorderOffsetY"] = nil
+                if db[prefix .. "BorderThicknessPx"] then
+                    db[prefix .. "BorderThicknessPx"] = false
+                end
+                refresh()
+                CludesUI:RefreshPage(true)
+            end,
+        }, BorderSizeSlider(prefix, "Border Size", lootOff, refresh, "Loot Window"))
+        y = y - h
 
         -- Accent | Class | Custom | Quality swatches beside Border Size, as on the Tooltips page.
-        AttachBorderControls(row, prefix, lootOff, false, { apply = refresh,
-            quality = { key = prefix.."BorderQualityColor",
-                        tip = "Quality Color: the best item's, or this color for Poor and Common" } })
+        AttachBorderControls(
+            row,
+            prefix,
+            lootOff,
+            false,
+            {
+                apply = refresh,
+                quality = {
+                    key = prefix .. "BorderQualityColor",
+                    tip = "Quality Color: the best item's, or this color for Poor and Common",
+                },
+            }
+        )
 
         -- Width | Height Offset, only for a textured style (art with built-in padding needs fitting).
         local ocfgL, ocfgR = BorderOffsetCfgs(prefix, lootOff, refresh, "Loot Window")
-        if ocfgL then _, h = W:DualRow(parent, y, ocfgL, ocfgR); y = y - h end
+        if ocfgL then
+            _, h = W:DualRow(parent, y, ocfgL, ocfgR)
+            y = y - h
+        end
 
         -- ICON BORDER: the item icons' quality border in a picked style and size (color stays the item quality).
-        _, h = WSCardSection(parent, "ICON BORDER", y);  y = y - h
+        _, h = WSCardSection(parent, "ICON BORDER", y)
+        y = y - h
 
         local iconValues, iconOrder = CludesUI.GetBorderTextureDropdown()
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Icon Borders",
-              tooltip="Draws the item icons' quality border in the style and size below.",
-              disabled=lootOff, disabledTooltip="Loot Window",
-              getValue=function() return CludesUIDB.lootIconBorder == true end,
-              setValue=function(v)
-                  CludesUIDB.lootIconBorder = v
-                  refresh()
-                  CludesUI:RefreshPage()
-              end },
-            { type="dropdown", text="Icon Border Style",
-              disabled=iconOff, disabledTooltip="Icon Borders",
-              values=iconValues, order=iconOrder,
-              getValue=function() return CludesUIDB[iconPrefix.."BorderTexture"] or "solid" end,
-              setValue=function(v)
-                  local db = CludesUIDB
-                  db[iconPrefix.."BorderTexture"] = v
-                  db[iconPrefix.."BorderOffsetX"] = nil
-                  db[iconPrefix.."BorderOffsetY"] = nil
-                  if db[iconPrefix.."BorderThicknessPx"] then db[iconPrefix.."BorderThicknessPx"] = false end
-                  refresh()
-                  CludesUI:RefreshPage(true)
-              end }
-        ); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Icon Borders",
+            tooltip = "Draws the item icons' quality border in the style and size below.",
+            disabled = lootOff,
+            disabledTooltip = "Loot Window",
+            getValue = function()
+                return CludesUIDB.lootIconBorder == true
+            end,
+            setValue = function(v)
+                CludesUIDB.lootIconBorder = v
+                refresh()
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Icon Border Style",
+            disabled = iconOff,
+            disabledTooltip = "Icon Borders",
+            values = iconValues,
+            order = iconOrder,
+            getValue = function()
+                return CludesUIDB[iconPrefix .. "BorderTexture"] or "solid"
+            end,
+            setValue = function(v)
+                local db = CludesUIDB
+                db[iconPrefix .. "BorderTexture"] = v
+                db[iconPrefix .. "BorderOffsetX"] = nil
+                db[iconPrefix .. "BorderOffsetY"] = nil
+                if db[iconPrefix .. "BorderThicknessPx"] then
+                    db[iconPrefix .. "BorderThicknessPx"] = false
+                end
+                refresh()
+                CludesUI:RefreshPage(true)
+            end,
+        })
+        y = y - h
 
         local iconSize = BorderSizeSlider(iconPrefix, "Icon Border Size", iconOff, refresh, "Icon Borders")
-        iconSize.trackWidth = nil  -- no swatches beside it: the full track
+        iconSize.trackWidth = nil -- no swatches beside it: the full track
         -- Textured styles add the two offsets: Size | Width Offset, then Height Offset | blank.
         local icL, icR = BorderOffsetCfgs(iconPrefix, iconOff, refresh, "Icon Borders")
         if icL then
-            _, h = W:DualRow(parent, y, iconSize, icL); y = y - h
-            _, h = W:DualRow(parent, y, icR, CludesUI.BlankRowCfg()); y = y - h
+            _, h = W:DualRow(parent, y, iconSize, icL)
+            y = y - h
+            _, h = W:DualRow(parent, y, icR, CludesUI.BlankRowCfg())
+            y = y - h
         else
-            _, h = W:DualRow(parent, y, iconSize, CludesUI.BlankRowCfg()); y = y - h
+            _, h = W:DualRow(parent, y, iconSize, CludesUI.BlankRowCfg())
+            y = y - h
         end
 
         return y
@@ -2219,46 +3506,67 @@ initFrame:SetScript("OnEvent", function(self)
         local W = CludesUI.Widgets
         local _, h
 
-        _, h = WSCardSection(parent, "QUALITY OF LIFE", y);  y = y - h
+        _, h = WSCardSection(parent, "QUALITY OF LIFE", y)
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Quality Strip",
-              tooltip="Adds a strip down the left edge of a loot toast in the item's quality color. The flat skin drops Blizzard's quality ring around the icon, so this puts that rarity cue back.",
-              getValue=function()
-                  return not CludesUIDB or CludesUIDB.lootToastQualityStrip ~= false
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.lootToastQualityStrip = v
-                  if CludesUI._LootToast_Refresh then CludesUI._LootToast_Refresh() end
-              end },
-            { type="toggle", text="Gold Toast Strip",
-              tooltip="Also show the strip on gold toasts, in the header's gold color. Gold has no rarity to signal, so this is off by default.",
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.lootToastQualityStripMoney == true
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.lootToastQualityStripMoney = v
-                  if CludesUI._LootToast_Refresh then CludesUI._LootToast_Refresh() end
-              end }
-        ); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Quality Strip",
+            tooltip = "Adds a strip down the left edge of a loot toast in the item's quality color. The flat skin drops Blizzard's quality ring around the icon, so this puts that rarity cue back.",
+            getValue = function()
+                return not CludesUIDB or CludesUIDB.lootToastQualityStrip ~= false
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.lootToastQualityStrip = v
+                if CludesUI._LootToast_Refresh then
+                    CludesUI._LootToast_Refresh()
+                end
+            end,
+        }, {
+            type = "toggle",
+            text = "Gold Toast Strip",
+            tooltip = "Also show the strip on gold toasts, in the header's gold color. Gold has no rarity to signal, so this is off by default.",
+            getValue = function()
+                return CludesUIDB and CludesUIDB.lootToastQualityStripMoney == true
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.lootToastQualityStripMoney = v
+                if CludesUI._LootToast_Refresh then
+                    CludesUI._LootToast_Refresh()
+                end
+            end,
+        })
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Toast Scale",
-              tooltip="Scales the loot and gold toasts.",
-              min=0.5, max=1.5, step=0.05, format="%.0f%%",
-              displayMul=100,
-              getValue=function()
-                  return CludesUIDB and CludesUIDB.lootToastScale or 1.0
-              end,
-              setValue=function(v)
-                  if not CludesUIDB then CludesUIDB = {} end
-                  CludesUIDB.lootToastScale = v
-                  if CludesUI._LootToast_Refresh then CludesUI._LootToast_Refresh() end
-              end },
-            { type="label", text="" }
-        ); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Toast Scale",
+            tooltip = "Scales the loot and gold toasts.",
+            min = 0.5,
+            max = 1.5,
+            step = 0.05,
+            format = "%.0f%%",
+            displayMul = 100,
+            getValue = function()
+                return CludesUIDB and CludesUIDB.lootToastScale or 1.0
+            end,
+            setValue = function(v)
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
+                CludesUIDB.lootToastScale = v
+                if CludesUI._LootToast_Refresh then
+                    CludesUI._LootToast_Refresh()
+                end
+            end,
+        }, { type = "label", text = "" })
+        y = y - h
 
         return y
     end
@@ -2271,19 +3579,29 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local function BuildMailAltList(parent, y)
         local MA = ns.MailAlts
-        if not MA then return y end
+        if not MA then
+            return y
+        end
         local W = CludesUI.Widgets
         local _, row, h
         local REQ = "Show Alt List"
-        local function On() return CludesUIDB and CludesUIDB.mailAltList == true end
-        local function Off() return not On() end
+        local function On()
+            return CludesUIDB and CludesUIDB.mailAltList == true
+        end
+        local function Off()
+            return not On()
+        end
         local function Get(key, default)
             local v = CludesUIDB and CludesUIDB[key]
-            if v == nil then return default end
+            if v == nil then
+                return default
+            end
             return v
         end
         local function Set(key, v)
-            if not CludesUIDB then CludesUIDB = {} end
+            if not CludesUIDB then
+                CludesUIDB = {}
+            end
             CludesUIDB[key] = v
             MA.Refresh()
         end
@@ -2305,22 +3623,32 @@ initFrame:SetScript("OnEvent", function(self)
             return items
         end
 
-        _, h = WSCardSection(parent, "ALT LIST", y);  y = y - h
+        _, h = WSCardSection(parent, "ALT LIST", y)
+        y = y - h
 
-        row, h = W:DualRow(parent, y,
-            { type="toggle", text="Show Alt List",
-              tooltip="Lists your alts beside Send Mail.",
-              getValue=On,
-              setValue=function(v)
-                  Set("mailAltList", v)
-                  CludesUI:RefreshPage()
-              end },
-            { type="dropdown", text="Shown Characters",
-              tooltip="Untick a character to leave it off the list.",
-              disabled=Off, disabledTooltip=REQ,
-              values={ __placeholder="..." }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end, setValue=function() end }
-        ); y = y - h
+        row, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Alt List",
+            tooltip = "Lists your alts beside Send Mail.",
+            getValue = On,
+            setValue = function(v)
+                Set("mailAltList", v)
+                CludesUI:RefreshPage()
+            end,
+        }, {
+            type = "dropdown",
+            text = "Shown Characters",
+            tooltip = "Untick a character to leave it off the list.",
+            disabled = Off,
+            disabledTooltip = REQ,
+            values = { __placeholder = "..." },
+            order = { "__placeholder" },
+            getValue = function()
+                return "__placeholder"
+            end,
+            setValue = function() end,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
@@ -2328,26 +3656,66 @@ initFrame:SetScript("OnEvent", function(self)
                 disabled = Off,
                 disabledTooltip = REQ,
                 rows = {
-                    { type="dropdown", label="Sort By",
-                      values={ recent="Last Played", level="Level", name="Name" },
-                      order={ "recent", "level", "name" },
-                      get=function() return Get("mailAltListSort", MA.DEFAULT_SORT) end,
-                      set=function(v) Set("mailAltListSort", v) end },
-                    { type="slider", label="Max Characters Shown", min=1, max=MA.MAX_ROWS, step=1,
-                      get=function() return Get("mailAltListMax", MA.DEFAULT_MAX) end,
-                      set=function(v) Set("mailAltListMax", v) end },
-                    { type="slider", label="Minimum Level", min=1, max=GetMaxLevelForLatestExpansion(), step=1,
-                      get=function() return Get("mailAltListMinLevel", MA.DEFAULT_MIN_LEVEL) end,
-                      set=function(v) Set("mailAltListMinLevel", v) end },
+                    {
+                        type = "dropdown",
+                        label = "Sort By",
+                        values = { recent = "Last Played", level = "Level", name = "Name" },
+                        order = { "recent", "level", "name" },
+                        get = function()
+                            return Get("mailAltListSort", MA.DEFAULT_SORT)
+                        end,
+                        set = function(v)
+                            Set("mailAltListSort", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Max Characters Shown",
+                        min = 1,
+                        max = MA.MAX_ROWS,
+                        step = 1,
+                        get = function()
+                            return Get("mailAltListMax", MA.DEFAULT_MAX)
+                        end,
+                        set = function(v)
+                            Set("mailAltListMax", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Minimum Level",
+                        min = 1,
+                        max = GetMaxLevelForLatestExpansion(),
+                        step = 1,
+                        get = function()
+                            return Get("mailAltListMinLevel", MA.DEFAULT_MIN_LEVEL)
+                        end,
+                        set = function(v)
+                            Set("mailAltListMinLevel", v)
+                        end,
+                    },
                 },
             })
             -- Shown Characters: the checkbox dropdown in place of the row's
             -- placeholder; a long roster gets the search box.
             local rgn = row._rightRegion
-            if rgn._control then rgn._control:Hide() end
-            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(rgn, 220, rgn:GetFrameLevel() + 2, Items,
-                MA.IsShown, MA.SetShown, nil, 10, #MA.Entries() > 12, nil, nil,
-                { disabled = Off, disabledTooltip = REQ, countLabel = true })
+            if rgn._control then
+                rgn._control:Hide()
+            end
+            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
+                rgn,
+                220,
+                rgn:GetFrameLevel() + 2,
+                Items,
+                MA.IsShown,
+                MA.SetShown,
+                nil,
+                10,
+                #MA.Entries() > 12,
+                nil,
+                nil,
+                { disabled = Off, disabledTooltip = REQ, countLabel = true }
+            )
             CludesUI.PanelPP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = dd
             rgn._lastInline = nil
@@ -2365,32 +3733,33 @@ initFrame:SetScript("OnEvent", function(self)
     --  a header rebuilds the page with that card open or closed.
     ---------------------------------------------------------------------------
     local WS_ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
-    local WS_ARROW_UP   = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
-    local WS_CARD_INSET = 0    -- card edges align with the DualRow content width
-    local WS_HEADER_H   = 54
-    local WS_CARD_GAP   = 14
+    local WS_ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
+    local WS_CARD_INSET = 0 -- card edges align with the DualRow content width
+    local WS_HEADER_H = 54
+    local WS_CARD_GAP = 14
 
     local _wsExpanded = {}
-    local _wsApplyAllStyle = "cui"  -- set-all dropdown pick (session-only)
+    local _wsApplyAllStyle = "cui" -- set-all dropdown pick (session-only)
 
     local function WSReloadPopup(message)
         CludesUI:ShowConfirmPopup({
-            title       = "Reload Required",
-            message     = message,
+            title = "Reload Required",
+            message = message,
             confirmText = "Reload Now",
-            cancelText  = "Later",
-            reload      = true,
+            cancelText = "Later",
+            reload = true,
         })
     end
 
     -- Style vocabulary shared by the per-card dropdowns and the set-all row.
     local WS_STYLE_VALUES = { cui = "CludesUI", modern = "Modern", off = "Blizz Default" }
-    local WS_STYLE_ORDER  = { "cui", "modern", "off" }
+    local WS_STYLE_ORDER = { "cui", "modern", "off" }
     -- The Character Sheet's own: its Blizz Default keeps Blizzard's sheet
     -- with the CludesUI stats, slot text and socket panel; Off leaves the
     -- sheet untouched.
-    local WS_CHARSHEET_VALUES = { cui = "CludesUI", modern = "Modern", blizzard = "Blizz Default", off = "Off" }
-    local WS_CHARSHEET_ORDER  = { "cui", "modern", "blizzard", "off" }
+    local WS_CHARSHEET_VALUES =
+        { cui = "CludesUI", modern = "Modern", blizzard = "Blizz Default", off = "Off" }
+    local WS_CHARSHEET_ORDER = { "cui", "modern", "blizzard", "off" }
 
     -- Modern background color + opacity: ONE global setting for the Modern
     -- style, resolved by the window-skin engine and applied live to every
@@ -2402,9 +3771,13 @@ initFrame:SetScript("OnEvent", function(self)
         return 0.067, 0.067, 0.067, 0.97
     end
     local function WSModernSet(r, g, b, a)
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         CludesUIDB.blizzWindowModernDefault = { r = r, g = g, b = b, a = a }
-        if CludesUI._WSkinRefreshStyles then CludesUI._WSkinRefreshStyles() end
+        if CludesUI._WSkinRefreshStyles then
+            CludesUI._WSkinRefreshStyles()
+        end
     end
 
     -- Single Modern color swatch left of the set-all dropdown, greyed and
@@ -2412,23 +3785,31 @@ initFrame:SetScript("OnEvent", function(self)
     -- carries the opacity slider; edits write the Modern preset directly, so
     -- windows already on Modern recolor immediately (no Apply to All).
     local function AttachModernSwatch(host, anchorTo, isOff)
-        local swatch, updateSwatch = CludesUI.BuildColorSwatch(host, host:GetFrameLevel() + 5,
-            function() return WSModernGet() end,
-            function(r, g, b, a) WSModernSet(r, g, b, a) end,
-            true, 20)
+        local swatch, updateSwatch = CludesUI.BuildColorSwatch(host, host:GetFrameLevel() + 5, function()
+            return WSModernGet()
+        end, function(r, g, b, a)
+            WSModernSet(r, g, b, a)
+        end, true, 20)
         CludesUI.PanelPP.Point(swatch, "RIGHT", anchorTo, "LEFT", -8, 0)
         swatch:HookScript("OnEnter", function(s)
             CludesUI.ShowWidgetTooltip(s, "Background color for the Modern style.")
         end)
-        swatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        swatch:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local block = CreateFrame("Frame", nil, swatch)
         block:SetAllPoints()
         block:SetFrameLevel(swatch:GetFrameLevel() + 10)
         block:EnableMouse(true)
         block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("This option requires the Modern style."))
+            CludesUI.ShowWidgetTooltip(
+                swatch,
+                CludesUI.DisabledTooltip("This option requires the Modern style.")
+            )
         end)
-        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         local function Refresh()
             updateSwatch()
             local off = isOff()
@@ -2445,11 +3826,18 @@ initFrame:SetScript("OnEvent", function(self)
         return CludesUIDB and CludesUIDB[key]
     end
     local function WSLookSet(key, field, v)
-        if not CludesUIDB then CludesUIDB = {} end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         local t = CludesUIDB[key]
-        if not t then t = {}; CludesUIDB[key] = t end
+        if not t then
+            t = {}
+            CludesUIDB[key] = t
+        end
         t[field] = v
-        if CludesUI._WSkinRefreshLooks then CludesUI._WSkinRefreshLooks() end
+        if CludesUI._WSkinRefreshLooks then
+            CludesUI._WSkinRefreshLooks()
+        end
     end
 
     -- Inline accent|custom swatch pair on a DualRow region (the standard
@@ -2459,20 +3847,18 @@ initFrame:SetScript("OnEvent", function(self)
         local PP = CludesUI.PanelPP
         local ctrl = rgn._control
 
-        local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-            rgn, row:GetFrameLevel() + 3,
-            function()
-                local c = WSLook(key)
-                local col = c and c.color
-                if col then return col.r or 1, col.g or 1, col.b or 1 end
-                return 1, 1, 1
-            end,
-            function(r, g, b)
-                WSLookSet(key, "color", { r = r, g = g, b = b })
-                WSLookSet(key, "useCustom", true)
-                CludesUI:RefreshPage()
-            end,
-            false, 20)
+        local customSwatch, updateCustom = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+            local c = WSLook(key)
+            local col = c and c.color
+            if col then
+                return col.r or 1, col.g or 1, col.b or 1
+            end
+            return 1, 1, 1
+        end, function(r, g, b)
+            WSLookSet(key, "color", { r = r, g = g, b = b })
+            WSLookSet(key, "useCustom", true)
+            CludesUI:RefreshPage()
+        end, false, 20)
         PP.Point(customSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
         local origClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self, ...)
@@ -2482,23 +3868,23 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI:RefreshPage()
                 return
             end
-            if origClick then origClick(self, ...) end
+            if origClick then
+                origClick(self, ...)
+            end
         end)
         customSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
         end)
-        customSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        customSwatch:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
 
-        local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-            rgn, row:GetFrameLevel() + 3,
-            function()
-                return CludesUI.ResolveActiveAccent()
-            end,
-            function()
-                WSLookSet(key, "useCustom", false)
-                CludesUI:RefreshPage()
-            end,
-            false, 20)
+        local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
+            return CludesUI.ResolveActiveAccent()
+        end, function()
+            WSLookSet(key, "useCustom", false)
+            CludesUI:RefreshPage()
+        end, false, 20)
         PP.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
         accentSwatch:SetScript("OnClick", function()
             WSLookSet(key, "useCustom", false)
@@ -2507,11 +3893,14 @@ initFrame:SetScript("OnEvent", function(self)
         accentSwatch:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
         end)
-        accentSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        accentSwatch:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
         rgn._lastInline = accentSwatch
 
         local function refreshPair()
-            updateCustom(); updateAccent()
+            updateCustom()
+            updateAccent()
             local c = WSLook(key)
             local useCustom = c and c.useCustom
             customSwatch:SetAlpha(useCustom and 1 or 0.3)
@@ -2523,16 +3912,18 @@ initFrame:SetScript("OnEvent", function(self)
 
     local WINDOWS = {
         {
-            key   = "charsheet",
+            key = "charsheet",
             title = "Character Sheet",
-            desc  = "Equipment panel with stat categories, item level, enchants, gems, and the inspect sheet.",
+            desc = "Equipment panel with stat categories, item level, enchants, gems, and the inspect sheet.",
             reloadMsg = "Character Sheet theme setting requires a UI reload to fully apply.",
             styleValues = WS_CHARSHEET_VALUES,
-            styleOrder  = WS_CHARSHEET_ORDER,
+            styleOrder = WS_CHARSHEET_ORDER,
             -- What the set-all row's Blizz Default gives this card.
             blizzDefault = "blizzard",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.themedCharacterSheet = v
                 CludesUIDB.themedInspectSheet = v
                 -- Individual feature toggles retain their values.
@@ -2540,16 +3931,18 @@ initFrame:SetScript("OnEvent", function(self)
             buildContent = BuildCharacterSheetContent,
         },
         {
-            key   = "lfg",
+            key = "lfg",
             -- Forever's window is titled "Looking For Group"; the parens keep "lfg"
             -- searchable there (the card search indexes title + desc).
             title = CludesUI.IS_FOREVER and "Looking For Group (LFG)" or "LFG Menu",
-            desc  = CludesUI.IS_FOREVER
-                and "Looking For Group window: group listing, group browser and who list, plus the group tooltip."
+            desc = CludesUI.IS_FOREVER
+                    and "Looking For Group window: group listing, group browser and who list, plus the group tooltip."
                 or "Group Finder and Premade Groups window, plus browsing quality-of-life extras.",
             reloadMsg = "Changing the Group Finder reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLFGMenu = v
             end,
             -- Its one extra (Remember Sign-Up Roles) hooks retail's premade sign-up
@@ -2557,456 +3950,546 @@ initFrame:SetScript("OnEvent", function(self)
             buildContent = not CludesUI.IS_FOREVER and BuildLFGMenuContent or nil,
         },
         {
-            key   = "legacysystem",
+            key = "legacysystem",
             title = "Progress Legacy",
-            desc  = "Restyles the Progress Legacy window (reward track, challenges and the legacy tree) in the CludesUI style.",
+            desc = "Restyles the Progress Legacy window (reward track, challenges and the legacy tree) in the CludesUI style.",
             reloadMsg = "Changing the Progress Legacy reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLegacySystem = v
             end,
         },
         {
-            key   = "greatvault",
+            key = "greatvault",
             title = "Great Vault",
-            desc  = "Weekly rewards window with custom tile backgrounds, progress colors, and completion states.",
+            desc = "Weekly rewards window with custom tile backgrounds, progress colors, and completion states.",
             reloadMsg = "Changing the Great Vault reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinGreatVault = v
             end,
         },
         {
-            key   = "adventureguide",
+            key = "adventureguide",
             title = "Adventure Guide",
-            desc  = "Encounter Journal: instance select, boss details, loot lists, and the bottom nav tabs.",
+            desc = "Encounter Journal: instance select, boss details, loot lists, and the bottom nav tabs.",
             reloadMsg = "Changing the Adventure Guide reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinAdventureGuide = v
             end,
         },
         {
-            key   = "collections",
+            key = "collections",
             title = "Collections",
-            desc  = "Mounts, pets, toys, heirlooms, appearances, and campsites.",
+            desc = "Mounts, pets, toys, heirlooms, appearances, and campsites.",
             reloadMsg = "Changing the Collections reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinCollections = v
             end,
         },
         {
-            key   = "playerspells",
+            key = "playerspells",
             title = "Talents & Spellbook",
-            desc  = "The Player Spells window: talents, spec selection, and the spellbook.",
+            desc = "The Player Spells window: talents, spec selection, and the spellbook.",
             reloadMsg = "Changing the Talents & Spellbook reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinPlayerSpells = v
             end,
         },
         {
-            key   = "professionsbook",
+            key = "professionsbook",
             title = "Professions",
-            desc  = "The professions overview book with squared icons and flat progress bars.",
+            desc = "The professions overview book with squared icons and flat progress bars.",
             reloadMsg = "Changing the Professions reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinProfessionsBook = v
             end,
         },
         {
-            key   = "professions",
+            key = "professions",
             title = "Profession Crafting",
-            desc  = "The profession crafting window: recipe list, schematic, specializations, and crafting orders.",
+            desc = "The profession crafting window: recipe list, schematic, specializations, and crafting orders.",
             reloadMsg = "Changing the Profession Crafting reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinProfessions = v
             end,
         },
         {
-            key   = "worldmap",
+            key = "worldmap",
             title = "Map & Quest Log",
-            desc  = "The world map window chrome and the quest log side panel.",
+            desc = "The world map window chrome and the quest log side panel.",
             reloadMsg = "Changing the Map & Quest Log reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinWorldMap = v
             end,
         },
         {
-            key   = "guild",
+            key = "guild",
             title = "Guild & Communities",
-            desc  = "The Guild & Communities window: roster, chat, and the community list.",
+            desc = "The Guild & Communities window: roster, chat, and the community list.",
             reloadMsg = "Changing the Guild & Communities reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinGuild = v
             end,
         },
         {
-            key   = "calendar",
+            key = "calendar",
             title = "Calendar",
-            desc  = "The monthly calendar grid, event dialogs, and navigation arrows.",
+            desc = "The monthly calendar grid, event dialogs, and navigation arrows.",
             reloadMsg = "Changing the Calendar reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinCalendar = v
             end,
         },
         {
-            key   = "achievements",
+            key = "achievements",
             title = "Achievements",
-            desc  = "The achievement window: categories, rows, progress bars, and search.",
+            desc = "The achievement window: categories, rows, progress bars, and search.",
             reloadMsg = "Changing the Achievements reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinAchievements = v
             end,
         },
         {
-            key   = "mail",
+            key = "mail",
             title = "Mail",
-            desc  = "The mailbox: inbox rows, send mail, open mail, and attachment slots.",
+            desc = "The mailbox: inbox rows, send mail, open mail, and attachment slots.",
             reloadMsg = "Changing the Mail reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinMail = v
             end,
             buildContent = not CludesUI.IS_FOREVER and BuildMailAltList or nil,
             searchText = not CludesUI.IS_FOREVER and { "Show Alt List", "Shown Characters" } or nil,
         },
         {
-            key   = "catalyst",
+            key = "catalyst",
             title = "Catalyst",
-            desc  = "The item conversion window (catalyst and similar kiosks).",
+            desc = "The item conversion window (catalyst and similar kiosks).",
             reloadMsg = "Changing the Catalyst reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinCatalyst = v
             end,
         },
         {
-            key   = "socket",
+            key = "socket",
             title = "Gem Socketing",
-            desc  = "The gem socketing window with squared gem slots.",
+            desc = "The gem socketing window with squared gem slots.",
             reloadMsg = "Changing the Gem Socketing reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinSocket = v
             end,
         },
         {
-            key   = "itemupgrade",
+            key = "itemupgrade",
             title = "Item Upgrades",
-            desc  = "The item upgrade window: upgrade slot, track selector, cost, and the currency strip.",
+            desc = "The item upgrade window: upgrade slot, track selector, cost, and the currency strip.",
             reloadMsg = "Changing the Item Upgrades reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinItemUpgrade = v
             end,
         },
         {
-            key   = "loot",
+            key = "loot",
             title = "Loot Window",
-            desc  = "The loot window: item rows with squared icons, kept item quality colors.",
+            desc = "The loot window: item rows with squared icons, kept item quality colors.",
             reloadMsg = "Changing the Loot Window reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLoot = v
             end,
             buildContent = BuildLootContent,
         },
         {
-            key   = "loottoast",
+            key = "loottoast",
             title = "Loot Toasts",
-            desc  = "The \"You received\" popups for loot, currency, and upgrades.",
+            desc = 'The "You received" popups for loot, currency, and upgrades.',
             reloadMsg = "Changing the Loot Toasts reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLootToast = v
             end,
             buildContent = BuildLootToastContent,
         },
         {
-            key   = "bnettoast",
+            key = "bnettoast",
             title = "Friend Notifications",
-            desc  = "The Battle.net popup when a friend comes online or goes offline, plus broadcasts and invites.",
+            desc = "The Battle.net popup when a friend comes online or goes offline, plus broadcasts and invites.",
             reloadMsg = "Changing the Friend Notifications reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinBNetToast = v
             end,
         },
         {
-            key   = "lootroll",
+            key = "lootroll",
             title = "Loot Roll Popups",
-            desc  = "The need / greed / pass roll popups, with a squared icon and a flat roll timer.",
+            desc = "The need / greed / pass roll popups, with a squared icon and a flat roll timer.",
             reloadMsg = "Changing the Loot Roll Popups reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLootRoll = v
             end,
         },
         {
-            key   = "loothistory",
+            key = "loothistory",
             title = "Loot Rolls Window",
-            desc  = "The pending-rolls window: encounter picker, roll timer, and the result rows.",
+            desc = "The pending-rolls window: encounter picker, roll timer, and the result rows.",
             reloadMsg = "Changing the Loot Rolls Window reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinLootHistory = v
             end,
         },
         {
-            key   = "groupinvite",
+            key = "groupinvite",
             title = "Group Invite Popup",
-            desc  = "The \"you have been invited to a group\" dialogs, with your role and Accept / Decline.",
+            desc = 'The "you have been invited to a group" dialogs, with your role and Accept / Decline.',
             reloadMsg = "Changing the Group Invite Popup reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinGroupInvite = v
             end,
         },
         {
-            key   = "readycheck",
+            key = "readycheck",
             title = "Ready Check",
-            desc  = "The ready check prompt with its Yes / No buttons.",
+            desc = "The ready check prompt with its Yes / No buttons.",
             reloadMsg = "Changing the Ready Check reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinReadyCheck = v
             end,
         },
         {
-            key   = "housing",
+            key = "housing",
             title = "Housing Dashboard",
-            desc  = "The housing dashboard window background, border, and title bar.",
+            desc = "The housing dashboard window background, border, and title bar.",
             reloadMsg = "Changing the Housing Dashboard reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinHousing = v
             end,
         },
         {
-            key   = "micromenu",
+            key = "micromenu",
             title = "Micro Menu",
-            desc  = "Flattens the micro menu buttons into the CludesUI style.",
+            desc = "Flattens the micro menu buttons into the CludesUI style.",
             reloadMsg = "Changing the Micro Menu reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinMicroMenu = v
             end,
         },
         {
-            key   = "bagbar",
+            key = "bagbar",
             title = "Bag Bar",
-            desc  = "Flattens the bag bar slot buttons into the CludesUI style.",
+            desc = "Flattens the bag bar slot buttons into the CludesUI style.",
             reloadMsg = "Changing the Bag Bar reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinBagBar = v
             end,
         },
         {
-            key   = "dressup",
+            key = "dressup",
             title = "Dressing Room",
-            desc  = "The item preview / transmog dressing room window.",
+            desc = "The item preview / transmog dressing room window.",
             reloadMsg = "Changing the Dressing Room reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinDressUp = v
             end,
         },
         {
-            key   = "transmog",
+            key = "transmog",
             title = "Transmogrifier",
-            desc  = "The transmogrification window at the transmogrifier.",
+            desc = "The transmogrification window at the transmogrifier.",
             reloadMsg = "Changing the Transmogrifier reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinTransmog = v
             end,
         },
         {
-            key   = "merchant",
+            key = "merchant",
             title = "Merchant",
-            desc  = "The vendor window: item list, buyback, and bottom money bar.",
+            desc = "The vendor window: item list, buyback, and bottom money bar.",
             reloadMsg = "Changing the Merchant reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinMerchant = v
             end,
             buildContent = BuildMerchantContent,
         },
         {
-            key   = "auctionhouse",
+            key = "auctionhouse",
             title = "Auction House",
-            desc  = "The auction house: browse, sell, and my auctions views.",
+            desc = "The auction house: browse, sell, and my auctions views.",
             reloadMsg = "Changing the Auction House reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinAuctionHouse = v
             end,
         },
         {
-            key   = "macros",
+            key = "macros",
             title = "Macros",
-            desc  = "The macro editor: tabs, icon grid, text well, and buttons.",
+            desc = "The macro editor: tabs, icon grid, text well, and buttons.",
             reloadMsg = "Changing the Macros reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinMacros = v
             end,
         },
         {
-            key   = "settings",
+            key = "settings",
             title = "Options Panel",
-            desc  = "Blizzard's options window chrome: frame, tabs, search, and category rail.",
+            desc = "Blizzard's options window chrome: frame, tabs, search, and category rail.",
             reloadMsg = "Changing the Options Panel reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinSettings = v
             end,
         },
         {
-            key   = "addonlist",
+            key = "addonlist",
             title = "AddOn List",
-            desc  = "The addon manager: list rows, checkboxes, and buttons.",
+            desc = "The addon manager: list rows, checkboxes, and buttons.",
             reloadMsg = "Changing the AddOn List reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinAddonList = v
             end,
         },
         {
-            key   = "craftorders",
+            key = "craftorders",
             title = "Crafting Orders",
-            desc  = "The customer crafting orders window: browse, order form, and my orders.",
+            desc = "The customer crafting orders window: browse, order form, and my orders.",
             reloadMsg = "Changing the Crafting Orders reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinCraftOrders = v
             end,
         },
         {
-            key   = "trainer",
+            key = "trainer",
             title = "Trainer",
-            desc  = "The class and profession trainer window: skill list, train button, and cost display.",
+            desc = "The class and profession trainer window: skill list, train button, and cost display.",
             reloadMsg = "Changing the Trainer reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinTrainer = v
             end,
         },
         {
-            key   = "gossip",
+            key = "gossip",
             title = "Gossip",
-            desc  = "The NPC dialog window: greeting text, gossip and quest options, and goodbye button.",
+            desc = "The NPC dialog window: greeting text, gossip and quest options, and goodbye button.",
             reloadMsg = "Changing the Gossip reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinGossip = v
             end,
         },
         {
-            key   = "quest",
+            key = "quest",
             title = "Quest",
-            desc  = "The NPC quest window: quest detail, progress, and reward panels plus the multi-quest greeting list.",
+            desc = "The NPC quest window: quest detail, progress, and reward panels plus the multi-quest greeting list.",
             reloadMsg = "Changing the Quest reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinQuest = v
             end,
         },
         {
-            key   = "inspectrecipe",
+            key = "inspectrecipe",
             title = "Inspect Recipe",
-            desc  = "The recipe preview window shown from a linked recipe or an inspected crafter.",
+            desc = "The recipe preview window shown from a linked recipe or an inspected crafter.",
             reloadMsg = "Changing the Inspect Recipe reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinInspectRecipe = v
             end,
         },
         {
-            key   = "delves",
+            key = "delves",
             title = "Delves Companion",
-            desc  = "Brann's configuration window: role and trinket slots, abilities, and the ability list.",
+            desc = "Brann's configuration window: role and trinket slots, abilities, and the ability list.",
             reloadMsg = "Changing the Delves Companion reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinDelves = v
             end,
         },
         {
-            key   = "socialui",
+            key = "socialui",
             title = "Friends List",
             -- Retail: the Friends List module repaints its window to this card
             -- live. WoW Forever: the card drives that client's friends packs
             -- and hosts the friend tiles and auto-accept the module gives retail.
-            desc  = CludesUI.IS_FOREVER
-                and "The Social window frame, border, title bar, Battle.net bar, search boxes, filter dropdowns and buttons, and the friend tiles with class icons, class-colored names and region icons. The side tab icons stay untouched."
+            desc = CludesUI.IS_FOREVER
+                    and "The Social window frame, border, title bar, Battle.net bar, search boxes, filter dropdowns and buttons, and the friend tiles with class icons, class-colored names and region icons. The side tab icons stay untouched."
                 or "The friends window backdrop, frame border, tabs, search boxes, bottom buttons and close button. Friend entries stay untouched; Blizz Default keeps the Friends List module's own flat look.",
             reloadMsg = CludesUI.IS_FOREVER
-                and "Changing the Friends List reskin requires a UI reload to fully swap between Blizzard and Cludes styles."
+                    and "Changing the Friends List reskin requires a UI reload to fully swap between Blizzard and Cludes styles."
                 or nil,
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinSocialUI = v
             end,
             buildContent = CludesUI.IS_FOREVER and BuildFriendsCardContent or nil,
-            searchText = CludesUI.IS_FOREVER and { "Custom Friends List Tiles", "Tile Height", "Tile Features" } or nil,
+            searchText = CludesUI.IS_FOREVER
+                    and { "Custom Friends List Tiles", "Tile Height", "Tile Features" }
+                or nil,
         },
         {
-            key   = "queuestatus",
+            key = "queuestatus",
             title = "Queue Status",
-            desc  = "The panel the minimap Group Finder eye shows on hover: queue titles, role icons and counts, and time in queue.",
+            desc = "The panel the minimap Group Finder eye shows on hover: queue titles, role icons and counts, and time in queue.",
             reloadMsg = "Changing the Queue Status reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinQueueStatus = v
             end,
         },
         {
-            key   = "delvepicker",
+            key = "delvepicker",
             title = "Delve Tier Picker",
-            desc  = "The delve difficulty window: tier dropdown, reward list and Enter button. The Map Properties row is left stock -- it is a Blizzard widget display and is not safe to restyle.",
+            desc = "The delve difficulty window: tier dropdown, reward list and Enter button. The Map Properties row is left stock -- it is a Blizzard widget display and is not safe to restyle.",
             reloadMsg = "Changing the Delve Tier Picker reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinDelvePicker = v
             end,
         },
         {
-            key   = "playerchoice",
+            key = "playerchoice",
             title = "Choice Windows",
-            desc  = "Weekly and event choice windows such as Abundance harvests and \"how will you aid...\" pickers: option plates, headers, reward icons and buttons. Option artwork stays.",
+            desc = 'Weekly and event choice windows such as Abundance harvests and "how will you aid..." pickers: option plates, headers, reward icons and buttons. Option artwork stays.',
             reloadMsg = "Changing the Choice Windows reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinPlayerChoice = v
             end,
         },
         {
-            key   = "trade",
+            key = "trade",
             title = "Trade",
-            desc  = "The player-to-player trade window: frame, both item columns, the enchant slots, money rows and buttons. Item icons are squared and carry a rarity border. Both portraits are removed, as on every other window.",
+            desc = "The player-to-player trade window: frame, both item columns, the enchant slots, money rows and buttons. Item icons are squared and carry a rarity border. Both portraits are removed, as on every other window.",
             reloadMsg = "Changing the Trade reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinTrade = v
             end,
         },
         {
-            key   = "flagcarrier",
+            key = "flagcarrier",
             title = "Flag Carriers",
-            desc  = "The battleground flag and orb carrier frames, dressed like CludesUI unit frames: health in the carrier's class color and power in its power color inside a thin black border, a square spec icon, a bordered trinket and cast bar, and the carrier's pet. The faction icon and the cast bar's fill stay as Blizzard draws them. To move them, turn on Move Flag Carriers in Layout Mode on the Utilities Shifter page.",
+            desc = "The battleground flag and orb carrier frames, dressed like CludesUI unit frames: health in the carrier's class color and power in its power color inside a thin black border, a square spec icon, a bordered trinket and cast bar, and the carrier's pet. The faction icon and the cast bar's fill stay as Blizzard draws them. To move them, turn on Move Flag Carriers in Layout Mode on the Utilities Shifter page.",
             reloadMsg = "Changing the Flag Carriers reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.reskinFlagCarriers = v
             end,
         },
@@ -3019,17 +4502,22 @@ initFrame:SetScript("OnEvent", function(self)
     if CludesUI.IS_FOREVER then
         local foreverDropped = {
             greatvault = true,
-            delvepicker = true, housing = true,
+            delvepicker = true,
+            housing = true,
         }
         for i = #WINDOWS, 1, -1 do
-            if foreverDropped[WINDOWS[i].key] then table.remove(WINDOWS, i) end
+            if foreverDropped[WINDOWS[i].key] then
+                table.remove(WINDOWS, i)
+            end
         end
     else
         -- The Bag Bar and Progress Legacy skins exist only on Forever; drop
         -- their cards on retail.
         for i = #WINDOWS, 1, -1 do
             local key = WINDOWS[i].key
-            if key == "bagbar" or key == "legacysystem" then table.remove(WINDOWS, i) end
+            if key == "bagbar" or key == "legacysystem" then
+                table.remove(WINDOWS, i)
+            end
         end
     end
 
@@ -3052,8 +4540,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- batch instead of one per window.
     local function WSSetStyle(win, style, suppressPopup)
         local old = WSGetStyle(win)
-        if old == style then return false end
-        if not CludesUIDB then CludesUIDB = {} end
+        if old == style then
+            return false
+        end
+        if not CludesUIDB then
+            CludesUIDB = {}
+        end
         -- A pick here belongs to the whole UI's current look: the Style
         -- page's Apply to All saves it into that look's window slot when
         -- the look changes (CludesUI.SwapWindowSkinStyle).
@@ -3061,7 +4553,9 @@ initFrame:SetScript("OnEvent", function(self)
         if style ~= "off" then
             -- Remember which skin set this window uses; kept while "off" so
             -- re-enabling restores the same pick.
-            if not CludesUIDB.blizzWindowSkinStyles then CludesUIDB.blizzWindowSkinStyles = {} end
+            if not CludesUIDB.blizzWindowSkinStyles then
+                CludesUIDB.blizzWindowSkinStyles = {}
+            end
             CludesUIDB.blizzWindowSkinStyles[win.key] = style
         end
         -- A card with no reloadMsg swaps live both ways (retail Friends List).
@@ -3069,7 +4563,9 @@ initFrame:SetScript("OnEvent", function(self)
         local newClass = (style == "off" and 0) or (style == "blizzard" and 1) or 2
         local crossed = win.reloadMsg ~= nil and oldClass ~= newClass
         -- cui<->modern applies live (shell backdrops swap in place).
-        if CludesUI._WSkinRefreshStyles then CludesUI._WSkinRefreshStyles() end
+        if CludesUI._WSkinRefreshStyles then
+            CludesUI._WSkinRefreshStyles()
+        end
         if crossed and not suppressPopup then
             WSReloadPopup(win.reloadMsg)
         end
@@ -3084,17 +4580,30 @@ initFrame:SetScript("OnEvent", function(self)
     function CludesUI.WindowSkinStyleCfg(winKey, text, tooltip)
         local win
         for i = 1, #WINDOWS do
-            if WINDOWS[i].key == winKey then win = WINDOWS[i]; break end
+            if WINDOWS[i].key == winKey then
+                win = WINDOWS[i]
+                break
+            end
         end
-        if not win then return nil end
-        return { type = "dropdown", text = text, tooltip = tooltip,
-            values = win.styleValues or WS_STYLE_VALUES, order = win.styleOrder or WS_STYLE_ORDER,
-            disabled = CludesUI.BlizzWindowSkinsKilled, disabledTooltip = "Window Skins",
-            getValue = function() return WSGetStyle(win) end,
+        if not win then
+            return nil
+        end
+        return {
+            type = "dropdown",
+            text = text,
+            tooltip = tooltip,
+            values = win.styleValues or WS_STYLE_VALUES,
+            order = win.styleOrder or WS_STYLE_ORDER,
+            disabled = CludesUI.BlizzWindowSkinsKilled,
+            disabledTooltip = "Window Skins",
+            getValue = function()
+                return WSGetStyle(win)
+            end,
             setValue = function(v)
                 WSSetStyle(win, v)
                 CludesUI:RefreshPage()
-            end }
+            end,
+        }
     end
 
     -- One expandable card: custom header (mini-window glyph + title + style
@@ -3103,11 +4612,11 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildWindowCard(parent, y, win)
         local PP = CludesUI.PanelPP
         local EG = CludesUI.CLUDES_GREEN
-        local L  = CludesUI.L
+        local L = CludesUI.L
         local hasSettings = win.buildContent ~= nil
         local expanded = hasSettings and _wsExpanded[win.key]
         local cardTop = y
-        local brd  -- whole-card border, created with the bg below (hover closure)
+        local brd -- whole-card border, created with the bg below (hover closure)
 
         -- Explicit size + single TOPLEFT anchor (the widget contract): inline
         -- search re-anchors and restores direct children through their FIRST
@@ -3136,7 +4645,9 @@ initFrame:SetScript("OnEvent", function(self)
         hdr._isSectionHeader = true
         hdr._sectionName = searchName
         local searchNameLoc = L(win.title) .. " " .. L(win.desc or "") .. extraLoc
-        if searchNameLoc ~= searchName then hdr._sectionNameLoc = searchNameLoc end
+        if searchNameLoc ~= searchName then
+            hdr._sectionNameLoc = searchNameLoc
+        end
 
         -- Global (sidebar) search: the card header never goes through
         -- SectionHeader, so the index would otherwise have no entry for it --
@@ -3151,14 +4662,24 @@ initFrame:SetScript("OnEvent", function(self)
             local titleLoc = L(win.title)
             local descSearch = win.desc or ""
             local descLoc = L(win.desc or "")
-            if descLoc ~= descSearch then descSearch = descSearch .. " " .. descLoc end
+            if descLoc ~= descSearch then
+                descSearch = descSearch .. " " .. descLoc
+            end
             descSearch = descSearch .. extra
-            if extraLoc ~= extra then descSearch = descSearch .. extraLoc end
-            CludesUI._RegisterSearchEntry(win.title,
+            if extraLoc ~= extra then
+                descSearch = descSearch .. extraLoc
+            end
+            CludesUI._RegisterSearchEntry(
+                win.title,
                 titleLoc ~= win.title and titleLoc or nil,
                 descSearch,
-                CludesUI._buildingModule, CludesUI._buildingPage,
-                searchName, nil, nil, true)
+                CludesUI._buildingModule,
+                CludesUI._buildingPage,
+                searchName,
+                nil,
+                nil,
+                true
+            )
         end
 
         -- Hover wash (transparent when idle; the card bg below provides the fill)
@@ -3176,7 +4697,10 @@ initFrame:SetScript("OnEvent", function(self)
         glyphBar:SetHeight(4)
         PP.Point(glyphBar, "TOPLEFT", glyph, "TOPLEFT", 1, -1)
         PP.Point(glyphBar, "TOPRIGHT", glyph, "TOPRIGHT", -1, -1)
-        if glyphBar.SetSnapToPixelGrid then glyphBar:SetSnapToPixelGrid(false); glyphBar:SetTexelSnappingBias(0) end
+        if glyphBar.SetSnapToPixelGrid then
+            glyphBar:SetSnapToPixelGrid(false)
+            glyphBar:SetTexelSnappingBias(0)
+        end
 
         local title = CludesUI.MakeFont(hdr, 14, nil, 1, 1, 1, 0.9)
         PP.Point(title, "TOPLEFT", hdr, "TOPLEFT", 50, -12)
@@ -3198,24 +4722,35 @@ initFrame:SetScript("OnEvent", function(self)
             PP.Point(chev, "RIGHT", hdr, "RIGHT", -16, 0)
             chev:SetTexture(expanded and WS_ARROW_UP or WS_ARROW_DOWN)
             chev:SetAlpha(0.45)
-            if expanded then chev:SetVertexColor(EG.r, EG.g, EG.b) end
+            if expanded then
+                chev:SetVertexColor(EG.r, EG.g, EG.b)
+            end
         end
 
         -- Style dropdown: pick CludesUI / Modern / Blizz Default for this
         -- window without expanding the card (the card's own list, when it
         -- has one).
-        local dd = CludesUI.BuildDropdownControl(hdr, 148, hdr:GetFrameLevel() + 2,
-            win.styleValues or WS_STYLE_VALUES, win.styleOrder or WS_STYLE_ORDER,
-            function() return WSGetStyle(win) end,
+        local dd = CludesUI.BuildDropdownControl(
+            hdr,
+            148,
+            hdr:GetFrameLevel() + 2,
+            win.styleValues or WS_STYLE_VALUES,
+            win.styleOrder or WS_STYLE_ORDER,
+            function()
+                return WSGetStyle(win)
+            end,
             function(v)
                 WSSetStyle(win, v)
                 CludesUI:RefreshPage()
-            end)
+            end
+        )
         PP.Point(dd, "RIGHT", hdr, "RIGHT", -44, 0)
         local owner = WS_STYLE_OWNERS[win.key]
-        if owner and CludesUI.BlizzStyle then CludesUI.BlizzStyle.BlockInline(owner, dd) end
+        if owner and CludesUI.BlizzStyle then
+            CludesUI.BlizzStyle.BlockInline(owner, dd)
+        end
 
-        local strip  -- accent strip on the header's left edge (created with bg)
+        local strip -- accent strip on the header's left edge (created with bg)
         local function RefreshCardState()
             local on = WSGetStyle(win) ~= "off"
             glyphBrd:SetColor(1, 1, 1, on and 0.4 or 0.2)
@@ -3237,23 +4772,31 @@ initFrame:SetScript("OnEvent", function(self)
                     strip:SetColorTexture(1, 1, 1, 0.10)
                 end
             end
-            if dd._refreshLabel then dd._refreshLabel() end
+            if dd._refreshLabel then
+                dd._refreshLabel()
+            end
         end
 
         local function ApplyHeaderHover()
             hbg:SetColorTexture(1, 1, 1, 0.05)
             title:SetAlpha(1)
             chev:SetAlpha(0.85)
-            if brd then brd:SetColor(1, 1, 1, 0.22) end
+            if brd then
+                brd:SetColor(1, 1, 1, 0.22)
+            end
         end
         local function ClearHeaderHover()
             -- Moving between the header and its dropdown fires OnLeave first;
             -- keep the row highlight while the pointer is still inside the header.
-            if hdr:IsMouseOver() then return end
+            if hdr:IsMouseOver() then
+                return
+            end
             hbg:SetColorTexture(0, 0, 0, 0)
             title:SetAlpha(0.9)
             chev:SetAlpha(0.45)
-            if brd then brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12) end
+            if brd then
+                brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12)
+            end
         end
         -- Cards without settings are inert: no hover wash, no click-to-expand.
         -- Their dropdown still works on its own.
@@ -3308,7 +4851,10 @@ initFrame:SetScript("OnEvent", function(self)
         strip:SetWidth(2)
         PP.Point(strip, "TOPLEFT", hdr, "TOPLEFT", 1, -1)
         PP.Point(strip, "BOTTOMLEFT", hdr, "BOTTOMLEFT", 1, 1)
-        if strip.SetSnapToPixelGrid then strip:SetSnapToPixelGrid(false); strip:SetTexelSnappingBias(0) end
+        if strip.SetSnapToPixelGrid then
+            strip:SetSnapToPixelGrid(false)
+            strip:SetTexelSnappingBias(0)
+        end
 
         CludesUI.RegisterWidgetRefresh(RefreshCardState)
         RefreshCardState()
@@ -3322,14 +4868,18 @@ initFrame:SetScript("OnEvent", function(self)
     -- toggle shows the reload popup.
     local function WSKillSwitchSet(disabled)
         local prof = CludesUI.GetActiveProfileData()
-        if not prof then return end
+        if not prof then
+            return
+        end
         prof.disableWindowSkins = disabled and true or nil
         -- Structural change (settings <-> hero takeover): force a rebuild,
         -- a plain refresh only re-reads widget values on the cached page.
         CludesUI:RefreshPage(true)
-        WSReloadPopup(disabled
-            and "Window skins are now disabled for this profile. A UI reload is required to restore the stock Blizzard windows."
-            or "Window skins are now enabled for this profile. A UI reload is required to apply them.")
+        WSReloadPopup(
+            disabled
+                    and "Window skins are now disabled for this profile. A UI reload is required to restore the stock Blizzard windows."
+                or "Window skins are now enabled for this profile. A UI reload is required to apply them."
+        )
     end
 
     -- Feature hero shown INSTEAD of the page content while window skins are
@@ -3338,7 +4888,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildWindowSkinsDisabledHero(parent, yOffset)
         local PP = CludesUI.PanelPP
         local EG = CludesUI.CLUDES_GREEN
-        local L  = CludesUI.L
+        local L = CludesUI.L
         local MakeBorder = CludesUI.MakeBorder
         local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
@@ -3372,7 +4922,10 @@ initFrame:SetScript("OnEvent", function(self)
             bar:SetHeight(8)
             PP.Point(bar, "TOPLEFT", card, "TOPLEFT", 1, -1)
             PP.Point(bar, "TOPRIGHT", card, "TOPRIGHT", -1, -1)
-            if bar.SetSnapToPixelGrid then bar:SetSnapToPixelGrid(false); bar:SetTexelSnappingBias(0) end
+            if bar.SetSnapToPixelGrid then
+                bar:SetSnapToPixelGrid(false)
+                bar:SetTexelSnappingBias(0)
+            end
             local dot = card:CreateTexture(nil, "OVERLAY")
             dot:SetColorTexture(0, 0, 0, 0.4)
             PP.Size(dot, 4, 4)
@@ -3417,7 +4970,11 @@ initFrame:SetScript("OnEvent", function(self)
         desc:SetJustifyH("CENTER")
         desc:SetWordWrap(true)
         PP.Point(desc, "TOP", title, "BOTTOM", 0, -12)
-        desc:SetText(L("Blizzard's windows match the CludesUI theme with a WoW 2.0 Dark Theme, from the Dungeon Journal to the Auction House and beyond."))
+        desc:SetText(
+            L(
+                "Blizzard's windows match the CludesUI theme with a WoW 2.0 Dark Theme, from the Dungeon Journal to the Auction House and beyond."
+            )
+        )
 
         local BULLETS = {
             "Every major Blizzard window themed to match CUI",
@@ -3448,8 +5005,9 @@ initFrame:SetScript("OnEvent", function(self)
         PP.Size(enableBtn, 220, 40)
         PP.Point(enableBtn, "TOP", host, "TOP", 0, -344)
         enableBtn:SetFrameLevel(host:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(enableBtn, "Enable Window Skins", 15,
-            CludesUI.WB_COLOURS, function() WSKillSwitchSet(false) end)
+        CludesUI.MakeStyledButton(enableBtn, "Enable Window Skins", 15, CludesUI.WB_COLOURS, function()
+            WSKillSwitchSet(false)
+        end)
 
         local footnote = host:CreateFontString(nil, "OVERLAY")
         footnote:SetFont(FONT, 12, "")
@@ -3474,11 +5032,15 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildThirdPartySection(parent, y)
         local W = CludesUI.Widgets
         local list = ns.GetThirdPartySkinList and ns.GetThirdPartySkinList()
-        if not list or #list == 0 then return y end
+        if not list or #list == 0 then
+            return y
+        end
 
         local _, h
-        _, h = W:Spacer(parent, y, 10); y = y - h
-        _, h = W:SectionHeader(parent, "THIRD-PARTY ADDONS", y); y = y - h
+        _, h = W:Spacer(parent, y, 10)
+        y = y - h
+        _, h = W:SectionHeader(parent, "THIRD-PARTY ADDONS", y)
+        y = y - h
 
         local function MasterOff()
             return (CludesUIDB and CludesUIDB.thirdPartySkinsOff) and true or false
@@ -3494,11 +5056,17 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local items = {}
-        items[1] = { type = "toggle", text = "Skin Third-Party Addons",
+        items[1] = {
+            type = "toggle",
+            text = "Skin Third-Party Addons",
             tooltip = "Master switch for skinning other addons that support the CludesUI skinning API.",
-            getValue = function() return not MasterOff() end,
+            getValue = function()
+                return not MasterOff()
+            end,
             setValue = function(v)
-                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB then
+                    CludesUIDB = {}
+                end
                 CludesUIDB.thirdPartySkinsOff = (not v) and true or nil
                 if v then
                     TurnedOn()
@@ -3506,10 +5074,13 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI:RefreshPage()
                     WSReloadPopup("Removing third-party addon skins requires a UI reload.")
                 end
-            end }
+            end,
+        }
         for _, info in ipairs(list) do
             local name = info.name
-            items[#items + 1] = { type = "toggle", text = name,
+            items[#items + 1] = {
+                type = "toggle",
+                text = name,
                 tooltip = "Skin " .. name .. " to match the CludesUI theme.",
                 disabled = MasterOff,
                 disabledTooltip = "Enable Skin Third-Party Addons",
@@ -3518,16 +5089,26 @@ initFrame:SetScript("OnEvent", function(self)
                     return not (t and t[name] == false)
                 end,
                 setValue = function(v)
-                    if not CludesUIDB then CludesUIDB = {} end
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
                     local t = CludesUIDB.thirdPartySkinAddons
-                    if not t then t = {}; CludesUIDB.thirdPartySkinAddons = t end
-                    if v then t[name] = nil else t[name] = false end
+                    if not t then
+                        t = {}
+                        CludesUIDB.thirdPartySkinAddons = t
+                    end
+                    if v then
+                        t[name] = nil
+                    else
+                        t[name] = false
+                    end
                     if v then
                         TurnedOn()
                     else
                         WSReloadPopup("Removing " .. name .. "'s skin requires a UI reload.")
                     end
-                end }
+                end,
+            }
         end
         local h2
         for i = 1, #items, 2 do
@@ -3540,7 +5121,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildWindowSkinsPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local PP = CludesUI.PanelPP
-        local L  = CludesUI.L
+        local L = CludesUI.L
         local y = yOffset
         local _, h
 
@@ -3556,7 +5137,8 @@ initFrame:SetScript("OnEvent", function(self)
             return math.abs(y2)
         end
 
-        _, h = W:Spacer(parent, y, 14);  y = y - h
+        _, h = W:Spacer(parent, y, 14)
+        y = y - h
 
         -- Hosted on a sized frame (not a raw region on the wrapper) so the
         -- inline search hides it while filtering and restores it on clear;
@@ -3575,28 +5157,43 @@ initFrame:SetScript("OnEvent", function(self)
         PP.Size(disBtn, 160, 24)
         PP.Point(disBtn, "RIGHT", introHost, "RIGHT", 0, 0)
         disBtn:SetFrameLevel(introHost:GetFrameLevel() + 3)
-        CludesUI.MakeStyledButton(disBtn, "Disable Window Skins", 11,
-            CludesUI.WB_COLOURS, function() WSKillSwitchSet(true) end)
-        disBtn:HookScript("OnEnter", function(s)
-            CludesUI.ShowWidgetTooltip(s, L("Turns off ALL window skinning for this profile. Requires a reload."))
+        CludesUI.MakeStyledButton(disBtn, "Disable Window Skins", 11, CludesUI.WB_COLOURS, function()
+            WSKillSwitchSet(true)
         end)
-        disBtn:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        disBtn:HookScript("OnEnter", function(s)
+            CludesUI.ShowWidgetTooltip(
+                s,
+                L("Turns off ALL window skinning for this profile. Requires a reload.")
+            )
+        end)
+        disBtn:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
 
         y = y - 28
 
         -- Set-all row: pick a style, then push it to every window below. The
         -- swatch + cog edit the GLOBAL Modern background (windows without a
         -- per-window override follow it).
-        local allDD = CludesUI.BuildDropdownControl(parent, 170, parent:GetFrameLevel() + 3,
-            WS_STYLE_VALUES, WS_STYLE_ORDER,
-            function() return _wsApplyAllStyle end,
+        local allDD = CludesUI.BuildDropdownControl(
+            parent,
+            170,
+            parent:GetFrameLevel() + 3,
+            WS_STYLE_VALUES,
+            WS_STYLE_ORDER,
+            function()
+                return _wsApplyAllStyle
+            end,
             function(v)
                 _wsApplyAllStyle = v
                 CludesUI:RefreshPage()
-            end)
+            end
+        )
         PP.Point(allDD, "TOPLEFT", parent, "TOP", -115, y)
         allDD._ttText = "Style to apply to every window below."
-        AttachModernSwatch(parent, allDD, function() return _wsApplyAllStyle ~= "modern" end)
+        AttachModernSwatch(parent, allDD, function()
+            return _wsApplyAllStyle ~= "modern"
+        end)
 
         local applyBtn = CreateFrame("Button", nil, parent)
         PP.Size(applyBtn, 110, 30)
@@ -3606,7 +5203,9 @@ initFrame:SetScript("OnEvent", function(self)
             local crossed = false
             for _, win in ipairs(WINDOWS) do
                 local style = (_wsApplyAllStyle == "off" and win.blizzDefault) or _wsApplyAllStyle
-                if not WSStyleOwned(win) and WSSetStyle(win, style, true) then crossed = true end
+                if not WSStyleOwned(win) and WSSetStyle(win, style, true) then
+                    crossed = true
+                end
             end
             CludesUI:RefreshPage()
             if crossed then
@@ -3616,75 +5215,98 @@ initFrame:SetScript("OnEvent", function(self)
         y = y - 30 - 26
 
         -- GLOBAL OPTIONS: look settings shared by every reskinned window.
-        _, h = W:SectionHeader(parent, "GLOBAL OPTIONS", y); y = y - h
+        _, h = W:SectionHeader(parent, "GLOBAL OPTIONS", y)
+        y = y - h
 
         local gRow1
-        gRow1, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Show Accent Bar",
-              tooltip = "Accent bar on the active tab of reskinned windows.",
-              getValue = function()
-                  local c = WSLook("blizzWinAccentBar")
-                  return not (c and c.enabled == false)
-              end,
-              setValue = function(v)
-                  WSLookSet("blizzWinAccentBar", "enabled", v and true or false)
-              end },
-            { type = "slider", text = "Bar Fill Opacity",
-              min = 10, max = 100, step = 1,
-              getValue = function()
-                  local c = WSLook("blizzWinBarFill")
-                  return math.floor(((c and c.alpha) or 0.95) * 100 + 0.5)
-              end,
-              setValue = function(v) WSLookSet("blizzWinBarFill", "alpha", v / 100) end })
+        gRow1, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Accent Bar",
+            tooltip = "Accent bar on the active tab of reskinned windows.",
+            getValue = function()
+                local c = WSLook("blizzWinAccentBar")
+                return not (c and c.enabled == false)
+            end,
+            setValue = function(v)
+                WSLookSet("blizzWinAccentBar", "enabled", v and true or false)
+            end,
+        }, {
+            type = "slider",
+            text = "Bar Fill Opacity",
+            min = 10,
+            max = 100,
+            step = 1,
+            getValue = function()
+                local c = WSLook("blizzWinBarFill")
+                return math.floor(((c and c.alpha) or 0.95) * 100 + 0.5)
+            end,
+            setValue = function(v)
+                WSLookSet("blizzWinBarFill", "alpha", v / 100)
+            end,
+        })
         if not CludesUI._prebuilding then
-        AttachLookSwatches(gRow1._leftRegion, gRow1, "blizzWinAccentBar")
-        AttachLookSwatches(gRow1._rightRegion, gRow1, "blizzWinBarFill")
+            AttachLookSwatches(gRow1._leftRegion, gRow1, "blizzWinAccentBar")
+            AttachLookSwatches(gRow1._rightRegion, gRow1, "blizzWinBarFill")
         end
         y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type = "multiSwatch", text = "Link Color",
-              swatches = {
-                  { tooltip = "Accent Color",
-                    getValue = function()
-                        return CludesUI.ResolveActiveAccent()
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        WSLookSet("blizzWinLinks", "useCustom", false)
-                        CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        local c = WSLook("blizzWinLinks")
-                        return (c and c.useCustom) and 0.3 or 1
-                    end },
-                  { tooltip = "Custom Color",
-                    getValue = function()
-                        local c = WSLook("blizzWinLinks")
-                        local col = c and c.color
-                        if col then return col.r or 1, col.g or 1, col.b or 1 end
-                        return 1, 1, 1
-                    end,
-                    setValue = function(r, g, b)
-                        WSLookSet("blizzWinLinks", "color", { r = r, g = g, b = b })
-                        WSLookSet("blizzWinLinks", "useCustom", true)
-                        CludesUI:RefreshPage()
-                    end,
-                    onClick = function(self)
-                        local c = WSLook("blizzWinLinks")
-                        if not (c and c.useCustom) then
+        _, h = W:DualRow(
+            parent,
+            y,
+            {
+                type = "multiSwatch",
+                text = "Link Color",
+                swatches = {
+                    {
+                        tooltip = "Accent Color",
+                        getValue = function()
+                            return CludesUI.ResolveActiveAccent()
+                        end,
+                        setValue = function() end,
+                        onClick = function()
+                            WSLookSet("blizzWinLinks", "useCustom", false)
+                            CludesUI:RefreshPage()
+                        end,
+                        refreshAlpha = function()
+                            local c = WSLook("blizzWinLinks")
+                            return (c and c.useCustom) and 0.3 or 1
+                        end,
+                    },
+                    {
+                        tooltip = "Custom Color",
+                        getValue = function()
+                            local c = WSLook("blizzWinLinks")
+                            local col = c and c.color
+                            if col then
+                                return col.r or 1, col.g or 1, col.b or 1
+                            end
+                            return 1, 1, 1
+                        end,
+                        setValue = function(r, g, b)
+                            WSLookSet("blizzWinLinks", "color", { r = r, g = g, b = b })
                             WSLookSet("blizzWinLinks", "useCustom", true)
                             CludesUI:RefreshPage()
-                            return
-                        end
-                        if self._eabOrigClick then self._eabOrigClick(self) end
-                    end,
-                    refreshAlpha = function()
-                        local c = WSLook("blizzWinLinks")
-                        return (c and c.useCustom) and 1 or 0.3
-                    end },
-              } },
-            { type = "label", text = "" })
+                        end,
+                        onClick = function(self)
+                            local c = WSLook("blizzWinLinks")
+                            if not (c and c.useCustom) then
+                                WSLookSet("blizzWinLinks", "useCustom", true)
+                                CludesUI:RefreshPage()
+                                return
+                            end
+                            if self._eabOrigClick then
+                                self._eabOrigClick(self)
+                            end
+                        end,
+                        refreshAlpha = function()
+                            local c = WSLook("blizzWinLinks")
+                            return (c and c.useCustom) and 1 or 0.3
+                        end,
+                    },
+                },
+            },
+            { type = "label", text = "" }
+        )
         y = y - h
 
         -- Breathing room between the global settings and the window cards.
@@ -3696,10 +5318,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- don't care, and new entries keep being added by category there.
         local ordered = {}
         for _, win in ipairs(WINDOWS) do
-            if win.buildContent then ordered[#ordered + 1] = win end
+            if win.buildContent then
+                ordered[#ordered + 1] = win
+            end
         end
         for _, win in ipairs(WINDOWS) do
-            if not win.buildContent then ordered[#ordered + 1] = win end
+            if not win.buildContent then
+                ordered[#ordered + 1] = win
+            end
         end
         for _, win in ipairs(ordered) do
             y = BuildWindowCard(parent, y, win)
@@ -3707,7 +5333,8 @@ initFrame:SetScript("OnEvent", function(self)
 
         y = BuildThirdPartySection(parent, y)
 
-        _, h = W:Spacer(parent, y, 20);  y = y - h
+        _, h = W:Spacer(parent, y, 20)
+        y = y - h
         return math.abs(y)
     end
 
@@ -3717,27 +5344,46 @@ initFrame:SetScript("OnEvent", function(self)
     local function EDR_DB()
         return ns.edrDB and ns.edrDB.profile
     end
-    local function EDR_Cfg(k) local p = EDR_DB(); return p and p[k] end
-    local function EDR_Set(k, v) local p = EDR_DB(); if p then p[k] = v end end
-    local function EDR_SetField(k, field, v)
-        local t = EDR_Cfg(k); if t then t[field] = v end
+    local function EDR_Cfg(k)
+        local p = EDR_DB()
+        return p and p[k]
     end
-    local function EDR_Rebuild() if ns.edrRebuild then ns.edrRebuild() end
+    local function EDR_Set(k, v)
+        local p = EDR_DB()
+        if p then
+            p[k] = v
+        end
+    end
+    local function EDR_SetField(k, field, v)
+        local t = EDR_Cfg(k)
+        if t then
+            t[field] = v
+        end
+    end
+    local function EDR_Rebuild()
+        if ns.edrRebuild then
+            ns.edrRebuild()
+        end
         CludesUI:RefreshPage()
     end
-    local function EDR_Redraw() if ns.edrRedraw then ns.edrRedraw() end end
+    local function EDR_Redraw()
+        if ns.edrRedraw then
+            ns.edrRedraw()
+        end
+    end
 
     -------------------------------------------------------------------
     --  Bar texture dropdown tables (shared media path, same as ERB)
     -------------------------------------------------------------------
     local EDR_BAR_TEXTURES = ns.EDR_BAR_TEXTURES
-    local _, EDR_BAR_TEXTURE_NAMES, EDR_BAR_TEXTURE_ORDER =
-        CludesUI.BuildBarTextureTables()
+    local _, EDR_BAR_TEXTURE_NAMES, EDR_BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
 
     -- Live sample bubble in the content header; sized to the bubble plus margin.
     local function ChatBubblesHeaderBuilder(header)
         local building = true
-        local function HeightFor(bubbleH) return math.max(80, math.floor(bubbleH + 40)) end
+        local function HeightFor(bubbleH)
+            return math.max(80, math.floor(bubbleH + 40))
+        end
         local bubble = CludesUI.ChatBubbles.ShowPreview(header, function(bubbleH)
             local want = HeightFor(bubbleH)
             if not building and header:IsVisible() and math.abs(header:GetHeight() - want) > 1 then
@@ -3750,14 +5396,20 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Sample Skyriding HUD in the content header, painted by the HUD's own
     -- passes (ns.EDR_ShowSample).
-    local SkyridingHeaderBuilder = SampleHeaderBuilder({ { show = function(header, place)
-        if ns.EDR_ShowSample then ns.EDR_ShowSample(header, place) end
-    end } })
+    local SkyridingHeaderBuilder = SampleHeaderBuilder({
+        {
+            show = function(header, place)
+                if ns.EDR_ShowSample then
+                    ns.EDR_ShowSample(header, place)
+                end
+            end,
+        },
+    })
 
     local function BuildChatBubblesPage(pageName, parent, yOffset)
-        local W  = CludesUI.Widgets
+        local W = CludesUI.Widgets
         local PP = CludesUI.PP
-        local y  = yOffset
+        local y = yOffset
         local _, h
 
         parent._showRowDivider = true
@@ -3767,23 +5419,28 @@ initFrame:SetScript("OnEvent", function(self)
             CludesUI:ClearContentHeader()
         end
 
-
         local CBM = CludesUI.ChatBubbles
         -- Reads never create the profile table; writes do.
-        local function BBDB() return CBM.DB(true) end
+        local function BBDB()
+            return CBM.DB(true)
+        end
         -- Same defaults table the renderer reads, so a widget can never offer a value the
         -- bubble would not actually draw.
         local function CBVal(key)
             local db = CBM.DB(false)
             local v = db and db[key]
-            if v ~= nil then return v end
+            if v ~= nil then
+                return v
+            end
             return CBM.Defaults()[key]
         end
         -- Structural write: can change whether we draw at all, or which of Blizzard's
         -- CVars we hold down, so it runs the renderer's full pass.
         local function CBSet(key, v)
             local db = BBDB()
-            if not db then return end
+            if not db then
+                return
+            end
             db[key] = v
             CBM.Refresh()
         end
@@ -3793,16 +5450,22 @@ initFrame:SetScript("OnEvent", function(self)
         -- registration and round-trips Blizzard's three switches every time.
         local function CBSetStyle(key, v)
             local db = BBDB()
-            if not db then return end
+            if not db then
+                return
+            end
             db[key] = v
             CBM.RefreshStyle()
         end
         local function CBColor(key)
             local c = CBVal(key)
-            if not c then return 1, 1, 1, 1 end
+            if not c then
+                return 1, 1, 1, 1
+            end
             return c.r, c.g, c.b, c.a or 1
         end
-        local function Off() return CBVal("enabled") ~= true end
+        local function Off()
+            return CBVal("enabled") ~= true
+        end
         local GATE = "Enable Chat Bubbles Customization"
         -- The toggle's own label reads as an instruction; DisabledTooltip wraps whatever it
         -- is handed in "This option requires %1$s to be enabled", which needs a plain noun.
@@ -3824,19 +5487,24 @@ initFrame:SetScript("OnEvent", function(self)
         end
         y = y - 30
 
-        _, h = W:SectionHeader(parent, "DISPLAY", y);  y = y - h
+        _, h = W:SectionHeader(parent, "DISPLAY", y)
+        y = y - h
 
         local channelsRow
-        channelsRow, h = W:DualRow(parent, y,
-            { type="toggle", text=GATE,
-              getValue=function() return CBVal("enabled") == true end,
-              setValue=function(v)
+        channelsRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = GATE,
+            getValue = function()
+                return CBVal("enabled") == true
+            end,
+            setValue = function(v)
                 if not v then
                     CBSet("enabled", false)
                     CludesUI:RefreshPage()
                     return
                 end
-                local message = "CludesUI restyles Blizzard's chat bubbles and turns on the switches it needs. Party and Raid keep your current setting, and everything is put back when you turn this off."
+                local message =
+                    "CludesUI restyles Blizzard's chat bubbles and turns on the switches it needs. Party and Raid keep your current setting, and everything is put back when you turn this off."
                 CludesUI:ShowConfirmPopup({
                     title = GATE,
                     message = message,
@@ -3846,33 +5514,57 @@ initFrame:SetScript("OnEvent", function(self)
                         CBSet("enabled", true)
                         CludesUI:RefreshPage()
                     end,
-                    onCancel = function() CludesUI:RefreshPage() end,
+                    onCancel = function()
+                        CludesUI:RefreshPage()
+                    end,
                 })
-              end },
-            { type="dropdown", text="Channels",
-              tooltip="Choose which channels get a bubble.",
-              disabled = Off, disabledTooltip = GATE_REQ,
-              values={ __placeholder = "..." }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end,
-              setValue=function() end });  y = y - h
+            end,
+        }, {
+            type = "dropdown",
+            text = "Channels",
+            tooltip = "Choose which channels get a bubble.",
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+            values = { __placeholder = "..." },
+            order = { "__placeholder" },
+            getValue = function()
+                return "__placeholder"
+            end,
+            setValue = function() end,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
             local rgn = channelsRow._rightRegion
-            if rgn._control then rgn._control:Hide() end
+            if rgn._control then
+                rgn._control:Hide()
+            end
             local channelItems = {
-                { key="say",   label="Say" },
-                { key="yell",  label="Yell" },
-                { key="party", label="Party", tooltip="Includes instance chat." },
-                { key="raid",  label="Raid" },
-                { key="npc",   label="NPCs" },
-                { key="emote", label="Emotes" },
+                { key = "say", label = "Say" },
+                { key = "yell", label = "Yell" },
+                { key = "party", label = "Party", tooltip = "Includes instance chat." },
+                { key = "raid", label = "Raid" },
+                { key = "npc", label = "NPCs" },
+                { key = "emote", label = "Emotes" },
             }
             local chDD, chDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn, 240, rgn:GetFrameLevel() + 2,
+                rgn,
+                240,
+                rgn:GetFrameLevel() + 2,
                 channelItems,
-                function(k) return CBVal(k) == true end,
-                function(k, v) CBSet(k, v) end,
-                nil, nil, nil, nil, nil, { disabled = Off, disabledTooltip = GATE_REQ })
+                function(k)
+                    return CBVal(k) == true
+                end,
+                function(k, v)
+                    CBSet(k, v)
+                end,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                { disabled = Off, disabledTooltip = GATE_REQ }
+            )
             CludesUI.PanelPP.Point(chDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = chDD
             rgn._lastInline = nil
@@ -3882,38 +5574,86 @@ initFrame:SetScript("OnEvent", function(self)
         -- Structural, not appearance: it decides which of Blizzard's switches we hold and at
         -- what value, so it takes the full pass. Half-empty right slot is allowed here because
         -- this is the last row of its section.
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Hide Chat Bubbles in Instances",
-              getValue=function() return CBVal("hideInInstances") == true end,
-              setValue=function(v) CBSet("hideInInstances", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ },
-            { type="label", text="" });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Hide Chat Bubbles in Instances",
+            getValue = function()
+                return CBVal("hideInInstances") == true
+            end,
+            setValue = function(v)
+                CBSet("hideInInstances", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        }, { type = "label", text = "" })
+        y = y - h
 
-        _, h = W:SectionHeader(parent, "APPEARANCE", y);  y = y - h
+        _, h = W:SectionHeader(parent, "APPEARANCE", y)
+        y = y - h
 
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="Padding", min=2, max=24, step=1,
-              tooltip="Space between the text and the edge of the bubble.",
-              getValue=function() return CBVal("padding") end,
-              setValue=function(v) CBSetStyle("padding", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ },
-            { type="slider", text="Maximum Width", min=120, max=500, step=10,
-              getValue=function() return CBVal("maxWidth") end,
-              setValue=function(v) CBSetStyle("maxWidth", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ });  y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "slider",
+            text = "Padding",
+            min = 2,
+            max = 24,
+            step = 1,
+            tooltip = "Space between the text and the edge of the bubble.",
+            getValue = function()
+                return CBVal("padding")
+            end,
+            setValue = function(v)
+                CBSetStyle("padding", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        }, {
+            type = "slider",
+            text = "Maximum Width",
+            min = 120,
+            max = 500,
+            step = 10,
+            getValue = function()
+                return CBVal("maxWidth")
+            end,
+            setValue = function(v)
+                CBSetStyle("maxWidth", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        })
+        y = y - h
 
         local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
         local fontBorderRow
-        fontBorderRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Font",
-              values=fontValues, order=fontOrder,
-              getValue=function() return CBVal("font") end,
-              setValue=function(v) CBSetStyle("font", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ },
-            { type="slider", text="Border", min=0, max=4, step=1,
-              getValue=function() return CBVal("borderSize") end,
-              setValue=function(v) CBSetStyle("borderSize", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ });  y = y - h
+        fontBorderRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Font",
+            values = fontValues,
+            order = fontOrder,
+            getValue = function()
+                return CBVal("font")
+            end,
+            setValue = function(v)
+                CBSetStyle("font", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        }, {
+            type = "slider",
+            text = "Border",
+            min = 0,
+            max = 4,
+            step = 1,
+            getValue = function()
+                return CBVal("borderSize")
+            end,
+            setValue = function(v)
+                CBSetStyle("borderSize", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        })
+        y = y - h
 
         if not CludesUI._prebuilding then
             -- Built BEFORE the swatch on purpose: the cog sits beside the control, and
@@ -3923,21 +5663,47 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = GATE_REQ,
                 title = "Font",
                 rows = {
-                    { type = "slider", label = "Font Size", min = 8, max = 24, step = 1,
-                      get = function() return CBVal("fontSize") end,
-                      set = function(v) CBSetStyle("fontSize", v) end },
-                    { type = "dropdown", label = "Outline",
-                      values = { __global = "CUI Global Outline", none = "Drop Shadow",
-                                 outline = "Outline", thick = "Thick Outline" },
-                      order = { "__global", "none", "outline", "thick" },
-                      get = function() return CBVal("outline") end,
-                      set = function(v) CBSetStyle("outline", v) end },
-                    { type = "toggle", label = "Follow Blizzard Default Color",
-                      get = function() return CBVal("followBlizzardColor") == true end,
-                      set = function(v)
-                          CBSetStyle("followBlizzardColor", v)
-                          CludesUI:RefreshPage()
-                      end },
+                    {
+                        type = "slider",
+                        label = "Font Size",
+                        min = 8,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            return CBVal("fontSize")
+                        end,
+                        set = function(v)
+                            CBSetStyle("fontSize", v)
+                        end,
+                    },
+                    {
+                        type = "dropdown",
+                        label = "Outline",
+                        values = {
+                            __global = "CUI Global Outline",
+                            none = "Drop Shadow",
+                            outline = "Outline",
+                            thick = "Thick Outline",
+                        },
+                        order = { "__global", "none", "outline", "thick" },
+                        get = function()
+                            return CBVal("outline")
+                        end,
+                        set = function(v)
+                            CBSetStyle("outline", v)
+                        end,
+                    },
+                    {
+                        type = "toggle",
+                        label = "Follow Blizzard Default Color",
+                        get = function()
+                            return CBVal("followBlizzardColor") == true
+                        end,
+                        set = function(v)
+                            CBSetStyle("followBlizzardColor", v)
+                            CludesUI:RefreshPage()
+                        end,
+                    },
                 },
             })
 
@@ -3946,62 +5712,111 @@ initFrame:SetScript("OnEvent", function(self)
             -- swatch's refresh so a profile switch repaints it, and builds the greyed-out block
             -- plus tooltip from opts.disabled.
             CludesUI.BuildInlineSwatches(fontBorderRow._leftRegion, {
-                { getValue = function() local r, g, b = CBColor("textColor"); return r, g, b, 1 end,
-                  setValue = function(r, g, b) CBSetStyle("textColor", { r=r, g=g, b=b }) end,
-                  -- Two reasons this swatch can be dead, so the tip is resolved per reason.
-                  disabled = function() return Off() or CBVal("followBlizzardColor") == true end,
-                  disabledTooltip = function()
-                      return Off() and GATE_REQ or "Follow Blizzard Default Color"
-                  end,
-                  requireState = function() return Off() and "enabled" or "disabled" end },
+                {
+                    getValue = function()
+                        local r, g, b = CBColor("textColor")
+                        return r, g, b, 1
+                    end,
+                    setValue = function(r, g, b)
+                        CBSetStyle("textColor", { r = r, g = g, b = b })
+                    end,
+                    -- Two reasons this swatch can be dead, so the tip is resolved per reason.
+                    disabled = function()
+                        return Off() or CBVal("followBlizzardColor") == true
+                    end,
+                    disabledTooltip = function()
+                        return Off() and GATE_REQ or "Follow Blizzard Default Color"
+                    end,
+                    requireState = function()
+                        return Off() and "enabled" or "disabled"
+                    end,
+                },
             }, { disabled = Off, disabledTooltip = GATE_REQ })
 
             CludesUI.BuildInlineSwatches(fontBorderRow._rightRegion, {
-                { getValue = function() return CBColor("borderColor") end,
-                  setValue = function(r, g, b, a) CBSetStyle("borderColor", { r=r, g=g, b=b, a=a }) end,
-                  hasAlpha = true },
+                {
+                    getValue = function()
+                        return CBColor("borderColor")
+                    end,
+                    setValue = function(r, g, b, a)
+                        CBSetStyle("borderColor", { r = r, g = g, b = b, a = a })
+                    end,
+                    hasAlpha = true,
+                },
             }, { disabled = Off, disabledTooltip = GATE_REQ })
         end
 
         local nameRow
-        nameRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Show Speaker Name",
-              tooltip="Choose which channels show the speaker.",
-              disabled = Off, disabledTooltip = GATE_REQ,
-              values={ __placeholder = "..." }, order={ "__placeholder" },
-              getValue=function() return "__placeholder" end,
-              setValue=function() end },
-            { type="slider", text="Vertical Offset", min=-80, max=80, step=2,
-              getValue=function() return CBVal("offsetY") end,
-              setValue=function(v) CBSetStyle("offsetY", v) end,
-              disabled = Off, disabledTooltip = GATE_REQ });  y = y - h
+        nameRow, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Show Speaker Name",
+            tooltip = "Choose which channels show the speaker.",
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+            values = { __placeholder = "..." },
+            order = { "__placeholder" },
+            getValue = function()
+                return "__placeholder"
+            end,
+            setValue = function() end,
+        }, {
+            type = "slider",
+            text = "Vertical Offset",
+            min = -80,
+            max = 80,
+            step = 2,
+            getValue = function()
+                return CBVal("offsetY")
+            end,
+            setValue = function(v)
+                CBSetStyle("offsetY", v)
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        })
+        y = y - h
 
         -- Same build as the Channels dropdown above.
         if not CludesUI._prebuilding then
             local rgn = nameRow._leftRegion
-            if rgn._control then rgn._control:Hide() end
+            if rgn._control then
+                rgn._control:Hide()
+            end
             local nameItems = {
-                { key="say",   label="Say" },
-                { key="yell",  label="Yell" },
-                { key="party", label="Party" },
-                { key="raid",  label="Raid" },
-                { key="npc",   label="NPCs" },
-                { key="emote", label="Emotes" },
+                { key = "say", label = "Say" },
+                { key = "yell", label = "Yell" },
+                { key = "party", label = "Party" },
+                { key = "raid", label = "Raid" },
+                { key = "npc", label = "NPCs" },
+                { key = "emote", label = "Emotes" },
             }
             local nmDD, nmDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn, 240, rgn:GetFrameLevel() + 2,
+                rgn,
+                240,
+                rgn:GetFrameLevel() + 2,
                 nameItems,
                 function(k)
                     local t = CBVal("showName")
                     return type(t) == "table" and t[k] == true
                 end,
                 function(k, v)
-                    local db = BBDB(); if not db then return end
-                    if type(db.showName) ~= "table" then db.showName = {} end
+                    local db = BBDB()
+                    if not db then
+                        return
+                    end
+                    if type(db.showName) ~= "table" then
+                        db.showName = {}
+                    end
                     db.showName[k] = v or nil
                     CBM.RefreshStyle()
                 end,
-                nil, nil, nil, nil, nil, { disabled = Off, disabledTooltip = GATE_REQ })
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                { disabled = Off, disabledTooltip = GATE_REQ }
+            )
             CludesUI.PanelPP.Point(nmDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = nmDD
             rgn._lastInline = nil
@@ -4012,51 +5827,111 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = GATE_REQ,
                 title = "Speaker Name",
                 rows = {
-                    { type = "dropdown", label = "Anchor",
-                      values = { TOPLEFT = "Top Left", TOP = "Top", TOPRIGHT = "Top Right",
-                                 BOTTOMLEFT = "Bottom Left", BOTTOM = "Bottom", BOTTOMRIGHT = "Bottom Right" },
-                      order = { "TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" },
-                      get = function() return CBVal("nameAnchor") end,
-                      set = function(v) CBSetStyle("nameAnchor", v) end },
-                    { type = "slider", label = "Font Size", min = 6, max = 24, step = 1,
-                      get = function() return CBVal("nameFontSize") end,
-                      set = function(v) CBSetStyle("nameFontSize", v) end },
-                    { type = "slider", label = "X Offset", min = -50, max = 50, step = 1,
-                      get = function() return CBVal("nameOffsetX") end,
-                      set = function(v) CBSetStyle("nameOffsetX", v) end },
-                    { type = "slider", label = "Y Offset", min = -50, max = 50, step = 1,
-                      get = function() return CBVal("nameOffsetY") end,
-                      set = function(v) CBSetStyle("nameOffsetY", v) end },
+                    {
+                        type = "dropdown",
+                        label = "Anchor",
+                        values = {
+                            TOPLEFT = "Top Left",
+                            TOP = "Top",
+                            TOPRIGHT = "Top Right",
+                            BOTTOMLEFT = "Bottom Left",
+                            BOTTOM = "Bottom",
+                            BOTTOMRIGHT = "Bottom Right",
+                        },
+                        order = { "TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" },
+                        get = function()
+                            return CBVal("nameAnchor")
+                        end,
+                        set = function(v)
+                            CBSetStyle("nameAnchor", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Font Size",
+                        min = 6,
+                        max = 24,
+                        step = 1,
+                        get = function()
+                            return CBVal("nameFontSize")
+                        end,
+                        set = function(v)
+                            CBSetStyle("nameFontSize", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "X Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return CBVal("nameOffsetX")
+                        end,
+                        set = function(v)
+                            CBSetStyle("nameOffsetX", v)
+                        end,
+                    },
+                    {
+                        type = "slider",
+                        label = "Y Offset",
+                        min = -50,
+                        max = 50,
+                        step = 1,
+                        get = function()
+                            return CBVal("nameOffsetY")
+                        end,
+                        set = function(v)
+                            CBSetStyle("nameOffsetY", v)
+                        end,
+                    },
                 },
             })
         end
 
         -- Last row of the section, so the empty right slot is allowed.
         local bgRow
-        bgRow, h = W:DualRow(parent, y,
-            { type="toggle", text="Background",
-              getValue=function() return CBVal("background") ~= false end,
-              setValue=function(v) CBSetStyle("background", v); CludesUI:RefreshPage() end,
-              disabled = Off, disabledTooltip = GATE_REQ },
-            { type="label", text="" });  y = y - h
+        bgRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Background",
+            getValue = function()
+                return CBVal("background") ~= false
+            end,
+            setValue = function(v)
+                CBSetStyle("background", v)
+                CludesUI:RefreshPage()
+            end,
+            disabled = Off,
+            disabledTooltip = GATE_REQ,
+        }, { type = "label", text = "" })
+        y = y - h
 
         -- Colour and opacity are one swatch but two stored keys, so the write goes straight
         -- to the DB rather than through CBSetStyle.
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
-                { getValue = function()
-                      local r, g, b = CBColor("bgColor")
-                      return r, g, b, CBVal("bgAlpha")
-                  end,
-                  setValue = function(r, g, b, a)
-                      local db = BBDB(); if not db then return end
-                      db.bgColor = { r=r, g=g, b=b }
-                      db.bgAlpha = a
-                      CBM.RefreshStyle()
-                  end,
-                  hasAlpha = true,
-                  disabled = function() return Off() or CBVal("background") == false end,
-                  disabledTooltip = function() return Off() and GATE_REQ or "Background" end },
+                {
+                    getValue = function()
+                        local r, g, b = CBColor("bgColor")
+                        return r, g, b, CBVal("bgAlpha")
+                    end,
+                    setValue = function(r, g, b, a)
+                        local db = BBDB()
+                        if not db then
+                            return
+                        end
+                        db.bgColor = { r = r, g = g, b = b }
+                        db.bgAlpha = a
+                        CBM.RefreshStyle()
+                    end,
+                    hasAlpha = true,
+                    disabled = function()
+                        return Off() or CBVal("background") == false
+                    end,
+                    disabledTooltip = function()
+                        return Off() and GATE_REQ or "Background"
+                    end,
+                },
             })
         end
 
@@ -4078,7 +5953,7 @@ initFrame:SetScript("OnEvent", function(self)
             EDR_BAR_TEXTURES
         )
         local edrTexValues = {}
-        local edrTexOrder  = {}
+        local edrTexOrder = {}
         for _, key in ipairs(EDR_BAR_TEXTURE_ORDER) do
             if key ~= "---" then
                 edrTexValues[key] = EDR_BAR_TEXTURE_NAMES[key] or key
@@ -4087,11 +5962,13 @@ initFrame:SetScript("OnEvent", function(self)
         end
         edrTexValues._menuOpts = {
             itemHeight = 28,
-            background = function(key) return EDR_BAR_TEXTURES[key] end,
+            background = function(key)
+                return EDR_BAR_TEXTURES[key]
+            end,
         }
 
         local justifyValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
-        local justifyOrder  = { "LEFT", "CENTER", "RIGHT" }
+        local justifyOrder = { "LEFT", "CENTER", "RIGHT" }
 
         -- The bar art is chosen on Global Settings > Style ("Skyriding HUD")
         -- and latched for the session like every other module's style, so
@@ -4110,301 +5987,659 @@ initFrame:SetScript("OnEvent", function(self)
         -- The Move in Unlock Mode button on the bar's first section, built
         -- whatever Enable Skyriding Bar says: its disabled state explains itself.
         local hdr
-        hdr, h = W:SectionHeader(parent, "GENERAL", y); y = y - h
-        CludesUI.BuildSectionUnlockJump(hdr, { key = "EDR_Cluster",
-            disabled = function() return EDR_Cfg("enabled") ~= true end,
-            disabledTooltip = "Skyriding Bar" })
+        hdr, h = W:SectionHeader(parent, "GENERAL", y)
+        y = y - h
+        CludesUI.BuildSectionUnlockJump(hdr, {
+            key = "EDR_Cluster",
+            disabled = function()
+                return EDR_Cfg("enabled") ~= true
+            end,
+            disabledTooltip = "Skyriding Bar",
+        })
         y = BS.Note(parent, y, "dragonriding")
-        _, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Enable Skyriding Bar",
-              getValue = function() return EDR_Cfg("enabled") == true end,
-              -- DependentSetValue: everything below Row 1 is hidden while the
-              -- bar is off; the flip forces the full rebuild.
-              setValue = CludesUI.DependentSetValue(
-                  function() return EDR_Cfg("enabled") == true end,
-                  function(v) EDR_Set("enabled", v); EDR_Rebuild() end) },
-            { type = "toggle", text = "Hide in Combat",
-              disabled = function() return EDR_Cfg("enabled") ~= true end,
-              disabledTooltip = "Skyriding Bar",
-              getValue = function() return EDR_Cfg("hideInCombat") == true end,
-              setValue = function(v) EDR_Set("hideInCombat", v); EDR_Rebuild() end }
-        ); y = y - h
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Enable Skyriding Bar",
+            getValue = function()
+                return EDR_Cfg("enabled") == true
+            end,
+            -- DependentSetValue: everything below Row 1 is hidden while the
+            -- bar is off; the flip forces the full rebuild.
+            setValue = CludesUI.DependentSetValue(function()
+                return EDR_Cfg("enabled") == true
+            end, function(v)
+                EDR_Set("enabled", v)
+                EDR_Rebuild()
+            end),
+        }, {
+            type = "toggle",
+            text = "Hide in Combat",
+            disabled = function()
+                return EDR_Cfg("enabled") ~= true
+            end,
+            disabledTooltip = "Skyriding Bar",
+            getValue = function()
+                return EDR_Cfg("hideInCombat") == true
+            end,
+            setValue = function(v)
+                EDR_Set("hideInCombat", v)
+                EDR_Rebuild()
+            end,
+        })
+        y = y - h
 
         -- Everything below Row 1 (the rest of GENERAL plus the LAYOUT and
         -- SPEED BAR sections) is HIDDEN entirely while the bar is off.
         if EDR_Cfg("enabled") == true then
-        local function EDR_IsGems() return EDR_Cfg("vigorStyle") == "gems" end
-        local function EDR_ShowSpeed() return EDR_Cfg("showSpeed") ~= false end
-        local function EDR_ShowSW() return EDR_Cfg("showSecondWind") ~= false end
-        local function EDR_WSOff() return EDR_Cfg("showWhirlingSurge") == false end
-        -- The icon's automatic size, in the Icon Size slider's range.
-        local function EDR_AutoIconSize()
-            local v = math.floor(((ns.edrIconSize and ns.edrIconSize()) or 34) + 0.5)
-            return math.max(16, math.min(80, v))
-        end
+            local function EDR_IsGems()
+                return EDR_Cfg("vigorStyle") == "gems"
+            end
+            local function EDR_ShowSpeed()
+                return EDR_Cfg("showSpeed") ~= false
+            end
+            local function EDR_ShowSW()
+                return EDR_Cfg("showSecondWind") ~= false
+            end
+            local function EDR_WSOff()
+                return EDR_Cfg("showWhirlingSurge") == false
+            end
+            -- The icon's automatic size, in the Icon Size slider's range.
+            local function EDR_AutoIconSize()
+                local v = math.floor(((ns.edrIconSize and ns.edrIconSize()) or 34) + 0.5)
+                return math.max(16, math.min(80, v))
+            end
 
-        -- The parts the HUD shows. The speed bar's and Second Wind's own
-        -- rows exist only while they are shown, so those two rebuild the page.
-        _, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Show Speed Bar",
-              getValue = EDR_ShowSpeed,
-              setValue = CludesUI.DependentSetValue(EDR_ShowSpeed,
-                  function(v) EDR_Set("showSpeed", v); EDR_Rebuild() end) },
-            { type = "toggle", text = "Show Second Wind",
-              getValue = EDR_ShowSW,
-              setValue = CludesUI.DependentSetValue(EDR_ShowSW,
-                  function(v) EDR_Set("showSecondWind", v); EDR_Rebuild() end) }
-        ); y = y - h
-        local wsRow
-        wsRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Show Whirling Surge",
-              getValue = function() return not EDR_WSOff() end,
-              setValue = function(v) EDR_Set("showWhirlingSurge", v); EDR_Rebuild() end },
-            { type = "toggle", text = "Show Icon Cooldown Text",
-              disabled = EDR_WSOff, disabledTooltip = "Show Whirling Surge",
-              getValue = function() return EDR_Cfg("whirlingSurgeText") and EDR_Cfg("whirlingSurgeText").enabled ~= false end,
-              setValue = function(v) EDR_SetField("whirlingSurgeText", "enabled", v); EDR_Redraw() end }
-        ); y = y - h
-        -- Icon size: automatic (as tall as the bars) while Auto Size is on;
-        -- turning it off hands the slider the current automatic size.
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(wsRow._leftRegion, {
-                title = "Whirling Surge Icon",
-                disabled = EDR_WSOff, disabledTooltip = "Show Whirling Surge",
-                rows = {
-                    { type = "toggle", label = "Auto Size",
-                      tooltip = "Keeps the icon as tall as the bars.",
-                      get = function() return EDR_Cfg("iconSize") == nil end,
-                      set = function(v)
-                          if v then
-                              EDR_Set("iconSize", nil)
-                          else
-                              EDR_Set("iconSize", EDR_AutoIconSize())
-                          end
-                          EDR_Rebuild()
-                      end },
-                    { type = "slider", label = "Icon Size", min = 16, max = 80, step = 1,
-                      disabled = function() return EDR_Cfg("iconSize") == nil end,
-                      disabledTooltip = "Auto Size", requireState = "disabled",
-                      get = function() return EDR_Cfg("iconSize") or EDR_AutoIconSize() end,
-                      set = function(v) EDR_Set("iconSize", v); EDR_Rebuild() end },
+            -- The parts the HUD shows. The speed bar's and Second Wind's own
+            -- rows exist only while they are shown, so those two rebuild the page.
+            _, h = W:DualRow(
+                parent,
+                y,
+                {
+                    type = "toggle",
+                    text = "Show Speed Bar",
+                    getValue = EDR_ShowSpeed,
+                    setValue = CludesUI.DependentSetValue(EDR_ShowSpeed, function(v)
+                        EDR_Set("showSpeed", v)
+                        EDR_Rebuild()
+                    end),
                 },
+                {
+                    type = "toggle",
+                    text = "Show Second Wind",
+                    getValue = EDR_ShowSW,
+                    setValue = CludesUI.DependentSetValue(EDR_ShowSW, function(v)
+                        EDR_Set("showSecondWind", v)
+                        EDR_Rebuild()
+                    end),
+                }
+            )
+            y = y - h
+            local wsRow
+            wsRow, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Show Whirling Surge",
+                getValue = function()
+                    return not EDR_WSOff()
+                end,
+                setValue = function(v)
+                    EDR_Set("showWhirlingSurge", v)
+                    EDR_Rebuild()
+                end,
+            }, {
+                type = "toggle",
+                text = "Show Icon Cooldown Text",
+                disabled = EDR_WSOff,
+                disabledTooltip = "Show Whirling Surge",
+                getValue = function()
+                    return EDR_Cfg("whirlingSurgeText") and EDR_Cfg("whirlingSurgeText").enabled ~= false
+                end,
+                setValue = function(v)
+                    EDR_SetField("whirlingSurgeText", "enabled", v)
+                    EDR_Redraw()
+                end,
             })
-        end
-        -- Classic Gems replaces the charge row with Blizzard's original gems
-        -- (the page rebuilds: the Charge row and the gem scale follow it).
-        -- The cog holds the full-charge chime and, for the gems, their scale.
-        local vigorRow
-        vigorRow, h = W:DualRow(parent, y,
-            { type = "segmented", text = "Vigor Style",
-              values = { bars = "Bars", gems = "Classic Gems" },
-              order  = { "bars", "gems" },
-              tooltip = "Classic Gems brings back Blizzard's original vigor display above the bars.",
-              getValue = function() return EDR_Cfg("vigorStyle") or "bars" end,
-              setValue = CludesUI.DependentSetValue(EDR_IsGems,
-                  function(v) EDR_Set("vigorStyle", v); EDR_Rebuild() end) },
-            { type = "slider", pixel = true, text = "Stack Spacing", min = 0, max = 10, step = 1,
-              -- The gap between pips: nothing to space with no pip row shown.
-              disabled = function() return EDR_IsGems() and not EDR_ShowSW() end,
-              disabledTooltip = "This option requires the Bars vigor style or Show Second Wind",
-              getValue = function() return EDR_Cfg("stackSpacing") end,
-              setValue = function(v) EDR_Set("stackSpacing", v); EDR_Rebuild() end }
-        ); y = y - h
-        if not CludesUI._prebuilding then
-            local vigorRows = {
-                { type = "toggle", label = "Play Sound on Full Charge",
-                  tooltip = "Plays Blizzard's vigor chime each time a skyriding charge fills.",
-                  get = function() return EDR_Cfg("chargeSound") == true end,
-                  set = function(v) EDR_Set("chargeSound", v) end },
-            }
-            if EDR_IsGems() then
-                vigorRows[2] = { type = "slider", label = "Gem Scale", min = 0.5, max = 2.0, step = 0.05,
-                    get = function() return EDR_Cfg("classicScale") or 1 end,
-                    set = function(v) EDR_Set("classicScale", v); EDR_Rebuild() end }
+            y = y - h
+            -- Icon size: automatic (as tall as the bars) while Auto Size is on;
+            -- turning it off hands the slider the current automatic size.
+            if not CludesUI._prebuilding then
+                CludesUI.BuildInlineCog(wsRow._leftRegion, {
+                    title = "Whirling Surge Icon",
+                    disabled = EDR_WSOff,
+                    disabledTooltip = "Show Whirling Surge",
+                    rows = {
+                        {
+                            type = "toggle",
+                            label = "Auto Size",
+                            tooltip = "Keeps the icon as tall as the bars.",
+                            get = function()
+                                return EDR_Cfg("iconSize") == nil
+                            end,
+                            set = function(v)
+                                if v then
+                                    EDR_Set("iconSize", nil)
+                                else
+                                    EDR_Set("iconSize", EDR_AutoIconSize())
+                                end
+                                EDR_Rebuild()
+                            end,
+                        },
+                        {
+                            type = "slider",
+                            label = "Icon Size",
+                            min = 16,
+                            max = 80,
+                            step = 1,
+                            disabled = function()
+                                return EDR_Cfg("iconSize") == nil
+                            end,
+                            disabledTooltip = "Auto Size",
+                            requireState = "disabled",
+                            get = function()
+                                return EDR_Cfg("iconSize") or EDR_AutoIconSize()
+                            end,
+                            set = function(v)
+                                EDR_Set("iconSize", v)
+                                EDR_Rebuild()
+                            end,
+                        },
+                    },
+                })
             end
-            CludesUI.BuildInlineCog(vigorRow._leftRegion, { title = "Vigor", rows = vigorRows })
-        end
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Width", min = 80, max = 600, step = 1,
-              getValue = function() return EDR_Cfg("width") end,
-              setValue = function(v) EDR_Set("width", v); EDR_Rebuild() end },
-            { type = "slider", pixel = true, text = "Element Spacing", min = 0, max = 12, step = 1,
-              getValue = function() return EDR_Cfg("gap") end,
-              setValue = function(v) EDR_Set("gap", v); EDR_Rebuild() end }
-        ); y = y - h
-        -- Border Size: the CludesUI border and its colour on the
-        -- CludesUI look; under Classic WoW UI the slot sizes the vanilla
-        -- frame, as the Resource Bars' Border Size does; Blizzard Style's
-        -- panel has no size to set.
-        local borderCfg
-        if edrStyle == "classic" then
-            borderCfg = BS.ClassicBorderSizeCfg(
-                function() return EDR_Cfg("classicFrameSize") end,
-                function(v) EDR_Set("classicFrameSize", v); EDR_Rebuild() end)
-        else
-            borderCfg = BS.Gate("dragonriding",
-                { type = "slider", text = "Border Size", min = 0, max = 4, step = 1,
-                  getValue = function() return EDR_Cfg("borderThickness") or 0 end,
-                  setValue = function(v)
-                      EDR_Set("borderThickness", v); EDR_Redraw()
-                      CludesUI:RefreshPage()
-                  end })
-        end
-        local borderRow
-        borderRow, h = W:DualRow(parent, y, borderCfg,
-            { type = "dropdown", text = "Bar Texture",
-              values = edrTexValues, order = edrTexOrder,
-              getValue = function() return EDR_Cfg("barTexture") or "none" end,
-              setValue = function(v) EDR_Set("barTexture", v); EDR_Redraw() end }
-        ); y = y - h
-        if not CludesUI._prebuilding and edrStyle == "cui" then
-            local rgn = borderRow._leftRegion
-            local ctrl = rgn._control
-            local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rgn, borderRow:GetFrameLevel() + 3,
-                function() local t = EDR_Cfg("borderColor"); return t.r, t.g, t.b, t.a end,
-                function(r, g, b, a) local p = EDR_Cfg("borderColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                true, 20)
-            CludesUI.PanelPP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-            rgn._lastInline = swatch
-            -- No border to colour at size 0: dimmed and blocked.
-            local block = CreateFrame("Frame", nil, swatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("This option requires a Border Size above 0."))
-            end)
-            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
-            local function UpdateSwatchState()
-                if (EDR_Cfg("borderThickness") or 0) == 0 then
-                    swatch:SetAlpha(0.3); block:Show()
-                else
-                    swatch:SetAlpha(1); block:Hide()
+            -- Classic Gems replaces the charge row with Blizzard's original gems
+            -- (the page rebuilds: the Charge row and the gem scale follow it).
+            -- The cog holds the full-charge chime and, for the gems, their scale.
+            local vigorRow
+            vigorRow, h = W:DualRow(parent, y, {
+                type = "segmented",
+                text = "Vigor Style",
+                values = { bars = "Bars", gems = "Classic Gems" },
+                order = { "bars", "gems" },
+                tooltip = "Classic Gems brings back Blizzard's original vigor display above the bars.",
+                getValue = function()
+                    return EDR_Cfg("vigorStyle") or "bars"
+                end,
+                setValue = CludesUI.DependentSetValue(EDR_IsGems, function(v)
+                    EDR_Set("vigorStyle", v)
+                    EDR_Rebuild()
+                end),
+            }, {
+                type = "slider",
+                pixel = true,
+                text = "Stack Spacing",
+                min = 0,
+                max = 10,
+                step = 1,
+                -- The gap between pips: nothing to space with no pip row shown.
+                disabled = function()
+                    return EDR_IsGems() and not EDR_ShowSW()
+                end,
+                disabledTooltip = "This option requires the Bars vigor style or Show Second Wind",
+                getValue = function()
+                    return EDR_Cfg("stackSpacing")
+                end,
+                setValue = function(v)
+                    EDR_Set("stackSpacing", v)
+                    EDR_Rebuild()
+                end,
+            })
+            y = y - h
+            if not CludesUI._prebuilding then
+                local vigorRows = {
+                    {
+                        type = "toggle",
+                        label = "Play Sound on Full Charge",
+                        tooltip = "Plays Blizzard's vigor chime each time a skyriding charge fills.",
+                        get = function()
+                            return EDR_Cfg("chargeSound") == true
+                        end,
+                        set = function(v)
+                            EDR_Set("chargeSound", v)
+                        end,
+                    },
+                }
+                if EDR_IsGems() then
+                    vigorRows[2] = {
+                        type = "slider",
+                        label = "Gem Scale",
+                        min = 0.5,
+                        max = 2.0,
+                        step = 0.05,
+                        get = function()
+                            return EDR_Cfg("classicScale") or 1
+                        end,
+                        set = function(v)
+                            EDR_Set("classicScale", v)
+                            EDR_Rebuild()
+                        end,
+                    }
                 end
+                CludesUI.BuildInlineCog(vigorRow._leftRegion, { title = "Vigor", rows = vigorRows })
             end
-            CludesUI.RegisterWidgetRefresh(function() updateSwatch(); UpdateSwatchState() end)
-            UpdateSwatchState()
-        end
-        _, h = W:Spacer(parent, y, 20); y = y - h
+            _, h = W:DualRow(parent, y, {
+                type = "slider",
+                text = "Width",
+                min = 80,
+                max = 600,
+                step = 1,
+                getValue = function()
+                    return EDR_Cfg("width")
+                end,
+                setValue = function(v)
+                    EDR_Set("width", v)
+                    EDR_Rebuild()
+                end,
+            }, {
+                type = "slider",
+                pixel = true,
+                text = "Element Spacing",
+                min = 0,
+                max = 12,
+                step = 1,
+                getValue = function()
+                    return EDR_Cfg("gap")
+                end,
+                setValue = function(v)
+                    EDR_Set("gap", v)
+                    EDR_Rebuild()
+                end,
+            })
+            y = y - h
+            -- Border Size: the CludesUI border and its colour on the
+            -- CludesUI look; under Classic WoW UI the slot sizes the vanilla
+            -- frame, as the Resource Bars' Border Size does; Blizzard Style's
+            -- panel has no size to set.
+            local borderCfg
+            if edrStyle == "classic" then
+                borderCfg = BS.ClassicBorderSizeCfg(function()
+                    return EDR_Cfg("classicFrameSize")
+                end, function(v)
+                    EDR_Set("classicFrameSize", v)
+                    EDR_Rebuild()
+                end)
+            else
+                borderCfg = BS.Gate("dragonriding", {
+                    type = "slider",
+                    text = "Border Size",
+                    min = 0,
+                    max = 4,
+                    step = 1,
+                    getValue = function()
+                        return EDR_Cfg("borderThickness") or 0
+                    end,
+                    setValue = function(v)
+                        EDR_Set("borderThickness", v)
+                        EDR_Redraw()
+                        CludesUI:RefreshPage()
+                    end,
+                })
+            end
+            local borderRow
+            borderRow, h = W:DualRow(parent, y, borderCfg, {
+                type = "dropdown",
+                text = "Bar Texture",
+                values = edrTexValues,
+                order = edrTexOrder,
+                getValue = function()
+                    return EDR_Cfg("barTexture") or "none"
+                end,
+                setValue = function(v)
+                    EDR_Set("barTexture", v)
+                    EDR_Redraw()
+                end,
+            })
+            y = y - h
+            if not CludesUI._prebuilding and edrStyle == "cui" then
+                local rgn = borderRow._leftRegion
+                local ctrl = rgn._control
+                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
+                    rgn,
+                    borderRow:GetFrameLevel() + 3,
+                    function()
+                        local t = EDR_Cfg("borderColor")
+                        return t.r, t.g, t.b, t.a
+                    end,
+                    function(r, g, b, a)
+                        local p = EDR_Cfg("borderColor")
+                        p.r, p.g, p.b, p.a = r, g, b, a
+                        EDR_Redraw()
+                    end,
+                    true,
+                    20
+                )
+                CludesUI.PanelPP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                rgn._lastInline = swatch
+                -- No border to colour at size 0: dimmed and blocked.
+                local block = CreateFrame("Frame", nil, swatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(swatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(
+                        swatch,
+                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                    )
+                end)
+                block:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                local function UpdateSwatchState()
+                    if (EDR_Cfg("borderThickness") or 0) == 0 then
+                        swatch:SetAlpha(0.3)
+                        block:Show()
+                    else
+                        swatch:SetAlpha(1)
+                        block:Hide()
+                    end
+                end
+                CludesUI.RegisterWidgetRefresh(function()
+                    updateSwatch()
+                    UpdateSwatchState()
+                end)
+                UpdateSwatchState()
+            end
+            _, h = W:Spacer(parent, y, 20)
+            y = y - h
 
-        -- Charge and Second Wind rows, each only while its part is shown
-        -- (Classic Gems replaces the charge row); no section without either.
-        local showCharges, showSW = not EDR_IsGems(), EDR_ShowSW()
-        if showCharges or showSW then
-            _, h = W:SectionHeader(parent, "LAYOUT", y); y = y - h
-            if showCharges then
-                _, h = W:DualRow(parent, y,
-                    { type = "slider", text = "Charge Height", min = 2, max = 24, step = 1,
-                      getValue = function() return EDR_Cfg("skyridingHeight") end,
-                      setValue = function(v) EDR_Set("skyridingHeight", v); EDR_Rebuild() end },
-                    { type = "multiSwatch", text = "Charge Color",
-                      swatches = {
-                        { text = "Background",
-                          getValue = function() local t = EDR_Cfg("skyridingBg"); return t.r, t.g, t.b, t.a end,
-                          setValue = function(r, g, b, a) local p = EDR_Cfg("skyridingBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                          hasAlpha = true,
-                          tooltip = "Background" },
-                        { text = "Stacks",
-                          getValue = function() local t = EDR_Cfg("skyridingFilled"); return t.r, t.g, t.b, t.a end,
-                          setValue = function(r, g, b, a) local p = EDR_Cfg("skyridingFilled"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                          hasAlpha = true,
-                          tooltip = "Charges" },
-                      } }
-                ); y = y - h
+            -- Charge and Second Wind rows, each only while its part is shown
+            -- (Classic Gems replaces the charge row); no section without either.
+            local showCharges, showSW = not EDR_IsGems(), EDR_ShowSW()
+            if showCharges or showSW then
+                _, h = W:SectionHeader(parent, "LAYOUT", y)
+                y = y - h
+                if showCharges then
+                    _, h = W:DualRow(
+                        parent,
+                        y,
+                        {
+                            type = "slider",
+                            text = "Charge Height",
+                            min = 2,
+                            max = 24,
+                            step = 1,
+                            getValue = function()
+                                return EDR_Cfg("skyridingHeight")
+                            end,
+                            setValue = function(v)
+                                EDR_Set("skyridingHeight", v)
+                                EDR_Rebuild()
+                            end,
+                        },
+                        {
+                            type = "multiSwatch",
+                            text = "Charge Color",
+                            swatches = {
+                                {
+                                    text = "Background",
+                                    getValue = function()
+                                        local t = EDR_Cfg("skyridingBg")
+                                        return t.r, t.g, t.b, t.a
+                                    end,
+                                    setValue = function(r, g, b, a)
+                                        local p = EDR_Cfg("skyridingBg")
+                                        p.r, p.g, p.b, p.a = r, g, b, a
+                                        EDR_Redraw()
+                                    end,
+                                    hasAlpha = true,
+                                    tooltip = "Background",
+                                },
+                                {
+                                    text = "Stacks",
+                                    getValue = function()
+                                        local t = EDR_Cfg("skyridingFilled")
+                                        return t.r, t.g, t.b, t.a
+                                    end,
+                                    setValue = function(r, g, b, a)
+                                        local p = EDR_Cfg("skyridingFilled")
+                                        p.r, p.g, p.b, p.a = r, g, b, a
+                                        EDR_Redraw()
+                                    end,
+                                    hasAlpha = true,
+                                    tooltip = "Charges",
+                                },
+                            },
+                        }
+                    )
+                    y = y - h
+                end
+                if showSW then
+                    _, h = W:DualRow(
+                        parent,
+                        y,
+                        {
+                            type = "slider",
+                            text = "Second Wind Height",
+                            min = 2,
+                            max = 24,
+                            step = 1,
+                            getValue = function()
+                                return EDR_Cfg("secondWindHeight")
+                            end,
+                            setValue = function(v)
+                                EDR_Set("secondWindHeight", v)
+                                EDR_Rebuild()
+                            end,
+                        },
+                        {
+                            type = "multiSwatch",
+                            text = "Second Wind Color",
+                            swatches = {
+                                {
+                                    text = "Background",
+                                    getValue = function()
+                                        local t = EDR_Cfg("secondWindBg")
+                                        return t.r, t.g, t.b, t.a
+                                    end,
+                                    setValue = function(r, g, b, a)
+                                        local p = EDR_Cfg("secondWindBg")
+                                        p.r, p.g, p.b, p.a = r, g, b, a
+                                        EDR_Redraw()
+                                    end,
+                                    hasAlpha = true,
+                                    tooltip = "Background",
+                                },
+                                {
+                                    text = "Second Wind",
+                                    getValue = function()
+                                        local t = EDR_Cfg("secondWindFilled")
+                                        return t.r, t.g, t.b, t.a
+                                    end,
+                                    setValue = function(r, g, b, a)
+                                        local p = EDR_Cfg("secondWindFilled")
+                                        p.r, p.g, p.b, p.a = r, g, b, a
+                                        EDR_Redraw()
+                                    end,
+                                    hasAlpha = true,
+                                    tooltip = "Second Wind",
+                                },
+                            },
+                        }
+                    )
+                    y = y - h
+                end
+                _, h = W:Spacer(parent, y, 20)
+                y = y - h
             end
-            if showSW then
-                _, h = W:DualRow(parent, y,
-                    { type = "slider", text = "Second Wind Height", min = 2, max = 24, step = 1,
-                      getValue = function() return EDR_Cfg("secondWindHeight") end,
-                      setValue = function(v) EDR_Set("secondWindHeight", v); EDR_Rebuild() end },
-                    { type = "multiSwatch", text = "Second Wind Color",
-                      swatches = {
-                        { text = "Background",
-                          getValue = function() local t = EDR_Cfg("secondWindBg"); return t.r, t.g, t.b, t.a end,
-                          setValue = function(r, g, b, a) local p = EDR_Cfg("secondWindBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                          hasAlpha = true,
-                          tooltip = "Background" },
-                        { text = "Second Wind",
-                          getValue = function() local t = EDR_Cfg("secondWindFilled"); return t.r, t.g, t.b, t.a end,
-                          setValue = function(r, g, b, a) local p = EDR_Cfg("secondWindFilled"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                          hasAlpha = true,
-                          tooltip = "Second Wind" },
-                      } }
-                ); y = y - h
-            end
-            _, h = W:Spacer(parent, y, 20); y = y - h
-        end
 
-        -- The speed bar's own section only while the bar is shown.
-        if EDR_ShowSpeed() then
-        _, h = W:SectionHeader(parent, "SPEED BAR", y); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Height", min = 4, max = 40, step = 1,
-              getValue = function() return EDR_Cfg("speedHeight") end,
-              setValue = function(v) EDR_Set("speedHeight", v); EDR_Rebuild() end },
-            { type = "toggle", text = "Thrill Color Change",
-              getValue = function() return EDR_Cfg("thrillColorToggle") == true end,
-              setValue = function(v) EDR_Set("thrillColorToggle", v); EDR_Redraw() end }
-        ); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "multiSwatch", text = "Speed Color",
-              swatches = {
-                { text = "Background",
-                  getValue = function() local t = EDR_Cfg("speedBarBg"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("speedBarBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Background" },
-                { text = "Speed",
-                  getValue = function() local t = EDR_Cfg("normalColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("normalColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Speed" },
-              } },
-            { type = "multiSwatch", text = "Thrill Color",
-              swatches = {
-                { text = "Hash",
-                  getValue = function() local t = EDR_Cfg("tickColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("tickColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Hash Marker" },
-                { text = "Thrill",
-                  getValue = function() local t = EDR_Cfg("thrillColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("thrillColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Thrill" },
-              } }
-        ); y = y - h
-        local speedTextRow
-        speedTextRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Show Speed Text",
-              getValue = function() return EDR_Cfg("speedText") and EDR_Cfg("speedText").enabled ~= false end,
-              setValue = function(v) EDR_SetField("speedText", "enabled", v); EDR_Redraw() end },
-            { type = "dropdown", text = "Text Align",
-              values = justifyValues, order = justifyOrder,
-              getValue = function() return (EDR_Cfg("speedText") or {}).justify or "CENTER" end,
-              setValue = function(v) EDR_SetField("speedText", "justify", v); EDR_Redraw() end }
-        )
-        if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(speedTextRow._rightRegion, {
-            title = "Speed Text Position",
-            rows = {
-                { type = "slider", label = "Size",     min = 6,    max = 32,  step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).size    or 12 end,
-                  set = function(v) EDR_SetField("speedText", "size",    v); EDR_Redraw() end },
-                { type = "slider", label = "Offset X", min = -200, max = 200, step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).offsetX or 0  end,
-                  set = function(v) EDR_SetField("speedText", "offsetX", v); EDR_Redraw() end },
-                { type = "slider", label = "Offset Y", min = -200, max = 200, step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).offsetY or 0  end,
-                  set = function(v) EDR_SetField("speedText", "offsetY", v); EDR_Redraw() end },
-            },
-        })
-        end
-        y = y - h
-        _, h = W:Spacer(parent, y, 20); y = y - h
-        end -- Show Speed Bar
-        end   -- close Dragon Riding hidden-while-disabled gate
+            -- The speed bar's own section only while the bar is shown.
+            if EDR_ShowSpeed() then
+                _, h = W:SectionHeader(parent, "SPEED BAR", y)
+                y = y - h
+                _, h = W:DualRow(parent, y, {
+                    type = "slider",
+                    text = "Height",
+                    min = 4,
+                    max = 40,
+                    step = 1,
+                    getValue = function()
+                        return EDR_Cfg("speedHeight")
+                    end,
+                    setValue = function(v)
+                        EDR_Set("speedHeight", v)
+                        EDR_Rebuild()
+                    end,
+                }, {
+                    type = "toggle",
+                    text = "Thrill Color Change",
+                    getValue = function()
+                        return EDR_Cfg("thrillColorToggle") == true
+                    end,
+                    setValue = function(v)
+                        EDR_Set("thrillColorToggle", v)
+                        EDR_Redraw()
+                    end,
+                })
+                y = y - h
+                _, h = W:DualRow(
+                    parent,
+                    y,
+                    {
+                        type = "multiSwatch",
+                        text = "Speed Color",
+                        swatches = {
+                            {
+                                text = "Background",
+                                getValue = function()
+                                    local t = EDR_Cfg("speedBarBg")
+                                    return t.r, t.g, t.b, t.a
+                                end,
+                                setValue = function(r, g, b, a)
+                                    local p = EDR_Cfg("speedBarBg")
+                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    EDR_Redraw()
+                                end,
+                                hasAlpha = true,
+                                tooltip = "Background",
+                            },
+                            {
+                                text = "Speed",
+                                getValue = function()
+                                    local t = EDR_Cfg("normalColor")
+                                    return t.r, t.g, t.b, t.a
+                                end,
+                                setValue = function(r, g, b, a)
+                                    local p = EDR_Cfg("normalColor")
+                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    EDR_Redraw()
+                                end,
+                                hasAlpha = true,
+                                tooltip = "Speed",
+                            },
+                        },
+                    },
+                    {
+                        type = "multiSwatch",
+                        text = "Thrill Color",
+                        swatches = {
+                            {
+                                text = "Hash",
+                                getValue = function()
+                                    local t = EDR_Cfg("tickColor")
+                                    return t.r, t.g, t.b, t.a
+                                end,
+                                setValue = function(r, g, b, a)
+                                    local p = EDR_Cfg("tickColor")
+                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    EDR_Redraw()
+                                end,
+                                hasAlpha = true,
+                                tooltip = "Hash Marker",
+                            },
+                            {
+                                text = "Thrill",
+                                getValue = function()
+                                    local t = EDR_Cfg("thrillColor")
+                                    return t.r, t.g, t.b, t.a
+                                end,
+                                setValue = function(r, g, b, a)
+                                    local p = EDR_Cfg("thrillColor")
+                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    EDR_Redraw()
+                                end,
+                                hasAlpha = true,
+                                tooltip = "Thrill",
+                            },
+                        },
+                    }
+                )
+                y = y - h
+                local speedTextRow
+                speedTextRow, h = W:DualRow(parent, y, {
+                    type = "toggle",
+                    text = "Show Speed Text",
+                    getValue = function()
+                        return EDR_Cfg("speedText") and EDR_Cfg("speedText").enabled ~= false
+                    end,
+                    setValue = function(v)
+                        EDR_SetField("speedText", "enabled", v)
+                        EDR_Redraw()
+                    end,
+                }, {
+                    type = "dropdown",
+                    text = "Text Align",
+                    values = justifyValues,
+                    order = justifyOrder,
+                    getValue = function()
+                        return (EDR_Cfg("speedText") or {}).justify or "CENTER"
+                    end,
+                    setValue = function(v)
+                        EDR_SetField("speedText", "justify", v)
+                        EDR_Redraw()
+                    end,
+                })
+                if not CludesUI._prebuilding then
+                    CludesUI.BuildInlineCog(speedTextRow._rightRegion, {
+                        title = "Speed Text Position",
+                        rows = {
+                            {
+                                type = "slider",
+                                label = "Size",
+                                min = 6,
+                                max = 32,
+                                step = 1,
+                                get = function()
+                                    return (EDR_Cfg("speedText") or {}).size or 12
+                                end,
+                                set = function(v)
+                                    EDR_SetField("speedText", "size", v)
+                                    EDR_Redraw()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Offset X",
+                                min = -200,
+                                max = 200,
+                                step = 1,
+                                get = function()
+                                    return (EDR_Cfg("speedText") or {}).offsetX or 0
+                                end,
+                                set = function(v)
+                                    EDR_SetField("speedText", "offsetX", v)
+                                    EDR_Redraw()
+                                end,
+                            },
+                            {
+                                type = "slider",
+                                label = "Offset Y",
+                                min = -200,
+                                max = 200,
+                                step = 1,
+                                get = function()
+                                    return (EDR_Cfg("speedText") or {}).offsetY or 0
+                                end,
+                                set = function(v)
+                                    EDR_SetField("speedText", "offsetY", v)
+                                    EDR_Redraw()
+                                end,
+                            },
+                        },
+                    })
+                end
+                y = y - h
+                _, h = W:Spacer(parent, y, 20)
+                y = y - h
+            end -- Show Speed Bar
+        end -- close Dragon Riding hidden-while-disabled gate
 
         -- The wrapper is SetAllPoints-anchored, so SetHeight on it is inert;
         -- return the measured height so the scroll range is correct.
@@ -4417,27 +6652,34 @@ initFrame:SetScript("OnEvent", function(self)
     -- so it is offered only while Quality of Life is loaded.
     local pages = CludesUI.IS_FOREVER and { PAGE_WINDOWSKINS, PAGE_TOOLTIPS, PAGE_CHATBUBBLES }
         or { PAGE_WINDOWSKINS, PAGE_TOOLTIPS, PAGE_CHATBUBBLES, PAGE_DRAGONRIDING }
-    if CludesUI._ModuleNS["CludesUIQoL"] then table.insert(pages, 2, PAGE_WINDOWMOVER) end
+    if CludesUI._ModuleNS["CludesUIQoL"] then
+        table.insert(pages, 2, PAGE_WINDOWMOVER)
+    end
     -- Panel shown, or unfolded from its mini window (no page callback runs then): a shown
     -- sample catches up on writes it skipped while hidden (Unlock Mode, other pages). Each
     -- repaint checks that its own sample is the one on screen.
     local function CatchUpPreviews()
         TooltipPreviewRepaint()
         PopupPreviewRepaint()
-        if ns.EDR_RepaintSample then ns.EDR_RepaintSample() end
+        if ns.EDR_RepaintSample then
+            ns.EDR_RepaintSample()
+        end
     end
     CludesUI:RegisterOnShow(CatchUpPreviews)
     CludesUI:RegisterOnCollapse(function(on)
-        if not on then CatchUpPreviews() end
+        if not on then
+            CatchUpPreviews()
+        end
     end)
     CludesUI:RegisterModule("CludesUIBlizzardSkin", {
-        title       = "Window Skins",
-        description = CludesUI.IS_FOREVER and "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles."
+        title = "Window Skins",
+        description = CludesUI.IS_FOREVER
+                and "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles."
             or "Themed Blizzard frames: window skins, tooltips, menus, popups, chat bubbles, Dragon Riding HUD.",
         searchTerms = "blizzard skin character sheet tooltip menu popup dragon riding skyriding window skins lfg group finder premade queue pause game menu great vault inspect collections mounts pets toys spellbook talents adventure guide encounter journal professions guild communities calendar achievements mail catalyst gem socket item upgrade upgrades crest loot window loot toast you received popup micro menu modern delves companion brann loot roll need greed pass disenchant loot rolls pending rolls group invite invited to a group role chat bubbles bubble speech balloon",
-        pages       = pages,
-        pageLinks   = { [PAGE_WINDOWMOVER] = { module = "CludesUIQoL", page = "Shifter" } },
-        buildPage   = function(pageName, parent, yOffset)
+        pages = pages,
+        pageLinks = { [PAGE_WINDOWMOVER] = { module = "CludesUIQoL", page = "Shifter" } },
+        buildPage = function(pageName, parent, yOffset)
             if pageName == PAGE_WINDOWSKINS then
                 return BuildWindowSkinsPage(pageName, parent, yOffset)
             end
@@ -4454,8 +6696,12 @@ initFrame:SetScript("OnEvent", function(self)
         -- The Tooltips, Chat Bubbles and Skyriding previews live in the content header; a
         -- cached page whose header was dropped rebuilds with it.
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_TOOLTIPS then return TooltipHeaderBuilder end
-            if pageName == PAGE_CHATBUBBLES then return ChatBubblesHeaderBuilder end
+            if pageName == PAGE_TOOLTIPS then
+                return TooltipHeaderBuilder
+            end
+            if pageName == PAGE_CHATBUBBLES then
+                return ChatBubblesHeaderBuilder
+            end
             if pageName == PAGE_DRAGONRIDING and EDR_Cfg("enabled") == true then
                 return SkyridingHeaderBuilder
             end
@@ -4463,8 +6709,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- A kept page shown again: its preview paints again (the Fonts and Textures pages,
         -- Unlock Mode and a profile switch write its keys from elsewhere).
         onPageCacheRestore = function(pageName)
-            if pageName == PAGE_TOOLTIPS then TooltipPreviewRepaint(); PopupPreviewRepaint() end
-            if pageName == PAGE_DRAGONRIDING and ns.EDR_RepaintSample then ns.EDR_RepaintSample() end
+            if pageName == PAGE_TOOLTIPS then
+                TooltipPreviewRepaint()
+                PopupPreviewRepaint()
+            end
+            if pageName == PAGE_DRAGONRIDING and ns.EDR_RepaintSample then
+                ns.EDR_RepaintSample()
+            end
         end,
         resetScope = "account",
         onReset = function()
@@ -4476,10 +6727,16 @@ initFrame:SetScript("OnEvent", function(self)
             -- ACTIVE profile (other profiles keep their own choice).
             do
                 local prof = CludesUI.GetActiveProfileData()
-                if prof then prof.disableWindowSkins = nil end
+                if prof then
+                    prof.disableWindowSkins = nil
+                end
                 -- Per-profile Chat Bubbles; Refresh hands back any CVars it held.
-                if prof then prof.chatBubbles = nil end
-                if CludesUI.ChatBubbles then CludesUI.ChatBubbles.Refresh() end
+                if prof then
+                    prof.chatBubbles = nil
+                end
+                if CludesUI.ChatBubbles then
+                    CludesUI.ChatBubbles.Refresh()
+                end
             end
             if CludesUIDB then
                 -- NOTE: these account-global keys also travel in profile exports via
@@ -4498,12 +6755,14 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUIDB.tooltipCursorPosition = nil
                 CludesUIDB.tooltipCursorOffsetX = nil
                 CludesUIDB.tooltipCursorOffsetY = nil
-                CludesUIDB.tooltipFixedPos = nil  -- stale key from the account-global build
+                CludesUIDB.tooltipFixedPos = nil -- stale key from the account-global build
                 -- Per-profile fixed tooltip position: clearing it re-seeds from
                 -- Blizzard's CURRENT Edit Mode spot on the next tooltip show.
                 do
                     local prof = CludesUI.GetActiveProfileData()
-                    if prof then prof.tooltipFixedPos = nil end
+                    if prof then
+                        prof.tooltipFixedPos = nil
+                    end
                 end
                 CludesUIDB.uberTooltips = nil
                 CludesUIDB.uberTooltipsManual = nil
@@ -4527,25 +6786,43 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUIDB.tooltipBuffsPerRow = nil
                 CludesUIDB.tooltipBuffOffsetX = nil
                 CludesUIDB.tooltipBuffOffsetY = nil
-                if CludesUI._applyTooltipBuffs then CludesUI._applyTooltipBuffs() end
+                if CludesUI._applyTooltipBuffs then
+                    CludesUI._applyTooltipBuffs()
+                end
                 CludesUIDB.reskinQueuePopup = nil
                 CludesUIDB.resurrectAcceptGlow = nil
                 -- Clear any glow on a currently visible popup (the setting
                 -- just went nil = off; hooks stay installed but inert).
-                if CludesUI._EnsureResurrectGlow then CludesUI._EnsureResurrectGlow() end
+                if CludesUI._EnsureResurrectGlow then
+                    CludesUI._EnsureResurrectGlow()
+                end
                 CludesUIDB.reskinGameMenu = nil
-                CludesUIDB.popupMenuButtonBackgroundColor=nil
-                CludesUIDB.popupMenuButtonTextColorMode=nil
-                CludesUIDB.popupMenuButtonTextColor=nil
-                for _,prefix in ipairs({"popupMenu","popupMenuButton","tooltip","lootWindow","lootIcon"}) do
-                    for _,suffix in ipairs({"BorderTexture","BorderThickness","BorderThicknessPx","BorderColor","BorderColorMode","BorderOpacity","BorderOffsetX","BorderOffsetY","BorderShiftX","BorderShiftY","BorderBehind"}) do
-                        CludesUIDB[prefix..suffix]=nil
+                CludesUIDB.popupMenuButtonBackgroundColor = nil
+                CludesUIDB.popupMenuButtonTextColorMode = nil
+                CludesUIDB.popupMenuButtonTextColor = nil
+                for _, prefix in ipairs({ "popupMenu", "popupMenuButton", "tooltip", "lootWindow", "lootIcon" }) do
+                    for _, suffix in ipairs({
+                        "BorderTexture",
+                        "BorderThickness",
+                        "BorderThicknessPx",
+                        "BorderColor",
+                        "BorderColorMode",
+                        "BorderOpacity",
+                        "BorderOffsetX",
+                        "BorderOffsetY",
+                        "BorderShiftX",
+                        "BorderShiftY",
+                        "BorderBehind",
+                    }) do
+                        CludesUIDB[prefix .. suffix] = nil
                     end
                 end
                 -- Legacy numeric key the tooltip Border Size still falls back
                 -- to when tooltipBorderThickness is unset.
                 CludesUIDB.tooltipBorderSize = nil
-                if CludesUI.SyncAuraTooltipSkin then CludesUI.SyncAuraTooltipSkin() end
+                if CludesUI.SyncAuraTooltipSkin then
+                    CludesUI.SyncAuraTooltipSkin()
+                end
                 CludesUIDB.reskinGreatVault = nil
                 CludesUIDB.reskinLFGMenu = nil
                 CludesUIDB.showQueueTimer = nil
@@ -4645,36 +6922,85 @@ initFrame:SetScript("OnEvent", function(self)
                 -- The rest of what the export bundle carries for these two tabs
                 -- (BLIZZ_SKIN_GLOBAL_KEYS): card and tooltip settings, defaults too.
                 for _, k in ipairs({
-                    "themedCharacterSheet", "themedInspectSheet", "statCategoryUseColor",
-                    "showItemLevel", "showUpgradeTrack", "showGems", "showEnchants",
-                    "charSheetSocketPanel", "charSheetIconZoom", "charSheetEnchantNames",
-                    "charSheetEnchantSize", "inspectShowEnchants", "inspectShowItemLevel",
-                    "inspectShowUpgradeTrack", "merchantShowAsList", "merchantListRowHeight",
-                    "merchantShowItemLevel", "merchantBulkBuy", "merchantExpand", "merchantCols", "merchantRows",
-                    "tooltipItemLevel", "tooltipShowMode",
-                    "tooltipShowModifier", "tooltipGrowthDirection", "tooltipBgColor",
-                    "tooltipBgOpacity", "showSpellID", "spellIDModifier", "showIconID",
-                    "showItemID", "friendsListCard",
-                    "mailAltList", "mailAltListMax", "mailAltListMinLevel", "mailAltListSort",
+                    "themedCharacterSheet",
+                    "themedInspectSheet",
+                    "statCategoryUseColor",
+                    "showItemLevel",
+                    "showUpgradeTrack",
+                    "showGems",
+                    "showEnchants",
+                    "charSheetSocketPanel",
+                    "charSheetIconZoom",
+                    "charSheetEnchantNames",
+                    "charSheetEnchantSize",
+                    "inspectShowEnchants",
+                    "inspectShowItemLevel",
+                    "inspectShowUpgradeTrack",
+                    "merchantShowAsList",
+                    "merchantListRowHeight",
+                    "merchantShowItemLevel",
+                    "merchantBulkBuy",
+                    "merchantExpand",
+                    "merchantCols",
+                    "merchantRows",
+                    "tooltipItemLevel",
+                    "tooltipShowMode",
+                    "tooltipShowModifier",
+                    "tooltipGrowthDirection",
+                    "tooltipBgColor",
+                    "tooltipBgOpacity",
+                    "showSpellID",
+                    "spellIDModifier",
+                    "showIconID",
+                    "showItemID",
+                    "friendsListCard",
+                    "mailAltList",
+                    "mailAltListMax",
+                    "mailAltListMinLevel",
+                    "mailAltListSort",
                     -- Shown Characters (the roster itself is recorded data, not a setting)
                     "mailAltHidden",
-                }) do CludesUIDB[k] = nil end
+                }) do
+                    CludesUIDB[k] = nil
+                end
                 CludesUIDB.characterFramePos = nil
                 CludesUIDB.friendsFramePos = nil
             end
-            if CludesUI._applyTooltipCursorAnchor then CludesUI._applyTooltipCursorAnchor() end
-            if CludesUI._applyTooltipFixedAnchor then CludesUI._applyTooltipFixedAnchor() end
-            if CludesUI._applyTooltipHealthStrip then CludesUI._applyTooltipHealthStrip() end
-            if CludesUI._applyTooltipHealthStripStyle then CludesUI._applyTooltipHealthStripStyle() end
-            if CludesUI._refreshCharSheetSocketPanel then CludesUI._refreshCharSheetSocketPanel() end
-            if CludesUI._refreshCharSheetSlotFlyoutArrows then CludesUI._refreshCharSheetSlotFlyoutArrows() end
-            if CludesUI._refreshStatFormats then CludesUI._refreshStatFormats() end
-            if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
-            if CludesUI._refreshInspectSlotLabels then CludesUI._refreshInspectSlotLabels() end
+            if CludesUI._applyTooltipCursorAnchor then
+                CludesUI._applyTooltipCursorAnchor()
+            end
+            if CludesUI._applyTooltipFixedAnchor then
+                CludesUI._applyTooltipFixedAnchor()
+            end
+            if CludesUI._applyTooltipHealthStrip then
+                CludesUI._applyTooltipHealthStrip()
+            end
+            if CludesUI._applyTooltipHealthStripStyle then
+                CludesUI._applyTooltipHealthStripStyle()
+            end
+            if CludesUI._refreshCharSheetSocketPanel then
+                CludesUI._refreshCharSheetSocketPanel()
+            end
+            if CludesUI._refreshCharSheetSlotFlyoutArrows then
+                CludesUI._refreshCharSheetSlotFlyoutArrows()
+            end
+            if CludesUI._refreshStatFormats then
+                CludesUI._refreshStatFormats()
+            end
+            if CludesUI._refreshCharSheetSlotLabels then
+                CludesUI._refreshCharSheetSlotLabels()
+            end
+            if CludesUI._refreshInspectSlotLabels then
+                CludesUI._refreshInspectSlotLabels()
+            end
             -- WoW Forever's Friends List card (auto-accept and the tiles)
-            if ns.FriendsCardRefresh then ns.FriendsCardRefresh() end
+            if ns.FriendsCardRefresh then
+                ns.FriendsCardRefresh()
+            end
             -- The Mail card's Alt List (retail)
-            if ns.MailAlts then ns.MailAlts.Refresh() end
+            if ns.MailAlts then
+                ns.MailAlts.Refresh()
+            end
         end,
     })
 
@@ -4684,13 +7010,22 @@ initFrame:SetScript("OnEvent", function(self)
     -- present before it resolves the section/highlight.
     local origNav = CludesUI.NavigateToElementSettings
     if origNav then
-        function CludesUI:NavigateToElementSettings(moduleName, pageName, sectionName, preSelectFn, highlightText)
+        function CludesUI:NavigateToElementSettings(
+            moduleName,
+            pageName,
+            sectionName,
+            preSelectFn,
+            highlightText
+        )
             -- The original refuses in combat: no page state changes then.
             if InCombatLockdown() then
                 return origNav(self, moduleName, pageName, sectionName, preSelectFn, highlightText)
             end
-            if moduleName == "CludesUIBlizzardSkin" and pageName == PAGE_WINDOWSKINS
-               and (sectionName or highlightText) then
+            if
+                moduleName == "CludesUIBlizzardSkin"
+                and pageName == PAGE_WINDOWSKINS
+                and (sectionName or highlightText)
+            then
                 local changed = false
                 for _, win in ipairs(WINDOWS) do
                     if not _wsExpanded[win.key] then
@@ -4708,9 +7043,13 @@ initFrame:SetScript("OnEvent", function(self)
 
     SLASH_EBSK1 = "/cbsk"
     SlashCmdList.EBSK = function()
-        if InCombatLockdown and InCombatLockdown() then return end
+        if InCombatLockdown and InCombatLockdown() then
+            return
+        end
         CludesUI:ShowModule("CludesUIBlizzardSkin")
     end
 end)
 -- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then initFrame:GetScript("OnEvent")(initFrame) end
+if IsLoggedIn() then
+    initFrame:GetScript("OnEvent")(initFrame)
+end

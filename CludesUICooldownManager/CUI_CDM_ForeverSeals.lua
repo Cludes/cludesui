@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_ForeverSeals.lua
 --
@@ -21,10 +23,16 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  aura icon engine and its hooks stay for custom buffs.
 -------------------------------------------------------------------------------
 local _, ns = ...
-if CludesUI.IS_FOREVER ~= true then return end
+if CludesUI.IS_FOREVER ~= true then
+    return
+end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "PALADIN" then return end
-if not ns.CDM_AuraIconProvider then return end
+if playerClass ~= "PALADIN" then
+    return
+end
+if not ns.CDM_AuraIconProvider then
+    return
+end
 
 -- Blizzard's Seals entry on WoW Forever (its spell).
 local SEALS = 1323522
@@ -33,13 +41,14 @@ local SEALS = 1323522
 -- reuses, plus Forever's Seal of Fury). Any rank the player knows joins
 -- through its name; an id the client lacks only joins the set.
 local SEAL_SEEDS = {
-    20154, 21084,  -- Seal of Righteousness
-    21082,         -- Seal of the Crusader
-    20375,         -- Seal of Command
-    20164,         -- Seal of Justice
-    20165,         -- Seal of Light
-    20166,         -- Seal of Wisdom
-    1311649,       -- Seal of Fury (WoW Forever)
+    20154,
+    21084, -- Seal of Righteousness
+    21082, -- Seal of the Crusader
+    20375, -- Seal of Command
+    20164, -- Seal of Justice
+    20165, -- Seal of Light
+    20166, -- Seal of Wisdom
+    1311649, -- Seal of Fury (WoW Forever)
 }
 
 -- The Add menu's Seals row reads it.
@@ -54,12 +63,14 @@ local IsSecret = CludesUI.IsSecret
 
 -- Blizzard's API copy of an entry's info is never secret.
 local function IsSealsInfo(info)
-    return info ~= nil and (info.spellID == SEALS or info.overrideSpellID == SEALS
-        or info.overrideTooltipSpellID == SEALS)
+    return info ~= nil
+        and (info.spellID == SEALS or info.overrideSpellID == SEALS or info.overrideTooltipSpellID == SEALS)
 end
 
 local function IsSealsCd(cdID)
-    if type(cdID) ~= "number" or IsSecret(cdID) then return false end
+    if type(cdID) ~= "number" or IsSecret(cdID) then
+        return false
+    end
     local known = S.cd[cdID]
     if known == nil then
         local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
@@ -83,15 +94,22 @@ local function Aliases()
         local ok, set = pcall(CV.GetCooldownViewerCategorySet, cat, true)
         if ok and type(set) == "table" then
             for _, cdID in ipairs(set) do
-                local info = type(cdID) == "number" and not IsSecret(cdID)
+                local info = type(cdID) == "number"
+                    and not IsSecret(cdID)
                     and CV.GetCooldownViewerCooldownInfo(cdID)
                 if info and IsSealsInfo(info) then
                     S.cd[cdID] = true
                     local a, b = info.spellID, info.overrideSpellID
-                    if type(a) == "number" and a > 0 and a ~= SEALS then ids[#ids + 1] = a end
-                    if type(b) == "number" and b > 0 and b ~= SEALS then ids[#ids + 1] = b end
+                    if type(a) == "number" and a > 0 and a ~= SEALS then
+                        ids[#ids + 1] = a
+                    end
+                    if type(b) == "number" and b > 0 and b ~= SEALS then
+                        ids[#ids + 1] = b
+                    end
                     if type(info.linkedSpellIDs) == "table" then
-                        for i = 1, #info.linkedSpellIDs do linked[#linked + 1] = info.linkedSpellIDs[i] end
+                        for i = 1, #info.linkedSpellIDs do
+                            linked[#linked + 1] = info.linkedSpellIDs[i]
+                        end
                     end
                 end
             end
@@ -102,20 +120,28 @@ local function Aliases()
 end
 
 local function AddID(set, names, id)
-    if type(id) ~= "number" or IsSecret(id) or id <= 0 then return end
+    if type(id) ~= "number" or IsSecret(id) or id <= 0 then
+        return
+    end
     set[id] = true
     local name = C_Spell.GetSpellName(id)
-    if name then names[name] = true end
+    if name then
+        names[name] = true
+    end
 end
 
 -- Every seal id: the seeds, the entry's linked spells, and every spellbook
 -- spell (each rank is its own spell on Forever) sharing their names.
 local function Include()
     local set, names = {}, {}
-    for i = 1, #SEAL_SEEDS do AddID(set, names, SEAL_SEEDS[i]) end
+    for i = 1, #SEAL_SEEDS do
+        AddID(set, names, SEAL_SEEDS[i])
+    end
     local linked = S.linked
     if linked then
-        for i = 1, #linked do AddID(set, names, linked[i]) end
+        for i = 1, #linked do
+            AddID(set, names, linked[i])
+        end
     end
     local known = false
     pcall(function()
@@ -140,7 +166,9 @@ local function Include()
     end)
     S.known = known
     local ids = {}
-    for id in pairs(set) do ids[#ids + 1] = id end
+    for id in pairs(set) do
+        ids[#ids + 1] = id
+    end
     table.sort(ids)
     return set, table.concat(ids, ",")
 end
@@ -149,7 +177,9 @@ local function Icon()
     if not S.art then
         S.art = C_Spell.GetSpellTexture(SEALS)
         for i = 1, #SEAL_SEEDS do
-            if S.art then break end
+            if S.art then
+                break
+            end
             S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[i])
         end
     end
@@ -160,16 +190,21 @@ end
 -- bar means its fix landed, so the stand-in stands down for the session (the
 -- next reanchor drops its frames).
 local function Placed()
-    if S.native then return end
+    if S.native then
+        return
+    end
     local icons = ns.cdmBarIcons
-    if not icons then return end
+    if not icons then
+        return
+    end
     for _, list in pairs(icons) do
         for i = 1, #list do
             local f = list[i]
-            if f and not f._isPresetFrame and not f._isPlaceholderFrame
-               and IsSealsCd(f.cooldownID) then
+            if f and not f._isPresetFrame and not f._isPlaceholderFrame and IsSealsCd(f.cooldownID) then
                 S.native = true
-                if ns.QueueReanchor then ns.QueueReanchor() end
+                if ns.QueueReanchor then
+                    ns.QueueReanchor()
+                end
                 return
             end
         end
@@ -182,8 +217,12 @@ ns.CDM_AuraIconProvider(SEALS, {
     Include = Include,
     Icon = Icon,
     -- Grey only while no seal is known; a seal that is down is the Seals icon.
-    Desaturate = function() return not S.known end,
-    Off = function() return S.native end,
+    Desaturate = function()
+        return not S.known
+    end,
+    Off = function()
+        return S.native
+    end,
     Aliases = Aliases,
     Placed = Placed,
 })

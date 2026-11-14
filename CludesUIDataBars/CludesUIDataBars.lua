@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CludesUIDataBars: user-created multi-bar engine.
 --
 -- ENGINE FILE. Owns DB + fresh profile shape (bars array, monotonic never-reused
@@ -61,8 +63,21 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --       preview strip re-solves from the block measurements that pass settled.
 
 local ADDON_NAME, ns = ...
-if not (CludesUI and CludesUI._ModuleNS and CludesUI.NewCombatQueue and CludesUI._Pool and CludesUI.RequestTimePlayed and CludesUI.FormatDuration and CludesUI.SetFontFamily) then CUI_CLIENT_BLOCKED = true; return end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Time Played block asks /played through RequestTimePlayed and formats through FormatDuration; the tooltip rows take font families through SetFontFamily)
-CludesUI._ModuleNS[ADDON_NAME] = ns  -- LOD options files read this module ns via the registry
+if
+    not (
+        CludesUI
+        and CludesUI._ModuleNS
+        and CludesUI.NewCombatQueue
+        and CludesUI._Pool
+        and CludesUI.RequestTimePlayed
+        and CludesUI.FormatDuration
+        and CludesUI.SetFontFamily
+    )
+then
+    CUI_CLIENT_BLOCKED = true
+    return
+end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (the Time Played block asks /played through RequestTimePlayed and formats through FormatDuration; the tooltip rows take font families through SetFontFamily)
+CludesUI._ModuleNS[ADDON_NAME] = ns -- LOD options files read this module ns via the registry
 ns.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 local WB = CludesUI.Lite.NewAddon("CludesUIDataBars")
@@ -70,132 +85,132 @@ ns.WB = WB
 
 -- Localized-ish string table shared with the Blocks\ files (ns.L).
 local L = {
-    LEFT_CLICK           = "|cffFFFFFFLeft Click:|r",
-    RIGHT_CLICK          = "|cffFFFFFFRight Click:|r",
-    MIDDLE_CLICK         = "|cffFFFFFFMiddle Click:|r",
-    SHIFT_MIDDLE_CLICK   = "|cffFFFFFFShift + Middle Click:|r",
-    SHIFT_LEFT_CLICK     = "|cffFFFFFFShift + Left Click:|r",
-    CTRL_LEFT_CLICK      = "|cffFFFFFFCtrl + Left Click:|r",
-    CTRL_RIGHT_CLICK     = "|cffFFFFFFCtrl + Right Click:|r",
+    LEFT_CLICK = "|cffFFFFFFLeft Click:|r",
+    RIGHT_CLICK = "|cffFFFFFFRight Click:|r",
+    MIDDLE_CLICK = "|cffFFFFFFMiddle Click:|r",
+    SHIFT_MIDDLE_CLICK = "|cffFFFFFFShift + Middle Click:|r",
+    SHIFT_LEFT_CLICK = "|cffFFFFFFShift + Left Click:|r",
+    CTRL_LEFT_CLICK = "|cffFFFFFFCtrl + Left Click:|r",
+    CTRL_RIGHT_CLICK = "|cffFFFFFFCtrl + Right Click:|r",
     CTRL_SHIFT_RIGHT_CLICK = "|cffFFFFFFCtrl + Shift + Right Click:|r",
-    CTRL_ALT_LEFT_CLICK  = "|cffFFFFFFCtrl + Alt + Left Click a Name:|r",
-    SHIFT_HOVER          = "|cffFFFFFFShift + Hover:|r",
-    YOU_HAVE_MAIL        = "You've Got Mail!",
-    SERVER_TIME          = "Server time",
-    SAVED_INSTANCES      = "Saved Raid(s)",
-    DAILY_RESET          = "Daily reset",
-    WEEKLY_RESET         = "Weekly reset",
-    TOGGLE_CALENDAR      = "Toggle Calendar",
-    TOGGLE_CLOCK         = "Toggle Clock",
-    RELOAD_UI            = "Reload UI",
-    FPS                  = "FPS",
-    HOME                 = "Home",
-    WORLD                = "World",
-    DOWNLOAD             = "Download",
-    UPLOAD               = "Upload",
-    KB_PER_SEC           = "KB/s",
-    MEMORY_USAGE         = "Memory Usage",
-    REFRESH_STATS        = "Refresh stats / print memory snapshot",
-    FORCE_GC             = "Force garbage collection",
-    GOLD                 = "Gold",
-    SESSION              = "Session",
-    EARNED               = "Earned",
-    SPENT                = "Spent",
-    PROFIT               = "Profit",
-    DEFICIT              = "Deficit",
-    TOTAL                = "Total",
-    WOW_TOKEN            = "WoW Token",
-    OPEN_BAGS            = "Open Bags",
-    BAGS                 = "Bags",
-    FREE                 = "Free",
-    OPEN_CURRENCIES      = "Open Currencies",
-    RESET_SESSION        = "Reset Session",
-    RESET_ALL_DATA       = "Reset All Data",
-    REMOVE_CHARACTER     = "Remove Character",
+    CTRL_ALT_LEFT_CLICK = "|cffFFFFFFCtrl + Alt + Left Click a Name:|r",
+    SHIFT_HOVER = "|cffFFFFFFShift + Hover:|r",
+    YOU_HAVE_MAIL = "You've Got Mail!",
+    SERVER_TIME = "Server time",
+    SAVED_INSTANCES = "Saved Raid(s)",
+    DAILY_RESET = "Daily reset",
+    WEEKLY_RESET = "Weekly reset",
+    TOGGLE_CALENDAR = "Toggle Calendar",
+    TOGGLE_CLOCK = "Toggle Clock",
+    RELOAD_UI = "Reload UI",
+    FPS = "FPS",
+    HOME = "Home",
+    WORLD = "World",
+    DOWNLOAD = "Download",
+    UPLOAD = "Upload",
+    KB_PER_SEC = "KB/s",
+    MEMORY_USAGE = "Memory Usage",
+    REFRESH_STATS = "Refresh stats / print memory snapshot",
+    FORCE_GC = "Force garbage collection",
+    GOLD = "Gold",
+    SESSION = "Session",
+    EARNED = "Earned",
+    SPENT = "Spent",
+    PROFIT = "Profit",
+    DEFICIT = "Deficit",
+    TOTAL = "Total",
+    WOW_TOKEN = "WoW Token",
+    OPEN_BAGS = "Open Bags",
+    BAGS = "Bags",
+    FREE = "Free",
+    OPEN_CURRENCIES = "Open Currencies",
+    RESET_SESSION = "Reset Session",
+    RESET_ALL_DATA = "Reset All Data",
+    REMOVE_CHARACTER = "Remove Character",
     SHOW_EVERY_CHARACTER = "Show Every Character",
-    PLUS_N_MORE          = "+ %d more",
-    TRAVEL_COOLDOWNS     = "Travel Cooldowns",
-    HEARTHSTONE          = "Hearthstone",
-    READY                = "Ready",
-    ON_COOLDOWN          = "On Cooldown",
-    MYTHIC_TELEPORTS     = "Mythic+ Teleports",
-    USE_HEARTHSTONE      = "Use Hearthstone",
-    OTHER_CHARACTERS     = "Other Characters",
-    RANDOM_HEARTHSTONE   = "Random Hearthstone",
-    RETURN_FROM_HOME     = "Return from Home",
-    RETURN_AVAILABLE     = "Return available",
-    HOME_ALLIANCE        = "Home (A)",
-    HOME_HORDE           = "Home (H)",
-    TRAVEL_ARCANTINA     = "Arcantina",
-    TRAVEL_MOONGLADE     = "Moonglade",
-    CURRENT_SPEC         = "Current Specialization",
-    CHANGE_SPEC          = "Change Specialization",
-    CHANGE_SPEC_SHORT    = "Change Spec",
-    CHANGE_LOOT_SPEC     = "Change Loot Spec",
-    OPEN_TALENTS         = "Open Talents",
-    CANNOT_USE_COMBAT    = "Cannot Use While In Combat",
-    COMBAT_STATUS        = "Combat Status",
-    IN_COMBAT            = "In Combat",
-    OUT_OF_COMBAT        = "Out of Combat",
-    AUDIO                = "Audio",
-    AUDIO_MASTER         = "Master",
-    AUDIO_SFX            = "Sound Effects",
-    AUDIO_MUSIC          = "Music",
-    AUDIO_AMBIENCE       = "Ambience",
-    AUDIO_DIALOG         = "Dialog",
-    AUDIO_MUTE_HINT      = "Toggle Mute",
-    AUDIO_SET_HINT       = "Set Volume",
-    AUDIO_SCROLL_HINT    = "Adjust Volume",
-    AUDIO_SHIFT_HINT     = "Hold Shift for 10% Steps",
-    AUDIO_MUTED          = "Muted",
-    SCROLL_WHEEL         = "|cffFFFFFFScroll:|r",
-    DRAG_BAR             = "|cffFFFFFFDrag Bar:|r",
-    CHANGE_LOADOUT       = "Change Loadout",
-    OPEN_PROFESSION      = "Open Profession",
+    PLUS_N_MORE = "+ %d more",
+    TRAVEL_COOLDOWNS = "Travel Cooldowns",
+    HEARTHSTONE = "Hearthstone",
+    READY = "Ready",
+    ON_COOLDOWN = "On Cooldown",
+    MYTHIC_TELEPORTS = "Mythic+ Teleports",
+    USE_HEARTHSTONE = "Use Hearthstone",
+    OTHER_CHARACTERS = "Other Characters",
+    RANDOM_HEARTHSTONE = "Random Hearthstone",
+    RETURN_FROM_HOME = "Return from Home",
+    RETURN_AVAILABLE = "Return available",
+    HOME_ALLIANCE = "Home (A)",
+    HOME_HORDE = "Home (H)",
+    TRAVEL_ARCANTINA = "Arcantina",
+    TRAVEL_MOONGLADE = "Moonglade",
+    CURRENT_SPEC = "Current Specialization",
+    CHANGE_SPEC = "Change Specialization",
+    CHANGE_SPEC_SHORT = "Change Spec",
+    CHANGE_LOOT_SPEC = "Change Loot Spec",
+    OPEN_TALENTS = "Open Talents",
+    CANNOT_USE_COMBAT = "Cannot Use While In Combat",
+    COMBAT_STATUS = "Combat Status",
+    IN_COMBAT = "In Combat",
+    OUT_OF_COMBAT = "Out of Combat",
+    AUDIO = "Audio",
+    AUDIO_MASTER = "Master",
+    AUDIO_SFX = "Sound Effects",
+    AUDIO_MUSIC = "Music",
+    AUDIO_AMBIENCE = "Ambience",
+    AUDIO_DIALOG = "Dialog",
+    AUDIO_MUTE_HINT = "Toggle Mute",
+    AUDIO_SET_HINT = "Set Volume",
+    AUDIO_SCROLL_HINT = "Adjust Volume",
+    AUDIO_SHIFT_HINT = "Hold Shift for 10% Steps",
+    AUDIO_MUTED = "Muted",
+    SCROLL_WHEEL = "|cffFFFFFFScroll:|r",
+    DRAG_BAR = "|cffFFFFFFDrag Bar:|r",
+    CHANGE_LOADOUT = "Change Loadout",
+    OPEN_PROFESSION = "Open Profession",
     OPEN_PROFESSION_BOOK = "Open Profession Book",
-    START_CAMPFIRE       = "Start a Campfire",
-    ACH_POINTS           = "Achievement Points",
-    DELVE_JOURNEY        = "Delver's Journey",
-    COMPANION_LEVEL      = "Companion Level",
-    SELECT_CURRENCY      = "Select a currency",
-    SELECT_PLUGIN        = "Select a plugin",
-    OPEN_SETTINGS        = "Open Settings",
-    CRESTS               = "Crests",
-    SEASON_MAXIMUM       = "Current Season Maximum",
-    ILVL                 = "ILVL",
-    ITEM_LEVEL           = "Item Level",
-    EQUIPPED             = "Equipped",
-    PVP_ITEM_LEVEL       = "PvP Item Level",
-    OPEN_CHARACTER       = "Open Character Sheet",
-    WHISPER              = "Whisper",
-    WHISPER_BNET         = "Whisper BNet",
-    INVITE               = "Invite",
-    NO_FRIENDS_ONLINE    = "No friends online",
-    NOT_IN_GUILD         = "Not in a guild",
-    TOGGLE_WORLD_MAP     = "Toggle World Map",
-    SWITCH_TO_REP        = "Switch to Reputation",
-    SWITCH_TO_XP         = "Switch to Experience",
-    PROGRESS             = "Progress",
-    RESTED               = "Rested",
+    START_CAMPFIRE = "Start a Campfire",
+    ACH_POINTS = "Achievement Points",
+    DELVE_JOURNEY = "Delver's Journey",
+    COMPANION_LEVEL = "Companion Level",
+    SELECT_CURRENCY = "Select a currency",
+    SELECT_PLUGIN = "Select a plugin",
+    OPEN_SETTINGS = "Open Settings",
+    CRESTS = "Crests",
+    SEASON_MAXIMUM = "Current Season Maximum",
+    ILVL = "ILVL",
+    ITEM_LEVEL = "Item Level",
+    EQUIPPED = "Equipped",
+    PVP_ITEM_LEVEL = "PvP Item Level",
+    OPEN_CHARACTER = "Open Character Sheet",
+    WHISPER = "Whisper",
+    WHISPER_BNET = "Whisper BNet",
+    INVITE = "Invite",
+    NO_FRIENDS_ONLINE = "No friends online",
+    NOT_IN_GUILD = "Not in a guild",
+    TOGGLE_WORLD_MAP = "Toggle World Map",
+    SWITCH_TO_REP = "Switch to Reputation",
+    SWITCH_TO_XP = "Switch to Experience",
+    PROGRESS = "Progress",
+    RESTED = "Rested",
 }
 ns.L = L
 
 -- Upvalues
-local _G                = _G
-local CreateFrame       = CreateFrame
-local UIParent          = UIParent
-local InCombatLockdown  = InCombatLockdown
-local C_Timer           = C_Timer
-local pairs, ipairs     = pairs, ipairs
-local type, select      = type, select
-local pcall             = pcall
-local wipe              = wipe
-local format            = string.format
-local tinsert, tremove  = table.insert, table.remove
-local tconcat           = table.concat
-local tsort             = table.sort
-local floor             = math.floor
-local max, min, abs     = math.max, math.min, math.abs
+local _G = _G
+local CreateFrame = CreateFrame
+local UIParent = UIParent
+local InCombatLockdown = InCombatLockdown
+local C_Timer = C_Timer
+local pairs, ipairs = pairs, ipairs
+local type, select = type, select
+local pcall = pcall
+local wipe = wipe
+local format = string.format
+local tinsert, tremove = table.insert, table.remove
+local tconcat = table.concat
+local tsort = table.sort
+local floor = math.floor
+local max, min, abs = math.max, math.min, math.abs
 
 local PP = CludesUI.PP
 -- The options page frame pool's table (made by the parent, filled in place when
@@ -214,8 +229,8 @@ ns.MICROMENU_MEDIA = "Interface\\AddOns\\CludesUI\\media\\micromenu\\"
 -------------------------------------------------------------------------------
 local defaults = {
     profile = {
-        nextBarId  = 0,   -- monotonic bar id counter; only ever incremented
-        bars       = {},  -- ordered array of barCfg
+        nextBarId = 0, -- monotonic bar id counter; only ever incremented
+        bars = {}, -- ordered array of barCfg
     },
 }
 
@@ -223,31 +238,36 @@ local defaults = {
 --  Block type registry
 -------------------------------------------------------------------------------
 ns.BLOCK_TYPES = {
-    { key = "clock",      label = "Clock" },
-    { key = "fps",        label = "FPS" },
-    { key = "ms",         label = "Latency" },
-    { key = "location",   label = "Location" },
-    { key = "coords",     label = "Coordinates" },
-    { key = "gold",       label = "Gold" },
-    { key = "bags",       label = "Bags" },
+    { key = "clock", label = "Clock" },
+    { key = "fps", label = "FPS" },
+    { key = "ms", label = "Latency" },
+    { key = "location", label = "Location" },
+    { key = "coords", label = "Coordinates" },
+    { key = "gold", label = "Gold" },
+    { key = "bags", label = "Bags" },
     { key = "durability", label = "Durability" },
-    { key = "combat",     label = "Combat Status" },
-    { key = "xprep",      label = "XP / Reputation Bar" },
-    { key = "spec",       label = "Spec & Loot Spec" },
+    { key = "combat", label = "Combat Status" },
+    { key = "xprep", label = "XP / Reputation Bar" },
+    { key = "spec", label = "Spec & Loot Spec" },
     { key = "profession", label = "Professions" },
     { key = "profession2", label = "Secondary Professions" },
-    { key = "travel",     label = "Travel Cooldowns" },
-    { key = "micromenu",  label = "Micro Menu" },
-    { key = "currency",   label = "Currency" },
-    { key = "crests",     label = "Crests" },
-    { key = "ilvl",       label = "Item Level" },
+    { key = "travel", label = "Travel Cooldowns" },
+    { key = "micromenu", label = "Micro Menu" },
+    { key = "currency", label = "Currency" },
+    { key = "crests", label = "Crests" },
+    { key = "ilvl", label = "Item Level" },
     { key = "greatvault", label = "Great Vault" },
-    { key = "mplussummary", label = "M+ Summary",
-      available = function() return CludesUI._MythicRuns ~= nil end },
+    {
+        key = "mplussummary",
+        label = "M+ Summary",
+        available = function()
+            return CludesUI._MythicRuns ~= nil
+        end,
+    },
     { key = "timeplayed", label = "Time Played" },
-    { key = "audio",      label = "Audio" },
-    { key = "ldb",        label = "Broker Plugin" },
-    { key = "spacer",     label = "Spacer" },
+    { key = "audio", label = "Audio" },
+    { key = "ldb", label = "Broker Plugin" },
+    { key = "spacer", label = "Spacer" },
 }
 
 -- The types the picker offers: one with available() only while it answers
@@ -256,50 +276,98 @@ ns.BLOCK_TYPES = {
 function ns.OfferedBlockTypes()
     local out = {}
     for _, t in ipairs(ns.BLOCK_TYPES) do
-        if not t.available or t.available() then out[#out + 1] = t end
+        if not t.available or t.available() then
+            out[#out + 1] = t
+        end
     end
     return out
 end
 
 ns.BLOCK_DEFAULTS = {
-    clock      = { localTime = true, twentyFour = true, showMail = true, showResting = true, fontSizeClock = nil, fontSizeInfo = nil },
-    fps        = {},
-    ms         = { showIcon = false },
+    clock = {
+        localTime = true,
+        twentyFour = true,
+        showMail = true,
+        showResting = true,
+        fontSizeClock = nil,
+        fontSizeInfo = nil,
+    },
+    fps = {},
+    ms = { showIcon = false },
     -- widthMode/maxWidth deliberately unset: "auto" is the resolved default
     -- (ns.LocationWidthMode); nil maxWidth marks the width as never chosen,
     -- which the options page pulses about.
-    location   = { showIcon = true, showSubZone = true },
-    coords     = { showIcon = true, precision = 0, hideInInstance = true },
-    gold       = { showIcons = true, showBagSpace = false, showSmall = false, coinIcons = false, abbreviate = false, forceEnglishUnits = false },
-    bags       = { showIcon = true, value = "free", reagent = false, lowThreshold = 0 },
+    location = { showIcon = true, showSubZone = true },
+    coords = { showIcon = true, precision = 0, hideInInstance = true },
+    gold = {
+        showIcons = true,
+        showBagSpace = false,
+        showSmall = false,
+        coinIcons = false,
+        abbreviate = false,
+        forceEnglishUnits = false,
+    },
+    bags = { showIcon = true, value = "free", reagent = false, lowThreshold = 0 },
     durability = { showIcon = true },
-    combat     = { onlyInCombat = false },
-    xprep      = { mode = "auto" },
-    spec       = { showLoadout = true, useUppercase = false },
+    combat = { onlyInCombat = false },
+    xprep = { mode = "auto" },
+    spec = { showLoadout = true, useUppercase = false },
     profession = {},
     profession2 = {},
-    travel     = { randomizeHs = true },
-    micromenu  = { disableBlizzardMicroMenu = false, hideSocialText = false, mainMenuSpacing = 4, iconSpacing = 2,
-                   menu = true, guild = true, social = true, char = true, spell = true, ach = true, quest = true, lfg = true,
-                   pvp = true, housing = true, journal = true, pet = true, shop = true, help = true },
-    currency   = { currencyId = nil, showIcon = true, showDescription = true },
+    travel = { randomizeHs = true },
+    micromenu = {
+        disableBlizzardMicroMenu = false,
+        hideSocialText = false,
+        mainMenuSpacing = 4,
+        iconSpacing = 2,
+        menu = true,
+        guild = true,
+        social = true,
+        char = true,
+        spell = true,
+        ach = true,
+        quest = true,
+        lfg = true,
+        pvp = true,
+        housing = true,
+        journal = true,
+        pet = true,
+        shop = true,
+        help = true,
+    },
+    currency = { currencyId = nil, showIcon = true, showDescription = true },
     -- t1..t5 are TIER slots, not currency ids: a season swap replaces the ids
     -- in Blocks\Shared.lua (CRESTS) and the player's checklist selection still applies.
-    crests     = { t1 = true, t2 = true, t3 = true, t4 = true, t5 = true,
-                   showIcons = true, separator = "slash", showSeasonProgress = false,
-                   hideEmpty = false, reverse = false },
-    ilvl       = { prefix = "short", value = "equipped", precision = 0 },
+    crests = {
+        t1 = true,
+        t2 = true,
+        t3 = true,
+        t4 = true,
+        t5 = true,
+        showIcons = true,
+        separator = "slash",
+        showSeasonProgress = false,
+        hideEmpty = false,
+        reverse = false,
+    },
+    ilvl = { prefix = "short", value = "equipped", precision = 0 },
     greatvault = {},
     mplussummary = { hideWhenEmpty = false },
     timeplayed = { alwaysTotal = false },
-    audio      = { channel = "master" },
+    audio = { channel = "master" },
     -- Broker plugin: one block type for every LibDataBroker data source, picked
     -- by name (source). stripColors defaults ON -- broker text arrives full of
     -- the plugin's own |cff.. codes, which would silently beat this block's Text
     -- Color and its accent hover. maxWidth nil = size from the live string.
-    ldb        = { source = nil, showIcon = true, showLabel = false, showText = true,
-                   stripColors = true, maxWidth = nil },
-    spacer     = {},
+    ldb = {
+        source = nil,
+        showIcon = true,
+        showLabel = false,
+        showText = true,
+        stripColors = true,
+        maxWidth = nil,
+    },
+    spacer = {},
 }
 
 -- Factories are registered by Blocks\*.lua.
@@ -316,9 +384,13 @@ if CludesUI.IS_FOREVER then
     table.insert(ns.BLOCK_TYPES, #ns.BLOCK_TYPES, { key = "supplies", label = "Class Resources" })
     ns.BLOCK_DEFAULTS.supplies = { showIcon = true }
     for i = #ns.BLOCK_TYPES, 1, -1 do
-        if FOREVER_OFF[ns.BLOCK_TYPES[i].key] then table.remove(ns.BLOCK_TYPES, i) end
+        if FOREVER_OFF[ns.BLOCK_TYPES[i].key] then
+            table.remove(ns.BLOCK_TYPES, i)
+        end
     end
-    for key in pairs(FOREVER_OFF) do ns.BLOCK_DEFAULTS[key] = nil end
+    for key in pairs(FOREVER_OFF) do
+        ns.BLOCK_DEFAULTS[key] = nil
+    end
 end
 
 local DeepCopy = CludesUI.Lite.DeepCopy
@@ -332,24 +404,34 @@ end
 
 function ns.BarsInOrder()
     local profile = ns.GetProfile()
-    if profile then return profile.bars end
+    if profile then
+        return profile.bars
+    end
     return {}
 end
 
 function ns.GetBar(id)
     local profile = ns.GetProfile()
-    if not profile then return nil end
+    if not profile then
+        return nil
+    end
     local bars = profile.bars
     for i = 1, #bars do
-        if bars[i].id == id then return bars[i] end
+        if bars[i].id == id then
+            return bars[i]
+        end
     end
     return nil
 end
 
 local function GetBlock(barCfg, blockId)
-    if not barCfg then return nil end
+    if not barCfg then
+        return nil
+    end
     for i = 1, #barCfg.blocks do
-        if barCfg.blocks[i].id == blockId then return barCfg.blocks[i], i end
+        if barCfg.blocks[i].id == blockId then
+            return barCfg.blocks[i], i
+        end
     end
     return nil
 end
@@ -362,11 +444,15 @@ end
 -- (CludesUI.SetFontFamily): Cyrillic, Korean and Chinese letters draw in the
 -- client's own faces. Every font write to such a string passes family.
 function ns.SetFont(fs, size, barCfg, family)
-    if not (fs and fs.SetFont) then return end
-    local path  = CludesUI.GetFontPath("dataBars")
+    if not (fs and fs.SetFont) then
+        return
+    end
+    local path = CludesUI.GetFontPath("dataBars")
     local flags = CludesUI.GetFontOutlineFlag()
     local scale = 100
-    if barCfg and barCfg.fontScale then scale = barCfg.fontScale end
+    if barCfg and barCfg.fontScale then
+        scale = barCfg.fontScale
+    end
     local sz = max(6, floor((size or 11) * scale / 100 + 0.5))
     local useShadow = flags == "" and CludesUI.GetFontUseShadow()
     if family then
@@ -385,14 +471,18 @@ function ns.GetAccent()
         return CludesUI.GetAccentColor()
     end
     local theme = CludesUI.CLUDES_GREEN
-    if theme then return theme.r, theme.g, theme.b end
+    if theme then
+        return theme.r, theme.g, theme.b
+    end
     return 0.298, 0.788, 0.941
 end
 
 -- Colour gradient (bad -> caution -> good)
 function ns.SlowColorGradient(perc)
     perc = max(0, min(1, perc))
-    local function smoothstep(t) return t * t * (3 - 2 * t) end
+    local function smoothstep(t)
+        return t * t * (3 - 2 * t)
+    end
     if perc < 0.5 then
         local t = smoothstep(perc * 2)
         return 1, t, 0.08 * (1 - t)
@@ -412,9 +502,9 @@ end
 --  Money / time formatting (pure)
 -------------------------------------------------------------------------------
 local DENOMINATIONS = {
-    { divisor = 10000, symbol = GOLD_AMOUNT_SYMBOL,   color = "|cffe2ac7a" },  -- E2AC7A (user-set; do not "restore" to ffd700)
-    { divisor = 100,   symbol = SILVER_AMOUNT_SYMBOL, color = "|cffc7c7cf" },
-    { divisor = 1,     symbol = COPPER_AMOUNT_SYMBOL, color = "|cffed8a3f" },  -- copper-orange
+    { divisor = 10000, symbol = GOLD_AMOUNT_SYMBOL, color = "|cffe2ac7a" }, -- E2AC7A (user-set; do not "restore" to ffd700)
+    { divisor = 100, symbol = SILVER_AMOUNT_SYMBOL, color = "|cffc7c7cf" },
+    { divisor = 1, symbol = COPPER_AMOUNT_SYMBOL, color = "|cffed8a3f" }, -- copper-orange
 }
 
 -- Coin textures, one per denomination. ":0:0:2:0" is Blizzard's own
@@ -431,9 +521,13 @@ local COIN_TEX = {
 -- Icons/Coin Colored/Show Silver&Copper compose identically everywhere --
 -- GetCoinTextureString can't, it always emits all three coins welded into one string.
 local function CoinMarker(i, coinIcons, coloured)
-    if coinIcons then return COIN_TEX[i] end
+    if coinIcons then
+        return COIN_TEX[i]
+    end
     local d = DENOMINATIONS[i]
-    if coloured then return d.color .. d.symbol .. "|r" end
+    if coloured then
+        return d.color .. d.symbol .. "|r"
+    end
     return d.symbol
 end
 
@@ -441,7 +535,9 @@ end
 -- any locale-specific algorithm (e.g. CJK wan/yi grouping) live in the
 -- shared CludesUI_NumberFormat.lua, so every module abbreviates the same way.
 local function GoldDisplay(val, abbreviate, forceEnglish)
-    if abbreviate then return CludesUI.AbbreviateNumberFixed(val, forceEnglish) end
+    if abbreviate then
+        return CludesUI.AbbreviateNumberFixed(val, forceEnglish)
+    end
     return BreakUpLargeNumbers and BreakUpLargeNumbers(val) or tostring(val)
 end
 
@@ -476,7 +572,8 @@ function ns.FormatMoney(amount, useColors, showSmall, coinIcons, abbreviate, for
         amount = amount % denom.divisor
         if i == 1 and val > 0 then
             foundGold = true
-            parts[#parts + 1] = GoldDisplay(val, abbreviate, forceEnglish) .. CoinMarker(i, coinIcons, coloured)
+            parts[#parts + 1] = GoldDisplay(val, abbreviate, forceEnglish)
+                .. CoinMarker(i, coinIcons, coloured)
         elseif i > 1 and (not foundGold or showSmall ~= false) and (val > 0 or (i == 3 and #parts == 0)) then
             parts[#parts + 1] = val .. CoinMarker(i, coinIcons, coloured)
         end
@@ -498,7 +595,9 @@ function ns.FormatTimeLeft(seconds)
 end
 
 function ns.FormatCooldown(cd)
-    if cd <= 0 then return nil end
+    if cd <= 0 then
+        return nil
+    end
     cd = floor(cd)
     if cd >= 3600 then
         return format("%d:%02d:%02d", floor(cd / 3600), floor(cd % 3600 / 60), cd % 60)
@@ -506,14 +605,29 @@ function ns.FormatCooldown(cd)
     return format("%d:%02d", floor(cd / 60), cd % 60)
 end
 
-function ns.GetFPSSuffix() local s = FPS_ABBR; if s then return s end return " fps" end
-function ns.GetMSSuffix()  local s = MILLISECONDS_ABBR; if s then return s end return " ms" end
+function ns.GetFPSSuffix()
+    local s = FPS_ABBR
+    if s then
+        return s
+    end
+    return " fps"
+end
+function ns.GetMSSuffix()
+    local s = MILLISECONDS_ABBR
+    if s then
+        return s
+    end
+    return " ms"
+end
 
 -------------------------------------------------------------------------------
 --  Combat deferral (last caller per key wins; runs on regen)
 -------------------------------------------------------------------------------
 function ns.DeferUntilOOC(key, fn)
-    if not InCombatLockdown() then fn(); return end
+    if not InCombatLockdown() then
+        fn()
+        return
+    end
     ns.CombatQueue.Defer(key, fn)
 end
 
@@ -531,7 +645,9 @@ do
                 -- Isolate listeners: one erroring block must not starve the rest.
                 for _, callback in pairs(listeners) do
                     local ok, err = pcall(callback)
-                    if not ok then geterrorhandler()(err) end
+                    if not ok then
+                        geterrorhandler()(err)
+                    end
                 end
             end)
         end
@@ -565,7 +681,9 @@ function ns.CreateFramePool(frameType, parent, template)
     end
 
     local function ResetPooledFrame(f)
-        if not f then return end
+        if not f then
+            return
+        end
         f:Hide()
         f:ClearAllPoints()
         f:SetParent(pool._parent)
@@ -583,14 +701,30 @@ function ns.CreateFramePool(frameType, parent, template)
         f:SetScript("OnUpdate", nil)
         f:SetScript("OnShow", nil)
         f:SetScript("OnHide", nil)
-        if f.GetNormalTexture and f:GetNormalTexture() and f:GetNormalTexture().SetTexture then f:GetNormalTexture():SetTexture(nil) end
-        if f.GetPushedTexture and f:GetPushedTexture() and f:GetPushedTexture().SetTexture then f:GetPushedTexture():SetTexture(nil) end
-        if f.GetHighlightTexture and f:GetHighlightTexture() and f:GetHighlightTexture().SetTexture then f:GetHighlightTexture():SetTexture(nil) end
-        if f.GetDisabledTexture and f:GetDisabledTexture() and f:GetDisabledTexture().SetTexture then f:GetDisabledTexture():SetTexture(nil) end
-        if f.GetCheckedTexture and f:GetCheckedTexture() and f:GetCheckedTexture().SetTexture then f:GetCheckedTexture():SetTexture(nil) end
-        if f.SetButtonState then f:SetButtonState("NORMAL") end
-        if f.SetChecked then f:SetChecked(false) end
-        if f.SetText then f:SetText("") end
+        if f.GetNormalTexture and f:GetNormalTexture() and f:GetNormalTexture().SetTexture then
+            f:GetNormalTexture():SetTexture(nil)
+        end
+        if f.GetPushedTexture and f:GetPushedTexture() and f:GetPushedTexture().SetTexture then
+            f:GetPushedTexture():SetTexture(nil)
+        end
+        if f.GetHighlightTexture and f:GetHighlightTexture() and f:GetHighlightTexture().SetTexture then
+            f:GetHighlightTexture():SetTexture(nil)
+        end
+        if f.GetDisabledTexture and f:GetDisabledTexture() and f:GetDisabledTexture().SetTexture then
+            f:GetDisabledTexture():SetTexture(nil)
+        end
+        if f.GetCheckedTexture and f:GetCheckedTexture() and f:GetCheckedTexture().SetTexture then
+            f:GetCheckedTexture():SetTexture(nil)
+        end
+        if f.SetButtonState then
+            f:SetButtonState("NORMAL")
+        end
+        if f.SetChecked then
+            f:SetChecked(false)
+        end
+        if f.SetText then
+            f:SetText("")
+        end
         if f.SetAttribute then
             pcall(f.SetAttribute, f, "type", nil)
             pcall(f.SetAttribute, f, "macrotext", nil)
@@ -600,13 +734,27 @@ function ns.CreateFramePool(frameType, parent, template)
             -- select() avoids allocating a throwaway table per released frame.
             for i = 1, f:GetNumRegions() do
                 local r = select(i, f:GetRegions())
-                if r and r.Hide then r:Hide() end
-                if r and r.SetAlpha then r:SetAlpha(1) end
-                if r and r.ClearAllPoints then r:ClearAllPoints() end
-                if r and r.SetText then r:SetText("") end
-                if r and r.SetTexture then r:SetTexture(nil) end
-                if r and r.SetVertexColor then r:SetVertexColor(1, 1, 1, 1) end
-                if r and r.SetTexCoord then r:SetTexCoord(0, 1, 0, 1) end
+                if r and r.Hide then
+                    r:Hide()
+                end
+                if r and r.SetAlpha then
+                    r:SetAlpha(1)
+                end
+                if r and r.ClearAllPoints then
+                    r:ClearAllPoints()
+                end
+                if r and r.SetText then
+                    r:SetText("")
+                end
+                if r and r.SetTexture then
+                    r:SetTexture(nil)
+                end
+                if r and r.SetVertexColor then
+                    r:SetVertexColor(1, 1, 1, 1)
+                end
+                if r and r.SetTexCoord then
+                    r:SetTexCoord(0, 1, 0, 1)
+                end
             end
         end
     end
@@ -640,7 +788,9 @@ do
             sharedClickCatcher:EnableMouse(true)
             sharedClickCatcher:RegisterForClicks("AnyDown", "AnyUp")
             sharedClickCatcher:SetScript("OnClick", function()
-                if activePopup and activePopup:IsShown() then activePopup:Hide() end
+                if activePopup and activePopup:IsShown() then
+                    activePopup:Hide()
+                end
             end)
         end
         return sharedClickCatcher
@@ -679,10 +829,16 @@ do
             end
         end)
         popup:SetScript("OnHide", function(self)
-            if activePopup == self then activePopup = nil end
+            if activePopup == self then
+                activePopup = nil
+            end
             local catcher = self._wbClickCatcher
-            if catcher and (not activePopup or not activePopup:IsShown()) then catcher:Hide() end
-            if self._wbOnHide then self:_wbOnHide() end
+            if catcher and (not activePopup or not activePopup:IsShown()) then
+                catcher:Hide()
+            end
+            if self._wbOnHide then
+                self:_wbOnHide()
+            end
         end)
         return popup
     end
@@ -692,19 +848,35 @@ end
 --  Text fitting helpers + fit cache
 -------------------------------------------------------------------------------
 function ns.SetWrappedText(fs, width, justify)
-    if not fs then return end
+    if not fs then
+        return
+    end
     fs:SetWidth(max(1, width or 1))
-    if fs.SetWordWrap then fs:SetWordWrap(true) end
-    if fs.SetNonSpaceWrap then fs:SetNonSpaceWrap(true) end
-    if fs.SetJustifyH then fs:SetJustifyH(justify or "CENTER") end
+    if fs.SetWordWrap then
+        fs:SetWordWrap(true)
+    end
+    if fs.SetNonSpaceWrap then
+        fs:SetNonSpaceWrap(true)
+    end
+    if fs.SetJustifyH then
+        fs:SetJustifyH(justify or "CENTER")
+    end
 end
 
 function ns.ResetInlineText(fs, justify)
-    if not fs then return end
+    if not fs then
+        return
+    end
     fs:SetWidth(0)
-    if fs.SetWordWrap then fs:SetWordWrap(false) end
-    if fs.SetNonSpaceWrap then fs:SetNonSpaceWrap(false) end
-    if fs.SetJustifyH then fs:SetJustifyH(justify or "LEFT") end
+    if fs.SetWordWrap then
+        fs:SetWordWrap(false)
+    end
+    if fs.SetNonSpaceWrap then
+        fs:SetNonSpaceWrap(false)
+    end
+    if fs.SetJustifyH then
+        fs:SetJustifyH(justify or "LEFT")
+    end
 end
 
 local _fitCache, _fitCacheCount = {}, 0
@@ -723,19 +895,30 @@ end
 -- bars at different scales never share entries.
 function ns.FitFontToLines(lines, startSize, minSize, maxWidth, barCfg)
     local fs = ns.MeasureFS()
-    if not fs then return startSize end
+    if not fs then
+        return startSize
+    end
     local width = max(1, maxWidth or 1)
     local start = startSize or 14
     local floorSize = minSize or max(8, start - 6)
     local scale = 100
-    if barCfg and barCfg.fontScale then scale = barCfg.fontScale end
+    if barCfg and barCfg.fontScale then
+        scale = barCfg.fontScale
+    end
 
     wipe(_fitKeyParts)
-    _fitKeyParts[1] = start; _fitKeyParts[2] = floorSize; _fitKeyParts[3] = width; _fitKeyParts[4] = scale
-    for i, line in ipairs(lines or {}) do _fitKeyParts[i + 4] = line or "" end
+    _fitKeyParts[1] = start
+    _fitKeyParts[2] = floorSize
+    _fitKeyParts[3] = width
+    _fitKeyParts[4] = scale
+    for i, line in ipairs(lines or {}) do
+        _fitKeyParts[i + 4] = line or ""
+    end
     local cacheKey = tconcat(_fitKeyParts, "\1")
     local cached = _fitCache[cacheKey]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
 
     for size = start, floorSize, -1 do
         ns.SetFont(fs, size, barCfg)
@@ -743,16 +926,24 @@ function ns.FitFontToLines(lines, startSize, minSize, maxWidth, barCfg)
         for _, line in ipairs(lines or {}) do
             fs:SetText(line or "")
             local w = fs:GetStringWidth() or 0
-            if w > widest then widest = w end
+            if w > widest then
+                widest = w
+            end
         end
         if widest <= width then
-            if _fitCacheCount > 200 then _fitCache = {}; _fitCacheCount = 0 end
+            if _fitCacheCount > 200 then
+                _fitCache = {}
+                _fitCacheCount = 0
+            end
             _fitCache[cacheKey] = size
             _fitCacheCount = _fitCacheCount + 1
             return size
         end
     end
-    if _fitCacheCount > 200 then _fitCache = {}; _fitCacheCount = 0 end
+    if _fitCacheCount > 200 then
+        _fitCache = {}
+        _fitCacheCount = 0
+    end
     _fitCache[cacheKey] = floorSize
     _fitCacheCount = _fitCacheCount + 1
     return floorSize
@@ -770,10 +961,10 @@ end
 do
     local tip
     local owner
-    local rows = {}       -- rows[i] = { left = fs, right = fs, cols = { fs, ... } }
-    local data = {}       -- data[i] = { l, r, lr, lg, lb, rr, rg, rb }
+    local rows = {} -- rows[i] = { left = fs, right = fs, cols = { fs, ... } }
+    local data = {} -- data[i] = { l, r, lr, lg, lb, rr, rg, rb }
     local dataCount = 0
-    local colW = {}       -- per-Tip_Show widest token per sub-column
+    local colW = {} -- per-Tip_Show widest token per sub-column
     local PAD = 10
     local ROW_GAP = 3
     local COL_GAP = 18
@@ -795,7 +986,7 @@ do
     -- the owner onto the tip to click a row without it closing.
     local actionPool = {}
     local activeActions = 0
-    local actionHost           -- secure container, built with the first button
+    local actionHost -- secure container, built with the first button
     local actionsDirty = false -- a teardown landed in combat; regen finishes it
     local interactive = false
     -- Caller-forced interactive mode (Tip_MarkInteractive): hover-persistent
@@ -816,7 +1007,9 @@ do
     local clickRow = 0
 
     local function EnsureTip()
-        if tip then return tip end
+        if tip then
+            return tip
+        end
         tip = CreateFrame("Frame", "CludesUIDataBarsTip", UIParent)
         tip:SetFrameStrata("TOOLTIP")
         tip:SetFrameLevel(TIP_LEVEL)
@@ -859,7 +1052,9 @@ do
     -- Pooled rows: a row reused with fewer/no sub-columns must not leave
     -- the previous show's token FontStrings on screen.
     local function HideCols(row, from)
-        for c = from, #row.cols do row.cols[c]:Hide() end
+        for c = from, #row.cols do
+            row.cols[c]:Hide()
+        end
     end
 
     -- Hide/detach every overlay button. PROTECTED (SecureActionButtonTemplate),
@@ -867,8 +1062,13 @@ do
     -- regen handler finishes it (state driver already pulled the host off
     -- screen, so nothing stays clickable meanwhile).
     local function HideActionButtons()
-        if activeActions == 0 and not actionsDirty then return end
-        if InCombatLockdown() then actionsDirty = true; return end
+        if activeActions == 0 and not actionsDirty then
+            return
+        end
+        if InCombatLockdown() then
+            actionsDirty = true
+            return
+        end
         actionsDirty = false
         for i = 1, #actionPool do
             local b = actionPool[i]
@@ -881,8 +1081,11 @@ do
     end
 
     local function EnsureActionHost()
-        if actionHost then return actionHost end
-        actionHost = CreateFrame("Frame", "CludesUIDataBarsTipActions", UIParent, "SecureHandlerStateTemplate")
+        if actionHost then
+            return actionHost
+        end
+        actionHost =
+            CreateFrame("Frame", "CludesUIDataBarsTipActions", UIParent, "SecureHandlerStateTemplate")
         actionHost:SetFrameStrata("TOOLTIP")
         actionHost:SetFrameLevel(TIP_LEVEL + 10)
         actionHost:SetAllPoints(tip)
@@ -895,7 +1098,9 @@ do
         regen:RegisterEvent("PLAYER_REGEN_DISABLED")
         regen:SetScript("OnEvent", function(_, event)
             if event == "PLAYER_REGEN_ENABLED" then
-                if actionsDirty then HideActionButtons() end
+                if actionsDirty then
+                    HideActionButtons()
+                end
                 return
             end
             -- REGEN_DISABLED: InCombatLockdown() reports true already, but
@@ -947,7 +1152,9 @@ do
             b:SetAttribute("type", "spell")
             -- Static handler, installed once; pooled reuse only swaps the
             -- action attributes and the hover recolor scripts.
-            b:HookScript("PostClick", function() ns.Tip_Hide() end)
+            b:HookScript("PostClick", function()
+                ns.Tip_Hide()
+            end)
             actionPool[activeActions] = b
         end
         return b
@@ -957,7 +1164,9 @@ do
     -- functions only, so no secure host or combat handling needed -- buttons
     -- build/click in any lockdown state.
     local function HideClickButtons()
-        if activeClicks == 0 then return end
+        if activeClicks == 0 then
+            return
+        end
         for i = 1, #clickPool do
             local b = clickPool[i]
             b:Hide()
@@ -997,19 +1206,28 @@ do
         -- rise on any Tip_Show, and a pooled button keeping the old base
         -- would sink under the background. Never lowered.
         local want = tip:GetFrameLevel() + 5
-        if b:GetFrameLevel() < want then b:SetFrameLevel(want) end
+        if b:GetFrameLevel() < want then
+            b:SetFrameLevel(want)
+        end
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", tip, "TOPLEFT", PAD, d._y)
         b:SetSize(max(1, innerW), max(1, d._h))
         local ar, ag, ab = ns.GetAccent()
         local lr, lg, lb = d.lr or 1, d.lg or 1, d.lb or 1
-        b:SetScript("OnEnter", function() row.left:SetTextColor(ar, ag, ab, 1) end)
-        b:SetScript("OnLeave", function() row.left:SetTextColor(lr, lg, lb, 1) end)
+        b:SetScript("OnEnter", function()
+            row.left:SetTextColor(ar, ag, ab, 1)
+        end)
+        b:SetScript("OnLeave", function()
+            row.left:SetTextColor(lr, lg, lb, 1)
+        end)
         b:Show()
     end
 
     local function StopKeepAlive()
-        if keepAlive then keepAlive:Cancel(); keepAlive = nil end
+        if keepAlive then
+            keepAlive:Cancel()
+            keepAlive = nil
+        end
     end
 
     -- Dismiss once the cursor is over neither owner nor tip. IsMouseOver tests
@@ -1019,18 +1237,26 @@ do
     -- grace (~0.2s) covers slow diagonal exits past a corner.
     local KA_SLACK = 12
     local function StartKeepAlive()
-        if keepAlive then return end
+        if keepAlive then
+            return
+        end
         local missed = 0
         keepAlive = C_Timer.NewTicker(0.1, function()
-            if not (tip and tip:IsShown()) then StopKeepAlive(); return end
-            local overOwner = owner and owner.IsMouseOver
+            if not (tip and tip:IsShown()) then
+                StopKeepAlive()
+                return
+            end
+            local overOwner = owner
+                and owner.IsMouseOver
                 and owner:IsMouseOver(KA_SLACK, -KA_SLACK, -KA_SLACK, KA_SLACK)
             local overTip = tip:IsMouseOver(KA_SLACK, -KA_SLACK, -KA_SLACK, KA_SLACK)
             if overOwner or overTip then
                 missed = 0
             else
                 missed = missed + 1
-                if missed >= 2 then ns.Tip_Hide() end
+                if missed >= 2 then
+                    ns.Tip_Hide()
+                end
             end
         end)
     end
@@ -1048,17 +1274,26 @@ do
     -- FontString. Rows carrying a secret are dropped here, so the tooltip
     -- shortens instead of erroring. Add functions return true when added.
     function ns.Tip_AddLine(text, r, g, b)
-        if not tip then return end
+        if not tip then
+            return
+        end
         clickRow = 0
-        if text ~= nil and issecretvalue(text) then return end
+        if text ~= nil and issecretvalue(text) then
+            return
+        end
         -- Fixed UI strings resolve through the shared locale; dynamic content
         -- (names, numbers, already-localized strings) has no key, falls back unchanged.
         text = CludesUI.L(text)
         dataCount = dataCount + 1
         local d = data[dataCount]
-        if not d then d = {}; data[dataCount] = d end
+        if not d then
+            d = {}
+            data[dataCount] = d
+        end
         d.l = text or " "
-        d.lr = r; d.lg = g; d.lb = b
+        d.lr = r
+        d.lg = g
+        d.lb = b
         d.r = nil
         d.wrap = nil
         d.action = nil
@@ -1075,25 +1310,38 @@ do
     -- Long prose (currency descriptions etc.): word-wraps at maxWidth px
     -- instead of blowing the tooltip out to the widest single line.
     function ns.Tip_AddWrappedLine(text, maxWidth, r, g, b)
-        if not tip then return end
+        if not tip then
+            return
+        end
         if ns.Tip_AddLine(text, r, g, b) then
             data[dataCount].wrap = maxWidth or 280
         end
     end
 
     function ns.Tip_AddDouble(left, right, lr, lg, lb, rr, rg, rb)
-        if not tip then return end
+        if not tip then
+            return
+        end
         clickRow = 0
-        if (left ~= nil and issecretvalue(left))
-        or (right ~= nil and issecretvalue(right)) then return end
-        left = CludesUI.L(left); right = CludesUI.L(right)   -- see Tip_AddLine
+        if (left ~= nil and issecretvalue(left)) or (right ~= nil and issecretvalue(right)) then
+            return
+        end
+        left = CludesUI.L(left)
+        right = CludesUI.L(right) -- see Tip_AddLine
         dataCount = dataCount + 1
         local d = data[dataCount]
-        if not d then d = {}; data[dataCount] = d end
+        if not d then
+            d = {}
+            data[dataCount] = d
+        end
         d.l = left or " "
-        d.lr = lr; d.lg = lg; d.lb = lb
+        d.lr = lr
+        d.lg = lg
+        d.lb = lb
         d.r = right or ""
-        d.rr = rr; d.rg = rg; d.rb = rb
+        d.rr = rr
+        d.rg = rg
+        d.rb = rb
         d.wrap = nil
         d.action = nil
         d.actionToy = nil
@@ -1112,18 +1360,29 @@ do
     -- different widths. Tokens carry their own inline color codes; the array
     -- is copied, so callers may reuse one buffer for every row.
     function ns.Tip_AddColumns(left, tokens, lr, lg, lb)
-        if not tip then return end
+        if not tip then
+            return
+        end
         clickRow = 0
-        if left ~= nil and issecretvalue(left) then return end
+        if left ~= nil and issecretvalue(left) then
+            return
+        end
         local n = (tokens and #tokens) or 0
         for i = 1, n do
-            if issecretvalue(tokens[i]) then return end
+            if issecretvalue(tokens[i]) then
+                return
+            end
         end
         dataCount = dataCount + 1
         local d = data[dataCount]
-        if not d then d = {}; data[dataCount] = d end
+        if not d then
+            d = {}
+            data[dataCount] = d
+        end
         d.l = left or " "
-        d.lr = lr; d.lg = lg; d.lb = lb
+        d.lr = lr
+        d.lg = lg
+        d.lb = lb
         d.r = nil
         d.wrap = nil
         d.action = nil
@@ -1139,8 +1398,13 @@ do
         d.ncols = n > 0 and n or nil
         if n > 0 then
             local c = d.cols
-            if not c then c = {}; d.cols = c end
-            for i = 1, n do c[i] = tokens[i] end
+            if not c then
+                c = {}
+                d.cols = c
+            end
+            for i = 1, n do
+                c[i] = tokens[i]
+            end
         end
         return true
     end
@@ -1184,7 +1448,9 @@ do
     -- without an action, so a row's spacing stays stable across its
     -- clickable/plain states (e.g. the travel hearthstone line on cooldown).
     function ns.Tip_PadRow()
-        if tip and dataCount > 0 then data[dataCount]._padBand = true end
+        if tip and dataCount > 0 then
+            data[dataCount]._padBand = true
+        end
     end
 
     -- Click-to-act row: like Tip_AddDouble, but overlays an insecure button
@@ -1219,15 +1485,21 @@ do
     end
 
     function ns.Tip_Show()
-        if not tip or not owner then return end
+        if not tip or not owner then
+            return
+        end
         -- Re-check the level contest on every show: GameTooltip's level is not constant
         -- (Blizzard raises it, addons reparent/restack it), so a level picked once at
         -- creation could be overtaken. Only ever raises -- TIP_LEVEL is the floor.
         do
             local lvl = TIP_LEVEL
             local gt = GameTooltip and GameTooltip.GetFrameLevel and GameTooltip:GetFrameLevel()
-            if gt and gt >= lvl then lvl = gt + 10 end
-            if tip:GetFrameLevel() < lvl then tip:SetFrameLevel(lvl) end
+            if gt and gt >= lvl then
+                lvl = gt + 10
+            end
+            if tip:GetFrameLevel() < lvl then
+                tip:SetFrameLevel(lvl)
+            end
         end
         local maxLeft, maxRight, totalH = 0, 0, 0
         local anyRight = false
@@ -1261,8 +1533,12 @@ do
             local lw = row.left:GetStringWidth() or 0
             if d.wrap then
                 anyWrap = true
-                if lw > d.wrap then lw = d.wrap end
-                if lw > maxWrap then maxWrap = lw end
+                if lw > d.wrap then
+                    lw = d.wrap
+                end
+                if lw > maxWrap then
+                    maxWrap = lw
+                end
             elseif lw > maxLeft then
                 maxLeft = lw
             end
@@ -1272,7 +1548,9 @@ do
                 row.right:SetTextColor(d.rr or 1, d.rg or 1, d.rb or 1, 1)
                 row.right:Show()
                 local rw = row.right:GetStringWidth() or 0
-                if rw > maxRight then maxRight = rw end
+                if rw > maxRight then
+                    maxRight = rw
+                end
             else
                 row.right:SetText("")
                 row.right:Hide()
@@ -1280,7 +1558,9 @@ do
             local colH = 0
             if d.ncols then
                 anyRight = true
-                if d.ncols > colCount then colCount = d.ncols end
+                if d.ncols > colCount then
+                    colCount = d.ncols
+                end
                 for c = 1, d.ncols do
                     local fs = EnsureCol(row, c)
                     ns.SetFont(fs, FONT_SIZE)
@@ -1289,9 +1569,13 @@ do
                     fs:SetText(d.cols[c])
                     fs:Show()
                     local tw = fs:GetStringWidth() or 0
-                    if tw > (colW[c] or 0) then colW[c] = tw end
+                    if tw > (colW[c] or 0) then
+                        colW[c] = tw
+                    end
                     local th = fs:GetStringHeight() or 0
-                    if th > colH then colH = th end
+                    if th > colH then
+                        colH = th
+                    end
                 end
             end
             HideCols(row, (d.ncols or 0) + 1)
@@ -1302,13 +1586,19 @@ do
                 local h = row.left:GetStringHeight() or FONT_SIZE
                 if d.r then
                     local rh = row.right:GetStringHeight() or 0
-                    if rh > h then h = rh end
+                    if rh > h then
+                        h = rh
+                    end
                 end
-                if colH > h then h = colH end
+                if colH > h then
+                    h = colH
+                end
                 -- Clickable (or pad-marked) rows carry 2px of breathing room
                 -- above and below the text; the padded band is the rect the
                 -- overlay button and its hover wash cover.
-                if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then h = h + 4 end
+                if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+                    h = h + 4
+                end
                 d._h = h
             end
         end
@@ -1324,15 +1614,21 @@ do
         for c = 1, colCount do
             colsW = colsW + (colW[c] or 0) + (c > 1 and TOKEN_GAP or 0)
         end
-        if colsW > maxRight then maxRight = colsW end
+        if colsW > maxRight then
+            maxRight = colsW
+        end
 
         local innerW = maxLeft
-        if anyRight then innerW = maxLeft + COL_GAP + maxRight end
+        if anyRight then
+            innerW = maxLeft + COL_GAP + maxRight
+        end
         -- Prose spans the whole inner width instead of stopping at the value rows' left
         -- column, wrapping into fewer, fuller lines with no dead gutter. Only widens
         -- the tip when its capped width exceeds what the other rows already need.
         if anyWrap then
-            if maxWrap > innerW then innerW = maxWrap end
+            if maxWrap > innerW then
+                innerW = maxWrap
+            end
             for i = 1, dataCount do
                 local d = data[i]
                 if d.wrap then
@@ -1340,7 +1636,9 @@ do
                     left:SetWordWrap(true)
                     left:SetWidth(innerW)
                     local h = left:GetStringHeight() or FONT_SIZE
-                    if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then h = h + 4 end
+                    if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+                        h = h + 4
+                    end
                     d._h = h
                 end
             end
@@ -1362,7 +1660,9 @@ do
             -- Text sits 4px into a clickable row's padded band (centered);
             -- d._y keeps the band's top so the overlay covers all of it.
             local ty = y
-            if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then ty = y - 2 end
+            if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+                ty = y - 2
+            end
             row.left:ClearAllPoints()
             row.left:SetPoint("TOPLEFT", tip, "TOPLEFT", PAD, ty)
             if d.r then
@@ -1406,7 +1706,9 @@ do
                         host:SetAllPoints(tip)
                         -- Follow the tip up if it outranked GameTooltip this show.
                         local hw = tip:GetFrameLevel() + 10
-                        if host:GetFrameLevel() < hw then host:SetFrameLevel(hw) end
+                        if host:GetFrameLevel() < hw then
+                            host:SetFrameLevel(hw)
+                        end
                     end
                     local b = AcquireActionButton()
                     -- Pooled reuse swaps type + payload; the unused payload is
@@ -1452,21 +1754,31 @@ do
                 local b = AcquireClickButton()
                 local cb = d.onClick
                 PlaceRowOverlay(b, i, innerW)
-                b:SetScript("OnClick", function(_, mouseButton) cb(mouseButton) end)
+                b:SetScript("OnClick", function(_, mouseButton)
+                    cb(mouseButton)
+                end)
                 local wcb = d.onWheel
                 if wcb then
                     anyWheel = true
                     b:EnableMouseWheel(true)
-                    b:SetScript("OnMouseWheel", function(_, delta) wcb(delta) end)
+                    b:SetScript("OnMouseWheel", function(_, delta)
+                        wcb(delta)
+                    end)
                 end
             end
         end
         -- The tip body swallows the wheel only while a row takes it (see EnsureTip).
         tip:EnableMouseWheel(anyWheel)
 
-        if forceInteractive then interactive = true end
+        if forceInteractive then
+            interactive = true
+        end
         tip:EnableMouse(interactive)
-        if interactive then StartKeepAlive() else StopKeepAlive() end
+        if interactive then
+            StartKeepAlive()
+        else
+            StopKeepAlive()
+        end
 
         -- Smart anchoring: opens off the BAR's roomier side (above/below H,
         -- left/right V) with a 6px gap, centered on the hovered block along
@@ -1476,7 +1788,9 @@ do
         local bar = owner:GetParent()
         while bar do
             local n = bar.GetName and bar:GetName()
-            if n and n:find("^CludesUIDataBarsBar%d+$") then break end
+            if n and n:find("^CludesUIDataBarsBar%d+$") then
+                break
+            end
             bar = bar:GetParent()
         end
         local ocx, ocy = owner:GetCenter()
@@ -1518,8 +1832,12 @@ do
     end
 
     function ns.Tip_Hide(ownerFrame)
-        if not tip then return end
-        if ownerFrame and owner ~= ownerFrame then return end
+        if not tip then
+            return
+        end
+        if ownerFrame and owner ~= ownerFrame then
+            return
+        end
         owner = nil
         HideActionButtons()
         HideClickButtons()
@@ -1533,14 +1851,22 @@ do
     -- Owner OnLeave hook: an interactive tip defers to its own keep-alive poll (so the
     -- cursor can move onto it to click a row); a plain tip hides immediately.
     function ns.Tip_HideUnlessInteractive(ownerFrame)
-        if not tip then return end
-        if ownerFrame and owner ~= ownerFrame then return end
-        if interactive then return end
+        if not tip then
+            return
+        end
+        if ownerFrame and owner ~= ownerFrame then
+            return
+        end
+        if interactive then
+            return
+        end
         ns.Tip_Hide(ownerFrame)
     end
 
     function ns.Tip_IsOwned(ownerFrame)
-        if not tip then return false end
+        if not tip then
+            return false
+        end
         return tip:IsShown() and owner == ownerFrame
     end
 
@@ -1572,7 +1898,9 @@ ns.EDGE_PAD = EDGE_PAD
 
 -- Per-BAR sizing mode; absent = "auto".
 function ns.BarSizingMode(barCfg)
-    if barCfg and barCfg.sizingMode == "even" then return "even" end
+    if barCfg and barCfg.sizingMode == "even" then
+        return "even"
+    end
     return "auto"
 end
 
@@ -1582,11 +1910,15 @@ end
 function ns.EnsureFillBlock(barCfg)
     local blocks = barCfg and barCfg.blocks
     local n = blocks and #blocks or 0
-    if n == 0 then return nil end
+    if n == 0 then
+        return nil
+    end
     local id = barCfg.fillBlockId
     if id ~= nil then
         for i = 1, n do
-            if blocks[i].id == id then return id end
+            if blocks[i].id == id then
+                return id
+            end
         end
     end
     id = blocks[n].id
@@ -1599,11 +1931,17 @@ end
 -- single contentGap (then 10), so old data keeps its symmetric gap.
 local function ContentGapsOf(b)
     local base = b.contentGap
-    if base == nil then base = 10 end
+    if base == nil then
+        base = 10
+    end
     local l = b.contentGapL
-    if l == nil then l = base end
+    if l == nil then
+        l = base
+    end
     local r = b.contentGapR
-    if r == nil then r = base end
+    if r == nil then
+        r = base
+    end
     return l, r
 end
 ns.ContentGapsOf = ContentGapsOf
@@ -1616,7 +1954,9 @@ ns.ContentGapsOf = ContentGapsOf
 function ns.SolveLayout(barCfg, L, measure)
     local segs = {}
     local n = #barCfg.blocks
-    if n == 0 then return segs end
+    if n == 0 then
+        return segs
+    end
 
     if ns.BarSizingMode(barCfg) == "even" then
         -- Equal shares among blocks that exist for layout: a collapsed block
@@ -1631,13 +1971,17 @@ function ns.SolveLayout(barCfg, L, measure)
                 hasShare = (measure(b) or 0) > 0
             end
             shares[i] = hasShare
-            if hasShare then nShare = nShare + 1 end
+            if hasShare then
+                nShare = nShare + 1
+            end
         end
         if nShare == 0 then
             -- Everything collapsed: fall back to plain equal shares so the
             -- solve stays well-defined.
             nShare = n
-            for i = 1, n do shares[i] = true end
+            for i = 1, n do
+                shares[i] = true
+            end
         end
         local prevEdge, k = 0, 0
         for i = 1, n do
@@ -1665,7 +2009,10 @@ function ns.SolveLayout(barCfg, L, measure)
         local cid = barCfg.centerBlockId
         if cid ~= nil then
             for i = 1, n do
-                if barCfg.blocks[i].id == cid then centerIdx = i break end
+                if barCfg.blocks[i].id == cid then
+                    centerIdx = i
+                    break
+                end
             end
         end
     end
@@ -1703,17 +2050,26 @@ function ns.SolveLayout(barCfg, L, measure)
     -- absorbs the slack so the run spans the region. Bounds may be
     -- fractional; the pinned edge always rounds onto the region bound.
     local function SolveRegion(first, last, regionStart, regionEnd, packRight)
-        if first > last then return end
+        if first > last then
+            return
+        end
         local regionLen = regionEnd - regionStart
-        if regionLen < 0 then regionLen = 0 end
+        if regionLen < 0 then
+            regionLen = 0
+        end
         local sumFixed, hasFill = 0, false
         for i = first, last do
-            if segs[i].isFill then hasFill = true
-            else sumFixed = sumFixed + segs[i].desired end
+            if segs[i].isFill then
+                hasFill = true
+            else
+                sumFixed = sumFixed + segs[i].desired
+            end
         end
         local scale, fillPx = 1, 0
         if sumFixed > regionLen then
-            if sumFixed > 0 then scale = regionLen / sumFixed end
+            if sumFixed > 0 then
+                scale = regionLen / sumFixed
+            end
         elseif hasFill then
             fillPx = regionLen - sumFixed
         end
@@ -1736,7 +2092,11 @@ function ns.SolveLayout(barCfg, L, measure)
         for i = first, last do
             local s = segs[i]
             local w
-            if s.isFill then w = fillPx else w = s.desired * scale end
+            if s.isFill then
+                w = fillPx
+            else
+                w = s.desired * scale
+            end
             cum = cum + w
             local edge = floor(cum + 0.5)
             if hasFill and i == last then
@@ -1762,8 +2122,12 @@ function ns.SolveLayout(barCfg, L, measure)
     local cDesired, cGl, cW = SizedPx(cB)
     local cPx = floor(cDesired + 0.5)
     local cAt = floor(L / 2 - cW / 2 - cGl + 0.5)
-    if cAt < 0 then cAt = 0 end
-    if cAt + cPx > L then cAt = floor(max(0, L - cPx) + 0.5) end
+    if cAt < 0 then
+        cAt = 0
+    end
+    if cAt + cPx > L then
+        cAt = floor(max(0, L - cPx) + 0.5)
+    end
     local cSeg = segs[centerIdx]
     cSeg.desired = nil
 
@@ -1811,7 +2175,9 @@ local function EnsureThemeTextures(host)
     -- textures count only for the dress (generation) they were made in. Gen
     -- is nil for every frame the pool did not make (the live bars).
     local gen = POOL.Gen and POOL.Gen(host)
-    if host._edbBgAtlas and host._edbThemeGen == gen then return end
+    if host._edbBgAtlas and host._edbThemeGen == gen then
+        return
+    end
     local bgAtlas = host:CreateTexture(nil, "BACKGROUND", nil, -8)
     bgAtlas:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
     bgAtlas:SetAllPoints(host)
@@ -1826,16 +2192,18 @@ local function EnsureThemeTextures(host)
     local barTex = host:CreateTexture(nil, "BACKGROUND", nil, -6)
     barTex:SetAllPoints(host)
     barTex:SetAlpha(0)
-    host._edbBgAtlas   = bgAtlas
+    host._edbBgAtlas = bgAtlas
     host._edbBgOverlay = bgOverlay
-    host._edbModernBg  = modernBg
-    host._edbBarTex    = barTex
-    host._edbThemeGen  = gen
+    host._edbModernBg = modernBg
+    host._edbBarTex = barTex
+    host._edbThemeGen = gen
 
     -- Cover-fit: crop the atlas so it fills the host without stretching.
     local function UpdateBgTexCoords()
         local fw, fh = host:GetSize()
-        if not fw or fw == 0 or not fh or fh == 0 then return end
+        if not fw or fw == 0 or not fh or fh == 0 then
+            return
+        end
         local fa = fw / fh
         if fa > BG_ASPECT then
             local visV = BASE_V * (BG_ASPECT / fa)
@@ -1879,13 +2247,17 @@ local function ApplyThemeToHost(host, theme, texKey, showBorder)
             host._edbModernBg:SetAlpha(1)
         end
         op = c.a
-        if op == nil then op = 0.95 end
+        if op == nil then
+            op = 0.95
+        end
     else
         -- cuiOpacity fades the WHOLE background stack (art + dim overlay); cuiAlpha is
         -- the overlay's own darkening amount. Bar Texture never applies here -- the cui
         -- style always renders untextured art (the texture picker is Modern-only).
         op = theme.cuiOpacity
-        if op == nil then op = 1 end
+        if op == nil then
+            op = 1
+        end
         host._edbBarTex:SetAlpha(0)
         host._edbBgAtlas:SetAlpha(op)
         host._edbBgOverlay:SetColorTexture(0, 0, 0, theme.cuiAlpha or 0.5)
@@ -1935,7 +2307,9 @@ local function MakeBarCtx(id)
     end
     function ctx.GetThickness()
         local c = ctx.cfg
-        if c and c.thickness then return c.thickness end
+        if c and c.thickness then
+            return c.thickness
+        end
         return 30
     end
     function ctx.RequestLayout()
@@ -1943,9 +2317,13 @@ local function MakeBarCtx(id)
     end
     function ctx.IsBarAtTop()
         local rec = live[id]
-        if not (rec and rec.bar) then return false end
+        if not (rec and rec.bar) then
+            return false
+        end
         local _, cy = rec.bar:GetCenter()
-        if not cy then return false end
+        if not cy then
+            return false
+        end
         return cy > (UIParent:GetHeight() / 2)
     end
     return ctx
@@ -1953,26 +2331,46 @@ end
 
 -- Offset of an anchor point from a rect's BOTTOMLEFT corner.
 local function PointXY(point, w, h)
-    if point == "TOPLEFT" then return 0, h end
-    if point == "TOP" then return w / 2, h end
-    if point == "TOPRIGHT" then return w, h end
-    if point == "LEFT" then return 0, h / 2 end
-    if point == "RIGHT" then return w, h / 2 end
-    if point == "BOTTOMLEFT" then return 0, 0 end
-    if point == "BOTTOM" then return w / 2, 0 end
-    if point == "BOTTOMRIGHT" then return w, 0 end
+    if point == "TOPLEFT" then
+        return 0, h
+    end
+    if point == "TOP" then
+        return w / 2, h
+    end
+    if point == "TOPRIGHT" then
+        return w, h
+    end
+    if point == "LEFT" then
+        return 0, h / 2
+    end
+    if point == "RIGHT" then
+        return w, h / 2
+    end
+    if point == "BOTTOMLEFT" then
+        return 0, 0
+    end
+    if point == "BOTTOM" then
+        return w / 2, 0
+    end
+    if point == "BOTTOMRIGHT" then
+        return w, 0
+    end
     return w / 2, h / 2
 end
 
 local function ApplyBarPosition(id)
     local rec = live[id]
     local cfg = ns.GetBar(id)
-    if not (rec and rec.bar and cfg) then return end
+    if not (rec and rec.bar and cfg) then
+        return
+    end
     local bar = rec.bar
     -- Implicitly protected bar (secure children): reposition is blocked in
     -- combat; keep current position and re-apply once on regen.
     if InCombatLockdown() and bar:IsProtected() then
-        ns.DeferUntilOOC("pos:" .. id, function() ApplyBarPosition(id) end)
+        ns.DeferUntilOOC("pos:" .. id, function()
+            ApplyBarPosition(id)
+        end)
         return
     end
     local vertical = cfg.orientation == "V"
@@ -1982,12 +2380,18 @@ local function ApplyBarPosition(id)
     -- Edge snap, ignoring an edge that does not match the orientation
     -- (the options page keeps the setting valid; defense for stale data).
     local edge = cfg.snapEdge
-    if edge == "none" then edge = nil end
+    if edge == "none" then
+        edge = nil
+    end
     if edge then
         if vertical then
-            if edge ~= "left" and edge ~= "right" then edge = nil end
+            if edge ~= "left" and edge ~= "right" then
+                edge = nil
+            end
         else
-            if edge ~= "bottom" and edge ~= "top" then edge = nil end
+            if edge ~= "bottom" and edge ~= "top" then
+                edge = nil
+            end
         end
     end
 
@@ -2021,14 +2425,18 @@ local function ApplyBarPosition(id)
         cy = ry + (sp.y or 0) - py + bh / 2
     end
     if vertical then
-        if full then cy = uh / 2 end
+        if full then
+            cy = uh / 2
+        end
         if edge == "left" then
             cx = bw / 2
         elseif edge == "right" then
             cx = uw - bw / 2
         end
     else
-        if full then cx = uw / 2 end
+        if full then
+            cx = uw / 2
+        end
         if edge == "bottom" then
             cy = bh / 2
         elseif edge == "top" then
@@ -2086,12 +2494,26 @@ local function ApplyBlockDecor(slot, blockCfg, barCfg)
             slot._edbHover:SetColorTexture(1, 1, 1, 0.04)
             slot._edbHover:Hide()
         end
-        if slot.EnableMouseMotion then slot:EnableMouseMotion(true) end
-        slot:SetScript("OnEnter", function(s) if s._edbHover then s._edbHover:Show() end end)
-        slot:SetScript("OnLeave", function(s) if s._edbHover then s._edbHover:Hide() end end)
+        if slot.EnableMouseMotion then
+            slot:EnableMouseMotion(true)
+        end
+        slot:SetScript("OnEnter", function(s)
+            if s._edbHover then
+                s._edbHover:Show()
+            end
+        end)
+        slot:SetScript("OnLeave", function(s)
+            if s._edbHover then
+                s._edbHover:Hide()
+            end
+        end)
     else
-        if slot._edbHover then slot._edbHover:Hide() end
-        if slot.EnableMouseMotion then slot:EnableMouseMotion(false) end
+        if slot._edbHover then
+            slot._edbHover:Hide()
+        end
+        if slot.EnableMouseMotion then
+            slot:EnableMouseMotion(false)
+        end
         slot:SetScript("OnEnter", nil)
         slot:SetScript("OnLeave", nil)
     end
@@ -2099,12 +2521,18 @@ end
 
 local function AnchorContent(slot, blockCfg, vertical, barCfg)
     local content = slot._edbContent
-    if not content then return end
+    if not content then
+        return
+    end
     -- Per-block content scale: the whole content tree (icons + texts) scales
     -- as a group inside its slot. Offsets divide by scale so stored X/Y stay
     -- screen-true regardless.
     local s = (blockCfg.scale or 100) / 100
-    if s < 0.25 then s = 0.25 elseif s > 3 then s = 3 end
+    if s < 0.25 then
+        s = 0.25
+    elseif s > 3 then
+        s = 3
+    end
     content:SetScale(s)
     content:ClearAllPoints()
     local a = blockCfg.align or "CENTER"
@@ -2116,25 +2544,36 @@ local function AnchorContent(slot, blockCfg, vertical, barCfg)
     local cShift = slot._edbCenterShift
     if cShift then
         a = "CENTER"
-        if vertical then y = y - cShift / s else x = x + cShift / s end
+        if vertical then
+            y = y - cShift / s
+        else
+            x = x + cShift / s
+        end
     end
     -- Auto-mode slots reserve per-side gaps around content; align steps inward
     -- by the LEADING gap (LEFT otherwise piles the whole reserve on the far
     -- side), CENTER shifts by half the gap DIFFERENCE. Gaps are slot-space px,
     -- so divide by content scale like the offsets. Fill block's slot is the
     -- remainder, not gap-sized: plain align.
-    if barCfg and ns.BarSizingMode(barCfg) == "auto"
-       and blockCfg.id ~= ns.EnsureFillBlock(barCfg) then
+    if barCfg and ns.BarSizingMode(barCfg) == "auto" and blockCfg.id ~= ns.EnsureFillBlock(barCfg) then
         local gl, gr = ns.ContentGapsOf(blockCfg)
         gl, gr = gl / s, gr / s
         if vertical then
-            if a == "LEFT" then y = y - gl
-            elseif a == "RIGHT" then y = y + gr
-            else y = y - (gl - gr) / 2 end
+            if a == "LEFT" then
+                y = y - gl
+            elseif a == "RIGHT" then
+                y = y + gr
+            else
+                y = y - (gl - gr) / 2
+            end
         else
-            if a == "LEFT" then x = x + gl
-            elseif a == "RIGHT" then x = x - gr
-            else x = x + (gl - gr) / 2 end
+            if a == "LEFT" then
+                x = x + gl
+            elseif a == "RIGHT" then
+                x = x - gr
+            else
+                x = x + (gl - gr) / 2
+            end
         end
     end
     if vertical then
@@ -2163,7 +2602,9 @@ end
 -- ApplyBar would see unchanged px and skip.
 function ns.ReflowBlocks(id)
     local rec = live and live[id]
-    if not rec then return end
+    if not rec then
+        return
+    end
     wipe(rec.assigned)
     ns.RequestLayout(id)
 end
@@ -2171,12 +2612,18 @@ end
 -- Coalesced re-layout: one pass per bar per frame at most.
 function ns.RequestLayout(id)
     local rec = live[id]
-    if not rec then return end
-    if rec.layoutQueued then return end
+    if not rec then
+        return
+    end
+    if rec.layoutQueued then
+        return
+    end
     rec.layoutQueued = true
     C_Timer.After(0, function()
         local r = live[id]
-        if r then r.layoutQueued = false end
+        if r then
+            r.layoutQueued = false
+        end
         ApplyLayout(id)
     end)
 end
@@ -2184,21 +2631,33 @@ end
 ApplyLayout = function(id)
     local rec = live[id]
     local cfg = ns.GetBar(id)
-    if not (rec and rec.bar and cfg) then return end
-    if not rec.enabled then return end
+    if not (rec and rec.bar and cfg) then
+        return
+    end
+    if not rec.enabled then
+        return
+    end
     -- A bar holding secure children (profession/micromenu passthrough buttons) is
     -- implicitly protected, and so is every ancestor of those buttons: slot geometry on
     -- it is blocked in combat (ADDON_ACTION_BLOCKED on slot:ClearAllPoints). Freeze the
     -- current layout for the fight and run ONE deferred pass on regen.
     if InCombatLockdown() and rec.bar:IsProtected() then
-        ns.DeferUntilOOC("layout:" .. id, function() ApplyLayout(id) end)
+        ns.DeferUntilOOC("layout:" .. id, function()
+            ApplyLayout(id)
+        end)
         return
     end
     local vertical = cfg.orientation == "V"
     local barLen
-    if vertical then barLen = rec.bar:GetHeight() else barLen = rec.bar:GetWidth() end
+    if vertical then
+        barLen = rec.bar:GetHeight()
+    else
+        barLen = rec.bar:GetWidth()
+    end
     local L2 = (barLen or 0) - 2 * EDGE_PAD
-    if L2 < 1 then L2 = 1 end
+    if L2 < 1 then
+        L2 = 1
+    end
 
     local function measure(b)
         local inst = rec.insts[b.id]
@@ -2215,7 +2674,9 @@ ApplyLayout = function(id)
         local slot = rec.slots[seg.block.id]
         if slot then
             local px = seg.px
-            if px < 1 then px = 1 end
+            if px < 1 then
+                px = 1
+            end
             -- Positions come from the solver (seg.at), never a running
             -- cursor: a Force Centered block leaves uncovered background
             -- beside it, so segments are not guaranteed contiguous.
@@ -2245,13 +2706,17 @@ ApplyLayout = function(id)
             if prev == nil or abs(prev - px) > 0.5 then
                 rec.assigned[seg.block.id] = px
                 local inst = rec.insts[seg.block.id]
-                if inst and inst.Refresh then inst:Refresh() end
+                if inst and inst.Refresh then
+                    inst:Refresh()
+                end
             end
         end
     end
     -- The options page's preview strip solves from these measurements.
     local onLaidOut = ns.OnBarLaidOut
-    if onLaidOut then onLaidOut(id) end
+    if onLaidOut then
+        onLaidOut(id)
+    end
 end
 
 --- "Never" is this module's only disable channel, so every gate that asks it has to ask
@@ -2259,16 +2724,22 @@ end
 --- scalar included, so Always or Mouseover has to keep a bar alive whose stored scalar
 --- reads never, and an override of Never disables one whose scalar does not.
 function ns.VisIsNever(cfg)
-    if not cfg then return true end
+    if not cfg then
+        return true
+    end
     local ov = CludesUI.VisOverrideValue(cfg)
-    if ov then return ov == "never" end
+    if ov then
+        return ov == "never"
+    end
     return cfg.visibility == "never"
 end
 
 -- Idempotent create-or-update of one bar from its cfg.
 function ns.ApplyBar(id)
     local profile = ns.GetProfile()
-    if not profile then return end
+    if not profile then
+        return
+    end
     local cfg = ns.GetBar(id)
     local rec = live[id]
 
@@ -2277,7 +2748,9 @@ function ns.ApplyBar(id)
     -- regen; the bar keeps its current state for the fight (runtime
     -- visibility stays alpha-based and unaffected).
     if rec and rec.bar and InCombatLockdown() and rec.bar:IsProtected() then
-        ns.DeferUntilOOC("applybar:" .. id, function() ns.ApplyBar(id) end)
+        ns.DeferUntilOOC("applybar:" .. id, function()
+            ns.ApplyBar(id)
+        end)
         return
     end
 
@@ -2288,12 +2761,16 @@ function ns.ApplyBar(id)
     if ns.VisIsNever(cfg) then
         if rec and rec.enabled then
             for _, inst in pairs(rec.insts) do
-                if inst.Disable then inst:Disable() end
+                if inst.Disable then
+                    inst:Disable()
+                end
             end
             rec.bar:Hide()
             rec.enabled = false
         end
-        if AfterBarStateChange then AfterBarStateChange() end
+        if AfterBarStateChange then
+            AfterBarStateChange()
+        end
         return
     end
 
@@ -2309,7 +2786,9 @@ function ns.ApplyBar(id)
         -- Anchor-driven size changes (full-length bars stretching with the
         -- screen) re-solve the layout; RequestLayout coalesces, and the
         -- combat gate defers protected bars to regen.
-        rec.bar:HookScript("OnSizeChanged", function() ns.RequestLayout(id) end)
+        rec.bar:HookScript("OnSizeChanged", function()
+            ns.RequestLayout(id)
+        end)
         rec.ctx = MakeBarCtx(id)
         rec.ctx.frame = rec.bar
         live[id] = rec
@@ -2338,7 +2817,11 @@ function ns.ApplyBar(id)
     local thickness = cfg.thickness or 30
     local length
     if cfg.lengthMode == "full" then
-        if vertical then length = UIParent:GetHeight() else length = UIParent:GetWidth() end
+        if vertical then
+            length = UIParent:GetHeight()
+        else
+            length = UIParent:GetWidth()
+        end
     else
         length = cfg.length or 400
     end
@@ -2350,7 +2833,9 @@ function ns.ApplyBar(id)
 
     ApplyBarPosition(id)
     -- Back onto its unlock anchor (nil until the unlock core is built).
-    if CludesUI.ReapplyUnlockAnchor then CludesUI.ReapplyUnlockAnchor("EDB_" .. id) end
+    if CludesUI.ReapplyUnlockAnchor then
+        CludesUI.ReapplyUnlockAnchor("EDB_" .. id)
+    end
     ApplyThemeToHost(rec.bar, cfg.theme, cfg.barTexture, not cfg.hideBorder)
 
     -- Reconcile block instances against cfg.blocks
@@ -2361,8 +2846,12 @@ function ns.ApplyBar(id)
     for blockId, inst in pairs(rec.insts) do
         local b = want[blockId]
         if not b or b.type ~= inst._edbType then
-            if inst.Disable then inst:Disable() end
-            if inst.Destroy then inst:Destroy() end
+            if inst.Disable then
+                inst:Disable()
+            end
+            if inst.Destroy then
+                inst:Destroy()
+            end
             rec.insts[blockId] = nil
             rec.assigned[blockId] = nil
             local slot = rec.slots[blockId]
@@ -2381,7 +2870,9 @@ function ns.ApplyBar(id)
         end
     end
     for blockId, slot in pairs(rec.slots) do
-        if not want[blockId] then slot:Hide() end
+        if not want[blockId] then
+            slot:Hide()
+        end
     end
 
     for i = 1, #cfg.blocks do
@@ -2401,13 +2892,17 @@ function ns.ApplyBar(id)
                     if inst then
                         inst._edbType = b.type
                         rec.insts[b.id] = inst
-                        if inst.Enable then inst:Enable() end
+                        if inst.Enable then
+                            inst:Enable()
+                        end
                     end
                 end
             elseif wasDisabled then
                 -- Re-enabling a previously disabled bar: instance Enable is
                 -- idempotent (re-registers events + heartbeat under the same key).
-                if inst.Enable then inst:Enable() end
+                if inst.Enable then
+                    inst:Enable()
+                end
             end
         end
     end
@@ -2416,16 +2911,22 @@ function ns.ApplyBar(id)
 
     for i = 1, #cfg.blocks do
         local inst = rec.insts[cfg.blocks[i].id]
-        if inst and inst.Refresh then inst:Refresh() end
+        if inst and inst.Refresh then
+            inst:Refresh()
+        end
     end
 
     ns.RequestLayout(id)
-    if AfterBarStateChange then AfterBarStateChange() end
+    if AfterBarStateChange then
+        AfterBarStateChange()
+    end
     -- Enabled after registration: getFrame was nil, so install the unlock hooks
     -- and bring held followers to the bar.
     if wasDisabled and ns._edbUnlockRegistered then
         ns.RegisterAllUnlockElements()
-        if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain("EDB_" .. id) end
+        if CludesUI.PropagateAnchorChain then
+            CludesUI.PropagateAnchorChain("EDB_" .. id)
+        end
     end
 end
 
@@ -2433,15 +2934,21 @@ end
 function ns.ApplyTheme(id)
     local rec = live[id]
     local cfg = ns.GetBar(id)
-    if not (rec and rec.bar and cfg) then return end
+    if not (rec and rec.bar and cfg) then
+        return
+    end
     ApplyThemeToHost(rec.bar, cfg.theme, cfg.barTexture, not cfg.hideBorder)
 end
 
 function ns.GetLiveAutoLength(barId, blockId)
     local rec = live[barId]
-    if not rec then return nil end
+    if not rec then
+        return nil
+    end
     local inst = rec.insts[blockId]
-    if inst and inst.GetAutoLength then return inst:GetAutoLength() end
+    if inst and inst.GetAutoLength then
+        return inst:GetAutoLength()
+    end
     return nil
 end
 
@@ -2450,7 +2957,9 @@ end
 -- since Auto Sized blocks need the real bar length and live content
 -- measurements; falls back to configured length for unbuilt bars.
 function ns.NormalizedShare(barCfg, blockId)
-    if not barCfg or #barCfg.blocks == 0 then return 0 end
+    if not barCfg or #barCfg.blocks == 0 then
+        return 0
+    end
     local rec = live[barCfg.id]
     local L
     if rec and rec.bar then
@@ -2472,10 +2981,14 @@ function ns.NormalizedShare(barCfg, blockId)
         end
     end
     L = L - 2 * EDGE_PAD
-    if L < 1 then L = 1 end
+    if L < 1 then
+        L = 1
+    end
     local function measure(b)
         local inst = rec and rec.insts[b.id]
-        if inst and inst.GetAutoLength then return inst:GetAutoLength() or 0 end
+        if inst and inst.GetAutoLength then
+            return inst:GetAutoLength() or 0
+        end
         return 0
     end
     local segs = ns.SolveLayout(barCfg, L, measure)
@@ -2515,7 +3028,9 @@ end
 -- covers the visual meanwhile, and micromenu buttons self-disable via combatlock.
 local function SetBarContentShown(id, shown)
     local rec = live[id]
-    if not rec then return end
+    if not rec then
+        return
+    end
     shown = shown and true or false
     if (rec.contentShown ~= false) == shown and not rec.contentDeferred then
         return
@@ -2531,7 +3046,9 @@ local function SetBarContentShown(id, shown)
         end
     end
     if not shown then
-        for _, slot in pairs(rec.slots) do apply(slot, false) end
+        for _, slot in pairs(rec.slots) do
+            apply(slot, false)
+        end
     else
         -- Re-show only the slots belonging to CURRENT blocks; slots orphaned
         -- by block removal stay hidden.
@@ -2539,7 +3056,9 @@ local function SetBarContentShown(id, shown)
         if cfg and cfg.blocks then
             for i = 1, #cfg.blocks do
                 local slot = rec.slots[cfg.blocks[i].id]
-                if slot then apply(slot, true) end
+                if slot then
+                    apply(slot, true)
+                end
             end
         end
     end
@@ -2552,13 +3071,19 @@ function ns.SetBlockEditHighlight(barId, blockId)
     if _editHL then
         local rec = live[_editHL.barId]
         local slot = rec and rec.slots[_editHL.blockId]
-        if slot and slot._edbEditHL then slot._edbEditHL:Hide() end
+        if slot and slot._edbEditHL then
+            slot._edbEditHL:Hide()
+        end
         _editHL = nil
     end
-    if not (barId and blockId) then return end
+    if not (barId and blockId) then
+        return
+    end
     local rec = live[barId]
     local slot = rec and rec.slots[blockId]
-    if not slot then return end
+    if not slot then
+        return
+    end
     if not slot._edbEditHL then
         local t = slot:CreateTexture(nil, "OVERLAY", nil, 6)
         t:SetAllPoints(slot)
@@ -2576,34 +3101,58 @@ do
     local st = {}
 
     local VIS_EVENTS = {
-        "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
-        "PLAYER_TARGET_CHANGED", "GROUP_ROSTER_UPDATE",
-        "PLAYER_MOUNT_DISPLAY_CHANGED", "PLAYER_CAN_GLIDE_CHANGED",
-        "ZONE_CHANGED_NEW_AREA", "UPDATE_SHAPESHIFT_FORM",
-        "PLAYER_ENTERING_WORLD", "PLAYER_UPDATE_RESTING",
-        "UNIT_ENTERED_VEHICLE", "UNIT_EXITED_VEHICLE",
+        "PLAYER_REGEN_DISABLED",
+        "PLAYER_REGEN_ENABLED",
+        "PLAYER_TARGET_CHANGED",
+        "GROUP_ROSTER_UPDATE",
+        "PLAYER_MOUNT_DISPLAY_CHANGED",
+        "PLAYER_CAN_GLIDE_CHANGED",
+        "ZONE_CHANGED_NEW_AREA",
+        "UPDATE_SHAPESHIFT_FORM",
+        "PLAYER_ENTERING_WORLD",
+        "PLAYER_UPDATE_RESTING",
+        "UNIT_ENTERED_VEHICLE",
+        "UNIT_EXITED_VEHICLE",
     }
 
     -- Legacy scalar evaluation for the modes the multi engine declines.
     -- in_party and in_raid are disjoint: a raid group only matches in_raid.
     local function LegacyScalar(mode)
         mode = mode or "always"
-        if mode == "always" then return true end
-        if mode == "never" then return false end
-        if mode == "mouseover" then return "mouseover" end
-        if mode == "in_combat" then return _inCombat end
-        if mode == "out_of_combat" then return not _inCombat end
+        if mode == "always" then
+            return true
+        end
+        if mode == "never" then
+            return false
+        end
+        if mode == "mouseover" then
+            return "mouseover"
+        end
+        if mode == "in_combat" then
+            return _inCombat
+        end
+        if mode == "out_of_combat" then
+            return not _inCombat
+        end
         local inRaid = IsInRaid()
         local inGroup = IsInGroup()
-        if mode == "in_raid" then return inRaid end
-        if mode == "in_party" then return inGroup and not inRaid end
-        if mode == "solo" then return not inGroup end
+        if mode == "in_raid" then
+            return inRaid
+        end
+        if mode == "in_party" then
+            return inGroup and not inRaid
+        end
+        if mode == "solo" then
+            return not inGroup
+        end
         return true
     end
 
     function ns.UpdateAllBarVisibility()
         local profile = ns.GetProfile()
-        if not profile then return end
+        if not profile then
+            return
+        end
         local bars = profile.bars
         for i = 1, #bars do
             local cfg = bars[i]
@@ -2620,7 +3169,11 @@ do
                     if CludesUI.EvalVisibilityExtended then
                         ext = CludesUI.EvalVisibilityExtended(cfg, "visibility", st, ns.EDB_VIS_CAPS)
                     end
-                    if ext ~= nil then vis = ext else vis = LegacyScalar(cfg.visibility) end
+                    if ext ~= nil then
+                        vis = ext
+                    else
+                        vis = LegacyScalar(cfg.visibility)
+                    end
                 end
                 if vis == "mouseover" then
                     ns._moEligible[cfg.id] = true
@@ -2650,7 +3203,9 @@ do
 
     local function AnyEnabledBar()
         local profile = ns.GetProfile()
-        if not profile then return false end
+        if not profile then
+            return false
+        end
         local bars = profile.bars
         for i = 1, #bars do
             if not ns.VisIsNever(bars[i]) then
@@ -2666,7 +3221,9 @@ do
                 visFrame = CreateFrame("Frame")
                 visFrame:SetScript("OnEvent", OnVisEvent)
             end
-            for _, e in ipairs(VIS_EVENTS) do visFrame:RegisterEvent(e) end
+            for _, e in ipairs(VIS_EVENTS) do
+                visFrame:RegisterEvent(e)
+            end
             if CludesUI._hasGlidingEvent then
                 visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")
             end
@@ -2681,18 +3238,26 @@ do
     -- SetBarAlphaVisible (alpha-only), never EnableMouse on the bar.
     local moRegistered = {}
     RegisterBarMouseoverProxy = function(id)
-        if moRegistered[id] then return end
-        if not CludesUI.RegisterMouseoverTarget then return end
+        if moRegistered[id] then
+            return
+        end
+        if not CludesUI.RegisterMouseoverTarget then
+            return
+        end
         moRegistered[id] = true
         local proxy = {}
         proxy.GetRect = function()
             local rec = live[id]
-            if rec and rec.bar then return rec.bar:GetRect() end
+            if rec and rec.bar then
+                return rec.bar:GetRect()
+            end
             return nil
         end
         proxy.GetEffectiveScale = function()
             local rec = live[id]
-            if rec and rec.bar then return rec.bar:GetEffectiveScale() end
+            if rec and rec.bar then
+                return rec.bar:GetEffectiveScale()
+            end
             return 1
         end
         proxy.SetAlpha = function() end
@@ -2712,7 +3277,9 @@ do
             end
         end
         CludesUI.RegisterMouseoverTarget(proxy, function()
-            if ns._moEligible[id] then return true end
+            if ns._moEligible[id] then
+                return true
+            end
             return false
         end)
     end
@@ -2732,7 +3299,9 @@ do
 
     local function AnyScreenBar()
         local profile = ns.GetProfile()
-        if not profile then return false end
+        if not profile then
+            return false
+        end
         local bars = profile.bars
         for i = 1, #bars do
             if not ns.VisIsNever(bars[i]) and FollowsScreen(bars[i]) then
@@ -2744,7 +3313,9 @@ do
 
     local function OnDispEvent()
         local profile = ns.GetProfile()
-        if not profile then return end
+        if not profile then
+            return
+        end
         ns.WipeFitCache()
         local bars = profile.bars
         for i = 1, #bars do
@@ -2762,7 +3333,9 @@ do
         OnDispEvent()
     end
     local function OnUIParentSized()
-        if sizeQueued then return end
+        if sizeQueued then
+            return
+        end
         sizeQueued = true
         C_Timer.After(0, FlushSized)
     end
@@ -2789,7 +3362,9 @@ AfterBarStateChange = function()
     visRuntime.UpdateEventRegistration()
     dispRuntime.UpdateEventRegistration()
     ns.UpdateAllBarVisibility()
-    if ns.RefreshMicroMenuHider then ns.RefreshMicroMenuHider() end
+    if ns.RefreshMicroMenuHider then
+        ns.RefreshMicroMenuHider()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -2800,24 +3375,30 @@ end
 --  registered again next login.
 -------------------------------------------------------------------------------
 local function MakeBarElement(barId, orderIdx)
-    local function cfgOf() return ns.GetBar(barId) end
+    local function cfgOf()
+        return ns.GetBar(barId)
+    end
     local cfgNow = cfgOf()
     local label = "DataBar " .. barId
-    if cfgNow and cfgNow.name then label = cfgNow.name end
+    if cfgNow and cfgNow.name then
+        label = cfgNow.name
+    end
     -- Unlock resize: ApplyBar moved the bar to its stored spot, so return it to
     -- the mover. Snapped and anchored bars keep their edge or link.
     local function holdAtMover(cfg)
-        if cfg.snapEdge and cfg.snapEdge ~= "none" then return end
+        if cfg.snapEdge and cfg.snapEdge ~= "none" then
+            return
+        end
         local key = "EDB_" .. barId
         if CludesUI._unlockActive and not CludesUI.IsUnlockAnchored(key) then
             CludesUI.RepositionBarToMover(key)
         end
     end
     return CludesUI.MakeUnlockElement({
-        key      = "EDB_" .. barId,
-        label    = label,
-        group    = "Info Bar",
-        order    = 700 + orderIdx,
+        key = "EDB_" .. barId,
+        label = label,
+        group = "Info Bar",
+        order = 700 + orderIdx,
         -- ApplyBarPosition is the sole position authority: full-screen/edge-snap
         -- recompute the anchor from cfg, so re-applying the stored CENTER
         -- position here would clobber it (a bar switched H->V would re-pin at
@@ -2832,17 +3413,26 @@ local function MakeBarElement(barId, orderIdx)
             end
             return nil
         end,
-        getSize  = function()
+        getSize = function()
             local rec = live[barId]
-            if rec and rec.bar then return rec.bar:GetSize() end
+            if rec and rec.bar then
+                return rec.bar:GetSize()
+            end
             return 0, 0
         end,
-        savePos  = function(_, pt, rpt, x, y)
+        savePos = function(_, pt, rpt, x, y)
             local cfg = cfgOf()
-            if not cfg then return end
+            if not cfg then
+                return
+            end
             local sp = cfg.savedPos
-            local moved = not (sp and sp.point == pt and (sp.relPoint or sp.point) == rpt
-                and sp.x == x and sp.y == y)
+            local moved = not (
+                sp
+                and sp.point == pt
+                and (sp.relPoint or sp.point) == rpt
+                and sp.x == x
+                and sp.y == y
+            )
             cfg.savedPos = { point = pt, relPoint = rpt, x = x, y = y }
             -- A real move un-snaps the bar: it is no longer flush to the edge,
             -- so the setting reverting to None reflects reality (and applyPos
@@ -2851,15 +3441,19 @@ local function MakeBarElement(barId, orderIdx)
                 cfg.snapEdge = "none"
             end
         end,
-        loadPos  = function()
+        loadPos = function()
             local cfg = cfgOf()
             local sp = cfg and cfg.savedPos
-            if not (sp and sp.point) then return nil end
+            if not (sp and sp.point) then
+                return nil
+            end
             return { point = sp.point, relPoint = sp.relPoint, x = sp.x, y = sp.y }
         end,
         clearPos = function()
             local cfg = cfgOf()
-            if cfg then cfg.savedPos = nil end
+            if cfg then
+                cfg.savedPos = nil
+            end
         end,
         applyPos = function()
             ApplyBarPosition(barId)
@@ -2871,13 +3465,19 @@ local function MakeBarElement(barId, orderIdx)
         -- use the match. Cross-axis (thickness) always applies.
         setWidth = function(_, w)
             local cfg = cfgOf()
-            if not cfg then return end
+            if not cfg then
+                return
+            end
             w = floor((w or 0) + 0.5)
-            if w < 16 then w = 16 end
+            if w < 16 then
+                w = 16
+            end
             if cfg.orientation == "V" then
                 cfg.thickness = w
             else
-                if cfg.lengthMode == "full" then return end
+                if cfg.lengthMode == "full" then
+                    return
+                end
                 cfg.length = w
             end
             ns.ApplyBar(barId)
@@ -2885,11 +3485,17 @@ local function MakeBarElement(barId, orderIdx)
         end,
         setHeight = function(_, h)
             local cfg = cfgOf()
-            if not cfg then return end
+            if not cfg then
+                return
+            end
             h = floor((h or 0) + 0.5)
-            if h < 16 then h = 16 end
+            if h < 16 then
+                h = 16
+            end
             if cfg.orientation == "V" then
-                if cfg.lengthMode == "full" then return end
+                if cfg.lengthMode == "full" then
+                    return
+                end
                 cfg.length = h
             else
                 cfg.thickness = h
@@ -2905,9 +3511,13 @@ local function MakeBarElement(barId, orderIdx)
 end
 
 function ns.RegisterAllUnlockElements()
-    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
+    if not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
+        return
+    end
     local profile = ns.GetProfile()
-    if not profile then return end
+    if not profile then
+        return
+    end
     local elements = {}
     for i = 1, #profile.bars do
         local barId = profile.bars[i].id
@@ -2929,54 +3539,95 @@ local TEMPLATES = {
     bottom = {
         -- 40px gaps, coin-colored gold, accent professions (left-aligned), 90% clock
         -- with 12-hour time, random-hearthstone travel block on the right edge.
-        name = "Bottom Info Bar", orientation = "H", lengthMode = "full",
-        length = 1200, thickness = 30, theme = "cui", snapEdge = "top",
-        sizingMode = "auto", fillType = "clock", centerType = "clock",
+        name = "Bottom Info Bar",
+        orientation = "H",
+        lengthMode = "full",
+        length = 1200,
+        thickness = 30,
+        theme = "cui",
+        snapEdge = "top",
+        sizingMode = "auto",
+        fillType = "clock",
+        centerType = "clock",
         savedPos = { point = "BOTTOM", relPoint = "BOTTOM", x = 0, y = 0 },
         blocks = {
-            { type = "micromenu", textYOff = 8, contentGapR = 40,
-              settings = { help = false } },
+            {
+                type = "micromenu",
+                textYOff = 8,
+                contentGapR = 40,
+                settings = { help = false },
+            },
             { type = "xprep", contentGapL = 40, contentGapR = 40 },
             { type = "spec", contentGapL = 40, contentGapR = 40 },
-            { type = "durability", contentGapL = 40, contentGapR = 40,
-              useIconDefaultColor = true,
-              iconColor = { r = 1, g = 0.62, b = 0.25 } },
-            { type = "clock", scale = 90,
-              settings = { twentyFour = false } },
-            { type = "profession", contentGapL = 40, contentGapR = 40,
-              align = "LEFT", textXOff = 0,
-              useIconAccentColor = true,
-              iconColor = { r = 1, g = 0.55, b = 0.25 } },
-            { type = "gold", contentGapL = 40, contentGapR = 40,
-              useCoinColor = true, coinForced = true,
-              useIconDefaultColor = true,
-              color = { r = 1, g = 1, b = 1 },
-              iconColor = { r = 1, g = 1, b = 1 } },
+            {
+                type = "durability",
+                contentGapL = 40,
+                contentGapR = 40,
+                useIconDefaultColor = true,
+                iconColor = { r = 1, g = 0.62, b = 0.25 },
+            },
+            { type = "clock", scale = 90, settings = { twentyFour = false } },
+            {
+                type = "profession",
+                contentGapL = 40,
+                contentGapR = 40,
+                align = "LEFT",
+                textXOff = 0,
+                useIconAccentColor = true,
+                iconColor = { r = 1, g = 0.55, b = 0.25 },
+            },
+            {
+                type = "gold",
+                contentGapL = 40,
+                contentGapR = 40,
+                useCoinColor = true,
+                coinForced = true,
+                useIconDefaultColor = true,
+                color = { r = 1, g = 1, b = 1 },
+                iconColor = { r = 1, g = 1, b = 1 },
+            },
             { type = "fps", contentGapL = 40, contentGapR = 0 },
             { type = "ms", contentGapL = 0, contentGapR = 40 },
-            { type = "travel", align = "RIGHT", xOff = -5, contentGapL = 40,
-              useIconDefaultColor = true,
-              iconColor = { r = 0.35, g = 0.72, b = 1 },
-              settings = { hsChoice = "random" } },
+            {
+                type = "travel",
+                align = "RIGHT",
+                xOff = -5,
+                contentGapL = 40,
+                useIconDefaultColor = true,
+                iconColor = { r = 0.35, g = 0.72, b = 1 },
+                settings = { hsChoice = "random" },
+            },
         },
     },
     minimapc = {
-        name = "Minimap Companion", orientation = "H", lengthMode = "custom",
-        length = 220, thickness = 24, theme = "modern",
+        name = "Minimap Companion",
+        orientation = "H",
+        lengthMode = "custom",
+        length = 220,
+        thickness = 24,
+        theme = "modern",
         sizingMode = "even",
         savedPos = { point = "TOPRIGHT", relPoint = "TOPRIGHT", x = -4, y = -240 },
         blocks = { { type = "clock" }, { type = "fps" }, { type = "ms" } },
     },
     microstrip = {
-        name = "Micro Menu Strip", orientation = "H", lengthMode = "custom",
-        length = 420, thickness = 28, theme = "modern",
+        name = "Micro Menu Strip",
+        orientation = "H",
+        lengthMode = "custom",
+        length = 420,
+        thickness = 28,
+        theme = "modern",
         sizingMode = "auto",
         savedPos = { point = "BOTTOMRIGHT", relPoint = "BOTTOMRIGHT", x = -4, y = 4 },
         blocks = { { type = "micromenu" } },
     },
     empty = {
-        name = "New DataBar", orientation = "H", lengthMode = "custom",
-        length = 400, thickness = 30, theme = "cui",
+        name = "New DataBar",
+        orientation = "H",
+        lengthMode = "custom",
+        length = 400,
+        thickness = 30,
+        theme = "cui",
         sizingMode = "auto",
         savedPos = nil,
         blocks = {},
@@ -2985,38 +3636,52 @@ local TEMPLATES = {
 
 local function UniqueBarName(base)
     local profile = ns.GetProfile()
-    if not profile then return base end
+    if not profile then
+        return base
+    end
     local function taken(n)
         for i = 1, #profile.bars do
-            if profile.bars[i].name == n then return true end
+            if profile.bars[i].name == n then
+                return true
+            end
         end
         return false
     end
-    if not taken(base) then return base end
+    if not taken(base) then
+        return base
+    end
     local n = 2
-    while taken(base .. " " .. n) do n = n + 1 end
+    while taken(base .. " " .. n) do
+        n = n + 1
+    end
     return base .. " " .. n
 end
 
 -- Appends a block of typeKey to the bar and applies. Returns the blockCfg.
 function ns.AddBlock(barId, typeKey)
     local cfg = ns.GetBar(barId)
-    if not cfg then return nil end
-    if not ns.BLOCK_DEFAULTS[typeKey] then return nil end
+    if not cfg then
+        return nil
+    end
+    if not ns.BLOCK_DEFAULTS[typeKey] then
+        return nil
+    end
     cfg.nextBlockId = (cfg.nextBlockId or 0) + 1
     local b = {
-        id       = cfg.nextBlockId,
-        type     = typeKey,
-        align    = "CENTER",
-        xOff     = 0,
-        yOff     = 0,
-        bg       = nil,
+        id = cfg.nextBlockId,
+        type = typeKey,
+        align = "CENTER",
+        xOff = 0,
+        yOff = 0,
+        bg = nil,
         settings = DeepCopy(ns.BLOCK_DEFAULTS[typeKey]),
     }
     -- Micro menu counters default 8px above their buttons via the SAME
     -- textYOff the Text Position cog edits, so ONE value owns the counter
     -- position (anchor is plain button-center).
-    if typeKey == "micromenu" then b.textYOff = 8 end
+    if typeKey == "micromenu" then
+        b.textYOff = 8
+    end
     cfg.blocks[#cfg.blocks + 1] = b
     ns.ApplyBar(barId)
     return b
@@ -3024,7 +3689,9 @@ end
 
 function ns.RemoveBlock(barId, blockId)
     local cfg = ns.GetBar(barId)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     for i = 1, #cfg.blocks do
         if cfg.blocks[i].id == blockId then
             tremove(cfg.blocks, i)
@@ -3033,17 +3700,25 @@ function ns.RemoveBlock(barId, blockId)
     end
     -- Center is optional: removing the centered block just clears the
     -- designation (fill heals to the last block via EnsureFillBlock).
-    if cfg.centerBlockId == blockId then cfg.centerBlockId = nil end
+    if cfg.centerBlockId == blockId then
+        cfg.centerBlockId = nil
+    end
     ns.ApplyBar(barId)
 end
 
 function ns.MoveBlock(barId, blockId, delta)
     local cfg = ns.GetBar(barId)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     local _, idx = GetBlock(cfg, blockId)
-    if not idx then return end
+    if not idx then
+        return
+    end
     local target = idx + (delta or 0)
-    if target < 1 or target > #cfg.blocks then return end
+    if target < 1 or target > #cfg.blocks then
+        return
+    end
     cfg.blocks[idx], cfg.blocks[target] = cfg.blocks[target], cfg.blocks[idx]
     ns.ApplyBar(barId)
 end
@@ -3055,7 +3730,9 @@ end
 function ns.SetFillBlock(barId, blockId)
     local cfg = ns.GetBar(barId)
     local b = GetBlock(cfg, blockId)
-    if not b then return end
+    if not b then
+        return
+    end
     cfg.fillBlockId = blockId
     ns.ApplyBar(barId)
 end
@@ -3064,10 +3741,14 @@ end
 -- clears). At most one per bar.
 function ns.SetCenterBlock(barId, blockId)
     local cfg = ns.GetBar(barId)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     if blockId ~= nil then
         local b = GetBlock(cfg, blockId)
-        if not b then return end
+        if not b then
+            return
+        end
     end
     cfg.centerBlockId = blockId
     ns.ApplyBar(barId)
@@ -3077,17 +3758,30 @@ end
 -- in the PRE-removal indexing of the blocks array, n+1 = after the last).
 function ns.MoveBlockTo(barId, blockId, newIndex)
     local cfg = ns.GetBar(barId)
-    if not cfg then return end
+    if not cfg then
+        return
+    end
     local from
     for i = 1, #cfg.blocks do
-        if cfg.blocks[i].id == blockId then from = i break end
+        if cfg.blocks[i].id == blockId then
+            from = i
+            break
+        end
     end
-    if not from then return end
+    if not from then
+        return
+    end
     local b = table.remove(cfg.blocks, from)
     local to = newIndex or (from + 1)
-    if to > from then to = to - 1 end
-    if to < 1 then to = 1 end
-    if to > #cfg.blocks + 1 then to = #cfg.blocks + 1 end
+    if to > from then
+        to = to - 1
+    end
+    if to < 1 then
+        to = 1
+    end
+    if to > #cfg.blocks + 1 then
+        to = #cfg.blocks + 1
+    end
     table.insert(cfg.blocks, to, b)
     ns.ApplyBar(barId)
 end
@@ -3097,11 +3791,17 @@ function ns.TransferPct(barId, aBlockId, bBlockId, newAWeight)
     local cfg = ns.GetBar(barId)
     local a = GetBlock(cfg, aBlockId)
     local b = GetBlock(cfg, bBlockId)
-    if not (a and b) then return end
+    if not (a and b) then
+        return
+    end
     local budget = (a.widthPct or 10) + (b.widthPct or 10)
     local w = newAWeight or (budget / 2)
-    if w < 0 then w = 0 end
-    if w > budget then w = budget end
+    if w < 0 then
+        w = 0
+    end
+    if w > budget then
+        w = budget
+    end
     a.widthPct = w
     b.widthPct = budget - w
     ns.RequestLayout(barId)
@@ -3111,9 +3811,13 @@ end
 -- applies it, registers its unlock element and selects it.
 function ns.CreateBar(templateKey)
     local profile = ns.GetProfile()
-    if not profile then return nil end
+    if not profile then
+        return nil
+    end
     local t = TEMPLATES[templateKey]
-    if not t then t = TEMPLATES.empty end
+    if not t then
+        t = TEMPLATES.empty
+    end
     profile.nextBarId = (profile.nextBarId or 0) + 1
     local id = profile.nextBarId
     local sp = nil
@@ -3121,24 +3825,24 @@ function ns.CreateBar(templateKey)
         sp = { point = t.savedPos.point, relPoint = t.savedPos.relPoint, x = t.savedPos.x, y = t.savedPos.y }
     end
     local cfg = {
-        id          = id,
-        name        = UniqueBarName(t.name),
+        id = id,
+        name = UniqueBarName(t.name),
         orientation = t.orientation,
-        lengthMode  = t.lengthMode,
-        length      = t.length,
-        thickness   = t.thickness,
-        snapEdge    = t.snapEdge,
-        sizingMode  = t.sizingMode,
-        fontScale   = 100,
+        lengthMode = t.lengthMode,
+        length = t.length,
+        thickness = t.thickness,
+        snapEdge = t.snapEdge,
+        sizingMode = t.sizingMode,
+        fontScale = 100,
         theme = {
-            style       = t.theme,
-            cuiAlpha    = 0.5,
+            style = t.theme,
+            cuiAlpha = 0.5,
             modernColor = { r = 0.067, g = 0.067, b = 0.067, a = 0.95 },
         },
-        visibility  = "always",
-        savedPos    = sp,
+        visibility = "always",
+        savedPos = sp,
         nextBlockId = 0,
-        blocks      = {},
+        blocks = {},
     }
     profile.bars[#profile.bars + 1] = cfg
     -- Template block entries may carry per-block overrides beyond the
@@ -3148,7 +3852,9 @@ function ns.CreateBar(templateKey)
         if b then
             for k, v in pairs(bt) do
                 if k == "settings" then
-                    for sk, sv in pairs(v) do b.settings[sk] = DeepCopy(sv) end
+                    for sk, sv in pairs(v) do
+                        b.settings[sk] = DeepCopy(sv)
+                    end
                 elseif k ~= "type" then
                     b[k] = DeepCopy(v)
                 end
@@ -3187,7 +3893,9 @@ end
 -- registered and goes dormant; the id is never reused.
 function ns.DeleteBar(id)
     local profile = ns.GetProfile()
-    if not profile then return end
+    if not profile then
+        return
+    end
     for i = 1, #profile.bars do
         if profile.bars[i].id == id then
             tremove(profile.bars, i)
@@ -3197,8 +3905,12 @@ function ns.DeleteBar(id)
     local rec = live[id]
     if rec then
         for _, inst in pairs(rec.insts) do
-            if inst.Disable then inst:Disable() end
-            if inst.Destroy then inst:Destroy() end
+            if inst.Disable then
+                inst:Disable()
+            end
+            if inst.Destroy then
+                inst:Destroy()
+            end
         end
         wipe(rec.insts)
         rec.bar:Hide()
@@ -3206,16 +3918,24 @@ function ns.DeleteBar(id)
         live[id] = nil
     end
     ns._moEligible[id] = nil
-    if profile.selectedBarId == id then profile.selectedBarId = nil end
+    if profile.selectedBarId == id then
+        profile.selectedBarId = nil
+    end
     AfterBarStateChange()
 end
 
 function ns.RenameBar(id, name)
     local cfg = ns.GetBar(id)
-    if not cfg then return end
-    if type(name) ~= "string" then return end
+    if not cfg then
+        return
+    end
+    if type(name) ~= "string" then
+        return
+    end
     name = name:gsub("^%s+", ""):gsub("%s+$", "")
-    if name == "" then return end
+    if name == "" then
+        return
+    end
     cfg.name = name
     -- Re-registration is a safe overwrite; it refreshes the mover label.
     ns.RegisterAllUnlockElements()
@@ -3245,12 +3965,18 @@ function ns.BuildCurrencyList()
         if info and not info.isHeader then
             local link = C_CurrencyInfo.GetCurrencyListLink(i)
             local cID = nil
-            if link then cID = C_CurrencyInfo.GetCurrencyIDFromLink(link) end
+            if link then
+                cID = C_CurrencyInfo.GetCurrencyIDFromLink(link)
+            end
             if cID and not values[cID] then
                 local cInfo = C_CurrencyInfo.GetCurrencyInfo(cID)
                 local cName = info.name
-                if cInfo and cInfo.name then cName = cInfo.name end
-                if not cName then cName = tostring(cID) end
+                if cInfo and cInfo.name then
+                    cName = cInfo.name
+                end
+                if not cName then
+                    cName = tostring(cID)
+                end
                 values[cID] = cName
                 order[#order + 1] = cID
             end
@@ -3272,8 +3998,12 @@ end
 -- a half-updated install must go quiet here, not error.
 local _ldb
 function ns.GetLDB()
-    if _ldb then return _ldb end
-    if not LibStub then return nil end
+    if _ldb then
+        return _ldb
+    end
+    if not LibStub then
+        return nil
+    end
     _ldb = LibStub:GetLibrary("LibDataBroker-1.1", true)
     return _ldb
 end
@@ -3283,7 +4013,9 @@ end
 -- grey, so a plugin that calls itself something other than its name is still
 -- findable in the picker.
 function ns.LDBLabel(name, obj)
-    if not obj then return name end
+    if not obj then
+        return name
+    end
     local lbl = obj.label
     if type(lbl) == "string" and lbl ~= "" and lbl ~= name then
         return name .. " |cff808080(" .. lbl .. ")|r"
@@ -3297,12 +4029,16 @@ end
 function ns.BuildLDBList()
     local values, order = {}, {}
     local LDB = ns.GetLDB()
-    if not LDB then return values, order end
+    if not LDB then
+        return values, order
+    end
     for name, obj in LDB:DataObjectIterator() do
         values[name] = ns.LDBLabel(name, obj)
         order[#order + 1] = name
     end
-    tsort(order, function(a, b) return a:lower() < b:lower() end)
+    tsort(order, function(a, b)
+        return a:lower() < b:lower()
+    end)
     return values, order
 end
 
@@ -3321,7 +4057,9 @@ end
 
 function WB:OnEnable()
     local profile = ns.GetProfile()
-    if not profile then return end
+    if not profile then
+        return
+    end
     for i = 1, #profile.bars do
         ns.ApplyBar(profile.bars[i].id)
     end
@@ -3340,12 +4078,16 @@ end
 
 function WB:OnDisable()
     local profile = ns.GetProfile()
-    if not profile then return end
+    if not profile then
+        return
+    end
     for i = 1, #profile.bars do
         local rec = live[profile.bars[i].id]
         if rec and rec.enabled then
             for _, inst in pairs(rec.insts) do
-                if inst.Disable then inst:Disable() end
+                if inst.Disable then
+                    inst:Disable()
+                end
             end
             rec.bar:Hide()
             rec.enabled = false
@@ -3359,9 +4101,13 @@ end
 --  profile (ApplyBar treats missing cfg as disable), build the incoming
 --  set, re-register unlock movers, re-sync every gate.
 -------------------------------------------------------------------------------
-_G._EDB_Apply = function()
-    if not (WB.db and WB.db.profile) then return end
-    if ns.WipeFitCache then ns.WipeFitCache() end
+_G._CUDB_Apply = function()
+    if not (WB.db and WB.db.profile) then
+        return
+    end
+    if ns.WipeFitCache then
+        ns.WipeFitCache()
+    end
     for id in pairs(live) do
         ns.ApplyBar(id)
     end
@@ -3373,7 +4119,7 @@ _G._EDB_Apply = function()
     AfterBarStateChange()
 end
 
-_G._EDB_RegisterUnlock = function()
+_G._CUDB_RegisterUnlock = function()
     ns.RegisterAllUnlockElements()
 end
 
@@ -3384,7 +4130,7 @@ end
 -------------------------------------------------------------------------------
 do
     local groups = {}
-    local groupOf = setmetatable({}, { __mode = "k" })   -- bar rec -> reused group
+    local groupOf = setmetatable({}, { __mode = "k" }) -- bar rec -> reused group
     CludesUI.PartySpin_Create({
         target = "dataBars",
         collect = function()
@@ -3399,7 +4145,9 @@ do
                     grp.pivot = rec.bar
                     local list = grp.frames
                     wipe(list)
-                    for _, slot in pairs(rec.slots) do list[#list + 1] = slot end
+                    for _, slot in pairs(rec.slots) do
+                        list[#list + 1] = slot
+                    end
                     groups[#groups + 1] = grp
                 end
             end
@@ -3412,6 +4160,8 @@ end
 -- core fires its own edge.
 if CludesUI.RegisterVisEdge then
     CludesUI.RegisterVisEdge(function()
-        if ns.UpdateAllBarVisibility then ns.UpdateAllBarVisibility() end
+        if ns.UpdateAllBarVisibility then
+            ns.UpdateAllBarVisibility()
+        end
     end)
 end

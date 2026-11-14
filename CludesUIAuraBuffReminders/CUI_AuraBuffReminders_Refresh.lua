@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Refresh.lua
 --
@@ -10,7 +12,9 @@ local _, ns = ...
 local I = ns._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local floor = math.floor
@@ -37,21 +41,31 @@ local SetCachedOutline, CursorAttachActive = I.SetCachedOutline, I.CursorAttachA
 local CachedGetItemCount, GetWeaponCategory = I.CachedGetItemCount, I.GetWeaponCategory
 
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 local cuiPanelOpen = false
-I.panelOpenSetters[#I.panelOpenSetters + 1] = function(v) cuiPanelOpen = v end
+I.panelOpenSetters[#I.panelOpenSetters + 1] = function(v)
+    cuiPanelOpen = v
+end
 local iconAnchor
-I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v) iconAnchor = v end
+I.iconAnchorSetters[#I.iconAnchorSetters + 1] = function(v)
+    iconAnchor = v
+end
 local combatAnchor
-I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v) combatAnchor = v end
+I.combatAnchorSetters[#I.combatAnchorSetters + 1] = function(v)
+    combatAnchor = v
+end
 local cursorAnchor
-I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v) cursorAnchor = v end
+I.cursorAnchorSetters[#I.cursorAnchorSetters + 1] = function(v)
+    cursorAnchor = v
+end
 
 local refreshQueued = false
 
 -- Reusable tables wiped each Refresh() call to avoid per-call allocation.
 local _refreshMissing = {}
-local UpdateDurationTicker  -- forward-declare; defined after RequestRefresh
+local UpdateDurationTicker -- forward-declare; defined after RequestRefresh
 
 -- WoW Forever rank families of the custom spell IDs: an ID stands for itself,
 -- every spellbook entry with its name (each rank the player knows is its own
@@ -72,8 +86,7 @@ end
 
 function EABR.ForeverFamily(id)
     local fams = EABR._fvFams
-    if not (fams and fams[id]) or EABR._fvFamDirty
-        or EABR._fvRanksEnabled ~= PickerEnabled() then
+    if not (fams and fams[id]) or EABR._fvFamDirty or EABR._fvRanksEnabled ~= PickerEnabled() then
         EABR.BuildForeverFamilies()
         fams = EABR._fvFams
     end
@@ -85,57 +98,86 @@ function EABR.BuildForeverFamilies()
     local pickerEnabled = PickerEnabled()
     EABR._fvRanksEnabled = pickerEnabled
     local fams = EABR._fvFams
-    if fams then wipe(fams) else fams = {}; EABR._fvFams = fams end
+    if fams then
+        wipe(fams)
+    else
+        fams = {}
+        EABR._fvFams = fams
+    end
     -- The families with a rank in this character's spellbook (spell groups:
     -- EABR.CollectForeverGroups), from the same pass.
     local known = EABR._fvKnownFams
-    if known then wipe(known) else known = {}; EABR._fvKnownFams = known end
+    if known then
+        wipe(known)
+    else
+        known = {}
+        EABR._fvKnownFams = known
+    end
     -- The rank each cast-by-name reminder resolves to is read again too.
-    if EABR._fvTopRank then wipe(EABR._fvTopRank) end
+    if EABR._fvTopRank then
+        wipe(EABR._fvTopRank)
+    end
     local fo = db.profile.forever
     local custom = fo and fo.customIDs
     local groups = fo and fo.customGroups
-    if not ((custom and custom[1]) or (groups and groups[1])) then return end
+    if not ((custom and custom[1]) or (groups and groups[1])) then
+        return
+    end
     local familyOf = EABR._fvFamilyOf
     if not familyOf then
         familyOf = {}
         for _, shared in pairs(CludesUI.FOREVER_BUFF_FAMILIES) do
-            for _, sid in ipairs(shared.ids) do familyOf[sid] = shared end
+            for _, sid in ipairs(shared.ids) do
+                familyOf[sid] = shared
+            end
         end
         EABR._fvFamilyOf = familyOf
     end
     -- name -> the families its spellbook entries join
     local byName = {}
     local function buildFamilyFor(spellID)
-        if type(spellID) ~= "number" or fams[spellID] then return end
+        if type(spellID) ~= "number" or fams[spellID] then
+            return
+        end
         local list = { spellID }
         local shared = familyOf[spellID]
         if shared then
             for _, sid in ipairs(shared.ids) do
-                if sid ~= spellID then list[#list + 1] = sid end
+                if sid ~= spellID then
+                    list[#list + 1] = sid
+                end
             end
         end
         fams[spellID] = list
         local name = SpellName(spellID)
         if name then
             local into = byName[name]
-            if not into then into = {}; byName[name] = into end
+            if not into then
+                into = {}
+                byName[name] = into
+            end
             into[#into + 1] = list
         end
     end
     if custom then
-        for _, spellID in ipairs(custom) do buildFamilyFor(spellID) end
+        for _, spellID in ipairs(custom) do
+            buildFamilyFor(spellID)
+        end
     end
     -- Group members get the same rank expansion, from the same spellbook pass.
     if groups then
         for _, group in ipairs(groups) do
             local groupSpellIDs = type(group) == "table" and group.ids
             if type(groupSpellIDs) == "table" then
-                for _, spellID in ipairs(groupSpellIDs) do buildFamilyFor(spellID) end
+                for _, spellID in ipairs(groupSpellIDs) do
+                    buildFamilyFor(spellID)
+                end
             end
         end
     end
-    if not next(byName) then return end
+    if not next(byName) then
+        return
+    end
     local bank = Enum.SpellBookSpellBank.Player
     local SPELL = Enum.SpellBookItemType.Spell
     for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
@@ -148,14 +190,21 @@ function EABR.BuildForeverFamilies()
                 local cast = sid
                 if pickerEnabled then
                     cast = known[into[1]] or {}
-                    if not tContains(cast, sid) then cast[#cast + 1] = sid end
+                    if not tContains(cast, sid) then
+                        cast[#cast + 1] = sid
+                    end
                 end
                 for _, list in ipairs(into) do
                     local listed = false
                     for k = 1, #list do
-                        if list[k] == sid then listed = true; break end
+                        if list[k] == sid then
+                            listed = true
+                            break
+                        end
                     end
-                    if not listed then list[#list + 1] = sid end
+                    if not listed then
+                        list[#list + 1] = sid
+                    end
                     known[list] = cast
                 end
             end
@@ -171,15 +220,21 @@ function EABR.ForeverGroupCastSpell(group, spellID, family)
         family = family or (type(spellID) == "number" and SpellName(spellID) and EABR.ForeverFamily(spellID))
         ranks = family and EABR._fvKnownFams[family]
     end
-    if type(ranks) ~= "table" then return end
+    if type(ranks) ~= "table" then
+        return
+    end
     local settings = group.settings or group
     local pinned = settings.castRanks and settings.castRanks[spellID]
     if pinned then
         for i, id in ipairs(ranks) do
             if id == pinned then
-                if i == #ranks then break end
+                if i == #ranks then
+                    break
+                end
                 local _, rank = EABR.ForeverPickerSpellData(id, true)
-                if rank then return id, ranks, i end
+                if rank then
+                    return id, ranks, i
+                end
                 break
             end
         end
@@ -189,7 +244,9 @@ end
 
 local function SetForeverPickerSpell(entry, group, id, ranks)
     local macro, rank = EABR.ForeverPickerSpellData(id, #ranks > 1)
-    if not macro then return end
+    if not macro then
+        return
+    end
     entry.mode = "macro"
     entry.macro = macro
     entry.spellID = id
@@ -213,7 +270,10 @@ local function CastByName(entry, castName, fallbackID)
         castMacros[castName] = macro
     end
     local tops = EABR._fvTopRank
-    if not tops then tops = {}; EABR._fvTopRank = tops end
+    if not tops then
+        tops = {}
+        EABR._fvTopRank = tops
+    end
     local top = tops[castName]
     if top == nil then
         -- By name the client answers the highest rank in the spellbook.
@@ -223,7 +283,8 @@ local function CastByName(entry, castName, fallbackID)
             tops[castName] = top
         end
     end
-    entry.mode = "macro"; entry.macro = macro
+    entry.mode = "macro"
+    entry.macro = macro
     entry.spellID = top or fallbackID
 end
 
@@ -241,7 +302,9 @@ local function GroupCovered(spellIDs, ids, names)
     for _, spellID in ipairs(spellIDs) do
         if type(spellID) == "number" then
             local name = SpellName(spellID)
-            if not (ids[spellID] or (name and names[name])) then return false end
+            if not (ids[spellID] or (name and names[name])) then
+                return false
+            end
             any = true
         end
     end
@@ -259,19 +322,25 @@ function EABR.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
     local pickerEnabled = PickerEnabled()
     for _, group in ipairs(groups) do
         local spellIDs = type(group) == "table" and group.ids
-        if type(spellIDs) == "table" and not (coveredIDs and GroupCovered(spellIDs, coveredIDs, coveredNames)) then
+        if
+            type(spellIDs) == "table"
+            and not (coveredIDs and GroupCovered(spellIDs, coveredIDs, coveredNames))
+        then
             local iconSpellID, castSpellID, hasActiveAura
             local firstRanks, castRanks, hasChoices
             local allAurasReadable = true
             for _, spellID in ipairs(spellIDs) do
-                local rankSpellIDs = type(spellID) == "number" and SpellName(spellID)
+                local rankSpellIDs = type(spellID) == "number"
+                    and SpellName(spellID)
                     and EABR.ForeverFamily(spellID)
                 if rankSpellIDs then
                     if pickerEnabled then
                         local knownSpellID, ranks = EABR.ForeverGroupCastSpell(group, spellID, rankSpellIDs)
                         if knownSpellID then
                             firstRanks = firstRanks or ranks
-                            if ranks ~= firstRanks then hasChoices = true end
+                            if ranks ~= firstRanks then
+                                hasChoices = true
+                            end
                             if not castSpellID or spellID == group.castSpellID then
                                 iconSpellID, castSpellID, castRanks = knownSpellID, knownSpellID, ranks
                             end
@@ -280,7 +349,9 @@ function EABR.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
                         iconSpellID = spellID
                     end
                     hasActiveAura = PlayerHasAuraByID(rankSpellIDs)
-                    if hasActiveAura then break end
+                    if hasActiveAura then
+                        break
+                    end
                     if aurasRestricted and not EABR.FvRanksReadable(rankSpellIDs) then
                         allAurasReadable = false
                     end
@@ -301,10 +372,10 @@ function EABR.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
                 else
                     CastByName(entry, castName, iconSpellID)
                 end
-                entry.label = type(group.name) == "string" and group.name
-                    or ShortLabel(castName)
-                entry.cat = "forever"; entry.dismissKey = dismissKey
-                missing[#missing+1] = entry
+                entry.label = type(group.name) == "string" and group.name or ShortLabel(castName)
+                entry.cat = "forever"
+                entry.dismissKey = dismissKey
+                missing[#missing + 1] = entry
             end
         end
     end
@@ -324,7 +395,11 @@ function EABR.FvTrackingState()
         for i = 1, C_Minimap.GetNumTrackingTypes() do
             local info = C_Minimap.GetTrackingInfo(i)
             if info and info.active and info.type == "spell" then
-                if info.spellID == EABR.FIND_TREASURE then treasure = true else class = true end
+                if info.spellID == EABR.FIND_TREASURE then
+                    treasure = true
+                else
+                    class = true
+                end
             end
         end
         EABR._fvTreasureUp, EABR._fvClassUp = treasure, class
@@ -337,10 +412,12 @@ end
 -- label is given.
 function EABR.FvSpellEntry(missing, id, dismissKey, label)
     local e = AcquireEntry()
-    e.mode = "spell"; e.spellID = id
+    e.mode = "spell"
+    e.spellID = id
     e.label = label or ShortLabel(SpellName(id) or tostring(id))
-    e.cat = "forever"; e.dismissKey = dismissKey
-    missing[#missing+1] = e
+    e.cat = "forever"
+    e.dismissKey = dismissKey
+    missing[#missing + 1] = e
     return e
 end
 
@@ -348,10 +425,16 @@ end
 -- another caster's), or nil when a secret or unreadable answer cannot tell.
 local function OwnAuraState(id)
     local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
-    if not ok or isSecret(aura) then return nil end
-    if aura == nil then return false end
+    if not ok or isSecret(aura) then
+        return nil
+    end
+    if aura == nil then
+        return false
+    end
     local okMine, mine = pcall(EABR._StrictAuraFromMe, aura)
-    if not okMine or isSecret(mine) then return nil end
+    if not okMine or isSecret(mine) then
+        return nil
+    end
     return mine
 end
 
@@ -362,25 +445,39 @@ local function RanksState(ranks, ids, own)
     for j = 1, #ranks do
         if own then
             local state = OwnAuraState(ranks[j])
-            if state then return true end
-            if state == nil then unknown = true end
+            if state then
+                return true
+            end
+            if state == nil then
+                unknown = true
+            end
         else
             ids[1] = ranks[j]
-            if PlayerHasAuraByID(ids) then return true end
+            if PlayerHasAuraByID(ids) then
+                return true
+            end
         end
     end
-    if unknown then return nil end
+    if unknown then
+        return nil
+    end
     return false
 end
 
 local function LineState(lines, i, ids, also, own)
     local state = RanksState(lines[i], ids, own)
-    if state then return true end
+    if state then
+        return true
+    end
     local extra = also and also[i]
     if extra then
         local extraState = RanksState(extra, ids, own)
-        if extraState then return true end
-        if extraState == nil then state = nil end
+        if extraState then
+            return true
+        end
+        if extraState == nil then
+            state = nil
+        end
     end
     return state
 end
@@ -405,39 +502,60 @@ local function CollectLines(missing, auraLock, ids, lines, last, dismissKey, lab
     local unknown = false
     if first then
         local state = LineState(lines, first, ids, also, own)
-        if state then return first end
-        if state == nil then unknown = true end
+        if state then
+            return first
+        end
+        if state == nil then
+            unknown = true
+        end
     end
     local readable = not (auraLock and first and not LineReadable(lines, first, also))
     for i = 1, #lines do
         if i ~= first then
             local state = LineState(lines, i, ids, also, own)
-            if state then return i end
-            if state == nil then unknown = true end
-            if auraLock and not LineReadable(lines, i, also) then readable = false end
+            if state then
+                return i
+            end
+            if state == nil then
+                unknown = true
+            end
+            if auraLock and not LineReadable(lines, i, also) then
+                readable = false
+            end
         end
     end
     -- Under the aura lock an unreadable rank would read absent: say nothing.
-    if unknown or not readable then return false end
+    if unknown or not readable then
+        return false
+    end
     if anyCounts then
         for i = 1, #lines do
-            if LineState(lines, i, ids, also, false) then return false end
+            if LineState(lines, i, ids, also, false) then
+                return false
+            end
         end
     end
     local id = first and EABR.FvHighest(lines[first])
     if not id then
         for i = #lines, 1, -1 do
             id = EABR.FvHighest(lines[i])
-            if id then break end
+            if id then
+                break
+            end
         end
     end
-    if id then return nil, EABR.FvSpellEntry(missing, id, dismissKey, label) end
+    if id then
+        return nil, EABR.FvSpellEntry(missing, id, dismissKey, label)
+    end
 end
 
 local function CharStore(field)
     local store = CludesUIDB[field]
     local keys = EABR._fvCharKeys
-    if not keys then keys = {}; EABR._fvCharKeys = keys end
+    if not keys then
+        keys = {}
+        EABR._fvCharKeys = keys
+    end
     local key = keys[field]
     if not key then
         key = CludesUI.CharKey("-", store)
@@ -452,10 +570,13 @@ end
 function EABR.CollectMageArmor(missing, auraLock, ids)
     local store, key = CharStore("mageArmorByChar")
     local last = store and key and store[key]
-    local up = CollectLines(missing, auraLock, ids, EABR.MAGE_ARMORS, last,
-        "forever:magearmor", CludesUI.L("Armor"))
+    local up =
+        CollectLines(missing, auraLock, ids, EABR.MAGE_ARMORS, last, "forever:magearmor", CludesUI.L("Armor"))
     if up and up ~= last and key then
-        if not store then store = {}; CludesUIDB.mageArmorByChar = store end
+        if not store then
+            store = {}
+            CludesUIDB.mageArmorByChar = store
+        end
         store[key] = up
     end
 end
@@ -464,7 +585,9 @@ end
 -- class's always-on buffs ticked; Thorns, Righteous Fury and Shadowform not).
 local function ClassBuffOn(buff, picks)
     local v = picks and picks[buff.key]
-    if v == nil then return buff.on == true end
+    if v == nil then
+        return buff.on == true
+    end
     return v == true
 end
 EABR.FvClassBuffOn = ClassBuffOn
@@ -477,27 +600,37 @@ EABR.FvClassBuffOn = ClassBuffOn
 -- class or the ticked set changes; nil while none is ticked.
 local coveredIDs, coveredNames, coveredMask, coveredClass = {}, {}, nil, nil
 local function CoverLines(lines)
-    if not lines then return end
+    if not lines then
+        return
+    end
     for i = 1, #lines do
         local ranks = lines[i]
         for j = 1, #ranks do
             local id = ranks[j]
             coveredIDs[id] = true
             local name = SpellName(id)
-            if name then coveredNames[name] = true end
+            if name then
+                coveredNames[name] = true
+            end
         end
     end
 end
 function EABR.FvClassTracked(fo, class)
     local list = EABR.FvClassBuffs()[class]
-    if not list then return nil end
+    if not list then
+        return nil
+    end
     local picks = fo.classBuffPicks
     local mask, bit = 0, 1
     for i = 1, #list do
-        if ClassBuffOn(list[i], picks) then mask = mask + bit end
+        if ClassBuffOn(list[i], picks) then
+            mask = mask + bit
+        end
         bit = bit * 2
     end
-    if mask == 0 then return nil end
+    if mask == 0 then
+        return nil
+    end
     if mask ~= coveredMask or class ~= coveredClass then
         wipe(coveredIDs)
         wipe(coveredNames)
@@ -518,7 +651,9 @@ local function BuildClassBuffPicker(buff, actions, settings)
     for _, line in ipairs(buff.lines) do
         local ranks = {}
         for _, id in ipairs(line) do
-            if C_SpellBook.IsSpellKnown(id) and SpellName(id) then ranks[#ranks + 1] = id end
+            if C_SpellBook.IsSpellKnown(id) and SpellName(id) then
+                ranks[#ranks + 1] = id
+            end
         end
         if ranks[1] then
             group.ids[#group.ids + 1] = line[1]
@@ -532,7 +667,9 @@ local function ClassPickerSpell(group, defaultID)
     local settings = group.settings
     if settings then
         local id, ranks = EABR.ForeverGroupCastSpell(group, settings.castSpellID)
-        if id then return id, ranks end
+        if id then
+            return id, ranks
+        end
     end
     for _, spellID in ipairs(group.ids) do
         if tContains(group.ranksBySpell[spellID], defaultID) then
@@ -545,7 +682,10 @@ local function ApplyClassBuffPicker(entry, fo, buff)
     local actions = fo.classBuffActions
     local settings = actions[buff.key]
     local cache = EABR._fvClassPickerGroups
-    if not cache then cache = {}; EABR._fvClassPickerGroups = cache end
+    if not cache then
+        cache = {}
+        EABR._fvClassPickerGroups = cache
+    end
     local group = cache[buff.key]
     local id, ranks
     if group and group.actions == actions and group.settings == settings then
@@ -557,12 +697,16 @@ local function ApplyClassBuffPicker(entry, fo, buff)
         cache[buff.key] = group
         id, ranks = ClassPickerSpell(group, entry.spellID)
     end
-    if id then SetForeverPickerSpell(entry, group.ids[2] and group or nil, id, ranks) end
+    if id then
+        SetForeverPickerSpell(entry, group.ids[2] and group or nil, id, ranks)
+    end
 end
 
 function EABR.CollectClassBuffs(missing, fo, auraLock, ids, class)
     local list = EABR.FvClassBuffs()[class]
-    if not list then return end
+    if not list then
+        return
+    end
     local picks = fo.classBuffPicks
     local store, key = CharStore("classBuffByChar")
     local rec = store and key and store[key]
@@ -570,16 +714,36 @@ function EABR.CollectClassBuffs(missing, fo, auraLock, ids, class)
         local buff = list[i]
         if ClassBuffOn(buff, picks) then
             local dk = buff.dismissKey
-            if not dk then dk = "forever:class_" .. buff.key; buff.dismissKey = dk end
+            if not dk then
+                dk = "forever:class_" .. buff.key
+                buff.dismissKey = dk
+            end
             local last = rec and rec[buff.key]
-            local up, entry = CollectLines(missing, auraLock, ids, buff.lines, last, dk,
-                buff.label, buff.also,
-                buff.own or buff.ownMemory, buff.ownMemory)
-            if entry and PickerEnabled() then ApplyClassBuffPicker(entry, fo, buff) end
+            local up, entry = CollectLines(
+                missing,
+                auraLock,
+                ids,
+                buff.lines,
+                last,
+                dk,
+                buff.label,
+                buff.also,
+                buff.own or buff.ownMemory,
+                buff.ownMemory
+            )
+            if entry and PickerEnabled() then
+                ApplyClassBuffPicker(entry, fo, buff)
+            end
             if up and up ~= last and key and buff.lines[2] then
-                if not store then store = {}; CludesUIDB.classBuffByChar = store end
+                if not store then
+                    store = {}
+                    CludesUIDB.classBuffByChar = store
+                end
                 rec = store[key]
-                if not rec then rec = {}; store[key] = rec end
+                if not rec then
+                    rec = {}
+                    store[key] = rec
+                end
                 rec[buff.key] = up
             end
         end
@@ -587,34 +751,61 @@ function EABR.CollectClassBuffs(missing, fo, auraLock, ids, class)
 end
 
 local FV_HANDS = {
-    { slot = 16, ws = "MainHand", imbue = "mhImbue", temp = "mhTemp", label = "Main Hand",
-      imbueKey = "forever:weapon_mh_imbue", tempKey = "forever:weapon_mh_temp", macros = {} },
-    { slot = 17, ws = "OffHand", imbue = "ohImbue", temp = "ohTemp", label = "Off Hand",
-      imbueKey = "forever:weapon_oh_imbue", tempKey = "forever:weapon_oh_temp", macros = {} },
+    {
+        slot = 16,
+        ws = "MainHand",
+        imbue = "mhImbue",
+        temp = "mhTemp",
+        label = "Main Hand",
+        imbueKey = "forever:weapon_mh_imbue",
+        tempKey = "forever:weapon_mh_temp",
+        macros = {},
+    },
+    {
+        slot = 17,
+        ws = "OffHand",
+        imbue = "ohImbue",
+        temp = "ohTemp",
+        label = "Off Hand",
+        imbueKey = "forever:weapon_oh_imbue",
+        tempKey = "forever:weapon_oh_temp",
+        macros = {},
+    },
 }
 local FISHING_POLE = 20
 
 local function FvWeaponCategory(slot)
     local cat = GetWeaponCategory(slot)
-    if not cat or cat == "RANGED" then return nil end
+    if not cat or cat == "RANGED" then
+        return nil
+    end
     local _, _, _, _, _, _, sub = C_Item.GetItemInfoInstant(GetInventoryItemID("player", slot))
-    if sub == FISHING_POLE then return nil end
+    if sub == FISHING_POLE then
+        return nil
+    end
     return cat
 end
 
 local function FvWeaponEnchants(ws)
     local list = C_Item.GetWeaponEnchantInfo(Enum.WeaponSlot[ws])
-    if isSecret(list) then return false end
+    if isSecret(list) then
+        return false
+    end
     local imbueLeft, tempLeft
     if type(list) == "table" then
         local IMBUE, TEMPORARY = Enum.ItemEnchantType.Imbue, Enum.ItemEnchantType.Temporary
         for i = 1, #list do
             local e = list[i]
             local has, kind, left = e.hasEnchant, e.enchantType, e.timeLeft
-            if isSecret(has) or isSecret(kind) or isSecret(left) then return false end
+            if isSecret(has) or isSecret(kind) or isSecret(left) then
+                return false
+            end
             if has and left and left > 0 then
-                if kind == IMBUE then imbueLeft = left / 1000
-                elseif kind == TEMPORARY then tempLeft = left / 1000 end
+                if kind == IMBUE then
+                    imbueLeft = left / 1000
+                elseif kind == TEMPORARY then
+                    tempLeft = left / 1000
+                end
             end
         end
     end
@@ -622,45 +813,69 @@ local function FvWeaponEnchants(ws)
 end
 
 local function FvAvailable(buff, low)
-    if buff.spells then return EABR.FvHighest(buff.spells), nil end
+    if buff.spells then
+        return EABR.FvHighest(buff.spells), nil
+    end
     local items = buff.items
     local first, last, step = #items, 1, -1
-    if low then first, last, step = 1, #items, 1 end
+    if low then
+        first, last, step = 1, #items, 1
+    end
     for i = first, last, step do
-        if CachedGetItemCount(items[i]) > 0 then return nil, items[i] end
+        if CachedGetItemCount(items[i]) > 0 then
+            return nil, items[i]
+        end
     end
 end
 
 local function FvPick(choice, isImbue, class, wcat, low)
-    if choice == "off" then return nil end
+    if choice == "off" then
+        return nil
+    end
     local auto = choice == nil or choice == "auto"
     local list = EABR.FV_WEAPON_BUFFS
     for i = 1, #list do
         local buff = list[i]
-        if (auto or choice == buff.key) and (buff.imbue == true) == isImbue
-           and (not buff.class or buff.class == class)
-           and (not buff.weapon or buff.weapon == wcat) then
+        if
+            (auto or choice == buff.key)
+            and (buff.imbue == true) == isImbue
+            and (not buff.class or buff.class == class)
+            and (not buff.weapon or buff.weapon == wcat)
+        then
             local spellID, itemID = FvAvailable(buff, low)
-            if spellID or itemID or not auto then return buff, spellID, itemID end
+            if spellID or itemID or not auto then
+                return buff, spellID, itemID
+            end
         end
     end
 end
 
 local function FvNeeds(left, warnSec)
-    if not left then return true end
-    if warnSec and left < warnSec then return true end
+    if not left then
+        return true
+    end
+    if warnSec and left < warnSec then
+        return true
+    end
     local at = GetTime() + left - (warnSec or 0)
     local nextAt = EABR._nextDurationRefreshTime
-    if not nextAt or at < nextAt then EABR._nextDurationRefreshTime = at end
+    if not nextAt or at < nextAt then
+        EABR._nextDurationRefreshTime = at
+    end
     return false
 end
 
 local function FvWeaponEntry(missing, hand, label, dismissKey, buff, spellID, itemID, hideNoItem, left)
-    if buff.spells and not spellID then return end
-    if buff.items and not itemID and hideNoItem then return end
+    if buff.spells and not spellID then
+        return
+    end
+    if buff.items and not itemID and hideNoItem then
+        return
+    end
     local e = AcquireEntry()
     if spellID then
-        e.mode = "spell"; e.spellID = spellID
+        e.mode = "spell"
+        e.spellID = spellID
     else
         local shown = itemID or buff.items[#buff.items]
         e.texture = C_Item.GetItemIconByID(shown) or 134400
@@ -673,36 +888,57 @@ local function FvWeaponEntry(missing, hand, label, dismissKey, buff, spellID, it
                 macro = "/use item:" .. itemID .. "\n/use " .. hand.slot
                 hand.macros[itemID] = macro
             end
-            e.mode = "macro"; e.macro = macro
+            e.mode = "macro"
+            e.macro = macro
         else
             e.mode = "texture"
         end
     end
-    if left then e.expireAt = GetTime() + left; e.expireTotal = left end
+    if left then
+        e.expireAt = GetTime() + left
+        e.expireTotal = left
+    end
     e.label = label
-    e.cat = "forever"; e.dismissKey = dismissKey
-    missing[#missing+1] = e
+    e.cat = "forever"
+    e.dismissKey = dismissKey
+    missing[#missing + 1] = e
 end
 
 function EABR.CollectForeverWeapons(missing, fo, class)
-    if not (C_Item.GetWeaponEnchantInfo and Enum.WeaponSlot and Enum.ItemEnchantType) then return end
+    if not (C_Item.GetWeaponEnchantInfo and Enum.WeaponSlot and Enum.ItemEnchantType) then
+        return
+    end
     local hands = fo.weaponHands and fo.weaponHands[class]
     local low, hideNoItem = fo.weaponLowRank == true, fo.weaponHideNoItem ~= false
     local showBelow = fo.weaponShowBelow or 1
     local warnSec = showBelow > 0 and showBelow * 60 or nil
     local mhFull, ohFull = CludesUI.L(FV_HANDS[1].label), CludesUI.L(FV_HANDS[2].label)
     local mhLabel, ohLabel = ShortLabel(mhFull), ShortLabel(ohFull)
-    if mhLabel == ohLabel then mhLabel, ohLabel = mhFull, ohFull end
+    if mhLabel == ohLabel then
+        mhLabel, ohLabel = mhFull, ohFull
+    end
     for i = 1, #FV_HANDS do
         local hand = FV_HANDS[i]
         local wcat = FvWeaponCategory(hand.slot)
         local ok, imbueLeft, tempLeft
-        if wcat then ok, imbueLeft, tempLeft = FvWeaponEnchants(hand.ws) end
+        if wcat then
+            ok, imbueLeft, tempLeft = FvWeaponEnchants(hand.ws)
+        end
         if ok then
             local label = i == 1 and mhLabel or ohLabel
             local buff, spellID, itemID = FvPick(hands and hands[hand.imbue], true, class, wcat, low)
             if buff and FvNeeds(imbueLeft, warnSec) then
-                FvWeaponEntry(missing, hand, label, hand.imbueKey, buff, spellID, itemID, hideNoItem, imbueLeft)
+                FvWeaponEntry(
+                    missing,
+                    hand,
+                    label,
+                    hand.imbueKey,
+                    buff,
+                    spellID,
+                    itemID,
+                    hideNoItem,
+                    imbueLeft
+                )
             end
             buff, spellID, itemID = FvPick(hands and hands[hand.temp], false, class, wcat, low)
             if buff and FvNeeds(tempLeft, warnSec) then
@@ -714,15 +950,22 @@ end
 
 local function FvAtMaxLevel()
     local level = UnitLevel("player") or 0
-    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then return true end
+    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then
+        return true
+    end
     local maxLevel = (GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion())
         or (GetMaxPlayerLevel and GetMaxPlayerLevel())
     return (maxLevel and level >= maxLevel) or false
 end
 
 function EABR.FvSleepingBagOwned()
-    if EABR._fvMaxLevel then return false end
-    if FvAtMaxLevel() then EABR._fvMaxLevel = true; return false end
+    if EABR._fvMaxLevel then
+        return false
+    end
+    if FvAtMaxLevel() then
+        EABR._fvMaxLevel = true
+        return false
+    end
     local owned = EABR._fvSleepBag
     if owned == nil then
         owned = (C_Item.GetItemCount(EABR.SLEEPING_BAG_ITEM) or 0) > 0
@@ -759,51 +1002,64 @@ function EABR.CollectForever(missing, inInstance, inPvP)
     local shows = fo and not InCombat() and EABR.SectionShows(fo.whereToShow, inInstance)
     -- Class trackers and Find Treasure are read from the minimap, whose event
     -- is listened to only while a reminder that reads it can show.
-    EABR.FvSyncTrackingEvent(shows and not inPvP
-        and ((fo.gather == true and fo.gatherClassTrack ~= false) or fo.treasure == true) or false)
+    EABR.FvSyncTrackingEvent(
+        shows and not inPvP and ((fo.gather == true and fo.gatherClassTrack ~= false) or fo.treasure == true)
+            or false
+    )
     EABR.FvSyncWeaponEvents(shows and fo.weapon == true or false)
     local wantBag = shows and fo.sleepingBag == true and not inPvP
     local sleepBag = wantBag and EABR.FvSleepingBagOwned()
     -- No bag yet below max level: a light watcher hears one arrive, unless
     -- Weapon Buffs' bag listener (below) already hears every bag change.
-    EABR.FvSyncSleepBagWatch(wantBag and not sleepBag and not EABR._fvMaxLevel
-        and fo.weapon ~= true or false)
+    EABR.FvSyncSleepBagWatch(wantBag and not sleepBag and not EABR._fvMaxLevel and fo.weapon ~= true or false)
     EABR.FvSyncBagEvent(shows and (fo.weapon == true or sleepBag) or false)
     local watchPickerSpells = shows and PickerEnabled() or false
     if watchPickerSpells ~= (EABR._fvPickerSpellEvents or false) then
         EABR.FvSyncPickerSpellEvents(watchPickerSpells)
     end
-    if not shows then return end
+    if not shows then
+        return
+    end
     local open = not inPvP
     -- Under the aura lock a secret aura reads absent, so an aura reminder
     -- shows only while none of its spells is secret.
     local auraLock = CludesUI.AuraKit.AurasRestricted()
     local ids = EABR._foreverIDs
-    if not ids then ids = {}; EABR._foreverIDs = ids end
+    if not ids then
+        ids = {}
+        EABR._foreverIDs = ids
+    end
     if fo.camp ~= false and open then
         ids[1] = EABR.CAMP_BENEFITS
         if not PlayerHasAuraByID(ids) and not (auraLock and not EABR.FvRanksReadable(ids)) then
             local e = AcquireEntry()
-            e.mode = "texture"; e.spellID = EABR.CAMP_BENEFITS
+            e.mode = "texture"
+            e.spellID = EABR.CAMP_BENEFITS
             e.texture = Tex(EABR.CAMP_BENEFITS)
             e.label = CludesUI.L("Camp")
-            e.cat = "forever"; e.dismissKey = "forever:camp"
-            missing[#missing+1] = e
+            e.cat = "forever"
+            e.dismissKey = "forever:camp"
+            missing[#missing + 1] = e
         end
     end
     local sleepIDs = EABR._fvSleepIDs
-    if not sleepIDs then sleepIDs = { EABR.SLEEPING_BAG_BUFF }; EABR._fvSleepIDs = sleepIDs end
+    if not sleepIDs then
+        sleepIDs = { EABR.SLEEPING_BAG_BUFF }
+        EABR._fvSleepIDs = sleepIDs
+    end
     if sleepBag and not (auraLock and not EABR.FvRanksReadable(sleepIDs)) then
         local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, EABR.SLEEPING_BAG_BUFF)
         local stacks = ok and not isSecret(aura) and (aura and aura.applications or 0)
         if stacks and not isSecret(stacks) and stacks < EABR.SLEEPING_BAG_STACKS then
             local item = EABR.SLEEPING_BAG_ITEM
             local e = AcquireEntry()
-            e.mode = "item"; e.itemID = item
+            e.mode = "item"
+            e.itemID = item
             e.texture = C_Item.GetItemIconByID(item) or Tex(EABR.SLEEPING_BAG_BUFF)
             e.label = CludesUI.L("Sleeping")
-            e.cat = "forever"; e.dismissKey = "forever:sleepingbag"
-            missing[#missing+1] = e
+            e.cat = "forever"
+            e.dismissKey = "forever:sleepingbag"
+            missing[#missing + 1] = e
         end
     end
     -- Gathering tracking: shown while no tracker is up and the player knows
@@ -812,37 +1068,52 @@ function EABR.CollectForever(missing, inInstance, inPvP)
     -- auras there, so the minimap is asked only once a tracker is known.
     local scanned, treasureUp, classUp
     local list = EABR.GATHER_TRACKING
-    if fo.gather and open and not PlayerHasAuraByID(list)
-       and not (auraLock and not EABR.FvRanksReadable(list)) then
+    if
+        fo.gather
+        and open
+        and not PlayerHasAuraByID(list)
+        and not (auraLock and not EABR.FvRanksReadable(list))
+    then
         local id
         for i = 1, #list do
-            if Known(list[i]) then id = list[i] break end
+            if Known(list[i]) then
+                id = list[i]
+                break
+            end
         end
         if id then
             if fo.gatherClassTrack ~= false then
                 scanned = true
                 treasureUp, classUp = EABR.FvTrackingState()
             end
-            if not classUp then EABR.FvSpellEntry(missing, id, "forever:gather") end
+            if not classUp then
+                EABR.FvSpellEntry(missing, id, "forever:gather")
+            end
         end
     end
     -- Find Treasure (Dwarf racial): no aura there, so read from the same
     -- minimap pass when the gathering check already ran it.
     local tid = EABR.FIND_TREASURE
     if fo.treasure and open and Known(tid) then
-        if not scanned then treasureUp = EABR.FvTrackingState() end
-        if not treasureUp then EABR.FvSpellEntry(missing, tid, "forever:treasure") end
+        if not scanned then
+            treasureUp = EABR.FvTrackingState()
+        end
+        if not treasureUp then
+            EABR.FvSpellEntry(missing, tid, "forever:treasure")
+        end
     end
     if fo.wellFed and open then
         local name = SpellName(EABR.WELL_FED) or "Well Fed"
         local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, "player", name, "HELPFUL")
         if ok and not isSecret(aura) and not aura and not PlayerHasAuraByID(EABR.FOOD_BUFFS) then
             local e = AcquireEntry()
-            e.mode = "texture"; e.spellID = EABR.WELL_FED
+            e.mode = "texture"
+            e.spellID = EABR.WELL_FED
             e.texture = Tex(EABR.WELL_FED)
             e.label = name
-            e.cat = "forever"; e.dismissKey = "forever:wellfed"
-            missing[#missing+1] = e
+            e.cat = "forever"
+            e.dismissKey = "forever:wellfed"
+            missing[#missing + 1] = e
         end
     end
     if fo.mageArmor and open and GetPlayerClass() == "MAGE" then
@@ -853,7 +1124,9 @@ function EABR.CollectForever(missing, inInstance, inPvP)
     local coveredIDs, coveredNames
     if open then
         coveredIDs, coveredNames = EABR.FvClassTracked(fo, GetPlayerClass())
-        if coveredIDs then EABR.CollectClassBuffs(missing, fo, auraLock, ids, GetPlayerClass()) end
+        if coveredIDs then
+            EABR.CollectClassBuffs(missing, fo, auraLock, ids, GetPlayerClass())
+        end
     end
     if fo.weapon == true then
         EABR.CollectForeverWeapons(missing, fo, GetPlayerClass())
@@ -863,9 +1136,14 @@ function EABR.CollectForever(missing, inInstance, inPvP)
         EABR.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
     end
     local custom = fo.customIDs
-    if not custom then return end
+    if not custom then
+        return
+    end
     local keys = EABR._foreverKeys
-    if not keys then keys = {}; EABR._foreverKeys = keys end
+    if not keys then
+        keys = {}
+        EABR._foreverKeys = keys
+    end
     -- A custom spell reminds only the classes ticked on its options slot
     -- (forever.customClasses[id][CLASS] = false unticks one; unset: every class).
     local classOff, class = fo.customClasses, GetPlayerClass()
@@ -876,9 +1154,14 @@ function EABR.CollectForever(missing, inInstance, inPvP)
             local name = SpellName(id)
             if not (coveredIDs and (coveredIDs[id] or (name and coveredNames[name]))) then
                 local fam = EABR.ForeverFamily(id)
-                if not PlayerHasAuraByID(fam) and not (auraLock and fam and not EABR.FvRanksReadable(fam)) then
+                if
+                    not PlayerHasAuraByID(fam) and not (auraLock and fam and not EABR.FvRanksReadable(fam))
+                then
                     local dk = keys[id]
-                    if not dk then dk = "forever:" .. id; keys[id] = dk end
+                    if not dk then
+                        dk = "forever:" .. id
+                        keys[id] = dk
+                    end
                     local e = AcquireEntry()
                     -- A spell the character knows (a rank in the spellbook)
                     -- casts on click; any other (a buff someone else casts) is
@@ -886,12 +1169,14 @@ function EABR.CollectForever(missing, inInstance, inPvP)
                     if name and fam and EABR._fvKnownFams[fam] then
                         CastByName(e, name, id)
                     else
-                        e.mode = "texture"; e.spellID = id
+                        e.mode = "texture"
+                        e.spellID = id
                     end
                     e.texture = Tex(id)
                     e.label = ShortLabel(name or tostring(id))
-                    e.cat = "forever"; e.dismissKey = dk
-                    missing[#missing+1] = e
+                    e.cat = "forever"
+                    e.dismissKey = dk
+                    missing[#missing + 1] = e
                 end
             end
         end
@@ -910,15 +1195,24 @@ end
 -- Localized names of a family, cached per family (cold spell data stays uncached).
 function EABR.FvNames(fam)
     local cache = EABR._fvNameCache
-    if not cache then cache = {}; EABR._fvNameCache = cache end
+    if not cache then
+        cache = {}
+        EABR._fvNameCache = cache
+    end
     local names = cache[fam]
-    if names then return names end
+    if names then
+        return names
+    end
     names = {}
     for _, id in ipairs(fam.names) do
         local n = SpellName(id)
-        if n then names[#names + 1] = n end
+        if n then
+            names[#names + 1] = n
+        end
     end
-    if names[1] then cache[fam] = names end
+    if names[1] then
+        cache[fam] = names
+    end
     return names
 end
 
@@ -927,13 +1221,19 @@ end
 -- for the group aura probe.
 function EABR.FvUnitHas(u, fam, rec)
     local names = EABR.FvNames(fam)
-    if not names[1] then return nil end
+    if not names[1] then
+        return nil
+    end
     for n = 1, #names do
         local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, u, names[n], "HELPFUL")
-        if not ok or isSecret(aura) then return nil end
+        if not ok or isSecret(aura) then
+            return nil
+        end
         if aura then
             local iid = rec and aura.auraInstanceID
-            if iid and not isSecret(iid) then rec[iid] = true end
+            if iid and not isSecret(iid) then
+                rec[iid] = true
+            end
             return true
         end
     end
@@ -943,14 +1243,18 @@ end
 -- The highest rank in a list (lowest first) the player knows, or nil.
 function EABR.FvHighest(list)
     for i = #list, 1, -1 do
-        if C_SpellBook.IsSpellKnown(list[i]) then return list[i] end
+        if C_SpellBook.IsSpellKnown(list[i]) then
+            return list[i]
+        end
     end
 end
 
 -- Whether no rank in a list reads secret right now.
 function EABR.FvRanksReadable(list)
     for i = 1, #list do
-        if not EABR.IsRuntimeNonSecret(list[i]) then return false end
+        if not EABR.IsRuntimeNonSecret(list[i]) then
+            return false
+        end
     end
     return true
 end
@@ -960,9 +1264,14 @@ end
 -- kept for the frame (inputs: the family and the frame's time), since a burst
 -- of unreadable group aura payloads asks it per event.
 function EABR.FvReadable(fam, restricted)
-    if not restricted then return true end
+    if not restricted then
+        return true
+    end
     local memo = EABR._fvReadMemo
-    if not memo then memo = {}; EABR._fvReadMemo = memo end
+    if not memo then
+        memo = {}
+        EABR._fvReadMemo = memo
+    end
     local now = GetTime()
     if memo.t ~= now then
         wipe(memo)
@@ -980,10 +1289,16 @@ end
 -- raid1-40.
 function EABR.FvTokens()
     local t = EABR._fvTokens
-    if t then return t end
+    if t then
+        return t
+    end
     t = { party = { "player" }, raid = {} }
-    for i = 1, 4 do t.party[i + 1] = "party" .. i end
-    for i = 1, 40 do t.raid[i] = "raid" .. i end
+    for i = 1, 4 do
+        t.party[i + 1] = "party" .. i
+    end
+    for i = 1, 40 do
+        t.raid[i] = "raid" .. i
+    end
     EABR._fvTokens = t
     return t
 end
@@ -997,7 +1312,10 @@ end
 -- provides two buffs).
 function EABR.FvCoverage(fam, benefit, keep)
     local inst = EABR._fvInst
-    if not inst then inst = {}; EABR._fvInst = inst end
+    if not inst then
+        inst = {}
+        EABR._fvInst = inst
+    end
     local raid = IsInRaid()
     local tokens = EABR.FvTokens()
     local list = raid and tokens.raid or tokens.party
@@ -1005,15 +1323,26 @@ function EABR.FvCoverage(fam, benefit, keep)
     local have, total, first = 0, 0, nil
     for i = 1, n do
         local u = list[i]
-        if not u then break end
+        if not u then
+            break
+        end
         local rec = inst[u]
-        if rec and not keep then wipe(rec) end
+        if rec and not keep then
+            wipe(rec)
+        end
         if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) and EABR.UnitBenefits(u, benefit) then
-            if not rec then rec = {}; inst[u] = rec end
+            if not rec then
+                rec = {}
+                inst[u] = rec
+            end
             local has = EABR.FvUnitHas(u, fam, rec)
             if has ~= nil then
                 total = total + 1
-                if has then have = have + 1 elseif not first then first = u end
+                if has then
+                    have = have + 1
+                elseif not first then
+                    first = u
+                end
             end
         end
     end
@@ -1052,7 +1381,12 @@ end
 function EABR.CollectForeverRaidBuffs(missing, playerClass, inInstance)
     local rb = db.profile.raidBuffs
     local watch = EABR._fvWatchFams
-    if watch then wipe(watch) else watch = {}; EABR._fvWatchFams = watch end
+    if watch then
+        wipe(watch)
+    else
+        watch = {}
+        EABR._fvWatchFams = watch
+    end
     local roster = false
     local castSpell, castUnit
     local provided, covered, idle, idleFirst = false, false, nil, nil
@@ -1069,9 +1403,16 @@ function EABR.CollectForeverRaidBuffs(missing, playerClass, inInstance)
                 local fam = buff.fam
                 local iCast = buff.class == playerClass
                     and (EABR.FvHighest(fam.single) or EABR.FvHighest(fam.group)) ~= nil
-                if iCast and othersMissing then watch[#watch + 1] = fam end
-                if not iCast and iAmMissing and not buff.talent then roster = true end
-                local doReceiver = not iCast and not buff.talent and groupClasses and groupClasses[buff.class]
+                if iCast and othersMissing then
+                    watch[#watch + 1] = fam
+                end
+                if not iCast and iAmMissing and not buff.talent then
+                    roster = true
+                end
+                local doReceiver = not iCast
+                    and not buff.talent
+                    and groupClasses
+                    and groupClasses[buff.class]
                     and EABR.PlayerBenefitsFromBuff(buff)
                 if (iCast or doReceiver) and EABR.FvReadable(fam, restricted) then
                     local isMissing, have, total, first
@@ -1083,12 +1424,18 @@ function EABR.CollectForeverRaidBuffs(missing, playerClass, inInstance)
                         isMissing = EABR.FvUnitHas("player", fam) == false
                     end
                     if iCast then
-                        if not idle then idle, idleFirst = buff, first end
+                        if not idle then
+                            idle, idleFirst = buff, first
+                        end
                         -- Under lockdown: the spell the button casts, a rank or
                         -- group version of the one buff that may show.
                         local bound = lockdown and EABR._providerCastSpell
-                        isMissing = isMissing and not provided and not _dismissedUntilLoad[buff.dismissKey]
-                            and not (bound and not (tContains(fam.single, bound) or tContains(fam.group, bound)))
+                        isMissing = isMissing
+                            and not provided
+                            and not _dismissedUntilLoad[buff.dismissKey]
+                            and not (
+                                bound and not (tContains(fam.single, bound) or tContains(fam.group, bound))
+                            )
                         if isMissing then
                             provided = true
                             if not lockdown then
@@ -1099,7 +1446,8 @@ function EABR.CollectForeverRaidBuffs(missing, playerClass, inInstance)
                     if isMissing then
                         local e = AcquireEntry()
                         e.label = ShortLabel(SpellName(buff.castSpell) or buff.name)
-                        e.cat = "raidbuff"; e.data = buff
+                        e.cat = "raidbuff"
+                        e.data = buff
                         e.dismissKey = buff.dismissKey
                         if total then
                             e.groupHave = have
@@ -1115,14 +1463,16 @@ function EABR.CollectForeverRaidBuffs(missing, playerClass, inInstance)
                             e.spellID = buff.castSpell
                             e.texture = Tex(buff.castSpell)
                         end
-                        missing[#missing+1] = e
+                        missing[#missing + 1] = e
                     end
                 end
             end
         end
     end
     if not lockdown then
-        if not provided and idle then castSpell, castUnit = EABR.FvPickCast(idle, idleFirst) end
+        if not provided and idle then
+            castSpell, castUnit = EABR.FvPickCast(idle, idleFirst)
+        end
         EABR._fvCastSpell, EABR._fvCastUnit = castSpell, castUnit
     end
     EABR.FvSyncGroupWatch(watch, roster)
@@ -1140,8 +1490,12 @@ function EABR.FvStandDown()
     -- for one): the Sleeping Bag is counted again when it is back.
     EABR.FvSyncSleepBagWatch(false)
     EABR._fvSleepBag = nil
-    if EABR._fvPickerSpellEvents then EABR.FvSyncPickerSpellEvents(false) end
-    if EABR.ValidateOpenPicker then EABR.ValidateOpenPicker() end
+    if EABR._fvPickerSpellEvents then
+        EABR.FvSyncPickerSpellEvents(false)
+    end
+    if EABR.ValidateOpenPicker then
+        EABR.ValidateOpenPicker()
+    end
     if EABR._durationTimer then
         EABR._durationTimer:Cancel()
         EABR._durationTimer = nil
@@ -1151,43 +1505,64 @@ end
 local function Refresh()
     SetCachedOutline(nil)
     EABR._nextDurationRefreshTime = nil
-    if not db then return end
+    if not db then
+        return
+    end
     -- Pooled reminder buttons are children of iconAnchor, built in OnEnable (PLAYER_LOGIN). File-scope events (SPELLS_CHANGED, PLAYER_TALENT_UPDATE,
     -- TRAIT_CONFIG_UPDATED, ...) can fire DURING loading before OnEnable runs; a reminder created then via GetOrCreateIcon gets a nil parent and renders oversized forever (scale 1.0, not UIParent scale -- pooled buttons are never re-parented). Wait for the anchor; OnEnable fires its own refresh.
-    if not iconAnchor then return end
+    if not iconAnchor then
+        return
+    end
     -- WoW Forever: the returns below show nothing, so the Raid Buffs group
     -- watch and the tracking event stand down with them (EABR.FvStandDown);
     -- the event that ends each state (panel close, vehicle exit, alive, rest
     -- ended) refreshes and re-arms them.
     if cuiPanelOpen then
-        HideCombatIcons(); HideAllIcons()
-        if EABR.FOREVER then EABR.FvStandDown() end
+        HideCombatIcons()
+        HideAllIcons()
+        if EABR.FOREVER then
+            EABR.FvStandDown()
+        end
         return
     end
 
     -- Hides all reminders while skyriding (mounted+flying) or in a vehicle; IsMounted/IsFlying/UnitInVehicle are combat-safe (no taint).
     if UnitInVehicle("player") or (IsMounted() and IsFlying()) then
-        HideCombatIcons(); HideCursorIcons()
+        HideCombatIcons()
+        HideCursorIcons()
         if InCombat() then
             FadeOutSecureIcons()
         else
             HideAllIcons()
         end
-        if EABR.FOREVER then EABR.FvStandDown() end
+        if EABR.FOREVER then
+            EABR.FvStandDown()
+        end
         return
     end
 
     -- Suppresses while dead or in a rested area (city/inn) -- rested areas
     -- always stay hidden, independent of every "Where to Show" setting.
     if UnitIsDeadOrGhost("player") then
-        HideCombatIcons(); HideCursorIcons(); HideAllIcons()
-        if EABR.FOREVER then EABR.FvStandDown() end
+        HideCombatIcons()
+        HideCursorIcons()
+        HideAllIcons()
+        if EABR.FOREVER then
+            EABR.FvStandDown()
+        end
         return
     end
     if IsResting() then
-        HideCombatIcons(); HideCursorIcons()
-        if InCombat() then FadeOutSecureIcons() else HideAllIcons() end
-        if EABR.FOREVER then EABR.FvStandDown() end
+        HideCombatIcons()
+        HideCursorIcons()
+        if InCombat() then
+            FadeOutSecureIcons()
+        else
+            HideAllIcons()
+        end
+        if EABR.FOREVER then
+            EABR.FvStandDown()
+        end
         return
     end
 
@@ -1259,7 +1634,12 @@ local function Refresh()
     ---------------------------------------------------------------------------
     if remindersOn and not EABR.FOREVER and PET_CLASSES[playerClass] then
         local co = db.profile.consumables
-        if co and co.enabled and co.enabled.pet ~= false and EABR.SectionShows(EABR.SpecialsWhere(co, EABR.SPECIALS.PET.where), inInstance) then
+        if
+            co
+            and co.enabled
+            and co.enabled.pet ~= false
+            and EABR.SectionShows(EABR.SpecialsWhere(co, EABR.SPECIALS.PET.where), inInstance)
+        then
             local suppress = false
             local petIcon = 132161
             local petLabel = "Pet"
@@ -1268,33 +1648,44 @@ local function Refresh()
                 local spec = GetSpecialization and GetSpecialization()
                 if spec then
                     local sid = GetSpecializationInfo(spec)
-                    if sid == 254 and not Known(1223323) then suppress = true end
+                    if sid == 254 and not Known(1223323) then
+                        suppress = true
+                    end
                 end
             elseif playerClass == "WARLOCK" then
                 petIcon = 136218
-                if Known(108503) and PlayerHasAuraByID({196099}) then suppress = true end
+                if Known(108503) and PlayerHasAuraByID({ 196099 }) then
+                    suppress = true
+                end
                 local allowed = co.wrongPetAllowed
                 warlockEnforcedPets = {}
                 if allowed then
                     for _, pet in ipairs(WARLOCK_PETS) do
                         if allowed[pet.key] and Known(pet.castSpell) then
-                            warlockEnforcedPets[#warlockEnforcedPets+1] = pet
+                            warlockEnforcedPets[#warlockEnforcedPets + 1] = pet
                         end
                     end
                 end
             elseif playerClass == "DEATHKNIGHT" then
                 petIcon = 1100170
                 petLabel = "Ghoul"
-                if specID ~= 252 then suppress = true end
+                if specID ~= 252 then
+                    suppress = true
+                end
             elseif playerClass == "MAGE" then
                 petIcon = 135862
                 petLabel = "Water Elemental"
-                if specID ~= 64 or not Known(31687) then suppress = true end
+                if specID ~= 64 or not Known(31687) then
+                    suppress = true
+                end
             end
             -- Skipped while mounted, and for a beat after dismounting: mounting auto-dismisses the pet and the server resummons it on dismount a moment after the mount display drops, so the reminder is never actionable there (summoning would dismount you anyway). IsMounted()/GetTime() are combat-safe.
-            if not suppress and not IsMounted()
-               and not (EABR._petRemountGrace and GetTime() < EABR._petRemountGrace)
-               and not (UnitExists("pet") and not UnitIsDead("pet")) then
+            if
+                not suppress
+                and not IsMounted()
+                and not (EABR._petRemountGrace and GetTime() < EABR._petRemountGrace)
+                and not (UnitExists("pet") and not UnitIsDead("pet"))
+            then
                 local e = AcquireEntry()
                 e.cat = "consumable"
                 e.dismissKey = "consumable:pet"
@@ -1306,35 +1697,48 @@ local function Refresh()
                     e.texture = petIcon
                     e.label = petLabel
                 end
-                missing[#missing+1] = e
+                missing[#missing + 1] = e
             end
-            if not suppress and playerClass == "WARLOCK"
-               and co.enabled.wrong_pet ~= false
-               and EABR.SectionShows(co.warlockWhereToShow, inInstance)
-               and UnitExists("pet") and not UnitIsDead("pet") then
+            if
+                not suppress
+                and playerClass == "WARLOCK"
+                and co.enabled.wrong_pet ~= false
+                and EABR.SectionShows(co.warlockWhereToShow, inInstance)
+                and UnitExists("pet")
+                and not UnitIsDead("pet")
+            then
                 local _, familyID = UnitCreatureFamily("pet")
                 familyID = familyID and not (issecretvalue and issecretvalue(familyID)) and familyID or nil
                 local isAllowed = false
                 for _, pet in ipairs(warlockEnforcedPets) do
-                    if familyID and pet.families[familyID] then isAllowed = true; break end
+                    if familyID and pet.families[familyID] then
+                        isAllowed = true
+                        break
+                    end
                 end
                 if #warlockEnforcedPets > 0 and not isAllowed then
                     local e = AcquireEntry()
                     EABR.SetWarlockPetSpell(e, warlockEnforcedPets, 136216, CludesUI.L("Wrong Demon"))
                     e.cat = "consumable"
                     e.dismissKey = "consumable:wrong_pet"
-                    missing[#missing+1] = e
+                    missing[#missing + 1] = e
                 end
             end
             -- Pet on Passive: warns when an active pet is set to Passive stance. Combat-safe (pet command state isn't secret); skipped while mounted (pet is auto-forced to Passive).
-            if not suppress and co.enabled.pet_passive ~= false
-               and UnitExists("pet") and not UnitIsDead("pet")
-               and not IsMounted() then
+            if
+                not suppress
+                and co.enabled.pet_passive ~= false
+                and UnitExists("pet")
+                and not UnitIsDead("pet")
+                and not IsMounted()
+            then
                 local passiveActive, passiveTex, passiveIsToken
                 for i = 1, (NUM_PET_ACTION_SLOTS or 10) do
                     local nm, tx, tok, active = GetPetActionInfo(i)
                     if nm == "PET_MODE_PASSIVE" then
-                        if not isSecret(active) then passiveActive = (active == true) end
+                        if not isSecret(active) then
+                            passiveActive = (active == true)
+                        end
                         passiveTex, passiveIsToken = tx, tok
                         break
                     end
@@ -1346,7 +1750,7 @@ local function Refresh()
                     e.label = PET_MODE_PASSIVE or "Passive"
                     e.cat = "consumable"
                     e.dismissKey = "consumable:pet_passive"
-                    missing[#missing+1] = e
+                    missing[#missing + 1] = e
                 end
             end
         end
@@ -1392,8 +1796,12 @@ local function Refresh()
                     -- pooled icon instead -- visual-only, like every other
                     -- combat entry. The button resumes ownership at the OOC
                     -- refresh.
-                    if m.cat == "raidbuff" and m.mode == "spell" and not useCursor
-                       and (EABR._providerCastVisible or EABR._providerCastCombatReserved) then
+                    if
+                        m.cat == "raidbuff"
+                        and m.mode == "spell"
+                        and not useCursor
+                        and (EABR._providerCastVisible or EABR._providerCastCombatReserved)
+                    then
                         providerEntry = m
                     else
                         local f
@@ -1421,7 +1829,9 @@ local function Refresh()
                 if pBtn then
                     local p = db.profile.display
                     local sz = pBtn:GetWidth() or ICON_SIZE
-                    if pBtn._eabrGlowWrapper then pBtn._eabrGlowWrapper:Hide() end
+                    if pBtn._eabrGlowWrapper then
+                        pBtn._eabrGlowWrapper:Hide()
+                    end
                     ApplyGlow(pBtn, p, sz)
                 end
             end
@@ -1484,7 +1894,9 @@ local function Refresh()
             if pBtn then
                 local p = db.profile.display
                 local sz = pBtn:GetWidth() or ICON_SIZE
-                if pBtn._eabrGlowWrapper then pBtn._eabrGlowWrapper:Hide() end
+                if pBtn._eabrGlowWrapper then
+                    pBtn._eabrGlowWrapper:Hide()
+                end
                 ApplyGlow(pBtn, p, sz)
             end
         else
@@ -1507,12 +1919,14 @@ local function Refresh()
     end
 
     -- The pool is rebuilt above. A visible button can now represent another reminder.
-    if EABR.ValidateOpenPicker then EABR.ValidateOpenPicker() end
+    if EABR.ValidateOpenPicker then
+        EABR.ValidateOpenPicker()
+    end
     UpdateDurationTicker()
 end
 
 local REFRESH_THROTTLE_COMBAT = 0.5
-local REFRESH_THROTTLE_OOC    = 0.5
+local REFRESH_THROTTLE_OOC = 0.5
 local _lastRefreshTime = 0
 local _refreshTimerActive = false
 local function _doRefresh()
@@ -1522,7 +1936,9 @@ local function _doRefresh()
     Refresh()
 end
 local function RequestRefresh()
-    if refreshQueued then return end
+    if refreshQueued then
+        return
+    end
     refreshQueued = true
     local throttle = InCombat() and REFRESH_THROTTLE_COMBAT or REFRESH_THROTTLE_OOC
     local elapsed = GetTime() - _lastRefreshTime
@@ -1553,12 +1969,18 @@ function EABR.FvSyncGroupWatch(fams, roster)
     local any = n > 0 or roster
     local W = EABR._fvWatch
     if not W then
-        if not any then return end
+        if not any then
+            return
+        end
         W = { ids = {}, frames = {}, fams = {} }
         -- With a refresh already queued there is nothing to probe.
         local function OnUnitEvent(_, event, unit, info)
-            if refreshQueued then return end
-            if event ~= "UNIT_AURA" or EABR.FvAuraRelevant(unit, info) then RequestRefresh() end
+            if refreshQueued then
+                return
+            end
+            if event ~= "UNIT_AURA" or EABR.FvAuraRelevant(unit, info) then
+                RequestRefresh()
+            end
         end
         local tokens = EABR.FvTokens()
         for kind, from in pairs({ party = 2, raid = 1 }) do
@@ -1571,13 +1993,17 @@ function EABR.FvSyncGroupWatch(fams, roster)
             end
         end
         W.world = CreateFrame("Frame")
-        W.world:SetScript("OnEvent", function() RequestRefresh() end)
+        W.world:SetScript("OnEvent", function()
+            RequestRefresh()
+        end)
         EABR._fvWatch = W
     end
     -- The watched buffs, copied (the collector reuses its list).
     local same = #W.fams == n
     for i = 1, n do
-        if W.fams[i] ~= fams[i] then same = false end
+        if W.fams[i] ~= fams[i] then
+            same = false
+        end
     end
     if not same then
         wipe(W.fams)
@@ -1585,7 +2011,9 @@ function EABR.FvSyncGroupWatch(fams, roster)
         for i = 1, n do
             local fam = fams[i]
             W.fams[i] = fam
-            for _, id in ipairs(fam.ids) do W.ids[id] = true end
+            for _, id in ipairs(fam.ids) do
+                W.ids[id] = true
+            end
         end
     end
     if W.any ~= any then
@@ -1605,11 +2033,15 @@ function EABR.FvSyncGroupWatch(fams, roster)
             if f.kind == mode then
                 f:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", f.u1, f.u2)
                 f:RegisterUnitEvent("UNIT_CONNECTION", f.u1, f.u2)
-                if auraOn then f:RegisterUnitEvent("UNIT_AURA", f.u1, f.u2) end
+                if auraOn then
+                    f:RegisterUnitEvent("UNIT_AURA", f.u1, f.u2)
+                end
             end
         end
         if not auraOn and EABR._fvInst then
-            for _, rec in pairs(EABR._fvInst) do wipe(rec) end
+            for _, rec in pairs(EABR._fvInst) do
+                wipe(rec)
+            end
         end
     end
 end
@@ -1618,7 +2050,9 @@ end
 local function FvWatchReadable(W)
     local fams = W.fams
     for i = 1, #fams do
-        if EABR.FvReadable(fams[i], true) then return true end
+        if EABR.FvReadable(fams[i], true) then
+            return true
+        end
     end
     return false
 end
@@ -1629,30 +2063,54 @@ end
 -- while a watched buff itself stays readable.
 function EABR.FvAuraRelevant(unit, info)
     local W = EABR._fvWatch
-    if not (W and W.fams[1]) then return false end
-    if not info then return true end
-    if isSecret(info) then return FvWatchReadable(W) end
+    if not (W and W.fams[1]) then
+        return false
+    end
+    if not info then
+        return true
+    end
+    if isSecret(info) then
+        return FvWatchReadable(W)
+    end
     local full = info.isFullUpdate
-    if isSecret(full) then return FvWatchReadable(W) end
-    if full then return true end
+    if isSecret(full) then
+        return FvWatchReadable(W)
+    end
+    if full then
+        return true
+    end
     local added = info.addedAuras
     if added then
-        if isSecret(added) then return FvWatchReadable(W) end
+        if isSecret(added) then
+            return FvWatchReadable(W)
+        end
         for i = 1, #added do
             local aura = added[i]
-            if isSecret(aura) then return FvWatchReadable(W) end
+            if isSecret(aura) then
+                return FvWatchReadable(W)
+            end
             local sid = aura.spellId
-            if isSecret(sid) then return FvWatchReadable(W) end
-            if sid and W.ids[sid] then return true end
+            if isSecret(sid) then
+                return FvWatchReadable(W)
+            end
+            if sid and W.ids[sid] then
+                return true
+            end
         end
     end
     local removed, found = info.removedAuraInstanceIDs, EABR._fvInst and EABR._fvInst[unit]
     if removed and found and next(found) then
-        if isSecret(removed) then return FvWatchReadable(W) end
+        if isSecret(removed) then
+            return FvWatchReadable(W)
+        end
         for i = 1, #removed do
             local iid = removed[i]
-            if isSecret(iid) then return FvWatchReadable(W) end
-            if found[iid] then return true end
+            if isSecret(iid) then
+                return FvWatchReadable(W)
+            end
+            if found[iid] then
+                return true
+            end
         end
     end
     return false
@@ -1670,11 +2128,15 @@ UpdateDurationTicker = function()
     end
 
     local delay = EABR._nextDurationRefreshTime - GetTime() + 0.1
-    if delay < 0.1 then delay = 0.1 end
+    if delay < 0.1 then
+        delay = 0.1
+    end
 
     EABR._durationTimer = C_Timer.NewTimer(delay, function()
         EABR._durationTimer = nil
-        if not EABR.ShowUnderThresholdApplies() then return end
+        if not EABR.ShowUnderThresholdApplies() then
+            return
+        end
         RequestRefresh()
     end)
 end
@@ -1688,7 +2150,9 @@ function EABR.ArmSoulstoneCooldownRefresh(remaining)
         EABR._soulstoneCdTimer:Cancel()
         EABR._soulstoneCdTimer = nil
     end
-    if type(remaining) ~= "number" or remaining <= 0 then return end
+    if type(remaining) ~= "number" or remaining <= 0 then
+        return
+    end
     EABR._soulstoneCdTimer = C_Timer.NewTimer(remaining + 0.1, function()
         EABR._soulstoneCdTimer = nil
         RequestRefresh()

@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Secure.lua
 --
@@ -34,14 +36,17 @@ local RegisterButtonWithController = I.RegisterButtonWithController
 local barButtons = {}
 ns.barButtons = barButtons
 
-local _secureHandler = CreateFrame("Frame", "EABSecureSetupHandler", UIParent, "SecureHandlerAttributeTemplate")
+local _secureHandler =
+    CreateFrame("Frame", "EABSecureSetupHandler", UIParent, "SecureHandlerAttributeTemplate")
 
 -- Reads encoded button data and applies SetParent + layout. Attribute format
 -- per slot: "btn-N" = "barref|x|y|w|h|show" (show="1"/"0"). Frame refs: bar
 -- frames as "bar-{key}", hidden parent as "hiddenParent", UIParent as
 -- "uiParent", Blizzard bars as "blizzbar-{name}". Trigger: set "do-setup" to
 -- any value to run the full setup.
-_secureHandler:SetAttribute("_onattributechanged", [=[
+_secureHandler:SetAttribute(
+    "_onattributechanged",
+    [=[
     if name == "do-setup" then
         -- (setup code follows below)
     elseif name == "clear-binds" then
@@ -134,18 +139,23 @@ _secureHandler:SetAttribute("_onattributechanged", [=[
     -- Each button's _childupdate-eab-page recalculates the action attribute.
 
     -- Step 6: All keybind dispatch uses SetOverrideBindingClick (set by UpdateKeybinds).
-]=])
+]=]
+)
 
 -- Register all buttons and bar frames as refs on the secure handler.
 -- Must be called AFTER SetupBar creates buttons (barButtons is populated).
 local _secureRefsReady = false
-I.secureRefsReadySetters[#I.secureRefsReadySetters + 1] = function(v) _secureRefsReady = v end
+I.secureRefsReadySetters[#I.secureRefsReadySetters + 1] = function(v)
+    _secureRefsReady = v
+end
 -- One pass over every button that exists. Lazily built bars add buttons after
 -- it has already run, so the reveal path in RefreshRuntimeVisibility clears
 -- _secureRefsReady and calls this again; indices are reassigned consistently in
 -- the same pass, and the only readers of btn._secureSlotIdx run after a full one.
 local function SecureSetupHandler_PrepareRefs()
-    if _secureRefsReady then return end
+    if _secureRefsReady then
+        return
+    end
     _secureRefsReady = true
 
     _secureHandler:SetFrameRef("uiParent", UIParent)
@@ -194,15 +204,45 @@ end
 local function SecureSetupHandler_Execute(layoutData, barFrameData)
     for slot, d in pairs(layoutData) do
         local actionSlot = d.actionSlot or 0
-        _secureHandler:SetAttribute("layout-" .. slot,
-            d.barKey .. "|" .. d.x .. "|" .. d.y .. "|" .. d.w .. "|" .. d.h .. "|" .. (d.show and "1" or "0") .. "|" .. actionSlot)
+        _secureHandler:SetAttribute(
+            "layout-" .. slot,
+            d.barKey
+                .. "|"
+                .. d.x
+                .. "|"
+                .. d.y
+                .. "|"
+                .. d.w
+                .. "|"
+                .. d.h
+                .. "|"
+                .. (d.show and "1" or "0")
+                .. "|"
+                .. actionSlot
+        )
     end
     -- Encode bar frame sizes/positions
     local barFrameCount = 0
     for _, d in ipairs(barFrameData) do
         barFrameCount = barFrameCount + 1
-        _secureHandler:SetAttribute("barframe-" .. barFrameCount,
-            d.key .. "|" .. d.w .. "|" .. d.h .. "|" .. d.point .. "|" .. d.relPoint .. "|" .. d.x .. "|" .. d.y .. "|" .. (d.hidden and "1" or "0"))
+        _secureHandler:SetAttribute(
+            "barframe-" .. barFrameCount,
+            d.key
+                .. "|"
+                .. d.w
+                .. "|"
+                .. d.h
+                .. "|"
+                .. d.point
+                .. "|"
+                .. d.relPoint
+                .. "|"
+                .. d.x
+                .. "|"
+                .. d.y
+                .. "|"
+                .. (d.hidden and "1" or "0")
+        )
     end
     _secureHandler:SetAttribute("barframe-count", barFrameCount)
     -- Trigger the snippet
@@ -263,7 +303,9 @@ local function HideBlizzardBars()
     -- transition (ValidateActionBarTransition) works. MainMenuBarPageNumber is
     -- a legacy global absent on current clients; the live pager is
     -- MainActionBar's ActionBarPageNumber child, neutralised by KillPagerMouse.
-    if MainMenuBarPageNumber then MainMenuBarPageNumber:Hide() end
+    if MainMenuBarPageNumber then
+        MainMenuBarPageNumber:Hide()
+    end
 
     -- Replace ActionBar_PageUp/Down with versions that compute the target page
     -- and pass it to ChangeActionBarPage explicitly: stock versions derive it
@@ -305,8 +347,12 @@ local function HideBlizzardBars()
     -- and errors in the gamepad buttons, in combat). A global once written
     -- stays tainted, so this is decided here, once, as the bars are taken.
     if not CludesUI.PadGamepadUI() then
-        ActionBar_PageUp = function() ChangeManualPage(1) end
-        ActionBar_PageDown = function() ChangeManualPage(-1) end
+        ActionBar_PageUp = function()
+            ChangeManualPage(1)
+        end
+        ActionBar_PageDown = function()
+            ChangeManualPage(-1)
+        end
     end
 
     -- Hide status tracking bar manager (unless user wants Blizzard data bars).
@@ -326,40 +372,39 @@ local function HideBlizzardBars()
     CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_2", "1", "CludesUIActionBars")
     CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_3", "1", "CludesUIActionBars")
     CludesUI.SetCVar("SHOW_MULTI_ACTIONBAR_4", "1", "CludesUIActionBars")
-
 end
 
 -------------------------------------------------------------------------------
 --  Button Creation: all action bar buttons (slots 1-180) are our own
 --  EABButton frames. Stance/Pet bars still reuse Blizzard buttons.
 -------------------------------------------------------------------------------
-local allButtons = {}   -- [actionSlot] = button
+local allButtons = {} -- [actionSlot] = button
 -- barButtons: forward-declared above (before SecureSetupHandler_PrepareRefs)
-local buttonToBar = {}  -- [btn] = { barKey, index } for taint-safe slot resolution
-local barFrames  = {}   -- [barKey] = secure header frame
+local buttonToBar = {} -- [btn] = { barKey, index } for taint-safe slot resolution
+local barFrames = {} -- [barKey] = secure header frame
 local dataBarFrames = {} -- [barKey] = data bar frame (XP/Rep) populated later in SetupDataBars
 local blizzMovableHolders = {} -- [barKey] = holder frame for Blizzard movable frames (ExtraAction, Encounter)
 local extraBarHolders = {} -- [barKey] = holder frame for extra bars (MicroBar, BagBar)
 local BLIZZ_MOVABLE_OVERLAY = { -- Fixed overlay sizes for unlock mode movers (not the actual Blizzard frames)
     ExtraActionButton = { w = 100, h = 100 },
-    EncounterBar      = { w = 150, h = 40 },
+    EncounterBar = { w = 150, h = 40 },
 }
-local barBaseSize = {}  -- [barKey] = { w, h } original button size before any shape/scale
+local barBaseSize = {} -- [barKey] = { w, h } original button size before any shape/scale
 
 -- Action slot ranges per bar (see trailing comments). MUST match Blizzard's
 -- internal slot assignments per button prefix (warcraft.wiki.gg/wiki/ActionSlot).
 -- Slots 133-144 are reserved/unused. Stance bar uses StanceButton1-10 (not action slots).
 local BAR_SLOT_OFFSETS = {
-    MainBar = 0,    -- slots 1-12 (paged)
-    Bar2 = 60,      -- slots 61-72  (MultiBarBottomLeft)
-    Bar3 = 48,      -- slots 49-60  (MultiBarBottomRight)
-    Bar4 = 24,      -- slots 25-36  (MultiBarRight)
-    Bar5 = 36,      -- slots 37-48  (MultiBarLeft)
-    Bar6 = 144,     -- slots 145-156 (MultiBar5)
-    Bar7 = 156,     -- slots 157-168 (MultiBar6)
-    Bar8 = 168,     -- slots 169-180 (MultiBar7)
-    Bar9 = 12,      -- slots 13-24   (action page 2 -- custom bar)
-    Bar10 = 108,    -- slots 109-120 (action page 10 -- custom bar, no native frame)
+    MainBar = 0, -- slots 1-12 (paged)
+    Bar2 = 60, -- slots 61-72  (MultiBarBottomLeft)
+    Bar3 = 48, -- slots 49-60  (MultiBarBottomRight)
+    Bar4 = 24, -- slots 25-36  (MultiBarRight)
+    Bar5 = 36, -- slots 37-48  (MultiBarLeft)
+    Bar6 = 144, -- slots 145-156 (MultiBar5)
+    Bar7 = 156, -- slots 157-168 (MultiBar6)
+    Bar8 = 168, -- slots 169-180 (MultiBar7)
+    Bar9 = 12, -- slots 13-24   (action page 2 -- custom bar)
+    Bar10 = 108, -- slots 109-120 (action page 10 -- custom bar, no native frame)
 }
 
 -- Binding name prefixes per bar: MULTIACTIONBAR<N>BUTTON, where N is Blizzard's
@@ -385,10 +430,10 @@ local BINDING_MAP = {
 -- Readable labels for the custom Bar9/Bar10 binding commands in Bindings.xml.
 -- Global writes only (no file-scope locals); keybind UI reads
 -- BINDING_HEADER_<header> for the section title, BINDING_NAME_<command> per row.
-_G.BINDING_HEADER_CUI_BAR9  = "CludesUI Action Bar 9"
+_G.BINDING_HEADER_CUI_BAR9 = "CludesUI Action Bar 9"
 _G.BINDING_HEADER_CUI_BAR10 = "CludesUI Action Bar 10"
 for i = 1, 12 do
-    _G["BINDING_NAME_CUI_BAR9_BUTTON"  .. i] = "Action Bar 9 Button "  .. i
+    _G["BINDING_NAME_CUI_BAR9_BUTTON" .. i] = "Action Bar 9 Button " .. i
     _G["BINDING_NAME_CUI_BAR10_BUTTON" .. i] = "Action Bar 10 Button " .. i
 end
 
@@ -396,7 +441,9 @@ end
 -- All usage is event-driven, so we resolve the reference lazily.
 local EABFlyout
 local function GetEABFlyout()
-    if not EABFlyout then EABFlyout = ns.EABFlyout end
+    if not EABFlyout then
+        EABFlyout = ns.EABFlyout
+    end
     return EABFlyout
 end
 
@@ -507,7 +554,12 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
         local name = "EABButton" .. slot
         btn = _G[name]
         if not btn then
-            btn = CreateFrame("CheckButton", name, parent, "ActionBarButtonTemplate, SecureActionButtonTemplate")
+            btn = CreateFrame(
+                "CheckButton",
+                name,
+                parent,
+                "ActionBarButtonTemplate, SecureActionButtonTemplate"
+            )
             -- Neuter UpdateButtonArt: it resets NormalTexture/PushedTexture
             -- atlases on every call, causing mass GPU redraws across 96
             -- buttons. We handle art ourselves (MakeButtonSquare/ApplyPushedTextures).
@@ -548,7 +600,9 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
                 fr[tail] = nil
             else
                 for k, f in pairs(fr) do
-                    if f == btn then fr[k] = nil end
+                    if f == btn then
+                        fr[k] = nil
+                    end
                 end
             end
         end
@@ -574,9 +628,12 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
                 if b and b.chargeCooldown and ns.UpdateChargeNumbersVisibility then
                     local action = b.GetAttribute and b:GetAttribute("action")
                     if action and HasAction(action) then
-                        ns.UpdateChargeNumbersVisibility(b, b.chargeCooldown,
+                        ns.UpdateChargeNumbersVisibility(
+                            b,
+                            b.chargeCooldown,
                             C_ActionBar.GetActionCooldown(action),
-                            C_ActionBar.GetActionCharges(action))
+                            C_ActionBar.GetActionCharges(action)
+                        )
                     end
                 end
             end)
@@ -622,12 +679,16 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
             local pressBindCmd = BINDING_MAP[info.key]
             pressBindCmd = pressBindCmd and (pressBindCmd .. index) or nil
             btn:HookScript("PostClick", function(self, _, down)
-                if ns._EABPressPush then ns._EABPressPush(self) end
+                if ns._EABPressPush then
+                    ns._EABPressPush(self)
+                end
                 -- Publish for the CDM press mirror: click-routed keybinds never
                 -- fire the native binding commands. Global rather than ns (the
-                -- subscriber is a separate addon, like _EAB_UpdateKeybinds).
+                -- subscriber is a separate addon, like _CUAB_UpdateKeybinds).
                 local onPress = _G._CUI_OnActionButtonPress
-                if onPress then onPress(self, down, pressBindCmd) end
+                if onPress then
+                    onPress(self, down, pressBindCmd)
+                end
             end)
         end
         -- Cast Actions on Key Down is for keys. A mouse click acts on
@@ -661,7 +722,11 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
         -- keeps it and restores on its own release.
         if not btn:GetAttribute("eabPickupWrap") and not InCombatLockdown() then
             btn:SetAttribute("eabPickupWrap", true)
-            SecureHandlerWrapScript(btn, "OnClick", btn, [[
+            SecureHandlerWrapScript(
+                btn,
+                "OnClick",
+                btn,
+                [[
                 local flipped = self:GetAttribute("eabPickupFlipped")
                 if down then
                     if self:IsUnderMouse() then
@@ -676,10 +741,12 @@ local function GetOrCreateButton(slot, parent, info, index, skipProtected)
                 elseif flipped then
                     return nil, "restore"
                 end
-            ]], [[
+            ]],
+                [[
                 self:SetAttribute("eabPickupFlipped", false)
                 self:SetAttribute("useOnKeyDown", true)
-            ]])
+            ]]
+            )
         end
         if not skipProtected then
             btn:SetParent(parent)
@@ -707,13 +774,41 @@ local NUM_AB_PAGES = NUM_ACTIONBAR_PAGES or 6
 -- EAB_VTABLE, not in file locals.
 do
     local V = EAB_VTABLE
-    V.GetOverrideBarIndex = GetOverrideBarIndex or (C_ActionBar and C_ActionBar.GetOverrideBarIndex) or function() return 14 end
-    V.GetVehicleBarIndex = GetVehicleBarIndex or (C_ActionBar and C_ActionBar.GetVehicleBarIndex) or function() return 12 end
-    V.GetTempShapeshiftBarIndex = GetTempShapeshiftBarIndex or (C_ActionBar and C_ActionBar.GetTempShapeshiftBarIndex) or function() return 13 end
-    V.GetActionBarPage = GetActionBarPage or (C_ActionBar and C_ActionBar.GetActionBarPage) or function() return 1 end
-    V.HasVehicleActionBar = HasVehicleActionBar or (C_ActionBar and C_ActionBar.HasVehicleActionBar) or function() return false end
-    V.HasOverrideActionBar = HasOverrideActionBar or (C_ActionBar and C_ActionBar.HasOverrideActionBar) or function() return false end
-    V.HasTempShapeshiftActionBar = HasTempShapeshiftActionBar or (C_ActionBar and C_ActionBar.HasTempShapeshiftActionBar) or function() return false end
+    V.GetOverrideBarIndex = GetOverrideBarIndex
+        or (C_ActionBar and C_ActionBar.GetOverrideBarIndex)
+        or function()
+            return 14
+        end
+    V.GetVehicleBarIndex = GetVehicleBarIndex
+        or (C_ActionBar and C_ActionBar.GetVehicleBarIndex)
+        or function()
+            return 12
+        end
+    V.GetTempShapeshiftBarIndex = GetTempShapeshiftBarIndex
+        or (C_ActionBar and C_ActionBar.GetTempShapeshiftBarIndex)
+        or function()
+            return 13
+        end
+    V.GetActionBarPage = GetActionBarPage
+        or (C_ActionBar and C_ActionBar.GetActionBarPage)
+        or function()
+            return 1
+        end
+    V.HasVehicleActionBar = HasVehicleActionBar
+        or (C_ActionBar and C_ActionBar.HasVehicleActionBar)
+        or function()
+            return false
+        end
+    V.HasOverrideActionBar = HasOverrideActionBar
+        or (C_ActionBar and C_ActionBar.HasOverrideActionBar)
+        or function()
+            return false
+        end
+    V.HasTempShapeshiftActionBar = HasTempShapeshiftActionBar
+        or (C_ActionBar and C_ActionBar.HasTempShapeshiftActionBar)
+        or function()
+            return false
+        end
 end
 
 -- Entry points the files after this one re-import by name.

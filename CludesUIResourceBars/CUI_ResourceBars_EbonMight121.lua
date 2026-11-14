@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_EbonMight121.lua
 -- 12.1 ONLY: engine-slot driver for the Aug Evoker Ebon Might power bar.
 --
@@ -41,17 +43,20 @@ local S = {}
 -- duration formatter, then to the engine default.
 local timeFmt
 local function GetTimeFormatter()
-    if timeFmt ~= nil then return timeFmt or nil end
+    if timeFmt ~= nil then
+        return timeFmt or nil
+    end
     timeFmt = false
-    if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter
-        and Enum.NumericRuleFormatRounding then
+    if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding then
         local f = C_StringUtil.CreateNumericRuleFormatter()
         local Down = Enum.NumericRuleFormatRounding.Down
         local ok = pcall(f.SetBreakpoints, f, {
-            { threshold = 0,  format = "%.1f", step = 0.1, rounding = Down },
-            { threshold = 60, format = "%dm",  step = 1,   rounding = Down, components = { { div = 60 } } },
+            { threshold = 0, format = "%.1f", step = 0.1, rounding = Down },
+            { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
         })
-        if ok then timeFmt = f end
+        if ok then
+            timeFmt = f
+        end
     end
     if not timeFmt then
         local AK = CludesUI.AuraKit
@@ -62,11 +67,12 @@ end
 
 local function Build()
     local AK = CludesUI.AuraKit
-    if S.built or not AK or not S.rbBar then return end
+    if S.built or not AK or not S.rbBar then
+        return
+    end
     local rb, pp, pc = S.rbBar, S.pp or {}, S.pc
 
-    AK.styles["erb:emb121"] = AK.styles["erb:emb121"]
-        or { noRegions = true, width = 1, height = 1 }
+    AK.styles["erb:emb121"] = AK.styles["erb:emb121"] or { noRegions = true, width = 1, height = 1 }
     if not S.proxy then
         S.proxy = CreateFrame("Frame", nil, UIParent)
         S.proxy:Hide()
@@ -117,8 +123,12 @@ local function Build()
             -- up, swallowing clicks meant for the world (nameplates behind the
             -- bar stop responding mid-combat). It is a display-only overlay and
             -- has no OnClick, so it should never take mouse input at all.
-            if button.SetMouseClickEnabled then button:SetMouseClickEnabled(false) end
-            if button.SetMouseMotionEnabled then button:SetMouseMotionEnabled(false) end
+            if button.SetMouseClickEnabled then
+                button:SetMouseClickEnabled(false)
+            end
+            if button.SetMouseMotionEnabled then
+                button:SetMouseMotionEnabled(false)
+            end
 
             local bar = CreateFrame("StatusBar", nil, button)
             bar:SetAllPoints(button)
@@ -129,10 +139,16 @@ local function Build()
                     -- Mirrors the legacy gradient applier: white vertex,
                     -- endpoint colors carry the gradient.
                     bft:SetVertexColor(1, 1, 1, 1)
-                    bft:SetGradient(pp.gradientDir or "HORIZONTAL",
+                    bft:SetGradient(
+                        pp.gradientDir or "HORIZONTAL",
                         CreateColor(r, g, b, 1),
-                        CreateColor(pp.gradientR or r, pp.gradientG or g,
-                            pp.gradientB or b, pp.gradientA or 1))
+                        CreateColor(
+                            pp.gradientR or r,
+                            pp.gradientG or g,
+                            pp.gradientB or b,
+                            pp.gradientA or 1
+                        )
+                    )
                 else
                     bft:SetVertexColor(r, g, b, a or 1)
                 end
@@ -181,7 +197,9 @@ local function Build()
                         button:SetDurationText(fs, dopts)
                     end
                 end)
-                if not okFS then S.fsErr = errFS end
+                if not okFS then
+                    S.fsErr = errFS
+                end
             end
 
             S.btn, S.bar = button, bar
@@ -193,9 +211,13 @@ local function Build()
 end
 
 local function EnsureBuilt()
-    if S.built or S.queued then return end
+    if S.built or S.queued then
+        return
+    end
     local AK = CludesUI.AuraKit
-    if not (AK and AK.QueueBuildJob) then return end
+    if not (AK and AK.QueueBuildJob) then
+        return
+    end
     S.queued = true
     AKWorker:Queue(function()
         S.queued = nil
@@ -222,7 +244,9 @@ end
 function ns.EMB121_Gate(isEbon)
     if not isEbon and S.armed then
         S.armed = nil
-        if S.proxy then S.proxy:Hide() end
+        if S.proxy then
+            S.proxy:Hide()
+        end
     end
 end
 

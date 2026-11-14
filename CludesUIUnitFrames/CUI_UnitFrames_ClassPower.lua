@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ClassPower.lua
 --
@@ -18,7 +20,9 @@ local I = ns._internals
 local frames = I.frames
 local ClassPowerEntry, DruidNeedsCatForm, InCatForm = I.ClassPowerEntry, I.DruidNeedsCatForm, I.InCatForm
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 -- Fixed child-born shells for the class-power event driver and castbar watcher. The
 -- class-power bar is parked and rebuilt on spec switches through the profile system,
@@ -40,12 +44,16 @@ ns._cpCastWatcher:Hide()
 -- between Start()/Stop() and pauses while its host is hidden.
 ns._cpDriverTick = CludesUI.Tick.NewAnimTicker(ns._cpDriver, function()
     local fn = ns._cpTickFn
-    if fn then fn() end
+    if fn then
+        fn()
+    end
     return true
 end, 0.1)
 ns._cpWatchTick = CludesUI.Tick.NewAnimTicker(ns._cpCastWatcher, function()
     local fn = ns._cpWatchFn
-    if fn then fn() end
+    if fn then
+        fn()
+    end
     return true
 end, 0.1)
 
@@ -60,7 +68,9 @@ local cpPipPool = {}
 -- Silences and hides every child of the parked row (the engine-slot overlay's
 -- proxy included) without building a table of them.
 local function ParkChildren(child, ...)
-    if not child then return end
+    if not child then
+        return
+    end
     child:UnregisterAllEvents()
     child:SetScript("OnEvent", nil)
     child:Hide()
@@ -70,7 +80,9 @@ end
 local function DestroyCustomClassPower()
     -- Park the engine-slot warrior charge overlay: its proxy is parented to
     -- the container being parked; the next _WCUF_Sync re-adopts it.
-    if _G._EWC then _G._EWC.Gate("uf") end
+    if _G._EWC then
+        _G._EWC.Gate("uf")
+    end
     ns._cpTickFn = nil
     ns._cpDriverTick.Stop()
     ns._cpWatchFn = nil
@@ -86,7 +98,9 @@ end
 local function CreateCustomClassPower(playerFrame, style)
     local _, playerClass = UnitClass("player")
     local entry = ClassPowerEntry(playerClass)
-    if not entry then return nil end
+    if not entry then
+        return nil
+    end
 
     -- Resolve spec-specific entries (table with specID keys)
     local powerType, customMax, isCustom, renderMode
@@ -94,12 +108,14 @@ local function CreateCustomClassPower(playerFrame, style)
         local spec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
         local specID = spec and C_SpecializationInfo.GetSpecializationInfo(spec)
         local specEntry = specID and entry[specID]
-        if not specEntry then return nil end
+        if not specEntry then
+            return nil
+        end
         if type(specEntry) == "table" and type(specEntry[1]) == "string" then
             -- String-keyed custom resource (e.g. "SOUL_FRAGMENTS_VENGEANCE")
             powerType = specEntry[1]
             customMax = specEntry[2]
-            renderMode = specEntry[3]  -- optional "bar" for continuous fill
+            renderMode = specEntry[3] -- optional "bar" for continuous fill
             isCustom = true
         elseif type(specEntry) == "table" then
             -- Numeric powerType wrapped in a spec table (e.g. Chi for Windwalker)
@@ -135,14 +151,18 @@ local function CreateCustomClassPower(playerFrame, style)
             local maxC = customMax or 50
             if CludesUI and CludesUI.GetSoulFragments then
                 local _, m = CludesUI.GetSoulFragments()
-                if m and m > 0 then maxC = m end
+                if m and m > 0 then
+                    maxC = m
+                end
             end
             maxPower = maxC
             customMax = maxPower
         elseif powerType == "BREWMASTER_STAGGER" then
             -- Bar mode: "max" is player max HP; StatusBar fills with UnitStagger.
             local mh = UnitHealthMax("player") or 0
-            if issecretvalue and issecretvalue(mh) then mh = 0 end
+            if issecretvalue and issecretvalue(mh) then
+                mh = 0
+            end
             maxPower = (mh > 0) and mh or 1
             customMax = maxPower
         else
@@ -150,7 +170,9 @@ local function CreateCustomClassPower(playerFrame, style)
         end
     else
         maxPower = UnitPowerMax("player", powerType) or 5
-        if maxPower <= 0 then maxPower = 5 end
+        if maxPower <= 0 then
+            maxPower = 5
+        end
     end
 
     local isModern = (style == "modern")
@@ -158,7 +180,8 @@ local function CreateCustomClassPower(playerFrame, style)
     local sizeAdj = db.profile.player.classPowerSize or 8
     local spacingAdj = db.profile.player.classPowerSpacing or 2
     local pipSize = isModern and sizeAdj or (isCircle and (sizeAdj + 6) or (sizeAdj + 12))
-    local pipH = isModern and math.max(3, math.floor(sizeAdj * 0.375)) or (isCircle and (sizeAdj + 6) or (sizeAdj))
+    local pipH = isModern and math.max(3, math.floor(sizeAdj * 0.375))
+        or (isCircle and (sizeAdj + 6) or sizeAdj)
     local gap = spacingAdj
     local pad = isModern and 0 or 4
     -- Snap all dimensions to physical pixel boundaries
@@ -205,7 +228,9 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- Border: non-modern styles only, built on first use and shown per style
     if not isModern then
-        if not cpBorder then cpBorder = MakeBorder(container, 0, 0, 0, 0.8) end
+        if not cpBorder then
+            cpBorder = MakeBorder(container, 0, 0, 0, 0.8)
+        end
         cpBorder._frame:SetFrameLevel(container:GetFrameLevel() + 1)
         cpBorder.edges:SetFrameLevel(container:GetFrameLevel() + 2)
         cpBorder._frame:Show()
@@ -228,7 +253,7 @@ local function CreateCustomClassPower(playerFrame, style)
         container._bottomBdrFrame = cpBdrOverlay
     end
     cpBdrOverlay:SetFrameLevel(container:GetFrameLevel() + 20)
-    cpBdrOverlay:Hide()  -- shown only when position is "above"
+    cpBdrOverlay:Hide() -- shown only when position is "above"
 
     local useClassColor = db.profile.player.classPowerClassColor ~= false
     local cr, cg, cb
@@ -242,7 +267,11 @@ local function CreateCustomClassPower(playerFrame, style)
             cr, cg, cb = rc.r, rc.g, rc.b
         else
             local cc = CludesUI.GetClassColor(playerClass)
-            if cc then cr, cg, cb = cc.r, cc.g, cc.b else cr, cg, cb = 1, 1, 1 end
+            if cc then
+                cr, cg, cb = cc.r, cc.g, cc.b
+            else
+                cr, cg, cb = 1, 1, 1
+            end
         end
     end
 
@@ -300,7 +329,7 @@ local function CreateCustomClassPower(playerFrame, style)
     -- table), so #pips is a high-water mark that stops matching a shrunk-then-
     -- regrown max and silently skips the rebuild below.
     local shownPipCount = 0
-    local staggerBar  -- set only in bar mode
+    local staggerBar -- set only in bar mode
     if isBarMode then
         -- Single StatusBar filling the container; color updates per-tier.
         local inset = pad / 2
@@ -313,7 +342,7 @@ local function CreateCustomClassPower(playerFrame, style)
         end
         staggerBar:SetFrameLevel(container:GetFrameLevel() + 1)
         staggerBar:ClearAllPoints()
-        PP.Point(staggerBar, "TOPLEFT",     container, "TOPLEFT",     inset, 0)
+        PP.Point(staggerBar, "TOPLEFT", container, "TOPLEFT", inset, 0)
         PP.Point(staggerBar, "BOTTOMRIGHT", container, "BOTTOMRIGHT", -inset, 0)
         staggerBar:SetMinMaxValues(0, maxPower)
         staggerBar:SetValue(0)
@@ -323,15 +352,21 @@ local function CreateCustomClassPower(playerFrame, style)
         staggerBar._lastR, staggerBar._lastG, staggerBar._lastB = nil, nil, nil
         staggerBar:Show()
         container._staggerBar = staggerBar
-        for i = 1, #cpPipPool do cpPipPool[i]:Hide() end
+        for i = 1, #cpPipPool do
+            cpPipPool[i]:Hide()
+        end
     else
         container._staggerBar = nil
-        if cpStaggerBar then cpStaggerBar:Hide() end
+        if cpStaggerBar then
+            cpStaggerBar:Hide()
+        end
         for i = 1, maxPower do
             pips[i] = MakePip(container, i)
         end
         -- Pooled pips past this build's count stay hidden until a regrown max takes them.
-        for i = maxPower + 1, #cpPipPool do cpPipPool[i]:Hide() end
+        for i = maxPower + 1, #cpPipPool do
+            cpPipPool[i]:Hide()
+        end
         shownPipCount = maxPower
     end
 
@@ -342,14 +377,15 @@ local function CreateCustomClassPower(playerFrame, style)
         if isBarMode and staggerBar then
             if powerType == "BREWMASTER_STAGGER" then
                 local stagger = UnitStagger and UnitStagger("player") or 0
-                local maxHP   = UnitHealthMax("player") or 0
-                local tainted = issecretvalue
-                             and (issecretvalue(stagger) or issecretvalue(maxHP))
+                local maxHP = UnitHealthMax("player") or 0
+                local tainted = issecretvalue and (issecretvalue(stagger) or issecretvalue(maxHP))
                 if tainted then
                     staggerBar:Hide()
                     return
                 end
-                if maxHP <= 0 then maxHP = 1 end
+                if maxHP <= 0 then
+                    maxHP = 1
+                end
                 if staggerBar._lastMax ~= maxHP then
                     staggerBar._lastMax = maxHP
                     staggerBar:SetMinMaxValues(0, maxHP)
@@ -357,9 +393,13 @@ local function CreateCustomClassPower(playerFrame, style)
                 staggerBar:SetValue(stagger)
                 local pct = stagger / maxHP
                 local sr, sg, sb
-                if pct >= 0.6 then      sr, sg, sb = 1.0,  0.2,  0.2
-                elseif pct >= 0.3 then  sr, sg, sb = 1.0,  0.85, 0.2
-                else                    sr, sg, sb = 0.2,  0.8,  0.2 end
+                if pct >= 0.6 then
+                    sr, sg, sb = 1.0, 0.2, 0.2
+                elseif pct >= 0.3 then
+                    sr, sg, sb = 1.0, 0.85, 0.2
+                else
+                    sr, sg, sb = 0.2, 0.8, 0.2
+                end
                 if staggerBar._lastR ~= sr or staggerBar._lastG ~= sg or staggerBar._lastB ~= sb then
                     staggerBar._lastR, staggerBar._lastG, staggerBar._lastB = sr, sg, sb
                     staggerBar:GetStatusBarTexture():SetVertexColor(sr, sg, sb, 1)
@@ -368,7 +408,9 @@ local function CreateCustomClassPower(playerFrame, style)
                 local cur, maxC = 0, customMax or 50
                 if CludesUI and CludesUI.GetSoulFragments then
                     cur, maxC = CludesUI.GetSoulFragments()
-                    if not maxC or maxC <= 0 then maxC = customMax or 50 end
+                    if not maxC or maxC <= 0 then
+                        maxC = customMax or 50
+                    end
                 end
                 if staggerBar._lastMax ~= maxC then
                     staggerBar._lastMax = maxC
@@ -385,7 +427,9 @@ local function CreateCustomClassPower(playerFrame, style)
                     end
                 end
             end
-            if not staggerBar:IsShown() then staggerBar:Show() end
+            if not staggerBar:IsShown() then
+                staggerBar:Show()
+            end
             return
         end
         local cur, max
@@ -402,7 +446,11 @@ local function CreateCustomClassPower(playerFrame, style)
                 -- Engine slot owns the display (CludesUI_WarriorCharges):
                 -- the true count fills the overlay bar C-side; legacy pips
                 -- stay hidden (empty row until the deferred build lands).
-                for i = 1, #pips do if pips[i] then pips[i]:Hide() end end
+                for i = 1, #pips do
+                    if pips[i] then
+                        pips[i]:Hide()
+                    end
+                end
                 return
             elseif powerType == "ICICLES" then
                 -- Frost Mage Icicles: stack count from the Icicles aura (205473).
@@ -411,22 +459,25 @@ local function CreateCustomClassPower(playerFrame, style)
                     local aura = C_UnitAuras.GetPlayerAuraBySpellID(205473)
                     if aura then
                         count = aura.applications or aura.charges or aura.points or 0
-                        if count > 5 then count = 5 end
+                        if count > 5 then
+                            count = 5
+                        end
                     end
                 end
                 cur, max = count, 5
             else
                 cur, max = 0, maxPower
             end
-            if not max or max <= 0 then max = maxPower end
+            if not max or max <= 0 then
+                max = maxPower
+            end
         else
             -- Forever combo points belong to the target, and UnitPower still
             -- reports the previous target's count at the moment
             -- PLAYER_TARGET_CHANGED fires (measured on 1.60.1: up=3 while
             -- gcp=0 on the swap), with no later power event to correct it.
             -- Blizzard's own ComboFrame reads GetComboPoints for the same reason.
-            if CludesUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints
-               and GetComboPoints then
+            if CludesUI.IS_FOREVER == true and powerType == Enum.PowerType.ComboPoints and GetComboPoints then
                 cur = GetComboPoints("player", "target") or 0
             else
                 cur = UnitPower("player", powerType) or 0
@@ -438,7 +489,9 @@ local function CreateCustomClassPower(playerFrame, style)
                 cur = 0
                 for i = 1, max do
                     local start, duration, ready = GetRuneCooldown(i)
-                    if ready then cur = cur + 1 end
+                    if ready then
+                        cur = cur + 1
+                    end
                 end
             end
         end
@@ -448,7 +501,9 @@ local function CreateCustomClassPower(playerFrame, style)
         -- matching once max shrinks and regrows to a previously-seen value,
         -- leaving the high pips stuck hidden and the container stuck narrow.
         if max ~= shownPipCount and max > 0 then
-            for _, p in ipairs(pips) do p:Hide() end
+            for _, p in ipairs(pips) do
+                p:Hide()
+            end
             local newTotalW = max * pipSize + (max - 1) * gap + pad
             container:SetWidth(newTotalW)
             for i = 1, max do
@@ -465,8 +520,11 @@ local function CreateCustomClassPower(playerFrame, style)
             -- Only "above" stretches the row across the health bar (see
             -- PositionClassPowerBar); every other position keeps the natural pip
             -- width laid out just above.
-            if isModern and (db.profile.player.classPowerPosition or "top") == "above"
-               and container._repositionForWidth then
+            if
+                isModern
+                and (db.profile.player.classPowerPosition or "top") == "above"
+                and container._repositionForWidth
+            then
                 container._repositionForWidth(db.profile.player.frameWidth or 181)
             end
         end
@@ -492,14 +550,18 @@ local function CreateCustomClassPower(playerFrame, style)
                     pips[i]._secretBar:SetStatusBarColor(cr, cg, cb, 1)
                     pips[i]._secretBar:Show()
                     -- Hide normal fill; StatusBar replaces it
-                    if pips[i]._fill then pips[i]._fill:Hide() end
+                    if pips[i]._fill then
+                        pips[i]._fill:Hide()
+                    end
                 end
             end
         else
             -- Clean-value path
             for i = 1, #pips do
                 if pips[i] then
-                    if pips[i]._secretBar then pips[i]._secretBar:Hide() end
+                    if pips[i]._secretBar then
+                        pips[i]._secretBar:Hide()
+                    end
                     if pips[i]._fill then
                         if i <= cur then
                             pips[i]._fill:Show()
@@ -525,13 +587,16 @@ local function CreateCustomClassPower(playerFrame, style)
         -- Per-resource event registration: only register what each resource actually
         -- needs. Icicles, Maelstrom Weapon and Tip of the Spear are aura-driven; everything
         -- else polls via OnUpdate (either Lua API changes mid-combat, or no reliable event exists).
-        local auraDriven    = (powerType == "MAELSTROM_WEAPON" or powerType == "ICICLES"
-            or powerType == "TIP_OF_THE_SPEAR")
+        local auraDriven = (
+            powerType == "MAELSTROM_WEAPON"
+            or powerType == "ICICLES"
+            or powerType == "TIP_OF_THE_SPEAR"
+        )
         -- Warrior charge buffs are engine-driven end to end (the overlay owns
         -- the row: CludesUI_WarriorCharges): no poll, no cast events.
-        local engineDriven  = (powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES")
+        local engineDriven = (powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES")
         local needsOnUpdate = not auraDriven and not engineDriven
-        local needsAura     = auraDriven
+        local needsAura = auraDriven
 
         if needsOnUpdate then
             -- 10 Hz poll on the shared anim ticker (see ns._cpDriverTick):
@@ -575,12 +640,18 @@ local function CreateCustomClassPower(playerFrame, style)
             eventFrame:RegisterEvent("COMBO_TARGET_CHANGED")
         end
         eventFrame:SetScript("OnEvent", function(_, event, unit)
-            if druidFormToggle and (event == "UPDATE_SHAPESHIFT_FORM" or event == "PLAYER_ENTERING_WORLD") then
+            if
+                druidFormToggle and (event == "UPDATE_SHAPESHIFT_FORM" or event == "PLAYER_ENTERING_WORLD")
+            then
                 container:SetShown(InCatForm())
             end
-            if event == "PLAYER_ENTERING_WORLD" or event == "RUNE_POWER_UPDATE"
-               or event == "PLAYER_TARGET_CHANGED" or event == "COMBO_TARGET_CHANGED"
-               or (unit == "player") then
+            if
+                event == "PLAYER_ENTERING_WORLD"
+                or event == "RUNE_POWER_UPDATE"
+                or event == "PLAYER_TARGET_CHANGED"
+                or event == "COMBO_TARGET_CHANGED"
+                or (unit == "player")
+            then
                 UpdatePips()
             end
         end)
@@ -614,10 +685,16 @@ local function CreateCustomClassPower(playerFrame, style)
         -- shownPipCount, not #pips: the table is a high-water mark, so a shrunk
         -- max would divide the width by the old pip count and leave a gap.
         local n = shownPipCount
-        if n <= 0 then return end
+        if n <= 0 then
+            return
+        end
         local efs = container:GetEffectiveScale()
-        if efs <= 0 then efs = 1 end
-        local function Snap(v) return math_floor(v * efs + 0.5) / efs end
+        if efs <= 0 then
+            efs = 1
+        end
+        local function Snap(v)
+            return math_floor(v * efs + 0.5) / efs
+        end
         local intW = math_floor(targetW)
         local gapPx = Snap(gap)
         local totalGapW = (n - 1) * gapPx
@@ -647,19 +724,25 @@ end
 -- PositionClassPowerBar, so "above" stretching has already settled the width.
 ns._WCUF_Sync = function(container)
     local ewc = _G._EWC
-    if not (ewc and container) then return end
+    if not (ewc and container) then
+        return
+    end
     local powerType = container._powerType
-    if (powerType ~= "WHIRLWIND_STACKS" and powerType ~= "SWEEPING_STRIKES")
-       or container._style == "circles" then
+    if
+        (powerType ~= "WHIRLWIND_STACKS" and powerType ~= "SWEEPING_STRIKES")
+        or container._style == "circles"
+    then
         ewc.Gate("uf")
         return
     end
     local position = db.profile.player.classPowerPosition or "top"
-    local stretched = (container._style == "modern" and position == "above")
-        and container:GetWidth() or nil
+    local stretched = (container._style == "modern" and position == "above") and container:GetWidth() or nil
     ewc.Sync("uf", container, powerType, {
         texPath = "Interface\\Buttons\\WHITE8x8",
-        r = container._cpR, g = container._cpG, b = container._cpB, a = 1,
+        r = container._cpR,
+        g = container._cpG,
+        b = container._cpB,
+        a = 1,
         ori = "HORIZONTAL",
         sep = {
             r = container._sepCol and container._sepCol.r or 0.082,
@@ -685,7 +768,9 @@ end
 -- FACTION_BAR_COLORS when unset, so this is idempotent and reset-safe (re-applies the
 -- active profile's colors on profile swap). Hostile = reactions 1-3, Neutral = 4, Friendly = 5-8.
 local function ApplyEnemyColors()
-    if not (ns.Colors and ns.Colors.reaction and FACTION_BAR_COLORS) then return end
+    if not (ns.Colors and ns.Colors.reaction and FACTION_BAR_COLORS) then
+        return
+    end
     local ec = (db and db.profile and db.profile.enemyColors) or {}
     local function setIdx(idx, custom)
         local f = FACTION_BAR_COLORS[idx]
@@ -694,9 +779,13 @@ local function ApplyEnemyColors()
         local b = (custom and custom.b) or (f and f.b) or 1
         ns.Colors.reaction[idx] = CreateColor(r, g, b)
     end
-    for i = 1, 3 do setIdx(i, ec.hostile)  end
+    for i = 1, 3 do
+        setIdx(i, ec.hostile)
+    end
     setIdx(4, ec.neutral)
-    for i = 5, 8 do setIdx(i, ec.friendly) end
+    for i = 5, 8 do
+        setIdx(i, ec.friendly)
+    end
     local tc = ec.tapped
     ns.Colors.tapped = CreateColor((tc and tc.r) or 0.6, (tc and tc.g) or 0.6, (tc and tc.b) or 0.6)
     ns.Engine.ForceAll("OnShow")

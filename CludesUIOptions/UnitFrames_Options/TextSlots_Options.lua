@@ -1,9 +1,26 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local ns = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not ns then return end
+if not ns then
+    return
+end
 
-local MOVE_KEYS = { "X", "Y", "WidthPct", "ClassColor", "ColorR", "ColorG", "ColorB",
-    "NameFormat", "TargetSep", "TargetPrefix", "TargetSepColor", "TargetSepClassColor", "CustomFormat" }
+local MOVE_KEYS = {
+    "X",
+    "Y",
+    "WidthPct",
+    "ClassColor",
+    "ColorR",
+    "ColorG",
+    "ColorB",
+    "NameFormat",
+    "TargetSep",
+    "TargetPrefix",
+    "TargetSepColor",
+    "TargetSepClassColor",
+    "CustomFormat",
+}
 
 -- False for content a slot keeps to itself: "none", and "custom", whose format
 -- is stored per slot, so several slots may use it and none is picked for them.
@@ -41,13 +58,23 @@ function ns.UFO_EditCustomText(prefix, db, unit, onSave)
             color = { r = 0.9, g = 0.3, b = 0.3 }
         end
     else
-        color = { r = db[prefix .. "ColorR"] or 1, g = db[prefix .. "ColorG"] or 1, b = db[prefix .. "ColorB"] or 1 }
+        color = {
+            r = db[prefix .. "ColorR"] or 1,
+            g = db[prefix .. "ColorG"] or 1,
+            b = db[prefix .. "ColorB"] or 1,
+        }
     end
     CludesUI.TextTags.EditPopup({
-        cat = ns.UF_TextTags, color = color, onSave = onSave,
+        cat = ns.UF_TextTags,
+        color = color,
+        onSave = onSave,
         tagNotes = { hp = CludesUI.L("shows DEAD or OFFLINE") },
-        get = function() return db[key] end,
-        set = function(txt) db[key] = txt end,
+        get = function()
+            return db[key]
+        end,
+        set = function(txt)
+            db[key] = txt
+        end,
     })
 end
 
@@ -56,8 +83,11 @@ end
 -- "custom". The menu reads the alpha when it is built, so a selection has
 -- to rebuild it (page rebuild or _invalidateMenu).
 function ns.UFO_CustomTextValues(values, getValue, edit)
-    return CludesUI.TextTags.MenuValues(values, edit,
-        { selected = function() return getValue() == "custom" end })
+    return CludesUI.TextTags.MenuValues(values, edit, {
+        selected = function()
+            return getValue() == "custom"
+        end,
+    })
 end
 
 -- For a dropdown whose selection keeps the page: rebuilds the given regions'
@@ -69,10 +99,16 @@ function ns.UFO_RefreshMenus(...)
     C_Timer.After(0, function()
         for i = 1, n do
             local dd = rgns[i] and rgns[i]._control
-            if dd and dd._invalidateMenu then dd._invalidateMenu() end
+            if dd and dd._invalidateMenu then
+                dd._invalidateMenu()
+            end
         end
         local rl = CludesUI._widgetRefreshList
-        if rl then for ri = 1, #rl do rl[ri]() end end
+        if rl then
+            for ri = 1, #rl do
+                rl[ri]()
+            end
+        end
     end)
 end
 
@@ -82,14 +118,22 @@ end
 local PCT_TIP = "This option is only available for formats that display a percentage."
 function ns.UFO_PowerTextCog(get, set, pctOff, setShowPct)
     local rows = ns.UF_NameFormatRows("powerText", "perpp", get, set, {
-        { type="toggle", label="Show %",
-          disabled=function() return get("powerTextFormat", "perpp") == "custom" end,
-          disabledTooltip=PCT_TIP,
-          get=function() return get("powerShowPercent", true) ~= false end,
-          set=setShowPct },
+        {
+            type = "toggle",
+            label = "Show %",
+            disabled = function()
+                return get("powerTextFormat", "perpp") == "custom"
+            end,
+            disabledTooltip = PCT_TIP,
+            get = function()
+                return get("powerShowPercent", true) ~= false
+            end,
+            set = setShowPct,
+        },
     }, "powerTextFormat")
     return {
-        title = "Power Text", rows = rows,
+        title = "Power Text",
+        rows = rows,
         disabled = function()
             local fmt = get("powerTextFormat", "perpp")
             if fmt == "custom" then
@@ -110,10 +154,15 @@ end
 -- on a Custom slot, or one holding a format an override may switch back to.
 function ns.UFO_AddCustomFormatAccessor(rgn, label, prefix, content, getDB, apply)
     local fk = prefix .. "CustomFormat"
-    if content ~= "custom" and type(getDB()[fk]) ~= "string" then return end
-    CludesUI.TextTags.AddFormatAccessor(rgn, label,
-        function() return getDB()[fk] end,
-        function(v) getDB()[fk] = v; apply() end)
+    if content ~= "custom" and type(getDB()[fk]) ~= "string" then
+        return
+    end
+    CludesUI.TextTags.AddFormatAccessor(rgn, label, function()
+        return getDB()[fk]
+    end, function(v)
+        getDB()[fk] = v
+        apply()
+    end)
 end
 
 -- Level coloring is shared by the unit, and edited from its level-text cogs.
@@ -122,25 +171,41 @@ function ns.UF_CoreTextRows(prefix, contentDefault, get, set, rows)
     local content = get(prefix .. "Content", contentDefault)
     local parsed = content == "custom"
         and CludesUI.TextTags.Parse(ns.UF_TextTags, get(prefix .. "CustomFormat"))
-    local hasLevel = content == "level" or content == "levelname" or content == "namelevel"
+    local hasLevel = content == "level"
+        or content == "levelname"
+        or content == "namelevel"
         or (parsed and parsed.has.level)
-    if not hasLevel then return rows end
-    rows[#rows + 1] = { type="toggle", label="Level Text: Difficulty Color",
-        tooltip="Colors level text by difficulty, from grey (trivial) through green, yellow and orange to red (5+ levels above you).",
-        get=function() return get("levelDifficultyColor", false) == true end,
-        set=function(v)
+    if not hasLevel then
+        return rows
+    end
+    rows[#rows + 1] = {
+        type = "toggle",
+        label = "Level Text: Difficulty Color",
+        tooltip = "Colors level text by difficulty, from grey (trivial) through green, yellow and orange to red (5+ levels above you).",
+        get = function()
+            return get("levelDifficultyColor", false) == true
+        end,
+        set = function(v)
             set("levelDifficultyColor", v)
             ns._UFO_OptEnv.UpdatePreview()
-        end }
-    rows[#rows + 1] = { type="toggle", label="Level Text: Include Friendly",
-        tooltip="Friendly units get their level's color too, instead of gold.",
-        disabled=function() return get("levelDifficultyColor", false) ~= true end,
-        disabledTooltip="Level Text: Difficulty Color",
-        get=function() return get("levelDifficultyColorFriendly", false) == true end,
-        set=function(v)
+        end,
+    }
+    rows[#rows + 1] = {
+        type = "toggle",
+        label = "Level Text: Include Friendly",
+        tooltip = "Friendly units get their level's color too, instead of gold.",
+        disabled = function()
+            return get("levelDifficultyColor", false) ~= true
+        end,
+        disabledTooltip = "Level Text: Difficulty Color",
+        get = function()
+            return get("levelDifficultyColorFriendly", false) == true
+        end,
+        set = function(v)
             set("levelDifficultyColorFriendly", v)
             ns._UFO_OptEnv.UpdatePreview()
-        end }
+        end,
+    }
     return rows
 end
 
@@ -157,13 +222,21 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
     textValues.none = "Remove"
     textValues._menuOpts = {
         icon = function(key)
-            if key == "none" then return "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png" end
+            if key == "none" then
+                return "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
+            end
         end,
-        iconSize = function() return 12 end,
+        iconSize = function()
+            return 12
+        end,
         iconClearScroll = true,
-        iconColor = function() return 1, 0.35, 0.35, 0.75 end,
+        iconColor = function()
+            return 1, 0.35, 0.35, 0.75
+        end,
         labelColor = function(key)
-            if key == "none" then return 1, 0.35, 0.35, 0.8 end
+            if key == "none" then
+                return 1, 0.35, 0.35, 0.8
+            end
         end,
     }
     local function Notify(key)
@@ -184,7 +257,9 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
         else
             s.cfg.values = textValues
         end
-        if s.cfg.getValue() ~= "none" then cells[#cells + 1] = s end
+        if s.cfg.getValue() ~= "none" then
+            cells[#cells + 1] = s
+        end
     end
     local function Assigned(key)
         local s = byKey[key]
@@ -192,7 +267,9 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
     end
     local function Full()
         for i = 1, #slots do
-            if not Assigned(slots[i].key) then return false end
+            if not Assigned(slots[i].key) then
+                return false
+            end
         end
         return true
     end
@@ -202,24 +279,33 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
             if v ~= "---" and ns.UF_IsUniqueContent(v) then
                 local used = false
                 for j = 1, #slots do
-                    if slots[j].cfg.getValue() == v then used = true; break end
+                    if slots[j].cfg.getValue() == v then
+                        used = true
+                        break
+                    end
                 end
-                if not used then return v end
+                if not used then
+                    return v
+                end
             end
         end
     end
     local function Add(key)
         local v = Candidate()
         if Assigned(key) or not byKey[key] or not v then
-            CludesUI:RefreshPage(true); return
+            CludesUI:RefreshPage(true)
+            return
         end
         Notify(key)
         byKey[key].cfg.setValue(v)
     end
     local function Move(source, dest)
-        if source == dest then return end
+        if source == dest then
+            return
+        end
         if not Assigned(source) or not byKey[dest] or Assigned(dest) then
-            CludesUI:RefreshPage(true); return
+            CludesUI:RefreshPage(true)
+            return
         end
         local db = opts.db()
         local content = byKey[source].cfg.getValue()
@@ -229,13 +315,17 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
             -- The format moves only with Custom; otherwise the destination keeps its own.
             if suffix ~= "CustomFormat" or content == "custom" then
                 local v = db[source .. suffix]
-                if type(v) == "table" then v = CopyTable(v) end
+                if type(v) == "table" then
+                    v = CopyTable(v)
+                end
                 db[dest .. suffix] = v
             end
         end
         db[dest .. "Size"] = size
         if dest == "extraText" then
-            db.extraTextAlign = source == "rightText" and "right" or source == "centerText" and "center" or "left"
+            db.extraTextAlign = source == "rightText" and "right"
+                or source == "centerText" and "center"
+                or "left"
         end
         db[dest .. "Content"], db[source .. "Content"] = content, "none"
         Notify(dest)
@@ -244,42 +334,84 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
     end
 
     local addOpen
-    local addCfg = { type="button", text="+ Add Text Slot", width=220,
-        onClick=function() if addOpen then addOpen() end end,
-        disabled=function() return Full() or Candidate() == nil end,
-        disabledTooltip="Every text position is full." }
+    local addCfg = {
+        type = "button",
+        text = "+ Add Text Slot",
+        width = 220,
+        onClick = function()
+            if addOpen then
+                addOpen()
+            end
+        end,
+        disabled = function()
+            return Full() or Candidate() == nil
+        end,
+        disabledTooltip = "Every text position is full.",
+    }
     cells[#cells + 1] = addCfg
     local function Config(c)
-        if not c then return CludesUI.BlankRowCfg() end
+        if not c then
+            return CludesUI.BlankRowCfg()
+        end
         return c.cfg or c
     end
     local firstRow
     local function Finish(row, side, cell)
-        if not cell then return end
+        if not cell then
+            return
+        end
         firstRow = firstRow or row
         local rgn = row[side]
         if cell == addCfg then
             if not CludesUI._prebuilding then
-                addOpen = CludesUI.AttachButtonMenu(rgn._control, { width=220,
-                    order=order, values=values, setValue=Add,
-                    itemDisabled=function(v) return Assigned(v) or Candidate() == nil end })
+                addOpen = CludesUI.AttachButtonMenu(rgn._control, {
+                    width = 220,
+                    order = order,
+                    values = values,
+                    setValue = Add,
+                    itemDisabled = function(v)
+                        return Assigned(v) or Candidate() == nil
+                    end,
+                })
             end
             return
         end
-        if not cell.key then return end
-        targets[cell.key] = { row=row, side=side }
-        if CludesUI._prebuilding then return end
-        CludesUI.BuildRowLabelMenu(rgn, { order=order, values=values,
-            getValue=function() return cell.key end,
-            setValue=function(v) Move(cell.key, v) end,
-            itemDisabled=function(v)
-                if not Assigned(cell.key) then return true end
-                if v ~= cell.key and Assigned(v) then return true end
+        if not cell.key then
+            return
+        end
+        targets[cell.key] = { row = row, side = side }
+        if CludesUI._prebuilding then
+            return
+        end
+        CludesUI.BuildRowLabelMenu(rgn, {
+            order = order,
+            values = values,
+            getValue = function()
+                return cell.key
             end,
-            tooltip="Choose this text's slot position." })
+            setValue = function(v)
+                Move(cell.key, v)
+            end,
+            itemDisabled = function(v)
+                if not Assigned(cell.key) then
+                    return true
+                end
+                if v ~= cell.key and Assigned(v) then
+                    return true
+                end
+            end,
+            tooltip = "Choose this text's slot position.",
+        })
         cell.decorate(rgn)
         if cell.cfg.values and cell.cfg.values.custom then
-            ns.UFO_AddCustomFormatAccessor(rgn, cell.position, cell.key, cell.cfg.getValue(), opts.db, opts.apply)
+            ns.UFO_AddCustomFormatAccessor(
+                rgn,
+                cell.position,
+                cell.key,
+                cell.cfg.getValue(),
+                opts.db,
+                opts.apply
+            )
         end
         local pending = ns._ufTextNotify
         if pending and pending.unit == opts.unit and pending.key == cell.key then
@@ -299,12 +431,16 @@ function ns.UFO_BuildTextSlots(W, parent, y, opts)
     if not CludesUI._prebuilding then
         -- Presets/spec changes can alter the list while the page is cached.
         local saved = {}
-        for i = 1, #slots do saved[i] = slots[i].cfg.getValue() end
+        for i = 1, #slots do
+            saved[i] = slots[i].cfg.getValue()
+        end
         ns._ufTextChecks = ns._ufTextChecks or {}
         ns._ufTextChecks[opts.page] = function()
             local db = opts.liveDB()
             for i = 1, #slots do
-                if (db[slots[i].key .. "Content"] or slots[i].default) ~= saved[i] then return true end
+                if (db[slots[i].key .. "Content"] or slots[i].default) ~= saved[i] then
+                    return true
+                end
             end
             return false
         end
@@ -314,6 +450,9 @@ end
 
 function ns.UFO_TextClickTarget(parent, key, section, fallback)
     local c = parent._ufTextCells and parent._ufTextCells[key]
-    return { section=c and parent._ufTextHeader or section, target=c and c.row or fallback,
-        slotSide=c and (c.side == "_leftRegion" and "left" or "right") or nil }
+    return {
+        section = c and parent._ufTextHeader or section,
+        target = c and c.row or fallback,
+        slotSide = c and (c.side == "_leftRegion" and "left" or "right") or nil,
+    }
 end

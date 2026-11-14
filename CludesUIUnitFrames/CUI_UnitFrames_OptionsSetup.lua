@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_OptionsSetup.lua
 --
@@ -17,7 +19,9 @@ local frames, ApplyFramePosition, GetFrameDimensions = I.frames, I.ApplyFramePos
 local ReloadFrames, ResolveFontPath, ApplyDarkTheme = I.ReloadFrames, I.ResolveFontPath, I.ApplyDarkTheme
 local ApplyBlizzCastbarState, ApplyUnitFrameCastColor = I.ApplyBlizzCastbarState, I.ApplyUnitFrameCastColor
 local db
-I.dbSetters[#I.dbSetters + 1] = function(v) db = v end
+I.dbSetters[#I.dbSetters + 1] = function(v)
+    db = v
+end
 
 local function SetupOptionsPanel()
     ns.db = db
@@ -65,13 +69,19 @@ local function SetupOptionsPanel()
     -- and rebuild; running it every reload would thrash the bar.
     local RealiseClassPowerStyle
     RealiseClassPowerStyle = function()
-        if not frames._toggleClassPower then return end
+        if not frames._toggleClassPower then
+            return
+        end
         local wantCP = db.profile.player.classPowerStyle or "none"
         -- WoW Forever: compare the style that builds, not the saved one (the
         -- toggle keeps the saved style and builds its effective style).
         local builtCP = wantCP
-        if ns.UF_ForeverCPStyle then builtCP = ns.UF_ForeverCPStyle(wantCP) end
-        if builtCP == frames._classPowerBuiltStyle then return end
+        if ns.UF_ForeverCPStyle then
+            builtCP = ns.UF_ForeverCPStyle(wantCP)
+        end
+        if builtCP == frames._classPowerBuiltStyle then
+            return
+        end
         -- The toggle reparents Blizzard's class power frame and re-anchors the
         -- health bar. The throttle body keeps running after ReloadFrames()'s
         -- lockdown return (same shape as the UpdateFrameVisibility note in InitializeFrames),
@@ -100,7 +110,9 @@ local function SetupOptionsPanel()
         -- player's class color (preview rides on unit="player") + re-tags the name.
         -- Re-assert the preview (red color + fake name) so a settings change doesn't
         -- revert it. Secret-safe: no health values are read.
-        if ns._bossPreviewActive and ns.SetBossPreview then ns.SetBossPreview(true) end
+        if ns._bossPreviewActive and ns.SetBossPreview then
+            ns.SetBossPreview(true)
+        end
         -- ReloadFrames rebuilds frames but never touches the top-level wrapper/3D-
         -- portrait alpha, so recompute the out-of-combat fade here. Without this, a
         -- profile/spec swap (or first switch to a 3D portrait, whose PlayerModel is
@@ -108,7 +120,9 @@ local function SetupOptionsPanel()
         -- until the next combat/target/zone event. Safe from the throttle:
         -- UpdateFrameVisibility guards its restricted Show/Hide behind
         -- InCombatLockdown, and SetAlpha is unrestricted.
-        if ns.UpdateFrameVisibility then ns.UpdateFrameVisibility() end
+        if ns.UpdateFrameVisibility then
+            ns.UpdateFrameVisibility()
+        end
         -- The pet's containers are built only once its Buffs or Debuffs is on,
         -- and every path that can turn one on (the options, a profile switch,
         -- a Spec or Conditional Override) lands here: ask for them before the
@@ -117,7 +131,9 @@ local function SetupOptionsPanel()
         -- 12.1 aura containers reload with every real pass (direct call --
         -- ns.ReloadFrames is just the throttle-arming stub, so wrapping it
         -- from the container file is timing-unreliable).
-        if ns.UF_ReloadAllAuraContainers then ns.UF_ReloadAllAuraContainers() end
+        if ns.UF_ReloadAllAuraContainers then
+            ns.UF_ReloadAllAuraContainers()
+        end
         -- Class power: _toggleClassPower is the only thing that honours a
         -- classPowerStyle change, and options + the spec watcher are its only
         -- other callers -- styles changed by overrides, profile switch, or
@@ -126,7 +142,9 @@ local function SetupOptionsPanel()
         -- Threat watchers and the targeting sounds: a profile switch or spec
         -- override changes the saved toggles without calling their setters.
         ns.SyncPlayerThreat()
-        if ns.SyncThreatPct then ns.SyncThreatPct() end
+        if ns.SyncThreatPct then
+            ns.SyncThreatPct()
+        end
         ns.UF_SyncTargetSounds()
     end
     reloadThrottle:SetScript("OnUpdate", function(self)
@@ -140,17 +158,17 @@ local function SetupOptionsPanel()
             reloadThrottle:Show()
         end
     end
-    _G._EUF_ReloadFrames = ns.ReloadFrames
+    _G._CUUF_ReloadFrames = ns.ReloadFrames
 
     -- Fake debuff icons for the boss preview. Three square icons anchored where the
     -- real Debuffs frame would live, sized to match the Simple Debuff Display layout
     -- (frame bar height, growing right-to-left off the frame's left edge). Built on
     -- first use per boss frame, refreshed in place on every call, hidden on preview
     -- disable.
-    local FAKE_DEBUFF_SPELLS = { 122, 172, 1714 }  -- Frost Nova, Corruption, Curse of Tongues
-    local FAKE_DEBUFF_STACKS = { [2] = 3 }          -- one fake stack (icon 2 only)
-    local FAKE_DEBUFF_FRACS  = { 0.35, 0.62, 0.88 } -- static fake swipe fraction remaining
-    local FAKE_DEBUFF_SECS   = { 8, 15, 23 }         -- static fake duration-text seconds
+    local FAKE_DEBUFF_SPELLS = { 122, 172, 1714 } -- Frost Nova, Corruption, Curse of Tongues
+    local FAKE_DEBUFF_STACKS = { [2] = 3 } -- one fake stack (icon 2 only)
+    local FAKE_DEBUFF_FRACS = { 0.35, 0.62, 0.88 } -- static fake swipe fraction remaining
+    local FAKE_DEBUFF_SECS = { 8, 15, 23 } -- static fake duration-text seconds
     -- Preview-only: a fake aura icon wears the boss aura border settings (the ring
     -- the live buttons' style builds, drawn through the same eight-slice path;
     -- the owned border frame doubles as its texture cache). Blizzard Style keeps
@@ -158,45 +176,70 @@ local function SetupOptionsPanel()
     -- the Lua 5.1 local ceiling.
     ns.BossPreviewAuraBorder = function(border, settings)
         if ns.UF_Blizz and ns.UF_Blizz() then
-            if PP and PP.CreateBorder then PP.CreateBorder(border, 0, 0, 0, 1) end
+            if PP and PP.CreateBorder then
+                PP.CreateBorder(border, 0, 0, 0, 1)
+            end
         else
             local size = settings.auraBorderSize or 1
             local tex = settings.auraBorderTexture or "solid"
             if ns.UF_BossAuraBorderAboveEffects(settings) then
                 border:SetFrameLevel(border:GetParent():GetFrameLevel() + 20)
             end
-            CludesUI.ApplySecretSafeBorderStyle(border, border, size,
-                settings.auraBorderR or 0, settings.auraBorderG or 0, settings.auraBorderB or 0, settings.auraBorderA or 1,
-                tex, settings.auraBorderTextureOffset, settings.auraBorderTextureOffsetY,
-                settings.auraBorderTextureShiftX, settings.auraBorderTextureShiftY,
-                "unitframes", size, nil, CludesUI.BorderPx(settings.auraBorderSizePx, size, tex))
+            CludesUI.ApplySecretSafeBorderStyle(
+                border,
+                border,
+                size,
+                settings.auraBorderR or 0,
+                settings.auraBorderG or 0,
+                settings.auraBorderB or 0,
+                settings.auraBorderA or 1,
+                tex,
+                settings.auraBorderTextureOffset,
+                settings.auraBorderTextureOffsetY,
+                settings.auraBorderTextureShiftX,
+                settings.auraBorderTextureShiftY,
+                "unitframes",
+                size,
+                nil,
+                CludesUI.BorderPx(settings.auraBorderSizePx, size, tex)
+            )
         end
         -- The border frame is reused across refreshes and its level is set on
         -- each one: keep its solid strips one level over it, as when built.
         local strips = PP.GetBorders(border)
-        if strips then strips:SetFrameLevel(border:GetFrameLevel() + 1) end
+        if strips then
+            strips:SetFrameLevel(border:GetFrameLevel() + 1)
+        end
     end
     local function AttachFakeDebuffs(frame)
         -- Hide the holder until it is laid out again below, so size, anchor and
         -- style follow the current settings on every call.
         local holder = frame._previewDebuffs
-        if holder then holder:Hide() end
+        if holder then
+            holder:Hide()
+        end
         -- Suppress the real (player-unit) debuffs while the fake overlay is up so
         -- the preview shows exactly the fake set. Restored by ReloadFrames when
         -- the preview is disabled.
-        if ns.UF_HideAuraContainers then ns.UF_HideAuraContainers(frame) end
+        if ns.UF_HideAuraContainers then
+            ns.UF_HideAuraContainers(frame)
+        end
         local settings = db.profile.boss or {}
         local simpleMode = ns.GetBossSimpleDebuffMode(settings)
         local simple = simpleMode ~= "none"
         -- No debuffs shown at all (Simple Debuff Display None + Debuffs Location
         -- None): the holder stays hidden, so bail without drawing any fake
         -- debuffs (mirrors AttachFakeBuffs' none guard).
-        if not simple and (settings.debuffAnchor or "bottomleft") == "none" then return end
+        if not simple and (settings.debuffAnchor or "bottomleft") == "none" then
+            return
+        end
         local dOffX = settings.debuffOffsetX or 0
         local dOffY = settings.debuffOffsetY or 0
         -- Simple mode uses its own X/Y offsets (falling back to the regular
         -- debuff offsets for existing users) so the preview matches live.
-        if simple then dOffX, dOffY = ns.GetBossSimpleDebuffOffset(settings) end
+        if simple then
+            dOffX, dOffY = ns.GetBossSimpleDebuffOffset(settings)
+        end
         local powerPos = settings.powerPosition or "below"
         local powerIsAtt = (powerPos == "below" or powerPos == "above")
         local powerH = powerIsAtt and (settings.powerHeight or 0) or 0
@@ -230,8 +273,7 @@ local function SetupOptionsPanel()
         -- Mirror the live runtime behavior where bottom-anchored debuffs
         -- push down by the cast bar height to avoid overlap.
         local castBg = frame.Castbar and frame.Castbar:GetParent()
-        local castbarH = (settings.showCastbar ~= false and castBg)
-                         and castBg:GetHeight() or 0
+        local castbarH = (settings.showCastbar ~= false and castBg) and castBg:GetHeight() or 0
         if simple then
             -- Simple mode: align debuff stack with the health bar top so
             -- they never encroach on the cast bar area. Left grows off the
@@ -253,7 +295,7 @@ local function SetupOptionsPanel()
                 holder:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0 + dOffX, -gap - castbarH + dOffY)
             elseif dAnc == "right" then
                 holder:SetPoint("LEFT", frame, "RIGHT", gap + dOffX, 0 + dOffY)
-            else  -- "left" or fallback
+            else -- "left" or fallback
                 holder:SetPoint("RIGHT", frame, "LEFT", -gap + dOffX, 0 + dOffY)
             end
         end
@@ -276,8 +318,8 @@ local function SetupOptionsPanel()
         local stackOffX = settings.debuffStackTextOffsetX or 0
         local stackOffY = settings.debuffStackTextOffsetY or 0
         local stackPos = settings.debuffStackTextPosition
-        local cdTextColor = settings.debuffCooldownTextColor or {r=1, g=1, b=1}
-        local stackTextColor = settings.debuffStackTextColor or {r=1, g=1, b=1}
+        local cdTextColor = settings.debuffCooldownTextColor or { r = 1, g = 1, b = 1 }
+        local stackTextColor = settings.debuffStackTextColor or { r = 1, g = 1, b = 1 }
         local fontPath = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
         local now = GetTime()
         local icons = holder._icons
@@ -332,7 +374,7 @@ local function SetupOptionsPanel()
             iconFrame:SetFrameLevel(holder:GetFrameLevel())
             local icon = iconFrame._icon
             local tex = GetSpellTexture and GetSpellTexture(spellID)
-                     or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID))
+                or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID))
             icon:SetTexture(tex)
             local z = settings.debuffIconZoom or 0.07
             icon:SetTexCoord(z, 1 - z, z, 1 - z)
@@ -343,14 +385,20 @@ local function SetupOptionsPanel()
             local frac = FAKE_DEBUFF_FRACS[idx] or 0.6
             cd:Show()
             cd:SetCooldown(now - 3600 * (1 - frac), 3600)
-            iconFrame._textHost:SetFrameLevel(iconFrame:GetFrameLevel() + (ns.UF_BossAuraBorderAboveEffects(settings) and 25 or 4))
+            iconFrame._textHost:SetFrameLevel(
+                iconFrame:GetFrameLevel() + (ns.UF_BossAuraBorderAboveEffects(settings) and 25 or 4)
+            )
             local durText = iconFrame._durText
             CludesUI.ApplyIconTextFont(durText, fontPath, cdSize, "unitFrames")
             durText:ClearAllPoints()
             durText:SetPoint("CENTER", iconFrame, "CENTER", cdOffX, cdOffY)
             durText:SetTextColor(cdTextColor.r, cdTextColor.g, cdTextColor.b)
             durText:SetText(FAKE_DEBUFF_SECS[idx] or 10)
-            if showCD then durText:Show() else durText:Hide() end
+            if showCD then
+                durText:Show()
+            else
+                durText:Hide()
+            end
             local stack = iconFrame._stack
             if stack then
                 CludesUI.ApplyIconTextFont(stack, fontPath, stackSize, "unitFrames")
@@ -365,32 +413,42 @@ local function SetupOptionsPanel()
         holder:Show()
     end
     local function DetachFakeDebuffs(frame)
-        if frame._previewDebuffs then frame._previewDebuffs:Hide() end
+        if frame._previewDebuffs then
+            frame._previewDebuffs:Hide()
+        end
     end
 
     -- Fake buff icons for the boss preview. Two square icons anchored where the
     -- real Buffs frame would live, sized to the buff size. Built on first use per
     -- boss frame, refreshed in place on every call, hidden on preview disable.
     -- Capped at 2 regardless of Max Count.
-    local FAKE_BUFF_SPELLS = { 21562, 1459 }  -- Power Word: Fortitude, Arcane Intellect
+    local FAKE_BUFF_SPELLS = { 21562, 1459 } -- Power Word: Fortitude, Arcane Intellect
     local function AttachFakeBuffs(frame)
         local holder = frame._previewBuffs
-        if holder then holder:Hide() end
+        if holder then
+            holder:Hide()
+        end
         -- Suppress the real (player-unit) buffs while preview is up. Restored by
         -- ReloadFrames when the preview is disabled.
-        if ns.UF_HideAuraContainers then ns.UF_HideAuraContainers(frame) end
+        if ns.UF_HideAuraContainers then
+            ns.UF_HideAuraContainers(frame)
+        end
         local settings = db.profile.boss or {}
         local simpleMode = ns.GetBossSimpleBuffMode(settings)
         local simple = simpleMode ~= "none"
         -- Simple Buff Display overrides Buffs Location, so only bail on the
         -- location/visibility guards when simple mode is off.
-        if not simple and (settings.showBuffs == false or (settings.buffAnchor or "topleft") == "none") then return end
+        if not simple and (settings.showBuffs == false or (settings.buffAnchor or "topleft") == "none") then
+            return
+        end
         local anchor = settings.buffAnchor or "topleft"
         local bOffX = settings.buffOffsetX or 0
         local bOffY = settings.buffOffsetY or 0
         -- Simple mode uses its own X/Y offsets (falling back to the regular buff
         -- offsets for existing users) so the preview matches live.
-        if simple then bOffX, bOffY = ns.GetBossSimpleBuffOffset(settings) end
+        if simple then
+            bOffX, bOffY = ns.GetBossSimpleBuffOffset(settings)
+        end
         local powerPos = settings.powerPosition or "below"
         local powerIsAtt = (powerPos == "below" or powerPos == "above")
         local powerH = powerIsAtt and (settings.powerHeight or 0) or 0
@@ -420,8 +478,7 @@ local function SetupOptionsPanel()
         holder:SetFrameLevel(frame:GetFrameLevel() + 13)
         holder:ClearAllPoints()
         local castBg = frame.Castbar and frame.Castbar:GetParent()
-        local castbarH = (settings.showCastbar ~= false and castBg)
-                         and castBg:GetHeight() or 0
+        local castbarH = (settings.showCastbar ~= false and castBg) and castBg:GetHeight() or 0
         if simple then
             -- Align the column with the health bar top, side-based (matches the
             -- live runtime + Simple Debuff Display).
@@ -440,7 +497,7 @@ local function SetupOptionsPanel()
             holder:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0 + bOffX, -gap - castbarH + bOffY)
         elseif anchor == "right" then
             holder:SetPoint("LEFT", frame, "RIGHT", gap + bOffX, 0 + bOffY)
-        else  -- "left" or fallback
+        else -- "left" or fallback
             holder:SetPoint("RIGHT", frame, "LEFT", -gap + bOffX, 0 + bOffY)
         end
         local icons = holder._icons
@@ -467,7 +524,7 @@ local function SetupOptionsPanel()
             iconFrame:SetFrameLevel(holder:GetFrameLevel())
             local icon = iconFrame._icon
             local tex = GetSpellTexture and GetSpellTexture(spellID)
-                     or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID))
+                or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellID))
             icon:SetTexture(tex)
             local z = settings.buffIconZoom or 0.07
             icon:SetTexCoord(z, 1 - z, z, 1 - z)
@@ -478,7 +535,9 @@ local function SetupOptionsPanel()
         holder:Show()
     end
     local function DetachFakeBuffs(frame)
-        if frame._previewBuffs then frame._previewBuffs:Hide() end
+        if frame._previewBuffs then
+            frame._previewBuffs:Hide()
+        end
     end
 
     -- Fake static cast bar for the boss preview (boss2 only). This drives the
@@ -489,7 +548,9 @@ local function SetupOptionsPanel()
     local FAKE_CAST_SPELL_NAME = "Shadow Bolt"
     local FAKE_CAST_SPELL_ICON = 136197
     local function DetachFakeCastBar(frame)
-        if not frame._fakeCastActive then return end
+        if not frame._fakeCastActive then
+            return
+        end
         frame._fakeCastActive = nil
         local castbar = frame.Castbar
         local castbarBg = castbar and castbar:GetParent()
@@ -500,31 +561,41 @@ local function SetupOptionsPanel()
             end
             castbar:Hide()
         end
-        if castbarBg then castbarBg:Hide() end
+        if castbarBg then
+            castbarBg:Hide()
+        end
         -- The real Castbar element is re-enabled by ReloadFrames when the preview
         -- is turned off, so no manual re-enable is needed here.
     end
     local function AttachFakeCastBar(frame)
         local castbar = frame.Castbar
         local castbarBg = castbar and castbar:GetParent()
-        if not castbar or not castbarBg then return end
+        if not castbar or not castbarBg then
+            return
+        end
         local settings = db.profile.boss or {}
         if settings.showCastbar == false then
             castbarBg:Hide()
             return
         end
         -- Suppress the real Castbar element so oUF can't reset the frozen cast.
-        if frame:IsElementEnabled("Castbar") then frame:DisableElement("Castbar") end
+        if frame:IsElementEnabled("Castbar") then
+            frame:DisableElement("Castbar")
+        end
         castbar._eufSettings = settings
         -- Frozen mid-cast fill (respects the configured reverse-fill direction).
         castbar:SetMinMaxValues(0, 1)
         castbar:SetValue(0.65)
-        if castbar.Text then castbar.Text:SetText(FAKE_CAST_SPELL_NAME) end
+        if castbar.Text then
+            castbar.Text:SetText(FAKE_CAST_SPELL_NAME)
+        end
         if castbar.Time then
             if settings.showCastDuration == false then
-                castbar.Time:SetText(""); castbar.Time:Hide()
+                castbar.Time:SetText("")
+                castbar.Time:Hide()
             else
-                castbar.Time:Show(); castbar.Time:SetText("1.8")
+                castbar.Time:Show()
+                castbar.Time:SetText("1.8")
             end
         end
         if castbar.Icon then
@@ -541,23 +612,33 @@ local function SetupOptionsPanel()
         castbarBg:Show()
         castbar:Show()
         if castbar._iconFrame then
-            if settings.showCastIcon == false then castbar._iconFrame:Hide()
-            else castbar._iconFrame:Show() end
+            if settings.showCastIcon == false then
+                castbar._iconFrame:Hide()
+            else
+                castbar._iconFrame:Show()
+            end
         end
-        if castbar._layoutTextZones then castbar:_layoutTextZones() end
+        if castbar._layoutTextZones then
+            castbar:_layoutTextZones()
+        end
         frame._fakeCastActive = true
     end
 
     -- Refresh the in-game boss preview's fake auras when boss settings that affect them
     -- (simpleDebuffs, debuffAnchor, debuffSize, buffAnchor, etc.) change.
     ns.RefreshBossPreviewDebuffs = function()
-        if not ns._bossPreviewActive then return end
+        if not ns._bossPreviewActive then
+            return
+        end
         for i = 1, 3 do
             local f = frames["boss" .. i]
             if f then
-                AttachFakeDebuffs(f); AttachFakeBuffs(f)
+                AttachFakeDebuffs(f)
+                AttachFakeBuffs(f)
                 -- Only the 2nd boss frame shows a sample cast bar.
-                if i == 2 then AttachFakeCastBar(f) end
+                if i == 2 then
+                    AttachFakeCastBar(f)
+                end
             end
         end
     end
@@ -573,12 +654,22 @@ local function SetupOptionsPanel()
     -- NOT faked: the health max is a secret value in Midnight and cannot be read
     -- or compared, so the bar keeps the player's real (filled) health.
     local PREVIEW_BOSS_NAMES = {
-        "The Lich King", "Ragnaros", "Kel'Thuzad", "Archimonde", "Kil'jaeden",
-        "Deathwing", "Yogg-Saron", "C'Thun", "Cenarius", "Varimathras",
+        "The Lich King",
+        "Ragnaros",
+        "Kel'Thuzad",
+        "Archimonde",
+        "Kil'jaeden",
+        "Deathwing",
+        "Yogg-Saron",
+        "C'Thun",
+        "Cenarius",
+        "Varimathras",
     }
     local function GenBossPreviewNames()
         local pool = {}
-        for i = 1, #PREVIEW_BOSS_NAMES do pool[i] = PREVIEW_BOSS_NAMES[i] end
+        for i = 1, #PREVIEW_BOSS_NAMES do
+            pool[i] = PREVIEW_BOSS_NAMES[i]
+        end
         for i = #pool, 2, -1 do
             local j = math.random(i)
             pool[i], pool[j] = pool[j], pool[i]
@@ -594,14 +685,22 @@ local function SetupOptionsPanel()
         local lc = (s and s.leftTextContent) or "name"
         local rc = (s and s.rightTextContent) or "perhp"
         local cc = (s and s.centerTextContent) or "none"
-        if lc == "name" then return f.LeftText end
-        if rc == "name" then return f.RightText end
-        if cc == "name" then return f.CenterText end
+        if lc == "name" then
+            return f.LeftText
+        end
+        if rc == "name" then
+            return f.RightText
+        end
+        if cc == "name" then
+            return f.CenterText
+        end
         return nil
     end
     local function ApplyBossPreviewName(f, name)
         local fs = BossPreviewNameFS(f)
-        if not fs then return end
+        if not fs then
+            return
+        end
         f._previewNameFS = fs
         local zones = f._cuiTextZones
         if zones and not fs._previewSavedZone then
@@ -616,26 +715,36 @@ local function SetupOptionsPanel()
     end
     local function ClearBossPreviewName(f)
         local fs = f._previewNameFS
-        if not fs then return end
+        if not fs then
+            return
+        end
         if fs._previewSavedZone then
             local zones = f._cuiTextZones
-            if not zones then zones = {}; f._cuiTextZones = zones end
+            if not zones then
+                zones = {}
+                f._cuiTextZones = zones
+            end
             zones[#zones + 1] = fs._previewSavedZone
             fs._previewSavedZone = nil
         end
         f._previewNameFS = nil
-        if ns.UF_PaintText then ns.UF_PaintText(f, f._cuiUnit) end
+        if ns.UF_PaintText then
+            ns.UF_PaintText(f, f._cuiUnit)
+        end
     end
 
     local function ApplyBossPreviewColor(f)
         local h = f.Health
-        if not h then return end
-        f._previewColorSaved = f._previewColorSaved or {
-            colorClass       = h.colorClass,
-            colorReaction    = h.colorReaction,
-            colorTapped      = h.colorTapped,
-            colorDisconnected= h.colorDisconnected,
-        }
+        if not h then
+            return
+        end
+        f._previewColorSaved = f._previewColorSaved
+            or {
+                colorClass = h.colorClass,
+                colorReaction = h.colorReaction,
+                colorTapped = h.colorTapped,
+                colorDisconnected = h.colorDisconnected,
+            }
         -- Color the fake boss frames exactly as a real boss frame would: Dark Mode
         -- dark fill/bg, or a Custom Colored Fill, via ApplyDarkTheme (both leave
         -- colorClass off). The ONE exception: where a real frame would show the live
@@ -651,12 +760,16 @@ local function SetupOptionsPanel()
             h:SetStatusBarColor(PREVIEW_HEALTH_RED_R, PREVIEW_HEALTH_RED_G, PREVIEW_HEALTH_RED_B)
             -- oUF's own update may re-color on the next tick; this PostUpdate keeps
             -- the override sticky for the duration of the preview.
-            h.PostUpdateColor = function(self) self:SetStatusBarColor(PREVIEW_HEALTH_RED_R, PREVIEW_HEALTH_RED_G, PREVIEW_HEALTH_RED_B) end
+            h.PostUpdateColor = function(self)
+                self:SetStatusBarColor(PREVIEW_HEALTH_RED_R, PREVIEW_HEALTH_RED_G, PREVIEW_HEALTH_RED_B)
+            end
         end
     end
     local function ClearBossPreviewColor(f)
         local h = f.Health
-        if not h then return end
+        if not h then
+            return
+        end
         local s = f._previewColorSaved
         if s then
             h.colorClass = s.colorClass
@@ -674,7 +787,9 @@ local function SetupOptionsPanel()
     ns._ReapplyBossPreviewColor = function()
         for i = 1, 3 do
             local f = frames["boss" .. i]
-            if f then ApplyBossPreviewColor(f) end
+            if f then
+                ApplyBossPreviewColor(f)
+            end
         end
     end
 
@@ -683,7 +798,9 @@ local function SetupOptionsPanel()
     -- encounter. Gated out of combat to avoid taint; caller is responsible
     -- for auto-clearing on CUI options window close.
     ns.SetBossPreview = function(enabled)
-        if InCombatLockdown() then return false end
+        if InCombatLockdown() then
+            return false
+        end
         ns._bossPreviewActive = enabled and true or false
         if enabled and not ns._bossPreviewNames then
             ns._bossPreviewNames = GenBossPreviewNames()
@@ -695,19 +812,30 @@ local function SetupOptionsPanel()
                     f:SetAttribute("unit", "player")
                     f:Show()
                     ApplyBossPreviewColor(f)
-                    if f.UpdateAllElements then f:UpdateAllElements("BossPreview") end
+                    if f.UpdateAllElements then
+                        f:UpdateAllElements("BossPreview")
+                    end
                     -- After UpdateAllElements re-tags the name, override it with a fake boss name.
-                    ApplyBossPreviewName(f, (ns._bossPreviewNames and ns._bossPreviewNames[i]) or PREVIEW_BOSS_NAMES[i] or "Boss")
+                    ApplyBossPreviewName(
+                        f,
+                        (ns._bossPreviewNames and ns._bossPreviewNames[i]) or PREVIEW_BOSS_NAMES[i] or "Boss"
+                    )
                     AttachFakeDebuffs(f)
                     AttachFakeBuffs(f)
                     -- Only the 2nd boss frame shows a sample cast bar.
-                    if i == 2 then AttachFakeCastBar(f) end
+                    if i == 2 then
+                        AttachFakeCastBar(f)
+                    end
                 else
                     ClearBossPreviewColor(f)
                     ClearBossPreviewName(f)
                     f:SetAttribute("unit", "boss" .. i)
-                    if not UnitExists("boss" .. i) then f:Hide() end
-                    if f.UpdateAllElements then f:UpdateAllElements("BossPreview") end
+                    if not UnitExists("boss" .. i) then
+                        f:Hide()
+                    end
+                    if f.UpdateAllElements then
+                        f:UpdateAllElements("BossPreview")
+                    end
                     DetachFakeDebuffs(f)
                     DetachFakeBuffs(f)
                     DetachFakeCastBar(f)
@@ -718,7 +846,9 @@ local function SetupOptionsPanel()
             ns._bossPreviewNames = nil
             -- Restore the real Buffs/Debuffs elements (and their anchors/counts)
             -- that the fake overlay disabled while preview was active.
-            if ns.ReloadFrames then ns.ReloadFrames() end
+            if ns.ReloadFrames then
+                ns.ReloadFrames()
+            end
         end
         return true
     end
@@ -733,7 +863,9 @@ local function SetupOptionsPanel()
     -- in a tick of their own: the container build is insecure work whose
     -- cost scales with the bar count, so it keeps its own watchdog budget
     -- instead of riding this execution (login budget split rule).
-    if ns.PAB_CreateBars then C_Timer.After(0, ns.PAB_CreateBars) end
+    if ns.PAB_CreateBars then
+        C_Timer.After(0, ns.PAB_CreateBars)
+    end
 end
 
 I.SetupOptionsPanel = SetupOptionsPanel

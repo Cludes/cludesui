@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookResolve.lua
 --
@@ -9,7 +11,9 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local _, ns = ...
 local I = ns._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not I or I.broken then return end
+if not I or I.broken then
+    return
+end
 I.broken = true
 
 local ECME = ns.ECME
@@ -24,7 +28,9 @@ local function ResolveFrameSpellID(frame)
     if not cdID and frame.cooldownInfo then
         cdID = frame.cooldownInfo.cooldownID
     end
-    if not cdID or not C_CooldownViewer then return nil, nil end
+    if not cdID or not C_CooldownViewer then
+        return nil, nil
+    end
 
     local fc = _ecmeFC[frame]
     if fc and fc.resolvedSid and fc.cachedCdID == cdID then
@@ -52,20 +58,29 @@ local function ResolveFrameSpellID(frame)
         -- read resolves nothing this pass (fail-open, the next inactive
         -- read heals).
         local live = frame.GetSpellID and frame:GetSpellID()
-        if issecretvalue and issecretvalue(live) then live = nil end
+        if issecretvalue and issecretvalue(live) then
+            live = nil
+        end
         if type(live) == "number" and live > 0 then
             displaySID = live
         end
     end
-    if not displaySID or displaySID <= 0 then return nil, nil end
+    if not displaySID or displaySID <= 0 then
+        return nil, nil
+    end
     local baseSID = info and info.spellID
-    if not baseSID or baseSID <= 0 then baseSID = displaySID end
+    if not baseSID or baseSID <= 0 then
+        baseSID = displaySID
+    end
 
-    if not fc then fc = {}; _ecmeFC[frame] = fc end
+    if not fc then
+        fc = {}
+        _ecmeFC[frame] = fc
+    end
     fc.resolvedSid = displaySID
     fc.baseSpellID = baseSID
     fc.overrideSid = info and info.overrideSpellID or nil
-    fc.cachedCdID  = cdID
+    fc.cachedCdID = cdID
     fc.cachedAuraInstID = frame.auraInstanceID
     -- Native item rows identify by equipment slot (13/14 trinkets etc.);
     -- stashed for the slot-keyed settings/arbitration lane.
@@ -77,9 +92,13 @@ local function ResolveFrameSpellID(frame)
         -- buff viewers host dual-tracked buff forms, and frame.viewerFrame (the raw
         -- Blizzard field) is already readable at this point, before fd._isBuffViewerFrame
         -- exists.
-        if ns.LearnBuffVariantAlias
-           and (frame.viewerFrame == _G.BuffIconCooldownViewer
-                or frame.viewerFrame == _G.BuffBarCooldownViewer) then
+        if
+            ns.LearnBuffVariantAlias
+            and (
+                frame.viewerFrame == _G.BuffIconCooldownViewer
+                or frame.viewerFrame == _G.BuffBarCooldownViewer
+            )
+        then
             ns.LearnBuffVariantAlias(displaySID, info.linkedSpellIDs)
         end
     else
@@ -100,7 +119,9 @@ ns.ResolveFrameSpellID = ResolveFrameSpellID
 -- directions (assigned id may be the base whose live override is an identity id,
 -- e.g. Corruption 172 -> Wither 445468, or vice versa).
 local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
-    if not sid2 then return nil end
+    if not sid2 then
+        return nil
+    end
     -- Bar identity: explicit barKey wins (nil-frame callers), else frame context.
     local fc0 = frame and _ecmeFC[frame]
     local bk = barKey or (fc0 and fc0.barKey)
@@ -119,11 +140,13 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     local hostedFrame = false
     if frame and bk and sd2 and sd2.hostedBuffSpellIDs then
         local fdH = ns._hookFrameData and ns._hookFrameData[frame]
-        if (fc0 and fc0.isHostedBuff)
-           or (fdH and fdH._isBuffViewerFrame)
-           or frame._isPlaceholderFrame
-           or frame.viewerFrame == _G.BuffIconCooldownViewer
-           or frame.viewerFrame == _G.BuffBarCooldownViewer then
+        if
+            (fc0 and fc0.isHostedBuff)
+            or (fdH and fdH._isBuffViewerFrame)
+            or frame._isPlaceholderFrame
+            or frame.viewerFrame == _G.BuffIconCooldownViewer
+            or frame.viewerFrame == _G.BuffBarCooldownViewer
+        then
             local bdH = ns.barDataByKey and ns.barDataByKey[bk]
             if bdH and bdH.barType ~= "buffs" and bdH.barType ~= "custom_buff" then
                 hostedFrame = true
@@ -133,16 +156,21 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     -- HOSTED BUFFS never inherit the host bar's Apply-to-Bar tier (shared keys:
     -- Duration Text, Border) -- own per-spell entry ONLY. Nil-frame callers fall
     -- back to the flag test (a nil-frame lookup for a hosted id is always buff).
-    if tier and (hostedFrame
-       or (not frame and sd2 and sd2.hostedBuffSpellIDs and sd2.hostedBuffSpellIDs[sid2])) then
+    if
+        tier
+        and (hostedFrame or (not frame and sd2 and sd2.hostedBuffSpellIDs and sd2.hostedBuffSpellIDs[sid2]))
+    then
         tier = nil
     end
     -- Per-spell entries live in the spec's FAMILY store (travel with the spell
     -- across bars), not the bar. A hosted buff reads the BUFF store keyed off the
     -- FRAME, so a cooldown icon of the same spellID here keeps the CD store.
-    local settings = bk and ns.GetSpellSettingsStore
+    local settings = bk
+        and ns.GetSpellSettingsStore
         and ns.GetSpellSettingsStore(hostedFrame and "buffs" or bk)
-    if not settings or next(settings) == nil then return tier end
+    if not settings or next(settings) == nil then
+        return tier
+    end
 
     local ChainSettings = ns.ChainSettings
 
@@ -160,7 +188,10 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
             if type(cdID) == "number" then
                 if ns.BuffFamHasCdKey and ns.BuffFamHasCdKey(settings) then
                     local cd = settings["c" .. cdID]
-                    if cd then ChainSettings(cd, tier); return cd end
+                    if cd then
+                        ChainSettings(cd, tier)
+                        return cd
+                    end
                 end
                 -- Split-identity buffs (shared base spellID, per-form aura ids,
                 -- e.g. Warp/Weft): the active frame's identity collapses to the
@@ -171,7 +202,10 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
                 local cleanSid = ns._cdmCleanSidByCDID and ns._cdmCleanSidByCDID[cdID]
                 if cleanSid and cleanSid ~= sid2 then
                     local sClean = settings[cleanSid]
-                    if sClean then ChainSettings(sClean, tier); return sClean end
+                    if sClean then
+                        ChainSettings(sClean, tier)
+                        return sClean
+                    end
                 end
             end
         end
@@ -183,7 +217,10 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     -- bar's tier, so bar/spec/profile swaps (and fresh logins, since metatables
     -- aren't serialized) never leave a stale link.
     local direct = settings[sid2]
-    if direct then ChainSettings(direct, tier); return direct end
+    if direct then
+        ChainSettings(direct, tier)
+        return direct
+    end
 
     local fc2 = fc0
 
@@ -196,18 +233,31 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     -- edges needed. Step 3's FindSpellOverrideByID stays LIVE by design: live
     -- overrides flip mid-combat with no content change, which only that step catches.
     local ids
-    if fc2 and fc2.ssIds and fc2.ssIdsFor == sid2
-       and fc2.ssIdsRS == fc2.resolvedSid and fc2.ssIdsBS == fc2.baseSpellID then
+    if
+        fc2
+        and fc2.ssIds
+        and fc2.ssIdsFor == sid2
+        and fc2.ssIdsRS == fc2.resolvedSid
+        and fc2.ssIdsBS == fc2.baseSpellID
+    then
         ids = fc2.ssIds
     else
         ids = { sid2 }
         local function addId(id)
-            if not id or id <= 0 then return end
-            for i = 1, #ids do if ids[i] == id then return end end
+            if not id or id <= 0 then
+                return
+            end
+            for i = 1, #ids do
+                if ids[i] == id then
+                    return
+                end
+            end
             ids[#ids + 1] = id
         end
         local canon2 = frame and ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(frame)
-        if canon2 then addId(canon2) end
+        if canon2 then
+            addId(canon2)
+        end
         if fc2 then
             addId(fc2.resolvedSid)
             addId(fc2.baseSpellID)
@@ -220,7 +270,9 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
         -- form resolves on the proc'd frame.
         if C_Spell and C_Spell.GetBaseSpell then
             addId(C_Spell.GetBaseSpell(sid2))
-            if canon2 then addId(C_Spell.GetBaseSpell(canon2)) end
+            if canon2 then
+                addId(C_Spell.GetBaseSpell(canon2))
+            end
         end
         if fc2 then
             fc2.ssIds = ids
@@ -233,14 +285,20 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     -- 1. Direct hit on any identity id.
     for i = 1, #ids do
         local s = settings[ids[i]]
-        if s then ChainSettings(s, tier); return s end
+        if s then
+            ChainSettings(s, tier)
+            return s
+        end
     end
 
     -- 2. linkedSpellIDs reported by the cooldown info.
     if fc2 and fc2.linkedSpellIDs then
         for _, lid in ipairs(fc2.linkedSpellIDs) do
             local s = settings[lid]
-            if s then ChainSettings(s, tier); return s end
+            if s then
+                ChainSettings(s, tier)
+                return s
+            end
         end
     end
 
@@ -253,7 +311,9 @@ local function ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
         local idOvr = {}
         for i = 1, #ids do
             local id = ids[i]
-            if type(id) == "number" and id > 0 then idOvr[i] = FindOvr(id) end
+            if type(id) == "number" and id > 0 then
+                idOvr[i] = FindOvr(id)
+            end
         end
         for _, asid in ipairs(sd2.assignedSpells) do
             if asid and asid > 0 and settings[asid] then
@@ -287,18 +347,29 @@ local function ResolveSpellSettings(frame, sid2, sd2, barKey)
     -- fetching the bar's spell data up front, so the store walk behind
     -- GetBarSpellData runs only on a memo miss (the hit path never needs it).
     if not fc0 or not sid2 then
-        if sd2 == false then sd2 = (barKey and ns.GetBarSpellData) and ns.GetBarSpellData(barKey) or nil end
+        if sd2 == false then
+            sd2 = (barKey and ns.GetBarSpellData) and ns.GetBarSpellData(barKey) or nil
+        end
         return ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     end
     local bk = barKey or fc0.barKey
-    if fc0.ssRGen == ns._cdmResGen and fc0.ssRSid == sid2 and fc0.ssRBk == bk
-       and fc0.ssRRS == fc0.resolvedSid and fc0.ssRBS == fc0.baseSpellID then
+    if
+        fc0.ssRGen == ns._cdmResGen
+        and fc0.ssRSid == sid2
+        and fc0.ssRBk == bk
+        and fc0.ssRRS == fc0.resolvedSid
+        and fc0.ssRBS == fc0.baseSpellID
+    then
         local v = fc0.ssRVal
-        if v == false then return nil end
+        if v == false then
+            return nil
+        end
         ns.ChainSettings(v, fc0.ssRTier)
         return v
     end
-    if sd2 == false then sd2 = ns.GetBarSpellData and ns.GetBarSpellData(bk) end
+    if sd2 == false then
+        sd2 = ns.GetBarSpellData and ns.GetBarSpellData(bk)
+    end
     local res = ResolveSpellSettingsUncached(frame, sid2, sd2, barKey)
     fc0.ssRGen = ns._cdmResGen
     fc0.ssRSid = sid2
@@ -329,13 +400,17 @@ ns.ResolveSpellSettings = ResolveSpellSettings
 -- someone has the toggle on. On ns, not a file local: this file sits at Lua's
 -- 200-local cap.
 function ns.EffectiveReverseSwipe(frame, barKey, kindBaseline)
-    if not ns._cdmAnyReverseSwipe then return kindBaseline end
+    if not ns._cdmAnyReverseSwipe then
+        return kindBaseline
+    end
     local fc = frame and _ecmeFC[frame]
     local sid = fc and fc.spellID
     -- Bar identity: explicit key wins, else the frame context. Never resolve
     -- without one (the store lookup indexes by it).
     local bk = barKey or (fc and fc.barKey)
-    if not (sid and bk and ns.GetBarSpellData) then return kindBaseline end
+    if not (sid and bk and ns.GetBarSpellData) then
+        return kindBaseline
+    end
     -- Pass the key explicitly: the resolver picks the FAMILY store from the bar
     -- identity, and leaving it to be inferred resolves a hosted buff against the
     -- CD store.
@@ -347,7 +422,9 @@ function ns.EffectiveReverseSwipe(frame, barKey, kindBaseline)
         local cas = ns.GetEffectiveCustomActiveState(sid)
         rev = cas and cas.reverseSwipe
     end
-    if rev then return not kindBaseline end
+    if rev then
+        return not kindBaseline
+    end
     return kindBaseline
 end
 
@@ -359,7 +436,9 @@ end
 function ns.CdmBarHasShiftCdState(barKey)
     local sd = ns.GetBarSpellData(barKey)
     local list = sd and sd.assignedSpells
-    if not list then return false end
+    if not list then
+        return false
+    end
     for _, sid in ipairs(list) do
         if sid and sid ~= 0 then
             local eff
@@ -375,10 +454,14 @@ function ns.CdmBarHasShiftCdState(barKey)
                 end
                 if not ns.CdStateShifts(eff) then
                     local casEff = ns.CdStateHideOf(ns.GetEffectiveCustomActiveState(sid))
-                    if casEff then eff = casEff end
+                    if casEff then
+                        eff = casEff
+                    end
                 end
             end
-            if ns.CdStateShifts(eff) then return true end
+            if ns.CdStateShifts(eff) then
+                return true
+            end
         end
     end
     return false
@@ -396,7 +479,9 @@ end
 -- safe from the swipe hook OR the Fake-Active ticker. Idempotent via
 -- fd._activeGlowOn / fd._activeBorderOn so the two drivers cooperate.
 function ns.ApplyActiveOverlays(frame, fd, ss, isActive, bd)
-    if not fd then return end
+    if not fd then
+        return
+    end
 
     -- Active glow (per-spell)
     local hasGlow = ss and ss.activeGlow and ss.activeGlow > 0
@@ -409,7 +494,9 @@ function ns.ApplyActiveOverlays(frame, fd, ss, isActive, bd)
                     local _, ct = UnitClass("player")
                     if ct then
                         local cc = RAID_CLASS_COLORS[ct]
-                        if cc then gr, gg, gb = cc.r, cc.g, cc.b end
+                        if cc then
+                            gr, gg, gb = cc.r, cc.g, cc.b
+                        end
                     end
                 elseif ss.activeGlowR ~= nil then
                     gr, gg, gb = ss.activeGlowR, ss.activeGlowG or 0.85, ss.activeGlowB or 0
@@ -417,8 +504,13 @@ function ns.ApplyActiveOverlays(frame, fd, ss, isActive, bd)
             end
             -- (Re)start on first activation OR style/colour change (live edits
             -- apply); a steady active window never restarts (would flicker).
-            if not fd._activeGlowOn or fd._activeGlowStyle ~= ss.activeGlow
-               or fd._activeGlowR ~= gr or fd._activeGlowG ~= gg or fd._activeGlowB ~= gb then
+            if
+                not fd._activeGlowOn
+                or fd._activeGlowStyle ~= ss.activeGlow
+                or fd._activeGlowR ~= gr
+                or fd._activeGlowG ~= gg
+                or fd._activeGlowB ~= gb
+            then
                 ns.StartNativeGlow(fd.glowOverlay, ss.activeGlow, gr, gg, gb)
                 fd._activeGlowOn = true
                 fd._activeGlowStyle = ss.activeGlow
@@ -434,12 +526,16 @@ function ns.ApplyActiveOverlays(frame, fd, ss, isActive, bd)
             end
         end
     elseif fd._activeGlowOn then
-        if fd.glowOverlay then ns.StopNativeGlow(fd.glowOverlay) end
+        if fd.glowOverlay then
+            ns.StopNativeGlow(fd.glowOverlay)
+        end
         fd._activeGlowOn = false
         -- A CD-state glow this replaced or held back lights now, not on the
         -- icon's next cooldown edge: a buff that outlasts its cooldown ends
         -- with no further cooldown push to re-run that decision.
-        if fd._cdGlowOwed then ns.CdGlowKick(frame) end
+        if fd._cdGlowOwed then
+            ns.CdGlowKick(frame)
+        end
     end
 
     -- Active border color (per-spell): recolor while active, restore on falloff.
@@ -469,9 +565,13 @@ function ns.ApplyActiveOverlays(frame, fd, ss, isActive, bd)
             shapeBorder:SetVertexColor(fd._sbR, fd._sbG, fd._sbB, fd._sbA)
             fd._sbColorSaved = false
         elseif fd.borderFrame and CludesUI.SetBorderStyleColor then
-            CludesUI.SetBorderStyleColor(fd.borderFrame,
-                (bd and bd.borderR) or 0, (bd and bd.borderG) or 0,
-                (bd and bd.borderB) or 0, (bd and bd.borderA) or 1)
+            CludesUI.SetBorderStyleColor(
+                fd.borderFrame,
+                (bd and bd.borderR) or 0,
+                (bd and bd.borderG) or 0,
+                (bd and bd.borderB) or 0,
+                (bd and bd.borderA) or 1
+            )
         end
         fd._activeBorderOn = false
     end
@@ -492,11 +592,11 @@ end
 local _cdidRouteMap = {}
 
 local _divertedSpellsBuff = {}
-local _divertedSpellsCD   = {}
+local _divertedSpellsCD = {}
 -- cooldownID-level buff diversions: a collided buff (two viewer slots sharing one
 -- canonical spellID) is tracked on a custom bar by cooldownID (cd-claim marker in
 -- assignedSpells, ns.CdClaimMarker); checked BEFORE the sid map, so it outranks a pair claim.
-local _divertedBuffCdIDs  = {}
+local _divertedBuffCdIDs = {}
 --- Equipment-slot diversions, inventory slot -> barKey. Blizzard's own equipment
 --- cooldown entry carries an equipSlot and NO spell of its own, so the slot is its
 --- only routing key; a bar listing that slot (-13/-14 et al) claims the frame the
@@ -531,7 +631,7 @@ ns._buffReplaceBars = {}
 -- bars (Divine Toll/override Holy Bulwark share cooldownID 29342, base 375576);
 -- consulted first so the slot follows the assigned bar instead of flipping on each transform.
 local _divertedDirectBuff = {}
-local _divertedDirectCD   = {}
+local _divertedDirectCD = {}
 -- Base ids claimed by an explicitly assigned VARIANT, keyed base -> bar. A transforming
 -- slot names only its base plus the live form; the OTHER form is invisible (cooldownID
 -- 29342 reports Divine Toll 375576, overrideSpellID alternates armaments, no
@@ -541,7 +641,7 @@ local _divertedDirectCD   = {}
 -- hole; consulted after exact ids and before the base's own entry. Written only when
 -- the assigned id isn't the base, so ordinary spells never land here.
 local _divertedVarBaseBuff = {}
-local _divertedVarBaseCD   = {}
+local _divertedVarBaseCD = {}
 -- Learned variant -> base, deliberately NEVER wiped. It's static game data, but
 -- the client only answers while that variant is live (Holy Bulwark live ->
 -- GetBaseSpell(432459)=375576; Sacred Weapon live -> 432459: every identity API
@@ -575,7 +675,7 @@ local _divertedVarBaseCD   = {}
 -- logout untouched -- which also means nothing else can ever clear it, hence
 -- ns.ResetVariantBaseStore below.
 local _variantBaseLearned = {}
-local _variantBaseSpec = nil   -- spec key the live table was loaded for
+local _variantBaseSpec = nil -- spec key the live table was loaded for
 
 local function _variantBaseSV()
     local db = ECME and ECME.db
@@ -589,10 +689,16 @@ end
 -- or the spec is not up yet, so a later rebuild retries.
 local function _loadVariantBases()
     local specKey = ns.GetActiveSpecKey and ns.GetActiveSpecKey()
-    if not specKey then return end
-    if _variantBaseSpec == specKey then return end
+    if not specKey then
+        return
+    end
+    if _variantBaseSpec == specKey then
+        return
+    end
     local sv = _variantBaseSV()
-    if not sv then return end
+    if not sv then
+        return
+    end
     wipe(_variantBaseLearned)
     _variantBaseSpec = specKey
     local root = sv._variantBase
@@ -602,14 +708,17 @@ local function _loadVariantBases()
         -- they cannot be trusted; drop them rather than leave them orphaned.
         -- Clearing existing fields during pairs() is defined behaviour in Lua.
         for k in pairs(root) do
-            if type(k) ~= "string" then root[k] = nil end
+            if type(k) ~= "string" then
+                root[k] = nil
+            end
         end
     end
     local store = (type(root) == "table") and root[specKey] or nil
-    if type(store) ~= "table" then return end
+    if type(store) ~= "table" then
+        return
+    end
     for variant, base in pairs(store) do
-        if type(variant) == "number" and type(base) == "number"
-           and base > 0 and base ~= variant then
+        if type(variant) == "number" and type(base) == "number" and base > 0 and base ~= variant then
             _variantBaseLearned[variant] = base
         end
     end
@@ -622,11 +731,17 @@ end
 -- frame. Persists only once the spec is known, so a pair observed before that
 -- still routes this session without being filed under the wrong spec.
 local function _learnVariantBase(variant, base)
-    if _variantBaseLearned[variant] == base then return end
+    if _variantBaseLearned[variant] == base then
+        return
+    end
     _variantBaseLearned[variant] = base
-    if not _variantBaseSpec then return end
+    if not _variantBaseSpec then
+        return
+    end
     local sv = _variantBaseSV()
-    if not sv then return end
+    if not sv then
+        return
+    end
     local root = sv._variantBase
     if type(root) ~= "table" then
         root = {}
@@ -647,7 +762,9 @@ function ns.ResetVariantBaseStore()
     wipe(_variantBaseLearned)
     _variantBaseSpec = nil
     local sv = _variantBaseSV()
-    if sv then sv._variantBase = nil end
+    if sv then
+        sv._variantBase = nil
+    end
 end
 
 -- Equivalence check for the picker/list helpers: true when both ids reach the
@@ -657,26 +774,38 @@ end
 -- loops, so no per-call closure: the two root walks are inlined. The hop cap
 -- guards a cyclic pair.
 function ns.IsLearnedVariantOf(a, b)
-    if type(a) ~= "number" or type(b) ~= "number" then return false end
-    if issecretvalue and (issecretvalue(a) or issecretvalue(b)) then return false end
-    if a <= 0 or b <= 0 then return false end
+    if type(a) ~= "number" or type(b) ~= "number" then
+        return false
+    end
+    if issecretvalue and (issecretvalue(a) or issecretvalue(b)) then
+        return false
+    end
+    if a <= 0 or b <= 0 then
+        return false
+    end
     _loadVariantBases()
     local hops = 0
     while hops < 8 do
         local nxt = _variantBaseLearned[a]
-        if not nxt or nxt == a then break end
-        a = nxt; hops = hops + 1
+        if not nxt or nxt == a then
+            break
+        end
+        a = nxt
+        hops = hops + 1
     end
     hops = 0
     while hops < 8 do
         local nxt = _variantBaseLearned[b]
-        if not nxt or nxt == b then break end
-        b = nxt; hops = hops + 1
+        if not nxt or nxt == b then
+            break
+        end
+        b = nxt
+        hops = hops + 1
     end
     return a == b
 end
 ns._divertedSpellsBuff = _divertedSpellsBuff
-ns._divertedSpellsCD   = _divertedSpellsCD
+ns._divertedSpellsCD = _divertedSpellsCD
 
 -- Sentinel: true at the end of a successful RebuildSpellRouteMap. CollectAndReanchor's
 -- safety net tests THIS, not _cdidRouteMap (lazy cache, intentionally empty post-build)
@@ -714,7 +843,9 @@ function ns.RebuildSpellRouteMap()
     _routeMapBuilt = false
 
     local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then return end
+    if not p or not p.cdmBars then
+        return
+    end
 
     -- Before any StoreDirect: the recall below is the only thing that can supply
     -- a base for an assigned variant that is not the live form, and this is the
@@ -722,7 +853,9 @@ function ns.RebuildSpellRouteMap()
     _loadVariantBases()
 
     local SVV = ns.StoreVariantValue
-    if not SVV then return end
+    if not SVV then
+        return
+    end
 
     local IsBuffFamily = ns.IsBarBuffFamily
 
@@ -732,8 +865,7 @@ function ns.RebuildSpellRouteMap()
     local GetBase = C_Spell and C_Spell.GetBaseSpell
     local function StoreDirect(targetMap, sid, barKey)
         local isBuff = (targetMap == _divertedSpellsBuff)
-        SVV(targetMap, sid, barKey, false,
-            isBuff and _divertedDirectBuff or _divertedDirectCD)
+        SVV(targetMap, sid, barKey, false, isBuff and _divertedDirectBuff or _divertedDirectCD)
         -- Learn the base while the client will still say, else recall the last
         -- answer: without the recall the claim is written only on rebuilds that
         -- happen while this exact variant is live, and routing still flips.
@@ -755,7 +887,9 @@ function ns.RebuildSpellRouteMap()
     local RankName = ns.CDMRankName
     local function CollectDiversionsFor(bd, skipPositiveSet)
         local sd = ns.GetBarSpellData(bd.key)
-        if not sd or not sd.assignedSpells then return end
+        if not sd or not sd.assignedSpells then
+            return
+        end
         local targetMap = IsBuffFamily and IsBuffFamily(bd) and _divertedSpellsBuff or _divertedSpellsCD
         local byRank = RankName and targetMap == _divertedSpellsCD
         for _, sid in ipairs(sd.assignedSpells) do
@@ -763,7 +897,9 @@ function ns.RebuildSpellRouteMap()
                 if not skipPositiveSet or not skipPositiveSet[sid] then
                     StoreDirect(targetMap, sid, bd.key)
                     local n = byRank and not (sd.customSpellIDs and sd.customSpellIDs[sid]) and RankName(sid)
-                    if n then ns._divertedRankCD[n] = bd.key end
+                    if n then
+                        ns._divertedRankCD[n] = bd.key
+                    end
                 end
             else
                 -- Equipment slot entry: routes Blizzard's own equipment cooldown
@@ -786,9 +922,11 @@ function ns.RebuildSpellRouteMap()
     -- the same buff icon spells, so their diversions land in
     -- _divertedSpellsBuff even though IsBarBuffFamily is false for custom_buff.
     for _, bd in ipairs(p.cdmBars.bars) do
-        if bd.enabled and not bd.isGhostBar
-           and ((bd.barType == "buffs" and bd.key ~= "buffs")
-                or bd.barType == "custom_buff") then
+        if
+            bd.enabled
+            and not bd.isGhostBar
+            and ((bd.barType == "buffs" and bd.key ~= "buffs") or bd.barType == "custom_buff")
+        then
             local sd = ns.GetBarSpellData(bd.key)
             if sd and sd.assignedSpells then
                 for _, sid in ipairs(sd.assignedSpells) do
@@ -811,17 +949,26 @@ function ns.RebuildSpellRouteMap()
     -- (else a spell also in cooldowns.assignedSpells, materialized spillover
     -- both-state, renders on the default cooldowns bar).
     for _, bd in ipairs(p.cdmBars.bars) do
-        if bd.enabled and not bd.isGhostBar
-           and (bd.key == "cooldowns" or bd.key == "utility" or bd.key == "buffs") then
+        if
+            bd.enabled
+            and not bd.isGhostBar
+            and (bd.key == "cooldowns" or bd.key == "utility" or bd.key == "buffs")
+        then
             CollectDiversionsFor(bd)
         end
     end
     -- Pass 3: custom CD/utility bars overwrite the default diversions
     -- (deliberate custom-bar placement wins).
     for _, bd in ipairs(p.cdmBars.bars) do
-        if bd.enabled and not bd.isGhostBar
-           and bd.key ~= "cooldowns" and bd.key ~= "utility" and bd.key ~= "buffs"
-           and bd.barType ~= "buffs" and bd.barType ~= "custom_buff" then
+        if
+            bd.enabled
+            and not bd.isGhostBar
+            and bd.key ~= "cooldowns"
+            and bd.key ~= "utility"
+            and bd.key ~= "buffs"
+            and bd.barType ~= "buffs"
+            and bd.barType ~= "custom_buff"
+        then
             CollectDiversionsFor(bd)
         end
     end
@@ -831,8 +978,7 @@ function ns.RebuildSpellRouteMap()
     -- passes 1-2 so an explicit host outranks a stray buff-bar copy; the bar's
     -- Pass 3 CD diversion is untouched (separate family maps).
     for _, bd in ipairs(p.cdmBars.bars) do
-        if bd.enabled and not bd.isGhostBar
-           and bd.barType ~= "buffs" and bd.barType ~= "custom_buff" then
+        if bd.enabled and not bd.isGhostBar and bd.barType ~= "buffs" and bd.barType ~= "custom_buff" then
             local sd = ns.GetBarSpellData(bd.key)
             if sd and sd.hostedBuffSpellIDs then
                 -- Keyed off hostedBuffSpellIDs, not assignedSpells: the CD/util
@@ -865,8 +1011,7 @@ function ns.RebuildSpellRouteMap()
     -- pass swaps the frames. Gated: a profile with no mapping skips the pass.
     if ns._cdmAnyBuffReplace then
         for _, bd in ipairs(p.cdmBars.bars) do
-            if bd.enabled and not bd.isGhostBar
-               and bd.barType ~= "buffs" and bd.barType ~= "custom_buff" then
+            if bd.enabled and not bd.isGhostBar and bd.barType ~= "buffs" and bd.barType ~= "custom_buff" then
                 local sd = ns.GetBarSpellData(bd.key)
                 local store = sd and sd.assignedSpells and ns.GetSpellSettingsStore(bd.key)
                 if store then
@@ -909,7 +1054,9 @@ function ns.RebuildSpellRouteMap()
     -- pure aliases, and only those ghost entries are skipped below. Routing
     -- only -- the ghost entry itself is untouched.
     local ghostAliasSkip = {}
-    for sid in pairs(_divertedSpellsCD) do ghostAliasSkip[sid] = true end
+    for sid in pairs(_divertedSpellsCD) do
+        ghostAliasSkip[sid] = true
+    end
     local expanded
     repeat
         expanded = false
@@ -926,7 +1073,9 @@ function ns.RebuildSpellRouteMap()
             end
         end
     until not expanded
-    for sid in pairs(_divertedDirectCD) do ghostAliasSkip[sid] = nil end
+    for sid in pairs(_divertedDirectCD) do
+        ghostAliasSkip[sid] = nil
+    end
 
     -- Pass 4: ghost bars LAST = HIGHEST priority. A spell the user HID stays
     -- hidden even if the same id also sits on a visible bar ("both-state");
@@ -951,11 +1100,17 @@ function ns.RebuildSpellRouteMap()
             for i = 1, #keys do
                 local bar = ns._divertedItemCD[keys[i]]
                 local bdK = bar and byKey and byKey[bar]
-                if bar and not (bdK and bdK.isGhostBar) then pick = keys[i]; break end
+                if bar and not (bdK and bdK.isGhostBar) then
+                    pick = keys[i]
+                    break
+                end
             end
             if not pick then
                 for i = 1, #keys do
-                    if ns._divertedItemCD[keys[i]] then pick = keys[i]; break end
+                    if ns._divertedItemCD[keys[i]] then
+                        pick = keys[i]
+                        break
+                    end
                 end
             end
             ns._nativeItemKeyByCat[cat] = pick or keys[1]
@@ -972,10 +1127,15 @@ end
 -- item, whatever category it carries, and stays on the managed spell path.
 function ns.NativeItemKeyFor(info, frame)
     local cat = info and info.spellCategoryID
-    if type(cat) ~= "number" or (issecretvalue and issecretvalue(cat)) then return nil, false end
+    if type(cat) ~= "number" or (issecretvalue and issecretvalue(cat)) then
+        return nil, false
+    end
     local live = frame and frame.GetSpellID and frame:GetSpellID()
-    if type(live) == "number" and not (issecretvalue and issecretvalue(live))
-       and ns.ALL_RACIAL_SPELLS[live] then
+    if
+        type(live) == "number"
+        and not (issecretvalue and issecretvalue(live))
+        and ns.ALL_RACIAL_SPELLS[live]
+    then
         return nil, true
     end
     return ns._nativeItemKeyByCat[cat], false
@@ -991,15 +1151,23 @@ end
 -- issecretvalue read only the tags). Mirrors _IsUsableSID in the spell picker;
 -- tells a real "no diversion" answer from a blind lookup with all-secret ids.
 local function CdidIDReadable(id)
-    if type(id) ~= "number" then return false end
-    if issecretvalue and issecretvalue(id) then return false end
+    if type(id) ~= "number" then
+        return false
+    end
+    if issecretvalue and issecretvalue(id) then
+        return false
+    end
     return id > 0
 end
 
 local function ResolveCDIDToBar(cdID, viewerDefaultBar)
-    if not cdID then return viewerDefaultBar end
+    if not cdID then
+        return viewerDefaultBar
+    end
     local cached = _cdidRouteMap[cdID]
-    if cached then return cached end
+    if cached then
+        return cached
+    end
 
     -- cooldownID-level claim first (collided buffs tracked by slot). Needs no
     -- cooldownInfo read, so it also works while every sid field is secret.
@@ -1032,8 +1200,11 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
     -- Free learning: a slot always reports its stable base alongside the live
     -- variant, so every resolve teaches one pairing. Covers a session starting
     -- with the assigned variant NOT live: the first transform makes it known.
-    if CdidIDReadable(info.spellID) and CdidIDReadable(info.overrideSpellID)
-       and info.overrideSpellID ~= info.spellID then
+    if
+        CdidIDReadable(info.spellID)
+        and CdidIDReadable(info.overrideSpellID)
+        and info.overrideSpellID ~= info.spellID
+    then
         _learnVariantBase(info.overrideSpellID, info.spellID)
     end
 
@@ -1073,7 +1244,9 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
         -- transiently, uncached, like an unreadable slot.
         local cat = info.spellCategoryID
         if cat ~= nil then
-            if issecretvalue and issecretvalue(cat) then return viewerDefaultBar end
+            if issecretvalue and issecretvalue(cat) then
+                return viewerDefaultBar
+            end
             local itemKey = ns._nativeItemKeyByCat[cat]
             if itemKey then
                 local itemBar = ns._divertedItemCD[itemKey] or viewerDefaultBar
@@ -1102,7 +1275,9 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
             for _, lid in ipairs(info.linkedSpellIDs) do
                 if CdidIDReadable(lid) then
                     routedBar = directMap[lid]
-                    if routedBar then break end
+                    if routedBar then
+                        break
+                    end
                 end
             end
         end
@@ -1127,7 +1302,9 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
         if not routedBar and info.linkedSpellIDs then
             for _, lid in ipairs(info.linkedSpellIDs) do
                 routedBar = RVV(divertMap, lid)
-                if routedBar then break end
+                if routedBar then
+                    break
+                end
             end
         end
         -- WoW Forever: a row that does not link the listed rank goes by its name.
@@ -1145,7 +1322,10 @@ local function ResolveCDIDToBar(cdID, viewerDefaultBar)
         local sawReadable = CdidIDReadable(info.spellID) or CdidIDReadable(info.overrideSpellID)
         if not sawReadable and info.linkedSpellIDs then
             for _, lid in ipairs(info.linkedSpellIDs) do
-                if CdidIDReadable(lid) then sawReadable = true; break end
+                if CdidIDReadable(lid) then
+                    sawReadable = true
+                    break
+                end
             end
         end
         if not sawReadable then
@@ -1162,5 +1342,7 @@ ns._cdidRouteMap = _cdidRouteMap
 
 I.ResolveCDIDToBar, I.ResolveFrameSpellID = ResolveCDIDToBar, ResolveFrameSpellID
 I.ResolveSpellSettings = ResolveSpellSettings
-I.IsRouteMapBuilt = function() return _routeMapBuilt end
+I.IsRouteMapBuilt = function()
+    return _routeMapBuilt
+end
 I.broken = false

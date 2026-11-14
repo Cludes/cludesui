@@ -1,4 +1,6 @@
-if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then
+    return
+end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI Action Bars - Spell Flyout Reskin
 --  Reskins Blizzard's native SpellFlyout buttons to match the parent bar's
@@ -6,15 +8,15 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
 
-local SHAPE_MASKS              = ns.SHAPE_MASKS
-local SHAPE_BORDERS            = ns.SHAPE_BORDERS
-local SHAPE_ZOOM_DEFAULTS      = ns.SHAPE_ZOOM_DEFAULTS
-local SHAPE_ICON_EXPAND        = ns.SHAPE_ICON_EXPAND
+local SHAPE_MASKS = ns.SHAPE_MASKS
+local SHAPE_BORDERS = ns.SHAPE_BORDERS
+local SHAPE_ZOOM_DEFAULTS = ns.SHAPE_ZOOM_DEFAULTS
+local SHAPE_ICON_EXPAND = ns.SHAPE_ICON_EXPAND
 local SHAPE_ICON_EXPAND_OFFSETS = ns.SHAPE_ICON_EXPAND_OFFSETS
-local SHAPE_INSETS             = ns.SHAPE_INSETS
-local ResolveBorderThickness   = ns.ResolveBorderThickness
-local EAB                      = ns.EAB
-local EFD                      = ns.EFD
+local SHAPE_INSETS = ns.SHAPE_INSETS
+local ResolveBorderThickness = ns.ResolveBorderThickness
+local EAB = ns.EAB
+local EFD = ns.EFD
 
 -------------------------------------------------------------------------------
 --  SkinBlizzardFlyoutButton
@@ -26,14 +28,18 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
     if not fd.blizzStripped then
         fd.blizzStripped = true
         local nt = btn.NormalTexture or btn:GetNormalTexture()
-        if nt then nt:SetAlpha(0) end
+        if nt then
+            nt:SetAlpha(0)
+        end
         if btn.IconMask and CludesUI and CludesUI._hiddenParent then
             btn.IconMask:SetParent(CludesUI._hiddenParent)
         end
     end
 
     local icon = btn.icon or btn.Icon
-    if not icon then return end
+    if not icon then
+        return
+    end
 
     if shape ~= "none" and shape ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[shape] then
         local maskTex = SHAPE_MASKS[shape]
@@ -63,7 +69,9 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
         local shapeOffset = SHAPE_ICON_EXPAND_OFFSETS and SHAPE_ICON_EXPAND_OFFSETS[shape] or 0
         local shapeDefault = (SHAPE_ZOOM_DEFAULTS and SHAPE_ZOOM_DEFAULTS[shape] or 6.0) / 100
         local iconExp = (SHAPE_ICON_EXPAND or 0) + shapeOffset + ((zoom or 0) - shapeDefault) * 200
-        if iconExp < 0 then iconExp = 0 end
+        if iconExp < 0 then
+            iconExp = 0
+        end
         local halfIE = iconExp / 2
         local PP = CludesUI and CludesUI.PP
         if PP then
@@ -119,7 +127,9 @@ local function SkinBlizzardFlyoutButton(btn, shape, zoom, brdOn, cr, cg, cb, ca,
             end
             fd.shapeMask:Hide()
         end
-        if fd.shapeBorder then fd.shapeBorder:Hide() end
+        if fd.shapeBorder then
+            fd.shapeBorder:Hide()
+        end
 
         icon:ClearAllPoints()
         icon:SetAllPoints(btn)
@@ -155,30 +165,42 @@ end
 -------------------------------------------------------------------------------
 local function OnBlizzardFlyoutShow(flyout)
     local caller = flyout:GetParent()
-    if not caller then return end
+    if not caller then
+        return
+    end
 
     local barKey = EFD(caller).barKey
-    if not barKey then return end
+    if not barKey then
+        return
+    end
 
     local prof = EAB and EAB.db and EAB.db.profile
-    if not prof then return end
+    if not prof then
+        return
+    end
     local s = prof.bars and prof.bars[barKey]
-    if not s then return end
+    if not s then
+        return
+    end
 
     local shape = s.buttonShape or "none"
-    local zoom = ((s.iconZoom or prof.iconZoom or 5.5)) / 100
+    local zoom = (s.iconZoom or prof.iconZoom or 5.5) / 100
     local brdSz, brdPx = ResolveBorderThickness(s)
     local brdOn = brdSz > 0
     -- The flyout border is always solid strips: the bar's exact size flows only
     -- when the bar itself is solid (a textured bar's exact size is its edge art).
-    if brdPx and (s.borderTexture or "solid") == "solid" then brdSz = brdPx end
+    if brdPx and (s.borderTexture or "solid") == "solid" then
+        brdSz = brdPx
+    end
     local brdColor = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
     if s.borderClassColor then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
-            if cc then cr, cg, cb = cc.r, cc.g, cc.b end
+            if cc then
+                cr, cg, cb = cc.r, cc.g, cc.b
+            end
         end
     end
     local shapeBrdColor = s.shapeBorderColor or brdColor
@@ -187,17 +209,27 @@ local function OnBlizzardFlyoutShow(flyout)
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
-            if cc then sbR, sbG, sbB = cc.r, cc.g, cc.b end
+            if cc then
+                sbR, sbG, sbB = cc.r, cc.g, cc.b
+            end
         end
     end
 
     -- Hide Blizzard's flyout background art (re-applied every show,
     -- Blizzard resets these textures each time the flyout opens)
     if flyout.Background then
-        if flyout.Background.End then flyout.Background.End:SetAlpha(0) end
-        if flyout.Background.Start then flyout.Background.Start:SetAlpha(0) end
-        if flyout.Background.HorizontalMiddle then flyout.Background.HorizontalMiddle:SetAlpha(0) end
-        if flyout.Background.VerticalMiddle then flyout.Background.VerticalMiddle:SetAlpha(0) end
+        if flyout.Background.End then
+            flyout.Background.End:SetAlpha(0)
+        end
+        if flyout.Background.Start then
+            flyout.Background.Start:SetAlpha(0)
+        end
+        if flyout.Background.HorizontalMiddle then
+            flyout.Background.HorizontalMiddle:SetAlpha(0)
+        end
+        if flyout.Background.VerticalMiddle then
+            flyout.Background.VerticalMiddle:SetAlpha(0)
+        end
     end
 
     -- Skin each visible button. Classic WoW UI: the vanilla ring at the
@@ -210,7 +242,9 @@ local function OnBlizzardFlyoutShow(flyout)
         local child = children[i]
         if child and child:IsShown() and child.icon then
             if classic then
-                if not ns.EFD(child).classicArt then ns.AB_PaintClassicButton(child) end
+                if not ns.EFD(child).classicArt then
+                    ns.AB_PaintClassicButton(child)
+                end
             else
                 SkinBlizzardFlyoutButton(child, shape, zoom, brdOn, cr, cg, cb, ca, sbR, sbG, sbB, sbA, brdSz)
             end
@@ -224,8 +258,12 @@ end
 -------------------------------------------------------------------------------
 local function InstallBlizzFlyoutHook()
     local sf = _G.SpellFlyout
-    if not sf or not EFD then return false end
-    if EFD(sf).hooked then return true end
+    if not sf or not EFD then
+        return false
+    end
+    if EFD(sf).hooked then
+        return true
+    end
     EFD(sf).hooked = true
     sf:HookScript("OnShow", OnBlizzardFlyoutShow)
     return true
