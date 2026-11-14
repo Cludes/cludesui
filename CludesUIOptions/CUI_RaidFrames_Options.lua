@@ -24,7 +24,7 @@ local PAGE_MAIN = "Frames"
 local PAGE_PARTY = "Party"
 local PAGE_BUFFS = "Buff Manager"
 local PAGE_DM = "Debuff Manager"
-local PAGE_CLICKCAST = "HoverCast"
+local PAGE_CLICKCAST = "Frame Bindings"  -- was "HoverCast"
 
 -- Display-only tab labels. Page IDENTITY strings above are baked into nav
 -- targets/unlock/overrides/saved state; tab bar renders these instead (see CreateTabButton in CludesUI.lua).

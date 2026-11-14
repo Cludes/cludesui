@@ -85,6 +85,7 @@ local EXCLUDED_CONTEXTS = {
     -- store (never per-profile), so overrides can't apply to them.
     ["CludesUIRaidFrames"] = {
         ["HoverCast"] = true,
+        ["Frame Bindings"] = true,
     },
     -- Unit Frames: Player Aura Bars is a bar-CRUD system (custom bar lists,
     -- shared filter registry, structural per-bar tables), not per-spec slot

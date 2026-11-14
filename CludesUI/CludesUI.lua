@@ -3553,7 +3553,7 @@ CludesUI._RunConflictCheck = function()
             -- check; moduleCheck adds the HoverCast-enabled check.
             { addon = "Clique",                   label = "Clique",                     targets = { "CludesUIRaidFrames" },
               moduleCheck = function() return _G._ERF_IsHoverCastEnabled and _G._ERF_IsHoverCastEnabled() end,
-              message = "Clique controls click-casting on the same Raid & Party Frames as CludesUI's HoverCast, so they conflict. Disable the Clique addon to use HoverCast." },
+              message = "Clique controls click-casting on the same Raid & Party Frames as CludesUI's Frame Bindings, so they conflict. Disable the Clique addon to use Frame Bindings." },
             { addon = "TellMeWhen",               label = "TellMeWhen",                 targets = "all",                              message = "TellMeWhen overlaps with CludesUI's core positional architecture. If you ONLY use for sound alerts it should be okay but may still cause issues." },
             { addon = "Bartender4",               label = "Bartender4",                 targets = { "CludesUIActionBars" } },
             { addon = "Dominos",                  label = "Dominos",                    targets = { "CludesUIActionBars" } },

@@ -3023,9 +3023,12 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     local ADD_BTN_H    = 30
     local ADD_BTN_PAD  = 10
     local SPELL_STRIP_W = 57  -- narrow spell icon strip (outside the root, on CUI window edge)
-    local SIDEBAR_PCT  = 0.24
+    -- One bindings column on the left (Global over Spec), the options right of it.
+    local SIDEBAR_PCT  = 0.30
+    local COL_GAP      = 12
     local sidebarW     = floor(parentW * SIDEBAR_PCT)
-    local centerW      = parentW - sidebarW * 2
+    local centerW      = parentW - sidebarW - COL_GAP
+    local globalH      = floor((visibleH - COL_GAP) * 0.5)
 
     -- The page in the options panel's card style. CC.Button: a square
     -- button, dark with an accent outline and accent text (primary) or a grey
@@ -3619,7 +3622,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     --  LEFT SIDEBAR (Global Bindings)
     ---------------------------------------------------------------------------
     local leftOuter = CreateFrame("Frame", nil, root)
-    leftOuter:SetSize(sidebarW, visibleH)
+    leftOuter:SetSize(sidebarW, globalH)
     leftOuter:SetPoint("TOPLEFT", root, "TOPLEFT", 0, 0)
     leftOuter:SetFrameLevel(root:GetFrameLevel() + 1)
     local leftBg = leftOuter:CreateTexture(nil, "BACKGROUND")
@@ -3893,8 +3896,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     --  RIGHT SIDEBAR (Spec Bindings)
     ---------------------------------------------------------------------------
     local rightOuter = CreateFrame("Frame", nil, root)
-    rightOuter:SetSize(sidebarW, visibleH)
-    rightOuter:SetPoint("TOPRIGHT", root, "TOPRIGHT", 0, 0)
+    rightOuter:SetSize(sidebarW, visibleH - globalH - COL_GAP)
+    rightOuter:SetPoint("TOPLEFT", leftOuter, "BOTTOMLEFT", 0, -COL_GAP)
     rightOuter:SetFrameLevel(root:GetFrameLevel() + 1)
     local rightBg = rightOuter:CreateTexture(nil, "BACKGROUND")
     rightBg:SetAllPoints(); rightBg:SetColorTexture(0, 0, 0, 0.25)
@@ -4293,7 +4296,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
             ccPickers.spec = ui
         end
         local popup, gridScroll, gridChild = ui.popup, ui.scroll, ui.child
-        -- Right edge flush with left edge of right sidebar, centered vertically on the add button
+        -- Left edge flush with the bindings column's right edge, centred vertically on the add button
         local btnMidY = select(2, addSpecBtn:GetCenter()) or 0
         local sidebarMidY = select(2, rightOuter:GetCenter()) or 0
         local offsetY = btnMidY - sidebarMidY
@@ -4302,7 +4305,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
         local popupBotR = btnMidY - popupH2 / 2
         if popupBotR < rootBotR then offsetY = offsetY + (rootBotR - popupBotR) end
         popup:ClearAllPoints()
-        popup:SetPoint("RIGHT", rightOuter, "LEFT", 0, offsetY)
+        popup:SetPoint("LEFT", rightOuter, "RIGHT", 0, offsetY)
 
         ns._ccSpecPopup = popup
         gridScroll:SetVerticalScroll(0)
@@ -4523,7 +4526,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     ---------------------------------------------------------------------------
     local centerFrame = CreateFrame("Frame", nil, root)
     centerFrame:SetSize(centerW, visibleH)
-    centerFrame:SetPoint("TOPLEFT", leftOuter, "TOPRIGHT", 0, 0)
+    centerFrame:SetPoint("TOPLEFT", leftOuter, "TOPRIGHT", COL_GAP, 0)
     centerFrame:SetFrameLevel(root:GetFrameLevel() + 1)
 
     local C_PAD = 16           -- padding inside center panel

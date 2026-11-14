@@ -134,6 +134,9 @@ CludesUI._WHATSNEW_PATCHES = {
               title  = "Default themes",
               desc   = "WoW Forever opens in the CludesUI Forever theme, retail in the blue CludesUI theme." },
             { module = "Raid Frames",
+              title  = "Frame Bindings",
+              desc   = "HoverCast is now called Frame Bindings. Global and spec bindings share one column on the left, with the options beside them." },
+            { module = "Raid Frames",
               title  = "Preview window",
               desc   = "The raid and party preview opens in its own window beside the panel." },
             { module = "Global Settings",
@@ -1573,7 +1576,7 @@ initFrame:SetScript("OnEvent", function(self)
         wtext:SetWidth(width - 32)
         wtext:SetJustifyH("LEFT")
         wtext:SetSpacing(3)
-        wtext:SetText(CludesUI.L("This export includes cross profile settings that will overwrite the importing user's settings including Utilities, Hovercast and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."))
+        wtext:SetText(CludesUI.L("This export includes cross profile settings that will overwrite the importing user's settings including Utilities, Frame Bindings and more that should typically not be shared with standard profiles. THIS IS NOT RECOMMENDED for public sharing of profiles."))
         warn:SetHeight((wtext:GetStringHeight() or 40) + 28)
         y = y - warn:GetHeight() - 40
 

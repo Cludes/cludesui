@@ -1560,7 +1560,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         pastePage:Hide()
                         CludesUI:ShowConfirmPopup({
                             title = CludesUI.L("Import Full Account Data"),
-                            message = CludesUI.L("This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, HoverCast bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced.")
+                            message = CludesUI.L("This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced.")
                                 .. ((CludesUI.PayloadFromOtherClient(payload) and type(payload.data) == "table"
                                     and payload.data.spellAssignments ~= nil)
                                     and ("\n\n" .. CludesUI.L("Its Cooldown Manager spells come from the other game client and will not be imported.")) or ""),
