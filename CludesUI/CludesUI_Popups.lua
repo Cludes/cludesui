@@ -213,98 +213,86 @@ function CludesUI.MakeActionButton(parent, font, text, r, g, b, opts)
     return btn
 end
 
--- Fading popup button (confirm and input popups): 125x27; text and border lerp from the
--- default to the hover colours over 0.1s. Exposes btn._lbl, btn._resetAnim and
--- btn._setColors (new colours, same argument order as the defaults below).
--- square (optional): the square outline, for a window that is square by design.
-function CludesUI.MakePopupButton(
-    parent,
-    anchorPoint,
-    anchorTo,
-    anchorRef,
-    xOff,
-    yOff,
-    defR,
-    defG,
-    defB,
-    defA,
-    hovR,
-    hovG,
-    hovB,
-    hovA,
-    bDefR,
-    bDefG,
-    bDefB,
-    bDefA,
-    bHovR,
-    bHovG,
-    bHovB,
-    bHovA,
-    square
-)
-    local FADE_DUR = 0.1
-    local btn = CreateFrame("Button", nil, parent)
-    btn:SetSize(125, 27)
-    btn:SetPoint(anchorPoint, anchorTo, anchorRef, xOff, yOff)
-    btn:SetFrameLevel(parent:GetFrameLevel() + 2)
+-- Dialog button (confirm and input dialogs, and a few windows that match
+-- them): 125 x 27, a label and an outline that ease from their resting
+-- colours to their hover colours in 0.1 s, over a faint wash of the outline's
+-- colour that brightens with them. Colours are given as four RGBA groups:
+-- label, label on hover, outline, outline on hover. square (optional): a
+-- square outline, for a window that is square by design.
+-- Exposes btn._lbl, btn._resetAnim() (snap back to resting) and
+-- btn._setColors(...) (new colours, same order; repaints where it is).
+local POPUP_BTN_W, POPUP_BTN_H, POPUP_BTN_FADE = 125, 27, 0.1
 
-    local bg = SolidTex(btn, "BACKGROUND", 0, 0, 0, 0.5)
-    bg:SetAllPoints()
-    local brd
-    if square then
-        brd = MakeBorder(btn, bDefR, bDefG, bDefB, bDefA)
-    else
-        brd = CludesUI.MakeRoundedBorder(btn, bDefR, bDefG, bDefB, bDefA, bg)
+function CludesUI.MakePopupButton(parent, point, relTo, relPoint, x, y, ...)
+    local square = select(17, ...)
+    local col = {} -- [1..4] label, [5..8] label hover, [9..12] outline, [13..16] outline hover
+    local function SetColors(...)
+        for i = 1, 16 do
+            col[i] = select(i, ...)
+        end
     end
+    SetColors(...)
 
-    local lbl = MakeFont(btn, 12, nil, defR, defG, defB)
-    lbl:SetAlpha(defA)
-    lbl:SetPoint("CENTER")
+    local btn = CreateFrame("Button", nil, parent)
+    btn:SetSize(POPUP_BTN_W, POPUP_BTN_H)
+    btn:SetPoint(point, relTo, relPoint, x, y)
+    btn:SetFrameLevel(parent:GetFrameLevel() + 2)
+    local wash = SolidTex(btn, "BACKGROUND", 0, 0, 0, 0.5)
+    wash:SetAllPoints()
+    local outline = square and MakeBorder(btn, col[9], col[10], col[11], col[12])
+        or CludesUI.MakeRoundedBorder(btn, col[9], col[10], col[11], col[12], wash)
+    local label = MakeFont(btn, 12, nil, col[1], col[2], col[3])
+    label:SetPoint("CENTER")
 
-    local progress, target = 0, 0
-    local function Apply(t)
-        lbl:SetTextColor(lerp(defR, hovR, t), lerp(defG, hovG, t), lerp(defB, hovB, t), lerp(defA, hovA, t))
-        brd:SetColor(
-            lerp(bDefR, bHovR, t),
-            lerp(bDefG, bHovG, t),
-            lerp(bDefB, bHovB, t),
-            lerp(bDefA, bHovA, t)
+    -- t: 0 resting, 1 hovered.
+    local t, goal = 0, 0
+    local function Paint()
+        local function Mix(i)
+            return lerp(col[i], col[i + 4], t)
+        end
+        label:SetTextColor(Mix(1), Mix(2), Mix(3), Mix(4))
+        outline:SetColor(
+            lerp(col[9], col[13], t),
+            lerp(col[10], col[14], t),
+            lerp(col[11], col[15], t),
+            lerp(col[12], col[16], t)
+        )
+        -- A dark base with the outline's colour coming through as it lights up.
+        wash:SetColorTexture(
+            lerp(0, col[13], 0.08 * t),
+            lerp(0, col[14], 0.08 * t),
+            lerp(0, col[15], 0.08 * t),
+            0.5 + 0.1 * t
         )
     end
-
-    local function OnUpdate(self, elapsed)
-        local dir = (target == 1) and 1 or -1
-        progress = progress + dir * (elapsed / FADE_DUR)
-        if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
-            progress = target
+    local function Step(self, elapsed)
+        t = goal == 1 and math.min(1, t + elapsed / POPUP_BTN_FADE)
+            or math.max(0, t - elapsed / POPUP_BTN_FADE)
+        if t == goal then
             self:SetScript("OnUpdate", nil)
         end
-        Apply(progress)
+        Paint()
     end
-
     btn:SetScript("OnEnter", function(self)
-        target = 1
-        self:SetScript("OnUpdate", OnUpdate)
+        goal = 1
+        self:SetScript("OnUpdate", Step)
     end)
     btn:SetScript("OnLeave", function(self)
-        target = 0
-        self:SetScript("OnUpdate", OnUpdate)
+        goal = 0
+        self:SetScript("OnUpdate", Step)
     end)
 
-    btn._lbl = lbl
-    btn._resetAnim = function()
-        progress = 0
-        target = 0
-        Apply(0)
+    btn._lbl = label
+    function btn._resetAnim()
+        t, goal = 0, 0
         btn:SetScript("OnUpdate", nil)
+        Paint()
     end
-    -- Replaces the default and hover colours and repaints at the current hover progress.
-    btn._setColors = function(...)
-        defR, defG, defB, defA, hovR, hovG, hovB, hovA, bDefR, bDefG, bDefB, bDefA, bHovR, bHovG, bHovB, bHovA =
-            ...
-        lbl:SetAlpha(defA)
-        Apply(progress)
+    function btn._setColors(...)
+        SetColors(...)
+        Paint()
     end
+    Paint()
     return btn
 end
 
