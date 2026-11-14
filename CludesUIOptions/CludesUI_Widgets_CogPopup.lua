@@ -396,10 +396,13 @@ local function BuildCogPopup(opts)
         bg:SetAllPoints()
         CludesUI.MakeRoundedBorder(pf, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
 
+        -- House look: an accent cap along the top, the title on the left in capitals.
+        local cap = SolidTex(pf, "ARTWORK", CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b, 0.9)
+        cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
         local titleFS = MakeFont(pf, TITLE_H, "", 1, 1, 1)
-        titleFS:SetAlpha(0.7)
-        titleFS:SetPoint("TOP", pf, "TOP", 0, -TOP_PAD)
-        titleFS:SetText(CludesUI.L(opts.title or ""))
+        titleFS:SetAlpha(0.9)
+        titleFS:SetPoint("TOPLEFT", pf, "TOPLEFT", 14, -TOP_PAD)
+        titleFS:SetText(CludesUI.L(opts.title or ""):upper())
 
         -- A sections popup can be wide: it stays on screen.
         if opts.sections then pf:SetClampedToScreen(true) end
