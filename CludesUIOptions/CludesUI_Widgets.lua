@@ -594,6 +594,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local _moIconNative = _menuOpts and _menuOpts.iconNativeColor
         -- Optional in-menu search box (_menuOpts.searchable): filter field hides non-matching items and repositions the rest. Flat lists only (no subnav, no dividers).
         local _moSearchable = _menuOpts and _menuOpts.searchable
+        -- Unless a menu says otherwise, a plain list of 15 or more entries (no
+        -- dividers or flyouts, which the search cannot lay out) gets the box too:
+        -- fonts, textures and other long lists are typed into instead of scrolled.
+        if _moSearchable == nil and #sequence >= 15 then
+            _moSearchable = true
+            for _, key in ipairs(sequence) do
+                local dn = values[key]
+                if IsDividerKey(key) or (type(dn) == "table" and dn.subnav) then
+                    _moSearchable = false
+                    break
+                end
+            end
+        end
         local SEARCH_H = 26
         -- The search field is the list's flush first row (inside the 1 unit border,
         -- a divider as its last unit); the rows below keep their 4-unit top gap.
