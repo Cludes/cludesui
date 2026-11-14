@@ -14,6 +14,10 @@ local FLAVOR  = arg[1] or "retail"
 local CLASS   = arg[2] or "PALADIN"
 local VERBOSE = arg[3] == "-v"
 local ROOT    = "."
+-- The suite to load: its core addon's folder and global name (HARNESS_SUITE,
+-- default CludesUI). Another suite built the same way can be loaded to
+-- produce test data, such as an export string for the import tests.
+local SUITE   = os.getenv("HARNESS_SUITE") or "CludesUI"
 
 local realG = _G
 local unpack = unpack
@@ -548,7 +552,7 @@ G.IsAddOnLoaded, G.LoadAddOn, G.GetAddOnMetadata = G.C_AddOns.IsAddOnLoaded, G.C
 
 -- Names that must read as absent: the suite's own flags and saved variables,
 -- and other addons it only checks for.
-local ABSENT_PREFIX = { "^CUI", "^CludesUI", "^SLASH_", "^BINDING_", "^_" }
+local ABSENT_PREFIX = { "^CUI", "^CludesUI", "^EUI", "^Elles" .. "mere", "^SLASH_", "^BINDING_", "^_" }
 local ABSENT = {}
 for _, n in ipairs({ "ElvUI", "Details", "BigWigs", "DBM", "WeakAuras", "Plater", "Masque", "LibStub", "Clique", "OmniCC", "TomTom",
     "Bartender4", "Dominos", "MRT", "VMRT", "Skada", "Recount", "BugSack", "BugGrabber", "Questie", "Auctionator", "TSM_API",
@@ -694,7 +698,7 @@ end
 local function Discover()
     -- cmd.exe on Windows (dir), a POSIX shell elsewhere (ls).
     local windows = package.config:sub(1, 1) == "\\"
-    local p = io.popen(windows and 'dir /b /ad "CludesUI*" 2>nul' or 'ls -d CludesUI*/ 2>/dev/null')
+    local p = io.popen(windows and ('dir /b /ad "' .. SUITE .. '*" 2>nul') or ('ls -d ' .. SUITE .. '*/ 2>/dev/null'))
     for line in p:lines() do
         local dir = line:gsub("\r", ""):match("([^/\\]+)[/\\]?$")
         local suffix = FLAVOR == "forever" and "_Camelot" or "_Mainline"
@@ -746,9 +750,9 @@ end
 --  Run
 -------------------------------------------------------------------------------
 Discover()
-io.write(("CludesUI headless test: %s client, %s, %d addons found\n"):format(FLAVOR, CLASS, #addonOrder))
+io.write(("%s headless test: %s client, %s, %d addons found\n"):format(SUITE, FLAVOR, CLASS, #addonOrder))
 
-LoadAddon("CludesUI")
+LoadAddon(SUITE)
 for _, name in ipairs(addonOrder) do if not addons[name].lod then LoadAddon(name) end end
 
 for _, ev in ipairs({ "VARIABLES_LOADED", "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD", "SPELLS_CHANGED", "PLAYER_SPECIALIZATION_CHANGED", "GROUP_ROSTER_UPDATE" }) do
@@ -759,7 +763,7 @@ end
 phase = "timers after login"
 Advance(10)
 
-local CUI = rawget(realG, "CludesUI")
+local CUI = rawget(realG, SUITE)
 local pagesBuilt, pagesFailed = 0, 0
 if not CUI then
     Record("CludesUI global missing after load")
@@ -770,7 +774,7 @@ else
     Safe(function() if not (CUI._mainFrame and CUI._mainFrame:IsShown()) then CUI:Show() end end)
     Advance(3)
     -- The page registry is private to the core addon: its namespace table.
-    local modules = (addons.CludesUI.ns and addons.CludesUI.ns.modules) or {}
+    local modules = (addons[SUITE].ns and addons[SUITE].ns.modules) or {}
     local keys = {}
     for k in pairs(modules) do keys[#keys + 1] = k end
     if VERBOSE or #keys == 0 then
