@@ -1060,127 +1060,119 @@ end
 -- There is no beta-reset welcome popup or wipe gate (CludesUI:ShowWelcomePopup does not exist); manual reset lives in Global Settings > Reset.
 
 -------------------------------------------------------------------------------
---  Scrollable Info Popup  (read-only content with custom scroll + close button)
+--  Info dialog: a title, a message and Close.
 --  Usage:  CludesUI:ShowInfoPopup({ title, content, width, height })
---          content is a plain string; the popup handles word-wrap and scrolling.
+--  The dialog fits its message: a short note gets a short dialog, a long one
+--  grows to `height` (default 420) and scrolls past that. `width` defaults to
+--  400. Escape, a click outside it and a controller's back press close it.
 -------------------------------------------------------------------------------
-local infoPopup
+local info -- the dialog, built on first use: { dimmer, frame, title, text, scroll, child, ScrollTo, UpdateBar }
 
-local function CreateInfoPopup()
-    if infoPopup then
-        return infoPopup
-    end
+local INFO = { W = 400, MAX_H = 420, MIN_TEXT = 36, TEXT_PAD = 12 }
 
-    local POPUP_W, POPUP_H = 400, 310
-
-    -- Dimmer
+local function BuildInfoDialog()
     local dimmer = CreateFrame("Frame", "CUIInfoDimmer", UIParent)
     dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
     dimmer:SetAllPoints(UIParent)
     dimmer:EnableMouse(true)
     dimmer:EnableMouseWheel(true)
-    dimmer:SetScript("OnMouseWheel", function() end)
+    dimmer:SetScript("OnMouseWheel", function() end) -- the world under it does not zoom
     dimmer:Hide()
+    SolidTex(dimmer, "BACKGROUND", 0, 0, 0, 0.25):SetAllPoints()
 
-    local dimTex = SolidTex(dimmer, "BACKGROUND", 0, 0, 0, 0.25)
-    dimTex:SetAllPoints()
+    local frame = CreateFrame("Frame", "CUIInfoPopup", dimmer)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+    frame:SetFrameStrata("FULLSCREEN_DIALOG")
+    frame:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+    frame:EnableMouse(true)
+    local bg = SolidTex(frame, "BACKGROUND", 0.062, 0.070, 0.082, 1)
+    bg:SetAllPoints()
+    CludesUI.MakeRoundedBorder(frame, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
+    DressDialog(frame)
 
-    -- Popup frame
-    local popup = CreateFrame("Frame", "CUIInfoPopup", dimmer)
-    popup:SetSize(POPUP_W, POPUP_H)
-    popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-    popup:SetFrameStrata("FULLSCREEN_DIALOG")
-    popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
-    popup:EnableMouse(true)
+    local title = MakeFont(frame, 15, "", 1, 1, 1)
 
-    local popBg = SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
-    popBg:SetAllPoints()
-    CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBg)
-    DressDialog(popup)
+    local scroll = CreateFrame("ScrollFrame", nil, frame)
+    scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", DIALOG_PAD, -(DIALOG_HEAD + INFO.TEXT_PAD))
+    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -DIALOG_PAD, DIALOG_FOOT + INFO.TEXT_PAD)
+    scroll:SetFrameLevel(frame:GetFrameLevel() + 1)
+    scroll:EnableMouseWheel(true)
+    local child = CreateFrame("Frame", nil, scroll)
+    scroll:SetScrollChild(child)
+    local text = child:CreateFontString(nil, "OVERLAY")
+    text:SetFont(CludesUI.EXPRESSWAY, 12, "")
+    text:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.85)
+    text:SetPoint("TOPLEFT")
+    text:SetJustifyH("LEFT")
+    text:SetWordWrap(true)
+    text:SetSpacing(3)
+    local UpdateBar, ScrollTo = CludesUI.AttachSmoothScrollbar(scroll, { child = child })
 
-    -- Title, left in the header band
-    local title = MakeFont(popup, 15, "", 1, 1, 1)
-    PlaceDialogTitle(popup, title, POPUP_W)
-    popup._title = title
-
-    -- Scroll frame
-    local sf = CreateFrame("ScrollFrame", nil, popup)
-    sf:SetPoint("TOPLEFT", popup, "TOPLEFT", DIALOG_PAD, -(DIALOG_HEAD + 12))
-    sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -DIALOG_PAD, DIALOG_FOOT + 8)
-    sf:SetFrameLevel(popup:GetFrameLevel() + 1)
-    sf:EnableMouseWheel(true)
-
-    local sc = CreateFrame("Frame", nil, sf)
-    sc:SetWidth(sf:GetWidth() or (POPUP_W - 48))
-    sc:SetHeight(1)
-    sf:SetScrollChild(sc)
-
-    -- Content FontString
-    local contentFS = sc:CreateFontString(nil, "OVERLAY")
-    contentFS:SetFont(CludesUI.EXPRESSWAY, 11, "")
-    contentFS:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.80)
-    contentFS:SetPoint("TOPLEFT", sc, "TOPLEFT", 0, 0)
-    contentFS:SetWidth((POPUP_W - 48) - 10)
-    contentFS:SetJustifyH("LEFT")
-    contentFS:SetWordWrap(true)
-    contentFS:SetSpacing(3)
-    popup._contentFS = contentFS
-
-    local _, scrollTo = CludesUI.AttachSmoothScrollbar(sf)
-
-    -- Close button
-    local closeBtn = CreateFrame("Button", nil, popup)
-    closeBtn:SetSize(100, 26)
-    closeBtn:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", -14, 10)
-    closeBtn:SetFrameLevel(popup:GetFrameLevel() + 2)
-    CludesUI.MakeStyledButton(closeBtn, "Close", 11, CludesUI.RB_COLOURS, function()
+    local close = CreateFrame("Button", nil, frame)
+    close:SetSize(100, 26)
+    close:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -14, 10)
+    close:SetFrameLevel(frame:GetFrameLevel() + 2)
+    CludesUI.MakeStyledButton(close, "Close", 11, CludesUI.RB_COLOURS, function()
         dimmer:Hide()
     end)
-    -- Controller cursor: its cancel press closes through this button.
     if CludesUI.PadCP() then
-        popup.CloseButton = closeBtn
+        frame.CloseButton = close -- a controller's back press closes through it
     end
 
-    -- Click dimmer to close
     dimmer:SetScript("OnMouseDown", function()
-        if not popup:IsMouseOver() then
+        if not frame:IsMouseOver() then
             dimmer:Hide()
         end
     end)
-
-    -- Escape to close
-    WirePopupEscape(popup, dimmer)
-
-    -- Reset scroll on hide
+    WirePopupEscape(frame, dimmer)
     dimmer:HookScript("OnHide", function()
-        scrollTo(0)
+        ScrollTo(0) -- the next message starts at its top
     end)
 
-    popup._dimmer = dimmer
-    popup._scrollFrame = sf
-    popup._scrollChild = sc
-    infoPopup = popup
-    return popup
+    frame._dimmer = dimmer -- the shared popup helpers read the dimmer from here
+    info = {
+        dimmer = dimmer,
+        frame = frame,
+        title = title,
+        text = text,
+        scroll = scroll,
+        child = child,
+        ScrollTo = ScrollTo,
+        UpdateBar = UpdateBar,
+    }
+    return info
+end
+
+-- Sizes the dialog to its message: width w, height up to maxH.
+local function FitInfoDialog(d, w, maxH)
+    local textW = w - 2 * DIALOG_PAD - 10 -- room for the scroll bar
+    d.frame:SetWidth(w)
+    PlaceDialogTitle(d.frame, d.title, w)
+    d.child:SetWidth(textW)
+    d.text:SetWidth(textW)
+    local textH = d.text:GetStringHeight() or 0
+    if issecretvalue and issecretvalue(textH) then
+        textH = maxH -- unreadable in a restricted moment: take the full size and scroll
+    end
+    textH = math.max(INFO.MIN_TEXT, math.ceil(textH))
+    d.child:SetHeight(textH + 4)
+    local chrome = DIALOG_HEAD + DIALOG_FOOT + 2 * INFO.TEXT_PAD
+    d.frame:SetHeight(math.min(maxH, chrome + textH))
+    d.UpdateBar()
 end
 
 function CludesUI:ShowInfoPopup(opts)
+    opts = opts or {}
     if CludesUI.HideWidgetTooltip then
         CludesUI.HideWidgetTooltip()
     end
-    local popup = CreateInfoPopup()
-
-    popup._title:SetText(CludesUI.L(opts.title or "Information"))
-    popup._contentFS:SetText(CludesUI.L(opts.content) or "")
-
-    -- Resize scroll child to fit content after a frame
-    C_Timer.After(0.01, function()
-        local h = popup._contentFS:GetStringHeight() or 100
-        popup._scrollChild:SetHeight(h + 10)
-    end)
-
-    popup._dimmer:Show()
-    -- Controller cursor: move it into the popup.
-    CludesUI.PadFocus(popup)
+    local d = info or BuildInfoDialog()
+    d.title:SetText(CludesUI.L(opts.title or "Information"))
+    d.text:SetText(opts.content and CludesUI.L(opts.content) or "")
+    FitInfoDialog(d, opts.width or INFO.W, opts.height or INFO.MAX_H)
+    d.ScrollTo(0)
+    d.dimmer:Show()
+    CludesUI.PadFocus(d.frame) -- a controller's cursor moves into the dialog
 end
 
 -------------------------------------------------------------------------------
