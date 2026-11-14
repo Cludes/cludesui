@@ -265,11 +265,13 @@ local function BuildNameIconPopup(defs, onCreate)
     p:EnableMouse(true)
     local bg = p:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.06, 0.06, 0.07, 0.97)
+    bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
     CludesUI.MakeRoundedBorder(p, 1, 1, 1, 0.15, bg)
+    local cap = p:CreateTexture(nil, "ARTWORK", nil, 3); cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+    cap:SetColorTexture(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)  -- house look: accent cap
 
-    local title = CludesUI.MakeFont(p, 14, nil, ACCENT_R, ACCENT_G, ACCENT_B, 1)
-    title:SetPoint("TOP", p, "TOP", 0, -14)
+    local title = CludesUI.MakeFont(p, 14, nil, 1, 1, 1, 1)
+    title:SetPoint("TOPLEFT", p, "TOPLEFT", 20, -16)
     p._title = title
 
     local nameLbl = CludesUI.MakeFont(p, 12, nil, 1, 1, 1, 0.6)
@@ -1168,11 +1170,13 @@ function CludesUI.SpecOverrides_ToggleCardsPopup(anchorBtn)
         p:SetClampedToScreen(true)
         local bg = p:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.06, 0.06, 0.07, 0.99)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.99)
         p._brd = CludesUI.MakeRoundedBorder(p, 1, 1, 1, 0.15, bg)
-        local title = CludesUI.MakeFont(p, 13, nil, ACCENT_R, ACCENT_G, ACCENT_B, 1)
-        title:SetPoint("TOP", p, "TOP", 0, -12)
-        title:SetText(L("Spec Overrides"))
+        local cap = p:CreateTexture(nil, "ARTWORK", nil, 3); cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+        cap:SetColorTexture(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)  -- house look: accent cap
+        local title = CludesUI.MakeFont(p, 13, nil, 1, 1, 1, 1)
+        title:SetPoint("TOPLEFT", p, "TOPLEFT", 14, -12)
+        title:SetText(L("Spec Overrides"):upper())
 
         -- Click-anywhere-to-close, same pattern as the dropdown widgets: a
         -- global mouse-down listener (non-blocking, world clicks pass through).
@@ -1399,14 +1403,16 @@ function Cond.ShowPickerPopup(existing)
         p:EnableMouse(true)
         local bg = p:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.06, 0.06, 0.07, 0.97)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
         p._brd = CludesUI.MakeRoundedBorder(p, 1, 1, 1, 0.15, bg)
+        local cap = p:CreateTexture(nil, "ARTWORK", nil, 3); cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+        cap:SetColorTexture(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)  -- house look: accent cap
 
-        local title = CludesUI.MakeFont(p, 14, nil, ACCENT_R, ACCENT_G, ACCENT_B, 1)
-        title:SetPoint("TOP", p, "TOP", 0, -14)
+        local title = CludesUI.MakeFont(p, 14, nil, 1, 1, 1, 1)
+        title:SetPoint("TOPLEFT", p, "TOPLEFT", 20, -14)
         p._title = title
         local sub = CludesUI.MakeFont(p, 11, nil, 1, 1, 1, 0.5)
-        sub:SetPoint("TOP", p, "TOP", 0, -32)
+        sub:SetPoint("TOPLEFT", p, "TOPLEFT", 20, -32)
         sub:SetText(L("Select the conditions that activate this group:"))
 
         p._rows = {}

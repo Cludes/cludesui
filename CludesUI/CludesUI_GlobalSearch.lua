@@ -1011,8 +1011,19 @@ local function EnsureSearchUI()
     popup:Hide()
     local popupBg = popup:CreateTexture(nil, "BACKGROUND")
     popupBg:SetAllPoints()
-    popupBg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
+    popupBg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
     popup._brd = CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.12, popupBg)
+    -- House look: an accent cap; hovered and selected results take an accent wash.
+    local cap = popup:CreateTexture(nil, "ARTWORK", nil, 3)
+    cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+    popup:HookScript("OnShow", function()
+        local c = CludesUI.CLUDES_GREEN
+        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    end)
+    local function Wash(tex, on)
+        local c = CludesUI.CLUDES_GREEN
+        tex:SetColorTexture(c.r, c.g, c.b, on and 0.16 or 0)
+    end
 
     local resultsFrame = CreateFrame("Frame", nil, popup)
     resultsFrame:SetPoint("TOPLEFT", popup, "TOPLEFT", 4, -4)
@@ -1045,8 +1056,8 @@ local function EnsureSearchUI()
         sub:SetPoint("LEFT", row, "LEFT", 8, -9)
         sub:SetJustifyH("LEFT")
 
-        row:SetScript("OnEnter", function() hl:SetColorTexture(1, 1, 1, 0.08) end)
-        row:SetScript("OnLeave", function() hl:SetColorTexture(1, 1, 1, (i == selIdx and results[i]) and 0.08 or 0) end)
+        row:SetScript("OnEnter", function() Wash(hl, true) end)
+        row:SetScript("OnLeave", function() Wash(hl, (i == selIdx and results[i]) and true or false) end)
 
         row._hl = hl
         row._label = lbl
@@ -1056,9 +1067,9 @@ local function EnsureSearchUI()
     end
 
     local function SetSelected(i)
-        resultRows[selIdx]._hl:SetColorTexture(1, 1, 1, 0)
+        Wash(resultRows[selIdx]._hl, false)
         selIdx = i
-        resultRows[selIdx]._hl:SetColorTexture(1, 1, 1, 0.08)
+        Wash(resultRows[selIdx]._hl, true)
     end
 
     local RunSearch
