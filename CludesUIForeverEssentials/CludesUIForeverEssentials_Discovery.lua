@@ -884,7 +884,7 @@ local function FillTracker(zone)
             if carried > 0 then
                 local npc = Library.Librarian()
                 R:Line(("%d in your bags or bank"):format(carried), { indent = 6, colour = GOLD,
-                    tip = function(tip) tip:SetText(("Hand in to %s, %s"):format(npc.name, npc.place), 1, 1, 1, true) end,
+                    tip = function(tip) tip:SetText(("Hand in to %s, %s"):format(npc.name, npc.place), 1, 1, 1, 1, true) end,
                     onClick = function() Link(npc.name, npc.map, npc.x, npc.y) end })
             end
             for _, item in ipairs(find) do
