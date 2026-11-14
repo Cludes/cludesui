@@ -2331,6 +2331,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             valBox:SetTextColor(1, 1, 1, 1)
             valBox:HighlightText()
         end)
+        -- Up / Down in the box step the typed value by the slider's step (Shift:
+        -- ten steps), within its range; Enter or leaving the box applies it.
+        valBox:SetScript("OnArrowPressed", function(self, key)
+            if key ~= "UP" and key ~= "DOWN" then
+                return
+            end
+            local base = tonumber(self:GetText()) or currentVal
+            local delta = (key == "UP" and 1 or -1) * step * (IsShiftKeyDown() and 10 or 1)
+            self:SetText(FormatVal(SnapStep(math.max(minVal, math.min(maxVal, base + delta)))))
+        end)
         -- EditBox can fail to render SetText text right after becoming visible; nudging cursor position forces a re-render.
         valBox:SetScript("OnShow", function()
             if not valBox:HasFocus() then
