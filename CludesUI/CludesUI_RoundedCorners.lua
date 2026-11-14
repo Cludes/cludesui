@@ -1134,9 +1134,9 @@ end
 
 -- CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b): the
 -- settings card. A fill (default 0.062, 0.070, 0.082 at bgA 0.5) under a
--- rounded 1 px white outline at brdA (0.12). accentH: a top accent edge on
--- the outline's pixel layer under its inner shape (sharp, ends follow the
--- corners); the caller colours it. Returns the outline with o.bg, o.accent
+-- rounded 1 px white outline at brdA (0.12). accentH: an accent bar down the
+-- card's left edge, accentH thick, on the outline's pixel layer under its
+-- inner shape (sharp, ends follow the corners); the caller colours it. Returns the outline with o.bg, o.accent
 -- and o:Clip(tex), masking a texture of parent or a descendant to the
 -- inside of the outline (a side strip, a hover fill).
 local CARD_R, CARD_G, CARD_B = 0.062, 0.070, 0.082
@@ -1151,7 +1151,7 @@ local function FitCard(o, k)
         MaskWhenLoaded(accent, am)
     end
     local h = floor(o.accentH * k + 0.5)
-    accent:SetHeight(h < 1 and 1 or h)
+    accent:SetWidth(h < 1 and 1 or h)
 end
 
 local function CardClip(o, tex)
@@ -1169,7 +1169,7 @@ function CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b)
         local layer = o._frame
         local accent = layer:CreateTexture(nil, "BORDER", nil, 6)
         accent:SetPoint("TOPLEFT", layer, "TOPLEFT", 1, -1)
-        accent:SetPoint("TOPRIGHT", layer, "TOPRIGHT", -1, -1)
+        accent:SetPoint("BOTTOMLEFT", layer, "BOTTOMLEFT", 1, 1)
         local am = layer:CreateMaskTexture()
         am:SetPoint("TOPLEFT", layer, "TOPLEFT", 1, -1)
         am:SetPoint("BOTTOMRIGHT", layer, "BOTTOMRIGHT", -1, 1)
