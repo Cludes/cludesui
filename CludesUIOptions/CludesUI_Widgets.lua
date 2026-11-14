@@ -2183,7 +2183,10 @@ local function BuildSectionCard(parent, frame, y)
         t:SetColorTexture(1, 1, 1, a)
         return t
     end
-    local card = { frame = frame, y = y }
+    -- gen: the heading's pool generation. The pool hands a rebuilt page the
+    -- same objects again, so a card is live only while its heading is still
+    -- on the dress it was built for.
+    local card = { frame = frame, y = y, gen = PoolGen(frame) }
     card.body  = Tex(-6, CARD.BODY_A)
     card.band  = Tex(-5, CARD.BAND_A)
     card.edgeL = Tex(-4, 0); card.edgeR = Tex(-4, 0)
@@ -2208,10 +2211,11 @@ local function BuildSectionCard(parent, frame, y)
     CardSetBottom(card, y - 50)
     -- A heading that hides (a section folded away) takes its card with it.
     frame:HookScript("OnHide", function()
+        if PoolGen(frame) ~= card.gen then return end
         for _, t in ipairs(card.pieces) do t:Hide() end
     end)
     frame:HookScript("OnShow", function()
-        if CARD.searching then return end
+        if CARD.searching or PoolGen(frame) ~= card.gen then return end
         for _, t in ipairs(card.pieces) do t:Show() end
     end)
     CARD.all[card] = true
@@ -2225,8 +2229,10 @@ local function LowestRowOffset(parent)
         local n = child:GetNumPoints()
         if n and n > 0 and child:IsShown() then
             local p, rel, rp, _, y = child:GetPoint(1)
-            if rel == parent and p == "TOPLEFT" and rp == "TOPLEFT" and y then
-                local bottom = y - (child:GetHeight() or 0)
+            local h = child:GetHeight()
+            if rel == parent and p == "TOPLEFT" and rp == "TOPLEFT" and y and h
+               and not (issecretvalue and (issecretvalue(y) or issecretvalue(h))) then
+                local bottom = y - h
                 if not lowest or bottom < lowest then lowest = bottom end
             end
         end
@@ -2236,11 +2242,16 @@ end
 
 -- Called by the panel once a page is built: each parent's last card ends
 -- below the lowest row on it.
+-- Protected: a card is decoration, and a failure here must never stop the
+-- page it sits on from opening.
 function CludesUI._CloseSectionCards()
-    for parent, card in pairs(CARD.open) do
-        local lowest = LowestRowOffset(parent)
-        if lowest then CardSetBottom(card, lowest - 10) end
-        CARD.open[parent] = nil
+    local open = CARD.open
+    CARD.open = {}
+    for parent, card in pairs(open) do
+        pcall(function()
+            local lowest = LowestRowOffset(parent)
+            if lowest then CardSetBottom(card, lowest - 10) end
+        end)
     end
 end
 
@@ -2249,8 +2260,12 @@ end
 function CludesUI._SetSectionCardsShown(shown)
     CARD.searching = not shown or nil
     for card in pairs(CARD.all) do
-        local on = shown and card.frame:IsShown()
-        for _, t in ipairs(card.pieces) do t:SetShown(on) end
+        if PoolGen(card.frame) ~= card.gen then
+            CARD.all[card] = nil   -- its heading was dressed again: not ours now
+        else
+            local on = shown and card.frame:IsShown()
+            for _, t in ipairs(card.pieces) do t:SetShown(on) end
+        end
     end
 end
 
@@ -2280,12 +2295,18 @@ function WidgetFactory:SectionHeader(parent, text, yOffset, tooltip)
 
     -- The section's card: the one before it on this parent ends above this
     -- heading, and this one stays open until the next heading or the page end.
-    local prev = CARD.open[parent]
-    if prev then CardSetBottom(prev, yOffset - CARD.GAP) end
-    CARD.open[parent] = BuildSectionCard(parent, frame, yOffset)
-    if CARD.searching then
-        for _, t in ipairs(CARD.open[parent].pieces) do t:Hide() end
-    end
+    -- Protected, and tolerant of a heading placed without an offset: a card is
+    -- decoration and must never stop its page from building.
+    pcall(function()
+        local cy = tonumber(yOffset) or 0
+        local prev = CARD.open[parent]
+        if prev then CardSetBottom(prev, cy - CARD.GAP) end
+        local card = BuildSectionCard(parent, frame, cy)
+        CARD.open[parent] = card
+        if CARD.searching then
+            for _, t in ipairs(card.pieces) do t:Hide() end
+        end
+    end)
 
     -- Restart the alternating row counter so each section begins fresh
     CludesUI._rowCounters[parent] = 0

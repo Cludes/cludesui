@@ -53,6 +53,68 @@ I.previewContainerSetters[#I.previewContainerSetters + 1] = function(v) previewC
 -------------------------------------------------------------------------------
 local overlayContainer = nil
 
+-- The preview windows' look (raid and party): a CludesUI window of its own, a
+-- dark panel with a 1px edge, a title band and an accent cap along the top.
+-- Returns the title font string (font and text are set at each refresh, after
+-- ApplyFont: a fontstring with no font set errors on SetText).
+function ns.RF_StylePreviewWindow(oc)
+    local bg = oc:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.055, 0.065, 0.075, 0.97)
+    oc._bg = bg
+    local function Edge(p1, p2, w, h)
+        local e = oc:CreateTexture(nil, "BORDER")
+        e:SetColorTexture(1, 1, 1, 0.14)
+        e:SetPoint(p1, oc, p1, 0, 0)
+        e:SetPoint(p2, oc, p2, 0, 0)
+        if w then e:SetWidth(w) else e:SetHeight(h) end
+    end
+    Edge("TOPLEFT", "BOTTOMLEFT", 1); Edge("TOPRIGHT", "BOTTOMRIGHT", 1)
+    Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 1)
+    local band = oc:CreateTexture(nil, "BACKGROUND", nil, 1)
+    band:SetColorTexture(1, 1, 1, 0.05)
+    band:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
+    band:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
+    band:SetHeight(26)
+    local EG = CludesUI.CLUDES_GREEN
+    local cap = oc:CreateTexture(nil, "BORDER", nil, 1)
+    cap:SetColorTexture(EG.r, EG.g, EG.b, 1)
+    cap:SetPoint("TOPLEFT", oc, "TOPLEFT", 0, 0)
+    cap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", 0, 0)
+    cap:SetHeight(2)
+    if CludesUI.RegAccent then CludesUI.RegAccent({ type = "solid", obj = cap, a = 1 }) end
+    local title = oc:CreateFontString(nil, "OVERLAY")
+    title:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
+    oc._title = title
+    return title
+end
+
+-- Where a preview window sits (not draggable, nothing saved): beside the
+-- options panel, level with the top of its settings, on the right when it
+-- fits on screen, else on the left, else over the sidebar's foot as a last
+-- resort. Screen centre without the panel.
+function ns.RF_DockPreviewWindow(oc)
+    oc:ClearAllPoints()
+    local sf = CludesUI._scrollFrame
+    local l, r, t = sf and sf:GetLeft(), sf and sf:GetRight(), sf and sf:GetTop()
+    if not (l and r and t) then
+        oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        return
+    end
+    -- The panel has its own scale (Window Scale): its edges in UIParent units.
+    local k = sf:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local w = oc:GetWidth() or 0
+    local rightX = (r + 34) * k       -- clear of the panel's right border
+    local leftX = (l - 310) * k       -- clear of the sidebar's left border
+    if rightX + w <= UIParent:GetWidth() then
+        oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * k)
+    elseif leftX - w >= 0 then
+        oc:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", leftX, t * k)
+    else
+        oc:SetPoint("BOTTOMRIGHT", sf, "BOTTOMLEFT", 0, 0)
+    end
+end
+
 local function GetOrCreateOverlayContainer()
     if overlayContainer then return overlayContainer end
 
@@ -62,18 +124,7 @@ local function GetOrCreateOverlayContainer()
     oc:SetClampedToScreen(true)
     oc:Hide()
 
-    local bg = oc:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.9)
-    oc._bg = bg
-
-    -- Centered title at the top of the preview. Font/text/color/visibility are
-    -- (re)applied each refresh in RefreshPreview so it tracks the active font.
-    -- SetText is deferred until after ApplyFont there (a fontstring with no font
-    -- set errors on SetText), matching how the group-number labels are built.
-    local title = oc:CreateFontString(nil, "OVERLAY")
-    title:SetPoint("TOP", oc, "TOP", 0, -7)
-    oc._title = title
+    ns.RF_StylePreviewWindow(oc)
 
     overlayContainer = oc
     ns._overlayContainer = oc
@@ -309,7 +360,7 @@ local function RefreshPreview()
             totalH + padT + padB + anchorPad * 2 + topExtra)
         if overlayContainer._title then
             ApplyFont(overlayContainer._title, 13)
-            overlayContainer._title:SetText(CludesUI.L("Overlay Preview"))
+            overlayContainer._title:SetText(CludesUI.L("Raid Preview"):upper())
             overlayContainer._title:SetTextColor(1, 1, 1, 0.9)
             overlayContainer._title:Show()
         end
@@ -322,15 +373,7 @@ local function RefreshPreview()
         else
             overlayContainer:SetFrameStrata("FULLSCREEN_DIALOG")
             overlayContainer:SetFrameLevel(10)
-            overlayContainer:ClearAllPoints()
-            -- Hardcoded default position (not draggable, not saved): docked to
-            -- the left edge of the options panel, screen center as a fallback.
-            local sf = CludesUI._scrollFrame
-            if sf then
-                overlayContainer:SetPoint("BOTTOMRIGHT", sf, "BOTTOMLEFT", 0, 0)
-            else
-                overlayContainer:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-            end
+            ns.RF_DockPreviewWindow(overlayContainer)
         end
         overlayContainer:Show()
     end

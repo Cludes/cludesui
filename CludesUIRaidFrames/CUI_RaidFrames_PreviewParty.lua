@@ -329,17 +329,8 @@ local function GetOrCreatePartyOverlayContainer()
     oc:SetClampedToScreen(true)
     oc:Hide()
 
-    local bg = oc:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.9)
-    oc._bg = bg
-
-    -- Centered title at the top of the preview. Font/text/color/visibility are
-    -- (re)applied each refresh in RefreshPartyPreview after ApplyFont (a
-    -- fontstring with no font set errors on SetText).
-    local title = oc:CreateFontString(nil, "OVERLAY")
-    title:SetPoint("TOP", oc, "TOP", 0, -7)
-    oc._title = title
+    -- The raid preview window's look and title (CUI_RaidFrames_PreviewRaid.lua).
+    ns.RF_StylePreviewWindow(oc)
 
     ns._partyOC = oc
     return oc
@@ -458,19 +449,12 @@ local function RefreshPartyPreview()
         ns._partyOC:SetFrameLevel(10)
         if ns._partyOC._title then
             ApplyFont(ns._partyOC._title, 13)
-            ns._partyOC._title:SetText(CludesUI.L("Preview"))
+            ns._partyOC._title:SetText(CludesUI.L("Party Preview"):upper())
             ns._partyOC._title:SetTextColor(1, 1, 1, 0.9)
             ns._partyOC._title:Show()
         end
-        -- Hardcoded default position (not draggable, not saved): docked to the
-        -- left edge of the options panel, screen center as a fallback.
-        ns._partyOC:ClearAllPoints()
-        local sf = CludesUI._scrollFrame
-        if sf then
-            ns._partyOC:SetPoint("BOTTOMRIGHT", sf, "BOTTOMLEFT", 0, 0)
-        else
-            ns._partyOC:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        end
+        -- Beside the options panel (not draggable, not saved).
+        ns.RF_DockPreviewWindow(ns._partyOC)
         ns._partyOC:Show()
         -- Styled from the party settings, as the preview's own frames are.
         if petSpec and petSpec.owner then
