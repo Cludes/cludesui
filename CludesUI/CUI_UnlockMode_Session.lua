@@ -104,8 +104,10 @@ local function CreateHUD(parent)
         -- A chip (CUI_UnlockMode_Filter.lua) shows only its icon: its name and
         -- state, from its hidden label, lead the tooltip.
         local head = owner._chip and owner._label and owner._label:GetText()
-        local name, state = head and head:match("^(.-)\n(.*)$")
-        if name then
+        -- (Not "head and head:match(...)": an and-expression keeps one result.)
+        local name, state
+        if head then name, state = head:match("^(.-)\n(.*)$") end
+        if name and state then
             tip = CludesUI.HexColor(GetAccent()) .. name .. "|r  " .. state .. "\n" .. tip
         end
         local hud = UM.hudFrame
