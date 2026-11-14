@@ -1224,6 +1224,22 @@ function CludesUI.OutlineButton(btn, bg, primary)
     return brd
 end
 
+-- AccentCap(frame): the house accent line along a menu's or popup's top
+-- edge (2px), repainted with the current accent each time the frame shows.
+function CludesUI.AccentCap(frame)
+    local cap = frame:CreateTexture(nil, "OVERLAY", nil, 7)
+    cap:SetPoint("TOPLEFT")
+    cap:SetPoint("TOPRIGHT")
+    cap:SetHeight(2)
+    local function Paint()
+        local c = CludesUI.CLUDES_GREEN
+        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    end
+    Paint()
+    frame:HookScript("OnShow", Paint)
+    return cap
+end
+
 function CludesUI.CardSidebar(outer, bg)
     bg:SetColorTexture(1, 1, 1, 0.025)
     local function Line(a)

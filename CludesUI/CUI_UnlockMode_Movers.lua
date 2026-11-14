@@ -135,6 +135,7 @@ function MenuPool.Chrome(menu)
     bg:SetAllPoints()
     bg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
     CludesUI.MakeBorder(menu, 1, 1, 1, 0.20)
+    CludesUI.AccentCap(menu)
 end
 
 function MenuPool.Begin(menu, shadowed, fineDivs)
@@ -2999,6 +3000,7 @@ local function CreateMover(barKey)
         menuBg:SetAllPoints()
         menuBg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
         CludesUI.MakeBorder(snapMenu, 1, 1, 1, 0.20)
+        CludesUI.AccentCap(snapMenu)
 
         local ITEM_H = 24
         local yOff = -4
@@ -3152,6 +3154,7 @@ local function CreateMover(barKey)
                 rsBg:SetAllPoints()
                 rsBg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
                 CludesUI.MakeBorder(regSub, 1, 1, 1, 0.20)
+                CludesUI.AccentCap(regSub)
                 local rsYOff = -4
                 for _, eInfo in ipairs(gElems) do
                     local ek, eLbl = eInfo.key, eInfo.label
