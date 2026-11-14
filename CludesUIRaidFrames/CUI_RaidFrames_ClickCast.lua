@@ -3027,6 +3027,70 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     local sidebarW     = floor(parentW * SIDEBAR_PCT)
     local centerW      = parentW - sidebarW * 2
 
+    -- The page in the options panel's card style. CC.Button: a square
+    -- button, dark with an accent outline and accent text (primary) or a grey
+    -- outline (secondary), a faint wash on hover. CC.Sidebar: a sidebar as a
+    -- card with a heading band (title left, binding count right). CC.Card:
+    -- a card behind a centre section, from its heading down to bottomY.
+    local CC = {}
+    function CC.Button(btn, bg, lbl, primary)
+        local r, g, b = 1, 1, 1
+        if primary then r, g, b = accentColor.r, accentColor.g, accentColor.b end
+        local rest, lit = primary and 0.7 or 0.22, primary and 1 or 0.45
+        bg:SetColorTexture(r, g, b, 0.06)
+        lbl:SetTextColor(r, g, b, primary and 1 or 0.8)
+        lbl:SetAlpha(1)
+        local brd = CludesUI.MakeRoundedBorder(btn, r, g, b, rest, bg, 2)
+        btn:SetScript("OnEnter", function() bg:SetColorTexture(r, g, b, 0.14); brd:SetColor(r, g, b, lit) end)
+        btn:SetScript("OnLeave", function() bg:SetColorTexture(r, g, b, 0.06); brd:SetColor(r, g, b, rest) end)
+    end
+    local function Edge(host, layer, a)
+        local tex = host:CreateTexture(nil, layer)
+        tex:SetColorTexture(1, 1, 1, a)
+        return tex
+    end
+    function CC.Sidebar(outer, bg, header, count)
+        bg:SetColorTexture(1, 1, 1, 0.025)
+        local band = Edge(outer, "BACKGROUND", 0.035)
+        band:SetPoint("TOPLEFT"); band:SetPoint("TOPRIGHT"); band:SetHeight(38)
+        local div = Edge(outer, "ARTWORK", 0.10)
+        div:SetPoint("TOPLEFT", 0, -38); div:SetPoint("TOPRIGHT", 0, -38); div:SetHeight(1)
+        local cap = outer:CreateTexture(nil, "ARTWORK")
+        cap:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.9)
+        cap:SetPoint("TOPLEFT"); cap:SetPoint("TOPRIGHT"); cap:SetHeight(2)
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
+            local e = Edge(outer, "ARTWORK", 0.10)
+            e:SetPoint("TOP" .. side); e:SetPoint("BOTTOM" .. side); e:SetWidth(1)
+        end
+        header:ClearAllPoints()
+        header:SetPoint("LEFT", outer, "TOPLEFT", 14, -19)
+        header:SetText(header:GetText():upper())
+        header:SetTextColor(1, 1, 1, 1)
+        local n = CludesUI.MakeFont(outer, 11, nil, 1, 1, 1, 0.45)
+        n:SetPoint("RIGHT", outer, "TOPRIGHT", -14, -19)
+        n:SetText(tostring(count))
+    end
+    function CC.Card(host, x, topY, w, bottomY)
+        local body = Edge(host, "BACKGROUND", 0.025)
+        body:SetPoint("TOPLEFT", host, "TOPLEFT", x, topY)
+        body:SetSize(w, topY - bottomY)
+        local band = Edge(host, "BACKGROUND", 0.035)
+        band:SetPoint("TOPLEFT", body, "TOPLEFT"); band:SetPoint("TOPRIGHT", body, "TOPRIGHT"); band:SetHeight(34)
+        local pieces = {
+            { "TOPLEFT", "TOPRIGHT", 0, 1 }, { "BOTTOMLEFT", "BOTTOMRIGHT", 0, 1 },
+        }
+        for _, pc in ipairs(pieces) do
+            local e = Edge(host, "ARTWORK", 0.10)
+            e:SetPoint(pc[1], body, pc[1]); e:SetPoint(pc[2], body, pc[2]); e:SetHeight(1)
+        end
+        local div = Edge(host, "ARTWORK", 0.10)
+        div:SetPoint("TOPLEFT", band, "BOTTOMLEFT"); div:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT"); div:SetHeight(1)
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
+            local e = Edge(host, "ARTWORK", 0.10)
+            e:SetPoint("TOP" .. side, body, "TOP" .. side); e:SetPoint("BOTTOM" .. side, body, "BOTTOM" .. side); e:SetWidth(1)
+        end
+    end
+
     -- StyleFont dresses a font string the way MakeFont makes one; the reused
     -- picker strings are re-dressed with it on every open.
     local function StyleFont(fs, size, r, g, b, a)
@@ -3564,6 +3628,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     local leftHeader = MakeFont(leftOuter, 13, 1, 1, 1, 0.75)
     leftHeader:SetPoint("TOP", leftOuter, "TOP", 0, -18)
     leftHeader:SetText(CludesUI.L("Global Bindings"))
+    CC.Sidebar(leftOuter, leftBg, leftHeader, #GetGlobalBindings())
 
     local leftScroll = CreateFrame("ScrollFrame", nil, leftOuter)
     leftScroll:SetPoint("TOPLEFT", leftOuter, "TOPLEFT", 0, -38)
@@ -3605,6 +3670,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     agLbl:SetPoint("CENTER"); agLbl:SetText(CludesUI.L("Add Global Binding"))
     addGlobalBtn:SetScript("OnEnter", function() agBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
     addGlobalBtn:SetScript("OnLeave", function() agBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+    agLbl:SetText("+  " .. CludesUI.L("Add Global Binding"))
+    CC.Button(addGlobalBtn, agBg, agLbl, true)
 
     addGlobalBtn:SetScript("OnClick", function()
         if ns._ccGridPopup and ns._ccGridPopup:IsShown() then ns._ccGridPopup:Hide(); return end
@@ -3780,7 +3847,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     stickyLeftBg:SetPoint("BOTTOMRIGHT", leftOuter, "BOTTOMRIGHT", 0, 0)
     stickyLeftBg:SetFrameLevel(leftOuter:GetFrameLevel() + 4)
     local slbTex = stickyLeftBg:CreateTexture(nil, "BACKGROUND")
-    slbTex:SetAllPoints(); slbTex:SetColorTexture(17/255, 15/255, 12/255, 1)
+    slbTex:SetAllPoints(); slbTex:SetColorTexture(0.06, 0.07, 0.08, 1)
     stickyLeftBg:Hide()
 
     local stickyGlobalBtn = CreateFrame("Button", nil, leftOuter)
@@ -3794,6 +3861,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     sgLbl:SetPoint("CENTER"); sgLbl:SetText(CludesUI.L("Add Global Binding"))
     stickyGlobalBtn:SetScript("OnEnter", function() sgBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
     stickyGlobalBtn:SetScript("OnLeave", function() sgBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+    sgLbl:SetText("+  " .. CludesUI.L("Add Global Binding"))
+    CC.Button(stickyGlobalBtn, sgBg, sgLbl, true)
     stickyGlobalBtn:SetScript("OnClick", function()
         if ns._ccGridPopup and ns._ccGridPopup:IsShown() then ns._ccGridPopup:Hide(); return end
         addGlobalBtn:Click()
@@ -3833,6 +3902,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     local rightHeader = MakeFont(rightOuter, 13, 1, 1, 1, 0.75)
     rightHeader:SetPoint("TOP", rightOuter, "TOP", 0, -18)
     rightHeader:SetText(CludesUI.L("Spec Bindings"))
+    CC.Sidebar(rightOuter, rightBg, rightHeader, #GetSpecBindings())
 
     local rightScroll = CreateFrame("ScrollFrame", nil, rightOuter)
     rightScroll:SetPoint("TOPLEFT", rightOuter, "TOPLEFT", 0, -38)
@@ -3874,6 +3944,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     asLbl:SetPoint("CENTER"); asLbl:SetText(CludesUI.L("Add New"))
     addSpecBtn:SetScript("OnEnter", function() asBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
     addSpecBtn:SetScript("OnLeave", function() asBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+    asLbl:SetText("+  " .. CludesUI.L("Add New"))
+    CC.Button(addSpecBtn, asBg, asLbl, true)
 
     local qbBtn = CreateFrame("Button", nil, rightChild)
     qbBtn:SetSize(btnW, ADD_BTN_H)
@@ -3886,6 +3958,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     qbLbl:SetPoint("CENTER"); qbLbl:SetText(CludesUI.L("Quickbind"))
     qbBtn:SetScript("OnEnter", function() qbBg:SetColorTexture(0.35, 0.35, 0.35, 0.8); qbLbl:SetAlpha(0.9) end)
     qbBtn:SetScript("OnLeave", function() qbBg:SetColorTexture(0.25, 0.25, 0.25, 0.6); qbLbl:SetAlpha(0.5) end)
+    CC.Button(qbBtn, qbBg, qbLbl, false)
 
     qbBtn:SetScript("OnClick", function()
         if ns._ccQBPopup and ns._ccQBPopup:IsShown() then ns._ccQBPopup:Hide(); return end
@@ -3966,6 +4039,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
             doneLbl:SetPoint("CENTER"); doneLbl:SetText(CludesUI.L("Done"))
             doneBtn:SetScript("OnEnter", function() doneBg:SetColorTexture(0.35, 0.35, 0.35, 0.8); doneLbl:SetAlpha(0.9) end)
             doneBtn:SetScript("OnLeave", function() doneBg:SetColorTexture(0.25, 0.25, 0.25, 0.6); doneLbl:SetAlpha(0.5) end)
+            CC.Button(doneBtn, doneBg, doneLbl, false)
             doneBtn:SetScript("OnClick", function() dimmer:Hide() end)
 
             dimmer:SetScript("OnMouseDown", function(self, button)
@@ -4385,7 +4459,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     stickyRightBg:SetPoint("BOTTOMRIGHT", rightOuter, "BOTTOMRIGHT", 0, 0)
     stickyRightBg:SetFrameLevel(rightOuter:GetFrameLevel() + 4)
     local srbTex = stickyRightBg:CreateTexture(nil, "BACKGROUND")
-    srbTex:SetAllPoints(); srbTex:SetColorTexture(17/255, 15/255, 12/255, 1)
+    srbTex:SetAllPoints(); srbTex:SetColorTexture(0.06, 0.07, 0.08, 1)
     stickyRightBg:Hide()
 
     local stickySpecBtn = CreateFrame("Button", nil, rightOuter)
@@ -4399,6 +4473,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     ssLbl:SetPoint("CENTER"); ssLbl:SetText(CludesUI.L("Add New"))
     stickySpecBtn:SetScript("OnEnter", function() ssBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
     stickySpecBtn:SetScript("OnLeave", function() ssBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+    ssLbl:SetText("+  " .. CludesUI.L("Add New"))
+    CC.Button(stickySpecBtn, ssBg, ssLbl, true)
     stickySpecBtn:SetScript("OnClick", function()
         if ns._ccSpecPopup and ns._ccSpecPopup:IsShown() then ns._ccSpecPopup:Hide(); return end
         addSpecBtn:Click()
@@ -4415,6 +4491,7 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     sqLbl:SetPoint("CENTER"); sqLbl:SetText(CludesUI.L("Quickbind"))
     stickyQBBtn:SetScript("OnEnter", function() sqBg:SetColorTexture(0.35, 0.35, 0.35, 0.8); sqLbl:SetAlpha(0.9) end)
     stickyQBBtn:SetScript("OnLeave", function() sqBg:SetColorTexture(0.25, 0.25, 0.25, 0.6); sqLbl:SetAlpha(0.5) end)
+    CC.Button(stickyQBBtn, sqBg, sqLbl, false)
     stickyQBBtn:SetScript("OnClick", function() qbBtn:Click() end)
 
     stickySpecBtn:Hide()
@@ -4517,17 +4594,14 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
     --  GLOBAL OPTIONS section
     -------------------------------------------------------------------
     -- Accent-colored, matches W:SectionHeader style.
+    local globalTop
     do
         centerY = centerY - 6
-        local secH = 33
-        local secLabel = MakeFont(centerFrame, 11, 1, 1, 1, 0.75)
-        secLabel:SetPoint("TOPLEFT", centerFrame, "TOPLEFT", C_PAD, centerY - 14)
+        globalTop = centerY
+        local secH = 40
+        local secLabel = MakeFont(centerFrame, 13, 1, 1, 1, 1)
+        secLabel:SetPoint("LEFT", centerFrame, "TOPLEFT", C_PAD, centerY - 17)
         secLabel:SetText(CludesUI.L("GLOBAL OPTIONS"))
-        local secLine = centerFrame:CreateTexture(nil, "ARTWORK")
-        secLine:SetHeight(1)
-        secLine:SetPoint("LEFT", secLabel, "RIGHT", 8, 0)
-        secLine:SetPoint("RIGHT", centerFrame, "RIGHT", -C_PAD, 0)
-        secLine:SetColorTexture(1, 1, 1, 0.08)
         centerY = centerY - secH
     end
 
@@ -4603,21 +4677,20 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
         PP.Point(ddCtrl, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
         centerY = centerY - ROW_H
     end
+    centerY = centerY - 8
+    CC.Card(centerFrame, C_PAD - 8, globalTop, rowW + 16, centerY)
 
     -------------------------------------------------------------------
     --  PER-SPELL OPTIONS section
     -------------------------------------------------------------------
+    local perTop
     do
         centerY = centerY - 12
-        local secH = 33
-        local secLabel = MakeFont(bodyHost, 11, 1, 1, 1, 0.75)
-        secLabel:SetPoint("TOPLEFT", bodyHost, "TOPLEFT", C_PAD, centerY - 14)
+        perTop = centerY
+        local secH = 40
+        local secLabel = MakeFont(bodyHost, 13, 1, 1, 1, 1)
+        secLabel:SetPoint("LEFT", bodyHost, "TOPLEFT", C_PAD, centerY - 17)
         secLabel:SetText(CludesUI.L("PER-SPELL OPTIONS"))
-        local secLine = bodyHost:CreateTexture(nil, "ARTWORK")
-        secLine:SetHeight(1)
-        secLine:SetPoint("LEFT", secLabel, "RIGHT", 8, 0)
-        secLine:SetPoint("RIGHT", bodyHost, "RIGHT", -C_PAD, 0)
-        secLine:SetColorTexture(1, 1, 1, 0.08)
         centerY = centerY - secH
     end
 
@@ -4865,7 +4938,9 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
         hint:SetPoint("TOP", bodyHost, "TOP", 0, centerY - 50)
         hint:SetJustifyH("CENTER")
         hint:SetText(CludesUI.L("Select a binding from either sidebar to edit its options"))
+        centerY = centerY - 90
     end
+    CC.Card(bodyHost, C_PAD - 8, perTop, rowW + 16, centerY - 8)
 
     -- SPELL STRIP (right edge, always visible): narrow scrollable column of
     -- class/spec spell icons. Click to add. Built on the first page build and
