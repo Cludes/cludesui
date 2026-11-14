@@ -867,7 +867,13 @@ CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = RefitLayers
 -- where the mask would hide them.
 -- width (default 1): the edge in whole pixels, for a heavier ring (a pulse);
 -- the radius keeps room for it.
-local OUTLINE_RADIUS = 4
+-- The house corners when a caller names no radius: 2px on a control (a
+-- button, a dropdown, an input, a tick box), 4px on a panel (a popup, a menu,
+-- a list). A shape whose short side is PANEL_SIDE or more counts as a panel.
+local OUTLINE_RADIUS, CONTROL_RADIUS, PANEL_SIDE = 4, 2, 80
+local function HouseRadius(half)
+    return (half and half * 2 >= PANEL_SIDE) and OUTLINE_RADIUS or CONTROL_RADIUS
+end
 
 local function OutlineSetColor(self, r, g, b, a)
     self._fill:SetVertexColor(r, g, b, a or 1)
@@ -893,6 +899,9 @@ end
 local function FitOutline(o, k)
     local parent = o.parent
     local half = HalfSide(parent)
+    -- No radius named: the house corner for this size, read at each fit (the
+    -- parent may not have been laid out when the outline was made).
+    if o.autoRadius then o.radius = HouseRadius(half) end
     local r = floor(o.radius * k + 0.5)
     if half then
         local cap = floor(half * k - 0.5)
@@ -1085,7 +1094,9 @@ function CludesUI.MakeRoundedBorder(parent, r, g, b, a, body, radius, clip, widt
     hole:SetPoint("TOPLEFT", layer, "TOPLEFT", w, -w)
     hole:SetPoint("BOTTOMRIGHT", layer, "BOTTOMRIGHT", -w, w)
     o._fill, o.hole, o.SetColor, o.SetCover = fill, hole, OutlineSetColor, OutlineSetCover
-    o.radius = radius or OUTLINE_RADIUS
+    -- A clipped outline is a list or a menu: a panel.
+    o.radius = radius or (clip and OUTLINE_RADIUS or CONTROL_RADIUS)
+    o.autoRadius = (radius == nil and not clip) or nil
     if body then
         local bm = parent:CreateMaskTexture()
         bm:SetAllPoints(parent)
@@ -1107,8 +1118,8 @@ end
 -- is the parent's texture or a descendant's; it keeps the mask through
 -- SetColorTexture. Returns the mask.
 function CludesUI.RoundBody(parent, body, radius)
-    radius = radius or OUTLINE_RADIUS
     local half = HalfSide(body)
+    radius = radius or HouseRadius(half)
     if half and half > 1 then
         local cap = floor(half - 0.5)
         if radius > cap then radius = cap end
