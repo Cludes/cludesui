@@ -1,10 +1,11 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Filter.lua
---  Unlock Mode element filter: a funnel icon and a box right of the top
---  banner's logo, Snap Elements moved to its left; the banner grows on both
---  sides to make room (its art is drawn in slices that stretch only the
---  plain bar, the logo stays whole) and stays on screen with - and +.
+--  Unlock Mode top bar layout and element filter. The bar is drawn in code
+--  (DrawBanner) as a toolbar across the whole screen width, its controls in
+--  one row: the logo and title, the toggles as square chips, the funnel and
+--  filter box, then help, Exit, Save & Exit and the - and + scale buttons.
+--  It stays on screen with - and + (the box narrows first).
 --  Typing hides every overlay whose name lacks one of the typed words; the
 --  real frames are never touched. Not saved: hiding the banner clears it.
 --  Loaded after CUI_UnlockMode_Session.lua; _unlockCoreInit runs it once with UM.
@@ -42,19 +43,17 @@ local function FilterKeeps(words, label)
     return shown ~= label and HasAllWords(words, shown) or false
 end
 
--- The bar's base width (CreateHUD's frame, before Layout widens it) and the
--- drawn bar's parts (DrawBanner): its height, and the logo badge hung from
--- its centre, which the open animation's logo flies into (its centre BADGE_Y
--- below the top of the bar, its logo BADGE_LOGO wide).
-local BANNER_W = 1144
-local BAR_H, BADGE, BADGE_TOP, BADGE_LOGO = 58, 56, 8, 38
+-- The drawn bar's height, the row's spacing (outer padding, gap between
+-- chips, gap between groups), the chips' size and the brand logo's.
+local BAR_H, PAD, GAP, GROUP_GAP = 58, 16, 6, 18
+local CHIP, CHIP_ICON, SCALE_CHIP, LOGO_SZ = 28, 18, 22, 26
 local LOGO_TEX = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 local FILTER_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\filter.png"
 -- The bar's own numbers (toggle edges and gaps, the clearance before Exit /
 -- Save & Exit, the - and + reach, the scale range) come from CreateHUD
 -- (CUI_UnlockMode_Session.lua) as hud._hudLayout.
 local ICON_SZ, BOX_GAP = 28, 6
-local BOX_MIN, BOX_MAX = 100, 200
+local BOX_MIN, BOX_MAX = 120, 220
 local ALPHA_OFF, ALPHA_ON, ALPHA_HOVER = 0.30, 0.60, 0.9  -- as the bar's toggles
 
 CUI_NS.unlockParts.Filter = function(UM)
@@ -116,104 +115,147 @@ local function Apply()
     if CludesUI._SetOverrideGhostsAlpha then CludesUI._SetOverrideGhostsAlpha(1) end
 end
 
--- The bar, drawn in code: a dark plate the bar's width with square ends, an
--- accent line along its bottom edge with a soft glow under it, and the
--- CludesUI logo on a square badge that hangs over that line at the centre.
--- Every part is anchored to the bar's edges, so it follows Layout's width.
--- Spec-override sessions paint it gold (UM.PaintBanner).
+-- The bar, drawn in code: a dark plate across the whole screen width, a faint
+-- sheen, and an accent line along its bottom edge with a soft glow under it.
+-- The plate follows the screen, not the bar frame, so it reads as a toolbar
+-- whatever the row's width. Spec-override sessions paint it gold
+-- (UM.PaintBanner, which also colours the brand logo, made in BuildFilter).
 local function DrawBanner(hud)
+    local function Span(tex, top, h)
+        tex:SetPoint("TOP", hud, "TOP", 0, top)
+        tex:SetPoint("LEFT", UIParent, "LEFT")
+        tex:SetPoint("RIGHT", UIParent, "RIGHT")
+        tex:SetHeight(h)
+    end
     local plate = hud:CreateTexture(nil, "BACKGROUND")
-    plate:SetPoint("TOPLEFT")
-    plate:SetPoint("TOPRIGHT")
-    plate:SetHeight(BAR_H)
-    plate:SetColorTexture(0.035, 0.043, 0.052, 0.94)
+    Span(plate, 0, BAR_H)
+    plate:SetColorTexture(0.035, 0.043, 0.052, 0.95)
     local sheen = hud:CreateTexture(nil, "BACKGROUND", nil, 1)
-    sheen:SetAllPoints(plate)
+    Span(sheen, 0, BAR_H)
     sheen:SetColorTexture(1, 1, 1, 1)
     sheen:SetGradient("VERTICAL", CreateColor(1, 1, 1, 0), CreateColor(1, 1, 1, 0.04))
     local line = hud:CreateTexture(nil, "ARTWORK", nil, 2)
-    line:SetPoint("TOPLEFT", 0, -(BAR_H - 2))
-    line:SetPoint("TOPRIGHT", 0, -(BAR_H - 2))
-    line:SetHeight(2)
+    Span(line, -(BAR_H - 2), 2)
     local glow = hud:CreateTexture(nil, "ARTWORK", nil, 1)
-    glow:SetPoint("TOPLEFT", 0, -BAR_H)
-    glow:SetPoint("TOPRIGHT", 0, -BAR_H)
-    glow:SetHeight(14)
+    Span(glow, -BAR_H, 14)
     glow:SetColorTexture(1, 1, 1, 1)
-    local lEdge = hud:CreateTexture(nil, "ARTWORK", nil, 2)
-    lEdge:SetPoint("TOPLEFT")
-    lEdge:SetSize(2, BAR_H)
-    local rEdge = hud:CreateTexture(nil, "ARTWORK", nil, 2)
-    rEdge:SetPoint("TOPRIGHT")
-    rEdge:SetSize(2, BAR_H)
-
-    local badge = CreateFrame("Frame", nil, hud)
-    badge:SetSize(BADGE, BADGE)
-    badge:SetPoint("TOP", hud, "TOP", 0, -BADGE_TOP)
-    badge:SetFrameLevel(hud:GetFrameLevel() + 1)
-    local bbg = badge:CreateTexture(nil, "BACKGROUND")
-    bbg:SetAllPoints()
-    bbg:SetColorTexture(0.05, 0.062, 0.075, 1)
-    local bbrd = CludesUI.MakeRoundedBorder(badge, 1, 1, 1, 1, bbg, 2)
-    hud._outlines[#hud._outlines + 1] = bbrd
-    local logo = badge:CreateTexture(nil, "ARTWORK")
-    logo:SetSize(BADGE_LOGO, BADGE_LOGO)
-    logo:SetPoint("CENTER")
-    logo:SetTexture(LOGO_TEX)
-    hud._badgeLogo = logo
-    hud._badgeY, hud._badgeLogoSz = BADGE_TOP + BADGE / 2, BADGE_LOGO
 
     local function Paint(r, g, b)
         line:SetColorTexture(r, g, b, 0.9)
-        glow:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
-        lEdge:SetColorTexture(r, g, b, 0.5)
-        rEdge:SetColorTexture(r, g, b, 0.5)
-        bbrd:SetColor(r, g, b, 0.85)
-        logo:SetVertexColor(r, g, b, 1)
+        glow:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.2))
+        if hud._badgeLogo then hud._badgeLogo:SetVertexColor(r, g, b, 1) end
+        if hud._chipRepaint then hud._chipRepaint() end
     end
     function UM.PaintBanner(special)
         if special then Paint(1, 0.82, 0.30); return end
         local c = CludesUI.CLUDES_GREEN
         Paint(c.r, c.g, c.b)
     end
-    UM.PaintBanner(CludesUI._specialUnlockGroup)
     CludesUI.RegAccent({ type = "callback", fn = function() UM.PaintBanner(CludesUI._specialUnlockGroup) end })
 end
 
--- Sizes the box and the banner for a half screen width V (banner units at
--- banner scale 100%, nil = no limit) and returns the half width the banner
--- then needs: its own width or its - and + buttons, whichever
--- reaches farther. Exit and Save & Exit sit at the default inset (BuildFilter);
--- the box evens out the two halves, those buttons included, so both keep the
--- toggles' own gap to the chains, and the banner grows until they do.
--- When that does not fit: the box shrinks to BOX_MIN, then the gap to the
--- minimum clearance.
-local function Layout(hud, frame, V)
-    local L = hud._hudLayout
-    local half = BANNER_W / 2
-    local wS, wC, wH = hud._magnetBtn:GetWidth(), hud._coordBtn:GetWidth(), hud._hoverBtn:GetWidth()
-    local left = -L.upLeft + wS + hud._gridBtn:GetWidth() + hud._darkOverlayBtn:GetWidth()
-        + hud._flashBtn:GetWidth() + 3 * L.gapL
-    local fixed = L.upRight + ICON_SZ + BOX_GAP + L.gapL + wC + L.gapL + wH + L.gapL + hud._infoBtn:GetWidth()
-    local exitW, saveW, edgeIn = hud._exitBtn:GetWidth(), hud._saveBtn:GetWidth(), L.edgeIn
-    local function Outer(e) return math.max(half + e, half + e - edgeIn + L.scaleBtnReach) end
-    local function Need(boxW, gap)
-        return math.max(0, left + gap + exitW + edgeIn - half, fixed + boxW + gap + saveW + edgeIn - half)
-    end
-    local boxW = math.max(BOX_MIN, math.min(BOX_MAX, math.floor(left + exitW - saveW - fixed + 0.5)))
-    local e = Need(boxW, L.gapL)
-    if V and Outer(math.ceil(e)) > V then
-        boxW = BOX_MIN
-        e = Need(boxW, L.gapL)
-        if Outer(math.ceil(e)) > V then e = Need(boxW, L.clear) end
-    end
-    e = math.ceil(e)
-    hud:SetWidth(BANNER_W + 2 * e)
-    frame:SetWidth(boxW)
-    return Outer(e)
+-- The bar's accent colour now: gold in a spec-override session.
+local function BarAccent()
+    if CludesUI._specialUnlockGroup then return 1, 0.82, 0.30 end
+    local c = CludesUI.CLUDES_GREEN
+    return c.r, c.g, c.b
 end
 
--- Keeps the banner and its - and + on screen: a banner scale that no longer
+-- A square chip behind a control: plate, 2px corner outline. Returns the outline.
+local function ChipPlate(hud, btn)
+    local plate = btn:CreateTexture(nil, "BACKGROUND")
+    plate:SetAllPoints()
+    plate:SetColorTexture(1, 1, 1, 0.04)
+    local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.12, plate, 2)
+    hud._outlines[#hud._outlines + 1] = brd
+    return brd
+end
+
+-- A toggle as a chip: its icon alone, centred; the name and state move to
+-- the tooltip's first line (UM.ShowBarTip reads btn._label). The state shows
+-- as an accent wash and a bottom cap: full when on, half for Grid Lines'
+-- Dimmed. It reads the state from the icon's alpha, which every toggle
+-- already sets (off, dimmed, on); hover (0.9) only brightens the outline.
+local chips = {}
+local function Chipify(hud, btn)
+    btn:SetSize(CHIP, CHIP)
+    btn._label:Hide()
+    btn._chip = true
+    local tex = btn._tex
+    tex:ClearAllPoints()
+    tex:SetPoint("CENTER")
+    tex:SetSize(CHIP_ICON, CHIP_ICON)
+    local brd = ChipPlate(hud, btn)
+    local wash = btn:CreateTexture(nil, "BACKGROUND", nil, 1)
+    wash:SetAllPoints()
+    local cap = btn:CreateTexture(nil, "ARTWORK")
+    cap:SetPoint("BOTTOMLEFT", 1, 1)
+    cap:SetPoint("BOTTOMRIGHT", -1, 1)
+    cap:SetHeight(2)
+    local level, hover = 0, false
+    local function Paint()
+        local r, g, b = BarAccent()
+        wash:SetColorTexture(r, g, b, 0.16 * level)
+        cap:SetColorTexture(r, g, b, level)
+        if hover then
+            brd:SetColor(1, 1, 1, 0.35)
+        elseif level > 0 then
+            brd:SetColor(r, g, b, 0.5)
+        else
+            brd:SetColor(1, 1, 1, 0.12)
+        end
+    end
+    hooksecurefunc(tex, "SetAlpha", function(_, a)
+        hover = a > 0.85
+        if not hover then
+            level = (a > ALPHA_OFF + 0.05) and ((a >= ALPHA_ON - 0.01) and 1 or 0.5) or 0
+        end
+        Paint()
+    end)
+    tex:SetAlpha(tex:GetAlpha())
+    chips[#chips + 1] = Paint
+end
+
+-- The row, left to right: brand | toggles | funnel, box ... help, Exit,
+-- Save & Exit | - +. Everything hangs off the bar frame's two ends, so the
+-- frame's width (Layout) is the whole row; it sits centred on the screen.
+local function RowParts(hud, icon, frame)
+    return {
+        left = { hud._brand, "|", hud._gridBtn, hud._magnetBtn, hud._darkOverlayBtn, hud._flashBtn,
+                 hud._coordBtn, hud._hoverBtn, "|", icon, frame },
+        right = { hud._plusBtn, hud._minusBtn, "|", hud._saveBtn, hud._exitBtn, hud._infoBtn },
+    }
+end
+
+-- Sizes the box for a half screen width V (bar units at banner scale 100%,
+-- nil = no limit), sets the bar frame's width to the row's and returns half
+-- of it: the box gives up its width first when the row does not fit.
+local function Layout(hud, frame, V)
+    local parts = RowParts(hud, { GetWidth = function() return ICON_SZ end }, frame)
+    local function Width(list)
+        local w, prev = 0, nil
+        for _, p in ipairs(list) do
+            if p == "|" then
+                w = w + GROUP_GAP
+            else
+                if prev and prev ~= "|" then w = w + ((p == frame) and BOX_GAP or GAP) end
+                w = w + ((p == frame) and 0 or p:GetWidth())
+            end
+            prev = p
+        end
+        return w
+    end
+    -- The funnel stands in at its size; the box is added apart.
+    local fixed = 2 * PAD + Width(parts.left) + GROUP_GAP + Width(parts.right)
+    local boxW = BOX_MAX
+    if V and (fixed + boxW) / 2 > V then boxW = BOX_MIN end
+    frame:SetWidth(boxW)
+    local w = math.ceil(fixed + boxW)
+    hud:SetWidth(w)
+    return w / 2
+end
+
+-- Keeps the bar and its - and + on screen: a banner scale that no longer
 -- fits (a smaller screen) shows at the largest step that does, without saving
 -- it, and CreateHUD greys + where the next step would not fit (its scale cap).
 local function MakeFit(hud, frame)
@@ -233,33 +275,46 @@ local function MakeFit(hud, frame)
     end
 end
 
--- Called by CreateHUD with the banner and the toggles' vertical center.
--- Left of the logo: Exit, Cursor Light, Dark Overlays, Grid Lines and Snap
--- Elements (moved over); right of it: the funnel, the box, Coordinates,
--- Hover Top Bar and Save & Exit.
+-- Called by CreateHUD with the bar and its controls' vertical centre: draws
+-- the bar, restyles the controls and lays out the row.
 function UM.BuildFilter(hud, centerY)
-    DrawBanner(hud)
-    local L = hud._hudLayout
     local FONT_PATH = UM.FONT_PATH
     local BR, BG, BB = CludesUI.BORDER_R, CludesUI.BORDER_G, CludesUI.BORDER_B
+    -- Brand: the logo (the open animation's emblem lands on it) and the title.
+    local brand = CreateFrame("Frame", nil, hud)
+    brand:SetHeight(CHIP)
+    local logo = brand:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(LOGO_SZ, LOGO_SZ)
+    logo:SetPoint("LEFT")
+    logo:SetTexture(LOGO_TEX)
+    local title = brand:CreateFontString(nil, "OVERLAY")
+    title:SetFont(UM.FONT_PATH, 13, "OUTLINE, SLUG")
+    title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
+    title:SetTextColor(1, 1, 1, 0.92)
+    title:SetText(CludesUI.L("LAYOUT MODE"))
+    brand:SetWidth(LOGO_SZ + 8 + math.ceil(title:GetStringWidth() or 90))
+    hud._brand, hud._badgeLogo = brand, logo
+    DrawBanner(hud)
 
-    -- Snap Elements next to the logo's left side, its label outside like the other left toggles.
-    local snap = hud._magnetBtn
-    snap:ClearAllPoints()
-    snap:SetPoint("RIGHT", hud, "TOP", L.upLeft, centerY)
-    snap._tex:ClearAllPoints()
-    snap._tex:SetPoint("RIGHT", snap, "RIGHT", 0, 0)
-    snap._label:ClearAllPoints()
-    snap._label:SetPoint("RIGHT", snap._tex, "LEFT", -5, 0)
-    snap._label:SetJustifyH("RIGHT")
-    -- Grid, then Dark Overlays and Cursor Light hung off it, left of Snap Elements.
-    hud._gridBtn:ClearAllPoints()
-    hud._gridBtn:SetPoint("RIGHT", snap, "LEFT", -L.gapL, 0)
+    -- Toggles become chips; help, and - and +, take the same plate.
+    for _, b in ipairs({ hud._gridBtn, hud._magnetBtn, hud._darkOverlayBtn, hud._flashBtn,
+                         hud._coordBtn, hud._hoverBtn }) do
+        Chipify(hud, b)
+    end
+    hud._chipRepaint = function() for i = 1, #chips do chips[i]() end end
+    hud._infoBtn:SetSize(CHIP, CHIP)
+    ChipPlate(hud, hud._infoBtn)
+    for _, b in ipairs({ hud._minusBtn, hud._plusBtn }) do
+        b:SetSize(SCALE_CHIP, SCALE_CHIP)
+        b._shadow:Hide()
+        b._label:SetFont(UM.FONT_PATH, 16, "")
+        ChipPlate(hud, b)
+    end
+    UM.PaintBanner(CludesUI._specialUnlockGroup)
 
-    -- Funnel icon next to the logo's right side: the box's focus button and tooltip anchor.
+    -- Funnel icon: the box's focus button and tooltip anchor.
     local icon = CreateFrame("Button", nil, hud)
     icon:SetSize(ICON_SZ, ICON_SZ)
-    icon:SetPoint("LEFT", hud, "TOP", L.upRight, centerY)
     icon:SetFrameLevel(hud:GetFrameLevel() + 2)
     local iconTex = icon:CreateTexture(nil, "OVERLAY")
     iconTex:SetAllPoints()
@@ -269,24 +324,35 @@ function UM.BuildFilter(hud, centerY)
     -- The box, as tall as the Exit and Save & Exit buttons; Layout sets its width.
     local frame = CreateFrame("Frame", nil, hud)
     frame:SetSize(BOX_MIN, hud._exitBtn:GetHeight())
-    frame:SetPoint("LEFT", icon, "RIGHT", BOX_GAP, 0)
     frame:SetFrameLevel(hud:GetFrameLevel() + 2)
-    -- Coordinates and Hover Top Bar right of the box, spaced as the left toggles.
-    hud._coordBtn:ClearAllPoints()
-    hud._coordBtn:SetPoint("LEFT", frame, "RIGHT", L.gapL, 0)
-    hud._hoverBtn:ClearAllPoints()
-    hud._hoverBtn:SetPoint("LEFT", hud._coordBtn, "RIGHT", L.gapL, 0)
-    hud._infoBtn:ClearAllPoints()
-    hud._infoBtn:SetPoint("LEFT", hud._hoverBtn, "RIGHT", L.gapL, 0)
-    -- Exit and Save & Exit at the default inset: Layout grows the banner around the
-    -- chains instead, so - and + keep clear of the bar's ends on both sides.
-    local exit, save = hud._exitBtn, hud._saveBtn
-    local _, _, _, _, exitY = exit:GetPoint(1)
-    local _, _, _, _, saveY = save:GetPoint(1)
-    exit:ClearAllPoints()
-    exit:SetPoint("LEFT", hud, "TOPLEFT", L.edgeIn, exitY)
-    save:ClearAllPoints()
-    save:SetPoint("RIGHT", hud, "TOPRIGHT", -L.edgeIn, saveY)
+
+    -- Place the row: the left group from the bar's left end, the right group
+    -- from its right end, each part on the controls' centre line.
+    local parts = RowParts(hud, icon, frame)
+    local function Chain(list, side)
+        local prev, gap = nil, 0
+        for _, p in ipairs(list) do
+            if p == "|" then
+                gap = GROUP_GAP
+            else
+                p:ClearAllPoints()
+                if not prev then
+                    if side == "LEFT" then
+                        p:SetPoint("LEFT", hud, "TOPLEFT", PAD, centerY)
+                    else
+                        p:SetPoint("RIGHT", hud, "TOPRIGHT", -PAD, centerY)
+                    end
+                elseif side == "LEFT" then
+                    p:SetPoint("LEFT", prev, "RIGHT", (gap > 0) and gap or ((p == frame) and BOX_GAP or GAP), 0)
+                else
+                    p:SetPoint("RIGHT", prev, "LEFT", -((gap > 0) and gap or GAP), 0)
+                end
+                prev, gap = p, 0
+            end
+        end
+    end
+    Chain(parts.left, "LEFT")
+    Chain(parts.right, "RIGHT")
 
     -- The fit only changes with the screen, so it runs as the bar shows.
     local Fit = MakeFit(hud, frame)

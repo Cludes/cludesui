@@ -97,18 +97,20 @@ local function CreateHUD(parent)
     -- Tooltip for a bar control (also the element filter's, CUI_UnlockMode_Filter.lua): below
     -- the bar, its top 37px under the controls' centre line whatever the control's height.
     -- It starts at the control's left edge and grows right, unless at its widest (250, the
-    -- shared tooltip's cap) it would reach the logo, which the banner (level 900) draws over
-    -- it, or the screen's right edge; then it ends at the control's right edge instead.
-    -- Skipped while the first-open tip callout covers that spot.
-    local LOGO_HALF_W = 53  -- the logo's art half width (columns 519-622 of the banner)
+    -- shared tooltip's cap) it would pass the screen's right edge; then it ends at the
+    -- control's right edge instead. Skipped while the first-open tip callout covers that spot.
     function UM.ShowBarTip(owner, tip, justify)
         if UM.unlockTipFrame and UM.unlockTipFrame:IsShown() then return end
+        -- A chip (CUI_UnlockMode_Filter.lua) shows only its icon: its name and
+        -- state, from its hidden label, lead the tooltip.
+        local head = owner._chip and owner._label and owner._label:GetText()
+        local name, state = head and head:match("^(.-)\n(.*)$")
+        if name then
+            tip = CludesUI.HexColor(GetAccent()) .. name .. "|r  " .. state .. "\n" .. tip
+        end
         local hud = UM.hudFrame
         local toUI = owner:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        local hudCX = hud:GetCenter()
-        local limit = UIParent:GetRight()
-        if owner:GetCenter() < hudCX then limit = (hudCX - LOGO_HALF_W) * toUI end
-        local side = (owner:GetLeft() * toUI + 250 > limit) and "RIGHT" or "LEFT"
+        local side = (owner:GetLeft() * toUI + 250 > UIParent:GetRight()) and "RIGHT" or "LEFT"
         CludesUI.ShowWidgetTooltip(owner, tip, { anchorPoint = "TOP" .. side, anchorTo = "BOTTOM" .. side,
             anchorY = -(37 - owner:GetHeight() / 2) * hud:GetScale(), justify = justify })
     end
@@ -643,25 +645,6 @@ local function CreateHUD(parent)
         }
 
         RefreshScaleBtns()
-    end
-
-    -- A toggle's icon takes the accent colour while its setting is on (its
-    -- resting alpha above the off level); hover (0.9) keeps the colour it had.
-    do
-        local function AccentWhenOn(tex)
-            hooksecurefunc(tex, "SetAlpha", function(self, a)
-                if a > 0.85 then return end
-                if a > HUD_OFF_ALPHA + 0.05 then
-                    local c = CludesUI.CLUDES_GREEN
-                    self:SetVertexColor(c.r, c.g, c.b)
-                else
-                    self:SetVertexColor(1, 1, 1)
-                end
-            end)
-            tex:SetAlpha(tex:GetAlpha())
-        end
-        AccentWhenOn(gridTex); AccentWhenOn(darkOverlayTex); AccentWhenOn(flashTex)
-        AccentWhenOn(magnetTex); AccentWhenOn(coordTex); AccentWhenOn(hoverTex)
     end
 
     -- Element filter right of the logo, the banner widened for it (CUI_UnlockMode_Filter.lua)
@@ -2605,16 +2588,21 @@ function ns.OpenUnlockMode()
         -- The emblem flies up into the bar's badge, shrinking to its size:
         -- the brackets land on the badge's border and the logo on its logo.
         local ft = (elapsed - FLY_START) / FLY_DUR
-        if ft > 0 and hud and hud._badgeY then
+        local target = hud and hud._badgeLogo
+        if ft > 0 and target and target:GetCenter() then
             local f = EaseInOutCubic(min(1, ft))
             local uiS = UIParent:GetEffectiveScale()
-            local hudR = hud:GetEffectiveScale() / uiS
+            local tR = target:GetEffectiveScale() / uiS
             local aR = A:GetEffectiveScale() / uiS
-            local tScale = hud._badgeLogoSz / EMBLEM_LOGO * hudR / aR
+            local tScale = target:GetWidth() / EMBLEM_LOGO * tR / aR
             emblem:SetScale(1 + (tScale - 1) * f)
-            local y = (UIParent:GetHeight() / 2 - hud._badgeY * hudR) * f
+            -- The logo's centre, from the screen's centre, in UIParent units.
+            local tx, ty = target:GetCenter()
+            local cx, cy = UIParent:GetCenter()
+            local x, y = (tx * tR - cx) * f, (ty * tR - cy) * f
+            local k = uiS / emblem:GetEffectiveScale()
             emblem:ClearAllPoints()
-            emblem:SetPoint("CENTER", UIParent, "CENTER", 0, y * uiS / emblem:GetEffectiveScale())
+            emblem:SetPoint("CENTER", UIParent, "CENTER", x * k, y * k)
         end
 
         -- The scan line leaves the emblem and sweeps to the bottom of the screen.
